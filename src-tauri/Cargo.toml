@@ -1,0 +1,57 @@
+[package]
+name = "dynasty-scans-reader"
+version = "0.1.0"
+description = "Portable standalone Dynasty Scans reader"
+authors = ["Project Curator"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-window-state = "2"
+tauri-plugin-log = "2"
+log = "0.4"
+tracing = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.31", features = ["bundled"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+tokio = { version = "1", features = ["rt", "fs", "io-util"] }
+tokio-stream = "0.1"
+walkdir = "2"
+webp = "0.3"
+image = { version = "0.25", default-features = false, features = ["webp", "jpeg", "png", "gif", "bmp", "tiff", "qoi", "tga", "pnm", "hdr", "ico"] }
+open = "5"
+
+[profile.dev]
+opt-level = 0
+debug = 1
+
+# Same hot-path opts as the root workspace so dev-mode image decode/encode
+# reaches release-class speeds.
+[profile.dev.package."image"]
+opt-level = 3
+
+[profile.dev.package."image-webp"]
+opt-level = 3
+
+[profile.dev.package."zune-jpeg"]
+opt-level = 3
+
+[profile.dev.package."zune-core"]
+opt-level = 3
+
+[profile.dev.package."png"]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"
+
+# Self-contained workspace: this crate is NOT a member of the repo-root
+# workspace, so it can be lifted into its own repo verbatim later.
+[workspace]
