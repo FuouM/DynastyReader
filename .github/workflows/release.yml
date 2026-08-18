@@ -1,0 +1,64 @@
+name: Release Build & Publish
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger only on version tags (e.g. v0.1.0)
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+# Prevent duplicate builds if tagged in rapid succession
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    name: Build Portable Windows Executable
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build Standalone Executable (no bundle/installer)
+        run: npm run tauri build -- --no-bundle
+
+      - name: Stage Portable Executable
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Path staging -Force | Out-Null
+          if (Test-Path "src-tauri\target\release\DynastyReader.exe") {
+            Copy-Item "src-tauri\target\release\DynastyReader.exe" "staging\DynastyReader.exe" -Force
+          } elseif (Test-Path "src-tauri\target\release\dynasty-scans-reader.exe") {
+            Copy-Item "src-tauri\target\release\dynasty-scans-reader.exe" "staging\DynastyReader.exe" -Force
+          } else {
+            throw "Compiled executable not found in src-tauri\target\release!"
+          }
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          name: 'DynastyReader ${{ github.ref_name }}'
+          draft: false
+          prerelease: false
+          files: staging/DynastyReader.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
