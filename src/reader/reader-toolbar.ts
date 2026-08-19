@@ -347,10 +347,10 @@ export class ReaderToolbar {
     const c = this.c;
     if (getAppTheme() === "dark") {
       c.readerContainer.classList.add("ds-dark");
-      c.themeBtn.innerHTML = '<i class="bi bi-moon-fill"></i> Dark';
+      c.themeBtn.innerHTML = '<i class="bi bi-moon-fill"></i>';
     } else {
       c.readerContainer.classList.remove("ds-dark");
-      c.themeBtn.innerHTML = '<i class="bi bi-sun"></i> Light';
+      c.themeBtn.innerHTML = '<i class="bi bi-sun"></i>';
     }
   }
 

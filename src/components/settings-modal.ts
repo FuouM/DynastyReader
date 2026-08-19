@@ -13,7 +13,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { browseCovers } from "../browse/browse-covers";
 import { isAutoCacheChapterEnabled, setAutoCacheChapterEnabled, getPrefetchBuffer, setPrefetchBuffer } from "../reader/settings";
 import { setupInputClearButtons } from "./input-field";
-import { getAppTheme, setAppTheme } from "../theme";
+import { getAppTheme, toggleAppTheme } from "../theme";
 
 const STORAGE_KEY_UI_SCALE = "ds-ui-scale";
 const SCALE_PRESETS = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
@@ -329,11 +329,11 @@ export function openSettingsModal(): void {
   };
   updateThemeToggleUI();
   themeLightBtn?.addEventListener("click", () => {
-    setAppTheme("light");
+    toggleAppTheme();
     updateThemeToggleUI();
   });
   themeDarkBtn?.addEventListener("click", () => {
-    setAppTheme("dark");
+    toggleAppTheme();
     updateThemeToggleUI();
   });
 
