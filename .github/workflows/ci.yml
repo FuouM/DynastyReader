@@ -13,13 +13,13 @@ on:
       - '.gitignore'
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   check:
-    name: Typecheck & Cargo Check (Ubuntu)
-    runs-on: ubuntu-22.04
+    name: Typecheck & Cargo Check
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Rust Cargo Caching (Swatinem/rust-cache)
+      - name: Rust Cargo Caching
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
