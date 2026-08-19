@@ -11,7 +11,14 @@ import type { BlacklistedTag } from "../db";
 import { openExternal, suggest } from "../api";
 import { invoke } from "@tauri-apps/api/core";
 import { browseCovers } from "../browse/browse-covers";
-import { isAutoCacheChapterEnabled, setAutoCacheChapterEnabled, getPrefetchBuffer, setPrefetchBuffer } from "../reader/settings";
+import {
+  isAutoCacheChapterEnabled,
+  setAutoCacheChapterEnabled,
+  getPrefetchBuffer,
+  setPrefetchBuffer,
+  getReaderNavPosition,
+  setReaderNavPosition,
+} from "../reader/settings";
 import { setupInputClearButtons } from "./input-field";
 import { getAppTheme, toggleAppTheme } from "../theme";
 import { checkUpdates } from "./update-dialog";
@@ -182,6 +189,22 @@ export function openSettingsModal(): void {
     '          <button type="button" class="win-button ds-btn-sm" id="ds-settings-prefetch-dec" style="padding:2px 8px;font-size:11px;">−</button>' +
     '          <span id="ds-settings-prefetch-val" style="font-size:11px;font-weight:600;min-width:54px;text-align:center;">0 (off)</span>' +
     '          <button type="button" class="win-button ds-btn-sm" id="ds-settings-prefetch-inc" style="padding:2px 8px;font-size:11px;">+</button>' +
+    "        </div>" +
+    "      </div>" +
+    '      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">' +
+    '        <div>' +
+    '          <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Page Navigation Bar Position:</div>' +
+    '          <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">' +
+    "            Dock page navigation &amp; progress at top or bottom (recommended for mobile/narrow screens)." +
+    "          </div>" +
+    "        </div>" +
+    '        <div class="ds-segmented-switch" id="ds-settings-nav-pos-switch" style="flex-shrink:0;">' +
+    '          <button type="button" class="ds-segmented-btn" id="ds-settings-nav-pos-top" title="Top (default)">' +
+    '            <i class="bi bi-align-top"></i> Top' +
+    '          </button>' +
+    '          <button type="button" class="ds-segmented-btn" id="ds-settings-nav-pos-bottom" title="Bottom (mobile / thumb friendly)">' +
+    '            <i class="bi bi-align-bottom"></i> Bottom' +
+    '          </button>' +
     "        </div>" +
     "      </div>" +
     "    </div>" +
@@ -383,6 +406,23 @@ export function openSettingsModal(): void {
   prefetchIncBtn?.addEventListener("click", () => {
     const cur = getPrefetchBuffer();
     syncPrefetchUI(Math.min(10, cur + 1));
+  });
+
+  const navPosTopBtn = modal.querySelector<HTMLButtonElement>("#ds-settings-nav-pos-top");
+  const navPosBottomBtn = modal.querySelector<HTMLButtonElement>("#ds-settings-nav-pos-bottom");
+  const updateNavPosUI = () => {
+    const pos = getReaderNavPosition();
+    navPosTopBtn?.classList.toggle("active", pos === "top");
+    navPosBottomBtn?.classList.toggle("active", pos === "bottom");
+  };
+  updateNavPosUI();
+  navPosTopBtn?.addEventListener("click", () => {
+    setReaderNavPosition("top");
+    updateNavPosUI();
+  });
+  navPosBottomBtn?.addEventListener("click", () => {
+    setReaderNavPosition("bottom");
+    updateNavPosUI();
   });
 
   const cacheBtn = modal.querySelector<HTMLButtonElement>("#ds-settings-goto-cache");

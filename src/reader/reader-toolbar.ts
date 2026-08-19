@@ -2,9 +2,10 @@ import type { ReaderController } from "./reader-controller";
 import type { FitMode } from "../types/reader";
 import type { ChapterRef } from "../types/routes";
 import { getAppTheme, onThemeChange, toggleAppTheme } from "../theme";
+import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
 
 /**
- * Builds the reader's sticky top navigation bar: chapter/page navigation
+ * Builds the reader's sticky navigation bars: chapter/page navigation
  * buttons, the progress track, and the mode/fit/theme/fullscreen/scroll-lock
  * toggles. Reads controller-owned state; writes back on user interaction.
  */
@@ -12,6 +13,11 @@ export class ReaderToolbar {
   private zoomOutBtn!: HTMLButtonElement;
   private zoomResetBtn!: HTMLButtonElement;
   private zoomInBtn!: HTMLButtonElement;
+
+  topNav!: HTMLElement;
+  bottomNav!: HTMLElement;
+  rowMain!: HTMLElement;
+  rowControls!: HTMLElement;
 
   constructor(private readonly c: ReaderController) {
     this.build();
@@ -25,12 +31,49 @@ export class ReaderToolbar {
     this.updateLayoutBtns();
     this.applyTheme();
     c.onDispose(onThemeChange(() => this.applyTheme()));
+
+    if (!this.bottomNav.parentElement) {
+      c.readerContainer.appendChild(this.bottomNav);
+    }
+    this.applyNavPosition(getReaderNavPosition());
+    const onNavPosChange = (ev: Event) => {
+      const customEv = ev as CustomEvent<ReaderNavPosition>;
+      this.applyNavPosition(customEv.detail || getReaderNavPosition());
+    };
+    window.addEventListener("ds-reader-nav-pos-change", onNavPosChange);
+    c.onDispose(() => window.removeEventListener("ds-reader-nav-pos-change", onNavPosChange));
+  }
+
+  applyNavPosition(pos: ReaderNavPosition): void {
+    if (pos === "bottom") {
+      this.topNav.innerHTML = "";
+      this.topNav.appendChild(this.rowControls);
+      this.topNav.style.display = "";
+
+      this.bottomNav.innerHTML = "";
+      this.bottomNav.appendChild(this.rowMain);
+      this.bottomNav.style.display = "";
+    } else {
+      this.bottomNav.innerHTML = "";
+      this.bottomNav.style.display = "none";
+
+      this.topNav.innerHTML = "";
+      this.topNav.appendChild(this.rowMain);
+      this.topNav.appendChild(this.rowControls);
+      this.topNav.style.display = "";
+    }
   }
 
   private build(): void {
     const c = this.c;
-    const nav = document.createElement("div");
-    nav.className = "ds-reader-nav";
+    const topNav = document.createElement("div");
+    topNav.className = "ds-reader-nav ds-reader-nav-top";
+    this.topNav = topNav;
+
+    const bottomNav = document.createElement("div");
+    bottomNav.className = "ds-reader-nav ds-reader-nav-bottom";
+    bottomNav.style.display = "none";
+    this.bottomNav = bottomNav;
 
     const prevChapterBtn = document.createElement("button");
     prevChapterBtn.type = "button";
@@ -231,9 +274,10 @@ export class ReaderToolbar {
     rowControls.appendChild(zoomResetBtn);
     rowControls.appendChild(zoomInBtn);
 
-    nav.appendChild(rowMain);
-    nav.appendChild(rowControls);
-    c.readerContainer.appendChild(nav);
+    this.rowMain = rowMain;
+    this.rowControls = rowControls;
+
+    c.readerContainer.appendChild(topNav);
 
     this.updateZoomUI();
 

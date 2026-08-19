@@ -26,3 +26,15 @@ export function setPrefetchBuffer(count: number): void {
   const clamped = Math.max(0, Math.min(10, count));
   localStorage.setItem("ds-reader-prefetch", String(clamped));
 }
+
+export type ReaderNavPosition = "top" | "bottom";
+
+export function getReaderNavPosition(): ReaderNavPosition {
+  const val = localStorage.getItem("ds-reader-nav-position");
+  return val === "bottom" ? "bottom" : "top";
+}
+
+export function setReaderNavPosition(pos: ReaderNavPosition): void {
+  localStorage.setItem("ds-reader-nav-position", pos);
+  window.dispatchEvent(new CustomEvent("ds-reader-nav-pos-change", { detail: pos }));
+}
