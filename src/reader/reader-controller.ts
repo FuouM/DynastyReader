@@ -108,6 +108,8 @@ export class ReaderController {
   nextChapterBtn!: HTMLButtonElement;
   prevPageBtn!: HTMLButtonElement;
   nextPageBtn!: HTMLButtonElement;
+  firstPageBtn!: HTMLButtonElement;
+  lastPageBtn!: HTMLButtonElement;
   positionLabel!: HTMLElement;
   progressFill!: HTMLElement;
   scrollLockBtn!: HTMLButtonElement;

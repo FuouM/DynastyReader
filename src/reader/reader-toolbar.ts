@@ -56,6 +56,20 @@ export class ReaderToolbar {
     nextPageBtn.title = "Next Page (Right Arrow / Space)";
     nextPageBtn.innerHTML = '<i class="bi bi-chevron-right"></i>';
 
+    const firstPageBtn = document.createElement("button");
+    firstPageBtn.type = "button";
+    firstPageBtn.className = "win-button";
+    firstPageBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    firstPageBtn.title = "Jump to First Page";
+    firstPageBtn.innerHTML = '<i class="bi bi-chevron-double-left"></i>';
+
+    const lastPageBtn = document.createElement("button");
+    lastPageBtn.type = "button";
+    lastPageBtn.className = "win-button";
+    lastPageBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    lastPageBtn.title = "Jump to Last Page";
+    lastPageBtn.innerHTML = '<i class="bi bi-chevron-double-right"></i>';
+
     const progressWrap = document.createElement("div");
     progressWrap.className = "ds-reader-progress-wrap";
 
@@ -203,6 +217,8 @@ export class ReaderToolbar {
     c.nextChapterBtn = nextChapterBtn;
     c.prevPageBtn = prevPageBtn;
     c.nextPageBtn = nextPageBtn;
+    c.firstPageBtn = firstPageBtn;
+    c.lastPageBtn = lastPageBtn;
     c.positionLabel = positionLabel;
     c.progressFill = progressFill;
     c.scrollLockBtn = scrollLockBtn;
@@ -215,9 +231,11 @@ export class ReaderToolbar {
     c.themeBtn = themeBtn;
 
     nav.appendChild(prevChapterBtn);
+    nav.appendChild(firstPageBtn);
     nav.appendChild(prevPageBtn);
     nav.appendChild(progressWrap);
     nav.appendChild(nextPageBtn);
+    nav.appendChild(lastPageBtn);
     nav.appendChild(nextChapterBtn);
     nav.appendChild(scrollLockBtn);
     nav.appendChild(modeBtn);
@@ -253,6 +271,9 @@ export class ReaderToolbar {
       if (c.isSpread) c.stepSpread(1);
       else c.setPage(c.currentIndex + 1);
     });
+
+    firstPageBtn.addEventListener("click", () => c.setPage(0));
+    lastPageBtn.addEventListener("click", () => c.setPage(c.pages.length - 1));
 
     scrollLockBtn.addEventListener("click", () => {
       c.scrollLock = !c.scrollLock;
