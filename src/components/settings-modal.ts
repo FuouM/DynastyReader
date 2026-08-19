@@ -58,6 +58,17 @@ export function openSettingsModal(): void {
   };
   applyModalZoom(currentScale);
 
+  // If the saved scale is not one of the presets (e.g. 90% from +/-), add a
+  // selected custom option so the dropdown reflects the real value on open.
+  const scaleOptionsHtml = SCALE_PRESETS.map(
+    (s) =>
+      `<option value="${s}" ${Math.abs(s - currentScale) < 0.01 ? "selected" : ""}>${Math.round(s * 100)}%${s === 1.0 ? " (Default)" : ""}</option>`,
+  ).join("");
+  const hasScalePreset = SCALE_PRESETS.some((s) => Math.abs(s - currentScale) < 0.01);
+  const scaleCustomHtml = hasScalePreset
+    ? ""
+    : `<option value="${currentScale}" selected>${Math.round(currentScale * 100)}% (Custom)</option>`;
+
   modal.innerHTML =
     '<div class="ds-modal-header">' +
     '  <span class="ds-modal-title"><i class="bi bi-gear-fill"></i> Application Settings</span>' +
@@ -76,10 +87,7 @@ export function openSettingsModal(): void {
     '            <i class="bi bi-dash-lg"></i>' +
     "          </button>" +
     '          <select id="ds-settings-scale-select" class="input-field" style="width:115px;height:24px;font-size:11px;">' +
-    SCALE_PRESETS.map(
-      (s) =>
-        `<option value="${s}" ${Math.abs(s - currentScale) < 0.01 ? "selected" : ""}>${Math.round(s * 100)}%${s === 1.0 ? " (Default)" : ""}</option>`,
-    ).join("") +
+    scaleOptionsHtml + scaleCustomHtml +
     "          </select>" +
     '          <button type="button" class="win-button ds-btn-sm" id="ds-settings-scale-inc" title="Increase Scale (+10%)">' +
     '            <i class="bi bi-plus-lg"></i>' +
