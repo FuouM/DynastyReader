@@ -79,9 +79,14 @@ function renderTab(): HTMLElement {
     "    </div>" +
     '    <span id="ds-title" style="margin-left:8px;"></span>' +
     '    <div id="ds-banner"></div>' +
-    '    <button type="button" class="win-button ds-btn-sm" id="ds-settings-btn" title="Settings (UI Scale &amp; Preferences)" style="margin-left:auto;flex-shrink:0;">' +
-    '      <i class="bi bi-gear-fill"></i>' +
-    "    </button>" +
+    '    <div style="margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
+    '      <button type="button" class="win-button ds-btn-sm" id="ds-page-refresh-btn" title="Refresh Page">' +
+    '        <i class="bi bi-arrow-clockwise"></i>' +
+    '      </button>' +
+    '      <button type="button" class="win-button ds-btn-sm" id="ds-settings-btn" title="Settings (UI Scale &amp; Preferences)">' +
+    '        <i class="bi bi-gear-fill"></i>' +
+    '      </button>' +
+    "    </div>" +
     "  </div>" +
     '  <div id="ds-actions"></div>' +
     "</div>" +
@@ -95,6 +100,11 @@ function renderTab(): HTMLElement {
   const browseBtn = container.querySelector<HTMLButtonElement>("#ds-tab-browse");
   browseBtn?.addEventListener("click", () => {
     navigate({ view: "browse" });
+  });
+
+  const refreshPageBtn = container.querySelector<HTMLButtonElement>("#ds-page-refresh-btn");
+  refreshPageBtn?.addEventListener("click", () => {
+    window.location.reload();
   });
 
   const settingsBtn = container.querySelector<HTMLButtonElement>("#ds-settings-btn");
