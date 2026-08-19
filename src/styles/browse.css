@@ -134,6 +134,8 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 .ds-feed-status-pager-wrap {
   display: inline-flex;

@@ -275,6 +275,8 @@ body.ds-dark #ds-actions {
   display: flex;
   gap: 6px;
   align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
   flex-wrap: wrap;
 }
 .ds-subtab {
