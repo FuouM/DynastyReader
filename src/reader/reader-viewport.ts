@@ -58,7 +58,7 @@ export class ReaderViewport {
         targetSlot.scrollLeft = 0;
       }
       const slideIndex = c.isSpread ? spreadIndexOf(c.spreads, index) : index;
-      if (!c.scrollLock) {
+      if (!c.scrollLock || instant) {
         // Force layout commit so transition:none takes effect before transform
         c.strip.style.transition = "none";
         void c.strip.offsetWidth; // trigger reflow

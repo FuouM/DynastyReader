@@ -272,8 +272,8 @@ export class ReaderToolbar {
       else c.setPage(c.currentIndex + 1);
     });
 
-    firstPageBtn.addEventListener("click", () => c.setPage(0));
-    lastPageBtn.addEventListener("click", () => c.setPage(c.pages.length - 1));
+    firstPageBtn.addEventListener("click", () => c.setPage(0, true));
+    lastPageBtn.addEventListener("click", () => c.setPage(c.pages.length - 1, true));
 
     scrollLockBtn.addEventListener("click", () => {
       c.scrollLock = !c.scrollLock;
