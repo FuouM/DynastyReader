@@ -6,7 +6,7 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     watch: {
-      ignored: ["**/src-tauri/**", "**/.data/**", "**/.rust/**", "**/target/**"],
+      ignored: ["**/src-tauri/**", "**/.data/**", "**/.rust/**", "**/target/**", "**/.deprecated/**"],
     },
   },
   build: {
