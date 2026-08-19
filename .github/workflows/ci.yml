@@ -12,15 +12,14 @@ on:
       - '**.md'
       - '.gitignore'
 
-# Automatically cancel redundant concurrent runs on new pushes to save free runner minutes
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   check:
-    name: Typecheck & Cargo Check (Windows)
-    runs-on: windows-latest
+    name: Typecheck & Cargo Check (Ubuntu)
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,20 +30,19 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      # Linux dependencies commented out for now
-      # - name: Install system dependencies (WebKitGTK & dependencies)
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y --no-install-recommends \
-      #       libwebkit2gtk-4.1-dev \
-      #       build-essential \
-      #       curl \
-      #       wget \
-      #       file \
-      #       libxdo-dev \
-      #       libssl-dev \
-      #       libayatana-appindicator3-dev \
-      #       librsvg2-dev
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable

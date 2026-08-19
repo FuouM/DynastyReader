@@ -6,17 +6,25 @@ on:
       - 'v*' # Trigger only on version tags (e.g. v0.1.0)
   workflow_dispatch: # Allows manual triggering from GitHub UI
 
-# Prevent duplicate builds if tagged in rapid succession
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build-and-release:
-    name: Build Portable Windows Executable
+    name: Build (${{ matrix.platform }})
     permissions:
       contents: write
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            os_name: 'windows'
+          - platform: 'ubuntu-22.04'
+            os_name: 'linux'
+
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,6 +34,21 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+
+      - name: Install Linux build dependencies
+        if: matrix.os_name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -38,10 +61,16 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Build Standalone Executable (no bundle/installer)
+      - name: Build Windows Standalone Executable
+        if: matrix.os_name == 'windows'
         run: npm run tauri build -- --no-bundle
 
-      - name: Stage Portable Executable
+      - name: Build Linux AppImage & Debian Package
+        if: matrix.os_name == 'linux'
+        run: npm run tauri build -- --bundles appimage,deb
+
+      - name: Stage Windows Artifacts
+        if: matrix.os_name == 'windows'
         shell: powershell
         run: |
           New-Item -ItemType Directory -Path staging -Force | Out-Null
@@ -53,12 +82,20 @@ jobs:
             throw "Compiled executable not found in src-tauri\target\release!"
           }
 
+      - name: Stage Linux Artifacts
+        if: matrix.os_name == 'linux'
+        shell: bash
+        run: |
+          mkdir -p staging
+          find src-tauri/target/release/bundle/appimage -name "*.AppImage" -exec cp {} staging/DynastyReader-x86_64.AppImage \;
+          find src-tauri/target/release/bundle/deb -name "*.deb" -exec cp {} staging/ \;
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
           name: 'DynastyReader ${{ github.ref_name }}'
           draft: false
           prerelease: false
-          files: staging/DynastyReader.exe
+          files: staging/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
