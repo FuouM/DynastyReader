@@ -347,6 +347,14 @@
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
 }
+#ds-reader-viewport.horizontal #ds-reader-strip.rtl,
+#ds-reader-viewport.horizontal.rtl #ds-reader-strip {
+  flex-direction: row-reverse;
+}
+#ds-reader-viewport.horizontal #ds-reader-strip.ltr,
+#ds-reader-viewport.horizontal.ltr #ds-reader-strip {
+  flex-direction: row;
+}
 #ds-reader-viewport.horizontal #ds-reader-strip > .ds-slot {
   flex: 0 0 100%;
   width: 100%;

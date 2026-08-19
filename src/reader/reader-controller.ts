@@ -479,8 +479,8 @@ export class ReaderController {
     this.directionAutoDetected = false;
     localStorage.setItem("ds-reader-direction", dir);
     this.toolbarImpl.updateLayoutBtns();
-    if (this.isSpread) {
-      this.rebuildSpreadSlots();
+    if (this.isHorizontal) {
+      this.viewportImpl.applyLayoutMode();
       this.viewportImpl.resetToCurrentPage(true);
     }
   }

@@ -62,15 +62,17 @@ export class ReaderViewport {
           targetSlide.scrollLeft = 0;
         }
       }
+      const sign = c.direction === "rtl" ? 1 : -1;
+      const transformValue = `translateX(${sign * slideIndex * 100}%)`;
       if (!c.scrollLock || instant) {
         // Force layout commit so transition:none takes effect before transform
         c.strip.style.transition = "none";
         void c.strip.offsetWidth; // trigger reflow
-        c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
+        c.strip.style.transform = transformValue;
       } else {
         // Ensure transition is active then slide
         c.strip.style.transition = "";
-        c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
+        c.strip.style.transform = transformValue;
       }
     } else {
       c.isProgrammaticScroll = true;
@@ -99,15 +101,17 @@ export class ReaderViewport {
     updateViewportHeight();
     if (c.isHorizontal) {
       const slideIndex = c.isSpread ? spreadIndexOf(c.spreads, c.currentIndex) : c.currentIndex;
+      const sign = c.direction === "rtl" ? 1 : -1;
+      const transformValue = `translateX(${sign * slideIndex * 100}%)`;
       if (!smooth) {
         c.strip.style.transition = "none";
         void c.strip.offsetWidth;
-        c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
+        c.strip.style.transform = transformValue;
         requestAnimationFrame(() => {
           c.strip.style.transition = "";
         });
       } else {
-        c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
+        c.strip.style.transform = transformValue;
       }
     } else {
       c.isProgrammaticScroll = true;
@@ -130,16 +134,23 @@ export class ReaderViewport {
     c.rebuildSpreadSlots();
     if (c.isHorizontal) {
       c.viewport.classList.add("horizontal");
+      c.viewport.classList.toggle("rtl", c.direction === "rtl");
+      c.viewport.classList.toggle("ltr", c.direction === "ltr");
+      c.strip.classList.toggle("rtl", c.direction === "rtl");
+      c.strip.classList.toggle("ltr", c.direction === "ltr");
+
       // Jump to current slide instantly (no animation on mode switch)
       c.strip.style.transition = "none";
       const slideIndex = c.isSpread ? spreadIndexOf(c.spreads, c.currentIndex) : c.currentIndex;
-      c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
+      const sign = c.direction === "rtl" ? 1 : -1;
+      c.strip.style.transform = `translateX(${sign * slideIndex * 100}%)`;
       // Re-enable transition after the paint
       requestAnimationFrame(() => {
         c.strip.style.transition = "";
       });
     } else {
-      c.viewport.classList.remove("horizontal");
+      c.viewport.classList.remove("horizontal", "rtl", "ltr");
+      c.strip.classList.remove("rtl", "ltr");
       c.strip.style.transform = "";
       c.strip.style.transition = "";
       const target = c.slots[c.currentIndex];
