@@ -745,11 +745,22 @@ function feedItem(
         addToColBtn,
       );
     } else {
+      const doujinTag = (ch.tags ?? []).find((t) => {
+        const type = (t.type ?? "").toLowerCase();
+        return type === "doujin" || type === "doujinshi";
+      });
+      const anthologyTag = (ch.tags ?? []).find((t) => (t.type ?? "").toLowerCase() === "anthology");
+      const kind: CollectionItemKind = doujinTag
+        ? "doujin"
+        : anthologyTag
+          ? "anthology"
+          : "oneshot";
+
       void openAddToCollectionModal(
         {
           permalink: ch.permalink,
           title: ch.title,
-          kind: "oneshot",
+          kind,
           cover: coverInfo.coverKey,
         },
         addToColBtn,

@@ -54,6 +54,19 @@ export function updateBrowseTopPager(
     cssText: "align-items:center;margin:0;",
   });
   topPager.appendChild(pager);
+
+  const bottomBtn = document.createElement("button");
+  bottomBtn.type = "button";
+  bottomBtn.className = "win-button ds-scroll-top-btn";
+  bottomBtn.title = "Scroll to bottom of list";
+  bottomBtn.innerHTML = '<i class="bi bi-arrow-down"></i> Bottom';
+  bottomBtn.addEventListener("click", () => {
+    const view = document.getElementById("ds-pane-browse") || document.getElementById("ds-view");
+    if (view) {
+      view.scrollTo({ top: view.scrollHeight, behavior: "smooth" });
+    }
+  });
+  topPager.appendChild(bottomBtn);
 }
 
 export function scrollBrowseToTop(): void {
@@ -193,7 +206,7 @@ export function renderBrowse(container: HTMLElement, route: Route): void {
   // ── Top Pager Container ────────────────────────────────────────────────
   const topPagerContainer = document.createElement("div");
   topPagerContainer.id = "ds-browse-top-pager";
-  topPagerContainer.style.cssText = "display:flex;align-items:center;";
+  topPagerContainer.style.cssText = "display:flex;align-items:center;gap:8px;";
   tabsRight.appendChild(topPagerContainer);
 
   const content = document.createElement("div");
@@ -329,21 +342,6 @@ export function renderBrowse(container: HTMLElement, route: Route): void {
     }
   });
   tabsRight.appendChild(checkUpdatesBtn);
-
-  // ── Scroll to Bottom Button ───────────────────────────────────────────
-  const scrollBottomBtn = document.createElement("button");
-  scrollBottomBtn.type = "button";
-  scrollBottomBtn.id = "ds-scroll-bottom-btn";
-  scrollBottomBtn.className = "win-button ds-scroll-bottom-btn ds-btn-sm";
-  scrollBottomBtn.title = "Scroll to bottom of list";
-  scrollBottomBtn.innerHTML = '<i class="bi bi-arrow-down"></i> Bottom';
-  scrollBottomBtn.addEventListener("click", () => {
-    const view = document.getElementById("ds-pane-browse") || document.getElementById("ds-view");
-    if (view) {
-      view.scrollTo({ top: view.scrollHeight, behavior: "smooth" });
-    }
-  });
-  tabsRight.appendChild(scrollBottomBtn);
 
   // Mount initial active tab
   switchTab(currentTab);

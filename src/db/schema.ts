@@ -235,19 +235,6 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
-  {
-    version: 2,
-    name: "normalize standalone doujin entries in collection_items to oneshot",
-    up: async () => {
-      await runStep(
-        `UPDATE collection_items
-         SET item_kind = 'oneshot'
-         WHERE item_kind = 'doujin'
-           AND (parent_series_permalink IS NULL OR parent_series_permalink = '')`,
-        "normalize doujin collection items",
-      );
-    },
-  },
 ];
 
 let initDbPromise: Promise<void> | null = null;

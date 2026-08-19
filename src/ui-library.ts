@@ -3,7 +3,7 @@
  * All data is local (SQLite) — fully offline-safe, no network traffic.
  */
 
-import { Route, decodeEntities, formatDate, navigate, safeHtml, setActions, setBanner } from "./state";
+import { Route, decodeEntities, formatDate, navigate, safeHtml, setActions, setBanner, setTitle } from "./state";
 import {
   openExternal,
   refreshFollowedSeriesCover,
@@ -121,9 +121,7 @@ export function renderLibrary(container: HTMLElement, _route: Route): void {
     head: collectionsHead,
     body: collectionsBody,
     footer: collectionsFooter,
-  } = createLibraryPanel(
-    '<span class="ds-flex-row"><i class="bi bi-folder-star"></i> Collections</span>',
-  );
+  } = createLibraryPanel('<i class="bi bi-folder-fill"></i> Collections');
 
   const newColBtn = document.createElement("button");
   newColBtn.type = "button";
@@ -157,9 +155,7 @@ export function renderLibrary(container: HTMLElement, _route: Route): void {
     head: historyHead,
     body: historyBody,
     footer: historyFooter,
-  } = createLibraryPanel(
-    '<span class="ds-flex-row"><i class="bi bi-clock-history"></i> Reading History</span>',
-  );
+  } = createLibraryPanel('<i class="bi bi-clock-history"></i> Reading History');
 
   const clearHistoryBtn = createConfirmDeleteButton(
     "Clear all reading history",
@@ -637,6 +633,7 @@ export async function openCollectionDetailView(
     renderLibrary(container, { view: "library" });
     return;
   }
+  setTitle(collection.name);
 
   // Setup Top Bar Action for returning to the main Library
   setActions((host) => {
@@ -746,21 +743,13 @@ function renderCollectionItemCard(
   onRefresh: () => Promise<void>,
 ): HTMLElement {
   const item = document.createElement("div");
-  item.className = "ds-item ds-flex-row";
-  item.style.cssText = "padding:5px 8px;border-radius:2px;gap:8px;";
-
-  let coverEl = renderCoverImage(
-    it.cover,
-    it.item_title,
-    "ds-collection-cover",
-    "ds-collection-cover-placeholder",
-  );
-  coverEl.style.cursor = "pointer";
+  item.className = "ds-item ds-flex-row ds-clickable";
+  item.style.cssText = "padding:5px 8px;border-radius:2px;gap:8px;cursor:pointer;";
 
   const isChapterLike =
     it.item_kind === "chapter" ||
     it.item_kind === "oneshot" ||
-    (it.item_kind === "doujin" && (!it.parent_series_permalink || it.parent_series_permalink === ""));
+    it.item_kind === "doujin";
 
   const onOpen = () => {
     if (isChapterLike) {
@@ -780,7 +769,17 @@ function renderCollectionItemCard(
     }
   };
 
-  coverEl.addEventListener("click", onOpen);
+  // Fixed cover container to avoid dynamic replaceChild detachment losing listeners
+  const coverWrap = document.createElement("div");
+  coverWrap.style.cssText = "flex-shrink:0;cursor:pointer;";
+
+  let coverEl = renderCoverImage(
+    it.cover,
+    it.item_title,
+    "ds-collection-cover",
+    "ds-collection-cover-placeholder",
+  );
+  coverWrap.appendChild(coverEl);
 
   // Lazy cover hydration if no local file path is cached yet
   if (!it.cover || (!it.cover.includes("/") && !it.cover.includes("\\"))) {
@@ -803,18 +802,13 @@ function renderCollectionItemCard(
           "ds-collection-cover",
           "ds-collection-cover-placeholder",
         );
-        newCover.style.cursor = "pointer";
-        newCover.addEventListener("click", onOpen);
-        if (coverEl.parentElement) {
-          coverEl.parentElement.replaceChild(newCover, coverEl);
-          coverEl = newCover;
-        }
+        coverWrap.replaceChildren(newCover);
       }
     });
   }
 
   const info = document.createElement("div");
-  info.className = "ds-fill ds-clickable";
+  info.className = "ds-fill";
 
   const titleRow = document.createElement("div");
   titleRow.className = "ds-flex-row";
@@ -850,7 +844,9 @@ function renderCollectionItemCard(
 
   info.appendChild(titleRow);
   info.appendChild(meta);
-  info.addEventListener("click", onOpen);
+
+  // Click on the entire row opens the item
+  item.addEventListener("click", () => onOpen());
 
   const openBtn = document.createElement("button");
   openBtn.type = "button";
@@ -882,7 +878,8 @@ function renderCollectionItemCard(
     openExternal(`https://dynasty-scans.com/${endpoint}/${it.item_permalink}`);
   });
 
-  const removeBtn = createConfirmDeleteButton("Remove from collection", async () => {
+  const removeBtn = createConfirmDeleteButton("Remove from collection", async (ev?: Event) => {
+    ev?.stopPropagation();
     try {
       await removeItemFromCollection(collectionId, it.item_permalink);
       setBanner(`Removed "${it.item_title}" from collection.`);
@@ -892,10 +889,10 @@ function renderCollectionItemCard(
       setBanner(`Could not remove item: ${msg}`);
     }
   });
-  removeBtn.style.cssText =
-    "font-size:10px;padding:0;width:20px;height:20px;min-width:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;";
+  removeBtn.style.cssText = "font-size:10px;padding:2px 6px;flex-shrink:0;";
+  removeBtn.addEventListener("click", (ev) => ev.stopPropagation());
 
-  item.appendChild(coverEl);
+  item.appendChild(coverWrap);
   item.appendChild(info);
   item.appendChild(openBtn);
   item.appendChild(extBtn);

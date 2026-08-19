@@ -507,27 +507,10 @@
   height: auto;
   object-fit: contain;
   pointer-events: none;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 #ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot-state {
   max-width: 100%;
-}
-
-/* Outer drop-shadows for spread pages (stitched together seamlessly with no internal seam shadow) */
-#ds-reader-viewport.horizontal .ds-spread-canvas.ltr .ds-slot:first-child .ds-page-img {
-  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.35);
-}
-#ds-reader-viewport.horizontal .ds-spread-canvas.ltr .ds-slot:last-child .ds-page-img {
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.35);
-}
-#ds-reader-viewport.horizontal .ds-spread-canvas.rtl .ds-slot:first-child .ds-page-img {
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.35);
-}
-#ds-reader-viewport.horizontal .ds-spread-canvas.rtl .ds-slot:last-child .ds-page-img {
-  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.35);
-}
-#ds-reader-viewport.horizontal .ds-spread-canvas.ds-spread-single .ds-slot .ds-page-img {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 /* Fit modes in horizontal spread */

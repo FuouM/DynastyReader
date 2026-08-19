@@ -159,6 +159,21 @@ export function renderCurrent(): void {
   if (typeof cleanup === "function") state.dispose = cleanup;
 }
 
+/** Checks if two routes represent the exact same view and target. */
+export function isSameRoute(a: Route, b: Route): boolean {
+  if (a.view !== b.view) return false;
+  if (a.view === "reader") {
+    return a.chapterPermalink === b.chapterPermalink;
+  }
+  if (a.view === "series") {
+    return a.seriesPermalink === b.seriesPermalink;
+  }
+  if (a.view === "browse") {
+    return (a.browseTab ?? "releases") === (b.browseTab ?? "releases");
+  }
+  return true;
+}
+
 /** Navigates to a new route and updates the ephemeral session manga tab if entering a manga/chapter. */
 export function navigate(r: Route): void {
   if (r.view === "reader" || r.view === "series") {
@@ -168,6 +183,13 @@ export function navigate(r: Route): void {
       route: { ...r },
     };
   }
+
+  // If already at the exact same route/chapter, do not destroy and rebuild the view
+  if (isSameRoute(state.route, r)) {
+    updateSessionMangaTabUI();
+    return;
+  }
+
   state.route = r;
   for (const hook of routeChangeHooks) hook(r.view);
   renderCurrent();
@@ -229,8 +251,7 @@ export function updateSessionMangaTabUI(): void {
 
   tab.addEventListener("click", () => {
     if (state.lastMangaTab) {
-      state.route = { ...state.lastMangaTab.route };
-      renderCurrent();
+      navigate(state.lastMangaTab.route);
     }
   });
 
