@@ -2,15 +2,14 @@ name: CI & Fast Check
 
 on:
   push:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - '.gitignore'
+    tags:
+      - 'v*' # Run full checks on release version tags (e.g. v0.1.0)
   pull_request:
     branches: [ main ]
     paths-ignore:
       - '**.md'
       - '.gitignore'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
