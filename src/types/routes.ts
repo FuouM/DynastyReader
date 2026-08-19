@@ -14,6 +14,8 @@ export interface Route {
   view: ViewName;
   /** Which browse sub-tab to show. */
   browseTab?: string;
+  /** Collection ID when viewing a single custom collection in library. */
+  collectionId?: number;
   seriesPermalink?: string;
   seriesName?: string;
   chapterPermalink?: string;

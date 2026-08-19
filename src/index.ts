@@ -7,7 +7,7 @@
  * `main.ts` alongside the base CSS.
  */
 
-import { navigate, registerRenderer, loadPluginView } from "./state";
+import { navigate, goBack, goForward, registerRenderer, loadPluginView } from "./state";
 import { renderLibrary } from "./ui-library";
 import { renderBrowse } from "./browse";
 import { renderSeries } from "./ui-series";
@@ -52,13 +52,21 @@ function renderTab(): HTMLElement {
     '      <div class="ds-segmented-switch" id="ds-view-switch">' +
     '        <button type="button" class="ds-segmented-btn" id="ds-tab-browse" title="Browse &amp; Recent">' +
     '          <i class="bi bi-compass"></i> <span class="ds-tab-text-full">Browse &amp; Recent</span><span class="ds-tab-text-short">Browse</span>' +
-    "        </button>" +
+    '        </button>' +
     '        <button type="button" class="ds-segmented-btn" id="ds-tab-library" title="Library">' +
     '          <i class="bi bi-collection"></i> <span class="ds-tab-text-full">Library</span><span class="ds-tab-text-short">Library</span>' +
-    "        </button>" +
-    "      </div>" +
+    '        </button>' +
+    '      </div>' +
+    '      <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">' +
+    '        <button type="button" class="ds-segmented-btn ds-nav-history-btn" id="ds-nav-back" title="Back" disabled>' +
+    '          <i class="bi bi-arrow-left"></i>' +
+    '        </button>' +
+    '        <button type="button" class="ds-segmented-btn ds-nav-history-btn" id="ds-nav-forward" title="Forward" disabled>' +
+    '          <i class="bi bi-arrow-right"></i>' +
+    '        </button>' +
+    '      </div>' +
     '      <div id="ds-session-tab-wrap" style="display:none;margin-left:2px;"></div>' +
-    "    </div>" +
+    '    </div>' +
     '    <span id="ds-title" style="margin-left:8px;"></span>' +
     '    <div id="ds-banner"></div>' +
     '    <div id="ds-actions"></div>' +
@@ -69,10 +77,26 @@ function renderTab(): HTMLElement {
     '      <button type="button" class="win-button ds-btn-sm" id="ds-settings-btn" title="Settings (UI Scale &amp; Preferences)">' +
     '        <i class="bi bi-gear-fill"></i>' +
     '      </button>' +
-    "    </div>" +
-    "  </div>" +
-    "</div>" +
+    '    </div>' +
+    '  </div>' +
+    '</div>' +
     '<div id="ds-view"></div>';
+
+  const navBackBtn = container.querySelector<HTMLButtonElement>("#ds-nav-back");
+  navBackBtn?.addEventListener("mousedown", (ev) => {
+    ev.preventDefault();
+  });
+  navBackBtn?.addEventListener("click", () => {
+    goBack();
+  });
+
+  const navForwardBtn = container.querySelector<HTMLButtonElement>("#ds-nav-forward");
+  navForwardBtn?.addEventListener("mousedown", (ev) => {
+    ev.preventDefault();
+  });
+  navForwardBtn?.addEventListener("click", () => {
+    goForward();
+  });
 
   const libBtn = container.querySelector<HTMLButtonElement>("#ds-tab-library");
   libBtn?.addEventListener("click", () => {

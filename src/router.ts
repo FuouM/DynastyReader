@@ -159,6 +159,41 @@ export function renderCurrent(): void {
   if (typeof cleanup === "function") state.dispose = cleanup;
 }
 
+/** History stack for backward / forward navigation. */
+const historyBackStack: Route[] = [];
+const historyForwardStack: Route[] = [];
+let isNavigatingHistory = false;
+
+/** Returns true if there is at least one previous route to go back to. */
+export function canGoBack(): boolean {
+  return historyBackStack.length > 0;
+}
+
+/** Returns true if there is at least one route to go forward to. */
+export function canGoForward(): boolean {
+  return historyForwardStack.length > 0;
+}
+
+/** Navigates back one step in history stack. */
+export function goBack(): void {
+  if (historyBackStack.length === 0) return;
+  const prevRoute = historyBackStack.pop()!;
+  historyForwardStack.push({ ...state.route });
+  isNavigatingHistory = true;
+  navigate(prevRoute);
+  isNavigatingHistory = false;
+}
+
+/** Navigates forward one step in history stack. */
+export function goForward(): void {
+  if (historyForwardStack.length === 0) return;
+  const nextRoute = historyForwardStack.pop()!;
+  historyBackStack.push({ ...state.route });
+  isNavigatingHistory = true;
+  navigate(nextRoute);
+  isNavigatingHistory = false;
+}
+
 /** Checks if two routes represent the exact same view and target. */
 export function isSameRoute(a: Route, b: Route): boolean {
   if (a.view !== b.view) return false;
@@ -171,7 +206,18 @@ export function isSameRoute(a: Route, b: Route): boolean {
   if (a.view === "browse") {
     return (a.browseTab ?? "releases") === (b.browseTab ?? "releases");
   }
+  if (a.view === "library") {
+    return a.collectionId === b.collectionId;
+  }
   return true;
+}
+
+/** Updates the top bar history arrows state. */
+export function updateHistoryButtonsUI(): void {
+  const backBtn = document.getElementById("ds-nav-back") as HTMLButtonElement | null;
+  const forwardBtn = document.getElementById("ds-nav-forward") as HTMLButtonElement | null;
+  if (backBtn) backBtn.disabled = !canGoBack();
+  if (forwardBtn) forwardBtn.disabled = !canGoForward();
 }
 
 /** Navigates to a new route and updates the ephemeral session manga tab if entering a manga/chapter. */
@@ -187,12 +233,21 @@ export function navigate(r: Route): void {
   // If already at the exact same route/chapter, do not destroy and rebuild the view
   if (isSameRoute(state.route, r)) {
     updateSessionMangaTabUI();
+    updateHistoryButtonsUI();
     return;
+  }
+
+  // Track in history stack if this is a fresh user navigation
+  if (!isNavigatingHistory) {
+    historyBackStack.push({ ...state.route });
+    // Clear forward history on new branch
+    historyForwardStack.length = 0;
   }
 
   state.route = r;
   for (const hook of routeChangeHooks) hook(r.view);
   renderCurrent();
+  updateHistoryButtonsUI();
 }
 
 /** Closes the ephemeral session manga tab. */

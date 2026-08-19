@@ -25,6 +25,8 @@ body {
   flex-shrink: 0;
   z-index: 10;
   box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
 }
 #ds-topbar-main {
   display: flex;
@@ -107,6 +109,17 @@ body {
 }
 .ds-segmented-btn + .ds-segmented-btn {
   border-left: 1px solid var(--sys-border-dark, #b0b0b0) !important;
+}
+.ds-segmented-btn:disabled,
+.ds-segmented-btn[disabled] {
+  opacity: 0.45;
+  cursor: default !important;
+  pointer-events: none;
+  background: transparent !important;
+}
+.ds-nav-history-btn {
+  padding: 0 7px;
+  font-size: 12px;
 }
 .ds-segmented-btn .ds-tab-text-short {
   display: none;

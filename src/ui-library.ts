@@ -64,7 +64,14 @@ function createLibraryPanel(titleHtml: string): {
   return { panel, head, body, footer };
 }
 
-export function renderLibrary(container: HTMLElement, _route: Route): void {
+export function renderLibrary(container: HTMLElement, route: Route): void {
+  // If viewing a specific collection, mount the single collection view
+  if (route.collectionId !== undefined) {
+    container.innerHTML = "";
+    void openCollectionDetailView(container, route.collectionId);
+    return;
+  }
+
   // If library panels are already mounted, refresh rows and actions in-place without rebuilding grid
   const existingGrid = container.querySelector<HTMLElement>(".ds-library-grid");
   if (existingGrid) {
@@ -501,7 +508,7 @@ function renderCollections(
     info.appendChild(title);
     info.appendChild(meta);
     info.addEventListener("click", () => {
-      openCollectionDetailView(container, col.id);
+      navigate({ view: "library", collectionId: col.id });
     });
     item.appendChild(info);
 
@@ -511,7 +518,7 @@ function renderCollections(
     openBtn.style.cssText = "font-size:10px;padding:2px 8px;flex-shrink:0;";
     openBtn.innerHTML = '<i class="bi bi-folder2-open"></i> Open';
     openBtn.addEventListener("click", () => {
-      openCollectionDetailView(container, col.id);
+      navigate({ view: "library", collectionId: col.id });
     });
     item.appendChild(openBtn);
 
@@ -640,7 +647,7 @@ export async function openCollectionDetailView(
     for (const btn of createBackRefreshActions(
       "Back to Collections",
       () => {
-        renderLibrary(container, { view: "library" });
+        navigate({ view: "library" });
       },
       () => {
         void openCollectionDetailView(container, collectionId);
