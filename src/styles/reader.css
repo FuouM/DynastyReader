@@ -102,8 +102,8 @@
 
 .ds-reader-nav {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
   font-size: 11px;
   color: #666;
   width: 100%;
@@ -115,6 +115,26 @@
   top: 0;
   z-index: 20;
   flex-shrink: 0;
+}
+.ds-reader-nav-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ds-reader-nav-row.nav-main {
+  justify-content: space-between;
+}
+.ds-reader-nav-row.nav-controls {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+  border-top: 1px solid var(--sys-border-light, rgba(0, 0, 0, 0.06));
+}
+#ds-reader-container.ds-dark .ds-reader-nav-row.nav-controls {
+  border-top-color: rgba(255, 255, 255, 0.08);
 }
 .ds-reader-progress-wrap {
   display: flex;
@@ -132,7 +152,7 @@
   align-self: center;
   align-items: center;
   justify-content: center;
-  padding: 1px 12px;
+  padding: 1px 10px;
   background: var(--sys-control-bg, #ececec);
   border: 1px solid var(--sys-border-light, #bbb);
   border-radius: 3px;
@@ -141,6 +161,47 @@
   color: var(--sys-window-text, #333);
   white-space: nowrap;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+  max-width: 100%;
+}
+.ds-reader-progress-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.ds-reader-progress-label .ds-prog-short {
+  display: none;
+}
+.ds-reader-progress-label .ds-prog-full {
+  display: inline;
+}
+
+@media (max-width: 768px) {
+  .ds-reader-progress-label .ds-prog-cached-dot,
+  .ds-reader-progress-label .ds-prog-cached {
+    display: none;
+  }
+}
+
+@media (max-width: 580px) {
+  .ds-reader-progress-label .ds-prog-full {
+    display: none;
+  }
+  .ds-reader-progress-label .ds-prog-short {
+    display: inline;
+  }
+}
+
+@media (max-width: 440px) {
+  .ds-reader-progress-label .ds-prog-pct {
+    display: none;
+  }
+  .ds-reader-progress-pill {
+    padding: 1px 6px;
+  }
 }
 .ds-reader-progress-track {
   width: 100%;
@@ -164,7 +225,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 10px;
+  padding: 0;
   background: #eaeaea;
   user-select: none;
 }
@@ -280,7 +341,7 @@
 .fit-width .ds-slot {
   width: 100%;
   max-width: 100%;
-  padding: 0 8px;
+  padding: 0;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -308,7 +369,7 @@
   min-height: var(--ds-viewport-full, 100vh);
   max-height: var(--ds-viewport-full, 100vh);
   box-sizing: border-box;
-  padding: 0 12px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -363,7 +424,7 @@
   display: flex !important;
   align-items: safe center;
   justify-content: safe center;
-  padding: 0 12px;
+  padding: 0;
   box-sizing: border-box;
   overflow: auto;
   user-select: none;
@@ -475,16 +536,30 @@
 }
 
 /* Fit modes in horizontal spread */
+.fit-width #ds-reader-viewport.horizontal .ds-spread-slot {
+  display: flex;
+  align-items: flex-start;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 .fit-width #ds-reader-viewport.horizontal .ds-spread-canvas {
-  width: 100%;
-  max-width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  display: flex !important;
 }
 .fit-width #ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot {
   flex: 0 0 50% !important;
   width: 50% !important;
   max-width: 50% !important;
-  height: auto;
-  max-height: none;
+  height: auto !important;
+  max-height: none !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
 }
 .fit-width #ds-reader-viewport.horizontal .ds-spread-canvas.ds-spread-single .ds-slot {
   flex: 0 0 100% !important;
@@ -496,21 +571,35 @@
   max-width: 100% !important;
   height: auto !important;
   max-height: none !important;
-  object-fit: contain;
+  object-fit: contain !important;
+  display: block;
 }
 
+.fit-height #ds-reader-viewport.horizontal .ds-spread-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
 .fit-height #ds-reader-viewport.horizontal .ds-spread-canvas {
-  height: 100%;
-  max-height: 100%;
+  height: 100% !important;
+  max-height: 100% !important;
+  max-width: 100% !important;
+  margin: auto !important;
+  display: inline-flex !important;
 }
 .fit-height #ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot {
-  flex: 0 0 auto !important;
+  flex: 0 1 auto !important;
   width: auto !important;
   max-width: 50% !important;
   height: 100% !important;
   max-height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 .fit-height #ds-reader-viewport.horizontal .ds-spread-canvas.ds-spread-single .ds-slot {
+  flex: 0 1 auto !important;
   max-width: 100% !important;
 }
 .fit-height #ds-reader-viewport.horizontal .ds-spread-canvas .ds-page-img {
@@ -518,7 +607,7 @@
   max-height: 100% !important;
   width: auto !important;
   max-width: 100% !important;
-  object-fit: contain;
+  object-fit: contain !important;
 }
 
 .fit-original #ds-reader-viewport.horizontal .ds-spread-slot {

@@ -309,23 +309,33 @@ export class ReaderController {
 
   // Progress + persistence --------------------------------------------------
   updateProgressText(): void {
-    const pct =
-      this.pages.length > 0 ? Math.round(((this.currentIndex + 1) / this.pages.length) * 100) : 0;
-    const cachedNote =
-      this.cachedCount > 0 ? ` · ${this.cachedCount}/${this.pages.length} cached` : "";
+    const total = this.pages.length;
+    const pct = total > 0 ? Math.round(((this.currentIndex + 1) / total) * 100) : 0;
+    const cachedNote = this.cachedCount > 0 ? `${this.cachedCount}/${total} cached` : "";
+
+    let fullPageStr = `Page ${this.currentIndex + 1} of ${total}`;
+    let shortPageStr = `${this.currentIndex + 1} / ${total}`;
+
     if (this.isSpread && this.spreads.length > 0) {
       const group = this.spreads[spreadIndexOf(this.spreads, this.currentIndex)];
       if (group && group.pageIndices.length > 1) {
-        const last = group.pageIndices[group.pageIndices.length - 1];
-        this.positionLabel.textContent = `Pages ${group.pageIndices[0] + 1}–${last + 1} of ${this.pages.length} (${pct}%)${cachedNote}`;
+        const first = group.pageIndices[0] + 1;
+        const last = group.pageIndices[group.pageIndices.length - 1] + 1;
+        fullPageStr = `Pages ${first}–${last} of ${total}`;
+        shortPageStr = `${first}–${last} / ${total}`;
       } else if (group) {
-        this.positionLabel.textContent = `Page ${group.pageIndices[0] + 1} of ${this.pages.length} (${pct}%)${cachedNote}`;
-      } else {
-        this.positionLabel.textContent = `Page ${this.currentIndex + 1} of ${this.pages.length} (${pct}%)${cachedNote}`;
+        const first = group.pageIndices[0] + 1;
+        fullPageStr = `Page ${first} of ${total}`;
+        shortPageStr = `${first} / ${total}`;
       }
-    } else {
-      this.positionLabel.textContent = `Page ${this.currentIndex + 1} of ${this.pages.length} (${pct}%)${cachedNote}`;
     }
+
+    const cachedHtml = cachedNote
+      ? `<span class="ds-prog-cached-dot">·</span><span class="ds-prog-cached">${cachedNote}</span>`
+      : "";
+    this.positionLabel.innerHTML = `<span class="ds-prog-full">${fullPageStr}</span><span class="ds-prog-short">${shortPageStr}</span><span class="ds-prog-pct">(${pct}%)</span>${cachedHtml}`;
+    this.positionLabel.title = `${fullPageStr} (${pct}%)${cachedNote ? ` · ${cachedNote}` : ""}`;
+
     this.progressFill.style.width = `${pct}%`;
     if (this.isSpread && this.spreads.length > 0) {
       const cur = spreadIndexOf(this.spreads, this.currentIndex);
@@ -333,7 +343,7 @@ export class ReaderController {
       this.nextPageBtn.disabled = cur >= this.spreads.length - 1;
     } else {
       this.prevPageBtn.disabled = this.currentIndex <= 0;
-      this.nextPageBtn.disabled = this.currentIndex >= this.pages.length - 1;
+      this.nextPageBtn.disabled = this.currentIndex >= total - 1;
     }
   }
 
@@ -868,7 +878,7 @@ export class ReaderController {
       cacheBtn.type = "button";
       cacheBtn.className = "win-button";
       cacheBtn.title = "Download every uncached page of this chapter";
-      cacheBtn.innerHTML = '<i class="bi bi-download"></i> Cache Chapter';
+      cacheBtn.innerHTML = '<i class="bi bi-download"></i> <span class="ds-btn-text">Cache Chapter</span>';
       cacheBtn.addEventListener("click", () => {
         for (let i = 0; i < this.pages.length; i++) {
           if (!this.cachedMap.has(i) && !this.isPageFailed(i)) this.enqueue(i);

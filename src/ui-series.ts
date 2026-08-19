@@ -563,8 +563,8 @@ function buildActions(
     followBtn.type = "button";
     followBtn.className = "win-button";
     followBtn.innerHTML = followed
-      ? '<i class="bi bi-bookmark-check-fill"></i> Following'
-      : '<i class="bi bi-bookmark"></i> Follow';
+      ? '<i class="bi bi-bookmark-check-fill"></i> <span class="ds-btn-text">Following</span>'
+      : '<i class="bi bi-bookmark"></i> <span class="ds-btn-text">Follow</span>';
     followBtn.addEventListener("click", () => void toggleFollow(followBtn));
     host.appendChild(followBtn);
 
@@ -572,7 +572,7 @@ function buildActions(
     refreshBtn.type = "button";
     refreshBtn.className = "win-button";
     refreshBtn.title = "Re-fetch series data from the server";
-    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> <span class="ds-btn-text">Refresh</span>';
     refreshBtn.addEventListener("click", () => {
       void load(container, seriesPermalink, true);
     });

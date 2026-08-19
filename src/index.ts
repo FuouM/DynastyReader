@@ -63,23 +63,25 @@ function renderTab(): HTMLElement {
   container.style.setProperty("zoom", String(getSavedUiScale()));
   container.innerHTML =
     '<div id="ds-topbar">' +
-    '  <div class="ds-flex-row" id="ds-nav-tabs">' +
-    '    <div class="ds-segmented-switch" id="ds-view-switch">' +
-    '      <button type="button" class="ds-segmented-btn" id="ds-tab-browse" title="Browse &amp; Recent">' +
-    '        <i class="bi bi-compass"></i> Browse &amp; Recent' +
-    "      </button>" +
-    '      <button type="button" class="ds-segmented-btn" id="ds-tab-library" title="Library">' +
-    '        <i class="bi bi-collection"></i> Library' +
-    "      </button>" +
+    '  <div id="ds-topbar-main">' +
+    '    <div class="ds-flex-row" id="ds-nav-tabs">' +
+    '      <div class="ds-segmented-switch" id="ds-view-switch">' +
+    '        <button type="button" class="ds-segmented-btn" id="ds-tab-browse" title="Browse &amp; Recent">' +
+    '          <i class="bi bi-compass"></i> <span class="ds-tab-text-full">Browse &amp; Recent</span><span class="ds-tab-text-short">Browse</span>' +
+    "        </button>" +
+    '        <button type="button" class="ds-segmented-btn" id="ds-tab-library" title="Library">' +
+    '          <i class="bi bi-collection"></i> <span class="ds-tab-text-full">Library</span><span class="ds-tab-text-short">Library</span>' +
+    "        </button>" +
+    "      </div>" +
+    '      <div id="ds-session-tab-wrap" style="display:none;margin-left:2px;"></div>' +
     "    </div>" +
-    '    <div id="ds-session-tab-wrap" style="display:none;margin-left:2px;"></div>' +
+    '    <span id="ds-title" style="margin-left:8px;"></span>' +
+    '    <div id="ds-banner"></div>' +
+    '    <button type="button" class="win-button ds-btn-sm" id="ds-settings-btn" title="Settings (UI Scale &amp; Preferences)" style="margin-left:auto;flex-shrink:0;">' +
+    '      <i class="bi bi-gear-fill"></i>' +
+    "    </button>" +
     "  </div>" +
-    '  <span id="ds-title" style="margin-left:8px;"></span>' +
-    '  <div id="ds-banner"></div>' +
     '  <div id="ds-actions"></div>' +
-    '  <button type="button" class="win-button ds-btn-sm" id="ds-settings-btn" title="Settings (UI Scale &amp; Preferences)" style="margin-left:2px;">' +
-    '    <i class="bi bi-gear-fill"></i>' +
-    "  </button>" +
     "</div>" +
     '<div id="ds-view"></div>';
 

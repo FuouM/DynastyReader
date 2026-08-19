@@ -18,15 +18,16 @@ let currentBrowseSeq = 0;
 interface BrowseTab {
   id: string;
   label: string;
+  shortLabel?: string;
 }
 
 const TABS: BrowseTab[] = [
-  { id: "releases", label: "Recent Releases" },
-  { id: "added", label: "Recently Added" },
-  { id: "downloaded", label: "Downloaded" },
-  { id: "series-dir", label: "Series Directory" },
-  { id: "tags-dir", label: "Tags" },
-  { id: "search", label: "Search" },
+  { id: "releases", label: "Recent Releases", shortLabel: "Releases" },
+  { id: "added", label: "Recently Added", shortLabel: "Added" },
+  { id: "downloaded", label: "Downloaded", shortLabel: "Downloaded" },
+  { id: "series-dir", label: "Series Directory", shortLabel: "Series" },
+  { id: "tags-dir", label: "Tags", shortLabel: "Tags" },
+  { id: "search", label: "Search", shortLabel: "Search" },
 ];
 
 /** Tracks top pager configurations per tab pane so switching tabs updates the bar instantly. */
@@ -267,7 +268,8 @@ export function renderBrowse(container: HTMLElement, route: Route): void {
     btn.type = "button";
     btn.className = `win-button ds-subtab${tab.id === currentTab ? " active" : ""}`;
     btn.dataset.tabId = tab.id;
-    btn.textContent = tab.label;
+    btn.title = tab.label;
+    btn.innerHTML = `<span class="ds-subtab-full">${tab.label}</span><span class="ds-subtab-short">${tab.shortLabel ?? tab.label}</span>`;
     btn.addEventListener("click", () => {
       switchTab(tab.id);
     });

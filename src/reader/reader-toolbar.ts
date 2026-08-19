@@ -207,24 +207,32 @@ export class ReaderToolbar {
     c.fullscreenBtn = fullscreenBtn;
     c.themeBtn = themeBtn;
 
-    nav.appendChild(prevChapterBtn);
-    nav.appendChild(firstPageBtn);
-    nav.appendChild(prevPageBtn);
-    nav.appendChild(progressWrap);
-    nav.appendChild(nextPageBtn);
-    nav.appendChild(lastPageBtn);
-    nav.appendChild(nextChapterBtn);
-    nav.appendChild(scrollLockBtn);
-    nav.appendChild(modeBtn);
-    nav.appendChild(coverBtn);
-    nav.appendChild(spreadBtn);
-    nav.appendChild(dirBtn);
-    nav.appendChild(fitSelect);
-    nav.appendChild(themeBtn);
-    nav.appendChild(fullscreenBtn);
-    nav.appendChild(zoomOutBtn);
-    nav.appendChild(zoomResetBtn);
-    nav.appendChild(zoomInBtn);
+    const rowMain = document.createElement("div");
+    rowMain.className = "ds-reader-nav-row nav-main";
+    rowMain.appendChild(prevChapterBtn);
+    rowMain.appendChild(firstPageBtn);
+    rowMain.appendChild(prevPageBtn);
+    rowMain.appendChild(progressWrap);
+    rowMain.appendChild(nextPageBtn);
+    rowMain.appendChild(lastPageBtn);
+    rowMain.appendChild(nextChapterBtn);
+
+    const rowControls = document.createElement("div");
+    rowControls.className = "ds-reader-nav-row nav-controls";
+    rowControls.appendChild(scrollLockBtn);
+    rowControls.appendChild(modeBtn);
+    rowControls.appendChild(coverBtn);
+    rowControls.appendChild(spreadBtn);
+    rowControls.appendChild(dirBtn);
+    rowControls.appendChild(fitSelect);
+    rowControls.appendChild(themeBtn);
+    rowControls.appendChild(fullscreenBtn);
+    rowControls.appendChild(zoomOutBtn);
+    rowControls.appendChild(zoomResetBtn);
+    rowControls.appendChild(zoomInBtn);
+
+    nav.appendChild(rowMain);
+    nav.appendChild(rowControls);
     c.readerContainer.appendChild(nav);
 
     this.updateZoomUI();
