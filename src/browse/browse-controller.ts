@@ -1,4 +1,4 @@
-import { state, type Route } from "../state";
+import { esc, state, type Route } from "../state";
 import {
   renderFeed,
   revalidateFeedHead,
@@ -10,7 +10,6 @@ import { renderDirectory } from "./browse-directory";
 import { renderSearchTab, wireSearchPanel } from "./browse-search";
 import { renderDownloadedChapters } from "./browse-downloaded";
 import { renderPager } from "../components/pager";
-import { setupInputClearButtons } from "../components/input-field";
 import { attachDelayedLoading } from "../components/loading";
 import { getBlacklistRevision, onBlacklistChanged } from "../db";
 
@@ -107,7 +106,7 @@ export async function renderTabContent(
     host.innerHTML = "";
     const errorBox = document.createElement("div");
     errorBox.style.cssText = "display:flex;flex-direction:column;gap:6px;padding:8px;";
-    errorBox.innerHTML = `<span class="ds-muted">Failed to load content: ${err instanceof Error ? err.message : String(err)}</span>`;
+    errorBox.innerHTML = `<span class="ds-muted">Failed to load content: ${esc(err instanceof Error ? err.message : String(err))}</span>`;
     const retry = document.createElement("button");
     retry.type = "button";
     retry.className = "win-button";
@@ -169,7 +168,6 @@ export function renderBrowse(container: HTMLElement, route: Route): void {
     "  </div>" +
     "</div>";
   container.appendChild(searchBox);
-  setupInputClearButtons(searchBox);
 
   const toggleSearchGo = (ev: Event) => {
     ev.stopPropagation();

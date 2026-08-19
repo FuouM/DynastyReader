@@ -7,7 +7,7 @@
  * way, a targeted manual port is made.
  *
  * Extracted from:
- *   base.css        — :root vars, reset, scrollbars, .hidden, .skeleton-*
+ *   base.css        — :root vars, reset, scrollbars, .ds-hidden, .skeleton-*
  *   components.css  — .win-button (+ .primary), .input-field
  *   layout.css      — .group-box, .group-box-title
  *   tags.css        — .tag-pill taxonomy classes
@@ -159,10 +159,6 @@ body.ds-dark ::-webkit-scrollbar-thumb {
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
 body.ds-dark ::-webkit-scrollbar-thumb:hover {
   background: #6e6e6e;
-}
-
-.hidden {
-  display: none !important;
 }
 
 .skeleton,
@@ -668,11 +664,6 @@ body.ds-dark .tag-pill.tag-identity:hover {
   align-items: center;
   gap: 6px;
 }
-.ds-flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .ds-fill {
   flex: 1;
   min-width: 0;
@@ -686,17 +677,121 @@ body.ds-dark .tag-pill.tag-identity:hover {
   font-size: 11px;
   padding: 2px 7px;
 }
-.ds-muted-xs {
+.ds-btn-xs {
   font-size: 10px;
-  color: var(--sys-text-muted, #666);
+  padding: 1px 6px;
+}
+.ds-btn-compact {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+.ds-btn-icon {
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+}
+.ds-btn-text {
+  white-space: nowrap;
+}
+.ds-external-link {
+  color: var(--sys-primary, #0078d4);
+  text-decoration: underline;
+  cursor: pointer;
+  word-break: break-all;
+}
+.ds-search-title-link {
+  color: var(--sys-window-text, #111);
+  font-weight: 600;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ds-search-title-link:hover {
+  text-decoration: underline;
+}
+.ds-blacklist-notice {
+  background: var(--ds-warn-bg);
+  border: 1px solid var(--ds-warn-border);
+  color: var(--ds-warn-text);
+  border-radius: 3px;
+  padding: 6px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.ds-scroll-bottom-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.ds-offline-icon {
+  margin-left: 2px;
+  vertical-align: middle;
+}
+.ds-cover-xs {
+  width: 36px;
+  height: 50px;
+  min-width: 36px;
+  max-width: 36px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.ds-cover-sm {
+  width: 42px;
+  height: 58px;
+  min-width: 42px;
+  max-width: 42px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.ds-cover-lg {
+  width: 90px;
+  height: 126px;
+  min-width: 90px;
+  max-width: 90px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+/* win-textbox is the native-input alias of .input-field */
+.win-textbox {
+  background-color: var(--sys-window-bg);
+  color: var(--sys-window-text);
+  border: 1px solid #7a7a7a;
+  padding: 0 8px;
+  height: 24px;
+  line-height: 24px;
+  outline: none;
+  font-size: 12px;
+}
+.win-textbox:focus {
+  border-color: var(--sys-border-focus);
 }
 .ds-hidden {
   display: none !important;
 }
-.ds-grid-4 {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+.ds-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  text-align: center;
   gap: 8px;
+  color: var(--sys-text-muted, #666);
+  font-size: 12px;
+}
+.ds-empty-state > i {
+  font-size: 26px;
+  color: var(--sys-text-muted, #888);
 }
 .ds-danger {
   background-color: #d13438;

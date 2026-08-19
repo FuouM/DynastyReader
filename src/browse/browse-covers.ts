@@ -1,8 +1,7 @@
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
+import { convertFileSrc } from "../ipc";
 import type { FeedChapter } from "../types/api";
-
-const PH = window.PluginHost;
 
 export interface CoverTarget {
   coverKey: string;
@@ -284,7 +283,7 @@ export class BrowseCovers {
     img.width = 42;
     img.height = 58;
     img.decoding = "async";
-    img.src = PH.convertFileSrc(coverPath);
+    img.src = convertFileSrc(coverPath);
     img.addEventListener("error", () => {
       img.style.display = "none";
       const ph = document.createElement("div");

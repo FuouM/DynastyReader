@@ -47,7 +47,7 @@ fn is_version_newer(latest: &str, current: &str) -> bool {
 }
 
 /// Checks the official GitHub repository for new releases.
-#[tauri::command]
+#[tauri::command(rename = "checkForUpdates")]
 pub async fn check_for_updates(app: AppHandle) -> Result<UpdateInfo, String> {
     let current_version = app.package_info().version.to_string();
 
@@ -117,7 +117,7 @@ pub async fn check_for_updates(app: AppHandle) -> Result<UpdateInfo, String> {
 }
 
 /// Downloads the new executable and performs the atomic replacement dance on Windows.
-#[tauri::command]
+#[tauri::command(rename = "installUpdate")]
 pub async fn install_update(app: AppHandle, download_url: String) -> Result<(), String> {
     if download_url.is_empty() {
         return Err("Download URL cannot be empty".to_string());

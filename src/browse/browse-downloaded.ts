@@ -7,10 +7,9 @@ import { decodeEntities, formatBytes, formatDate, navigate, onRouteChange } from
 import { getFullyCachedChapters, type FullyCachedChapterRow } from "../db";
 import { renderPager } from "../components/pager";
 import { scrollBrowseToTop, updateBrowseTopPager } from "./browse-controller";
-import { setupInputClearButtons } from "../components/input-field";
+import { convertFileSrc } from "../ipc";
 
 const PAGE_SIZE = 25;
-const PH = window.PluginHost;
 
 let downloadedSearchQuery = "";
 let cachedChaptersList: FullyCachedChapterRow[] = [];
@@ -70,7 +69,6 @@ export async function renderDownloadedChapters(
     downloadedSearchQuery = filterInput.value;
     updateDownloadedView(host, 1, reload);
   });
-  setupInputClearButtons(filterWrap);
   header.appendChild(filterWrap);
 
   container.appendChild(header);
@@ -183,7 +181,7 @@ function renderDownloadedChapterRow(ch: FullyCachedChapterRow): HTMLElement {
 
   if (ch.coverPath) {
     const img = document.createElement("img");
-    img.src = PH.convertFileSrc(ch.coverPath);
+    img.src = convertFileSrc(ch.coverPath);
     img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
     img.loading = "lazy";
     img.onerror = () => {

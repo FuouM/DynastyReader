@@ -1,17 +1,29 @@
 /* Reader viewport, slots, shimmer, fullscreen, dark theme, fit modes. */
 
-/* Reader View (Light Mode Default) */
+/* Compact controls inside the reader nav bars (sizing stays theme-independent) */
+.ds-reader-nav .win-button {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+.ds-reader-nav .win-input {
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+/* Reader View (tinted via .ds-dark on the container) */
 #ds-reader-container {
+  --ds-reader-bg: var(--sys-window-bg, #ffffff);
+  --ds-reader-viewport-bg: #eaeaea;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--sys-window-bg, #ffffff);
+  background: var(--ds-reader-bg);
 }
 
-/* Fullscreen Mode (Light Mode) */
+/* Fullscreen Mode */
 #ds-reader-container.ds-fullscreen {
   position: fixed !important;
   top: 0 !important;
@@ -19,10 +31,10 @@
   width: 100vw !important;
   height: 100vh !important;
   z-index: 99999 !important;
-  background: #f0f0f0 !important;
+  background: var(--ds-reader-bg) !important;
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav {
-  background: var(--sys-window-bg, #fafafa) !important;
+  background: var(--ds-reader-bg) !important;
   color: var(--sys-window-text, #333) !important;
   padding: 6px 12px !important;
 }
@@ -35,16 +47,19 @@
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
 }
 #ds-reader-container.ds-fullscreen #ds-reader-viewport {
-  background: #e6e6e6 !important;
+  background: var(--ds-reader-viewport-bg) !important;
 }
 
-/* Dark Mode (Windowed + Fullscreen) */
+/* Dark reader tint — windowed + fullscreen. `.win-button` / `.win-input` dark
+   styling is already handled globally by the base [data-theme] palette. */
 #ds-reader-container.ds-dark {
-  background: #181818;
+  --ds-reader-bg: #181818;
+  --ds-reader-viewport-bg: #1e1e1e;
 }
 #ds-reader-container.ds-dark .ds-reader-nav {
-  background: #1e1e1e !important;
+  background: var(--ds-reader-bg) !important;
   color: #ffffff !important;
+  border-color: #383838 !important;
 }
 #ds-reader-container.ds-dark .ds-reader-nav.ds-reader-nav-top {
   border-bottom: 1px solid #383838 !important;
@@ -52,36 +67,8 @@
 #ds-reader-container.ds-dark .ds-reader-nav.ds-reader-nav-bottom {
   border-top: 1px solid #383838 !important;
 }
-#ds-reader-container.ds-dark .win-button {
-  background: #2b2b2b;
-  color: #e0e0e0;
-  border-color: #444444;
-}
-#ds-reader-container.ds-dark .win-button:hover {
-  background: #3b3b3b;
-  color: #ffffff;
-  border-color: #666666;
-}
-#ds-reader-container.ds-dark .win-button.primary {
-  background: #0067c0;
-  color: #ffffff;
-  border-color: #005a9e;
-}
-#ds-reader-container.ds-dark .win-button.primary:hover {
-  background: #1879cd;
-  border-color: #2b88d8;
-  color: #ffffff;
-}
-#ds-reader-container.ds-dark .win-button.primary:active {
-  background: #005a9e;
-  border-color: #004578;
-  color: #ffffff;
-}
-#ds-reader-container.ds-dark .win-input,
-#ds-reader-container.ds-dark select {
-  background: #2b2b2b;
-  color: #e0e0e0;
-  border-color: #444444;
+#ds-reader-container.ds-dark .ds-reader-nav-top > .nav-controls:not(:first-child) {
+  border-top-color: rgba(255, 255, 255, 0.08);
 }
 #ds-reader-container.ds-dark .ds-reader-progress-pill {
   background: #282828;
@@ -93,28 +80,13 @@
   background: #333333;
 }
 #ds-reader-container.ds-dark #ds-reader-viewport {
-  background: #1e1e1e !important;
+  background: var(--ds-reader-viewport-bg) !important;
 }
 #ds-reader-container.ds-dark .ds-progress-text {
   color: #cccccc;
 }
-#ds-reader-container.ds-fullscreen.ds-dark {
-  background: #181818 !important;
-}
-#ds-reader-container.ds-fullscreen.ds-dark .ds-reader-nav {
-  background: #1e1e1e !important;
-  color: #ffffff !important;
-}
-#ds-reader-container.ds-fullscreen.ds-dark .ds-reader-nav.ds-reader-nav-top {
-  border-bottom: 1px solid #383838 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-#ds-reader-container.ds-fullscreen.ds-dark .ds-reader-nav.ds-reader-nav-bottom {
-  border-top: 1px solid #383838 !important;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.5);
-}
-#ds-reader-container.ds-fullscreen.ds-dark #ds-reader-viewport {
-  background: #121212 !important;
+#ds-reader-container.ds-dark.ds-fullscreen {
+  --ds-reader-viewport-bg: #121212;
 }
 
 .ds-reader-nav {
@@ -158,14 +130,6 @@
 .ds-reader-nav-top > .nav-controls:not(:first-child) {
   padding-top: 2px;
   border-top: 1px solid var(--sys-border-light, rgba(0, 0, 0, 0.06));
-}
-#ds-reader-container.ds-dark .ds-reader-nav {
-  background: #1e1e1e !important;
-  color: #ffffff !important;
-  border-color: #383838 !important;
-}
-#ds-reader-container.ds-dark .ds-reader-nav-top > .nav-controls:not(:first-child) {
-  border-top-color: rgba(255, 255, 255, 0.08);
 }
 .ds-reader-progress-wrap {
   display: flex;

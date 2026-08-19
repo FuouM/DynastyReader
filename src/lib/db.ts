@@ -16,10 +16,8 @@
  * the same helper is safe to share across all plugins in the workspace.
  */
 
-const PH = window.PluginHost;
-
-/** A plain object row returned by the SQLite sandbox. */
-export type Row = Record<string, unknown>;
+import type { Row } from "../types/db";
+import * as ipc from "../ipc";
 
 export interface PluginDb {
   /** Runs a write query; resolves to the number of rows affected. */
@@ -32,14 +30,12 @@ export interface PluginDb {
 export function createPluginDb(dbName: string): PluginDb {
   return {
     async execute(sql: string, params: unknown[] = []): Promise<number> {
-      const resp = await PH.callService("PluginDbExecute", { db: dbName, sql, params });
-      if (resp?.Error) throw new Error(String(resp.Error.message));
-      return Number(resp?.PluginDbExecuteResult?.rows_affected ?? 0);
+      const resp = await ipc.dbExecute(dbName, sql, params);
+      return Number(resp.rows_affected ?? 0);
     },
     async query<T extends object = Row>(sql: string, params: unknown[] = []): Promise<T[]> {
-      const resp = await PH.callService("PluginDbQuery", { db: dbName, sql, params });
-      if (resp?.Error) throw new Error(String(resp.Error.message));
-      return (resp?.PluginDbQueryResult?.rows ?? []) as T[];
+      const resp = await ipc.dbQuery(dbName, sql, params);
+      return (resp.rows ?? []) as T[];
     },
   };
 }

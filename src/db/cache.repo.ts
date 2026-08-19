@@ -1,12 +1,14 @@
 import { query, execute } from "./client";
+import { inClause } from "./paging";
+import { loadCachedChapterContext } from "./cache-aggregate";
+import { DB_NAME } from "../state";
+import * as ipc from "../ipc";
 import type {
   CachedPageRow,
   ChapterCacheCount,
   CacheOverviewStats,
   CachedSeriesGroup,
 } from "../types/db";
-
-const PH = window.PluginHost;
 
 export async function getCachedPages(chapterPermalink: string): Promise<CachedPageRow[]> {
   return query<CachedPageRow>(
@@ -33,23 +35,14 @@ export async function setCachedPage(
   );
 }
 
-export async function countCachedPages(chapterPermalink: string): Promise<number> {
-  const rows = await query<{ n: number }>(
-    `SELECT COUNT(*) AS n FROM cached_pages WHERE chapter_permalink = ?`,
-    [chapterPermalink],
-  );
-  return Number(rows[0]?.n ?? 0);
-}
-
 /** Cached-page counts for a batch of chapters (one query). */
 export async function getCachedPageCounts(
   chapterPermalinks: string[],
 ): Promise<ChapterCacheCount[]> {
   if (chapterPermalinks.length === 0) return [];
-  const placeholders = chapterPermalinks.map(() => "?").join(",");
   return query<ChapterCacheCount>(
     `SELECT chapter_permalink, COUNT(*) AS n FROM cached_pages
-     WHERE chapter_permalink IN (${placeholders}) GROUP BY chapter_permalink`,
+     WHERE chapter_permalink IN (${inClause(chapterPermalinks.length)}) GROUP BY chapter_permalink`,
     chapterPermalinks,
   );
 }
@@ -62,8 +55,8 @@ export async function getCacheOverviewStats(): Promise<CacheOverviewStats> {
     query<{ count: number }>(`SELECT COUNT(*) as count FROM cached_metadata`),
     (async () => {
       try {
-        const resp = await PH.callService("DirStat", { path: "" });
-        return Number(resp?.DirStatResult?.total_bytes ?? 0);
+        const diskStat = await ipc.dirStat("");
+        return Number(diskStat.total_bytes ?? 0);
       } catch {
         return 0;
       }
@@ -82,93 +75,24 @@ export async function getCacheOverviewStats(): Promise<CacheOverviewStats> {
 }
 
 export async function getCachedSeriesGroups(): Promise<CachedSeriesGroup[]> {
-  const chapterRows = await query<{
-    chapter_permalink: string;
-    page_count: number;
-    size_bytes: number;
-    last_cached: number;
-  }>(
-    `SELECT chapter_permalink, COUNT(*) as page_count, SUM(COALESCE(size_bytes, 0)) as size_bytes, MAX(cached_at) as last_cached
-     FROM cached_pages GROUP BY chapter_permalink`,
-  );
-
-  if (chapterRows.length === 0) return [];
-
-  const permalinks = chapterRows.map((r) => r.chapter_permalink);
-  const placeholders = permalinks.map(() => "?").join(",");
-
-  const [progRows, histRows, metaRows, page0Rows] = await Promise.all([
-    query<{
-      chapter_permalink: string;
-      series_permalink: string;
-      series_name: string;
-      chapter_title: string;
-    }>(
-      `SELECT chapter_permalink, series_permalink, series_name, chapter_title FROM reading_progress WHERE chapter_permalink IN (${placeholders})`,
-      permalinks,
-    ),
-    query<{
-      chapter_permalink: string;
-      series_permalink: string;
-      series_name: string;
-      chapter_title: string;
-    }>(
-      `SELECT chapter_permalink, series_permalink, series_name, chapter_title FROM reading_history WHERE chapter_permalink IN (${placeholders})`,
-      permalinks,
-    ),
-    query<{ cache_key: string; json_payload: string }>(
-      `SELECT cache_key, json_payload FROM cached_metadata WHERE data_type = 'cover'`,
-    ),
-    query<{ chapter_permalink: string; file_path: string }>(
-      `SELECT chapter_permalink, file_path FROM cached_pages WHERE page_index = 0 AND chapter_permalink IN (${placeholders})`,
-      permalinks,
-    ),
-  ]);
-
-  const coverMap = new Map<string, string>();
-  for (const m of metaRows) {
-    coverMap.set(m.cache_key.replace(/^cover:/, ""), m.json_payload);
-  }
-
-  const page0Map = new Map<string, string>();
-  for (const p of page0Rows) {
-    page0Map.set(p.chapter_permalink, p.file_path);
-  }
-
-  const chapterInfoMap = new Map<
-    string,
-    { seriesPermalink: string; seriesName: string; chapterTitle: string }
-  >();
-  for (const r of histRows) {
-    chapterInfoMap.set(r.chapter_permalink, {
-      seriesPermalink: r.series_permalink,
-      seriesName: r.series_name,
-      chapterTitle: r.chapter_title,
-    });
-  }
-  for (const r of progRows) {
-    chapterInfoMap.set(r.chapter_permalink, {
-      seriesPermalink: r.series_permalink,
-      seriesName: r.series_name,
-      chapterTitle: r.chapter_title,
-    });
-  }
+  const { aggs, chapterInfo, coverMap, page0Map } = await loadCachedChapterContext();
+  if (aggs.length === 0) return [];
 
   const groupMap = new Map<string, CachedSeriesGroup>();
-  for (const row of chapterRows) {
-    const cp = row.chapter_permalink;
-    const info = chapterInfoMap.get(cp);
+  for (const row of aggs) {
+    const cp = row.chapterPermalink;
+    const info = chapterInfo.get(cp);
     const seriesPermalink = info?.seriesPermalink || "";
     const seriesName = info?.seriesName || "";
 
     const groupKey = seriesPermalink ? `series:${seriesPermalink}` : `chapter:${cp}`;
     let g = groupMap.get(groupKey);
     if (!g) {
+      // Canonical `cover:series:*` / `cover:chapter:*` keys only; legacy bare
+      // `cover:*` rows are normalized away by migration v1.
       const coverPath =
-        (seriesPermalink &&
-          (coverMap.get(`series:${seriesPermalink}`) || coverMap.get(seriesPermalink))) ||
+        (seriesPermalink && coverMap.get(`series:${seriesPermalink}`)) ||
         coverMap.get(`chapter:${cp}`) ||
-        coverMap.get(cp) ||
         page0Map.get(cp) ||
         null;
 
@@ -185,12 +109,10 @@ export async function getCachedSeriesGroups(): Promise<CachedSeriesGroup[]> {
       };
       groupMap.set(groupKey, g);
     }
-    const pageCount = Number(row.page_count);
-    const sizeBytes = Number(row.size_bytes);
     g.chapterCount += 1;
-    g.pageCount += pageCount;
-    g.totalSizeBytes += sizeBytes;
-    g.lastCachedAt = Math.max(g.lastCachedAt, Number(row.last_cached));
+    g.pageCount += row.pageCount;
+    g.totalSizeBytes += row.sizeBytes;
+    g.lastCachedAt = Math.max(g.lastCachedAt, row.lastCachedAt);
     g.chapterPermalinks.push(cp);
   }
 
@@ -209,9 +131,9 @@ export async function getCachedSeriesGroups(): Promise<CachedSeriesGroup[]> {
   }
 
   const allDirPaths = [...new Set(dirProbe.flatMap((p) => p.candidates))];
-  const dirResp = await PH.callService("DirStatBatch", { paths: allDirPaths });
+  const dirResp = await ipc.dirStatBatch(allDirPaths);
   const dirBytesByPath = new Map<string, number>();
-  for (const item of dirResp?.DirStatBatchResult?.items ?? []) {
+  for (const item of dirResp.items ?? []) {
     dirBytesByPath.set(item.path, Number(item.total_bytes ?? 0));
   }
 
@@ -235,18 +157,17 @@ export async function getCachedSeriesGroups(): Promise<CachedSeriesGroup[]> {
   if (fileProbe.length > 0) {
     const filePathGroups = await Promise.all(
       fileProbe.map(async (p) => {
-        const placeholders = p.group.chapterPermalinks.map(() => "?").join(",");
         const pathRows = await query<{ file_path: string }>(
-          `SELECT file_path FROM cached_pages WHERE chapter_permalink IN (${placeholders})`,
+          `SELECT file_path FROM cached_pages WHERE chapter_permalink IN (${inClause(p.group.chapterPermalinks.length)})`,
           p.group.chapterPermalinks,
         );
         return { group: p.group, filePaths: pathRows.map((r) => r.file_path) };
       }),
     );
     const allFilePaths = [...new Set(filePathGroups.flatMap((f) => f.filePaths))];
-    const fileResp = await PH.callService("FileExistsBatch", { paths: allFilePaths });
+    const fileResp = await ipc.fileExistsBatch(allFilePaths);
     const sizeByPath = new Map<string, number>();
-    for (const item of fileResp?.FileExistsBatchResult?.items ?? []) {
+    for (const item of fileResp.items ?? []) {
       sizeByPath.set(item.path, Number(item.size_bytes ?? 0));
     }
     for (const f of filePathGroups) {
@@ -257,48 +178,90 @@ export async function getCachedSeriesGroups(): Promise<CachedSeriesGroup[]> {
   return Array.from(groupMap.values()).sort((a, b) => b.lastCachedAt - a.lastCachedAt);
 }
 
-async function deleteFiles(paths: string[]): Promise<void> {
+/**
+ * Deletes files best-effort. Returns the set of paths that were actually
+ * deleted; callers must only remove DB rows for deleted paths so a failed
+ * file deletion never orphans an on-disk file the DB has already forgotten.
+ */
+async function deleteFiles(paths: string[]): Promise<Set<string>> {
+  const deleted = new Set<string>();
   await Promise.all(
     paths.map(async (p) => {
       try {
-        await PH.callService("FileDelete", { path: p });
-      } catch {}
+        await ipc.fileDelete(p);
+        deleted.add(p);
+      } catch (err) {
+        console.error("[cache.repo] FileDelete failed; keeping DB row to avoid orphan:", p, err);
+      }
     }),
   );
+  return deleted;
 }
 
 export async function clearCachedGroupPages(chapterPermalinks: string[]): Promise<void> {
   if (chapterPermalinks.length === 0) return;
-  const placeholders = chapterPermalinks.map(() => "?").join(",");
   const rows = await query<{ file_path: string }>(
-    `SELECT file_path FROM cached_pages WHERE chapter_permalink IN (${placeholders})`,
+    `SELECT file_path FROM cached_pages WHERE chapter_permalink IN (${inClause(chapterPermalinks.length)})`,
     chapterPermalinks,
   );
-  await deleteFiles(rows.map((r) => r.file_path));
+  const deleted = await deleteFiles(rows.map((r) => r.file_path));
+  if (deleted.size === 0) return;
+  const pathPlaceholders = inClause(deleted.size);
   await execute(
-    `DELETE FROM cached_pages WHERE chapter_permalink IN (${placeholders})`,
-    chapterPermalinks,
+    `DELETE FROM cached_pages WHERE file_path IN (${pathPlaceholders})`,
+    Array.from(deleted),
   );
 }
 
 export async function clearAllCachedPages(): Promise<void> {
   const rows = await query<{ file_path: string }>(`SELECT file_path FROM cached_pages`);
-  await deleteFiles(rows.map((r) => r.file_path));
-  await execute(`DELETE FROM cached_pages`);
+  const deleted = await deleteFiles(rows.map((r) => r.file_path));
+  if (deleted.size === 0) return;
+  await execute(`DELETE FROM cached_pages WHERE file_path IN (${inClause(deleted.size)})`, Array.from(deleted));
 }
 
 export async function clearAllCachedCovers(): Promise<void> {
   const coverRows = await query<{ json_payload: string }>(
     `SELECT json_payload FROM cached_metadata WHERE data_type = 'cover'`,
   );
-  await deleteFiles(coverRows.map((r) => r.json_payload));
-  await execute(`DELETE FROM cached_metadata WHERE data_type = 'cover'`);
+  const deleted = await deleteFiles(coverRows.map((r) => r.json_payload));
+  if (deleted.size === 0) return;
+  await execute(
+    `DELETE FROM cached_metadata WHERE data_type = 'cover' AND json_payload IN (${inClause(deleted.size)})`,
+    Array.from(deleted),
+  );
 }
 
 export async function clearAllCacheStorage(): Promise<void> {
-  await clearAllCachedPages();
-  await clearAllCachedCovers();
-  await execute(`DELETE FROM cached_metadata`);
+  // Sweep every removable on-disk file first (pages + covers); rows are only
+  // deleted for files that were actually removed, so a failed deletion never
+  // orphans a file the DB has already forgotten.
+  const [pageRows, coverRows] = await Promise.all([
+    query<{ file_path: string }>(`SELECT file_path FROM cached_pages`),
+    query<{ json_payload: string }>(
+      `SELECT json_payload FROM cached_metadata WHERE data_type = 'cover'`,
+    ),
+  ]);
+  const pagePaths = pageRows.map((r) => r.file_path);
+  const coverPaths = coverRows.map((r) => r.json_payload);
+  const deletedPaths = Array.from(await deleteFiles([...pagePaths, ...coverPaths]));
+
+  // The row deletion is atomic: every statement commits or none do, so a crash
+  // between statements can never leave a half-cleared cache.
+  const statements: string[] = [];
+  const batchParams: unknown[][] = [];
+  if (deletedPaths.length > 0) {
+    statements.push(`DELETE FROM cached_pages WHERE file_path IN (${inClause(deletedPaths.length)})`);
+    batchParams.push(deletedPaths);
+    statements.push(
+      `DELETE FROM cached_metadata WHERE data_type = 'cover' AND json_payload IN (${inClause(deletedPaths.length)})`,
+    );
+    batchParams.push(deletedPaths);
+  }
+  statements.push(`DELETE FROM cached_metadata`);
+  batchParams.push([]);
+
+  await ipc.dbExecuteBatch(DB_NAME, statements, batchParams);
 }
 
 export interface FullyCachedChapterRow {
@@ -315,157 +278,26 @@ export interface FullyCachedChapterRow {
 }
 
 export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]> {
-  const chapterRows = await query<{
-    chapter_permalink: string;
-    page_count: number;
-    size_bytes: number;
-    last_cached: number;
-  }>(
-    `SELECT chapter_permalink, COUNT(*) as page_count, SUM(COALESCE(size_bytes, 0)) as size_bytes, MAX(cached_at) as last_cached
-     FROM cached_pages GROUP BY chapter_permalink`,
-  );
-
-  if (chapterRows.length === 0) return [];
-
-  const permalinks = chapterRows.map((r) => r.chapter_permalink);
-  const placeholders = permalinks.map(() => "?").join(",");
-
-  const [progRows, histRows, metaChapterRows, page0Rows] = await Promise.all([
-    query<{
-      chapter_permalink: string;
-      series_permalink: string;
-      series_name: string;
-      chapter_title: string;
-      page_total: number;
-    }>(
-      `SELECT chapter_permalink, series_permalink, series_name, chapter_title, page_total FROM reading_progress WHERE chapter_permalink IN (${placeholders})`,
-      permalinks,
-    ),
-    query<{
-      chapter_permalink: string;
-      series_permalink: string;
-      series_name: string;
-      chapter_title: string;
-    }>(
-      `SELECT chapter_permalink, series_permalink, series_name, chapter_title FROM reading_history WHERE chapter_permalink IN (${placeholders})`,
-      permalinks,
-    ),
-    query<{ cache_key: string; json_payload: string }>(
-      `SELECT cache_key, json_payload FROM cached_metadata WHERE data_type = 'chapter'`,
-    ),
-    query<{ chapter_permalink: string; file_path: string }>(
-      `SELECT chapter_permalink, file_path FROM cached_pages WHERE page_index = 0 AND chapter_permalink IN (${placeholders})`,
-      permalinks,
-    ),
-  ]);
-
-  // Key-filtered cover lookup: only fetch the cover rows this page set can
-  // actually use (series + chapter keys) instead of scanning every
-  // `data_type='cover'` row in a table that also stores full cached bodies.
-  const coverKeys = new Set<string>();
-  for (const r of [...progRows, ...histRows]) {
-    if (r.series_permalink) {
-      coverKeys.add(`cover:series:${r.series_permalink}`);
-      coverKeys.add(`cover:${r.series_permalink}`);
-    }
-  }
-  for (const cp of permalinks) {
-    coverKeys.add(`cover:chapter:${cp}`);
-    coverKeys.add(`cover:${cp}`);
-  }
-  const coverKeyList = [...coverKeys];
-  const metaCoverRows =
-    coverKeyList.length === 0
-      ? []
-      : await query<{ cache_key: string; json_payload: string }>(
-          `SELECT cache_key, json_payload FROM cached_metadata WHERE data_type = 'cover' AND cache_key IN (${coverKeyList
-            .map(() => "?")
-            .join(",")})`,
-          coverKeyList,
-        );
-
-  const coverMap = new Map<string, string>();
-  for (const m of metaCoverRows) {
-    coverMap.set(m.cache_key.replace(/^cover:/, ""), m.json_payload);
-  }
-
-  const page0Map = new Map<string, string>();
-  for (const p of page0Rows) {
-    page0Map.set(p.chapter_permalink, p.file_path);
-  }
-
-  const chapterMetaMap = new Map<
-    string,
-    {
-      title: string;
-      pagesCount: number;
-      seriesPermalink?: string;
-      seriesName?: string;
-      tags?: { type?: string; name?: string; permalink?: string }[];
-    }
-  >();
-  for (const m of metaChapterRows) {
-    try {
-      const pl = m.cache_key.replace(/^chapter:/, "");
-      const parsed = JSON.parse(m.json_payload);
-      const seriesTag = (parsed.tags ?? []).find((t: any) => (t.type ?? "").toLowerCase() === "series");
-      chapterMetaMap.set(pl, {
-        title: parsed.title || pl,
-        pagesCount: Array.isArray(parsed.pages) ? parsed.pages.length : 0,
-        seriesPermalink: seriesTag?.permalink,
-        seriesName: seriesTag?.name,
-        tags: parsed.tags,
-      });
-    } catch {}
-  }
-
-  const progMap = new Map<
-    string,
-    { seriesPermalink: string; seriesName: string; chapterTitle: string; pageTotal: number }
-  >();
-  for (const r of progRows) {
-    progMap.set(r.chapter_permalink, {
-      seriesPermalink: r.series_permalink,
-      seriesName: r.series_name,
-      chapterTitle: r.chapter_title,
-      pageTotal: Number(r.page_total || 0),
-    });
-  }
-
-  const histMap = new Map<
-    string,
-    { seriesPermalink: string; seriesName: string; chapterTitle: string }
-  >();
-  for (const r of histRows) {
-    histMap.set(r.chapter_permalink, {
-      seriesPermalink: r.series_permalink,
-      seriesName: r.series_name,
-      chapterTitle: r.chapter_title,
-    });
-  }
+  const { aggs, chapterInfo, coverMap, page0Map, chapterMeta } = await loadCachedChapterContext();
 
   const result: FullyCachedChapterRow[] = [];
 
-  for (const row of chapterRows) {
-    const cp = row.chapter_permalink;
-    const pageCount = Number(row.page_count);
-    const meta = chapterMetaMap.get(cp);
-    const prog = progMap.get(cp);
-    const hist = histMap.get(cp);
+  for (const row of aggs) {
+    const cp = row.chapterPermalink;
+    const meta = chapterMeta.get(cp);
+    const info = chapterInfo.get(cp);
 
-    const totalPages = meta?.pagesCount || prog?.pageTotal || 0;
-    const isFullyCached = totalPages > 0 ? pageCount >= totalPages : pageCount > 0;
+    const totalPages = meta?.pagesCount || info?.pageTotal || 0;
+    const isFullyCached = totalPages > 0 ? row.pageCount >= totalPages : row.pageCount > 0;
 
     if (isFullyCached) {
-      const seriesPermalink =
-        meta?.seriesPermalink || prog?.seriesPermalink || hist?.seriesPermalink || null;
-      const seriesName = meta?.seriesName || prog?.seriesName || hist?.seriesName || null;
-      const chapterTitle = meta?.title || prog?.chapterTitle || hist?.chapterTitle || cp;
+      const seriesPermalink = meta?.seriesPermalink || info?.seriesPermalink || null;
+      const seriesName = meta?.seriesName || info?.seriesName || null;
+      const chapterTitle = meta?.title || info?.chapterTitle || cp;
+      // Canonical `cover:series:*` / `cover:chapter:*` keys only (migration v1).
       const coverPath =
-        (seriesPermalink &&
-          (coverMap.get(`series:${seriesPermalink}`) || coverMap.get(seriesPermalink))) ||
+        (seriesPermalink && coverMap.get(`series:${seriesPermalink}`)) ||
         coverMap.get(`chapter:${cp}`) ||
-        coverMap.get(cp) ||
         page0Map.get(cp) ||
         null;
 
@@ -474,10 +306,10 @@ export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]>
         chapterTitle,
         seriesPermalink,
         seriesName,
-        pageCount,
-        pageTotal: totalPages || pageCount,
-        totalSizeBytes: Number(row.size_bytes),
-        lastCachedAt: Number(row.last_cached),
+        pageCount: row.pageCount,
+        pageTotal: totalPages || row.pageCount,
+        totalSizeBytes: row.sizeBytes,
+        lastCachedAt: row.lastCachedAt,
         coverPath,
         tags: meta?.tags,
       });
@@ -488,7 +320,42 @@ export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]>
   return result;
 }
 
+/**
+ * Lightweight fully-cached check: instead of building the full per-view rows
+ * (covers, history, tags), this only needs each chapter's cached page count
+ * versus its expected total (progress `page_total`, or cached chapter metadata
+ * page count) to produce the `Set<permalink>` the feed/search/library badge.
+ */
 export async function getFullyCachedChapterPermalinks(): Promise<Set<string>> {
-  const chapters = await getFullyCachedChapters();
-  return new Set(chapters.map((c) => c.chapterPermalink));
+  const rows = await query<{
+    chapter_permalink: string;
+    page_count: number;
+    progress_total: number | null;
+    chapter_payload: string | null;
+  }>(
+    `SELECT cp.chapter_permalink,
+            COUNT(cp.page_index) AS page_count,
+            (SELECT rp.page_total FROM reading_progress rp WHERE rp.chapter_permalink = cp.chapter_permalink) AS progress_total,
+            (SELECT cm.json_payload FROM cached_metadata cm WHERE cm.cache_key = 'chapter:' || cp.chapter_permalink) AS chapter_payload
+     FROM cached_pages cp
+     GROUP BY cp.chapter_permalink`,
+  );
+
+  const fullyCached = new Set<string>();
+  for (const r of rows) {
+    let totalPages = Number(r.progress_total ?? 0);
+    if (totalPages === 0 && r.chapter_payload) {
+      try {
+        const parsed = JSON.parse(r.chapter_payload) as { pages?: unknown };
+        if (Array.isArray(parsed.pages)) totalPages = parsed.pages.length;
+      } catch (err) {
+        console.error(`[cache.repo] invalid chapter payload for ${r.chapter_permalink}:`, err);
+      }
+    }
+    const pageCount = Number(r.page_count);
+    if (totalPages > 0 ? pageCount >= totalPages : pageCount > 0) {
+      fullyCached.add(r.chapter_permalink);
+    }
+  }
+  return fullyCached;
 }

@@ -1,10 +1,12 @@
-//! `FileExists` / `FileMove` / `FileDelete` / `DirStat` backends.
+//! `fileExists` / `fileMove` / `fileDelete` / `dirStat` backends.
 //!
 //! Mirrors the Curator handlers (`curator-service/src/handlers/plugin_commands/storage.rs`):
-//! paths are confined to the portable data root, `FileExists` reports a file as
-//! existing only when it is non-empty, `DirStat` works on both directories
-//! (recursive) and single files, and `FileDelete` supports both. Batch variants
-//! (`file_exists_batch`, `dir_stat_batch`) resolve many paths in one call so the
+//! paths are confined to the portable data root, `fileExists` reports a file as
+//! existing only when it is at least `min_size` bytes (default 1 — so
+//! zero-byte files count as missing for cover/page probing; pass `min_size: 0`
+//! to treat them as present), `dirStat` works on both directories (recursive)
+//! and single files, and `fileDelete` supports both. Batch variants
+//! (`fileExistsBatch`, `dirStatBatch`) resolve many paths in one call so the
 //! frontend stops issuing per-file IPC bursts. Recursive walks run on the
 //! blocking pool.
 
@@ -15,13 +17,13 @@ fn file_size(path: &std::path::Path) -> u64 {
     std::fs::metadata(path).map(|m| m.len()).unwrap_or(0)
 }
 
-#[tauri::command]
-pub fn file_exists(path: String) -> Result<serde_json::Value, String> {
+#[tauri::command(rename = "fileExists")]
+pub fn file_exists(path: String, min_size: Option<u64>) -> Result<serde_json::Value, String> {
+    let min_size = min_size.unwrap_or(1);
     let target = crate::paths::resolve_in_root(&path)?;
     let meta = target.metadata().ok();
     let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
-    // Curator semantics: exists AND non-empty.
-    let exists = target.is_file() && size > 0;
+    let exists = target.is_file() && size >= min_size;
     Ok(json!({
         "exists": exists,
         "size_bytes": size,
@@ -29,8 +31,12 @@ pub fn file_exists(path: String) -> Result<serde_json::Value, String> {
     }))
 }
 
-#[tauri::command]
-pub async fn file_exists_batch(paths: Vec<String>) -> Result<serde_json::Value, String> {
+#[tauri::command(rename = "fileExistsBatch")]
+pub async fn file_exists_batch(
+    paths: Vec<String>,
+    min_size: Option<u64>,
+) -> Result<serde_json::Value, String> {
+    let min_size = min_size.unwrap_or(1);
     let items = tokio::task::spawn_blocking(move || {
         paths
             .iter()
@@ -38,7 +44,7 @@ pub async fn file_exists_batch(paths: Vec<String>) -> Result<serde_json::Value, 
                 Ok(target) => {
                     let meta = target.metadata().ok();
                     let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
-                    let exists = target.is_file() && size > 0;
+                    let exists = target.is_file() && size >= min_size;
                     json!({
                         "path": p,
                         "exists": exists,
@@ -62,7 +68,7 @@ pub async fn file_exists_batch(paths: Vec<String>) -> Result<serde_json::Value, 
     Ok(json!({ "items": items }))
 }
 
-#[tauri::command]
+#[tauri::command(rename = "fileMove")]
 pub fn file_move(src: String, dst: String) -> Result<serde_json::Value, String> {
     let src_target = crate::paths::resolve_in_root(&src)?;
     let dst_target = crate::paths::resolve_in_root(&dst)?;
@@ -118,7 +124,7 @@ fn copy_tree(src: &std::path::Path, dst: &std::path::Path) -> Result<(), String>
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename = "fileDelete")]
 pub fn file_delete(path: String) -> Result<serde_json::Value, String> {
     let target = crate::paths::resolve_in_root(&path)?;
     if target.is_dir() {
@@ -158,7 +164,7 @@ fn stat_one(target: &std::path::Path) -> (u64, u64) {
     (total_bytes, file_count)
 }
 
-#[tauri::command]
+#[tauri::command(rename = "dirStat")]
 pub async fn dir_stat(path: Option<String>) -> Result<serde_json::Value, String> {
     let target = crate::paths::resolve_in_root(path.as_deref().unwrap_or(""))?;
     let abs = target.to_string_lossy().into_owned();
@@ -172,7 +178,7 @@ pub async fn dir_stat(path: Option<String>) -> Result<serde_json::Value, String>
     }))
 }
 
-#[tauri::command]
+#[tauri::command(rename = "dirStatBatch")]
 pub async fn dir_stat_batch(paths: Vec<String>) -> Result<serde_json::Value, String> {
     let items = tokio::task::spawn_blocking(move || {
         paths

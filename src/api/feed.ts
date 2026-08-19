@@ -1,7 +1,8 @@
-import { SITE_ROOT } from "../state";
+import { absUrl } from "../state";
 import { getCached, setCached, touchCached } from "../db";
 import { httpGetText } from "./client";
 import { recordCacheHit } from "./traffic";
+import { tryParseJson } from "../utils/json";
 import type { Feed, FeedRevalidationResult, RevalidateOnlineResult } from "../types/api";
 
 export const FEED_TTL_MS = 60 * 60 * 1000;
@@ -15,7 +16,7 @@ export async function checkFeedOnline(
   key: string,
   etag?: string,
 ): Promise<RevalidateOnlineResult> {
-  const url = SITE_ROOT + urlPath;
+  const url = absUrl(urlPath);
   const headers: Record<string, string> = {};
   if (etag) {
     headers["If-None-Match"] = etag;
@@ -26,7 +27,8 @@ export async function checkFeedOnline(
     return { status: 304, isNew: false, etag };
   }
   if (resp.status === 200 && resp.body) {
-    const freshData = JSON.parse(resp.body) as Feed;
+    const freshData = tryParseJson<Feed>(resp.body);
+    if (freshData === null) throw new Error("Invalid JSON from feed endpoint");
     await setCached(key, "feed", resp.body, resp.etag);
     return { status: 200, data: freshData, isNew: true, etag: resp.etag };
   }
@@ -44,7 +46,7 @@ export async function fetchFeedWithRevalidation(
   urlPath: string,
   key: string,
 ): Promise<FeedRevalidationResult> {
-  const url = SITE_ROOT + urlPath;
+  const url = absUrl(urlPath);
   const cached = await getCached(key);
   const isStale = !cached || Date.now() - cached.cached_at >= FEED_TTL_MS;
 
@@ -92,7 +94,8 @@ export async function fetchFeedWithRevalidation(
   // No cache present: fetch directly
   const resp = await httpGetText(url);
   if (resp.status !== 200) throw new Error(`HTTP ${resp.status} for ${url}`);
-  const freshData = JSON.parse(resp.body) as Feed;
+  const freshData = tryParseJson<Feed>(resp.body);
+  if (freshData === null) throw new Error("Invalid JSON from feed endpoint");
   await setCached(key, "feed", resp.body, resp.etag);
   return {
     data: freshData,

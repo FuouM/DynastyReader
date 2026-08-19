@@ -64,8 +64,8 @@ export async function renderDirectory(
 
       const extBtn = document.createElement("button");
       extBtn.type = "button";
-      extBtn.className = "win-button";
-      extBtn.style.cssText = "font-size:10px;padding:1px 5px;flex-shrink:0;";
+      extBtn.className = "win-button ds-btn-xs";
+      extBtn.style.flexShrink = "0";
       extBtn.title = kind === "series" ? "Open series in browser" : "Search tag in browser";
       extBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
       extBtn.addEventListener("click", (ev) => {

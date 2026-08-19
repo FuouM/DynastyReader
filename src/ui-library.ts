@@ -3,7 +3,7 @@
  * All data is local (SQLite) — fully offline-safe, no network traffic.
  */
 
-import { Route, decodeEntities, formatDate, navigate, setActions, setBanner } from "./state";
+import { Route, decodeEntities, formatDate, navigate, safeHtml, setActions, setBanner } from "./state";
 import {
   openExternal,
   refreshFollowedSeriesCover,
@@ -35,7 +35,8 @@ import { createConfirmDeleteButton } from "./components/button";
 import { renderCoverImage } from "./components/cover";
 import { renderPager } from "./components/pager";
 import { attachDelayedLoading } from "./components/loading";
-import { setupInputClearButtons } from "./components/input-field";
+import { openModal } from "./components/modal";
+import { createBackRefreshActions } from "./components/action-bar";
 
 function createLibraryPanel(titleHtml: string): {
   panel: HTMLElement;
@@ -249,8 +250,7 @@ function setupLibraryActions(
 
     const cacheBtn = document.createElement("button");
     cacheBtn.type = "button";
-    cacheBtn.className = "win-button";
-    cacheBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    cacheBtn.className = "win-button ds-btn-compact";
     cacheBtn.innerHTML = '<i class="bi bi-hdd-stack"></i> Cache Management';
     cacheBtn.title = "View cache storage statistics and manage cached series/pages";
     cacheBtn.addEventListener("click", () => {
@@ -260,8 +260,7 @@ function setupLibraryActions(
 
     const blacklistBtn = document.createElement("button");
     blacklistBtn.type = "button";
-    blacklistBtn.className = "win-button";
-    blacklistBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    blacklistBtn.className = "win-button ds-btn-compact";
     blacklistBtn.innerHTML = '<i class="bi bi-shield-slash"></i> Series Blacklist';
     blacklistBtn.title = "Manage blacklisted series and view hidden works";
     blacklistBtn.addEventListener("click", () => {
@@ -546,74 +545,42 @@ function renderCollections(
  * Opens a sleek, native WinForms modal dialog to create a new custom collection.
  */
 export function openCreateCollectionDialog(onCreated: () => void): void {
-  const existing = document.getElementById("ds-create-collection-overlay");
-  if (existing) existing.remove();
+  if (document.getElementById("ds-create-collection-overlay")) return;
 
-  const root = document.getElementById("ds-root") || document.body;
-
-  const overlay = document.createElement("div");
-  overlay.id = "ds-create-collection-overlay";
-  overlay.className = "ds-modal-overlay";
-  overlay.style.cssText =
-    "position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(1px);";
-
-  const modal = document.createElement("div");
-  modal.className = "ds-modal-window";
-  modal.style.cssText =
-    "width:320px;max-width:92vw;background:var(--sys-window-bg,#fff);border:1px solid var(--sys-border-dark,#999);border-radius:3px;box-shadow:0 6px 20px rgba(0,0,0,0.25);display:flex;flex-direction:column;overflow:hidden;font-size:12px;color:var(--sys-window-text,#222);";
-
-  modal.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--sys-control-bg,#f0f0f0);border-bottom:1px solid var(--sys-border-light,#ddd);font-weight:600;font-size:11px;">
-      <span style="display:inline-flex;align-items:center;gap:5px;">
-        <i class="bi bi-folder-plus" style="color:var(--sys-primary,#0078d4);"></i> New Collection
-      </span>
-      <button type="button" class="win-button ds-modal-close" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;font-size:9px;line-height:1;min-width:18px;box-sizing:border-box;" title="Close">
-        <i class="bi bi-x-lg" style="display:inline-flex;align-items:center;justify-content:center;line-height:1;"></i>
-      </button>
-    </div>
-    <div style="padding:10px 12px 8px;display:flex;flex-direction:column;gap:6px;">
-      <label style="font-size:11px;font-weight:600;color:var(--sys-window-text,#111);">Collection Name:</label>
-      <div class="input-wrapper" style="width:100%;">
-        <input type="text" id="ds-new-col-name-input" class="input-field has-clear" placeholder="e.g. Yuri Gems, Read Later..." style="width:100%;box-sizing:border-box;font-size:11px;height:24px;" autofocus />
-        <button type="button" class="input-clear-btn" tabindex="-1" title="Clear"><i class="bi bi-x-lg"></i></button>
+  const { modal, close } = openModal({
+    backdropId: "ds-create-collection-overlay",
+    title:
+      '<i class="bi bi-folder-plus" style="color:var(--sys-primary,#0078d4);"></i> New Collection',
+    width: 320,
+    body: `
+      <div style="padding:10px 12px 8px;display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:600;color:var(--sys-window-text,#111);">Collection Name:</label>
+        <div class="input-wrapper" style="width:100%;">
+          <input type="text" id="ds-new-col-name-input" class="input-field has-clear" placeholder="e.g. Yuri Gems, Read Later..." style="width:100%;box-sizing:border-box;font-size:11px;height:24px;" autofocus />
+          <button type="button" class="input-clear-btn" tabindex="-1" title="Clear"><i class="bi bi-x-lg"></i></button>
+        </div>
       </div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:6px 12px;background:var(--sys-control-bg,#f9f9f9);border-top:1px solid var(--sys-border-light,#ddd);">
-      <button type="button" class="win-button ds-modal-cancel" style="font-size:11px;padding:2px 10px;">Cancel</button>
-      <button type="button" class="win-button primary ds-modal-submit" style="font-size:11px;padding:2px 10px;display:inline-flex;align-items:center;gap:4px;">
-        <i class="bi bi-plus-lg" style="font-size:10px;line-height:1;"></i> <span>Create</span>
-      </button>
-    </div>
-  `;
-
-  overlay.appendChild(modal);
-  root.appendChild(overlay);
-
-  setupInputClearButtons(modal);
+    `,
+    footer: `
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;width:100%;">
+        <button type="button" class="win-button ds-modal-cancel" style="font-size:11px;padding:2px 10px;">Cancel</button>
+        <button type="button" class="win-button primary ds-modal-submit" style="font-size:11px;padding:2px 10px;display:inline-flex;align-items:center;gap:4px;">
+          <i class="bi bi-plus-lg" style="font-size:10px;line-height:1;"></i> <span>Create</span>
+        </button>
+      </div>
+    `,
+  });
 
   const input = modal.querySelector<HTMLInputElement>("#ds-new-col-name-input")!;
   const submitBtn = modal.querySelector<HTMLButtonElement>(".ds-modal-submit")!;
   const cancelBtn = modal.querySelector<HTMLButtonElement>(".ds-modal-cancel")!;
-  const closeBtn = modal.querySelector<HTMLButtonElement>(".ds-modal-close")!;
 
   setTimeout(() => input?.focus(), 50);
 
-  const close = () => {
-    overlay.remove();
-    document.removeEventListener("keydown", onKeyDown);
-  };
-
-  const onKeyDown = (ev: KeyboardEvent) => {
-    if (ev.key === "Escape") close();
+  input.addEventListener("keydown", (ev: KeyboardEvent) => {
     if (ev.key === "Enter") void handleSubmit();
-  };
-  document.addEventListener("keydown", onKeyDown);
-
-  overlay.addEventListener("click", (ev) => {
-    if (ev.target === overlay) close();
   });
   cancelBtn.addEventListener("click", close);
-  closeBtn.addEventListener("click", close);
 
   const handleSubmit = async () => {
     const name = input.value.trim();
@@ -673,25 +640,17 @@ export async function openCollectionDetailView(
 
   // Setup Top Bar Action for returning to the main Library
   setActions((host) => {
-    const backBtn = document.createElement("button");
-    backBtn.type = "button";
-    backBtn.className = "win-button";
-    backBtn.style.cssText = "font-size:11px;padding:2px 8px;";
-    backBtn.innerHTML = '<i class="bi bi-arrow-left"></i> Back to Collections';
-    backBtn.addEventListener("click", () => {
-      renderLibrary(container, { view: "library" });
-    });
-    host.appendChild(backBtn);
-
-    const refreshBtn = document.createElement("button");
-    refreshBtn.type = "button";
-    refreshBtn.className = "win-button";
-    refreshBtn.style.cssText = "font-size:11px;padding:2px 8px;";
-    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
-    refreshBtn.addEventListener("click", () => {
-      void openCollectionDetailView(container, collectionId);
-    });
-    host.appendChild(refreshBtn);
+    for (const btn of createBackRefreshActions(
+      "Back to Collections",
+      () => {
+        renderLibrary(container, { view: "library" });
+      },
+      () => {
+        void openCollectionDetailView(container, collectionId);
+      },
+    )) {
+      host.appendChild(btn);
+    }
   });
 
   // Top summary header bar with live search filter
@@ -709,7 +668,6 @@ export async function openCollectionDetailView(
     <input type="text" class="input-field has-clear" placeholder="Filter items in collection..." style="width:100%;box-sizing:border-box;font-size:11px;height:22px;" />
     <button type="button" class="input-clear-btn" tabindex="-1" title="Clear"><i class="bi bi-x-lg"></i></button>
   `;
-  setupInputClearButtons(filterWrap);
   headerBar.appendChild(filterWrap);
 
   root.appendChild(headerBar);
@@ -735,7 +693,7 @@ export async function openCollectionDetailView(
 
     statsSpan.innerHTML = `
       <i class="${collection?.is_default ? "bi bi-star-fill" : "bi bi-folder2-open"}" style="color:${collection?.is_default ? "#d97706" : "var(--sys-primary,#0078d4)"};font-size:13px;"></i>
-      <span><b>${decodeEntities(collection?.name || "")}</b> — <b>${items.length}</b> item${items.length === 1 ? "" : "s"}</span>
+      <span><b>${safeHtml(collection?.name || "")}</b> — <b>${items.length}</b> item${items.length === 1 ? "" : "s"}</span>
     `;
 
     if (items.length === 0) {
@@ -799,8 +757,13 @@ function renderCollectionItemCard(
   );
   coverEl.style.cursor = "pointer";
 
+  const isChapterLike =
+    it.item_kind === "chapter" ||
+    it.item_kind === "oneshot" ||
+    (it.item_kind === "doujin" && (!it.parent_series_permalink || it.parent_series_permalink === ""));
+
   const onOpen = () => {
-    if (it.item_kind === "chapter" || it.item_kind === "oneshot") {
+    if (isChapterLike) {
       navigate({
         view: "reader",
         chapterPermalink: it.item_permalink,
@@ -822,7 +785,7 @@ function renderCollectionItemCard(
   // Lazy cover hydration if no local file path is cached yet
   if (!it.cover || (!it.cover.includes("/") && !it.cover.includes("\\"))) {
     const hydrateTask =
-      it.item_kind === "series"
+      !isChapterLike && it.item_kind === "series"
         ? getOrHydrateSeriesCover(it.item_permalink)
         : getOrHydrateItemCover(
             it.cover || `chapter:${it.item_permalink}`,
@@ -870,9 +833,13 @@ function renderCollectionItemCard(
   kindBadge.textContent =
     it.item_kind === "oneshot"
       ? "One-shot"
-      : it.item_kind === "doujin"
-        ? "Doujin"
-        : "Series";
+      : it.item_kind === "chapter"
+        ? "Chapter"
+        : it.item_kind === "doujin"
+          ? "Doujin"
+          : it.item_kind === "anthology"
+            ? "Anthology"
+            : "Series";
   titleRow.appendChild(kindBadge);
 
   const meta = document.createElement("div");
@@ -889,10 +856,9 @@ function renderCollectionItemCard(
   openBtn.type = "button";
   openBtn.className = "win-button ds-btn-sm";
   openBtn.style.cssText = "font-size:10px;padding:2px 8px;flex-shrink:0;";
-  openBtn.innerHTML =
-    it.item_kind === "chapter" || it.item_kind === "oneshot"
-      ? '<i class="bi bi-book"></i> Read'
-      : '<i class="bi bi-folder2-open"></i> Open';
+  openBtn.innerHTML = isChapterLike
+    ? '<i class="bi bi-book"></i> Read'
+    : '<i class="bi bi-folder2-open"></i> Open';
   openBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
     onOpen();
@@ -906,8 +872,13 @@ function renderCollectionItemCard(
   extBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
   extBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
-    const endpoint =
-      it.item_kind === "chapter" || it.item_kind === "oneshot" ? "chapters" : "series";
+    const endpoint = isChapterLike
+      ? "chapters"
+      : it.item_kind === "doujin"
+        ? "doujins"
+        : it.item_kind === "anthology"
+          ? "anthologies"
+          : "series";
     openExternal(`https://dynasty-scans.com/${endpoint}/${it.item_permalink}`);
   });
 
@@ -1001,7 +972,7 @@ function renderBookmarks(
     const title = document.createElement("div");
     title.className = "ds-item-title";
     title.style.cssText = "display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;";
-    title.innerHTML = `<span>${decodeEntities(row.chapter_title)}</span>${
+    title.innerHTML = `<span>${safeHtml(row.chapter_title)}</span>${
       isFullyCached
         ? '<i class="bi bi-cloud-check-fill ds-offline-icon" style="color:var(--sys-primary,#0078d4);font-size:11px;" title="Available Offline (Fully Cached)"></i>'
         : ""
@@ -1124,7 +1095,7 @@ function renderHistory(
     const title = document.createElement("div");
     title.className = "ds-item-title";
     title.style.cssText = "display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;";
-    title.innerHTML = `<span>${decodeEntities(row.chapter_title)}</span>${
+    title.innerHTML = `<span>${safeHtml(row.chapter_title)}</span>${
       isFullyCached
         ? '<i class="bi bi-cloud-check-fill ds-offline-icon" style="color:var(--sys-primary,#0078d4);font-size:11px;" title="Available Offline (Fully Cached)"></i>'
         : ""

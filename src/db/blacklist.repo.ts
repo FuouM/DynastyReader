@@ -102,7 +102,7 @@ export async function addBlacklistedTag(name: string, permalink?: string): Promi
   const now = Date.now();
 
   await execute(
-    "INSERT OR REPLACE INTO tag_blacklist (tag_name, tag_permalink, created_at) VALUES (?, ?, ?)",
+    "INSERT INTO tag_blacklist (tag_name, tag_permalink, created_at) VALUES (?, ?, ?) ON CONFLICT(tag_name) DO UPDATE SET tag_permalink = excluded.tag_permalink, created_at = excluded.created_at",
     [trimmed, permalink ? permalink.trim() : null, now],
   );
 
@@ -146,7 +146,7 @@ export async function addBlacklistedSeries(permalink: string, name: string): Pro
   const now = Date.now();
 
   await execute(
-    "INSERT OR REPLACE INTO series_blacklist (series_permalink, series_name, created_at) VALUES (?, ?, ?)",
+    "INSERT INTO series_blacklist (series_permalink, series_name, created_at) VALUES (?, ?, ?) ON CONFLICT(series_permalink) DO UPDATE SET series_name = excluded.series_name, created_at = excluded.created_at",
     [cleanPerm, cleanName, now],
   );
 

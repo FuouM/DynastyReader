@@ -40,7 +40,7 @@ const MAX_SOURCE_DIMENSION: u32 = 16_384;
 /// Headroom on the estimate-then-verify scale — the next encode is inexact.
 const BUDGET_ESTIMATE_HEADROOM: f64 = 0.95;
 
-#[tauri::command]
+#[tauri::command(rename = "ephemeralConvertImages")]
 pub async fn ephemeral_convert_images(
     conversions: Vec<(String, String)>,
     quality: Option<u8>,

@@ -1,4 +1,5 @@
 import { query, execute } from "./client";
+import { paginate, inClause } from "./paging";
 import type {
   FollowedSeriesRow,
   FollowedSeriesPageResult,
@@ -10,15 +11,6 @@ import type {
   BookmarkPageResult,
 } from "../types/db";
 
-export async function getFollowedSeries(): Promise<FollowedSeriesRow[]> {
-  return query<FollowedSeriesRow>(
-    `SELECT permalink, name, cover, last_checked_at, latest_chapter_permalink,
-            latest_chapter_title, created_at
-     FROM followed_series
-     ORDER BY name COLLATE NOCASE`,
-  );
-}
-
 export async function getFollowedSeriesCount(): Promise<number> {
   const rows = await query<{ count: number }>(`SELECT COUNT(*) as count FROM followed_series`);
   return rows[0]?.count ?? 0;
@@ -29,9 +21,7 @@ export async function getFollowedSeriesPage(
   pageSize = 10,
 ): Promise<FollowedSeriesPageResult> {
   const totalCount = await getFollowedSeriesCount();
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const currentPage = Math.min(Math.max(1, page), totalPages);
-  const offset = (currentPage - 1) * pageSize;
+  const { totalPages, currentPage, offset } = paginate(totalCount, page, pageSize);
   const rows = await query<FollowedSeriesRow>(
     `SELECT permalink, name, cover, last_checked_at, latest_chapter_permalink,
             latest_chapter_title, created_at
@@ -157,24 +147,20 @@ export async function addHistory(p: {
   seriesName: string;
   chapterTitle: string;
 }): Promise<void> {
-  const lastRows = await query<HistoryRow>(
-    `SELECT id, chapter_permalink FROM reading_history ORDER BY id DESC LIMIT 1`,
+  // Single atomic upsert: reading_history.chapter_permalink is UNIQUE (migration v1),
+  // so re-reading a chapter bumps its read_at instead of creating a duplicate row,
+  // and concurrent readers cannot double-insert (the old read-then-insert TOCTOU).
+  await execute(
+    `INSERT INTO reading_history (chapter_permalink, series_permalink, series_name,
+       chapter_title, read_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(chapter_permalink) DO UPDATE SET
+       series_permalink = excluded.series_permalink,
+       series_name = excluded.series_name,
+       chapter_title = excluded.chapter_title,
+       read_at = excluded.read_at`,
+    [p.chapterPermalink, p.seriesPermalink, p.seriesName, p.chapterTitle, Date.now()],
   );
-  if (lastRows.length > 0 && lastRows[0].chapter_permalink === p.chapterPermalink) {
-    await execute(
-      `UPDATE reading_history
-       SET series_permalink = ?, series_name = ?, chapter_title = ?, read_at = ?
-       WHERE id = ?`,
-      [p.seriesPermalink, p.seriesName, p.chapterTitle, Date.now(), lastRows[0].id],
-    );
-  } else {
-    await execute(
-      `INSERT INTO reading_history (chapter_permalink, series_permalink, series_name,
-         chapter_title, read_at)
-       VALUES (?, ?, ?, ?, ?)`,
-      [p.chapterPermalink, p.seriesPermalink, p.seriesName, p.chapterTitle, Date.now()],
-    );
-  }
 }
 
 export async function removeHistory(id: number): Promise<void> {
@@ -201,9 +187,7 @@ export async function getHistoryCount(): Promise<number> {
 
 export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
   const totalCount = await getHistoryCount();
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const currentPage = Math.min(Math.max(1, page), totalPages);
-  const offset = (currentPage - 1) * pageSize;
+  const { totalPages, currentPage, offset } = paginate(totalCount, page, pageSize);
   const rows = await query<HistoryRow>(
     `SELECT id, chapter_permalink, series_permalink, series_name, chapter_title, read_at
      FROM reading_history
@@ -216,20 +200,11 @@ export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPa
 /** Returns a Set of chapter permalinks that have been recorded in history. */
 export async function getHistoryPermalinks(permalinks: string[]): Promise<Set<string>> {
   if (permalinks.length === 0) return new Set();
-  const placeholders = permalinks.map(() => "?").join(",");
   const rows = await query<{ chapter_permalink: string }>(
-    `SELECT DISTINCT chapter_permalink FROM reading_history WHERE chapter_permalink IN (${placeholders})`,
+    `SELECT DISTINCT chapter_permalink FROM reading_history WHERE chapter_permalink IN (${inClause(permalinks.length)})`,
     permalinks,
   );
   return new Set(rows.map((r) => r.chapter_permalink));
-}
-
-export async function getBookmarks(): Promise<BookmarkRow[]> {
-  return query<BookmarkRow>(
-    `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
-            page_index, created_at
-     FROM bookmarks ORDER BY created_at DESC`,
-  );
 }
 
 export async function getBookmarkCount(): Promise<number> {
@@ -239,9 +214,7 @@ export async function getBookmarkCount(): Promise<number> {
 
 export async function getBookmarksPage(page = 1, pageSize = 15): Promise<BookmarkPageResult> {
   const totalCount = await getBookmarkCount();
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const currentPage = Math.min(Math.max(1, page), totalPages);
-  const offset = (currentPage - 1) * pageSize;
+  const { totalPages, currentPage, offset } = paginate(totalCount, page, pageSize);
   const rows = await query<BookmarkRow>(
     `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
             page_index, created_at
@@ -264,9 +237,8 @@ export async function getBookmark(chapterPermalink: string): Promise<BookmarkRow
 /** Returns a Set of chapter permalinks that have been bookmarked. */
 export async function getBookmarkPermalinks(permalinks: string[]): Promise<Set<string>> {
   if (permalinks.length === 0) return new Set();
-  const placeholders = permalinks.map(() => "?").join(",");
   const rows = await query<{ chapter_permalink: string }>(
-    `SELECT chapter_permalink FROM bookmarks WHERE chapter_permalink IN (${placeholders})`,
+    `SELECT chapter_permalink FROM bookmarks WHERE chapter_permalink IN (${inClause(permalinks.length)})`,
     permalinks,
   );
   return new Set(rows.map((r) => r.chapter_permalink));

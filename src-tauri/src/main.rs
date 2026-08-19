@@ -31,6 +31,7 @@ fn main() {
             commands::http::http_download,
             commands::db::db_execute,
             commands::db::db_query,
+            commands::db::db_execute_batch,
             commands::fs::file_exists,
             commands::fs::file_exists_batch,
             commands::fs::file_move,

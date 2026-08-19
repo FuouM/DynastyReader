@@ -1,4 +1,8 @@
 import type { ReaderController } from "./reader-controller";
+import { fileResolve, httpDownloadFull, pageOutputPath } from "../api";
+import { setCachedPage } from "../db";
+import { absUrl, setBanner } from "../state";
+import { renderSlotImg, renderSlotState, updateCacheCount } from "./reader-slots";
 
 /**
  * Bounded page download pool for a single chapter session.
@@ -77,33 +81,33 @@ export class ReaderQueue {
     const page = c.pages[index];
     if (!page) return;
     const slot = c.slots[index];
-    const outPath = c.pageOutputPath(index, page.url);
+    const outPath = pageOutputPath(c.seriesPermalink ?? "", c.permalink, index, page.url);
     try {
       // If the file already exists at the canonical path, skip the network entirely
-      const existing = await c.fileResolve(outPath);
+      const existing = await fileResolve(outPath);
       let absPath: string;
       let sizeBytes = 0;
       if (existing) {
         absPath = existing;
       } else {
-        const res = await c.httpDownloadFull(c.absUrl(page.url), outPath);
+        const res = await httpDownloadFull(absUrl(page.url), outPath);
         absPath = res.absolutePath;
         sizeBytes = res.sizeBytes;
       }
-      await c.setCachedPage(index, absPath, sizeBytes);
+      await setCachedPage(c.permalink, index, absPath, sizeBytes);
       c.cachedMap.set(index, absPath);
       if (!c.disposed && slot) {
-        c.renderSlotImg(slot, absPath, index + 1);
+        renderSlotImg(c, slot, absPath, index + 1);
       }
-      c.updateCacheCount();
+      updateCacheCount(c);
     } catch (err) {
       if (c.disposed) return;
       this.failed.add(index);
       const msg = err instanceof Error ? err.message : String(err);
-      if (slot) c.renderSlotState(slot, "error", `Download failed: ${msg}`);
+      if (slot) renderSlotState(c, slot, "error", `Download failed: ${msg}`);
       if (!this.firstErrorShown) {
         this.firstErrorShown = true;
-        c.setBanner(
+        setBanner(
           `Page download failed (page ${index + 1} of ${c.pages.length}). Use the slot's Retry.`,
         );
       }

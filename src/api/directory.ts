@@ -1,17 +1,19 @@
-import { SITE_ROOT } from "../state";
+import { absUrl } from "../state";
 import { cachedJson, httpGetText } from "./client";
 import { FEED_TTL_MS } from "./feed";
+import { tryParseJson } from "../utils/json";
 import type { Directory, DirectoryGroup, SuggestResult } from "../types/api";
 
 /** Series / tag directories, cached for one hour. */
 export function fetchDirectory(urlPath: string, key: string): Promise<Directory> {
-  return cachedJson<Directory>(key, SITE_ROOT + urlPath, FEED_TTL_MS);
+  return cachedJson<Directory>(key, absUrl(urlPath), FEED_TTL_MS);
 }
 
 /** Normalized, ordered letter → entries groups from a directory payload. */
-export function directoryGroups(d: Directory | any): DirectoryGroup[] {
-  if (!d) return [];
-  const rawList = d.tags ?? (Array.isArray(d) ? d : []);
+export function directoryGroups(d: Directory | unknown): DirectoryGroup[] {
+  if (!d || typeof d !== "object") return [];
+  const obj = d as { tags?: unknown };
+  const rawList = obj.tags ?? (Array.isArray(d) ? d : []);
   if (!Array.isArray(rawList)) return [];
   return rawList
     .map((obj) => {
@@ -27,10 +29,12 @@ export function directoryGroups(d: Directory | any): DirectoryGroup[] {
 
 /** Search typeahead suggestions. */
 export async function suggest(query: string): Promise<SuggestResult[]> {
-  const { status, body } = await httpGetText(`${SITE_ROOT}/tags/suggest`, {
+  const { status, body } = await httpGetText(absUrl("/tags/suggest"), {
     method: "POST",
     body: `query=${encodeURIComponent(query)}`,
   });
   if (status !== 200) throw new Error(`HTTP ${status} for /tags/suggest`);
-  return JSON.parse(body) as SuggestResult[];
+  const parsed = tryParseJson<SuggestResult[]>(body);
+  if (parsed === null) throw new Error("Invalid JSON from /tags/suggest");
+  return parsed;
 }

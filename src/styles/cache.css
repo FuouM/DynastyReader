@@ -1,47 +1,5 @@
-/* Cache Management modal, stat cards, and cached-works list. */
+/* Cache Management view, stat cards, and cached-works list. */
 
-.ds-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(2px);
-}
-.ds-cache-dialog {
-  width: 720px;
-  max-width: 92vw;
-  height: 560px;
-  max-height: 88vh;
-  background: var(--sys-window-bg, #fff);
-  border: 1px solid var(--sys-border-light, #ccc);
-  border-radius: 4px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  color: var(--sys-text-color, #111);
-}
-.ds-cache-titlebar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  background: var(--sys-control-bg, #f3f3f3);
-  border-bottom: 1px solid var(--sys-border-light, #ddd);
-  font-weight: 600;
-  font-size: 12px;
-}
-.ds-cache-body {
-  flex: 1;
-  padding: 12px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 .ds-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

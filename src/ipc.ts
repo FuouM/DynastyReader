@@ -1,0 +1,239 @@
+/**
+ * Typed Tauri IPC transport for the standalone app.
+ *
+ * The plugin code used to talk to Curator's `window.PluginHost` facade; every
+ * surface it touched is now backed directly by the Tauri commands in
+ * `src-tauri/src/commands/` (see `src-tauri/src/main.rs` `invoke_handler`).
+ * Unlike the old `{ <Method>Result }` / `{ Error }` envelope, these wrappers
+ * throw a plain `Error` on backend failure — callers already treated an
+ * `{ Error }` envelope as a thrown error, so behavior is unchanged. Tauri
+ * camelCases Rust snake_case args automatically, so callers pass `dbName`,
+ * `outputPath`, `timeoutMs`, etc.
+ */
+
+import { convertFileSrc as tauriConvertFileSrc, invoke } from "@tauri-apps/api/core";
+import type { UpdateInfo } from "./types/api";
+
+/** Asset-protocol URL for a resolved absolute on-disk path. */
+export const convertFileSrc = tauriConvertFileSrc;
+
+/* ---------------------------------------------------------------------------
+ * HTTP
+ * ------------------------------------------------------------------------ */
+
+export interface HttpGetArgs {
+  url: string;
+  method?: "GET" | "POST";
+  body?: string;
+  contentType?: string;
+  headers?: Record<string, string>;
+  timeoutMs?: number;
+}
+
+export interface HttpGetResult {
+  status: number;
+  body: string;
+  etag?: string;
+}
+
+/** GET/POST a text/JSON payload. Body is capped at 8MB by the backend. */
+export async function httpGet(args: HttpGetArgs): Promise<HttpGetResult> {
+  return invoke<HttpGetResult>("httpGet", { ...args });
+}
+
+export interface HttpDownloadArgs {
+  url: string;
+  outputPath: string;
+  timeoutMs?: number;
+}
+
+export interface HttpDownloadResult {
+  written_to: string;
+  size_bytes: number;
+  absolute_path: string;
+}
+
+/** Downloads a binary payload into the portable data root and returns the resolved path. */
+export async function httpDownload(args: HttpDownloadArgs): Promise<HttpDownloadResult> {
+  return invoke<HttpDownloadResult>("httpDownload", { ...args });
+}
+
+/* ---------------------------------------------------------------------------
+ * Database
+ * ------------------------------------------------------------------------ */
+
+export interface DbExecuteResult {
+  rows_affected: number;
+}
+
+/** Runs a write statement against a named database under the data root. */
+export async function dbExecute(
+  dbName: string,
+  sql: string,
+  params?: unknown[],
+): Promise<DbExecuteResult> {
+  return invoke<DbExecuteResult>("dbExecute", { dbName, sql, params });
+}
+
+export interface DbQueryResult {
+  rows: Record<string, unknown>[];
+}
+
+/** Runs a read query; rows come back as objects keyed by column name. */
+export async function dbQuery(
+  dbName: string,
+  sql: string,
+  params?: unknown[],
+): Promise<DbQueryResult> {
+  return invoke<DbQueryResult>("dbQuery", { dbName, sql, params });
+}
+
+export interface DbExecuteBatchResult {
+  rows_affected: number[];
+}
+
+/**
+ * Runs multiple write statements inside one transaction. `params` supplies one
+ * optional parameter list per statement (`?` placeholders), in order.
+ */
+export async function dbExecuteBatch(
+  dbName: string,
+  statements: string[],
+  params?: unknown[][],
+): Promise<DbExecuteBatchResult> {
+  return invoke<DbExecuteBatchResult>("dbExecuteBatch", { dbName, statements, params });
+}
+
+/* ---------------------------------------------------------------------------
+ * Filesystem
+ * ------------------------------------------------------------------------ */
+
+export interface FileExistsResult {
+  exists: boolean;
+  size_bytes: number;
+  absolute_path: string;
+}
+
+/**
+ * Reports a file as existing only when its size is at least `minSize` bytes.
+ * Defaults to 1 (zero-byte files count as missing); pass `minSize: 0` to treat
+ * them as present.
+ */
+export async function fileExists(path: string, minSize?: number): Promise<FileExistsResult> {
+  return invoke<FileExistsResult>("fileExists", { path, minSize });
+}
+
+export interface FileExistsBatchItem {
+  path: string;
+  exists: boolean;
+  size_bytes: number;
+  absolute_path: string;
+  error: string;
+}
+
+export interface FileExistsBatchResult {
+  items: FileExistsBatchItem[];
+}
+
+export async function fileExistsBatch(paths: string[], minSize?: number): Promise<FileExistsBatchResult> {
+  return invoke<FileExistsBatchResult>("fileExistsBatch", { paths, minSize });
+}
+
+export interface FileMoveResult {
+  absolute_path: string;
+}
+
+/** Renames/moves a path inside the portable data root (cross-device safe). */
+export async function fileMove(src: string, dst: string): Promise<FileMoveResult> {
+  return invoke<FileMoveResult>("fileMove", { src, dst });
+}
+
+/** Deletes a file or directory inside the portable data root. */
+export async function fileDelete(path: string): Promise<void> {
+  await invoke("fileDelete", { path });
+}
+
+export interface DirStatResult {
+  total_bytes: number;
+  file_count: number;
+  absolute_path: string;
+}
+
+/** Recursively stats a directory (or single file) under the data root. */
+export async function dirStat(path = ""): Promise<DirStatResult> {
+  return invoke<DirStatResult>("dirStat", { path });
+}
+
+export interface DirStatBatchItem {
+  path: string;
+  total_bytes: number;
+  file_count: number;
+  absolute_path: string;
+  error: string;
+}
+
+export interface DirStatBatchResult {
+  items: DirStatBatchItem[];
+}
+
+export async function dirStatBatch(paths: string[]): Promise<DirStatBatchResult> {
+  return invoke<DirStatBatchResult>("dirStatBatch", { paths });
+}
+
+/* ---------------------------------------------------------------------------
+ * Media
+ * ------------------------------------------------------------------------ */
+
+export interface ConvertItem {
+  source_path: string;
+  output_path: string;
+  error: string;
+}
+
+export interface EphemeralConvertArgs {
+  conversions: [string, string][];
+  quality?: number;
+  maxDimension?: number;
+  maxBytes?: number;
+}
+
+export interface EphemeralConvertResult {
+  converted: ConvertItem[];
+}
+
+/** Transcodes source → target paths (bounded dimension + byte budget). */
+export async function ephemeralConvertImages(
+  args: EphemeralConvertArgs,
+): Promise<EphemeralConvertResult> {
+  return invoke<EphemeralConvertResult>("ephemeralConvertImages", { ...args });
+}
+
+/* ---------------------------------------------------------------------------
+ * System
+ * ------------------------------------------------------------------------ */
+
+/** Opens a URL in the default browser (http/https only). */
+export async function openUrl(url: string): Promise<void> {
+  await invoke("openUrl", { url });
+}
+
+/** Reveals the rolling log folder in Explorer. */
+export async function openLogsDir(): Promise<{ absolute_path: string }> {
+  return invoke("openLogsDir");
+}
+
+/* ---------------------------------------------------------------------------
+ * Updater
+ * ------------------------------------------------------------------------ */
+
+export { type UpdateInfo };
+
+/** Checks the official GitHub release feed for a newer build. */
+export async function checkForUpdates(): Promise<UpdateInfo> {
+  return invoke<UpdateInfo>("checkForUpdates");
+}
+
+/** Downloads and atomically swaps in the new executable, then relaunches. */
+export async function installUpdate(downloadUrl: string): Promise<void> {
+  await invoke("installUpdate", { downloadUrl });
+}

@@ -1,13 +1,13 @@
-import { decodeEntities, navigate, onRouteChange, setBanner, sortTagsByCategory } from "../state";
+import { navigate, onRouteChange, safeHtml, setBanner, sortTagsByCategory } from "../state";
 import { esc } from "../utils/html";
 import { parseDynastyUrl, searchDynasty, suggest } from "../api";
-import { isItemBlacklisted, getBlacklistMode, getFullyCachedChapterPermalinks } from "../db";
+import { isItemBlacklisted, getBlacklistMode, getFullyCachedChapterPermalinks, type CollectionItemKind } from "../db";
 import { renderTagPill } from "../components/tag-pill";
 import { renderPager } from "../components/pager";
-import { setupInputClearButtons } from "../components/input-field";
 import { renderLoading } from "../components/loading";
 import { showBlacklistWarningModal } from "../components/trigger-warning";
 import { openAddToCollectionModal } from "../components/add-to-collection-modal";
+import { attachTypeahead, renderTypeaheadSuggestions } from "../components/typeahead";
 import { scrollBrowseToTop, updateBrowseTopPager } from "./browse-controller";
 import type {
   SearchClass,
@@ -178,7 +178,6 @@ export async function renderSearchTab(
 
   const frag = document.createDocumentFragment();
   frag.appendChild(controlBox);
-  setupInputClearButtons(controlBox);
 
   // Results area container
   const resultsContainer = document.createElement("div");
@@ -195,8 +194,7 @@ export async function renderSearchTab(
 
     const allBtn = document.createElement("button");
     allBtn.type = "button";
-    allBtn.className = `win-button ds-btn-sm${allActive ? " active" : ""}`;
-    allBtn.style.cssText = "font-size:10px;padding:1px 6px;";
+    allBtn.className = `win-button ds-btn-xs${allActive ? " active" : ""}`;
     allBtn.textContent = "All Categories";
     allBtn.addEventListener("click", () => {
       searchState.classes.clear();
@@ -209,8 +207,7 @@ export async function renderSearchTab(
       const active = searchState.classes.has(c.id);
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = `win-button ds-btn-sm${active ? " active" : ""}`;
-      btn.style.cssText = "font-size:10px;padding:1px 6px;";
+      btn.className = `win-button ds-btn-xs${active ? " active" : ""}`;
       btn.textContent = c.label;
       btn.addEventListener("click", () => {
         if (searchState.classes.has(c.id)) {
@@ -237,7 +234,7 @@ export async function renderSearchTab(
       chip.className = "ds-row";
       chip.style.cssText =
         "background:var(--sys-bg-active,#e8f0fe);color:var(--sys-primary,#0078d4);border:1px solid var(--sys-primary,#0078d4);border-radius:3px;padding:1px 5px;font-size:10px;align-items:center;gap:4px;";
-      chip.innerHTML = `<span>+ ${decodeEntities(t)}</span><i class="bi bi-x" style="cursor:pointer;font-size:12px;"></i>`;
+      chip.innerHTML = `<span>+ ${safeHtml(t)}</span><i class="bi bi-x" style="cursor:pointer;font-size:12px;"></i>`;
       chip.querySelector(".bi-x")?.addEventListener("click", () => {
         searchState.withTags = searchState.withTags.filter((x) => x !== t);
         renderTagChips();
@@ -252,7 +249,7 @@ export async function renderSearchTab(
       chip.className = "ds-row";
       chip.style.cssText =
         "background:var(--ds-danger-bg);color:var(--ds-danger-text);border:1px solid var(--ds-danger-border);border-radius:3px;padding:1px 5px;font-size:10px;align-items:center;gap:4px;";
-      chip.innerHTML = `<span>- ${decodeEntities(t)}</span><i class="bi bi-x" style="cursor:pointer;font-size:12px;"></i>`;
+      chip.innerHTML = `<span>- ${safeHtml(t)}</span><i class="bi bi-x" style="cursor:pointer;font-size:12px;"></i>`;
       chip.querySelector(".bi-x")?.addEventListener("click", () => {
         searchState.withoutTags = searchState.withoutTags.filter((x) => x !== t);
         renderTagChips();
@@ -268,59 +265,28 @@ export async function renderSearchTab(
     inputEl: HTMLInputElement | null,
     suggestEl: HTMLElement | null,
     onAdd: (tag: string) => void,
-  ) => {
+  ): void => {
     if (!inputEl || !suggestEl) return;
-    let timer: number | undefined;
-
-    inputEl.addEventListener("input", () => {
-      window.clearTimeout(timer);
-      const val = inputEl.value.trim();
-      if (!val) {
-        suggestEl.classList.add("ds-hidden");
-        return;
-      }
-      timer = window.setTimeout(async () => {
-        try {
-          const suggestions = await suggest(val);
-          suggestEl.innerHTML = "";
-          if (suggestions.length === 0) {
-            suggestEl.classList.add("ds-hidden");
-            return;
+    attachTypeahead(
+      inputEl,
+      suggestEl,
+      (q) => suggest(q),
+      (item) => {
+        onAdd(item.name);
+        inputEl.value = "";
+      },
+      {
+        maxItems: 6,
+        debounceMs: 200,
+        onEnter: () => {
+          const val = inputEl.value.trim();
+          if (val) {
+            onAdd(val);
+            inputEl.value = "";
           }
-          for (const s of suggestions.slice(0, 6)) {
-            const item = document.createElement("div");
-            item.className = "ds-typeahead-item";
-            item.innerHTML = `<span style="flex:1;">${decodeEntities(s.name)}</span><span class="ds-typeahead-type">${s.type}</span>`;
-            item.addEventListener("mousedown", () => {
-              onAdd(s.name);
-              inputEl.value = "";
-              suggestEl.classList.add("ds-hidden");
-            });
-            suggestEl.appendChild(item);
-          }
-          suggestEl.classList.remove("ds-hidden");
-        } catch {
-          suggestEl.classList.add("ds-hidden");
-        }
-      }, 200);
-    });
-
-    inputEl.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        const val = inputEl.value.trim();
-        if (val) {
-          onAdd(val);
-          inputEl.value = "";
-          suggestEl.classList.add("ds-hidden");
-        }
-      }
-    });
-
-    inputEl.addEventListener("blur", () => {
-      window.setTimeout(() => {
-        suggestEl.classList.add("ds-hidden");
-      }, 150);
-    });
+        },
+      },
+    );
   };
 
   setupTagAutocomplete(
@@ -385,46 +351,17 @@ export async function renderSearchTab(
 
   // Typeahead for main query input
   if (queryInput && suggestEl) {
-    let debounceTimer: number | undefined;
-    queryInput.addEventListener("input", () => {
-      window.clearTimeout(debounceTimer);
-      const q = queryInput.value.trim();
-      if (!q) {
-        suggestEl.classList.add("ds-hidden");
-        return;
-      }
-      debounceTimer = window.setTimeout(async () => {
-        try {
-          const suggestions = await suggest(q);
-          suggestEl.innerHTML = "";
-          if (suggestions.length === 0) {
-            suggestEl.classList.add("ds-hidden");
-            return;
-          }
-          for (const s of suggestions.slice(0, 8)) {
-            const item = document.createElement("div");
-            item.className = "ds-typeahead-item";
-            item.innerHTML = `<span style="flex:1;">${decodeEntities(s.name)}</span><span class="ds-typeahead-type">${s.type}</span>`;
-            item.addEventListener("mousedown", () => {
-              searchState.q = s.name;
-              queryInput.value = s.name;
-              suggestEl.classList.add("ds-hidden");
-              void executeSearch(resultsContainer, 1, onNavigateTab);
-            });
-            suggestEl.appendChild(item);
-          }
-          suggestEl.classList.remove("ds-hidden");
-        } catch {
-          suggestEl.classList.add("ds-hidden");
-        }
-      }, 250);
-    });
-
-    queryInput.addEventListener("blur", () => {
-      window.setTimeout(() => {
-        suggestEl.classList.add("ds-hidden");
-      }, 150);
-    });
+    attachTypeahead(
+      queryInput,
+      suggestEl,
+      (q) => suggest(q),
+      (item) => {
+        searchState.q = item.name;
+        queryInput.value = item.name;
+        void executeSearch(resultsContainer, 1, onNavigateTab);
+      },
+      { maxItems: 8, debounceMs: 250 },
+    );
   }
 
   // Initial load
@@ -567,7 +504,7 @@ async function renderSearchResultsList(
           <i class="bi bi-shield-slash-fill" style="color:#dc3545;"></i>
           <span><b>${blacklistedItems.length}</b> result${blacklistedItems.length === 1 ? "" : "s"} hidden by blacklist.</span>
         </div>
-        <button type="button" class="win-button ds-btn-sm" style="font-size:10px;padding:2px 8px;">
+        <button type="button" class="win-button ds-btn-sm">
           <i class="bi bi-eye"></i> Show Blacklisted (${blacklistedItems.length})
         </button>
       `;
@@ -693,7 +630,7 @@ function renderSearchResultRow(
     blBadge.style.cssText =
       "font-size:9px;background:var(--ds-danger-bg);color:var(--ds-danger-text);padding:1px 5px;border-radius:2px;border:1px solid var(--ds-danger-border);display:inline-flex;align-items:center;gap:3px;font-weight:600;";
     const labelPrefix = getBlacklistMode() === "warn" ? "Content Warning" : "Blacklisted";
-    blBadge.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${labelPrefix}: ${decodeEntities(matchedTags.join(", "))}`;
+    blBadge.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${labelPrefix}: ${safeHtml(matchedTags.join(", "))}`;
     titleRow.appendChild(blBadge);
   }
   body.appendChild(titleRow);
@@ -705,7 +642,7 @@ function renderSearchResultRow(
     const authorSpan = document.createElement("span");
     authorSpan.className = "ds-muted";
     authorSpan.style.cssText = "font-size:11px;";
-    authorSpan.innerHTML = `by <a style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;">${decodeEntities(item.author.name)}</a>`;
+    authorSpan.innerHTML = `by <a style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;">${safeHtml(item.author.name)}</a>`;
     const authorLink = authorSpan.querySelector("a");
     authorLink?.addEventListener("click", (ev) => {
       ev.stopPropagation();
@@ -722,7 +659,7 @@ function renderSearchResultRow(
     const doujinSpan = document.createElement("span");
     doujinSpan.className = "ds-muted";
     doujinSpan.style.cssText = "font-size:11px;";
-    doujinSpan.innerHTML = `<a style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;">${decodeEntities(item.doujin.name)}</a>`;
+    doujinSpan.innerHTML = `<a style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;">${safeHtml(item.doujin.name)}</a>`;
     const doujinLink = doujinSpan.querySelector("a");
     doujinLink?.addEventListener("click", (ev) => {
       ev.stopPropagation();
@@ -819,8 +756,8 @@ function renderSearchResultRow(
   if (isCollectible) {
     const addToColBtn = document.createElement("button");
     addToColBtn.type = "button";
-    addToColBtn.className = "win-button ds-btn-sm";
-    addToColBtn.style.cssText = "align-self:center;font-size:11px;padding:2px 6px;";
+    addToColBtn.className = "win-button ds-btn-compact";
+    addToColBtn.style.alignSelf = "center";
     addToColBtn.title = "Add to Favorites or custom collections";
     addToColBtn.innerHTML = '<i class="bi bi-folder-plus"></i>';
     addToColBtn.addEventListener("click", (ev) => {
@@ -829,7 +766,7 @@ function renderSearchResultRow(
         {
           permalink: item.permalink,
           title: item.title,
-          kind: item.kind === "chapter" ? "chapter" : (item.kind as any),
+          kind: item.kind === "chapter" ? "chapter" : (item.kind as CollectionItemKind),
         },
         addToColBtn,
       );
@@ -888,35 +825,22 @@ export async function loadSuggestions(
     return;
   }
   host.innerHTML = "";
-  if (results.length === 0) {
-    host.classList.add("ds-hidden");
-    return;
-  }
-  for (const r of results.slice(0, 8)) {
-    const item = document.createElement("div");
-    item.className = "ds-typeahead-item";
-    const name = document.createElement("span");
-    name.className = "ds-fill ds-truncate";
-    name.textContent = decodeEntities(r.name);
-    const type = document.createElement("span");
-    type.className = "ds-typeahead-type";
-    type.textContent = r.type;
-    item.appendChild(name);
-    item.appendChild(type);
-    item.addEventListener("mousedown", () => {
+  renderTypeaheadSuggestions(
+    host,
+    results,
+    (item) => {
       if (onSelect) {
-        onSelect(r);
+        onSelect(item);
       } else {
         navigate({
           view: "browse",
           browseTab: "search",
-          searchQuery: r.name,
+          searchQuery: item.name,
         });
       }
-    });
-    host.appendChild(item);
-  }
-  host.classList.remove("ds-hidden");
+    },
+    8,
+  );
 }
 
 /** Wires the search input, typeahead, and open-by-URL box inside the top search panel. */

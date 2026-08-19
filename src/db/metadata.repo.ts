@@ -2,7 +2,7 @@ import { query, execute } from "./client";
 import type { CachedMetadata } from "../types/db";
 
 export async function getCached(key: string): Promise<CachedMetadata | null> {
-  const rows = await query<CachedMetadata & { cache_key: string }>(
+  const rows = await query<CachedMetadata>(
     `SELECT json_payload, cached_at, etag FROM cached_metadata WHERE cache_key = ?`,
     [key],
   );

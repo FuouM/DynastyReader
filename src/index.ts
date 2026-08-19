@@ -1,57 +1,39 @@
 /**
  * Entry point for the dynasty-scans plugin.
  *
- * Registers the sidebar tab, injects plugin-scoped styles, initializes the
- * SQLite schema, and wires the top-bar + view router. esbuild bundles this
- * (and its imports) into the root index.js IIFE via:
- *
- *   cd plugins && node build.js --plugin dynasty-scans
+ * Builds the root tab DOM (sidebar tab scaffold, top bar, view container),
+ * wires the view router, initializes the SQLite schema, and applies the
+ * persisted UI scale. Per-view stylesheets are imported normally in
+ * `main.ts` alongside the base CSS.
  */
 
-import {
-  TAB_ID,
-  navigate,
-  registerRenderer,
-  loadPluginView,
-} from "./state";
+import { navigate, registerRenderer, loadPluginView } from "./state";
 import { renderLibrary } from "./ui-library";
 import { renderBrowse } from "./browse";
 import { renderSeries } from "./ui-series";
 import { renderReader } from "./reader/reader-controller";
 import { renderCache } from "./ui-cache";
 import { renderBlacklist } from "./ui-blacklist";
-import { openSettingsModal, getSavedUiScale } from "./components/settings-modal";
+import { openSettingsModal } from "./components/settings-modal";
+import { setupInputClearButtons } from "./components/input-field";
+import { getSavedUiScale } from "./ui-scale";
 
-import indexCss from "./styles/index.css?inline";
-import libraryCss from "./styles/library.css?inline";
-import browseCss from "./styles/browse.css?inline";
-import cacheCss from "./styles/cache.css?inline";
-import readerCss from "./styles/reader.css?inline";
+registerRenderer("library", renderLibrary);
+registerRenderer("browse", renderBrowse);
+registerRenderer("series", renderSeries);
+registerRenderer("reader", renderReader);
+registerRenderer("cache", renderCache);
+registerRenderer("blacklist", renderBlacklist);
 
-const PLUGIN_STYLES = [indexCss, libraryCss, browseCss, cacheCss, readerCss];
+setupInputClearButtons();
 
-const PH = window.PluginHost;
-if (!PH) {
-  console.error("dynasty-scans: PluginHost not available; aborting.");
-} else {
-  registerRenderer("library", renderLibrary);
-  registerRenderer("browse", renderBrowse);
-  registerRenderer("series", renderSeries);
-  registerRenderer("reader", renderReader);
-  registerRenderer("cache", renderCache);
-  registerRenderer("blacklist", renderBlacklist);
+mountTab(renderTab);
 
-  injectStyles();
-
-  PH.registerTab(TAB_ID, "Dynasty Scans", "bi bi-book", renderTab);
-}
-
-function injectStyles(): void {
-  if (document.getElementById("ds-style")) return;
-  const style = document.createElement("style");
-  style.id = "ds-style";
-  style.textContent = PLUGIN_STYLES.join("\n");
-  document.head.appendChild(style);
+/** Mounts the plugin's root container into the app frame. */
+function mountTab(render: () => HTMLElement): void {
+  const el = render();
+  const app = document.getElementById("app");
+  if (app) app.appendChild(el);
 }
 
 /**

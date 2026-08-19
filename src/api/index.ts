@@ -12,6 +12,7 @@ export { checkFeedOnline, fetchFeedWithRevalidation } from "./feed";
 export { fetchDirectory, directoryGroups, suggest } from "./directory";
 export {
   fetchSeries,
+  seriesEndpoints,
   getSeriesCover,
   getLocalCover,
   getLocalSeriesCover,
@@ -22,7 +23,8 @@ export {
 } from "./series";
 export { fetchChapter } from "./chapter";
 export { openExternal, parseDynastyUrl, pageOutputPath } from "./navigation";
-export { searchDynasty, parseSearchHtml } from "./search";
+export { searchDynasty } from "./search";
+export { parseSearchHtml } from "./search-parser";
 export {
   recordNetworkTraffic,
   recordCacheHit,

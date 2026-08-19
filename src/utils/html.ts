@@ -2,13 +2,24 @@
  * HTML escaping / entity decoding helpers shared across views.
  */
 
-/** Escapes a string for safe use inside an HTML attribute value. */
+/** Escapes a string for safe use inside HTML text or attribute values. */
 export function esc(s: string): string {
   return String(s)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/`/g, "&#96;");
+}
+
+/**
+ * Decodes HTML entities and then re-escapes the result so the decoded text can be
+ * safely interpolated into innerHTML or attribute templates without markup injection.
+ * Use for any server-provided (entity-encoded) string that is rendered as HTML.
+ */
+export function safeHtml(s: string | null | undefined): string {
+  return esc(decodeEntities(s));
 }
 
 /**

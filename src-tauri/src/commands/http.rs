@@ -1,11 +1,12 @@
-//! `HttpGet` / `HttpDownload` backends.
+//! `httpGet` / `httpDownload` backends.
 //!
 //! Mirrors the Curator handlers (`curator-service/src/handlers/plugin_commands/network.rs`):
-//! GET bodies are capped at 8MB, downloads write through a temp file then
-//! rename, and results return the resolved absolute path (the plugin stores it
-//! and later re-probes it). The `reqwest::Client` is managed once in Tauri
-//! state so connections/TLS are reused across calls, unknown methods are
-//! rejected, and a default timeout guards against hung servers.
+//! GET bodies are capped at 8MB (oversized responses fail loudly instead of
+//! truncating), downloads write through a temp file then rename, and results
+//! return the resolved absolute path (the plugin stores it and later re-probes
+//! it). The `reqwest::Client` is managed once in Tauri state so
+//! connections/TLS are reused across calls, unknown methods are rejected, and a
+//! default timeout guards against hung servers.
 
 use serde_json::json;
 use tauri::State;
@@ -62,7 +63,7 @@ fn apply_timeout(req: reqwest::RequestBuilder, timeout_ms: Option<u64>) -> reqwe
     req.timeout(std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS)))
 }
 
-#[tauri::command]
+#[tauri::command(rename = "httpGet")]
 pub async fn http_get(
     state: State<'_, HttpState>,
     url: String,
@@ -99,12 +100,14 @@ pub async fn http_get(
     if status != 304 {
         let mut stream = resp.bytes_stream();
         let mut buf: Vec<u8> = Vec::new();
+        let mut truncated = false;
         while buf.len() < MAX_GET_BODY {
             match stream.next().await {
                 Some(Ok(chunk)) => {
                     let remaining = MAX_GET_BODY - buf.len();
                     buf.extend_from_slice(&chunk[..chunk.len().min(remaining)]);
                     if chunk.len() > remaining {
+                        truncated = true;
                         break;
                     }
                 }
@@ -114,12 +117,19 @@ pub async fn http_get(
                 None => break,
             }
         }
+        // Never hand a truncated body to the caller — that would fail later in
+        // `JSON.parse` with a confusing error. Fail loudly instead.
+        if truncated {
+            return Err(format!(
+                "http get failed: response body exceeds {MAX_GET_BODY} byte limit"
+            ));
+        }
         body_text = String::from_utf8_lossy(&buf).into_owned();
     }
     Ok(json!({ "status": status, "body": body_text, "etag": etag }))
 }
 
-#[tauri::command]
+#[tauri::command(rename = "httpDownload")]
 pub async fn http_download(
     state: State<'_, HttpState>,
     url: String,

@@ -9,6 +9,7 @@ import {
   decodeEntities,
   formatDate,
   navigate,
+  safeHtml,
   setActions,
   setBanner,
 } from "./state";
@@ -20,6 +21,7 @@ import {
 } from "./db";
 import { openExternal } from "./api";
 import { renderLoading } from "./components/loading";
+import { createBackRefreshActions } from "./components/action-bar";
 
 export function renderBlacklist(container: HTMLElement, _route: Route): void {
   container.innerHTML = "";
@@ -40,21 +42,13 @@ export function renderBlacklist(container: HTMLElement, _route: Route): void {
 
       // Setup Top Bar Actions
       setActions((host) => {
-        const backBtn = document.createElement("button");
-        backBtn.type = "button";
-        backBtn.className = "win-button";
-        backBtn.style.cssText = "font-size:11px;padding:2px 8px;";
-        backBtn.innerHTML = '<i class="bi bi-arrow-left"></i> Back to Library';
-        backBtn.addEventListener("click", () => navigate({ view: "library" }));
-        host.appendChild(backBtn);
-
-        const refreshBtn = document.createElement("button");
-        refreshBtn.type = "button";
-        refreshBtn.className = "win-button";
-        refreshBtn.style.cssText = "font-size:11px;padding:2px 8px;";
-        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
-        refreshBtn.addEventListener("click", () => void loadView());
-        host.appendChild(refreshBtn);
+        for (const btn of createBackRefreshActions(
+          "Back to Library",
+          () => navigate({ view: "library" }),
+          () => void loadView(),
+        )) {
+          host.appendChild(btn);
+        }
       });
 
       // 1. Overview & Mode Group Box
@@ -172,7 +166,7 @@ export function renderBlacklist(container: HTMLElement, _route: Route): void {
           meta.className = "ds-muted";
           meta.style.cssText = "font-size:10px;display:flex;align-items:center;gap:6px;margin-top:1px;";
           meta.innerHTML = `
-            <span class="ds-etag-tag" style="font-size:9px;padding:0 4px;">${item.series_permalink}</span>
+            <span class="ds-etag-tag" style="font-size:9px;padding:0 4px;">${safeHtml(item.series_permalink)}</span>
             <span>Blacklisted on ${formatDate(item.created_at)}</span>
           `;
           titleWrap.appendChild(meta);
@@ -185,8 +179,7 @@ export function renderBlacklist(container: HTMLElement, _route: Route): void {
 
           const openBtn = document.createElement("button");
           openBtn.type = "button";
-          openBtn.className = "win-button ds-btn-sm";
-          openBtn.style.cssText = "font-size:10px;padding:1px 6px;";
+          openBtn.className = "win-button ds-btn-xs";
           openBtn.title = "Open on dynasty-scans.com";
           openBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
           openBtn.addEventListener("click", (ev) => {
@@ -197,8 +190,7 @@ export function renderBlacklist(container: HTMLElement, _route: Route): void {
 
           const removeBtn = document.createElement("button");
           removeBtn.type = "button";
-          removeBtn.className = "win-button ds-btn-sm";
-          removeBtn.style.cssText = "font-size:10px;padding:1px 6px;";
+          removeBtn.className = "win-button ds-btn-xs";
           removeBtn.title = "Remove series from blacklist";
           removeBtn.innerHTML = '<i class="bi bi-trash"></i> Remove';
           removeBtn.addEventListener("click", async () => {

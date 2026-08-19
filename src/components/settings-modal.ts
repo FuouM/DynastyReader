@@ -5,7 +5,7 @@
  * - General preferences
  */
 
-import { decodeEntities, navigate, renderCurrent } from "../state";
+import { navigate, renderCurrent, safeHtml } from "../state";
 import {
   addBlacklistedTag,
   getBlacklistedTags,
@@ -15,7 +15,6 @@ import {
 } from "../db";
 import type { BlacklistedTag } from "../db";
 import { openExternal, suggest } from "../api";
-import { invoke } from "@tauri-apps/api/core";
 import { browseCovers } from "../browse/browse-covers";
 import {
   isAutoCacheChapterEnabled,
@@ -25,52 +24,19 @@ import {
   getReaderNavPosition,
   setReaderNavPosition,
 } from "../reader/settings";
-import { setupInputClearButtons } from "./input-field";
+import { attachTypeahead } from "./typeahead";
 import { getAppTheme, toggleAppTheme } from "../theme";
 import { checkUpdates } from "./update-dialog";
+import * as ipc from "../ipc";
+import { getSavedUiScale, applyUiScale } from "../ui-scale";
+import { openModal, applyModalZoom } from "./modal";
 
-const STORAGE_KEY_UI_SCALE = "ds-ui-scale";
 const SCALE_PRESETS = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
 
-export function getSavedUiScale(): number {
-  const saved = localStorage.getItem(STORAGE_KEY_UI_SCALE);
-  if (saved) {
-    const val = parseFloat(saved);
-    if (!isNaN(val) && val >= 0.5 && val <= 2.5) {
-      return val;
-    }
-  }
-  return 1.0;
-}
-
-export function applyUiScale(scale: number): void {
-  const clamped = Math.max(0.5, Math.min(2.5, Math.round(scale * 100) / 100));
-  localStorage.setItem(STORAGE_KEY_UI_SCALE, String(clamped));
-  // Apply zoom only to #ds-root so that position:fixed / position:sticky elements
-  // (reader nav bar, global topbar) are not displaced by a zoomed <html> element.
-  const root = document.getElementById("ds-root");
-  if (root) root.style.setProperty("zoom", String(clamped));
-}
-
 export function openSettingsModal(): void {
-  const existing = document.getElementById("ds-settings-modal-backdrop");
-  if (existing) return;
-
-  const backdrop = document.createElement("div");
-  backdrop.id = "ds-settings-modal-backdrop";
-  backdrop.className = "ds-modal-backdrop";
-
-  const modal = document.createElement("div");
-  modal.className = "ds-modal-window";
-  modal.style.cssText = "width: 480px;";
+  if (document.getElementById("ds-settings-modal-backdrop")) return;
 
   const currentScale = getSavedUiScale();
-  const applyModalZoom = (s: number) => {
-    modal.style.setProperty("zoom", String(s));
-    modal.style.maxHeight = `calc((100vh - 40px) / ${s})`;
-    modal.style.maxWidth = `calc((100vw - 40px) / ${s})`;
-  };
-  applyModalZoom(currentScale);
 
   // If the saved scale is not one of the presets (e.g. 90% from +/-), add a
   // selected custom option so the dropdown reflects the real value on open.
@@ -83,14 +49,8 @@ export function openSettingsModal(): void {
     ? ""
     : `<option value="${currentScale}" selected>${Math.round(currentScale * 100)}% (Custom)</option>`;
 
-  modal.innerHTML =
-    '<div class="ds-modal-header">' +
-    '  <span class="ds-modal-title"><i class="bi bi-gear-fill"></i> Application Settings</span>' +
-    '  <button type="button" class="win-button ds-modal-close" title="Close (Esc)">' +
-    '    <i class="bi bi-x-lg"></i>' +
-    "  </button>" +
-    "</div>" +
-    '<div class="ds-modal-body" style="display:flex;flex-direction:column;gap:12px;">' +
+  const bodyHtml =
+    '<div style="display:flex;flex-direction:column;gap:12px;">' +
     '  <div class="group-box" style="margin-top:4px;">' +
     '    <div class="group-box-title"><i class="bi bi-aspect-ratio"></i> Display &amp; Scaling</div>' +
     '    <div style="display:flex;flex-direction:column;gap:8px;">' +
@@ -161,7 +121,7 @@ export function openSettingsModal(): void {
     '          <button type="button" class="input-clear-btn" tabindex="-1" title="Clear">' +
     '            <i class="bi bi-x-lg"></i>' +
     '          </button>' +
-    '          <div id="ds-settings-blacklist-suggest" class="ds-typeahead" style="display:none;max-height:160px;"></div>' +
+    '          <div id="ds-settings-blacklist-suggest" class="ds-typeahead ds-hidden" style="max-height:160px;"></div>' +
     "        </div>" +
     '        <button type="button" class="win-button" id="ds-settings-blacklist-add" style="font-size:11px;padding:2px 10px;">' +
     '          <i class="bi bi-plus-lg"></i> Add' +
@@ -192,9 +152,9 @@ export function openSettingsModal(): void {
     "          </div>" +
     "        </div>" +
     '        <div style="display:flex;align-items:center;gap:4px;">' +
-    '          <button type="button" class="win-button ds-btn-sm" id="ds-settings-prefetch-dec" style="padding:2px 8px;font-size:11px;">−</button>' +
+    '          <button type="button" class="win-button ds-btn-sm" id="ds-settings-prefetch-dec">−</button>' +
     '          <span id="ds-settings-prefetch-val" style="font-size:11px;font-weight:600;min-width:54px;text-align:center;">0 (off)</span>' +
-    '          <button type="button" class="win-button ds-btn-sm" id="ds-settings-prefetch-inc" style="padding:2px 8px;font-size:11px;">+</button>' +
+    '          <button type="button" class="win-button ds-btn-sm" id="ds-settings-prefetch-inc">+</button>' +
     "        </div>" +
     "      </div>" +
     '      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">' +
@@ -249,47 +209,33 @@ export function openSettingsModal(): void {
     "        </div>" +
     "      </div>" +
     '      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">' +
-    '        <button type="button" class="win-button" id="ds-about-check-update" title="Check for DynastyReader updates" style="font-size:11px;padding:2px 8px;justify-content:center;">' +
+    '        <button type="button" class="win-button ds-btn-compact" id="ds-about-check-update" title="Check for DynastyReader updates">' +
     '          <i class="bi bi-arrow-repeat"></i> Check Updates' +
     '        </button>' +
-    '        <button type="button" class="win-button" id="ds-about-open-github" title="Open DynastyReader GitHub repository" style="font-size:11px;padding:2px 8px;justify-content:center;">' +
+    '        <button type="button" class="win-button ds-btn-compact" id="ds-about-open-github" title="Open DynastyReader GitHub repository">' +
     '          <i class="bi bi-github"></i> GitHub' +
     '        </button>' +
-    '        <button type="button" class="win-button" id="ds-about-open-site" title="Open Dynasty Scans website in browser" style="font-size:11px;padding:2px 8px;justify-content:center;">' +
+    '        <button type="button" class="win-button ds-btn-compact" id="ds-about-open-site" title="Open Dynasty Scans website in browser">' +
     '          <i class="bi bi-box-arrow-up-right"></i> dynasty-scans.com' +
     '        </button>' +
     '      </div>' +
     "    </div>" +
     "  </div>" +
-    "</div>" +
-    '<div class="ds-modal-footer" style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px;">' +
+    "</div>";
+
+  const footerHtml =
+    '<div style="display:flex;justify-content:flex-end;gap:8px;width:100%;">' +
     '  <button type="button" class="win-button primary ds-modal-done" style="min-width:70px;">Done</button>' +
     "</div>";
 
-  backdrop.appendChild(modal);
-  setupInputClearButtons(modal);
-  // Mount directly to document.body so the full-window overlay is decoupled from
-  // #ds-root zoom scaling, and scale the modal dialog itself cleanly.
-  document.body.appendChild(backdrop);
-
-  const close = (): void => {
-    window.removeEventListener("keydown", onKeyDown);
-    backdrop.remove();
-  };
-
-  const onKeyDown = (ev: KeyboardEvent): void => {
-    if (ev.key === "Escape") {
-      ev.preventDefault();
-      close();
-    }
-  };
-  window.addEventListener("keydown", onKeyDown);
-
-  backdrop.addEventListener("click", (ev) => {
-    if (ev.target === backdrop) close();
+  const { modal, close } = openModal({
+    backdropId: "ds-settings-modal-backdrop",
+    title: '<i class="bi bi-gear-fill"></i> Application Settings',
+    width: 480,
+    body: bodyHtml,
+    footer: footerHtml,
   });
 
-  modal.querySelector(".ds-modal-close")?.addEventListener("click", close);
   modal.querySelector(".ds-modal-done")?.addEventListener("click", close);
 
   const scaleSelect = modal.querySelector<HTMLSelectElement>("#ds-settings-scale-select");
@@ -299,7 +245,7 @@ export function openSettingsModal(): void {
 
   const syncScaleUI = (scale: number): void => {
     applyUiScale(scale);
-    applyModalZoom(scale);
+    applyModalZoom(modal, scale);
     // Find closest preset or select matching option
     if (scaleSelect) {
       let matched = false;
@@ -451,7 +397,7 @@ export function openSettingsModal(): void {
 
   const openLogsBtn = modal.querySelector<HTMLButtonElement>("#ds-settings-open-logs");
   openLogsBtn?.addEventListener("click", () => {
-    void invoke("open_logs_dir").catch((err) => {
+    void ipc.openLogsDir().catch((err) => {
       console.error("dynasty-scans-reader: open logs folder failed:", err);
     });
   });
@@ -531,7 +477,7 @@ export function openSettingsModal(): void {
       chip.className = "ds-row";
       chip.style.cssText =
         "background:var(--ds-danger-bg);color:var(--ds-danger-text);border:1px solid var(--ds-danger-border);border-radius:3px;padding:1px 6px;font-size:10px;align-items:center;gap:4px;";
-      chip.innerHTML = `<span>${decodeEntities(item.tag_name)}</span><i class="bi bi-x" style="cursor:pointer;font-size:13px;" title="Remove from blacklist"></i>`;
+      chip.innerHTML = `<span>${safeHtml(item.tag_name)}</span><i class="bi bi-x" style="cursor:pointer;font-size:13px;" title="Remove from blacklist"></i>`;
       chip.querySelector(".bi-x")?.addEventListener("click", async () => {
         await removeBlacklistedTag(item.tag_name);
         void renderBlacklistChips();
@@ -547,7 +493,7 @@ export function openSettingsModal(): void {
     if (!trimmed) return;
     await addBlacklistedTag(trimmed, permalink);
     if (blInput) blInput.value = "";
-    if (blSuggest) blSuggest.style.display = "none";
+    if (blSuggest) blSuggest.classList.add("ds-hidden");
     void renderBlacklistChips();
     renderCurrent();
   };
@@ -555,50 +501,15 @@ export function openSettingsModal(): void {
   blAddBtn?.addEventListener("click", () => {
     if (blInput?.value) void addTag(blInput.value);
   });
-  blInput?.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter" && blInput.value) {
-      void addTag(blInput.value);
-    }
-  });
 
   // Blacklist Autocomplete
   if (blInput && blSuggest) {
-    let timer: number | undefined;
-    blInput.addEventListener("input", () => {
-      window.clearTimeout(timer);
-      const val = blInput.value.trim();
-      if (!val) {
-        blSuggest.style.display = "none";
-        return;
-      }
-      timer = window.setTimeout(async () => {
-        try {
-          const suggestions = await suggest(val);
-          blSuggest.innerHTML = "";
-          if (suggestions.length === 0) {
-            blSuggest.style.display = "none";
-            return;
-          }
-          for (const s of suggestions.slice(0, 6)) {
-            const item = document.createElement("div");
-            item.className = "ds-typeahead-item";
-            item.innerHTML = `<span style="flex:1;">${decodeEntities(s.name)}</span><span class="ds-typeahead-type">${s.type}</span>`;
-            item.addEventListener("mousedown", () => {
-              void addTag(s.name);
-            });
-            blSuggest.appendChild(item);
-          }
-          blSuggest.style.display = "block";
-        } catch {
-          blSuggest.style.display = "none";
-        }
-      }, 200);
-    });
-
-    blInput.addEventListener("blur", () => {
-      window.setTimeout(() => {
-        blSuggest.style.display = "none";
-      }, 150);
-    });
+    attachTypeahead(
+      blInput,
+      blSuggest,
+      (q) => suggest(q),
+      (item) => void addTag(item.name),
+      { maxItems: 6, debounceMs: 200, onEnter: () => void addTag(blInput.value) },
+    );
   }
 }

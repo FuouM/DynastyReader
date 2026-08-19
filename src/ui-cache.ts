@@ -24,6 +24,7 @@ import { createConfirmDeleteButton } from "./components/button";
 import { renderFeedCover } from "./components/cover";
 import { browseCovers } from "./browse/browse-covers";
 import { renderLoading } from "./components/loading";
+import { createBackRefreshActions } from "./components/action-bar";
 
 export function renderCache(container: HTMLElement, _route: Route): void {
   container.innerHTML = "";
@@ -44,21 +45,13 @@ export function renderCache(container: HTMLElement, _route: Route): void {
 
       // Setup Top Bar Actions
       setActions((host) => {
-        const backBtn = document.createElement("button");
-        backBtn.type = "button";
-        backBtn.className = "win-button";
-        backBtn.style.cssText = "font-size:11px;padding:2px 8px;";
-        backBtn.innerHTML = '<i class="bi bi-arrow-left"></i> Back to Library';
-        backBtn.addEventListener("click", () => navigate({ view: "library" }));
-        host.appendChild(backBtn);
-
-        const refreshBtn = document.createElement("button");
-        refreshBtn.type = "button";
-        refreshBtn.className = "win-button";
-        refreshBtn.style.cssText = "font-size:11px;padding:2px 8px;";
-        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
-        refreshBtn.addEventListener("click", () => void loadView());
-        host.appendChild(refreshBtn);
+        for (const btn of createBackRefreshActions(
+          "Back to Library",
+          () => navigate({ view: "library" }),
+          () => void loadView(),
+        )) {
+          host.appendChild(btn);
+        }
       });
 
       // 1. Overview Storage Metrics Grid
@@ -169,7 +162,7 @@ export function renderCache(container: HTMLElement, _route: Route): void {
         filterInput.type = "text";
         filterInput.className = "win-textbox";
         filterInput.placeholder = "Filter cached works by name or permalink...";
-        filterInput.style.cssText = "flex:1;min-width:200px;font-size:11px;padding:3px 6px;";
+        filterInput.style.cssText = "flex:1;min-width:200px;";
 
         const sortWrap = document.createElement("div");
         sortWrap.className = "ds-flex-row";
@@ -181,7 +174,7 @@ export function renderCache(container: HTMLElement, _route: Route): void {
 
         const sortSelect = document.createElement("select");
         sortSelect.className = "win-textbox";
-        sortSelect.style.cssText = "font-size:11px;padding:2px 6px;cursor:pointer;";
+        sortSelect.style.cssText = "cursor:pointer;";
         sortSelect.innerHTML = `
           <option value="size-desc">Disk Size (Largest first)</option>
           <option value="size-asc">Disk Size (Smallest first)</option>

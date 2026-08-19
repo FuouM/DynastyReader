@@ -1,8 +1,6 @@
 import {
   Route,
   ChapterRef,
-  PAGES_PREFIX,
-  absUrl,
   isOnline,
   navigate,
   setActions,
@@ -11,20 +9,12 @@ import {
 import {
   fetchChapter,
   fetchSeries,
-  fileMove,
-  fileResolve,
-  httpDownloadFull,
-  openExternal,
-  pageOutputPath,
 } from "../api";
 import {
-  addBookmark,
   addHistory,
   getBookmark,
   getCachedPages,
   getReadingProgress,
-  removeBookmark,
-  setCachedPage,
   setReadingProgress,
 } from "../db";
 import type { Chapter, ChapterPage } from "../types/api";
@@ -36,12 +26,14 @@ import type {
   SpreadGroup,
 } from "../types/reader";
 import {
-  WIDE_RATIO,
   anchorPageOf,
   computeSpreads,
   detectReadingDirection,
   spreadIndexOf,
 } from "./reader-spread";
+import { renderSlotImg, renderSlotState } from "./reader-slots";
+import { standardizeCachePaths } from "./path-migration";
+import { buildReaderActions } from "./reader-actions";
 import { ReaderQueue } from "./reader-queue";
 import { ReaderViewport } from "./reader-viewport";
 import { ReaderToolbar } from "./reader-toolbar";
@@ -139,156 +131,6 @@ export class ReaderController {
     this.cleanup.push(fn);
   }
 
-  // State helpers (re-exported so modules avoid importing state directly) --
-  setBanner(msg: string): void {
-    setBanner(msg);
-  }
-
-  navigate(route: Route): void {
-    navigate(route);
-  }
-
-  setActions(fn: (host: HTMLElement) => void): void {
-    setActions(fn);
-  }
-
-  // Transport wrappers ----------------------------------------------------
-  absUrl(u: string): string {
-    return absUrl(u);
-  }
-
-  fileResolve(path: string): Promise<string | null> {
-    return fileResolve(path);
-  }
-
-  httpDownloadFull(
-    url: string,
-    outPath: string,
-  ): Promise<{ absolutePath: string; sizeBytes: number }> {
-    return httpDownloadFull(url, outPath);
-  }
-
-  setCachedPage(index: number, absPath: string, sizeBytes: number): Promise<void> {
-    return setCachedPage(this.permalink, index, absPath, sizeBytes);
-  }
-
-  pageOutputPath(index: number, pageUrl: string): string {
-    return pageOutputPath(this.seriesPermalink ?? "", this.permalink, index, pageUrl);
-  }
-
-  // Slot rendering ---------------------------------------------------------
-  renderSlotImg(slot: HTMLElement, absPath: string, pageNum: number): void {
-    const PH = window.PluginHost;
-    slot.classList.remove("ds-slot-loading");
-    slot.innerHTML = "";
-    const badge = document.createElement("div");
-    badge.className = "ds-slot-page-badge";
-    badge.textContent = `${pageNum} / ${this.pages.length}`;
-    slot.appendChild(badge);
-
-    const img = document.createElement("img");
-    img.className = "ds-page-img";
-    img.alt = `Page ${pageNum}`;
-    img.addEventListener("error", () => {
-      const idx = Number(slot.dataset.index);
-      this.cachedMap.delete(idx);
-      if (this.queue.isRetrying(idx)) return;
-      this.queue.markRetrying(idx);
-      this.renderSlotState(slot, "spinner", "Re-downloading…");
-      this.queue.enqueue(idx, true);
-    });
-    img.addEventListener("load", () => {
-      if (this.disposed) return;
-      const idx = Number(slot.dataset.index);
-      const isWide = img.naturalWidth > img.naturalHeight * WIDE_RATIO;
-      if (isWide !== this.widePages.has(idx)) {
-        if (isWide) {
-          this.widePages.add(idx);
-        } else {
-          this.widePages.delete(idx);
-        }
-        this.recomputeSpreads();
-        // Rebuild only once every slot exists so page order stays intact.
-        if (this.isSpread && this.slots.length === this.pages.length) {
-          this.rebuildSpreadSlots();
-          this.viewportImpl.resetToCurrentPage(true);
-        }
-      }
-    });
-    img.src = PH.convertFileSrc(absPath);
-    slot.appendChild(img);
-  }
-
-  renderSlotState(slot: HTMLElement, kind: "spinner" | "offline" | "error" | "idle", message: string): void {
-    slot.innerHTML = "";
-    const idx = Number(slot.dataset.index);
-    const badge = document.createElement("div");
-    badge.className = "ds-slot-page-badge";
-    badge.textContent = `${idx + 1} / ${this.pages.length}`;
-    slot.appendChild(badge);
-
-    const state = document.createElement("div");
-    state.className = `ds-slot-state${kind === "error" ? " ds-slot-error" : ""}`;
-    if (kind === "spinner") {
-      state.innerHTML =
-        '<i class="bi bi-cloud-arrow-down" style="font-size:20px;color:var(--sys-primary,#0078d4);"></i>' +
-        '<div class="ds-slot-pulse-wrap"><div class="ds-slot-pulse-bar"></div></div>';
-    } else if (kind === "offline") {
-      state.innerHTML = '<i class="bi bi-wifi-off" style="font-size:20px;"></i>';
-    } else if (kind === "idle") {
-      state.innerHTML = '<i class="bi bi-book" style="font-size:20px;color:var(--sys-text-muted,#888);"></i>';
-    } else {
-      state.innerHTML = '<i class="bi bi-exclamation-triangle" style="font-size:20px;"></i>';
-    }
-    const text = document.createElement("span");
-    if (kind === "spinner") {
-      const pct =
-        this.pages.length > 0 ? Math.round((this.cachedCount / this.pages.length) * 100) : 0;
-      text.textContent = `Downloading page ${idx + 1} of ${this.pages.length} (${this.cachedCount}/${this.pages.length} cached · ${pct}%)`;
-    } else if (kind === "idle") {
-      text.textContent = `Page ${idx + 1} of ${this.pages.length} · Waiting to read…`;
-    } else {
-      text.textContent = message;
-    }
-    state.appendChild(text);
-    if (kind === "error") {
-      const retry = document.createElement("button");
-      retry.type = "button";
-      retry.className = "win-button";
-      retry.style.cssText = "font-size:10px;padding:1px 8px;";
-      retry.textContent = "Retry";
-      retry.addEventListener("click", () => {
-        this.queue.clearFailed(idx);
-        this.renderSlotState(slot, "spinner", "Downloading…");
-        this.queue.enqueue(idx);
-      });
-      state.appendChild(retry);
-    }
-    slot.appendChild(state);
-  }
-
-  updateCacheCount(): void {
-    this.cachedCount = this.cachedMap.size;
-    this.updateProgressText();
-    const pct =
-      this.pages.length > 0 ? Math.round((this.cachedCount / this.pages.length) * 100) : 0;
-    for (const slot of this.slots) {
-      const idx = Number(slot.dataset.index);
-      const absPath = this.cachedMap.get(idx);
-      if (absPath) {
-        // If cached but not yet rendered as an image, render it immediately
-        if (!slot.querySelector("img.ds-page-img")) {
-          this.renderSlotImg(slot, absPath, idx + 1);
-        }
-      } else {
-        const spinner = slot.querySelector<HTMLElement>(".ds-slot-state:not(.ds-slot-error) span");
-        if (spinner) {
-          spinner.textContent = `Downloading page ${idx + 1} of ${this.pages.length} (${this.cachedCount}/${this.pages.length} cached · ${pct}%)`;
-        }
-      }
-    }
-  }
-
   // Queue access ------------------------------------------------------------
   enqueue(index: number, priority = false): void {
     if (index >= 0 && index < this.pages.length) {
@@ -296,7 +138,7 @@ export class ReaderController {
       if (slot && !this.cachedMap.has(index) && !this.isPageFailed(index)) {
         // If the slot is in idle state, transition it to the downloading spinner
         if (slot.querySelector(".bi-book")) {
-          this.renderSlotState(slot, "spinner", "Downloading…");
+          renderSlotState(this, slot, "spinner", "Downloading…");
         }
       }
     }
@@ -543,7 +385,7 @@ export class ReaderController {
 
   // Chapter navigation ------------------------------------------------------
   gotoChapter(c: ChapterRef): void {
-    this.navigate({
+    navigate({
       view: "reader",
       seriesPermalink: this.seriesPermalink ?? undefined,
       seriesName: this.seriesName,
@@ -559,73 +401,6 @@ export class ReaderController {
     this.nextChapterBtn.disabled = curIdx < 0 || curIdx >= this.chapterList.length - 1;
   }
 
-  /** Background legacy-filename standardization. Zero network traffic. */
-  standardizeCachePaths(): void {
-    window.setTimeout(async () => {
-      if (this.disposed) return;
-      const cleanSeries = (this.seriesPermalink || "_singles").replace(/[^a-zA-Z0-9_-]/g, "_");
-      const cleanChapter = this.permalink.replace(/[^a-zA-Z0-9_-]/g, "_");
-
-      for (let i = 0; i < this.pages.length; i++) {
-        if (this.disposed) return;
-        const page = this.pages[i];
-        if (!page) continue;
-        const targetPath = this.pageOutputPath(i, page.url);
-
-        // Skip if already at canonical path. `cachedMap` holds absolute paths,
-        // so compare against the resolved absolute form (not the relative
-        // `targetPath`) — otherwise every cached page gets re-rendered here and
-        // the visible image flashes.
-        const alreadyThere = await this.fileResolve(targetPath);
-        if (alreadyThere) {
-          if (this.cachedMap.get(i) !== alreadyThere) {
-            await this.setCachedPage(i, alreadyThere, 0);
-            this.cachedMap.set(i, alreadyThere);
-            if (!this.disposed && this.slots[i]) {
-              this.renderSlotImg(this.slots[i], alreadyThere, i + 1);
-            }
-            this.updateCacheCount();
-          }
-          continue;
-        }
-
-        // Build candidate legacy paths from the original URL filename
-        const origName = page.url.split("/").pop() || "";
-        const ext = origName.split(".").pop()?.split("?")[0] || "webp";
-        const pad3 = String(i + 1).padStart(3, "0");
-        const pad4 = String(i + 1).padStart(4, "0");
-        const candidates = [
-          `${PAGES_PREFIX}/${cleanSeries}/${cleanChapter}/${pad3}_${origName}`,
-          `${PAGES_PREFIX}/${cleanChapter}/${origName}`,
-          `${PAGES_PREFIX}/_singles/${cleanChapter}/${origName}`,
-          `${PAGES_PREFIX}/${cleanSeries}/${cleanChapter}/${origName}`,
-          `${PAGES_PREFIX}/${cleanChapter}/page_${pad4}.${ext}`,
-        ];
-
-        let found: string | null = null;
-        for (const candidate of candidates) {
-          found = await this.fileResolve(candidate);
-          if (found) break;
-        }
-
-        if (found) {
-          try {
-            const newAbsPath = await fileMove(found, targetPath);
-            await this.setCachedPage(i, newAbsPath, 0);
-            this.cachedMap.set(i, newAbsPath);
-            if (!this.disposed && this.slots[i]) {
-              this.renderSlotImg(this.slots[i], newAbsPath, i + 1);
-            }
-            this.updateCacheCount();
-          } catch (e) {
-            console.warn(`dynasty-scans: could not move page ${i + 1} to canonical path:`, e);
-          }
-        }
-        // If nothing found: downloadPage already handles this via the queue
-      }
-    }, 2500);
-  }
-
   // Main bootstrap -----------------------------------------------------------
   async init(): Promise<void> {
     const route = this.route;
@@ -638,7 +413,7 @@ export class ReaderController {
     } catch (err) {
       if (this.disposed) return;
       const msg = err instanceof Error ? err.message : String(err);
-      this.setBanner(`Failed to load chapter: ${msg}`);
+      setBanner(`Failed to load chapter: ${msg}`);
       const retry = document.createElement("button");
       retry.type = "button";
       retry.className = "win-button";
@@ -744,7 +519,7 @@ export class ReaderController {
       cachedRows = await getCachedPages(this.permalink);
     } catch (err) {
       cachedRows = [];
-      this.setBanner(
+      setBanner(
         `Page cache lookup failed: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
@@ -763,14 +538,14 @@ export class ReaderController {
       slot.dataset.index = String(i);
       const absPath = this.cachedMap.get(i);
       if (absPath) {
-        this.renderSlotImg(slot, absPath, i + 1);
+        renderSlotImg(this, slot, absPath, i + 1);
       } else if (!isOnline()) {
-        this.renderSlotState(slot, "offline", "Offline — not downloaded");
+        renderSlotState(this, slot, "offline", "Offline — not downloaded");
       } else if (autoCacheAll) {
-        this.renderSlotState(slot, "spinner", "Queued for download…");
+        renderSlotState(this, slot, "spinner", "Queued for download…");
         this.enqueue(i);
       } else {
-        this.renderSlotState(slot, "idle", "Waiting to read…");
+        renderSlotState(this, slot, "idle", "Waiting to read…");
       }
       this.strip.appendChild(slot);
       this.slots.push(slot);
@@ -800,7 +575,7 @@ export class ReaderController {
     this.toolbarImpl.wireAfterSlots();
     this.viewportImpl.wireAfterSlots();
     this.updateProgressText();
-    this.standardizeCachePaths();
+    standardizeCachePaths(this);
 
     // History + top-bar actions
     try {
@@ -822,102 +597,8 @@ export class ReaderController {
       bookmarked = false;
     }
 
-    this.setActions((host) => {
-      if (this.seriesPermalink) {
-        const seriesBtn = document.createElement("button");
-        seriesBtn.type = "button";
-        seriesBtn.className = "win-button";
-        seriesBtn.title = "Open the containing series";
-        seriesBtn.innerHTML = '<i class="bi bi-collection"></i> Series';
-        seriesBtn.addEventListener("click", () => {
-          this.navigate({
-            view: "series",
-            seriesPermalink: this.seriesPermalink ?? undefined,
-            seriesName: this.seriesName ?? this.chapterTitle,
-          });
-        });
-        host.appendChild(seriesBtn);
-      }
-
-      const bmBtn = document.createElement("button");
-      bmBtn.type = "button";
-      bmBtn.className = "win-button";
-      bmBtn.title = bookmarked ? "Remove bookmark" : "Bookmark this chapter";
-      bmBtn.innerHTML = bookmarked
-        ? '<i class="bi bi-bookmark-fill"></i>'
-        : '<i class="bi bi-bookmark"></i>';
-      bmBtn.addEventListener("click", async () => {
-        bmBtn.disabled = true;
-        try {
-          if (bookmarked) {
-            await removeBookmark(this.permalink);
-            bookmarked = false;
-          } else {
-            await addBookmark({
-              chapterPermalink: this.permalink,
-              seriesPermalink: this.seriesPermalink ?? "",
-              seriesName: this.seriesName ?? "",
-              chapterTitle: this.chapterTitle,
-              pageIndex: this.currentIndex,
-            });
-            bookmarked = true;
-          }
-          bmBtn.innerHTML = bookmarked
-            ? '<i class="bi bi-bookmark-fill"></i>'
-            : '<i class="bi bi-bookmark"></i>';
-          bmBtn.title = bookmarked ? "Remove bookmark" : "Bookmark this chapter";
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          this.setBanner(`Bookmark failed: ${msg}`);
-        }
-        bmBtn.disabled = false;
-      });
-      host.appendChild(bmBtn);
-
-      const cacheBtn = document.createElement("button");
-      cacheBtn.type = "button";
-      cacheBtn.className = "win-button";
-      cacheBtn.title = "Download every uncached page of this chapter";
-      cacheBtn.innerHTML = '<i class="bi bi-download"></i> <span class="ds-btn-text">Cache Chapter</span>';
-      cacheBtn.addEventListener("click", () => {
-        for (let i = 0; i < this.pages.length; i++) {
-          if (!this.cachedMap.has(i) && !this.isPageFailed(i)) this.enqueue(i);
-        }
-        this.setBanner("Caching chapter…");
-      });
-      host.appendChild(cacheBtn);
-
-      const copyBtn = document.createElement("button");
-      copyBtn.type = "button";
-      copyBtn.className = "win-button";
-      copyBtn.title = "Copy chapter link to clipboard";
-      copyBtn.innerHTML = '<i class="bi bi-link-45deg"></i>';
-      copyBtn.addEventListener("click", async () => {
-        try {
-          const url = `https://dynasty-scans.com/chapters/${this.permalink}`;
-          await navigator.clipboard.writeText(url);
-          copyBtn.innerHTML = '<i class="bi bi-check-lg"></i>';
-          this.setBanner("Copied chapter link to clipboard");
-          window.setTimeout(() => {
-            if (!copyBtn.isConnected) return;
-            copyBtn.innerHTML = '<i class="bi bi-link-45deg"></i>';
-          }, 2000);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          this.setBanner(`Copy failed: ${msg}`);
-        }
-      });
-      host.appendChild(copyBtn);
-
-      const openBtn = document.createElement("button");
-      openBtn.type = "button";
-      openBtn.className = "win-button";
-      openBtn.title = "Open this chapter in your browser";
-      openBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
-      openBtn.addEventListener("click", () => {
-        void openExternal(`https://dynasty-scans.com/chapters/${this.permalink}`);
-      });
-      host.appendChild(openBtn);
+    setActions((host) => {
+      buildReaderActions(this, host, bookmarked);
     });
 
     // Restore the resume page. The awaited history/bookmark calls above gave

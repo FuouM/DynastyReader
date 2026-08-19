@@ -4,7 +4,7 @@
  * with a transparent overlay (no dark/opaque background) and UI-scale / zoom compensation.
  */
 
-import { decodeEntities, setBanner } from "../state";
+import { safeHtml, setBanner } from "../state";
 import {
   getCollections,
   createCollection,
@@ -12,8 +12,7 @@ import {
   toggleItemInCollection,
   CollectionItemKind,
 } from "../db";
-import { setupInputClearButtons } from "./input-field";
-import { getSavedUiScale } from "./settings-modal";
+import { getSavedUiScale } from "../ui-scale";
 
 export interface AddToCollectionItem {
   permalink: string;
@@ -91,8 +90,8 @@ export async function openAddToCollectionModal(
       </button>
     </div>
     <div style="padding:4px 8px;border-bottom:1px solid var(--sys-border-light,#eee);background:var(--sys-window-bg,#fafafa);">
-      <div class="ds-truncate" style="font-weight:600;font-size:11px;color:var(--sys-window-text,#111);" title="${decodeEntities(item.title)}">
-        ${decodeEntities(item.title)}
+      <div class="ds-truncate" style="font-weight:600;font-size:11px;color:var(--sys-window-text,#111);" title="${safeHtml(item.title)}">
+        ${safeHtml(item.title)}
       </div>
     </div>
     <div id="ds-add-to-col-list" style="max-height:180px;overflow-y:auto;padding:3px 4px;display:flex;flex-direction:column;gap:1px;">
@@ -111,8 +110,6 @@ export async function openAddToCollectionModal(
 
   overlay.appendChild(dropdown);
   root.appendChild(overlay);
-
-  setupInputClearButtons(dropdown);
 
   const close = () => {
     overlay.remove();
@@ -166,8 +163,8 @@ export async function openAddToCollectionModal(
         nameSpan.className = "ds-truncate";
         nameSpan.style.cssText = col.is_default ? "font-weight:600;font-size:11px;" : "font-size:11px;";
         nameSpan.innerHTML = col.is_default
-          ? `<i class="bi bi-star-fill" style="color:#d97706;font-size:10px;margin-right:2px;"></i> ${decodeEntities(col.name)}`
-          : decodeEntities(col.name);
+          ? `<i class="bi bi-star-fill" style="color:#d97706;font-size:10px;margin-right:2px;"></i> ${safeHtml(col.name)}`
+          : safeHtml(col.name);
         left.appendChild(nameSpan);
 
         row.appendChild(left);

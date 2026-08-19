@@ -10,9 +10,15 @@ import { el } from "./dom";
 export function createButton(
   html: string,
   title?: string,
-  cssText = "font-size:11px;padding:2px 8px;",
+  cssText = "",
+  className = "ds-btn-compact",
 ): HTMLButtonElement {
-  const btn = el("button", { type: "button", class: "win-button", style: cssText, title });
+  const btn = el("button", {
+    type: "button",
+    class: ["win-button", className].join(" "),
+    style: cssText,
+    title,
+  });
   btn.innerHTML = html;
   return btn;
 }
@@ -29,10 +35,10 @@ export function createConfirmDeleteButton(
 ): HTMLElement {
   const btn = el("button", {
     type: "button",
-    class: "win-button",
-    style: "font-size:11px;padding:2px 8px;flex-shrink:0;",
+    class: "win-button ds-btn-compact",
     title,
   });
+  btn.style.flexShrink = "0";
   btn.innerHTML = initialHtml;
 
   let confirming = false;
@@ -40,7 +46,7 @@ export function createConfirmDeleteButton(
 
   const reset = (): void => {
     confirming = false;
-    btn.className = "win-button";
+    btn.className = "win-button ds-btn-compact";
     btn.style.color = "";
     btn.style.backgroundColor = "";
     btn.style.borderColor = "";

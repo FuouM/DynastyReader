@@ -1,4 +1,4 @@
-import { decodeEntities, formatDateTime, navigate, setBanner, sortTagsByCategory } from "../state";
+import { decodeEntities, esc, formatDateTime, navigate, safeHtml, setBanner, sortTagsByCategory } from "../state";
 import {
   checkFeedOnline,
   fetchFeedWithRevalidation,
@@ -16,6 +16,7 @@ import {
   getHistoryPermalinks,
   isItemBlacklisted,
   removeBookmark,
+  CollectionItemKind,
 } from "../db";
 import { renderTagPill } from "../components/tag-pill";
 import { renderPager } from "../components/pager";
@@ -137,7 +138,7 @@ export async function renderFeed(
           <i class="bi bi-shield-slash-fill" style="color:#dc3545;"></i>
           <span><b>${blacklistedChapters.length}</b> chapter${blacklistedChapters.length === 1 ? "" : "s"} hidden by blacklist.</span>
         </div>
-        <button type="button" class="win-button ds-btn-sm" style="font-size:10px;padding:2px 8px;">
+        <button type="button" class="win-button ds-btn-sm">
           <i class="bi bi-eye"></i> Show Blacklisted (${blacklistedChapters.length})
         </button>
       `;
@@ -523,7 +524,7 @@ function updateFeedStatusFooter(
     }
     if (etagEl) {
       etagEl.setAttribute("title", `HTTP ETag: ${info.etag}`);
-      etagEl.innerHTML = `<i class="bi bi-hash"></i> <span class="ds-etag-hash">${info.etag.replace(/^"|"$/g, "").slice(0, 8)}</span>`;
+      etagEl.innerHTML = `<i class="bi bi-hash"></i> <span class="ds-etag-hash">${esc(info.etag.replace(/^"|"$/g, "").slice(0, 8))}</span>`;
     }
   }
 }
@@ -624,7 +625,7 @@ function feedItem(
   const title = document.createElement("div");
   title.className = "ds-item-title";
   title.style.cssText = "font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;flex-wrap:wrap;";
-  title.innerHTML = `<span>${decodeEntities(ch.title)}</span>${
+  title.innerHTML = `<span>${safeHtml(ch.title)}</span>${
     isFullyCached
       ? '<i class="bi bi-cloud-check-fill ds-offline-icon" style="color:var(--sys-primary,#0078d4);font-size:11px;" title="Available Offline (Fully Cached)"></i>'
       : ""
@@ -672,7 +673,7 @@ function feedItem(
     blBadge.style.cssText =
       "font-size:9px;background:var(--ds-danger-bg);color:var(--ds-danger-text);padding:1px 5px;border-radius:2px;border:1px solid var(--ds-danger-border);display:inline-flex;align-items:center;gap:3px;font-weight:600;";
     const labelPrefix = getBlacklistMode() === "warn" ? "Content Warning" : "Blacklisted";
-    blBadge.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${labelPrefix}: ${decodeEntities(matchedTags.join(", "))}`;
+    blBadge.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${labelPrefix}: ${safeHtml(matchedTags.join(", "))}`;
     metaRow.appendChild(blBadge);
   }
   info.appendChild(metaRow);
@@ -680,8 +681,7 @@ function feedItem(
   let bookmarked = isBookmarked;
   const bookmarkBtn = document.createElement("button");
   bookmarkBtn.type = "button";
-  bookmarkBtn.className = `win-button${bookmarked ? " primary" : ""}`;
-  bookmarkBtn.style.cssText = "font-size:11px;padding:2px 8px;flex-shrink:0;";
+  bookmarkBtn.className = `win-button ds-btn-compact${bookmarked ? " primary" : ""}`;
   bookmarkBtn.title = bookmarked ? "Remove from Read Later" : "Save for Read Later";
   bookmarkBtn.innerHTML = bookmarked
     ? '<i class="bi bi-bookmark-fill"></i> Saved'
@@ -719,23 +719,19 @@ function feedItem(
     bookmarkBtn.disabled = false;
   });
 
-  const isDoujin = Boolean(
-    (ch.tags ?? []).some((t) => (t.type ?? "").toLowerCase().includes("doujin")) ||
-    coverInfo.seriesType === "doujin",
-  );
-  const isSeries = Boolean(ch.series && !isDoujin);
+  const hasSeries = !coverInfo.isStandalone;
 
   const addToColBtn = document.createElement("button");
   addToColBtn.type = "button";
-  addToColBtn.className = "win-button";
-  addToColBtn.style.cssText = "font-size:11px;padding:2px 6px;flex-shrink:0;";
-  addToColBtn.title = isSeries
-    ? `Add series "${decodeEntities(ch.series || "")}" to collection`
+  addToColBtn.className = "win-button ds-btn-compact";
+  addToColBtn.style.flexShrink = "0";
+  addToColBtn.title = hasSeries
+    ? `Add series "${decodeEntities(coverInfo.seriesName || ch.series || "")}" to collection`
     : "Add to Favorites or custom collections";
   addToColBtn.innerHTML = '<i class="bi bi-folder-plus"></i>';
   addToColBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
-    if (isSeries) {
+    if (hasSeries) {
       const sPermalink =
         coverInfo.seriesPermalink ||
         (ch.series ? ch.series.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") : ch.permalink);
@@ -743,19 +739,8 @@ function feedItem(
         {
           permalink: sPermalink,
           title: coverInfo.seriesName || ch.series || ch.title,
-          kind: "series",
+          kind: (coverInfo.seriesType === "anthology" ? "anthology" : "series") as CollectionItemKind,
           cover: coverInfo.coverKey,
-        },
-        addToColBtn,
-      );
-    } else if (isDoujin) {
-      void openAddToCollectionModal(
-        {
-          permalink: ch.permalink,
-          title: ch.title,
-          kind: "doujin",
-          cover: coverInfo.coverKey,
-          parentSeriesName: ch.series || null,
         },
         addToColBtn,
       );
@@ -774,8 +759,8 @@ function feedItem(
 
   const extBtn = document.createElement("button");
   extBtn.type = "button";
-  extBtn.className = "win-button";
-  extBtn.style.cssText = "font-size:11px;padding:2px 6px;flex-shrink:0;";
+  extBtn.className = "win-button ds-btn-compact";
+  extBtn.style.flexShrink = "0";
   extBtn.title = `Open "${decodeEntities(ch.title)}" on Dynasty Scans in browser`;
   extBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
   extBtn.addEventListener("click", (ev) => {

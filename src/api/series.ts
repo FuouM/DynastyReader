@@ -1,10 +1,86 @@
 import { absUrl, COVERS_PREFIX, SITE_ROOT } from "../state";
 import { getCached, setCached, deleteCached, updateFollowedSeriesCover } from "../db";
-import { httpGetText, httpDownload, fileDelete, fileExists } from "./client";
+import { httpGetText, httpDownloadFull, fileDelete, fileExists, fileResolve } from "./client";
 import { fetchChapter } from "./chapter";
+import * as ipc from "../ipc";
 import type { Series } from "../types/api";
 
-const PH = window.PluginHost;
+/** Extracts a file extension from a URL (falls back to jpg). */
+function coverExtension(url: string): string {
+  const m = /\.([a-zA-Z0-9]+)(?:\?.*)?$/.exec(url);
+  return m ? m[1] : "jpg";
+}
+
+/**
+ * Downloads a cover image and only transcodes it into WebP if its raw size
+ * exceeds 100KB (bounded dimension + <=100KB budget via the backend media engine).
+ * If the download is already <= 100KB, it keeps the raw image without conversion.
+ */
+async function transcodeCover(url: string, rawOutPath: string, webpOutPath: string): Promise<string> {
+  const { absolutePath: absRawPath, sizeBytes } = await httpDownloadFull(url, rawOutPath, 30000);
+
+  // If the cover is already small (<= 100KB), keep the original download and do not convert.
+  if (sizeBytes > 0 && sizeBytes <= 100_000) {
+    return absRawPath;
+  }
+
+  let finalPath = absRawPath;
+  try {
+    const convResp = await ipc.ephemeralConvertImages({
+      quality: 75,
+      maxDimension: 256,
+      maxBytes: 100_000,
+      conversions: [[rawOutPath, webpOutPath]],
+    });
+    const results = convResp.converted;
+    if (results && results.length > 0 && results[0].output_path && !results[0].error) {
+      finalPath = results[0].output_path;
+      // Clean up the bulky raw download.
+      try {
+        await fileDelete(rawOutPath);
+      } catch {}
+    }
+  } catch (err) {
+    console.warn("Failed to transcode cover to WebP, keeping raw download:", err);
+  }
+
+  return finalPath;
+}
+
+/** Ordered candidate JSON endpoints for a series-style permalink. */
+export function seriesEndpoints(permalink: string, preferredType?: string): string[] {
+  const enc = encodeURIComponent(permalink);
+  const typeMap: Record<string, string> = {
+    series: `${SITE_ROOT}/series/${enc}.json`,
+    anthology: `${SITE_ROOT}/anthologies/${enc}.json`,
+    doujin: `${SITE_ROOT}/doujins/${enc}.json`,
+    doujinshi: `${SITE_ROOT}/doujins/${enc}.json`,
+    issue: `${SITE_ROOT}/issues/${enc}.json`,
+    author: `${SITE_ROOT}/authors/${enc}.json`,
+    artist: `${SITE_ROOT}/authors/${enc}.json`,
+    scanlator: `${SITE_ROOT}/scanlators/${enc}.json`,
+    group: `${SITE_ROOT}/scanlators/${enc}.json`,
+    pairing: `${SITE_ROOT}/pairings/${enc}.json`,
+    tag: `${SITE_ROOT}/tags/${enc}.json`,
+    general: `${SITE_ROOT}/tags/${enc}.json`,
+  };
+
+  const defaultEndpoints = [
+    `${SITE_ROOT}/series/${enc}.json`,
+    `${SITE_ROOT}/anthologies/${enc}.json`,
+    `${SITE_ROOT}/doujins/${enc}.json`,
+    `${SITE_ROOT}/issues/${enc}.json`,
+    `${SITE_ROOT}/authors/${enc}.json`,
+    `${SITE_ROOT}/tags/${enc}.json`,
+    `${SITE_ROOT}/pairings/${enc}.json`,
+    `${SITE_ROOT}/scanlators/${enc}.json`,
+  ];
+
+  const preferredUrl = preferredType ? typeMap[preferredType.toLowerCase()] : undefined;
+  return preferredUrl
+    ? [preferredUrl, ...defaultEndpoints.filter((u) => u !== preferredUrl)]
+    : defaultEndpoints;
+}
 
 /** Series / anthology / doujin / author / tag detail. `force` skips the cache (used by the Refresh button). */
 export async function fetchSeries(
@@ -18,39 +94,8 @@ export async function fetchSeries(
     if (cached) return JSON.parse(cached.json_payload) as Series;
   }
 
-  const typeMap: Record<string, string> = {
-    series: `${SITE_ROOT}/series/${encodeURIComponent(permalink)}.json`,
-    anthology: `${SITE_ROOT}/anthologies/${encodeURIComponent(permalink)}.json`,
-    doujin: `${SITE_ROOT}/doujins/${encodeURIComponent(permalink)}.json`,
-    doujinshi: `${SITE_ROOT}/doujins/${encodeURIComponent(permalink)}.json`,
-    issue: `${SITE_ROOT}/issues/${encodeURIComponent(permalink)}.json`,
-    author: `${SITE_ROOT}/authors/${encodeURIComponent(permalink)}.json`,
-    artist: `${SITE_ROOT}/authors/${encodeURIComponent(permalink)}.json`,
-    scanlator: `${SITE_ROOT}/scanlators/${encodeURIComponent(permalink)}.json`,
-    group: `${SITE_ROOT}/scanlators/${encodeURIComponent(permalink)}.json`,
-    pairing: `${SITE_ROOT}/pairings/${encodeURIComponent(permalink)}.json`,
-    tag: `${SITE_ROOT}/tags/${encodeURIComponent(permalink)}.json`,
-    general: `${SITE_ROOT}/tags/${encodeURIComponent(permalink)}.json`,
-  };
-
-  const defaultEndpoints = [
-    `${SITE_ROOT}/series/${encodeURIComponent(permalink)}.json`,
-    `${SITE_ROOT}/anthologies/${encodeURIComponent(permalink)}.json`,
-    `${SITE_ROOT}/doujins/${encodeURIComponent(permalink)}.json`,
-    `${SITE_ROOT}/issues/${encodeURIComponent(permalink)}.json`,
-    `${SITE_ROOT}/authors/${encodeURIComponent(permalink)}.json`,
-    `${SITE_ROOT}/tags/${encodeURIComponent(permalink)}.json`,
-    `${SITE_ROOT}/pairings/${encodeURIComponent(permalink)}.json`,
-    `${SITE_ROOT}/scanlators/${encodeURIComponent(permalink)}.json`,
-  ];
-
-  const preferredUrl = preferredType ? typeMap[preferredType.toLowerCase()] : undefined;
-  const endpoints = preferredUrl
-    ? [preferredUrl, ...defaultEndpoints.filter((u) => u !== preferredUrl)]
-    : defaultEndpoints;
-
   let lastErr: Error | null = null;
-  for (const url of endpoints) {
+  for (const url of seriesEndpoints(permalink, preferredType)) {
     try {
       const { status, body, etag } = await httpGetText(url);
       if (status === 200 && body) {
@@ -76,7 +121,7 @@ export async function getSeriesCover(
   coverUrl: string | null,
 ): Promise<string | null> {
   if (!coverUrl) return null;
-  const key = `cover:${permalink}`;
+  const key = `cover:series:${permalink}`;
   const cached = await getCached(key);
   if (cached && cached.json_payload) {
     // The cached path may point at a file that was purged (e.g. "Clear Cached
@@ -86,34 +131,12 @@ export async function getSeriesCover(
     } catch {}
     await deleteCached(key);
   }
-  const extMatch = /\.([a-zA-Z0-9]+)(?:\?.*)?$/.exec(coverUrl);
-  const ext = extMatch ? extMatch[1] : "jpg";
-  const tmpOutPath = `${COVERS_PREFIX}/raw_${permalink}.${ext}`;
+  const ext = coverExtension(coverUrl);
+  const rawOutPath = `${COVERS_PREFIX}/raw_${permalink}.${ext}`;
   const webpOutPath = `${COVERS_PREFIX}/${permalink}.webp`;
 
-  // 1. Download the original cover.
-  const absRawPath = await httpDownload(absUrl(coverUrl), tmpOutPath, 30000);
-
-  // 2. Transcode to a bounded, size-capped WebP thumbnail via backend media engine.
-  let finalPath = absRawPath;
-  try {
-    const convResp = await PH.callService("EphemeralConvertImages", {
-      quality: 75,
-      max_dimension: 256,
-      max_bytes: 100_000,
-      conversions: [[tmpOutPath, webpOutPath]],
-    });
-    const results = convResp?.ConvertImagesResult?.converted;
-    if (results && results.length > 0 && results[0].output_path && !results[0].error) {
-      finalPath = results[0].output_path;
-      // Clean up the bulky raw download.
-      try {
-        await fileDelete(tmpOutPath);
-      } catch {}
-    }
-  } catch (err) {
-    console.warn("Failed to transcode series cover to WebP, keeping raw download:", err);
-  }
+  // Download the original cover and only transcode to WebP if raw download exceeds 100KB.
+  const finalPath = await transcodeCover(absUrl(coverUrl), rawOutPath, webpOutPath);
 
   await setCached(key, "cover", finalPath);
   return finalPath;
@@ -156,12 +179,7 @@ export async function getLocalCover(coverKey: string): Promise<string | null> {
   if (!cached || !cached.json_payload) return null;
 
   // Verify file still exists on disk
-  try {
-    const resp = await PH.callService("FileExists", { path: cached.json_payload });
-    if (resp?.FileExistsResult?.exists) {
-      return cached.json_payload;
-    }
-  } catch {}
+  if (await fileResolve(cached.json_payload)) return cached.json_payload;
 
   // File is missing or deleted from disk; clean up stale database entry
   await deleteCached(key);
@@ -193,34 +211,12 @@ export async function getChapterCover(
     await deleteCached(key);
   }
 
-  const extMatch = /\.([a-zA-Z0-9]+)(?:\?.*)?$/.exec(firstPageUrl);
-  const ext = extMatch ? extMatch[1] : "jpg";
-  const tmpOutPath = `${COVERS_PREFIX}/raw_ch_${permalink}.${ext}`;
+  const ext = coverExtension(firstPageUrl);
+  const rawOutPath = `${COVERS_PREFIX}/raw_ch_${permalink}.${ext}`;
   const webpOutPath = `${COVERS_PREFIX}/ch_${permalink}.webp`;
 
-  // 1. Download raw first page
-  const absRawPath = await httpDownload(absUrl(firstPageUrl), tmpOutPath, 30000);
-
-  // 2. Transcode to WebP thumbnail via backend media engine (bounded + <=100KB)
-  let finalPath = absRawPath;
-  try {
-    const convResp = await PH.callService("EphemeralConvertImages", {
-      quality: 75,
-      max_dimension: 256,
-      max_bytes: 100_000,
-      conversions: [[tmpOutPath, webpOutPath]],
-    });
-    const results = convResp?.ConvertImagesResult?.converted;
-    if (results && results.length > 0 && results[0].output_path && !results[0].error) {
-      finalPath = results[0].output_path;
-      // Clean up bulky raw download
-      try {
-        await fileDelete(tmpOutPath);
-      } catch {}
-    }
-  } catch (err) {
-    console.warn("Failed to transcode cover to WebP, keeping raw download:", err);
-  }
+  // Download the raw first page and only transcode to WebP if raw download exceeds 100KB.
+  const finalPath = await transcodeCover(absUrl(firstPageUrl), rawOutPath, webpOutPath);
 
   await setCached(key, "cover", finalPath);
   return finalPath;

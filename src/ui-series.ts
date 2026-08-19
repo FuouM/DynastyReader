@@ -4,7 +4,7 @@
  * "chapter → reader" route carries the full ordered chapter list for prev/next.
  */
 
-import { Route, ChapterRef, decodeEntities, navigate, setActions, setBanner } from "./state";
+import { Route, ChapterRef, decodeEntities, navigate, safeHtml, setActions, setBanner } from "./state";
 import {
   SeriesProgressRow,
   followSeries,
@@ -17,7 +17,7 @@ import {
   removeBlacklistedSeries,
   isSeriesBlacklisted,
 } from "./db";
-import { Series, SeriesTag, fetchSeries, getSeriesCover, openExternal } from "./api";
+import { Series, SeriesTag, fetchSeries, fetchChapter, getSeriesCover, openExternal } from "./api";
 import { renderTagPill } from "./components/tag-pill";
 import { renderCoverImage } from "./components/cover";
 import { renderLoading } from "./components/loading";
@@ -45,6 +45,19 @@ async function load(container: HTMLElement, permalink: string, force: boolean): 
   try {
     series = await fetchSeries(permalink, force);
   } catch (err) {
+    // If fetching series failed, check if this permalink is actually a standalone chapter / oneshot
+    try {
+      const ch = await fetchChapter(permalink);
+      if (ch && ((ch.pages && ch.pages.length > 0) || ch.title)) {
+        navigate({
+          view: "reader",
+          chapterPermalink: permalink,
+          chapterTitle: ch.title || permalink,
+        });
+        return;
+      }
+    } catch {}
+
     container.innerHTML = "";
     const msg = err instanceof Error ? err.message : String(err);
     setBanner(`Failed to load series: ${msg}`);
@@ -379,7 +392,7 @@ function buildBody(
       card.className = "ds-row";
       card.style.cssText =
         "padding:4px 6px;background:var(--sys-bg-active, #f5f5f5);border:1px solid var(--sys-border-light, #e0e0e0);border-radius:3px;cursor:pointer;align-items:center;gap:6px;";
-      card.innerHTML = `<i class="bi bi-book" style="color:var(--sys-primary,#0078d4);"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;">${decodeEntities(tg.name)}</span><span class="ds-muted" style="font-size:10px;">${tg.type}</span>`;
+      card.innerHTML = `<i class="bi bi-book" style="color:var(--sys-primary,#0078d4);"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;">${safeHtml(tg.name)}</span><span class="ds-muted" style="font-size:10px;">${tg.type}</span>`;
       card.addEventListener("click", () => {
         navigate({
           view: "series",
@@ -420,8 +433,7 @@ function buildBody(
 
   const sortBtn = document.createElement("button");
   sortBtn.type = "button";
-  sortBtn.className = "win-button";
-  sortBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+  sortBtn.className = "win-button ds-btn-compact";
 
   const updateSortBtn = () => {
     sortBtn.innerHTML =
@@ -498,7 +510,7 @@ function chapterRow(
   const title = document.createElement("div");
   title.className = "ds-chapter-title";
   title.style.cssText = "display:inline-flex;align-items:center;gap:4px;";
-  title.innerHTML = `<span>${decodeEntities(ch.title)}</span>${
+  title.innerHTML = `<span>${safeHtml(ch.title)}</span>${
     isFullyCached
       ? '<i class="bi bi-cloud-check-fill ds-offline-icon" style="color:var(--sys-primary,#0078d4);font-size:11px;" title="Available Offline (Fully Cached)"></i>'
       : ""

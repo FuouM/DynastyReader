@@ -1,12 +1,12 @@
-//! `open_url` / `open_logs_dir` backends.
+//! `openUrl` / `openLogsDir` backends.
 //!
-//! `open_url` backs `PluginHost.system.openUrl` (used by `src/api/navigation.ts`
-//! for external dynasty-scans.com links). Only `http`/`https` are allowed so a
-//! hostile link cannot reach the OS shell via `file://`, `smb:`, `mailto:`, etc.
-//! `open_logs_dir` reveals the rolling log folder in Explorer so users can
-//! attach the log file to bug reports.
+//! `openUrl` backs the old `PluginHost.system.openUrl` surface (used by
+//! `src/api/navigation.ts` for external dynasty-scans.com links). Only
+//! `http`/`https` are allowed so a hostile link cannot reach the OS shell via
+//! `file://`, `smb:`, `mailto:`, etc. `openLogsDir` reveals the rolling log
+//! folder in Explorer so users can attach the log file to bug reports.
 
-#[tauri::command]
+#[tauri::command(rename = "openUrl")]
 pub fn open_url(url: String) -> Result<serde_json::Value, String> {
     let lower = url.to_ascii_lowercase();
     if !(lower.starts_with("http://") || lower.starts_with("https://")) {
@@ -16,7 +16,7 @@ pub fn open_url(url: String) -> Result<serde_json::Value, String> {
     Ok(serde_json::json!({}))
 }
 
-#[tauri::command]
+#[tauri::command(rename = "openLogsDir")]
 pub fn open_logs_dir() -> Result<serde_json::Value, String> {
     let logs_dir = crate::paths::data_root().join("logs");
     std::fs::create_dir_all(&logs_dir)

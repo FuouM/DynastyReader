@@ -4,8 +4,7 @@
  */
 
 import { el, icon } from "./dom";
-
-const PH = window.PluginHost;
+import { convertFileSrc } from "../ipc";
 
 /** Builds a cover <img> that falls back to a placeholder on load error. */
 export function renderCoverImage(
@@ -23,7 +22,7 @@ export function renderCoverImage(
   if (isValidLocalPath && path) {
     const img = el("img", { class: imgClass, title: alt });
     img.alt = alt;
-    img.src = PH.convertFileSrc(path);
+    img.src = convertFileSrc(path);
     img.addEventListener("error", () => {
       img.style.display = "none";
       img.parentElement?.replaceChild(renderCoverPlaceholder(placeholderClass), img);
@@ -51,7 +50,7 @@ export function renderFeedCover(path: string | null, coverKey: string, cssText =
     img.width = 42;
     img.height = 58;
     img.decoding = "async";
-    img.src = PH.convertFileSrc(path);
+    img.src = convertFileSrc(path);
     img.addEventListener("error", () => {
       img.style.display = "none";
       img.parentElement?.appendChild(

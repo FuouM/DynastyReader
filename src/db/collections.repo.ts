@@ -142,9 +142,16 @@ export async function addItemToCollection(
   }
 
   await execute(
-    `INSERT OR REPLACE INTO collection_items
+    `INSERT INTO collection_items
      (collection_id, item_permalink, item_title, item_kind, cover, parent_series_permalink, parent_series_name, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(collection_id, item_permalink) DO UPDATE SET
+       item_title = excluded.item_title,
+       item_kind = excluded.item_kind,
+       cover = excluded.cover,
+       parent_series_permalink = excluded.parent_series_permalink,
+       parent_series_name = excluded.parent_series_name,
+       created_at = excluded.created_at`,
     [
       collectionId,
       item.item_permalink.trim(),

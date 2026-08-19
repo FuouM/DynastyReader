@@ -78,42 +78,36 @@ export class ReaderToolbar {
     const prevChapterBtn = document.createElement("button");
     prevChapterBtn.type = "button";
     prevChapterBtn.className = "win-button";
-    prevChapterBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     prevChapterBtn.title = "Previous Chapter";
     prevChapterBtn.innerHTML = '<i class="bi bi-chevron-double-left"></i> Ch';
 
     const nextChapterBtn = document.createElement("button");
     nextChapterBtn.type = "button";
     nextChapterBtn.className = "win-button";
-    nextChapterBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     nextChapterBtn.title = "Next Chapter";
     nextChapterBtn.innerHTML = 'Ch <i class="bi bi-chevron-double-right"></i>';
 
     const prevPageBtn = document.createElement("button");
     prevPageBtn.type = "button";
     prevPageBtn.className = "win-button";
-    prevPageBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     prevPageBtn.title = "Previous Page (Left Arrow)";
     prevPageBtn.innerHTML = '<i class="bi bi-chevron-left"></i>';
 
     const nextPageBtn = document.createElement("button");
     nextPageBtn.type = "button";
     nextPageBtn.className = "win-button";
-    nextPageBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     nextPageBtn.title = "Next Page (Right Arrow / Space)";
     nextPageBtn.innerHTML = '<i class="bi bi-chevron-right"></i>';
 
     const firstPageBtn = document.createElement("button");
     firstPageBtn.type = "button";
     firstPageBtn.className = "win-button";
-    firstPageBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     firstPageBtn.title = "Jump to First Page";
     firstPageBtn.innerHTML = '<i class="bi bi-chevron-double-left"></i>';
 
     const lastPageBtn = document.createElement("button");
     lastPageBtn.type = "button";
     lastPageBtn.className = "win-button";
-    lastPageBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     lastPageBtn.title = "Jump to Last Page";
     lastPageBtn.innerHTML = '<i class="bi bi-chevron-double-right"></i>';
 
@@ -140,7 +134,6 @@ export class ReaderToolbar {
     const scrollLockBtn = document.createElement("button");
     scrollLockBtn.type = "button";
     scrollLockBtn.className = `win-button${c.scrollLock ? " primary" : ""}`;
-    scrollLockBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     scrollLockBtn.title = "Scroll Lock: mouse wheel flips exactly one page at a time";
     scrollLockBtn.innerHTML = c.scrollLock
       ? '<i class="bi bi-lock-fill"></i> Scroll Lock'
@@ -150,7 +143,6 @@ export class ReaderToolbar {
     const modeBtn = document.createElement("button");
     modeBtn.type = "button";
     modeBtn.className = "win-button";
-    modeBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     modeBtn.title = "Toggle Horizontal / Vertical reading mode";
     modeBtn.innerHTML = c.isHorizontal
       ? '<i class="bi bi-distribute-vertical"></i> Scroll'
@@ -160,27 +152,23 @@ export class ReaderToolbar {
     const spreadBtn = document.createElement("button");
     spreadBtn.type = "button";
     spreadBtn.className = "win-button";
-    spreadBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     spreadBtn.innerHTML = '<i class="bi bi-columns-gap"></i> Spread';
 
     // Reading direction toggle (RTL default / LTR via tag or manual)
     const dirBtn = document.createElement("button");
     dirBtn.type = "button";
     dirBtn.className = "win-button";
-    dirBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     dirBtn.innerHTML = '<i class="bi bi-arrow-left-right"></i> RTL';
 
     // Cover offset toggle (standalone cover page, Paged+Spread only)
     const coverBtn = document.createElement("button");
     coverBtn.type = "button";
     coverBtn.className = "win-button";
-    coverBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     coverBtn.innerHTML = '<i class="bi bi-book-half"></i> Cover 1st';
 
     // Fit mode selector
     const fitSelect = document.createElement("select");
     fitSelect.className = "win-input";
-    fitSelect.style.cssText = "font-size:11px;padding:2px 4px;";
     fitSelect.innerHTML =
       '<option value="width">Fit Width</option>' +
       '<option value="height">Fit Height</option>' +
@@ -191,7 +179,6 @@ export class ReaderToolbar {
     const fullscreenBtn = document.createElement("button");
     fullscreenBtn.type = "button";
     fullscreenBtn.className = "win-button";
-    fullscreenBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     fullscreenBtn.title = "Toggle Fullscreen (F)";
     fullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i> Fullscreen';
 
@@ -199,28 +186,25 @@ export class ReaderToolbar {
     const themeBtn = document.createElement("button");
     themeBtn.type = "button";
     themeBtn.className = "win-button";
-    themeBtn.style.cssText = "font-size:11px;padding:2px 8px;";
     themeBtn.title = "Toggle Light / Dark Theme (T)";
 
     // Zoom In / Out buttons (rightmost)
     const zoomOutBtn = document.createElement("button");
     zoomOutBtn.type = "button";
     zoomOutBtn.className = "win-button";
-    zoomOutBtn.style.cssText = "font-size:11px;padding:2px 7px;";
     zoomOutBtn.title = "Zoom Out (Ctrl - / -)";
     zoomOutBtn.innerHTML = '<i class="bi bi-dash-lg"></i>';
 
     const zoomResetBtn = document.createElement("button");
     zoomResetBtn.type = "button";
     zoomResetBtn.className = "win-button";
-    zoomResetBtn.style.cssText = "font-size:11px;padding:2px 6px;min-width:44px;";
+    zoomResetBtn.style.minWidth = "44px";
     zoomResetBtn.title = "Reset Zoom (Ctrl 0)";
     zoomResetBtn.textContent = "100%";
 
     const zoomInBtn = document.createElement("button");
     zoomInBtn.type = "button";
     zoomInBtn.className = "win-button";
-    zoomInBtn.style.cssText = "font-size:11px;padding:2px 7px;";
     zoomInBtn.title = "Zoom In (Ctrl + / +)";
     zoomInBtn.innerHTML = '<i class="bi bi-plus-lg"></i>';
 

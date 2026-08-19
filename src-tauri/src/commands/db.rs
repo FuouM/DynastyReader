@@ -1,4 +1,4 @@
-//! `PluginDbQuery` / `PluginDbExecute` backends.
+//! `dbExecute` / `dbQuery` / `dbExecuteBatch` backends.
 //!
 //! Mirrors the Curator sandboxed SQLite primitives
 //! (`curator-db/src/plugin_db.rs`): a connection pool keyed by `db_name` under
@@ -38,8 +38,18 @@ fn open(db_name: &str) -> Result<Connection, String> {
             .map_err(|e| format!("failed creating database directory: {e}"))?;
     }
     let conn = Connection::open(&path).map_err(|e| format!("failed opening database: {e}"))?;
+    // WAL tuned for the app's read-heavy, single-writer workload: NORMAL
+    // synchronous keeps commit latency low without sacrificing durability on
+    // checkpoint, journal_size_limit bounds the WAL growth, and
+    // wal_autocheckpoint keeps it from ballooning.
     conn.pragma_update(None, "journal_mode", "WAL")
         .map_err(|e| format!("failed enabling WAL: {e}"))?;
+    conn.pragma_update(None, "synchronous", "NORMAL")
+        .map_err(|e| format!("failed tuning synchronous mode: {e}"))?;
+    conn.pragma_update(None, "journal_size_limit", 64 * 1024 * 1024)
+        .map_err(|e| format!("failed tuning journal size limit: {e}"))?;
+    conn.pragma_update(None, "wal_autocheckpoint", 1000)
+        .map_err(|e| format!("failed tuning wal autocheckpoint: {e}"))?;
     conn.pragma_update(None, "foreign_keys", "ON")
         .map_err(|e| format!("failed enabling foreign keys: {e}"))?;
     conn.busy_timeout(std::time::Duration::from_millis(5000))
@@ -98,7 +108,7 @@ fn row_to_json(row: &rusqlite::Row<'_>) -> Result<Value, rusqlite::Error> {
     Ok(Value::Object(obj))
 }
 
-#[tauri::command]
+#[tauri::command(rename = "dbExecute")]
 pub async fn db_execute(
     state: State<'_, DbPool>,
     db_name: String,
@@ -121,7 +131,7 @@ pub async fn db_execute(
     Ok(json!({ "rows_affected": affected }))
 }
 
-#[tauri::command]
+#[tauri::command(rename = "dbQuery")]
 pub async fn db_query(
     state: State<'_, DbPool>,
     db_name: String,
@@ -149,6 +159,49 @@ pub async fn db_query(
     .await
     .map_err(|e| format!("db query task failed: {e}"))??;
     Ok(json!({ "rows": rows }))
+}
+
+/// Runs multiple write statements inside one transaction so a multi-step
+/// cleanup can never leave the DB in a half-applied state. Each statement has
+/// its own optional parameter list (one list per statement, `?` placeholders).
+#[tauri::command(rename = "dbExecuteBatch")]
+pub async fn db_execute_batch(
+    state: State<'_, DbPool>,
+    db_name: String,
+    statements: Vec<String>,
+    params: Option<Vec<Option<Vec<Value>>>>,
+) -> Result<serde_json::Value, String> {
+    let conn = {
+        let mut pool = state.0.lock().unwrap_or_else(|e| e.into_inner());
+        get_conn(&mut pool, &db_name)?
+    };
+    let counts = tokio::task::spawn_blocking(move || -> Result<Vec<usize>, String> {
+        let conn = conn.lock().unwrap_or_else(|e| e.into_inner());
+        let tx = conn
+            .unchecked_transaction()
+            .map_err(|e| format!("db execute batch begin failed: {e}"))?;
+        let param_lists = params.unwrap_or_default();
+        let mut counts = Vec::with_capacity(statements.len());
+        for (i, sql) in statements.iter().enumerate() {
+            let values: Vec<rusqlite::types::Value> = param_lists
+                .get(i)
+                .and_then(|p| p.clone())
+                .unwrap_or_default()
+                .iter()
+                .map(bind_value)
+                .collect();
+            let n = tx
+                .execute(sql, params_from_iter(values))
+                .map_err(|e| format!("db execute batch failed: {e}"))?;
+            counts.push(n);
+        }
+        tx.commit()
+            .map_err(|e| format!("db execute batch commit failed: {e}"))?;
+        Ok(counts)
+    })
+    .await
+    .map_err(|e| format!("db execute batch task failed: {e}"))??;
+    Ok(json!({ "rows_affected": counts }))
 }
 
 #[cfg(test)]

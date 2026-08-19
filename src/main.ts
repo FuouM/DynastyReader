@@ -22,12 +22,14 @@ window.addEventListener("unload", () => {
   });
 });
 
-import "./host-shim";
 import "./styles/curator-ui-base.css";
+import "./styles/index.css";
+import "./styles/library.css";
+import "./styles/browse.css";
+import "./styles/cache.css";
+import "./styles/reader.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-
-// Plugin entry point — host-shim's registerTab mounts it immediately.
-// index.ts imports its per-view CSS via `?inline` and injects a <style>
-// element itself, so no per-view stylesheet imports are needed here.
+// Plugin entry point — index.ts builds the tab DOM and mounts it into #app
+// immediately. Per-view stylesheets are imported above alongside the base CSS.
 import "./index";

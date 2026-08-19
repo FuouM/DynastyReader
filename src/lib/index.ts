@@ -8,4 +8,5 @@
 export { formatBytes } from "./format";
 
 export { createPluginDb } from "./db";
-export type { PluginDb, Row } from "./db";
+export type { PluginDb } from "./db";
+export type { Row } from "../types/db";

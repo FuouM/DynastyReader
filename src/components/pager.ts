@@ -7,7 +7,6 @@ import { el } from "./dom";
 
 export interface PagerOptions {
   cssText?: string;
-  ariaLabel?: string;
 }
 
 export function renderPager(
@@ -26,8 +25,7 @@ export function renderPager(
   // First Button (<<)
   const first = el("button", {
     type: "button",
-    class: "win-button ds-btn-sm",
-    style: "font-size:10px;padding:1px 6px;",
+    class: "win-button ds-btn-xs",
     title: "First page (Page 1)",
   });
   first.innerHTML = '<i class="bi bi-chevron-double-left"></i>';
@@ -39,8 +37,7 @@ export function renderPager(
   // Prev Button (<)
   const prev = el("button", {
     type: "button",
-    class: "win-button ds-btn-sm",
-    style: "font-size:10px;padding:1px 6px;",
+    class: "win-button ds-btn-xs",
     title: "Previous page",
   });
   prev.innerHTML = '<i class="bi bi-chevron-left"></i>';
@@ -79,8 +76,7 @@ export function renderPager(
 
   const goBtn = el("button", {
     type: "button",
-    class: "win-button ds-btn-sm",
-    style: "font-size:10px;padding:1px 5px;",
+    class: "win-button ds-btn-xs",
     title: "Jump to page",
   });
   goBtn.textContent = "Go";
@@ -111,8 +107,7 @@ export function renderPager(
   // Next Button (>)
   const next = el("button", {
     type: "button",
-    class: "win-button ds-btn-sm",
-    style: "font-size:10px;padding:1px 6px;",
+    class: "win-button ds-btn-xs",
     title: "Next page",
   });
   next.innerHTML = '<i class="bi bi-chevron-right"></i>';
@@ -124,8 +119,7 @@ export function renderPager(
   // Last Button (>>)
   const last = el("button", {
     type: "button",
-    class: "win-button ds-btn-sm",
-    style: "font-size:10px;padding:1px 6px;",
+    class: "win-button ds-btn-xs",
     title: `Last page (Page ${totalPages})`,
   });
   last.innerHTML = '<i class="bi bi-chevron-double-right"></i>';

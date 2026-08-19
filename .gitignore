@@ -1,4 +1,5 @@
 .data/
+.deprecated/
 
 .rust/
 .cargo/

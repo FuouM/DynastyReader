@@ -1,5 +1,5 @@
-import { decodeEntities } from "../state";
-import { getSavedUiScale } from "./settings-modal";
+import { safeHtml } from "../state";
+import { openModal } from "./modal";
 
 /**
  * Renders an accessible, WinForms-style Content/Trigger Warning confirmation modal
@@ -10,75 +10,48 @@ export function showBlacklistWarningModal(
   matchedTags: string[],
   onProceed: () => void,
 ): void {
-  const backdrop = document.createElement("div");
-  backdrop.className = "ds-modal-backdrop";
-
-  const scale = getSavedUiScale();
-  const modal = document.createElement("div");
-  modal.className = "ds-modal-window";
-  modal.style.cssText = `width:380px;zoom:${scale};max-height:calc((100vh - 40px) / ${scale});max-width:calc((100vw - 40px) / ${scale});`;
-
   const tagsListHtml = matchedTags
     .map(
       (t) =>
-        `<span class="tag-pill" style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);font-weight:600;font-size:11px;padding:2px 7px;"><i class="bi bi-shield-slash-fill"></i> ${decodeEntities(t)}</span>`,
+        `<span class="tag-pill" style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);font-weight:600;font-size:11px;padding:2px 7px;"><i class="bi bi-shield-slash-fill"></i> ${safeHtml(t)}</span>`,
     )
     .join("");
 
-  modal.innerHTML = `
-    <div class="ds-modal-header">
-      <span class="ds-modal-title" style="color:#d9534f;">
-        <i class="bi bi-exclamation-triangle-fill"></i> Content Warning
-      </span>
-      <button type="button" class="win-button ds-modal-close" id="ds-tw-close" title="Close">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
-    <div class="ds-modal-body" style="display:flex;flex-direction:column;gap:8px;">
-      <div style="font-size:12px;font-weight:600;color:var(--sys-window-text,#111);word-break:break-word;">
-        ${decodeEntities(title)}
+  const { modal, close } = openModal({
+    title:
+      '<span style="color:#d9534f;"><i class="bi bi-exclamation-triangle-fill"></i> Content Warning</span>',
+    width: 380,
+    body: `
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:12px;font-weight:600;color:var(--sys-window-text,#111);word-break:break-word;">
+          ${safeHtml(title)}
+        </div>
+        <div style="font-size:11px;color:var(--sys-text-muted,#555);line-height:1.4;">
+          This item matches tags or series on your blacklist:
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow-y:auto;padding:2px 0;">
+          ${tagsListHtml}
+        </div>
+        <div class="ds-muted" style="font-size:11px;color:#777;margin-top:2px;">
+          Do you still want to proceed and open it?
+        </div>
       </div>
-      <div style="font-size:11px;color:var(--sys-text-muted,#555);line-height:1.4;">
-        This item matches tags or series on your blacklist:
+    `,
+    footer: `
+      <div style="display:flex;justify-content:flex-end;gap:8px;width:100%;">
+        <button type="button" class="win-button ds-modal-cancel" style="min-width:70px;">Cancel</button>
+        <button type="button" class="win-button primary ds-modal-proceed" style="min-width:85px;background:#dc3545;border-color:#b02a37;color:#fff;">
+          <i class="bi bi-box-arrow-in-right"></i> Proceed
+        </button>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow-y:auto;padding:2px 0;">
-        ${tagsListHtml}
-      </div>
-      <div class="ds-muted" style="font-size:11px;color:#777;margin-top:2px;">
-        Do you still want to proceed and open it?
-      </div>
-    </div>
-    <div class="ds-modal-footer" style="display:flex;justify-content:flex-end;gap:8px;padding-top:8px;border-top:1px solid var(--sys-border-light,#ccc);flex-shrink:0;">
-      <button type="button" class="win-button" id="ds-tw-cancel" style="min-width:70px;">Cancel</button>
-      <button type="button" class="win-button primary" id="ds-tw-proceed" style="min-width:85px;background:#dc3545;border-color:#b02a37;color:#fff;">
-        <i class="bi bi-box-arrow-in-right"></i> Proceed
-      </button>
-    </div>
-  `;
+    `,
+  });
 
-  backdrop.appendChild(modal);
-  document.body.appendChild(backdrop);
-
-  const close = (): void => {
-    window.removeEventListener("keydown", onKeyDown);
-    backdrop.remove();
-  };
-
-  const onKeyDown = (ev: KeyboardEvent): void => {
-    if (ev.key === "Escape") {
-      ev.preventDefault();
-      close();
-    }
-  };
-  window.addEventListener("keydown", onKeyDown);
-
-  modal.querySelector("#ds-tw-close")?.addEventListener("click", close);
-  modal.querySelector("#ds-tw-cancel")?.addEventListener("click", close);
-  modal.querySelector("#ds-tw-proceed")?.addEventListener("click", () => {
+  const cancelBtn = modal.querySelector(".ds-modal-cancel");
+  const proceedBtn = modal.querySelector(".ds-modal-proceed");
+  cancelBtn?.addEventListener("click", close);
+  proceedBtn?.addEventListener("click", () => {
     close();
     onProceed();
-  });
-  backdrop.addEventListener("click", (ev) => {
-    if (ev.target === backdrop) close();
   });
 }
