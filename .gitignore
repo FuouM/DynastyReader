@@ -9,6 +9,14 @@ node_modules
 
 /dist/
 
+.plans/
+implementation_plan_*.md
+
+# symlinks from Project Curator locally
+
+AGENTS.md
+docs
+
 # Tauri auto-generated permission schemas
 /src-tauri/gen/
 
