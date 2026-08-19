@@ -1,14 +1,21 @@
 /**
- * Library view: Followed series, Bookmarks, and Reading history.
+ * Library view: Followed series, Custom Collections / Favorites, Bookmarks, and Reading history.
  * All data is local (SQLite) — fully offline-safe, no network traffic.
  */
 
 import { Route, decodeEntities, formatDate, navigate, setActions, setBanner } from "./state";
-import { openExternal, refreshFollowedSeriesCover } from "./api";
+import {
+  openExternal,
+  refreshFollowedSeriesCover,
+  getOrHydrateSeriesCover,
+  getOrHydrateItemCover,
+} from "./api";
 import {
   FollowedSeriesRow,
   BookmarkRow,
   HistoryRow,
+  CollectionRow,
+  CollectionItemRow,
   getFollowedSeriesPage,
   getBookmarksPage,
   getHistoryPage,
@@ -16,11 +23,19 @@ import {
   removeBookmark,
   removeHistory,
   clearHistory,
+  getCollections,
+  getCollectionById,
+  createCollection,
+  deleteCollection,
+  getCollectionItems,
+  removeItemFromCollection,
+  updateCollectionItemCover,
 } from "./db";
 import { createConfirmDeleteButton } from "./components/button";
 import { renderCoverImage } from "./components/cover";
 import { renderPager } from "./components/pager";
 import { attachDelayedLoading } from "./components/loading";
+import { setupInputClearButtons } from "./components/input-field";
 
 function createLibraryPanel(titleHtml: string): {
   panel: HTMLElement;
@@ -54,7 +69,7 @@ export function renderLibrary(container: HTMLElement, _route: Route): void {
   if (existingGrid) {
     const bodies = container.querySelectorAll<HTMLElement>(".ds-library-panel-body");
     const footers = container.querySelectorAll<HTMLElement>(".ds-library-panel-footer");
-    if (bodies.length >= 3 && footers.length >= 3) {
+    if (bodies.length >= 4 && footers.length >= 4) {
       setupLibraryActions(
         bodies[0],
         footers[0],
@@ -62,8 +77,21 @@ export function renderLibrary(container: HTMLElement, _route: Route): void {
         footers[1],
         bodies[2],
         footers[2],
+        bodies[3],
+        footers[3],
+        container,
       );
-      void loadAll(bodies[0], footers[0], bodies[1], footers[1], bodies[2], footers[2]);
+      void loadAll(
+        bodies[0],
+        footers[0],
+        bodies[1],
+        footers[1],
+        bodies[2],
+        footers[2],
+        bodies[3],
+        footers[3],
+        container,
+      );
       return;
     }
   }
@@ -78,6 +106,7 @@ export function renderLibrary(container: HTMLElement, _route: Route): void {
   grid.className = "ds-library-grid";
   root.appendChild(grid);
 
+  // 1. Followed Series
   const {
     panel: followedPanel,
     body: followedBody,
@@ -85,6 +114,35 @@ export function renderLibrary(container: HTMLElement, _route: Route): void {
   } = createLibraryPanel('<i class="bi bi-bookmark-heart"></i> Followed Series');
   grid.appendChild(followedPanel);
 
+  // 2. Collections & Favorites
+  const {
+    panel: collectionsPanel,
+    head: collectionsHead,
+    body: collectionsBody,
+    footer: collectionsFooter,
+  } = createLibraryPanel(
+    '<span class="ds-flex-row"><i class="bi bi-folder-star"></i> Collections</span>',
+  );
+
+  const newColBtn = document.createElement("button");
+  newColBtn.type = "button";
+  newColBtn.className = "win-button";
+  newColBtn.style.cssText =
+    "font-size:10px;padding:0 5px;height:18px;line-height:18px;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:3px;";
+  newColBtn.innerHTML = '<i class="bi bi-plus-lg" style="font-size:9px;line-height:1;"></i> <span>New</span>';
+  newColBtn.title = "Create a new custom collection";
+  newColBtn.addEventListener("click", () => {
+    openCreateCollectionDialog(() => {
+      void loadCollections(collectionsBody, collectionsFooter, container);
+    });
+  });
+
+  collectionsHead.style.cssText =
+    "display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;";
+  collectionsHead.appendChild(newColBtn);
+  grid.appendChild(collectionsPanel);
+
+  // 3. Bookmarks
   const {
     panel: bookmarksPanel,
     body: bookmarksBody,
@@ -92,6 +150,7 @@ export function renderLibrary(container: HTMLElement, _route: Route): void {
   } = createLibraryPanel('<i class="bi bi-bookmark"></i> Bookmarks');
   grid.appendChild(bookmarksPanel);
 
+  // 4. Reading History
   const {
     panel: historyPanel,
     head: historyHead,
@@ -108,42 +167,50 @@ export function renderLibrary(container: HTMLElement, _route: Route): void {
       setBanner("All reading history cleared.");
       void loadHistoryPage(historyBody, historyFooter, 1);
     },
-    '<i class="bi bi-trash3"></i> Clear',
+    '<i class="bi bi-trash3" style="line-height:1;"></i> Clear',
   );
   clearHistoryBtn.style.cssText =
-    "font-size:10px;padding:0 5px;height:18px;line-height:18px;margin-left:auto;";
+    "font-size:10px;padding:0 6px;height:18px;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:3px;";
   historyHead.style.cssText =
     "display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;";
   historyHead.appendChild(clearHistoryBtn);
-
   grid.appendChild(historyPanel);
 
   setupLibraryActions(
     followedBody,
     followedFooter,
+    collectionsBody,
+    collectionsFooter,
     bookmarksBody,
     bookmarksFooter,
     historyBody,
     historyFooter,
+    container,
   );
 
   void loadAll(
     followedBody,
     followedFooter,
+    collectionsBody,
+    collectionsFooter,
     bookmarksBody,
     bookmarksFooter,
     historyBody,
     historyFooter,
+    container,
   );
 }
 
 function setupLibraryActions(
   followedBody: HTMLElement,
   followedFooter: HTMLElement,
+  collectionsBody: HTMLElement,
+  collectionsFooter: HTMLElement,
   bookmarksBody: HTMLElement,
   bookmarksFooter: HTMLElement,
   historyBody: HTMLElement,
   historyFooter: HTMLElement,
+  container: HTMLElement,
 ): void {
   setActions((host) => {
     const refreshBtn = document.createElement("button");
@@ -160,10 +227,13 @@ function setupLibraryActions(
         await loadAll(
           followedBody,
           followedFooter,
+          collectionsBody,
+          collectionsFooter,
           bookmarksBody,
           bookmarksFooter,
           historyBody,
           historyFooter,
+          container,
         );
         refreshBtn.innerHTML = '<i class="bi bi-check2"></i> Updated';
         setTimeout(() => {
@@ -204,14 +274,18 @@ function setupLibraryActions(
 async function loadAll(
   followedBody: HTMLElement,
   followedFooter: HTMLElement,
+  collectionsBody: HTMLElement,
+  collectionsFooter: HTMLElement,
   bookmarksBody: HTMLElement,
   bookmarksFooter: HTMLElement,
   historyBody: HTMLElement,
   historyFooter: HTMLElement,
+  container: HTMLElement,
 ): Promise<void> {
   try {
     await Promise.all([
       loadFollowedPage(followedBody, followedFooter, 1),
+      loadCollections(collectionsBody, collectionsFooter, container),
       loadBookmarksPage(bookmarksBody, bookmarksFooter, 1),
       loadHistoryPage(historyBody, historyFooter, 1),
     ]);
@@ -220,6 +294,10 @@ async function loadAll(
     setBanner(`Library failed to load: ${msg}`);
   }
 }
+
+// ---------------------------------------------------------------------------
+// 1. Followed Series
+// ---------------------------------------------------------------------------
 
 async function loadFollowedPage(
   body: HTMLElement,
@@ -264,21 +342,8 @@ function renderFollowed(
   if (rows.length === 0) {
     footer.classList.add("ds-hidden");
     const empty = document.createElement("div");
-    empty.style.cssText =
-      "display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:8px 0;";
-    const emptyText = document.createElement("div");
-    emptyText.className = "ds-muted";
-    emptyText.textContent = "No followed series yet.";
-    const browseBtn = document.createElement("button");
-    browseBtn.type = "button";
-    browseBtn.className = "win-button";
-    browseBtn.style.cssText = "font-size:11px;";
-    browseBtn.innerHTML = '<i class="bi bi-compass"></i> Browse Series';
-    browseBtn.addEventListener("click", () => {
-      navigate({ view: "browse", browseTab: "series-dir" });
-    });
-    empty.appendChild(emptyText);
-    empty.appendChild(browseBtn);
+    empty.className = "ds-muted";
+    empty.textContent = "No followed series yet. Open a series and click Follow to see it here.";
     body.replaceChildren(empty);
     return;
   }
@@ -286,67 +351,76 @@ function renderFollowed(
   const frag = document.createDocumentFragment();
 
   for (const row of rows) {
-    const card = document.createElement("div");
-    card.className = "group-box";
-    card.style.cssText =
-      "display:flex;gap:10px;align-items:center;cursor:pointer;margin-bottom:4px;";
+    const item = document.createElement("div");
+    item.className = "ds-item ds-flex-row";
+    item.style.cssText = "padding:4px 6px;";
 
-    const coverSlot = document.createElement("div");
-    coverSlot.style.cssText = "flex-shrink:0;";
-    coverSlot.appendChild(renderCoverImage(row.cover, row.name));
-    card.appendChild(coverSlot);
-
-    void (async () => {
-      const fresh = await refreshFollowedSeriesCover(row.permalink, row.cover);
-      if (fresh && fresh !== row.cover) {
-        coverSlot.innerHTML = "";
-        coverSlot.appendChild(renderCoverImage(fresh, row.name));
-      }
-    })();
+    const cover = renderCoverImage(row.cover, row.name, "ds-followed-cover");
+    cover.style.cursor = "pointer";
+    cover.addEventListener("click", () => {
+      navigate({
+        view: "series",
+        seriesPermalink: row.permalink,
+        seriesName: row.name,
+      });
+    });
 
     const info = document.createElement("div");
-    info.className = "ds-fill";
-    const name = document.createElement("div");
-    name.className = "ds-truncate";
-    name.style.cssText = "font-size:12px;font-weight:600;";
-    name.textContent = decodeEntities(row.name);
-    const latest = document.createElement("div");
-    latest.className = "ds-muted";
-    latest.textContent = row.latest_chapter_title
+    info.className = "ds-fill ds-clickable";
+    const title = document.createElement("div");
+    title.className = "ds-item-title";
+    title.textContent = decodeEntities(row.name);
+    const meta = document.createElement("div");
+    meta.className = "ds-item-meta";
+    meta.textContent = row.latest_chapter_title
       ? `Latest: ${decodeEntities(row.latest_chapter_title)}`
-      : "No chapters read yet";
-    info.appendChild(name);
-    info.appendChild(latest);
-
-    const open = document.createElement("button");
-    open.type = "button";
-    open.className = "win-button";
-    open.style.cssText = "font-size:11px;padding:2px 10px;";
-    open.innerHTML = '<i class="bi bi-book"></i> Open';
-    open.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      navigate({ view: "series", seriesPermalink: row.permalink, seriesName: row.name });
-    });
+      : `Followed on ${formatDate(Number(row.created_at))}`;
+    info.appendChild(title);
+    info.appendChild(meta);
     info.addEventListener("click", () => {
-      navigate({ view: "series", seriesPermalink: row.permalink, seriesName: row.name });
+      navigate({
+        view: "series",
+        seriesPermalink: row.permalink,
+        seriesName: row.name,
+      });
     });
 
-    card.appendChild(info);
+    const refreshCoverBtn = document.createElement("button");
+    refreshCoverBtn.type = "button";
+    refreshCoverBtn.className = "win-button";
+    refreshCoverBtn.style.cssText = "font-size:10px;padding:2px 6px;flex-shrink:0;";
+    refreshCoverBtn.title = "Re-fetch series cover";
+    refreshCoverBtn.innerHTML = '<i class="bi bi-image"></i>';
+    refreshCoverBtn.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      refreshCoverBtn.disabled = true;
+      try {
+        await refreshFollowedSeriesCover(row.permalink, row.cover);
+        setBanner(`Cover updated for "${row.name}".`);
+        void loadFollowedPage(body, footer, currentPage);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setBanner(`Cover refresh failed: ${msg}`);
+        refreshCoverBtn.disabled = false;
+      }
+    });
 
     const extBtn = document.createElement("button");
     extBtn.type = "button";
     extBtn.className = "win-button";
-    extBtn.style.cssText = "font-size:11px;padding:2px 6px;";
-    extBtn.title = "Open series on Dynasty Scans in browser";
+    extBtn.style.cssText = "font-size:10px;padding:2px 6px;flex-shrink:0;";
+    extBtn.title = "Open on Dynasty Scans in browser";
     extBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
     extBtn.addEventListener("click", (ev) => {
       ev.stopPropagation();
       openExternal(`https://dynasty-scans.com/series/${row.permalink}`);
     });
-    card.appendChild(extBtn);
 
-    card.appendChild(open);
-    frag.appendChild(card);
+    item.appendChild(cover);
+    item.appendChild(info);
+    item.appendChild(refreshCoverBtn);
+    item.appendChild(extBtn);
+    frag.appendChild(item);
   }
 
   body.replaceChildren(frag);
@@ -358,6 +432,510 @@ function renderFollowed(
     footer.classList.add("ds-hidden");
   }
 }
+
+// ---------------------------------------------------------------------------
+// 2. Collections & Favorites
+// ---------------------------------------------------------------------------
+
+async function loadCollections(
+  body: HTMLElement,
+  footer: HTMLElement,
+  container: HTMLElement,
+): Promise<void> {
+  footer.innerHTML = "";
+  footer.classList.add("ds-hidden");
+  const cancelLoading = attachDelayedLoading(body, 140);
+
+  try {
+    const list = await getCollections();
+    cancelLoading();
+    renderCollections(body, footer, list, container);
+  } catch (err) {
+    cancelLoading();
+    const msg = err instanceof Error ? err.message : String(err);
+    body.innerHTML = "";
+    const errEl = document.createElement("div");
+    errEl.className = "ds-muted";
+    errEl.textContent = `Failed to load collections: ${msg}`;
+    body.appendChild(errEl);
+  }
+}
+
+function renderCollections(
+  body: HTMLElement,
+  footer: HTMLElement,
+  collections: CollectionRow[],
+  container: HTMLElement,
+): void {
+  footer.innerHTML = "";
+  footer.classList.add("ds-hidden");
+
+  if (collections.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "ds-muted";
+    empty.textContent = "No collections found.";
+    body.replaceChildren(empty);
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+
+  for (const col of collections) {
+    const item = document.createElement("div");
+    item.className = "ds-item ds-flex-row";
+    item.style.cssText = "padding:5px 8px;border-radius:2px;gap:8px;";
+
+    const icon = document.createElement("i");
+    icon.className = col.is_default ? "bi bi-star-fill" : "bi bi-folder2-open";
+    icon.style.cssText = col.is_default
+      ? "color:#d97706;font-size:14px;flex-shrink:0;"
+      : "color:var(--sys-primary,#0078d4);font-size:14px;flex-shrink:0;";
+    item.appendChild(icon);
+
+    const info = document.createElement("div");
+    info.className = "ds-fill ds-clickable";
+    const title = document.createElement("div");
+    title.className = "ds-item-title";
+    title.style.cssText = col.is_default ? "font-weight:700;" : "font-weight:600;";
+    title.textContent = decodeEntities(col.name);
+
+    const meta = document.createElement("div");
+    meta.className = "ds-item-meta";
+    meta.textContent = `${col.itemCount ?? 0} item${col.itemCount === 1 ? "" : "s"}${col.is_default ? " · Default Collection" : ""}`;
+
+    info.appendChild(title);
+    info.appendChild(meta);
+    info.addEventListener("click", () => {
+      openCollectionDetailView(container, col.id);
+    });
+    item.appendChild(info);
+
+    const openBtn = document.createElement("button");
+    openBtn.type = "button";
+    openBtn.className = "win-button ds-btn-sm";
+    openBtn.style.cssText = "font-size:10px;padding:2px 8px;flex-shrink:0;";
+    openBtn.innerHTML = '<i class="bi bi-folder2-open"></i> Open';
+    openBtn.addEventListener("click", () => {
+      openCollectionDetailView(container, col.id);
+    });
+    item.appendChild(openBtn);
+
+    if (!col.is_default) {
+      const delBtn = createConfirmDeleteButton("Delete collection", async () => {
+        try {
+          await deleteCollection(col.id);
+          setBanner(`Deleted collection "${col.name}".`);
+          void loadCollections(body, footer, container);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setBanner(`Could not delete collection: ${msg}`);
+        }
+      });
+      delBtn.style.cssText =
+        "font-size:10px;padding:0;width:20px;height:20px;min-width:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;";
+      item.appendChild(delBtn);
+    }
+
+    frag.appendChild(item);
+  }
+
+  body.replaceChildren(frag);
+}
+
+/**
+ * Opens a sleek, native WinForms modal dialog to create a new custom collection.
+ */
+export function openCreateCollectionDialog(onCreated: () => void): void {
+  const existing = document.getElementById("ds-create-collection-overlay");
+  if (existing) existing.remove();
+
+  const root = document.getElementById("ds-root") || document.body;
+
+  const overlay = document.createElement("div");
+  overlay.id = "ds-create-collection-overlay";
+  overlay.className = "ds-modal-overlay";
+  overlay.style.cssText =
+    "position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(1px);";
+
+  const modal = document.createElement("div");
+  modal.className = "ds-modal-window";
+  modal.style.cssText =
+    "width:320px;max-width:92vw;background:var(--sys-window-bg,#fff);border:1px solid var(--sys-border-dark,#999);border-radius:3px;box-shadow:0 6px 20px rgba(0,0,0,0.25);display:flex;flex-direction:column;overflow:hidden;font-size:12px;color:var(--sys-window-text,#222);";
+
+  modal.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--sys-control-bg,#f0f0f0);border-bottom:1px solid var(--sys-border-light,#ddd);font-weight:600;font-size:11px;">
+      <span style="display:inline-flex;align-items:center;gap:5px;">
+        <i class="bi bi-folder-plus" style="color:var(--sys-primary,#0078d4);"></i> New Collection
+      </span>
+      <button type="button" class="win-button ds-modal-close" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;font-size:9px;line-height:1;min-width:18px;box-sizing:border-box;" title="Close">
+        <i class="bi bi-x-lg" style="display:inline-flex;align-items:center;justify-content:center;line-height:1;"></i>
+      </button>
+    </div>
+    <div style="padding:10px 12px 8px;display:flex;flex-direction:column;gap:6px;">
+      <label style="font-size:11px;font-weight:600;color:var(--sys-window-text,#111);">Collection Name:</label>
+      <div class="input-wrapper" style="width:100%;">
+        <input type="text" id="ds-new-col-name-input" class="input-field has-clear" placeholder="e.g. Yuri Gems, Read Later..." style="width:100%;box-sizing:border-box;font-size:11px;height:24px;" autofocus />
+        <button type="button" class="input-clear-btn" tabindex="-1" title="Clear"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:6px 12px;background:var(--sys-control-bg,#f9f9f9);border-top:1px solid var(--sys-border-light,#ddd);">
+      <button type="button" class="win-button ds-modal-cancel" style="font-size:11px;padding:2px 10px;">Cancel</button>
+      <button type="button" class="win-button primary ds-modal-submit" style="font-size:11px;padding:2px 10px;display:inline-flex;align-items:center;gap:4px;">
+        <i class="bi bi-plus-lg" style="font-size:10px;line-height:1;"></i> <span>Create</span>
+      </button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  root.appendChild(overlay);
+
+  setupInputClearButtons(modal);
+
+  const input = modal.querySelector<HTMLInputElement>("#ds-new-col-name-input")!;
+  const submitBtn = modal.querySelector<HTMLButtonElement>(".ds-modal-submit")!;
+  const cancelBtn = modal.querySelector<HTMLButtonElement>(".ds-modal-cancel")!;
+  const closeBtn = modal.querySelector<HTMLButtonElement>(".ds-modal-close")!;
+
+  setTimeout(() => input?.focus(), 50);
+
+  const close = () => {
+    overlay.remove();
+    document.removeEventListener("keydown", onKeyDown);
+  };
+
+  const onKeyDown = (ev: KeyboardEvent) => {
+    if (ev.key === "Escape") close();
+    if (ev.key === "Enter") void handleSubmit();
+  };
+  document.addEventListener("keydown", onKeyDown);
+
+  overlay.addEventListener("click", (ev) => {
+    if (ev.target === overlay) close();
+  });
+  cancelBtn.addEventListener("click", close);
+  closeBtn.addEventListener("click", close);
+
+  const handleSubmit = async () => {
+    const name = input.value.trim();
+    if (!name) return;
+    submitBtn.disabled = true;
+    try {
+      await createCollection(name);
+      setBanner(`Created collection "${name}".`);
+      close();
+      onCreated();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setBanner(`Failed to create collection: ${msg}`);
+      submitBtn.disabled = false;
+    }
+  };
+
+  submitBtn.addEventListener("click", () => void handleSubmit());
+}
+
+/**
+ * Renders the dedicated, categorized detail view for a collection inside the Library.
+ * Series, Doujins & Anthologies, and One-shots are separated cleanly into distinct sections.
+ */
+export async function openCollectionDetailView(
+  container: HTMLElement,
+  collectionId: number,
+): Promise<void> {
+  container.innerHTML = "";
+
+  const root = document.createElement("div");
+  root.id = "ds-collection-detail-container";
+  container.appendChild(root);
+
+  const cancelLoading = attachDelayedLoading(root, 140);
+
+  let collection: CollectionRow | null = null;
+  let items: CollectionItemRow[] = [];
+  try {
+    [collection, items] = await Promise.all([
+      getCollectionById(collectionId),
+      getCollectionItems(collectionId),
+    ]);
+  } catch (err) {
+    cancelLoading();
+    const msg = err instanceof Error ? err.message : String(err);
+    setBanner(`Failed to load collection: ${msg}`);
+    return;
+  }
+  cancelLoading();
+
+  if (!collection) {
+    setBanner("Collection not found.");
+    renderLibrary(container, { view: "library" });
+    return;
+  }
+
+  // Setup Top Bar Action for returning to the main Library
+  setActions((host) => {
+    const backBtn = document.createElement("button");
+    backBtn.type = "button";
+    backBtn.className = "win-button";
+    backBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    backBtn.innerHTML = '<i class="bi bi-arrow-left"></i> Back to Collections';
+    backBtn.addEventListener("click", () => {
+      renderLibrary(container, { view: "library" });
+    });
+    host.appendChild(backBtn);
+
+    const refreshBtn = document.createElement("button");
+    refreshBtn.type = "button";
+    refreshBtn.className = "win-button";
+    refreshBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+    refreshBtn.addEventListener("click", () => {
+      void openCollectionDetailView(container, collectionId);
+    });
+    host.appendChild(refreshBtn);
+  });
+
+  // Top summary header bar with live search filter
+  const headerBar = document.createElement("div");
+  headerBar.className = "ds-collection-header-bar";
+
+  const statsSpan = document.createElement("div");
+  statsSpan.className = "ds-collection-stats";
+  headerBar.appendChild(statsSpan);
+
+  const filterWrap = document.createElement("div");
+  filterWrap.className = "input-wrapper";
+  filterWrap.style.cssText = "width:220px;max-width:100%;";
+  filterWrap.innerHTML = `
+    <input type="text" class="input-field has-clear" placeholder="Filter items in collection..." style="width:100%;box-sizing:border-box;font-size:11px;height:22px;" />
+    <button type="button" class="input-clear-btn" tabindex="-1" title="Clear"><i class="bi bi-x-lg"></i></button>
+  `;
+  setupInputClearButtons(filterWrap);
+  headerBar.appendChild(filterWrap);
+
+  root.appendChild(headerBar);
+
+  const contentArea = document.createElement("div");
+  contentArea.style.cssText = "display:flex;flex-direction:column;gap:10px;flex:1;";
+  root.appendChild(contentArea);
+
+  let filterQuery = "";
+
+  const renderContent = () => {
+    contentArea.innerHTML = "";
+
+    const q = filterQuery.trim().toLowerCase();
+    const filtered = q
+      ? items.filter(
+          (it) =>
+            it.item_title.toLowerCase().includes(q) ||
+            (it.parent_series_name && it.parent_series_name.toLowerCase().includes(q)) ||
+            it.item_permalink.toLowerCase().includes(q),
+        )
+      : items;
+
+    statsSpan.innerHTML = `
+      <i class="${collection?.is_default ? "bi bi-star-fill" : "bi bi-folder2-open"}" style="color:${collection?.is_default ? "#d97706" : "var(--sys-primary,#0078d4)"};font-size:13px;"></i>
+      <span><b>${decodeEntities(collection?.name || "")}</b> — <b>${items.length}</b> item${items.length === 1 ? "" : "s"}</span>
+    `;
+
+    if (items.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "ds-muted";
+      empty.style.cssText = "padding:16px 8px;font-size:11px;";
+      empty.innerHTML =
+        'No items in this collection yet. Click <b><i class="bi bi-folder-plus"></i> Add to...</b> on any series or chapter in Browse / Search / Series pages to add items here.';
+      contentArea.appendChild(empty);
+      return;
+    }
+
+    if (filtered.length === 0) {
+      const noMatch = document.createElement("div");
+      noMatch.className = "ds-muted";
+      noMatch.style.cssText = "padding:16px 8px;text-align:center;font-size:11px;";
+      noMatch.textContent = `No items matched "${filterQuery}".`;
+      contentArea.appendChild(noMatch);
+      return;
+    }
+
+    const list = document.createElement("div");
+    list.className = "ds-feed-list";
+    list.style.cssText = "display:flex;flex-direction:column;gap:4px;";
+
+    for (const it of filtered) {
+      list.appendChild(
+        renderCollectionItemCard(it, collectionId, async () => {
+          items = await getCollectionItems(collectionId);
+          renderContent();
+        }),
+      );
+    }
+
+    contentArea.appendChild(list);
+  };
+
+  const filterInput = filterWrap.querySelector<HTMLInputElement>("input")!;
+  filterInput.addEventListener("input", () => {
+    filterQuery = filterInput.value;
+    renderContent();
+  });
+
+  renderContent();
+}
+
+function renderCollectionItemCard(
+  it: CollectionItemRow,
+  collectionId: number,
+  onRefresh: () => Promise<void>,
+): HTMLElement {
+  const item = document.createElement("div");
+  item.className = "ds-item ds-flex-row";
+  item.style.cssText = "padding:5px 8px;border-radius:2px;gap:8px;";
+
+  let coverEl = renderCoverImage(
+    it.cover,
+    it.item_title,
+    "ds-collection-cover",
+    "ds-collection-cover-placeholder",
+  );
+  coverEl.style.cursor = "pointer";
+
+  const onOpen = () => {
+    if (it.item_kind === "chapter" || it.item_kind === "oneshot") {
+      navigate({
+        view: "reader",
+        chapterPermalink: it.item_permalink,
+        chapterTitle: it.item_title,
+        seriesPermalink: it.parent_series_permalink || undefined,
+        seriesName: it.parent_series_name || undefined,
+      });
+    } else {
+      navigate({
+        view: "series",
+        seriesPermalink: it.item_permalink,
+        seriesName: it.item_title,
+      });
+    }
+  };
+
+  coverEl.addEventListener("click", onOpen);
+
+  // Lazy cover hydration if no local file path is cached yet
+  if (!it.cover || (!it.cover.includes("/") && !it.cover.includes("\\"))) {
+    const hydrateTask =
+      it.item_kind === "series"
+        ? getOrHydrateSeriesCover(it.item_permalink)
+        : getOrHydrateItemCover(
+            it.cover || `chapter:${it.item_permalink}`,
+            it.item_permalink,
+            it.parent_series_permalink,
+            it.item_kind,
+          );
+    void hydrateTask.then((freshPath) => {
+      if (freshPath) {
+        it.cover = freshPath;
+        void updateCollectionItemCover(it.id, freshPath);
+        const newCover = renderCoverImage(
+          freshPath,
+          it.item_title,
+          "ds-collection-cover",
+          "ds-collection-cover-placeholder",
+        );
+        newCover.style.cursor = "pointer";
+        newCover.addEventListener("click", onOpen);
+        if (coverEl.parentElement) {
+          coverEl.parentElement.replaceChild(newCover, coverEl);
+          coverEl = newCover;
+        }
+      }
+    });
+  }
+
+  const info = document.createElement("div");
+  info.className = "ds-fill ds-clickable";
+
+  const titleRow = document.createElement("div");
+  titleRow.className = "ds-flex-row";
+  titleRow.style.cssText = "align-items:center;gap:6px;flex-wrap:wrap;";
+
+  const title = document.createElement("span");
+  title.className = "ds-item-title";
+  title.style.cssText = "font-weight:600;font-size:12px;";
+  title.textContent = decodeEntities(it.item_title);
+  titleRow.appendChild(title);
+
+  const kindBadge = document.createElement("span");
+  kindBadge.className = "ds-muted";
+  kindBadge.style.cssText =
+    "font-size:10px;background:var(--sys-control-bg,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;";
+  kindBadge.textContent =
+    it.item_kind === "oneshot"
+      ? "One-shot"
+      : it.item_kind === "doujin"
+        ? "Doujin"
+        : "Series";
+  titleRow.appendChild(kindBadge);
+
+  const meta = document.createElement("div");
+  meta.className = "ds-item-meta";
+  meta.textContent = it.parent_series_name
+    ? `${decodeEntities(it.parent_series_name)} · Added on ${formatDate(Number(it.created_at))}`
+    : `Added on ${formatDate(Number(it.created_at))}`;
+
+  info.appendChild(titleRow);
+  info.appendChild(meta);
+  info.addEventListener("click", onOpen);
+
+  const openBtn = document.createElement("button");
+  openBtn.type = "button";
+  openBtn.className = "win-button ds-btn-sm";
+  openBtn.style.cssText = "font-size:10px;padding:2px 8px;flex-shrink:0;";
+  openBtn.innerHTML =
+    it.item_kind === "chapter" || it.item_kind === "oneshot"
+      ? '<i class="bi bi-book"></i> Read'
+      : '<i class="bi bi-folder2-open"></i> Open';
+  openBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    onOpen();
+  });
+
+  const extBtn = document.createElement("button");
+  extBtn.type = "button";
+  extBtn.className = "win-button";
+  extBtn.style.cssText = "font-size:10px;padding:2px 6px;flex-shrink:0;";
+  extBtn.title = "Open on Dynasty Scans in browser";
+  extBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
+  extBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    const endpoint =
+      it.item_kind === "chapter" || it.item_kind === "oneshot" ? "chapters" : "series";
+    openExternal(`https://dynasty-scans.com/${endpoint}/${it.item_permalink}`);
+  });
+
+  const removeBtn = createConfirmDeleteButton("Remove from collection", async () => {
+    try {
+      await removeItemFromCollection(collectionId, it.item_permalink);
+      setBanner(`Removed "${it.item_title}" from collection.`);
+      await onRefresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setBanner(`Could not remove item: ${msg}`);
+    }
+  });
+  removeBtn.style.cssText =
+    "font-size:10px;padding:0;width:20px;height:20px;min-width:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;";
+
+  item.appendChild(coverEl);
+  item.appendChild(info);
+  item.appendChild(openBtn);
+  item.appendChild(extBtn);
+  item.appendChild(removeBtn);
+
+  return item;
+}
+
+// ---------------------------------------------------------------------------
+// 3. Bookmarks
+// ---------------------------------------------------------------------------
 
 async function loadBookmarksPage(
   body: HTMLElement,
@@ -405,7 +983,7 @@ function renderBookmarks(
     footer.classList.add("ds-hidden");
     const empty = document.createElement("div");
     empty.className = "ds-muted";
-    empty.textContent = "No bookmarks yet.";
+    empty.textContent = "No bookmarks yet. Click Read Later on any chapter to bookmark it.";
     body.replaceChildren(empty);
     return;
   }
@@ -430,7 +1008,9 @@ function renderBookmarks(
     }`;
     const meta = document.createElement("div");
     meta.className = "ds-item-meta";
-    meta.textContent = `${decodeEntities(row.series_name)} · page ${row.page_index + 1}`;
+    meta.textContent = row.series_name
+      ? `${decodeEntities(row.series_name)} · Saved on ${formatDate(Number(row.created_at))}`
+      : `Saved on ${formatDate(Number(row.created_at))}`;
     info.appendChild(title);
     info.appendChild(meta);
     info.addEventListener("click", () => {
@@ -475,6 +1055,10 @@ function renderBookmarks(
     footer.classList.add("ds-hidden");
   }
 }
+
+// ---------------------------------------------------------------------------
+// 4. Reading History
+// ---------------------------------------------------------------------------
 
 async function loadHistoryPage(
   body: HTMLElement,

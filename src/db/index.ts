@@ -59,6 +59,19 @@ export {
   setBlacklistMode,
 } from "./blacklist.repo";
 export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode } from "./blacklist.repo";
+export {
+  getCollections,
+  getCollectionById,
+  createCollection,
+  renameCollection,
+  deleteCollection,
+  getCollectionItems,
+  addItemToCollection,
+  removeItemFromCollection,
+  getItemCollectionIds,
+  toggleItemInCollection,
+  updateCollectionItemCover,
+} from "./collections.repo";
 export type {
   CachedMetadata,
   FollowedSeriesRow,
@@ -73,4 +86,7 @@ export type {
   ChapterCacheCount,
   CacheOverviewStats,
   CachedSeriesGroup,
+  CollectionRow,
+  CollectionItemRow,
+  CollectionItemKind,
 } from "../types/db";

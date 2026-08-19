@@ -21,6 +21,7 @@ import { Series, SeriesTag, fetchSeries, getSeriesCover, openExternal } from "./
 import { renderTagPill } from "./components/tag-pill";
 import { renderCoverImage } from "./components/cover";
 import { renderLoading } from "./components/loading";
+import { openAddToCollectionModal } from "./components/add-to-collection-modal";
 
 interface ChapterMeta extends ChapterRef {
   volumeHeader?: string;
@@ -603,6 +604,24 @@ function buildActions(
       : '<i class="bi bi-bookmark"></i> <span class="ds-btn-text">Follow</span>';
     followBtn.addEventListener("click", () => void toggleFollow(followBtn));
     host.appendChild(followBtn);
+
+    const addToBtn = document.createElement("button");
+    addToBtn.type = "button";
+    addToBtn.className = "win-button";
+    addToBtn.title = "Add to Favorites or custom collections";
+    addToBtn.innerHTML = '<i class="bi bi-folder-plus"></i> <span class="ds-btn-text">Add to...</span>';
+    addToBtn.addEventListener("click", () => {
+      void openAddToCollectionModal(
+        {
+          permalink: seriesPermalink,
+          title: seriesName,
+          kind: "series",
+          cover: coverPath,
+        },
+        addToBtn,
+      );
+    });
+    host.appendChild(addToBtn);
 
     const blacklistBtn = document.createElement("button");
     blacklistBtn.type = "button";

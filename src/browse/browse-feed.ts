@@ -20,6 +20,7 @@ import {
 import { renderTagPill } from "../components/tag-pill";
 import { renderPager } from "../components/pager";
 import { showBlacklistWarningModal } from "../components/trigger-warning";
+import { openAddToCollectionModal } from "../components/add-to-collection-modal";
 import { browseCovers } from "./browse-covers";
 import { updateBrowseTopPager } from "./browse-controller";
 import type { Feed, FeedChapter } from "../types/api";
@@ -718,6 +719,59 @@ function feedItem(
     bookmarkBtn.disabled = false;
   });
 
+  const isDoujin = Boolean(
+    (ch.tags ?? []).some((t) => (t.type ?? "").toLowerCase().includes("doujin")) ||
+    coverInfo.seriesType === "doujin",
+  );
+  const isSeries = Boolean(ch.series && !isDoujin);
+
+  const addToColBtn = document.createElement("button");
+  addToColBtn.type = "button";
+  addToColBtn.className = "win-button";
+  addToColBtn.style.cssText = "font-size:11px;padding:2px 6px;flex-shrink:0;";
+  addToColBtn.title = isSeries
+    ? `Add series "${decodeEntities(ch.series || "")}" to collection`
+    : "Add to Favorites or custom collections";
+  addToColBtn.innerHTML = '<i class="bi bi-folder-plus"></i>';
+  addToColBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (isSeries) {
+      const sPermalink =
+        coverInfo.seriesPermalink ||
+        (ch.series ? ch.series.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") : ch.permalink);
+      void openAddToCollectionModal(
+        {
+          permalink: sPermalink,
+          title: coverInfo.seriesName || ch.series || ch.title,
+          kind: "series",
+          cover: coverInfo.coverKey,
+        },
+        addToColBtn,
+      );
+    } else if (isDoujin) {
+      void openAddToCollectionModal(
+        {
+          permalink: ch.permalink,
+          title: ch.title,
+          kind: "doujin",
+          cover: coverInfo.coverKey,
+          parentSeriesName: ch.series || null,
+        },
+        addToColBtn,
+      );
+    } else {
+      void openAddToCollectionModal(
+        {
+          permalink: ch.permalink,
+          title: ch.title,
+          kind: "oneshot",
+          cover: coverInfo.coverKey,
+        },
+        addToColBtn,
+      );
+    }
+  });
+
   const extBtn = document.createElement("button");
   extBtn.type = "button";
   extBtn.className = "win-button";
@@ -731,6 +785,7 @@ function feedItem(
 
   item.appendChild(info);
   item.appendChild(bookmarkBtn);
+  item.appendChild(addToColBtn);
   item.appendChild(extBtn);
 
   item.addEventListener("click", () => {

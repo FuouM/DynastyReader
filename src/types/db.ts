@@ -107,3 +107,25 @@ export interface CachedSeriesGroup {
   lastCachedAt: number;
   chapterPermalinks: string[];
 }
+
+export interface CollectionRow {
+  id: number;
+  name: string;
+  is_default: number;
+  created_at: number;
+  itemCount?: number;
+}
+
+export type CollectionItemKind = "series" | "doujin" | "anthology" | "oneshot" | "chapter";
+
+export interface CollectionItemRow {
+  id: number;
+  collection_id: number;
+  item_permalink: string;
+  item_title: string;
+  item_kind: CollectionItemKind;
+  cover: string | null;
+  parent_series_permalink: string | null;
+  parent_series_name: string | null;
+  created_at: number;
+}

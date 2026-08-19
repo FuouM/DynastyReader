@@ -14,7 +14,13 @@ export function renderCoverImage(
   imgClass = "ds-cover",
   placeholderClass = "ds-cover-placeholder",
 ): HTMLElement {
-  if (path) {
+  const isValidLocalPath =
+    Boolean(path) &&
+    (path!.includes("/") || path!.includes("\\")) &&
+    !path!.startsWith("series:") &&
+    !path!.startsWith("chapter:");
+
+  if (isValidLocalPath && path) {
     const img = el("img", { class: imgClass, title: alt });
     img.alt = alt;
     img.src = PH.convertFileSrc(path);

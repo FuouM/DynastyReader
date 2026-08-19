@@ -61,6 +61,24 @@ const SCHEMA = [
     series_name TEXT NOT NULL,
     created_at INTEGER NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS collections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS collection_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    collection_id INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+    item_permalink TEXT NOT NULL,
+    item_title TEXT NOT NULL,
+    item_kind TEXT NOT NULL DEFAULT 'series',
+    cover TEXT,
+    parent_series_permalink TEXT,
+    parent_series_name TEXT,
+    created_at INTEGER NOT NULL,
+    UNIQUE(collection_id, item_permalink)
+  )`,
 ];
 
 let initDbPromise: Promise<void> | null = null;
@@ -80,6 +98,14 @@ export async function initDb(): Promise<void> {
       } catch {}
       try {
         await execute("DROP INDEX IF EXISTS idx_reading_history_chapter", []);
+      } catch {}
+      try {
+        // Seed default 'Favorites' collection if not already present
+        const now = Date.now();
+        await execute(
+          "INSERT OR IGNORE INTO collections (id, name, is_default, created_at) VALUES (1, 'Favorites', 1, ?)",
+          [now],
+        );
       } catch {}
       try {
         const { initBlacklistCache } = await import("./blacklist.repo");

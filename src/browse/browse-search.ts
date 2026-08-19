@@ -7,6 +7,7 @@ import { renderPager } from "../components/pager";
 import { setupInputClearButtons } from "../components/input-field";
 import { renderLoading } from "../components/loading";
 import { showBlacklistWarningModal } from "../components/trigger-warning";
+import { openAddToCollectionModal } from "../components/add-to-collection-modal";
 import { scrollBrowseToTop, updateBrowseTopPager } from "./browse-controller";
 import type {
   SearchClass,
@@ -807,6 +808,34 @@ function renderSearchResultRow(
     ev.preventDefault();
     onOpenItem();
   });
+
+  const isCollectible =
+    item.kind === "series" ||
+    item.kind === "chapter" ||
+    item.kind === "doujin" ||
+    item.kind === "anthology" ||
+    item.kind === "issue";
+
+  if (isCollectible) {
+    const addToColBtn = document.createElement("button");
+    addToColBtn.type = "button";
+    addToColBtn.className = "win-button ds-btn-sm";
+    addToColBtn.style.cssText = "align-self:center;font-size:11px;padding:2px 6px;";
+    addToColBtn.title = "Add to Favorites or custom collections";
+    addToColBtn.innerHTML = '<i class="bi bi-folder-plus"></i>';
+    addToColBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      void openAddToCollectionModal(
+        {
+          permalink: item.permalink,
+          title: item.title,
+          kind: item.kind === "chapter" ? "chapter" : (item.kind as any),
+        },
+        addToColBtn,
+      );
+    });
+    row.appendChild(addToColBtn);
+  }
 
   row.appendChild(actionBtn);
 

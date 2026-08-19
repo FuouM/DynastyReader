@@ -232,8 +232,10 @@ body.ds-dark ::-webkit-scrollbar-thumb:hover {
   line-height: 1;
 }
 .win-button i {
-  display: inline-block;
-  vertical-align: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 .win-button:hover {
   background-color: var(--sys-button-hover);
