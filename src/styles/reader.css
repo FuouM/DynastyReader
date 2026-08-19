@@ -164,7 +164,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px;
+  padding: 0 10px;
   background: #eaeaea;
   user-select: none;
 }
@@ -272,7 +272,7 @@
 
 /* Fit modes */
 .fit-width #ds-reader-viewport {
-  padding: 8px 0;
+  padding: 0;
 }
 .fit-width #ds-reader-strip {
   width: 100%;
@@ -308,7 +308,7 @@
   min-height: var(--ds-viewport-full, 100vh);
   max-height: var(--ds-viewport-full, 100vh);
   box-sizing: border-box;
-  padding: 12px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -355,7 +355,7 @@
   display: flex !important;
   align-items: safe center;
   justify-content: safe center;
-  padding: 12px;
+  padding: 0 12px;
   box-sizing: border-box;
   overflow: auto;
   user-select: none;
