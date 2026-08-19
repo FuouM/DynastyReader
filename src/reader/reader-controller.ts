@@ -427,8 +427,11 @@ export class ReaderController {
   rebuildSpreadSlots(): void {
     for (const wrap of this.spreadSlots) {
       const parent = wrap.parentElement;
-      while (wrap.firstChild && parent) {
-        parent.insertBefore(wrap.firstChild, wrap);
+      const slots = wrap.querySelectorAll<HTMLElement>(".ds-slot");
+      if (parent) {
+        for (const s of slots) {
+          parent.insertBefore(s, wrap);
+        }
       }
       wrap.remove();
     }
@@ -439,10 +442,14 @@ export class ReaderController {
       const isSingle = group.pageIndices.length === 1;
       wrap.className = `ds-spread-slot ${this.direction}${isSingle ? " ds-spread-single" : ""}`;
       wrap.dataset.spreadIndex = String(group.spreadIndex);
+
+      const canvas = document.createElement("div");
+      canvas.className = `ds-spread-canvas ${this.direction}${isSingle ? " ds-spread-single" : ""}`;
       for (const pageIndex of group.pageIndices) {
         const slot = this.slots[pageIndex];
-        if (slot) wrap.appendChild(slot);
+        if (slot) canvas.appendChild(slot);
       }
+      wrap.appendChild(canvas);
       this.strip.appendChild(wrap);
       this.spreadSlots.push(wrap);
     }

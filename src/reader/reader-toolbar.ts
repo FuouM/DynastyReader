@@ -9,6 +9,10 @@ import { getAppTheme, onThemeChange, toggleAppTheme } from "../theme";
  * toggles. Reads controller-owned state; writes back on user interaction.
  */
 export class ReaderToolbar {
+  private zoomOutBtn!: HTMLButtonElement;
+  private zoomResetBtn!: HTMLButtonElement;
+  private zoomInBtn!: HTMLButtonElement;
+
   constructor(private readonly c: ReaderController) {
     this.build();
   }
@@ -177,40 +181,13 @@ export class ReaderToolbar {
     zoomInBtn.title = "Zoom In (Ctrl + / +)";
     zoomInBtn.innerHTML = '<i class="bi bi-plus-lg"></i>';
 
-    const updateZoomUI = (): void => {
-      const isFitActive = c.fitMode !== "original";
-      zoomResetBtn.textContent = `${Math.round(c.zoomScale * 100)}%`;
-      c.readerContainer.style.setProperty("--ds-zoom-scale", String(c.zoomScale));
-      zoomOutBtn.disabled = isFitActive || c.zoomScale <= 0.25;
-      zoomResetBtn.disabled = isFitActive;
-      zoomInBtn.disabled = isFitActive || c.zoomScale >= 3.0;
+    this.zoomOutBtn = zoomOutBtn;
+    this.zoomResetBtn = zoomResetBtn;
+    this.zoomInBtn = zoomInBtn;
 
-      if (isFitActive) {
-        zoomOutBtn.title = "Zoom disabled when Fit mode is active (set to Original Size to zoom)";
-        zoomResetBtn.title = "Zoom disabled when Fit mode is active";
-        zoomInBtn.title = "Zoom disabled when Fit mode is active (set to Original Size to zoom)";
-      } else {
-        zoomOutBtn.title = "Zoom Out (Ctrl - / -)";
-        zoomResetBtn.title = "Reset Zoom (Ctrl 0)";
-        zoomInBtn.title = "Zoom In (Ctrl + / +)";
-      }
-    };
-
-    zoomOutBtn.addEventListener("click", () => {
-      if (c.fitMode !== "original") return;
-      c.zoomScale = Math.max(0.25, Math.round((c.zoomScale - 0.1) * 10) / 10);
-      updateZoomUI();
-    });
-    zoomResetBtn.addEventListener("click", () => {
-      if (c.fitMode !== "original") return;
-      c.zoomScale = 1.0;
-      updateZoomUI();
-    });
-    zoomInBtn.addEventListener("click", () => {
-      if (c.fitMode !== "original") return;
-      c.zoomScale = Math.min(3.0, Math.round((c.zoomScale + 0.1) * 10) / 10);
-      updateZoomUI();
-    });
+    zoomOutBtn.addEventListener("click", () => this.zoomOut());
+    zoomResetBtn.addEventListener("click", () => this.resetZoom());
+    zoomInBtn.addEventListener("click", () => this.zoomIn());
 
     // Store DOM refs on the controller so progress/shortcut code can reach them
     c.prevChapterBtn = prevChapterBtn;
@@ -250,7 +227,7 @@ export class ReaderToolbar {
     nav.appendChild(zoomInBtn);
     c.readerContainer.appendChild(nav);
 
-    updateZoomUI();
+    this.updateZoomUI();
 
     const gotoChapter = (ch: ChapterRef): void => c.gotoChapter(ch);
 
@@ -305,7 +282,7 @@ export class ReaderToolbar {
       if (c.fitMode !== "original") {
         c.zoomScale = 1.0;
       }
-      updateZoomUI();
+      this.updateZoomUI();
     });
 
     themeBtn.addEventListener("click", () => this.toggleTheme());
@@ -407,6 +384,50 @@ export class ReaderToolbar {
     c.coverBtn.title = "Show the cover alone before pairing pages (C)";
 
     this.updateScrollLockBtn();
+  }
+
+  updateZoomUI(): void {
+    const c = this.c;
+    const isFitActive = c.fitMode !== "original";
+    if (this.zoomResetBtn) {
+      this.zoomResetBtn.textContent = `${Math.round(c.zoomScale * 100)}%`;
+      this.zoomResetBtn.disabled = isFitActive;
+      this.zoomResetBtn.title = isFitActive ? "Zoom disabled when Fit mode is active" : "Reset Zoom (Ctrl 0)";
+    }
+    c.readerContainer.style.setProperty("--ds-zoom-scale", String(c.zoomScale));
+    if (this.zoomOutBtn) {
+      this.zoomOutBtn.disabled = isFitActive || c.zoomScale <= 0.25;
+      this.zoomOutBtn.title = isFitActive
+        ? "Zoom disabled when Fit mode is active (set to Original Size to zoom)"
+        : "Zoom Out (Ctrl - / -)";
+    }
+    if (this.zoomInBtn) {
+      this.zoomInBtn.disabled = isFitActive || c.zoomScale >= 3.0;
+      this.zoomInBtn.title = isFitActive
+        ? "Zoom disabled when Fit mode is active (set to Original Size to zoom)"
+        : "Zoom In (Ctrl + / +)";
+    }
+  }
+
+  zoomIn(): void {
+    const c = this.c;
+    if (c.fitMode !== "original") return;
+    c.zoomScale = Math.min(3.0, Math.round((c.zoomScale + 0.1) * 10) / 10);
+    this.updateZoomUI();
+  }
+
+  zoomOut(): void {
+    const c = this.c;
+    if (c.fitMode !== "original") return;
+    c.zoomScale = Math.max(0.25, Math.round((c.zoomScale - 0.1) * 10) / 10);
+    this.updateZoomUI();
+  }
+
+  resetZoom(): void {
+    const c = this.c;
+    if (c.fitMode !== "original") return;
+    c.zoomScale = 1.0;
+    this.updateZoomUI();
   }
 
   updateScrollLockBtn(): void {

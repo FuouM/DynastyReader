@@ -46,6 +46,30 @@ export class ReaderShortcuts {
       } else if (ev.key === "Escape" && c.isFullscreen) {
         ev.preventDefault();
         c.toolbarImpl.setFullscreen(false);
+      } else if (
+        ((ev.ctrlKey || ev.metaKey) && (ev.key === "=" || ev.key === "+")) ||
+        (!ev.ctrlKey && !ev.metaKey && !ev.altKey && (ev.key === "+" || ev.key === "="))
+      ) {
+        if (c.fitMode === "original") {
+          ev.preventDefault();
+          c.toolbarImpl.zoomIn();
+        }
+      } else if (
+        ((ev.ctrlKey || ev.metaKey) && (ev.key === "-" || ev.key === "_")) ||
+        (!ev.ctrlKey && !ev.metaKey && !ev.altKey && (ev.key === "-" || ev.key === "_"))
+      ) {
+        if (c.fitMode === "original") {
+          ev.preventDefault();
+          c.toolbarImpl.zoomOut();
+        }
+      } else if (
+        ((ev.ctrlKey || ev.metaKey) && ev.key === "0") ||
+        (!ev.ctrlKey && !ev.metaKey && !ev.altKey && ev.key === "0")
+      ) {
+        if (c.fitMode === "original") {
+          ev.preventDefault();
+          c.toolbarImpl.resetZoom();
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);

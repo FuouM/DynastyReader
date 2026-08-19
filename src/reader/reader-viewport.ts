@@ -47,17 +47,21 @@ export class ReaderViewport {
   slideTo(index: number, instant = false, scrollToBottom = false): void {
     const c = this.c;
     if (c.isHorizontal) {
-      const targetSlot = c.slots[index];
-      if (targetSlot) {
-        if (scrollToBottom) {
-          // Jump to bottom of previous page so upward scrolling continues seamlessly
-          targetSlot.scrollTop = Math.max(0, targetSlot.scrollHeight - targetSlot.clientHeight);
-        } else {
-          targetSlot.scrollTop = 0;
-        }
-        targetSlot.scrollLeft = 0;
-      }
       const slideIndex = c.isSpread ? spreadIndexOf(c.spreads, index) : index;
+      const targetSlide = c.isSpread ? c.spreadSlots[slideIndex] : c.slots[index];
+      if (targetSlide) {
+        if (scrollToBottom) {
+          // Jump to bottom of previous page/spread so upward scrolling continues seamlessly
+          targetSlide.scrollTop = Math.max(0, targetSlide.scrollHeight - targetSlide.clientHeight);
+        } else {
+          targetSlide.scrollTop = 0;
+        }
+        if (c.isSpread && c.direction === "rtl" && targetSlide.scrollWidth > targetSlide.clientWidth) {
+          targetSlide.scrollLeft = targetSlide.scrollWidth - targetSlide.clientWidth;
+        } else {
+          targetSlide.scrollLeft = 0;
+        }
+      }
       if (!c.scrollLock || instant) {
         // Force layout commit so transition:none takes effect before transform
         c.strip.style.transition = "none";
@@ -248,7 +252,13 @@ export class ReaderViewport {
       if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
 
       if (c.isHorizontal) {
-        const target = (ev.target as HTMLElement)?.closest<HTMLElement>(".ds-slot");
+        let target: HTMLElement | null = null;
+        if (c.isSpread) {
+          const curSlide = spreadIndexOf(c.spreads, c.currentIndex);
+          target = c.spreadSlots[curSlide] ?? (ev.target as HTMLElement)?.closest<HTMLElement>(".ds-spread-slot");
+        } else {
+          target = c.slots[c.currentIndex] ?? (ev.target as HTMLElement)?.closest<HTMLElement>(".ds-slot");
+        }
         if (!target) return;
         if (target.scrollWidth <= target.clientWidth && target.scrollHeight <= target.clientHeight) {
           return;
@@ -258,6 +268,7 @@ export class ReaderViewport {
         isViewportPan = false;
         activeSlot = target;
         activeSlot.classList.add("ds-dragging");
+        c.viewport.classList.add("ds-dragging");
         startX = ev.pageX;
         startY = ev.pageY;
         scrollLeft = activeSlot.scrollLeft;
@@ -304,10 +315,8 @@ export class ReaderViewport {
         activeSlot.classList.remove("ds-dragging");
         activeSlot = null;
       }
-      if (isViewportPan && c.viewport) {
-        c.viewport.classList.remove("ds-dragging");
-        isViewportPan = false;
-      }
+      c.viewport.classList.remove("ds-dragging");
+      isViewportPan = false;
     };
 
     c.viewport.addEventListener("mousedown", onMouseDown);
@@ -352,19 +361,44 @@ export class ReaderViewport {
       const targetTag = (ev.target as HTMLElement)?.tagName;
       if (targetTag === "INPUT" || targetTag === "TEXTAREA" || targetTag === "SELECT") return;
 
-      if (c.isHorizontal) {
-        const slot = c.slots[c.currentIndex];
-        const hasScroll = slot && slot.scrollHeight > slot.clientHeight + 4;
+      if (ev.ctrlKey) {
+        // Ctrl + Wheel: Zoom In / Out when in Original Size
+        if (c.fitMode === "original") {
+          ev.preventDefault();
+          if (ev.deltaY < 0) {
+            c.toolbarImpl.zoomIn();
+          } else if (ev.deltaY > 0) {
+            c.toolbarImpl.zoomOut();
+          }
+          return;
+        }
+      }
 
-        if (hasScroll) {
-          const maxScrollTop = slot.scrollHeight - slot.clientHeight;
-          const atTop = slot.scrollTop <= 2 && ev.deltaY < 0;
-          const atBottom = slot.scrollTop >= maxScrollTop - 2 && ev.deltaY > 0;
+      if (c.isHorizontal) {
+        const slideIndex = c.isSpread ? spreadIndexOf(c.spreads, c.currentIndex) : c.currentIndex;
+        const slide = c.isSpread ? c.spreadSlots[slideIndex] : c.slots[c.currentIndex];
+        
+        const hasVScroll = !!(slide && slide.scrollHeight > slide.clientHeight + 4);
+        const hasHScroll = !!(slide && slide.scrollWidth > slide.clientWidth + 4);
+
+        // Shift + Wheel or horizontal trackpad / tilt wheel
+        if (hasHScroll && (ev.shiftKey || Math.abs(ev.deltaX) > Math.abs(ev.deltaY))) {
+          ev.preventDefault();
+          const delta = ev.shiftKey && ev.deltaX === 0 ? ev.deltaY : ev.deltaX;
+          const maxScrollLeft = slide.scrollWidth - slide.clientWidth;
+          slide.scrollLeft = Math.max(0, Math.min(maxScrollLeft, slide.scrollLeft + delta));
+          return;
+        }
+
+        if (hasVScroll) {
+          const maxScrollTop = slide.scrollHeight - slide.clientHeight;
+          const atTop = slide.scrollTop <= 2 && ev.deltaY < 0;
+          const atBottom = slide.scrollTop >= maxScrollTop - 2 && ev.deltaY > 0;
 
           if (!atTop && !atBottom) {
-            // Scroll inside slot programmatically so browser never blocks wheel stream
+            // Scroll inside slide programmatically so browser never blocks wheel stream
             ev.preventDefault();
-            slot.scrollTop = Math.max(0, Math.min(maxScrollTop, slot.scrollTop + ev.deltaY));
+            slide.scrollTop = Math.max(0, Math.min(maxScrollTop, slide.scrollTop + ev.deltaY));
             hideIndicator();
             return;
           }
@@ -403,6 +437,13 @@ export class ReaderViewport {
           } else {
             c.setPage(c.currentIndex - 1, false, true);
           }
+          return;
+        }
+
+        // Horizontal overflow scrolling (e.g. wide zoomed spread)
+        if (slide && slide.scrollWidth > slide.clientWidth + 4 && Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) {
+          ev.preventDefault();
+          slide.scrollLeft = Math.max(0, Math.min(slide.scrollWidth - slide.clientWidth, slide.scrollLeft + ev.deltaX));
           return;
         }
 
