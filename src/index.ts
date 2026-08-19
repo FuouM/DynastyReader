@@ -79,7 +79,8 @@ function renderTab(): HTMLElement {
     "    </div>" +
     '    <span id="ds-title" style="margin-left:8px;"></span>' +
     '    <div id="ds-banner"></div>' +
-    '    <div style="margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
+    '    <div id="ds-actions"></div>' +
+    '    <div id="ds-topbar-tools">' +
     '      <button type="button" class="win-button ds-btn-sm" id="ds-page-refresh-btn" title="Refresh Page">' +
     '        <i class="bi bi-arrow-clockwise"></i>' +
     '      </button>' +
@@ -88,7 +89,6 @@ function renderTab(): HTMLElement {
     '      </button>' +
     "    </div>" +
     "  </div>" +
-    '  <div id="ds-actions"></div>' +
     "</div>" +
     '<div id="ds-view"></div>';
 
@@ -111,6 +111,21 @@ function renderTab(): HTMLElement {
   settingsBtn?.addEventListener("click", () => {
     openSettingsModal();
   });
+
+  const topbar = container.querySelector<HTMLElement>("#ds-topbar");
+  if (topbar && typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        if (width < 780) {
+          topbar.classList.add("ds-narrow");
+        } else {
+          topbar.classList.remove("ds-narrow");
+        }
+      }
+    });
+    ro.observe(topbar);
+  }
 
   setTimeout(() => {
     void loadPluginView();
