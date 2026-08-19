@@ -39,13 +39,13 @@ export function showBlacklistWarningModal(
         ${decodeEntities(title)}
       </div>
       <div style="font-size:11px;color:var(--sys-text-muted,#555);line-height:1.4;">
-        This release contains content tagged with tags on your blacklist:
+        This item matches tags or series on your blacklist:
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow-y:auto;padding:2px 0;">
         ${tagsListHtml}
       </div>
       <div class="ds-muted" style="font-size:11px;color:#777;margin-top:2px;">
-        Do you still want to proceed and open this release?
+        Do you still want to proceed and open it?
       </div>
     </div>
     <div class="ds-modal-footer" style="display:flex;justify-content:flex-end;gap:8px;padding-top:8px;border-top:1px solid var(--sys-border-light,#ccc);flex-shrink:0;">

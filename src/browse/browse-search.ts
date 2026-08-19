@@ -527,7 +527,12 @@ async function renderSearchResultsList(
   const blacklistedItems: { item: SearchResultItem; matchedTags: string[] }[] = [];
 
   for (const item of data.items) {
-    const check = isItemBlacklisted(item.tags);
+    const isSeriesKind =
+      item.kind === "series" || item.kind === "anthology" || item.kind === "doujin";
+    const seriesInfo = isSeriesKind
+      ? { permalink: item.permalink, name: item.title }
+      : { name: item.doujin?.name };
+    const check = isItemBlacklisted(item.tags, seriesInfo);
     if (check.blacklisted) {
       blacklistedItems.push({ item, matchedTags: check.matchedTags });
     } else {
@@ -559,7 +564,7 @@ async function renderSearchResultsList(
       notice.innerHTML = `
         <div class="ds-flex-row">
           <i class="bi bi-shield-slash-fill" style="color:#dc3545;"></i>
-          <span><b>${blacklistedItems.length}</b> result${blacklistedItems.length === 1 ? "" : "s"} hidden by tag blacklist.</span>
+          <span><b>${blacklistedItems.length}</b> result${blacklistedItems.length === 1 ? "" : "s"} hidden by blacklist.</span>
         </div>
         <button type="button" class="win-button ds-btn-sm" style="font-size:10px;padding:2px 8px;">
           <i class="bi bi-eye"></i> Show Blacklisted (${blacklistedItems.length})
@@ -583,19 +588,24 @@ async function renderSearchResultsList(
       const allFiltered = document.createElement("div");
       allFiltered.className = "ds-muted";
       allFiltered.style.cssText = "padding:12px 0;text-align:center;font-size:11px;";
-      allFiltered.textContent = "All results on this page were hidden by your tag blacklist.";
+      allFiltered.textContent = "All results on this page were hidden by your blacklist.";
       container.appendChild(allFiltered);
     }
 
     for (const item of normalItems) {
       list.appendChild(
-        renderSearchResultRow(item, false, [], fullyCachedSet.has(item.permalink)),
+        renderSearchResultRow(item, false, undefined, fullyCachedSet.has(item.permalink)),
       );
     }
   } else {
-    // "warn" mode: Render all items in the main list with warning tags
+    // "warn" mode: show all, flag blacklisted items
     for (const item of data.items) {
-      const check = isItemBlacklisted(item.tags);
+      const isSeriesKind =
+        item.kind === "series" || item.kind === "anthology" || item.kind === "doujin";
+      const seriesInfo = isSeriesKind
+        ? { permalink: item.permalink, name: item.title }
+        : { name: item.doujin?.name };
+      const check = isItemBlacklisted(item.tags, seriesInfo);
       list.appendChild(
         renderSearchResultRow(
           item,

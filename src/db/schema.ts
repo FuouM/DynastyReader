@@ -56,6 +56,11 @@ const SCHEMA = [
     tag_permalink TEXT,
     created_at INTEGER NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS series_blacklist (
+    series_permalink TEXT PRIMARY KEY,
+    series_name TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`,
 ];
 
 let initDbPromise: Promise<void> | null = null;

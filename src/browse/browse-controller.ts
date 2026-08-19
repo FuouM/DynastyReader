@@ -12,6 +12,7 @@ import { renderDownloadedChapters } from "./browse-downloaded";
 import { renderPager } from "../components/pager";
 import { setupInputClearButtons } from "../components/input-field";
 import { attachDelayedLoading } from "../components/loading";
+import { getBlacklistRevision, onBlacklistChanged } from "../db";
 
 let currentBrowseSeq = 0;
 
@@ -215,6 +216,23 @@ export function renderBrowse(container: HTMLElement, route: Route): void {
 
   const loadedPanes = new Set<string>();
   const paneLoadedAt = new Map<string, number>();
+  let lastRenderedBlacklistRev = getBlacklistRevision();
+
+  const handleBlacklistChange = () => {
+    // Invalidate all cached panes so they re-filter
+    loadedPanes.clear();
+    lastRenderedBlacklistRev = getBlacklistRevision();
+    const activeTab = route.browseTab ?? "releases";
+    const activePane = panes.get(activeTab);
+    if (activePane) {
+      loadedPanes.add(activeTab);
+      paneLoadedAt.set(activeTab, Date.now());
+      const savedPager = topPagerMap.get(activeTab);
+      void renderTabContent(activePane, activeTab, savedPager?.currentPage ?? 1);
+    }
+  };
+
+  onBlacklistChanged(handleBlacklistChange);
 
   const switchTab = (tabId: string, forceReload = false) => {
     route.browseTab = tabId;
@@ -230,6 +248,13 @@ export function renderBrowse(container: HTMLElement, route: Route): void {
 
     const activePane = panes.get(tabId);
     if (!activePane) return;
+
+    // Check if blacklist changed while away
+    if (lastRenderedBlacklistRev !== getBlacklistRevision()) {
+      loadedPanes.clear();
+      lastRenderedBlacklistRev = getBlacklistRevision();
+      forceReload = true;
+    }
 
     // Restore top pager for this tab
     const savedPager = topPagerMap.get(tabId);

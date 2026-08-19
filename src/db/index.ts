@@ -47,12 +47,18 @@ export {
   getBlacklistedTags,
   addBlacklistedTag,
   removeBlacklistedTag,
+  getBlacklistedSeries,
+  addBlacklistedSeries,
+  removeBlacklistedSeries,
+  isSeriesBlacklisted,
+  getBlacklistRevision,
+  onBlacklistChanged,
   initBlacklistCache,
   isItemBlacklisted,
   getBlacklistMode,
   setBlacklistMode,
 } from "./blacklist.repo";
-export type { BlacklistedTag, BlacklistCheckResult, BlacklistMode } from "./blacklist.repo";
+export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode } from "./blacklist.repo";
 export type {
   CachedMetadata,
   FollowedSeriesRow,

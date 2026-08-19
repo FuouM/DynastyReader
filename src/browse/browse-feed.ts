@@ -98,7 +98,7 @@ export async function renderFeed(
   const blacklistedChapters: { ch: FeedChapter; matchedTags: string[] }[] = [];
 
   for (const ch of feed.chapters) {
-    const check = isItemBlacklisted(ch.tags);
+    const check = isItemBlacklisted(ch.tags, { name: ch.series });
     if (check.blacklisted) {
       blacklistedChapters.push({ ch, matchedTags: check.matchedTags });
     } else {
@@ -134,7 +134,7 @@ export async function renderFeed(
       notice.innerHTML = `
         <div class="ds-flex-row">
           <i class="bi bi-shield-slash-fill" style="color:#dc3545;"></i>
-          <span><b>${blacklistedChapters.length}</b> chapter${blacklistedChapters.length === 1 ? "" : "s"} hidden by tag blacklist.</span>
+          <span><b>${blacklistedChapters.length}</b> chapter${blacklistedChapters.length === 1 ? "" : "s"} hidden by blacklist.</span>
         </div>
         <button type="button" class="win-button ds-btn-sm" style="font-size:10px;padding:2px 8px;">
           <i class="bi bi-eye"></i> Show Blacklisted (${blacklistedChapters.length})
@@ -158,7 +158,7 @@ export async function renderFeed(
       const allFiltered = document.createElement("div");
       allFiltered.className = "ds-muted";
       allFiltered.style.cssText = "padding:12px 0;text-align:center;font-size:11px;";
-      allFiltered.textContent = "All chapters on this page were hidden by your tag blacklist.";
+      allFiltered.textContent = "All chapters on this page were hidden by your blacklist.";
       frag.appendChild(allFiltered);
     }
 

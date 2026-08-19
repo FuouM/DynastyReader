@@ -187,6 +187,17 @@ function setupLibraryActions(
       navigate({ view: "cache" });
     });
     host.appendChild(cacheBtn);
+
+    const blacklistBtn = document.createElement("button");
+    blacklistBtn.type = "button";
+    blacklistBtn.className = "win-button";
+    blacklistBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    blacklistBtn.innerHTML = '<i class="bi bi-shield-slash"></i> Series Blacklist';
+    blacklistBtn.title = "Manage blacklisted series and view hidden works";
+    blacklistBtn.addEventListener("click", () => {
+      navigate({ view: "blacklist" });
+    });
+    host.appendChild(blacklistBtn);
   });
 }
 

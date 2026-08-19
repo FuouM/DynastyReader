@@ -2,6 +2,8 @@ import { decodeEntities, navigate } from "../state";
 import { directoryGroups, fetchDirectory, openExternal } from "../api";
 import { renderPager } from "../components/pager";
 import { updateBrowseTopPager } from "./browse-controller";
+import { isSeriesBlacklisted, getBlacklistMode } from "../db";
+import { showBlacklistWarningModal } from "../components/trigger-warning";
 import type { DirectoryGroup } from "../types/api";
 
 export interface DirectoryReload {
@@ -19,6 +21,7 @@ export async function renderDirectory(
   const key = `${kind === "series" ? "dir:series" : "dir:tags"}:${page}`;
   const dir = await fetchDirectory(url, key);
   const groups: DirectoryGroup[] = directoryGroups(dir);
+  const blMode = getBlacklistMode();
 
   if (groups.length === 0) {
     const empty = document.createElement("div");
@@ -39,6 +42,8 @@ export async function renderDirectory(
     const list = document.createElement("div");
     list.style.cssText = "display:flex;flex-direction:column;";
     for (const entry of group.entries) {
+      const isBl = kind === "series" && isSeriesBlacklisted(entry.permalink, entry.name);
+
       const item = document.createElement("div");
       item.className = "ds-item";
       item.style.cssText =
@@ -46,6 +51,15 @@ export async function renderDirectory(
       const title = document.createElement("div");
       title.className = "ds-item-title ds-fill ds-clickable";
       title.textContent = decodeEntities(entry.name);
+
+      if (isBl) {
+        const blBadge = document.createElement("span");
+        blBadge.className = "ds-muted";
+        blBadge.style.cssText = "font-size:10px;margin-left:6px;color:var(--ds-warn-text,#d97706);font-weight:600;";
+        blBadge.innerHTML = '<i class="bi bi-shield-slash-fill"></i> Blacklisted';
+        title.appendChild(blBadge);
+      }
+
       item.appendChild(title);
 
       const extBtn = document.createElement("button");
@@ -66,11 +80,18 @@ export async function renderDirectory(
 
       if (kind === "series") {
         title.addEventListener("click", () => {
-          navigate({
-            view: "series",
-            seriesPermalink: entry.permalink,
-            seriesName: entry.name,
-          });
+          const openSeries = () =>
+            navigate({
+              view: "series",
+              seriesPermalink: entry.permalink,
+              seriesName: entry.name,
+            });
+
+          if (isBl && blMode === "warn") {
+            showBlacklistWarningModal(entry.name, [entry.name], openSeries);
+          } else {
+            openSeries();
+          }
         });
       } else {
         title.addEventListener("click", () => {

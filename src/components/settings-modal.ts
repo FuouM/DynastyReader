@@ -6,7 +6,13 @@
  */
 
 import { decodeEntities, navigate, renderCurrent } from "../state";
-import { addBlacklistedTag, getBlacklistedTags, removeBlacklistedTag, getBlacklistMode, setBlacklistMode } from "../db";
+import {
+  addBlacklistedTag,
+  getBlacklistedTags,
+  removeBlacklistedTag,
+  getBlacklistMode,
+  setBlacklistMode,
+} from "../db";
 import type { BlacklistedTag } from "../db";
 import { openExternal, suggest } from "../api";
 import { invoke } from "@tauri-apps/api/core";
@@ -215,6 +221,12 @@ export function openSettingsModal(): void {
     '      <span style="font-size:12px;color:var(--sys-window-text,#333);">Manage disk footprint &amp; scans:</span>' +
     '      <button type="button" class="win-button" id="ds-settings-goto-cache">' +
     '        <i class="bi bi-box-arrow-in-right"></i> Open Cache Manager' +
+    '      </button>' +
+    "    </div>" +
+    '    <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;margin-top:4px;">' +
+    '      <span style="font-size:12px;color:var(--sys-window-text,#333);">Series Blacklist:</span>' +
+    '      <button type="button" class="win-button" id="ds-settings-goto-blacklist" title="Manage blacklisted series">' +
+    '        <i class="bi bi-shield-slash"></i> Open Series Blacklist' +
     '      </button>' +
     "    </div>" +
     '    <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;margin-top:4px;">' +
@@ -429,6 +441,12 @@ export function openSettingsModal(): void {
   cacheBtn?.addEventListener("click", () => {
     close();
     navigate({ view: "cache" });
+  });
+
+  const blacklistBtn = modal.querySelector<HTMLButtonElement>("#ds-settings-goto-blacklist");
+  blacklistBtn?.addEventListener("click", () => {
+    close();
+    navigate({ view: "blacklist" });
   });
 
   const openLogsBtn = modal.querySelector<HTMLButtonElement>("#ds-settings-open-logs");

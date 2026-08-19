@@ -13,6 +13,9 @@ import {
   getHistoryPermalinks,
   getProgressForSeries,
   unfollowSeries,
+  addBlacklistedSeries,
+  removeBlacklistedSeries,
+  isSeriesBlacklisted,
 } from "./db";
 import { Series, SeriesTag, fetchSeries, getSeriesCover, openExternal } from "./api";
 import { renderTagPill } from "./components/tag-pill";
@@ -61,6 +64,7 @@ async function load(container: HTMLElement, permalink: string, force: boolean): 
   }
 
   const followed = await getFollowedSeriesRow(permalink);
+  const blacklisted = isSeriesBlacklisted(permalink, series.name);
   const chapters = collectChapters(series);
   const chapterPermalinks = chapters.map((c) => c.permalink);
 
@@ -82,8 +86,8 @@ async function load(container: HTMLElement, permalink: string, force: boolean): 
   }
 
   container.innerHTML = "";
-  buildBody(container, series, coverPath, chapters, progress, cacheCounts, readHistorySet);
-  buildActions(container, series, coverPath, followed !== null, chapters);
+  buildBody(container, series, coverPath, chapters, progress, cacheCounts, readHistorySet, blacklisted);
+  buildActions(container, series, coverPath, followed !== null, blacklisted, chapters);
 }
 
 function collectChapters(series: Series): ChapterMeta[] {
@@ -215,7 +219,20 @@ function buildBody(
   progress: Map<string, SeriesProgressRow>,
   cacheCounts: Map<string, number>,
   readHistorySet: Set<string>,
+  blacklisted: boolean,
 ): void {
+  if (blacklisted) {
+    const notice = document.createElement("div");
+    notice.className = "ds-row ds-blacklist-notice";
+    notice.style.cssText =
+      "background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:6px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:11px;";
+    notice.innerHTML = `
+      <i class="bi bi-shield-slash-fill" style="font-size:14px;color:var(--ds-warn-text,#d97706);flex-shrink:0;"></i>
+      <span>This series is on your <b>blacklist</b>. Its releases are hidden from browse feeds and search results.</span>
+    `;
+    container.appendChild(notice);
+  }
+
   const head = document.createElement("div");
   head.className = "ds-series-head";
   head.appendChild(coverEl(coverPath, series.name));
@@ -528,6 +545,7 @@ function buildActions(
   series: Series,
   coverPath: string | null,
   followed: boolean,
+  blacklisted: boolean,
   chapters: ChapterMeta[],
 ): void {
   const seriesPermalink = series.permalink;
@@ -558,6 +576,24 @@ function buildActions(
     }
   };
 
+  const toggleBlacklist = async (btn: HTMLButtonElement): Promise<void> => {
+    btn.disabled = true;
+    try {
+      if (blacklisted) {
+        await removeBlacklistedSeries(seriesPermalink);
+        setBanner(`Removed "${seriesName}" from blacklist.`);
+      } else {
+        await addBlacklistedSeries(seriesPermalink, seriesName);
+        setBanner(`Blacklisted series "${seriesName}".`);
+      }
+      void load(container, seriesPermalink, false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setBanner(`Blacklist toggle failed: ${msg}`);
+      btn.disabled = false;
+    }
+  };
+
   setActions((host) => {
     const followBtn = document.createElement("button");
     followBtn.type = "button";
@@ -567,6 +603,18 @@ function buildActions(
       : '<i class="bi bi-bookmark"></i> <span class="ds-btn-text">Follow</span>';
     followBtn.addEventListener("click", () => void toggleFollow(followBtn));
     host.appendChild(followBtn);
+
+    const blacklistBtn = document.createElement("button");
+    blacklistBtn.type = "button";
+    blacklistBtn.className = `win-button${blacklisted ? " active" : ""}`;
+    blacklistBtn.title = blacklisted
+      ? "Remove series from blacklist"
+      : "Add series to blacklist (hides releases from browse & search)";
+    blacklistBtn.innerHTML = blacklisted
+      ? '<i class="bi bi-shield-slash-fill" style="color:var(--ds-warn-text,#d97706);"></i> <span class="ds-btn-text">Blacklisted</span>'
+      : '<i class="bi bi-shield-slash"></i> <span class="ds-btn-text">Blacklist</span>';
+    blacklistBtn.addEventListener("click", () => void toggleBlacklist(blacklistBtn));
+    host.appendChild(blacklistBtn);
 
     const refreshBtn = document.createElement("button");
     refreshBtn.type = "button";

@@ -6,6 +6,12 @@ export interface BlacklistedTag {
   created_at: number;
 }
 
+export interface BlacklistedSeries {
+  series_permalink: string;
+  series_name: string;
+  created_at: number;
+}
+
 export interface BlacklistCheckResult {
   blacklisted: boolean;
   matchedTags: string[];
@@ -13,33 +19,72 @@ export interface BlacklistCheckResult {
 
 export type BlacklistMode = "hide" | "warn";
 
+let blacklistRevision = 0;
+type BlacklistListener = () => void;
+const blacklistListeners: BlacklistListener[] = [];
+
+export function getBlacklistRevision(): number {
+  return blacklistRevision;
+}
+
+export function onBlacklistChanged(fn: BlacklistListener): () => void {
+  blacklistListeners.push(fn);
+  return () => {
+    const idx = blacklistListeners.indexOf(fn);
+    if (idx >= 0) blacklistListeners.splice(idx, 1);
+  };
+}
+
+function notifyBlacklistChanged(): void {
+  blacklistRevision++;
+  for (const fn of [...blacklistListeners]) {
+    try {
+      fn();
+    } catch (e) {
+      console.error("Blacklist listener error:", e);
+    }
+  }
+}
+
 export function getBlacklistMode(): BlacklistMode {
   return (localStorage.getItem("ds-blacklist-mode") as BlacklistMode) || "hide";
 }
 
 export function setBlacklistMode(mode: BlacklistMode): void {
   localStorage.setItem("ds-blacklist-mode", mode);
+  notifyBlacklistChanged();
 }
 
 let cachedBlacklistNames = new Set<string>();
+let cachedBlacklistSeriesPermalinks = new Set<string>();
+let cachedBlacklistSeriesNames = new Set<string>();
 
 /**
- * Loads the active tag blacklist into memory for ultra-fast synchronous checks.
+ * Loads the active tag and series blacklists into memory for ultra-fast synchronous checks.
  */
 export async function initBlacklistCache(): Promise<void> {
-  const rows = await getBlacklistedTags();
+  const [tagRows, seriesRows] = await Promise.all([
+    getBlacklistedTags(),
+    getBlacklistedSeries(),
+  ]);
+
   cachedBlacklistNames = new Set(
-    rows.flatMap((r) => [
+    tagRows.flatMap((r) => [
       r.tag_name.toLowerCase().trim(),
       ...(r.tag_permalink ? [r.tag_permalink.toLowerCase().trim()] : []),
     ]),
+  );
+
+  cachedBlacklistSeriesPermalinks = new Set(
+    seriesRows.map((r) => r.series_permalink.toLowerCase().trim()),
+  );
+  cachedBlacklistSeriesNames = new Set(
+    seriesRows.map((r) => r.series_name.toLowerCase().trim()),
   );
 }
 
 /**
  * Returns all blacklisted tags sorted by creation time.
- * Errors propagate so the UI can surface a broken blacklist instead of
- * silently rendering "no blacklist" (AGENTS §7.11).
  */
 export async function getBlacklistedTags(): Promise<BlacklistedTag[]> {
   return query<BlacklistedTag>(
@@ -65,6 +110,7 @@ export async function addBlacklistedTag(name: string, permalink?: string): Promi
   if (permalink) {
     cachedBlacklistNames.add(permalink.trim().toLowerCase());
   }
+  notifyBlacklistChanged();
 }
 
 /**
@@ -76,30 +122,108 @@ export async function removeBlacklistedTag(name: string): Promise<void> {
 
   await execute("DELETE FROM tag_blacklist WHERE tag_name = ?", [trimmed]);
   cachedBlacklistNames.delete(trimmed.toLowerCase());
-  // Refresh cache to ensure permalink aliases are cleaned properly
-  void initBlacklistCache();
+  await initBlacklistCache();
+  notifyBlacklistChanged();
 }
 
 /**
- * Synchronously checks if any of the given tags match the active blacklist.
+ * Returns all blacklisted series sorted by creation time.
+ */
+export async function getBlacklistedSeries(): Promise<BlacklistedSeries[]> {
+  return query<BlacklistedSeries>(
+    "SELECT series_permalink, series_name, created_at FROM series_blacklist ORDER BY created_at DESC",
+    [],
+  );
+}
+
+/**
+ * Adds a series to the SQLite blacklist and updates the in-memory cache.
+ */
+export async function addBlacklistedSeries(permalink: string, name: string): Promise<void> {
+  const cleanPerm = permalink.trim();
+  const cleanName = name.trim() || cleanPerm;
+  if (!cleanPerm) return;
+  const now = Date.now();
+
+  await execute(
+    "INSERT OR REPLACE INTO series_blacklist (series_permalink, series_name, created_at) VALUES (?, ?, ?)",
+    [cleanPerm, cleanName, now],
+  );
+
+  cachedBlacklistSeriesPermalinks.add(cleanPerm.toLowerCase());
+  cachedBlacklistSeriesNames.add(cleanName.toLowerCase());
+  notifyBlacklistChanged();
+}
+
+/**
+ * Removes a series from the SQLite blacklist and updates the in-memory cache.
+ */
+export async function removeBlacklistedSeries(permalink: string): Promise<void> {
+  const cleanPerm = permalink.trim();
+  if (!cleanPerm) return;
+
+  await execute("DELETE FROM series_blacklist WHERE series_permalink = ?", [cleanPerm]);
+  cachedBlacklistSeriesPermalinks.delete(cleanPerm.toLowerCase());
+  await initBlacklistCache();
+  notifyBlacklistChanged();
+}
+
+/**
+ * Checks synchronously whether a series is blacklisted by permalink or title.
+ */
+export function isSeriesBlacklisted(permalink?: string, name?: string): boolean {
+  if (permalink && cachedBlacklistSeriesPermalinks.has(permalink.toLowerCase().trim())) {
+    return true;
+  }
+  if (name && cachedBlacklistSeriesNames.has(name.toLowerCase().trim())) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Synchronously checks if an item (via tags or series info) matches the active blacklists.
  */
 export function isItemBlacklisted(
-  tags: { name: string; permalink?: string }[] | undefined,
+  tags: { name: string; permalink?: string; type?: string }[] | undefined,
+  seriesInfo?: { permalink?: string; name?: string },
 ): BlacklistCheckResult {
-  if (!tags || tags.length === 0 || cachedBlacklistNames.size === 0) {
-    return { blacklisted: false, matchedTags: [] };
+  const matched: string[] = [];
+
+  // 1. Check direct series blacklist
+  if (seriesInfo) {
+    if (seriesInfo.permalink && cachedBlacklistSeriesPermalinks.has(seriesInfo.permalink.toLowerCase().trim())) {
+      matched.push(seriesInfo.name || seriesInfo.permalink);
+    } else if (seriesInfo.name && cachedBlacklistSeriesNames.has(seriesInfo.name.toLowerCase().trim())) {
+      matched.push(seriesInfo.name);
+    }
   }
 
-  const matched: string[] = [];
-  for (const t of tags) {
-    const nameLower = (t.name || "").toLowerCase().trim();
-    const permLower = (t.permalink || "").toLowerCase().trim();
+  // 2. Check tags against tag blacklist & series blacklist
+  if (tags && tags.length > 0) {
+    for (const t of tags) {
+      const nameLower = (t.name || "").toLowerCase().trim();
+      const permLower = (t.permalink || "").toLowerCase().trim();
 
-    if (
-      (nameLower && cachedBlacklistNames.has(nameLower)) ||
-      (permLower && cachedBlacklistNames.has(permLower))
-    ) {
-      matched.push(t.name || t.permalink || "Unknown");
+      // Check tag blacklist
+      if (
+        (nameLower && cachedBlacklistNames.has(nameLower)) ||
+        (permLower && cachedBlacklistNames.has(permLower))
+      ) {
+        if (!matched.includes(t.name || t.permalink || "Unknown")) {
+          matched.push(t.name || t.permalink || "Unknown");
+        }
+      }
+
+      // If tag is a series tag, check against series blacklist
+      if (
+        (permLower && cachedBlacklistSeriesPermalinks.has(permLower)) ||
+        (nameLower && cachedBlacklistSeriesNames.has(nameLower))
+      ) {
+        if (!matched.includes(t.name || t.permalink || "Unknown")) {
+          matched.push(t.name || t.permalink || "Unknown");
+        }
+      }
     }
   }
 

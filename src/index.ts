@@ -19,6 +19,7 @@ import { renderBrowse } from "./browse";
 import { renderSeries } from "./ui-series";
 import { renderReader } from "./reader/reader-controller";
 import { renderCache } from "./ui-cache";
+import { renderBlacklist } from "./ui-blacklist";
 import { openSettingsModal, getSavedUiScale } from "./components/settings-modal";
 
 import indexCss from "./styles/index.css?inline";
@@ -38,6 +39,7 @@ if (!PH) {
   registerRenderer("series", renderSeries);
   registerRenderer("reader", renderReader);
   registerRenderer("cache", renderCache);
+  registerRenderer("blacklist", renderBlacklist);
 
   injectStyles();
 

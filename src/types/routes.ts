@@ -2,7 +2,7 @@
  * Router & navigation types for the dynasty-scans plugin.
  */
 
-export type ViewName = "library" | "browse" | "series" | "reader" | "cache";
+export type ViewName = "library" | "browse" | "series" | "reader" | "cache" | "blacklist";
 
 export interface ChapterRef {
   title: string;
