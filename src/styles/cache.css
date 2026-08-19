@@ -92,7 +92,6 @@
   border: 1px solid var(--sys-border-light, #e4e4e4);
   background: var(--sys-window-bg, #fafafa);
   border-radius: 3px;
-  transition: background 0.1s ease, border-color 0.1s ease;
 }
 .ds-cache-item:hover {
   background: var(--sys-hover-bg, #f3f3f3);

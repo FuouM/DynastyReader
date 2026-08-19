@@ -150,7 +150,7 @@ body {
 /* Generic content helpers */
 .ds-muted {
   font-size: 11px;
-  color: #777;
+  color: var(--sys-text-muted, #777);
   font-style: italic;
 }
 .ds-row {
@@ -223,21 +223,36 @@ body {
 .ds-series-link {
   font-size: 11px;
   font-weight: 600;
-  color: var(--sys-highlight-bg, #0284c7);
+  color: var(--sys-primary, #0284c7);
   cursor: pointer;
   text-decoration: none;
 }
 .ds-series-link:hover {
   text-decoration: underline;
 }
+:root[data-theme="dark"] .ds-series-link,
+[data-theme="dark"] .ds-series-link,
+body.ds-dark .ds-series-link {
+  color: #38bdf8;
+}
+:root[data-theme="dark"] .ds-series-link:hover,
+[data-theme="dark"] .ds-series-link:hover,
+body.ds-dark .ds-series-link:hover {
+  color: #7dd3fc;
+}
 .tag-pill {
   cursor: pointer;
   user-select: none;
   transition: filter 0.15s ease, opacity 0.15s ease;
 }
-.tag-pill:hover {
+:root:not([data-theme="dark"]) .tag-pill:hover {
   filter: brightness(0.92);
   opacity: 0.9;
+}
+:root[data-theme="dark"] .tag-pill:hover,
+[data-theme="dark"] .tag-pill:hover,
+body.ds-dark .tag-pill:hover {
+  opacity: 1;
 }
 
 /* Library & Browse item rows */
@@ -262,7 +277,7 @@ body {
 }
 .ds-item-meta {
   font-size: 11px;
-  color: #666;
+  color: var(--sys-text-muted, #666);
   margin-top: 2px;
 }
 
@@ -277,30 +292,30 @@ body {
   height: 126px;
   object-fit: cover;
   border: 1px solid var(--sys-border-light, #ccc);
-  background: #eee;
+  background: var(--sys-control-bg, #eee);
   flex-shrink: 0;
 }
 .ds-cover-placeholder {
   width: 90px;
   height: 126px;
   border: 1px solid var(--sys-border-light, #ccc);
-  background: #eee;
+  background: var(--sys-control-bg, #eee);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #aaa;
+  color: var(--sys-text-muted, #aaa);
   flex-shrink: 0;
 }
 .ds-series-desc {
   font-size: 11px;
-  color: #555;
+  color: var(--sys-text-secondary, #555);
   margin: 6px 0;
   white-space: pre-wrap;
 }
 .ds-vol-header {
   font-size: 11px;
   font-weight: 600;
-  color: #555;
+  color: var(--sys-text-secondary, #555);
   margin: 10px 0 4px;
 }
 .ds-chapter-row {
@@ -330,7 +345,7 @@ body {
 }
 .ds-chapter-badge {
   font-size: 10px;
-  color: #666;
+  color: var(--sys-text-muted, #666);
   flex-shrink: 0;
 }
 

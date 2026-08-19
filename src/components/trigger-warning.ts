@@ -21,7 +21,7 @@ export function showBlacklistWarningModal(
   const tagsListHtml = matchedTags
     .map(
       (t) =>
-        `<span class="tag-pill" style="background:#fdf3f4;border:1px solid #f5c2c7;color:#842029;font-weight:600;font-size:11px;padding:2px 7px;"><i class="bi bi-shield-slash-fill"></i> ${decodeEntities(t)}</span>`,
+        `<span class="tag-pill" style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);font-weight:600;font-size:11px;padding:2px 7px;"><i class="bi bi-shield-slash-fill"></i> ${decodeEntities(t)}</span>`,
     )
     .join("");
 

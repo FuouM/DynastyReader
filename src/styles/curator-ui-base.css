@@ -23,6 +23,7 @@
   --sys-window-text: #000000;
   --sys-border-light: #ffffff;
   --sys-border-dark: #b0b0b0;
+  --sys-border-medium: #cccccc;
   --sys-border-focus: #0078d7;
   --sys-highlight-bg: #0078d7;
   --sys-highlight-text: #ffffff;
@@ -34,12 +35,76 @@
   --sys-status-text: #333333;
   --sys-menu-bg: #f9f9f9;
   --sys-menu-border: #d0d0d0;
+  --sys-text-primary: #000000;
+  --sys-text-secondary: #555555;
+  --sys-text-muted: #666666;
   --sys-text-subtle: #555555;
+  --sys-text-color: #000000;
+  --sys-hover-bg: #f0f0f0;
+  --sys-bg-active: #f8f9fa;
+  --sys-card-bg: #ffffff;
   --sys-primary: #0078d4;
+  --ds-status-fresh-bg: #e6f4ea;
+  --ds-status-fresh-text: #137333;
+  --ds-status-fresh-border: #ceead6;
+  --ds-status-stale-bg: #fef7e0;
+  --ds-status-stale-text: #b06000;
+  --ds-status-stale-border: #feefc3;
+  --ds-danger-bg: #fde7e9;
+  --ds-danger-text: #a80000;
+  --ds-danger-border: #e81123;
+  --ds-warn-bg: #fdf3f4;
+  --ds-warn-text: #842029;
+  --ds-warn-border: #f5c2c7;
   --z-dropdown: 100;
   --z-modal: 9999;
   --z-viewer: 10000;
   --z-tooltip: 99999;
+}
+
+/* ── Dark theme palette (applied to the whole document) ───────────────────── */
+:root[data-theme="dark"],
+[data-theme="dark"],
+body.ds-dark {
+  --sys-control-bg: #1e1e1e;
+  --sys-control-text: #e0e0e0;
+  --sys-window-bg: #252526;
+  --sys-window-text: #e0e0e0;
+  --sys-border-light: #3a3a3a;
+  --sys-border-dark: #555555;
+  --sys-border-medium: #3a3a3a;
+  --sys-border-focus: #4da6ff;
+  --sys-highlight-bg: #0078d7;
+  --sys-highlight-text: #ffffff;
+  --sys-button-bg: #2b2b2b;
+  --sys-button-border: #444444;
+  --sys-button-hover: #3b3b3b;
+  --sys-button-active: #4a4a4a;
+  --sys-status-bg: #333333;
+  --sys-status-text: #d0d0d0;
+  --sys-menu-bg: #2d2d2d;
+  --sys-menu-border: #444444;
+  --sys-text-primary: #e0e0e0;
+  --sys-text-secondary: #bbbbbb;
+  --sys-text-muted: #999999;
+  --sys-text-subtle: #aaaaaa;
+  --sys-text-color: #e0e0e0;
+  --sys-hover-bg: #333333;
+  --sys-bg-active: #2f3a44;
+  --sys-card-bg: #252526;
+  --sys-primary: #4da6ff;
+  --ds-status-fresh-bg: rgba(34, 197, 94, 0.22);
+  --ds-status-fresh-text: #86efac;
+  --ds-status-fresh-border: rgba(74, 222, 128, 0.48);
+  --ds-status-stale-bg: #3a2e00;
+  --ds-status-stale-text: #ffd75e;
+  --ds-status-stale-border: #5c4d00;
+  --ds-danger-bg: #3a1a1c;
+  --ds-danger-text: #ff8a80;
+  --ds-danger-border: #d32f2f;
+  --ds-warn-bg: #2e2022;
+  --ds-warn-text: #ffb3b0;
+  --ds-warn-border: #5c3034;
 }
 
 * {
@@ -76,6 +141,24 @@ body {
 }
 ::-webkit-scrollbar-button {
   display: none;
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-track,
+[data-theme="dark"] ::-webkit-scrollbar-track,
+body.ds-dark ::-webkit-scrollbar-track {
+  background: #2b2b2b;
+  border-color: #3a3a3a;
+}
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb,
+body.ds-dark ::-webkit-scrollbar-thumb {
+  background: #555555;
+  border-color: #2b2b2b;
+}
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+body.ds-dark ::-webkit-scrollbar-thumb:hover {
+  background: #6e6e6e;
 }
 
 .hidden {
@@ -166,18 +249,46 @@ body {
   border-color: #adadad;
   cursor: not-allowed;
 }
+:root[data-theme="dark"] .win-button:disabled,
+[data-theme="dark"] .win-button:disabled,
+body.ds-dark .win-button:disabled {
+  background-color: #2a2a2a;
+  color: #6e6e6e;
+  border-color: #3a3a3a;
+}
 .win-button.primary {
-  background-color: var(--sys-highlight-bg);
-  color: var(--sys-highlight-text);
-  border-color: #005499;
+  background-color: var(--sys-highlight-bg, #0078d4);
+  color: var(--sys-highlight-text, #ffffff);
+  border-color: #005a9e;
 }
 .win-button.primary:hover {
-  background-color: #1a86d9;
+  background-color: #106ebe;
   border-color: #004578;
 }
 .win-button.primary:active {
-  background-color: #005499;
+  background-color: #005a9e;
   border-color: #003f7f;
+}
+:root[data-theme="dark"] .win-button.primary,
+[data-theme="dark"] .win-button.primary,
+body.ds-dark .win-button.primary {
+  background-color: #0067c0;
+  border-color: #005a9e;
+  color: #ffffff;
+}
+:root[data-theme="dark"] .win-button.primary:hover,
+[data-theme="dark"] .win-button.primary:hover,
+body.ds-dark .win-button.primary:hover {
+  background-color: #1879cd;
+  border-color: #2b88d8;
+  color: #ffffff;
+}
+:root[data-theme="dark"] .win-button.primary:active,
+[data-theme="dark"] .win-button.primary:active,
+body.ds-dark .win-button.primary:active {
+  background-color: #005a9e;
+  border-color: #004578;
+  color: #ffffff;
 }
 
 .input-field {
@@ -232,6 +343,17 @@ body {
 .input-clear-btn:active {
   background-color: #b0b0b0;
 }
+:root[data-theme="dark"] .input-clear-btn:hover,
+[data-theme="dark"] .input-clear-btn:hover,
+body.ds-dark .input-clear-btn:hover {
+  background-color: #3b3b3b;
+  color: #e0e0e0;
+}
+:root[data-theme="dark"] .input-clear-btn:active,
+[data-theme="dark"] .input-clear-btn:active,
+body.ds-dark .input-clear-btn:active {
+  background-color: #4a4a4a;
+}
 .input-wrapper.has-value .input-clear-btn {
   display: inline-flex;
 }
@@ -254,7 +376,7 @@ body {
   background-color: var(--sys-control-bg);
   padding: 0 6px;
   font-weight: 600;
-  color: #333333;
+  color: var(--sys-text-secondary, #333333);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -271,7 +393,6 @@ body {
   border-radius: 2px;
   color: var(--sys-button-border, #707070);
   font-size: 10px;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 .group-box-collapse-btn:hover {
   background-color: var(--sys-button-hover, #e5f1fb);
@@ -344,10 +465,161 @@ body {
   border: 1px solid #ffd9c2;
   color: #7c2d12;
 }
+.tag-pill.tag-pairing {
+  background-color: #fce7f3;
+  border: 1px solid #fbcfe8;
+  color: #9d174d;
+}
+.tag-pill.tag-status {
+  background-color: #e6f4ea;
+  border: 1px solid #ceead6;
+  color: #0e6b38;
+}
 .tag-pill.tag-rank-3 {
   background-color: #e7f0f7;
   border: 1px solid #cfe1ee;
   color: #33515f;
+}
+
+/* Dark theme tag taxonomy - vibrant, luminous, high-contrast, polished */
+:root[data-theme="dark"] .tag-pill.tag-user,
+[data-theme="dark"] .tag-pill.tag-user,
+body.ds-dark .tag-pill.tag-user {
+  background-color: rgba(234, 179, 8, 0.16);
+  border-color: rgba(234, 179, 8, 0.42);
+  color: #facc15;
+}
+:root[data-theme="dark"] .tag-pill.tag-user:hover,
+body.ds-dark .tag-pill.tag-user:hover {
+  background-color: rgba(234, 179, 8, 0.26);
+  border-color: rgba(234, 179, 8, 0.65);
+  color: #fef08a;
+}
+
+:root[data-theme="dark"] .tag-pill.tag-character,
+[data-theme="dark"] .tag-pill.tag-character,
+body.ds-dark .tag-pill.tag-character {
+  background-color: rgba(6, 182, 212, 0.16);
+  border-color: rgba(6, 182, 212, 0.42);
+  color: #22d3ee;
+}
+:root[data-theme="dark"] .tag-pill.tag-character:hover,
+body.ds-dark .tag-pill.tag-character:hover {
+  background-color: rgba(6, 182, 212, 0.26);
+  border-color: rgba(6, 182, 212, 0.65);
+  color: #67e8f9;
+}
+
+:root[data-theme="dark"] .tag-pill.tag-copyright,
+[data-theme="dark"] .tag-pill.tag-copyright,
+body.ds-dark .tag-pill.tag-copyright {
+  background-color: rgba(192, 132, 252, 0.20);
+  border-color: rgba(192, 132, 252, 0.48);
+  color: #d8b4fe;
+}
+:root[data-theme="dark"] .tag-pill.tag-copyright:hover,
+body.ds-dark .tag-pill.tag-copyright:hover {
+  background-color: rgba(192, 132, 252, 0.32);
+  border-color: rgba(192, 132, 252, 0.70);
+  color: #f5f3ff;
+}
+
+:root[data-theme="dark"] .tag-pill.tag-meta,
+[data-theme="dark"] .tag-pill.tag-meta,
+body.ds-dark .tag-pill.tag-meta {
+  background-color: rgba(148, 163, 184, 0.14);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #cbd5e1;
+}
+:root[data-theme="dark"] .tag-pill.tag-meta:hover,
+body.ds-dark .tag-pill.tag-meta:hover {
+  background-color: rgba(148, 163, 184, 0.24);
+  border-color: rgba(148, 163, 184, 0.55);
+  color: #f1f5f9;
+}
+
+:root[data-theme="dark"] .tag-pill.tag-artist,
+[data-theme="dark"] .tag-pill.tag-artist,
+body.ds-dark .tag-pill.tag-artist {
+  background-color: rgba(251, 146, 60, 0.20);
+  border-color: rgba(251, 146, 60, 0.48);
+  color: #fdba74;
+}
+:root[data-theme="dark"] .tag-pill.tag-artist:hover,
+body.ds-dark .tag-pill.tag-artist:hover {
+  background-color: rgba(251, 146, 60, 0.32);
+  border-color: rgba(251, 146, 60, 0.70);
+  color: #fff7ed;
+}
+
+:root[data-theme="dark"] .tag-pill.tag-pairing,
+[data-theme="dark"] .tag-pill.tag-pairing,
+body.ds-dark .tag-pill.tag-pairing {
+  background-color: rgba(244, 114, 182, 0.20);
+  border-color: rgba(244, 114, 182, 0.48);
+  color: #f9a8d4;
+}
+:root[data-theme="dark"] .tag-pill.tag-pairing:hover,
+body.ds-dark .tag-pill.tag-pairing:hover {
+  background-color: rgba(244, 114, 182, 0.32);
+  border-color: rgba(244, 114, 182, 0.70);
+  color: #fdf2f8;
+}
+
+:root[data-theme="dark"] .tag-pill.tag-status,
+[data-theme="dark"] .tag-pill.tag-status,
+body.ds-dark .tag-pill.tag-status {
+  background-color: rgba(34, 197, 94, 0.16);
+  border-color: rgba(34, 197, 94, 0.42);
+  color: #4ade80;
+}
+:root[data-theme="dark"] .tag-pill.tag-status:hover,
+body.ds-dark .tag-pill.tag-status:hover {
+  background-color: rgba(34, 197, 94, 0.26);
+  border-color: rgba(34, 197, 94, 0.65);
+  color: #86efac;
+}
+
+:root[data-theme="dark"] .tag-pill.tag-rank-3,
+[data-theme="dark"] .tag-pill.tag-rank-3,
+body.ds-dark .tag-pill.tag-rank-3 {
+  background-color: rgba(59, 130, 246, 0.16);
+  border-color: rgba(59, 130, 246, 0.40);
+  color: #60a5fa;
+}
+:root[data-theme="dark"] .tag-pill.tag-rank-3:hover,
+body.ds-dark .tag-pill.tag-rank-3:hover {
+  background-color: rgba(59, 130, 246, 0.26);
+  border-color: rgba(59, 130, 246, 0.65);
+  color: #bfdbfe;
+}
+
+:root[data-theme="dark"] .tag-pill.custom-concept,
+[data-theme="dark"] .tag-pill.custom-concept,
+body.ds-dark .tag-pill.custom-concept {
+  background-color: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.48);
+  color: #818cf8;
+}
+:root[data-theme="dark"] .tag-pill.custom-concept:hover,
+body.ds-dark .tag-pill.custom-concept:hover {
+  background-color: rgba(99, 102, 241, 0.28);
+  border-color: rgba(99, 102, 241, 0.65);
+  color: #a5b4fc;
+}
+
+:root[data-theme="dark"] .tag-pill.tag-identity,
+[data-theme="dark"] .tag-pill.tag-identity,
+body.ds-dark .tag-pill.tag-identity {
+  background-color: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.42);
+  color: #f87171;
+}
+:root[data-theme="dark"] .tag-pill.tag-identity:hover,
+body.ds-dark .tag-pill.tag-identity:hover {
+  background-color: rgba(239, 68, 68, 0.26);
+  border-color: rgba(239, 68, 68, 0.65);
+  color: #fca5a5;
 }
 
 /* ── Touhou Hakurei Yin-Yang Loading Screen ─────────────────────────────── */
@@ -414,7 +686,7 @@ body {
 }
 .ds-muted-xs {
   font-size: 10px;
-  color: #666;
+  color: var(--sys-text-muted, #666);
 }
 .ds-hidden {
   display: none !important;

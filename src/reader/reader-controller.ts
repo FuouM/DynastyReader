@@ -28,7 +28,7 @@ import {
   setReadingProgress,
 } from "../db";
 import type { Chapter, ChapterPage } from "../types/api";
-import type { FitMode, ReaderTheme } from "../types/reader";
+import type { FitMode } from "../types/reader";
 import { ReaderQueue } from "./reader-queue";
 import { ReaderViewport } from "./reader-viewport";
 import { ReaderToolbar } from "./reader-toolbar";
@@ -58,7 +58,6 @@ export class ReaderController {
   zoomScale = 1.0;
   scrollLock = false;
   currentIndex = 0;
-  readerTheme: ReaderTheme = "light";
   isFullscreen = false;
 
   cachedMap = new Map<number, string>();
@@ -513,7 +512,6 @@ export class ReaderController {
     this.isHorizontal = localStorage.getItem("ds-reader-mode") === "paged";
     this.fitMode = (localStorage.getItem("ds-reader-fit") as FitMode) || "width";
     this.scrollLock = localStorage.getItem("ds-reader-scroll-lock") === "1";
-    this.readerTheme = (localStorage.getItem("ds-reader-theme") as ReaderTheme) || "light";
 
     this.readerContainer = document.createElement("div");
     this.readerContainer.id = "ds-reader-container";

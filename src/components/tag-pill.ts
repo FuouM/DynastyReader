@@ -3,7 +3,7 @@
  * type→URL routing. Replaces the verbatim copies in Browse and Series views.
  */
 
-import { navigate, tagClass, tagStyle } from "../state";
+import { navigate, tagClass } from "../state";
 import { el } from "./dom";
 
 export interface TagPillData {
@@ -14,12 +14,10 @@ export interface TagPillData {
 
 export function renderTagPill(t: TagPillData, compact = true): HTMLElement {
   const pill = el("span", {
-    class: tagClass(t.type),
-    style:
-      tagStyle(t.type, t.name) +
-      (compact
-        ? "font-size:10px;padding:1px 6px;border-radius:2px;"
-        : "font-size:10px;padding:2px 6px;border-radius:2px;"),
+    class: tagClass(t.type, t.name),
+    style: compact
+      ? "font-size:10px;padding:1px 6px;border-radius:2px;"
+      : "font-size:10px;padding:2px 6px;border-radius:2px;",
     title: `${t.type}: ${t.name} (click to open)`,
   });
   pill.textContent = t.name;

@@ -98,14 +98,14 @@
   font-weight: 600;
 }
 .ds-status-pill.fresh {
-  background: #e6f4ea;
-  color: #137333;
-  border: 1px solid #ceead6;
+  background: var(--ds-status-fresh-bg, #e6f4ea);
+  color: var(--ds-status-fresh-text, #137333);
+  border: 1px solid var(--ds-status-fresh-border, #ceead6);
 }
 .ds-status-pill.stale {
-  background: #fef7e0;
-  color: #b06000;
-  border: 1px solid #feefc3;
+  background: var(--ds-status-stale-bg, #fef7e0);
+  color: var(--ds-status-stale-text, #b06000);
+  border: 1px solid var(--ds-status-stale-border, #feefc3);
 }
 .ds-etag-tag {
   display: inline-flex;
@@ -186,5 +186,5 @@
 }
 .ds-typeahead-type {
   font-size: 10px;
-  color: #888;
+  color: var(--sys-text-muted, #888);
 }

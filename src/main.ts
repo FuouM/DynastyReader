@@ -1,5 +1,10 @@
 import { restoreStateCurrent, saveWindowState, StateFlags } from "@tauri-apps/plugin-window-state";
 import { attachConsole } from "@tauri-apps/plugin-log";
+import { initAppTheme } from "./theme";
+
+// Apply the persisted theme before the plugin renders so the first paint is
+// already light or dark (no flash from the default light stylesheet).
+initAppTheme();
 
 // Mirror browser console output into the tauri-plugin-log backend so the
 // daemon-style `data/logs/dynasty-reader.log` file captures frontend errors

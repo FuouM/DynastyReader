@@ -52,9 +52,19 @@
   border-color: #666666;
 }
 #ds-reader-container.ds-dark .win-button.primary {
-  background: var(--sys-primary, #0078d4);
+  background: #0067c0;
   color: #ffffff;
   border-color: #005a9e;
+}
+#ds-reader-container.ds-dark .win-button.primary:hover {
+  background: #1879cd;
+  border-color: #2b88d8;
+  color: #ffffff;
+}
+#ds-reader-container.ds-dark .win-button.primary:active {
+  background: #005a9e;
+  border-color: #004578;
+  color: #ffffff;
 }
 #ds-reader-container.ds-dark .win-input,
 #ds-reader-container.ds-dark select {
@@ -73,6 +83,9 @@
 }
 #ds-reader-container.ds-dark #ds-reader-viewport {
   background: #1e1e1e !important;
+}
+#ds-reader-container.ds-dark .ds-progress-text {
+  color: #cccccc;
 }
 #ds-reader-container.ds-fullscreen.ds-dark {
   background: #181818 !important;

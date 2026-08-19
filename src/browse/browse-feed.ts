@@ -111,7 +111,7 @@ export async function renderFeed(
       const notice = document.createElement("div");
       notice.className = "ds-row ds-blacklist-notice";
       notice.style.cssText =
-        "background:#fdf3f4;border:1px solid #f5c2c7;color:#842029;border-radius:3px;padding:4px 10px;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11px;";
+        "background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:4px 10px;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11px;";
 
       let showBlacklisted = false;
       const blContainer = document.createElement("div");
@@ -669,7 +669,7 @@ function feedItem(
   if (isBlacklisted && matchedTags.length > 0) {
     const blBadge = document.createElement("span");
     blBadge.style.cssText =
-      "font-size:9px;background:#fde7e9;color:#a80000;padding:1px 5px;border-radius:2px;border:1px solid #e81123;display:inline-flex;align-items:center;gap:3px;font-weight:600;";
+      "font-size:9px;background:var(--ds-danger-bg);color:var(--ds-danger-text);padding:1px 5px;border-radius:2px;border:1px solid var(--ds-danger-border);display:inline-flex;align-items:center;gap:3px;font-weight:600;";
     const labelPrefix = getBlacklistMode() === "warn" ? "Content Warning" : "Blacklisted";
     blBadge.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${labelPrefix}: ${decodeEntities(matchedTags.join(", "))}`;
     metaRow.appendChild(blBadge);

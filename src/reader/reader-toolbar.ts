@@ -1,6 +1,7 @@
 import type { ReaderController } from "./reader-controller";
 import type { FitMode } from "../types/reader";
 import type { ChapterRef } from "../types/routes";
+import { getAppTheme, onThemeChange, toggleAppTheme } from "../theme";
 
 /**
  * Builds the reader's sticky top navigation bar: chapter/page navigation
@@ -21,6 +22,7 @@ export class ReaderToolbar {
     }
     this.updateScrollLockBtn();
     this.applyTheme();
+    c.onDispose(onThemeChange(() => this.applyTheme()));
   }
 
   private build(): void {
@@ -298,15 +300,12 @@ export class ReaderToolbar {
   }
 
   toggleTheme(): void {
-    const c = this.c;
-    c.readerTheme = c.readerTheme === "light" ? "dark" : "light";
-    localStorage.setItem("ds-reader-theme", c.readerTheme);
-    this.applyTheme();
+    toggleAppTheme();
   }
 
   applyTheme(): void {
     const c = this.c;
-    if (c.readerTheme === "dark") {
+    if (getAppTheme() === "dark") {
       c.readerContainer.classList.add("ds-dark");
       c.themeBtn.innerHTML = '<i class="bi bi-moon-fill"></i> Dark';
     } else {

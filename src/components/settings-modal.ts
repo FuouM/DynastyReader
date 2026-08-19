@@ -13,6 +13,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { browseCovers } from "../browse/browse-covers";
 import { isAutoCacheChapterEnabled, setAutoCacheChapterEnabled, getPrefetchBuffer, setPrefetchBuffer } from "../reader/settings";
 import { setupInputClearButtons } from "./input-field";
+import { getAppTheme, setAppTheme } from "../theme";
 
 const STORAGE_KEY_UI_SCALE = "ds-ui-scale";
 const SCALE_PRESETS = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
@@ -47,7 +48,7 @@ export function openSettingsModal(): void {
 
   const modal = document.createElement("div");
   modal.className = "ds-modal-window";
-  modal.style.cssText = "width: 440px;";
+  modal.style.cssText = "width: 480px;";
 
   const currentScale = getSavedUiScale();
   const applyModalZoom = (s: number) => {
@@ -68,9 +69,9 @@ export function openSettingsModal(): void {
     '  <div class="group-box" style="margin-top:4px;">' +
     '    <div class="group-box-title"><i class="bi bi-aspect-ratio"></i> Display &amp; Scaling</div>' +
     '    <div style="display:flex;flex-direction:column;gap:8px;">' +
-    '      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
-    '        <label for="ds-settings-scale-select" style="font-size:12px;color:#333;">UI Scale Factor:</label>' +
-    '        <div style="display:flex;align-items:center;gap:4px;">' +
+    '      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+    '        <label for="ds-settings-scale-select" style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">UI Scale Factor:</label>' +
+    '        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
     '          <button type="button" class="win-button ds-btn-sm" id="ds-settings-scale-dec" title="Decrease Scale (-10%)">' +
     '            <i class="bi bi-dash-lg"></i>' +
     "          </button>" +
@@ -88,22 +89,36 @@ export function openSettingsModal(): void {
     "          </button>" +
     "        </div>" +
     "      </div>" +
-    '      <div class="ds-muted" style="font-size:11px;color:#666;">' +
+    '      <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">' +
     "        Scales all application typography, panels, buttons, and navigation controls." +
     "      </div>" +
-    '      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid #eaeaea;gap:8px;">' +
-    '        <div>' +
-    '          <div style="font-size:12px;color:#333;font-weight:600;">Feed Cover Thumbnails:</div>' +
-    '          <div class="ds-muted" style="font-size:11px;color:#666;">Load and display cover thumbnails in browse feeds.</div>' +
+    '      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+    '        <div style="flex:1;min-width:0;">' +
+    '          <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">Theme:</div>' +
+    '          <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">Switch the entire application between light and dark mode.</div>' +
     '        </div>' +
-    '        <button type="button" class="win-button" id="ds-settings-covers-toggle" style="font-size:11px;padding:2px 10px;min-width:90px;"></button>' +
+    '        <div class="ds-segmented-switch" id="ds-settings-theme-switch" style="flex-shrink:0;">' +
+    '          <button type="button" class="ds-segmented-btn" id="ds-settings-theme-light" title="Light theme">' +
+    '            <i class="bi bi-sun"></i> Light' +
+    '          </button>' +
+    '          <button type="button" class="ds-segmented-btn" id="ds-settings-theme-dark" title="Dark theme">' +
+    '            <i class="bi bi-moon-fill"></i> Dark' +
+    '          </button>' +
+    '        </div>' +
     '      </div>' +
+    '      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">' +
+    '        <div style="flex:1;min-width:0;">' +
+    '          <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">Feed Cover Thumbnails:</div>' +
+    '          <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">Load and display cover thumbnails in browse feeds.</div>' +
+    '        </div>' +
+    '        <button type="button" class="win-button" id="ds-settings-covers-toggle" style="font-size:11px;padding:2px 10px;min-width:90px;flex-shrink:0;"></button>' +
+    "      </div>" +
     "    </div>" +
     "  </div>" +
     '  <div class="group-box">' +
     '    <div class="group-box-title"><i class="bi bi-shield-slash"></i> Tag Blacklist</div>' +
     '    <div style="display:flex;flex-direction:column;gap:8px;">' +
-    '      <div class="ds-muted" style="font-size:11px;color:#666;">' +
+    '      <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">' +
     "        Hide or show trigger warnings for releases and chapters matching these tags." +
     "      </div>" +
     '      <div style="display:flex;align-items:center;gap:12px;padding:2px 0;background:var(--sys-bg-active,#f8f9fa);border:1px solid var(--sys-border-light,#e2e2e2);border-radius:3px;padding:4px 8px;">' +
@@ -141,7 +156,7 @@ export function openSettingsModal(): void {
     '      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
     '        <div>' +
     '          <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Auto-Cache Entire Chapter</div>' +
-    '          <div class="ds-muted" style="font-size:11px;color:#666;">' +
+    '          <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">' +
     "            When ON, pre-downloads all pages in a chapter. When OFF, only caches pages as you read them." +
     "          </div>" +
     "        </div>" +
@@ -150,7 +165,7 @@ export function openSettingsModal(): void {
     '      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">' +
     '        <div>' +
     '          <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Page Prefetch Buffer:</div>' +
-    '          <div class="ds-muted" style="font-size:11px;color:#666;">' +
+    '          <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">' +
     "            Number of upcoming pages to preload ahead when auto-cache is off (default: 0)." +
     "          </div>" +
     "        </div>" +
@@ -165,13 +180,13 @@ export function openSettingsModal(): void {
     '  <div class="group-box">' +
     '    <div class="group-box-title"><i class="bi bi-hdd-stack"></i> Storage &amp; Cache</div>' +
     '    <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">' +
-    '      <span style="font-size:12px;color:#333;">Manage disk footprint &amp; scans:</span>' +
+    '      <span style="font-size:12px;color:var(--sys-window-text,#333);">Manage disk footprint &amp; scans:</span>' +
     '      <button type="button" class="win-button" id="ds-settings-goto-cache">' +
     '        <i class="bi bi-box-arrow-in-right"></i> Open Cache Manager' +
     '      </button>' +
     "    </div>" +
     '    <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;margin-top:4px;">' +
-    '      <span style="font-size:12px;color:#333;">Troubleshooting:</span>' +
+    '      <span style="font-size:12px;color:var(--sys-window-text,#333);">Troubleshooting:</span>' +
     '      <button type="button" class="win-button" id="ds-settings-open-logs" title="Reveal the rolling log file in Explorer">' +
     '        <i class="bi bi-folder2-open"></i> Open Logs Folder' +
     '      </button>' +
@@ -304,6 +319,24 @@ export function openSettingsModal(): void {
     renderCurrent();
   });
 
+  const themeLightBtn = modal.querySelector<HTMLButtonElement>("#ds-settings-theme-light");
+  const themeDarkBtn = modal.querySelector<HTMLButtonElement>("#ds-settings-theme-dark");
+  const updateThemeToggleUI = () => {
+    if (!themeLightBtn || !themeDarkBtn) return;
+    const theme = getAppTheme();
+    themeLightBtn.classList.toggle("active", theme === "light");
+    themeDarkBtn.classList.toggle("active", theme === "dark");
+  };
+  updateThemeToggleUI();
+  themeLightBtn?.addEventListener("click", () => {
+    setAppTheme("light");
+    updateThemeToggleUI();
+  });
+  themeDarkBtn?.addEventListener("click", () => {
+    setAppTheme("dark");
+    updateThemeToggleUI();
+  });
+
   const autoCacheToggleBtn = modal.querySelector<HTMLButtonElement>("#ds-settings-autocache-toggle");
   const updateAutoCacheToggleUI = () => {
     if (!autoCacheToggleBtn) return;
@@ -419,7 +452,7 @@ export function openSettingsModal(): void {
     } catch (err) {
       console.error("dynasty-scans-reader: failed to load tag blacklist:", err);
       blChips.innerHTML =
-        '<span class="ds-muted" style="font-size:10px;color:#a80000;padding:2px 0;">Could not load blacklist. Check the application log.</span>';
+        '<span class="ds-muted" style="font-size:10px;color:var(--ds-danger-text);padding:2px 0;">Could not load blacklist. Check the application log.</span>';
       return;
     }
     if (list.length === 0) {
@@ -430,7 +463,7 @@ export function openSettingsModal(): void {
       const chip = document.createElement("span");
       chip.className = "ds-row";
       chip.style.cssText =
-        "background:#fde7e9;color:#a80000;border:1px solid #e81123;border-radius:3px;padding:1px 6px;font-size:10px;align-items:center;gap:4px;";
+        "background:var(--ds-danger-bg);color:var(--ds-danger-text);border:1px solid var(--ds-danger-border);border-radius:3px;padding:1px 6px;font-size:10px;align-items:center;gap:4px;";
       chip.innerHTML = `<span>${decodeEntities(item.tag_name)}</span><i class="bi bi-x" style="cursor:pointer;font-size:13px;" title="Remove from blacklist"></i>`;
       chip.querySelector(".bi-x")?.addEventListener("click", async () => {
         await removeBlacklistedTag(item.tag_name);

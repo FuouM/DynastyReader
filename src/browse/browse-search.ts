@@ -250,7 +250,7 @@ export async function renderSearchTab(
       const chip = document.createElement("span");
       chip.className = "ds-row";
       chip.style.cssText =
-        "background:#fde7e9;color:#a80000;border:1px solid #e81123;border-radius:3px;padding:1px 5px;font-size:10px;align-items:center;gap:4px;";
+        "background:var(--ds-danger-bg);color:var(--ds-danger-text);border:1px solid var(--ds-danger-border);border-radius:3px;padding:1px 5px;font-size:10px;align-items:center;gap:4px;";
       chip.innerHTML = `<span>- ${decodeEntities(t)}</span><i class="bi bi-x" style="cursor:pointer;font-size:12px;"></i>`;
       chip.querySelector(".bi-x")?.addEventListener("click", () => {
         searchState.withoutTags = searchState.withoutTags.filter((x) => x !== t);
@@ -543,7 +543,7 @@ async function renderSearchResultsList(
       const notice = document.createElement("div");
       notice.className = "ds-row ds-blacklist-notice";
       notice.style.cssText =
-        "background:#fdf3f4;border:1px solid #f5c2c7;color:#842029;border-radius:3px;padding:4px 10px;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px;";
+        "background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:4px 10px;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px;";
 
       let showBlacklisted = false;
       const blList = document.createElement("div");
@@ -639,7 +639,7 @@ function renderSearchResultRow(
 ): HTMLElement {
   const row = document.createElement("div");
   row.className = "ds-row";
-  row.style.cssText = `background:var(--sys-bg-active,#fff);border:1px solid var(--sys-border-light,#ddd);border-radius:3px;padding:6px 10px;align-items:flex-start;gap:8px;transition:background 0.1s ease;${isBlacklisted ? "opacity:0.8;background:var(--sys-bg-active,#fcf8f8);" : ""}`;
+  row.style.cssText = `background:var(--sys-bg-active,#fff);border:1px solid var(--sys-border-light,#ddd);border-radius:3px;padding:6px 10px;align-items:flex-start;gap:8px;${isBlacklisted ? "opacity:0.8;background:var(--sys-bg-active,#fcf8f8);" : ""}`;
 
   // Icon based on kind
   const icon = document.createElement("div");
@@ -671,7 +671,7 @@ function renderSearchResultRow(
   const kindBadge = document.createElement("span");
   kindBadge.className = "ds-muted";
   kindBadge.style.cssText =
-    "font-size:10px;background:var(--sys-bg-hover,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;";
+    "font-size:10px;background:var(--sys-hover-bg,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;";
   kindBadge.textContent = item.kind;
 
   titleRow.appendChild(titleLink);
@@ -680,7 +680,7 @@ function renderSearchResultRow(
   if (isBlacklisted && matchedTags.length > 0) {
     const blBadge = document.createElement("span");
     blBadge.style.cssText =
-      "font-size:9px;background:#fde7e9;color:#a80000;padding:1px 5px;border-radius:2px;border:1px solid #e81123;display:inline-flex;align-items:center;gap:3px;font-weight:600;";
+      "font-size:9px;background:var(--ds-danger-bg);color:var(--ds-danger-text);padding:1px 5px;border-radius:2px;border:1px solid var(--ds-danger-border);display:inline-flex;align-items:center;gap:3px;font-weight:600;";
     const labelPrefix = getBlacklistMode() === "warn" ? "Content Warning" : "Blacklisted";
     blBadge.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${labelPrefix}: ${decodeEntities(matchedTags.join(", "))}`;
     titleRow.appendChild(blBadge);

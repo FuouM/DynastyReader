@@ -144,7 +144,7 @@ function updateDownloadedView(
       empty.innerHTML = `
         <div style="font-size:24px;margin-bottom:8px;"><i class="bi bi-cloud-arrow-down"></i></div>
         <div>No fully downloaded chapters found yet.</div>
-        <div style="font-size:11px;margin-top:4px;color:#888;">
+        <div style="font-size:11px;margin-top:4px;color:var(--sys-text-muted,#888);">
           Enable <b>Auto-Cache</b> in Settings or click <b>Cache Chapter</b> while reading to save chapters for offline reading.
         </div>
       `;
@@ -179,7 +179,7 @@ function renderDownloadedChapterRow(ch: FullyCachedChapterRow): HTMLElement {
   const coverWrap = document.createElement("div");
   coverWrap.className = "ds-feed-cover-wrap";
   coverWrap.style.cssText =
-    "flex-shrink:0;width:38px;height:52px;background:#e2e2e2;border:1px solid #ccc;border-radius:2px;overflow:hidden;display:flex;align-items:center;justify-content:center;";
+    "flex-shrink:0;width:38px;height:52px;background:var(--sys-control-bg,#e2e2e2);border:1px solid var(--sys-border-light,#ccc);border-radius:2px;overflow:hidden;display:flex;align-items:center;justify-content:center;";
 
   if (ch.coverPath) {
     const img = document.createElement("img");
@@ -187,11 +187,11 @@ function renderDownloadedChapterRow(ch: FullyCachedChapterRow): HTMLElement {
     img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
     img.loading = "lazy";
     img.onerror = () => {
-      coverWrap.innerHTML = '<i class="bi bi-book" style="color:#888;font-size:16px;"></i>';
+      coverWrap.innerHTML = '<i class="bi bi-book" style="color:var(--sys-text-muted,#888);font-size:16px;"></i>';
     };
     coverWrap.appendChild(img);
   } else {
-    coverWrap.innerHTML = '<i class="bi bi-book" style="color:#888;font-size:16px;"></i>';
+    coverWrap.innerHTML = '<i class="bi bi-book" style="color:var(--sys-text-muted,#888);font-size:16px;"></i>';
   }
   item.appendChild(coverWrap);
 

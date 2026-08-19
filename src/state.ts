@@ -367,9 +367,22 @@ export function sortTagsByCategory<T extends { type: string }>(tags: T[]): T[] {
     .map((x) => x.t);
 }
 
+/** Status names rendered as green status pills regardless of tag type. */
+const STATUS_NAMES = new Set([
+  "oneshot",
+  "one-shot",
+  "anthology",
+  "completed",
+  "ongoing",
+  "licensed",
+  "hiatus",
+  "discontinued",
+]);
+
 /**
- * Maps a Dynasty Scans tag type or name to a styled tag-pill class or inline style. */
-export function tagClass(type: string): string {
+ * Maps a Dynasty Scans tag type or name to a themed tag-pill class. Both light
+ * and dark palettes are driven entirely by CSS, never inline colors. */
+export function tagClass(type: string, name?: string): string {
   const t = (type ?? "").toLowerCase();
   switch (t) {
     case "author":
@@ -378,7 +391,7 @@ export function tagClass(type: string): string {
     case "character":
       return "tag-pill tag-character";
     case "pairing":
-      return "tag-pill tag-character";
+      return "tag-pill tag-pairing";
     case "series":
     case "anthology":
     case "issue":
@@ -392,54 +405,11 @@ export function tagClass(type: string): string {
     case "meta":
       return "tag-pill tag-meta";
     case "status":
-      return "tag-pill tag-user";
-    case "general":
+      return "tag-pill tag-status";
     default:
+      if (STATUS_NAMES.has((name ?? "").toLowerCase())) {
+        return "tag-pill tag-status";
+      }
       return "tag-pill tag-rank-3";
   }
-}
-
-/** Generates deterministic pastel background and border for General tags */
-export function tagStyle(type: string, name: string): string {
-  const t = (type ?? "").toLowerCase();
-  const n = (name ?? "").toLowerCase();
-  if (t === "author" || t === "artist") {
-    return "background-color: #fff0e6; border: 1px solid #ffd9c2; color: #7c2d12;";
-  }
-  if (t === "pairing") {
-    return "background-color: #fce7f3; border: 1px solid #fbcfe8; color: #9d174d;";
-  }
-  if (t === "character") {
-    return "background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460;";
-  }
-  if (
-    t === "series" ||
-    t === "anthology" ||
-    t === "issue" ||
-    t === "doujin" ||
-    t === "doujinshi" ||
-    t === "copyright" ||
-    t === "parody"
-  ) {
-    return "background-color: #ebdcf9; border: 1px solid #dcbdf5; color: #511c74;";
-  }
-  if (t === "scanlator" || t === "group" || t === "meta") {
-    return "background-color: #e2e3e5; border: 1px solid #d6d8db; color: #383d41;";
-  }
-  if (
-    t === "status" ||
-    n === "oneshot" ||
-    n === "one-shot" ||
-    n === "anthology" ||
-    n === "completed" ||
-    n === "ongoing" ||
-    n === "licensed" ||
-    n === "hiatus" ||
-    n === "discontinued"
-  ) {
-    return "background-color: #e6f4ea; border: 1px solid #ceead6; color: #0e6b38;";
-  }
-
-  // General tags get one fixed color so the type reads consistently across results.
-  return "background-color: #e7f0f7; border: 1px solid #cfe1ee; color: #33515f; font-weight: 500;";
 }
