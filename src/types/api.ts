@@ -173,3 +173,18 @@ export interface SearchResultPage {
   totalEstimated?: number;
   query: string;
 }
+
+export interface UpdateInfo {
+  has_update: boolean;
+  latest_version: string;
+  current_version: string;
+  release_notes: string;
+  download_url: string;
+  asset_size: number;
+}
+
+export interface DownloadProgress {
+  downloaded_bytes: number;
+  total_bytes: number;
+  percentage: number;
+}

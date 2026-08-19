@@ -17,6 +17,7 @@ fn main() {
         .plugin(log_plugin)
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .setup(|app| {
+            commands::updater::cleanup_old_executables();
             let root = data_root_for(app)?;
             paths::set_root(root);
             let root = paths::ensure_root().map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
@@ -39,6 +40,8 @@ fn main() {
             commands::media::ephemeral_convert_images,
             commands::system::open_url,
             commands::system::open_logs_dir,
+            commands::updater::check_for_updates,
+            commands::updater::install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Dynasty Scans Reader");

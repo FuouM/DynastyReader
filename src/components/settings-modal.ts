@@ -14,6 +14,7 @@ import { browseCovers } from "../browse/browse-covers";
 import { isAutoCacheChapterEnabled, setAutoCacheChapterEnabled, getPrefetchBuffer, setPrefetchBuffer } from "../reader/settings";
 import { setupInputClearButtons } from "./input-field";
 import { getAppTheme, toggleAppTheme } from "../theme";
+import { checkUpdates } from "./update-dialog";
 
 const STORAGE_KEY_UI_SCALE = "ds-ui-scale";
 const SCALE_PRESETS = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
@@ -398,19 +399,19 @@ export function openSettingsModal(): void {
   });
 
   const aboutUpdateBtn = modal.querySelector<HTMLButtonElement>("#ds-about-check-update");
-  aboutUpdateBtn?.addEventListener("click", () => {
+  aboutUpdateBtn?.addEventListener("click", async () => {
     if (!aboutUpdateBtn) return;
     aboutUpdateBtn.disabled = true;
+    const origHtml = aboutUpdateBtn.innerHTML;
     aboutUpdateBtn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Checking...';
-    window.setTimeout(() => {
-      if (!aboutUpdateBtn.isConnected) return;
-      aboutUpdateBtn.innerHTML = '<i class="bi bi-check-circle"></i> Up to Date (v0.1.0)';
-      window.setTimeout(() => {
-        if (!aboutUpdateBtn.isConnected) return;
+    try {
+      await checkUpdates(true);
+    } finally {
+      if (aboutUpdateBtn.isConnected) {
         aboutUpdateBtn.disabled = false;
-        aboutUpdateBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Check Updates';
-      }, 2500);
-    }, 800);
+        aboutUpdateBtn.innerHTML = origHtml;
+      }
+    }
   });
 
   const aboutGithubBtn = modal.querySelector<HTMLButtonElement>("#ds-about-open-github");
