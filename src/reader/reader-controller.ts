@@ -28,7 +28,20 @@ import {
   setReadingProgress,
 } from "../db";
 import type { Chapter, ChapterPage } from "../types/api";
-import type { FitMode } from "../types/reader";
+import type {
+  FitMode,
+  PagedLayout,
+  ReaderMode,
+  ReadingDirection,
+  SpreadGroup,
+} from "../types/reader";
+import {
+  WIDE_RATIO,
+  anchorPageOf,
+  computeSpreads,
+  detectReadingDirection,
+  spreadIndexOf,
+} from "./reader-spread";
 import { ReaderQueue } from "./reader-queue";
 import { ReaderViewport } from "./reader-viewport";
 import { ReaderToolbar } from "./reader-toolbar";
@@ -53,12 +66,27 @@ export class ReaderController {
   chapterTitle = "";
   chapterList: ChapterRef[] = [];
 
-  isHorizontal = false;
+  mode: ReaderMode = "scroll";
+  pagedLayout: PagedLayout = "single";
+  direction: ReadingDirection = "rtl";
+  directionAutoDetected = false;
+  coverOffset = false;
+  widePages = new Set<number>();
+  spreads: SpreadGroup[] = [];
+  spreadSlots: HTMLElement[] = [];
   fitMode: FitMode = "width";
   zoomScale = 1.0;
   scrollLock = false;
   currentIndex = 0;
   isFullscreen = false;
+
+  get isHorizontal(): boolean {
+    return this.mode === "paged";
+  }
+
+  get isSpread(): boolean {
+    return this.mode === "paged" && this.pagedLayout === "spread";
+  }
 
   cachedMap = new Map<number, string>();
   cachedCount = 0;
@@ -84,6 +112,9 @@ export class ReaderController {
   progressFill!: HTMLElement;
   scrollLockBtn!: HTMLButtonElement;
   modeBtn!: HTMLButtonElement;
+  spreadBtn!: HTMLButtonElement;
+  dirBtn!: HTMLButtonElement;
+  coverBtn!: HTMLButtonElement;
   fitSelect!: HTMLSelectElement;
   themeBtn!: HTMLButtonElement;
   fullscreenBtn!: HTMLButtonElement;
@@ -163,6 +194,24 @@ export class ReaderController {
       this.queue.markRetrying(idx);
       this.renderSlotState(slot, "spinner", "Re-downloading…");
       this.queue.enqueue(idx, true);
+    });
+    img.addEventListener("load", () => {
+      if (this.disposed) return;
+      const idx = Number(slot.dataset.index);
+      const isWide = img.naturalWidth > img.naturalHeight * WIDE_RATIO;
+      if (isWide !== this.widePages.has(idx)) {
+        if (isWide) {
+          this.widePages.add(idx);
+        } else {
+          this.widePages.delete(idx);
+        }
+        this.recomputeSpreads();
+        // Rebuild only once every slot exists so page order stays intact.
+        if (this.isSpread && this.slots.length === this.pages.length) {
+          this.rebuildSpreadSlots();
+          this.viewportImpl.resetToCurrentPage(true);
+        }
+      }
     });
     img.src = PH.convertFileSrc(absPath);
     slot.appendChild(img);
@@ -262,10 +311,28 @@ export class ReaderController {
       this.pages.length > 0 ? Math.round(((this.currentIndex + 1) / this.pages.length) * 100) : 0;
     const cachedNote =
       this.cachedCount > 0 ? ` · ${this.cachedCount}/${this.pages.length} cached` : "";
-    this.positionLabel.textContent = `Page ${this.currentIndex + 1} of ${this.pages.length} (${pct}%)${cachedNote}`;
+    if (this.isSpread && this.spreads.length > 0) {
+      const group = this.spreads[spreadIndexOf(this.spreads, this.currentIndex)];
+      if (group && group.pageIndices.length > 1) {
+        const last = group.pageIndices[group.pageIndices.length - 1];
+        this.positionLabel.textContent = `Pages ${group.pageIndices[0] + 1}–${last + 1} of ${this.pages.length} (${pct}%)${cachedNote}`;
+      } else if (group) {
+        this.positionLabel.textContent = `Page ${group.pageIndices[0] + 1} of ${this.pages.length} (${pct}%)${cachedNote}`;
+      } else {
+        this.positionLabel.textContent = `Page ${this.currentIndex + 1} of ${this.pages.length} (${pct}%)${cachedNote}`;
+      }
+    } else {
+      this.positionLabel.textContent = `Page ${this.currentIndex + 1} of ${this.pages.length} (${pct}%)${cachedNote}`;
+    }
     this.progressFill.style.width = `${pct}%`;
-    this.prevPageBtn.disabled = this.currentIndex <= 0;
-    this.nextPageBtn.disabled = this.currentIndex >= this.pages.length - 1;
+    if (this.isSpread && this.spreads.length > 0) {
+      const cur = spreadIndexOf(this.spreads, this.currentIndex);
+      this.prevPageBtn.disabled = cur <= 0;
+      this.nextPageBtn.disabled = cur >= this.spreads.length - 1;
+    } else {
+      this.prevPageBtn.disabled = this.currentIndex <= 0;
+      this.nextPageBtn.disabled = this.currentIndex >= this.pages.length - 1;
+    }
   }
 
   schedulePersist(): void {
@@ -299,21 +366,125 @@ export class ReaderController {
     this.schedulePersist();
     if (this.atEnd) void this.persistNow();
 
-    this.enqueue(this.currentIndex);
-    if (isAutoCacheChapterEnabled()) {
-      this.enqueue(this.currentIndex + 1);
-      this.enqueue(this.currentIndex + 2);
+    if (this.isSpread) {
+      this.enqueueSpreadNeighborhood();
     } else {
-      const prefetchCount = getPrefetchBuffer();
-      for (let offset = 1; offset <= prefetchCount; offset++) {
-        const nextIdx = this.currentIndex + offset;
-        if (nextIdx < this.pages.length && !this.cachedMap.has(nextIdx)) {
-          this.enqueue(nextIdx);
+      this.enqueue(this.currentIndex);
+      if (isAutoCacheChapterEnabled()) {
+        this.enqueue(this.currentIndex + 1);
+        this.enqueue(this.currentIndex + 2);
+      } else {
+        const prefetchCount = getPrefetchBuffer();
+        for (let offset = 1; offset <= prefetchCount; offset++) {
+          const nextIdx = this.currentIndex + offset;
+          if (nextIdx < this.pages.length && !this.cachedMap.has(nextIdx)) {
+            this.enqueue(nextIdx);
+          }
         }
       }
     }
 
     this.viewportImpl.slideTo(index, instant, scrollToBottom);
+  }
+
+  /** Enqueues the current and next two spreads so paired pages load together. */
+  private enqueueSpreadNeighborhood(): void {
+    if (this.spreads.length === 0) return;
+    const cur = spreadIndexOf(this.spreads, this.currentIndex);
+    const end = Math.min(this.spreads.length - 1, cur + 2);
+    for (let s = cur; s <= end; s++) {
+      for (const pageIndex of this.spreads[s].pageIndices) {
+        this.enqueue(pageIndex);
+      }
+    }
+  }
+
+  /** Steps by one spread in the given reading direction. */
+  stepSpread(delta: 1 | -1): void {
+    if (!this.isSpread || this.spreads.length === 0) return;
+    const cur = spreadIndexOf(this.spreads, this.currentIndex);
+    const next = cur + delta;
+    if (next < 0 || next >= this.spreads.length) return;
+    this.setPage(anchorPageOf(this.spreads, next), false, delta === -1);
+  }
+
+  // Layout controls ------------------------------------------------------
+  recomputeSpreads(): void {
+    this.spreads = computeSpreads(
+      this.pages.length,
+      this.coverOffset,
+      (i) => this.widePages.has(i),
+    );
+  }
+
+  /**
+   * Rebuilds the strip's spread slides from the current spread groups. In
+   * single/scroll layouts the page slots are direct strip children (unchanged);
+   * in spread layout each group is wrapped in one `.ds-spread-slot`.
+   */
+  rebuildSpreadSlots(): void {
+    for (const wrap of this.spreadSlots) {
+      const parent = wrap.parentElement;
+      while (wrap.firstChild && parent) {
+        parent.insertBefore(wrap.firstChild, wrap);
+      }
+      wrap.remove();
+    }
+    this.spreadSlots = [];
+    if (!this.isSpread) return;
+    for (const group of this.spreads) {
+      const wrap = document.createElement("div");
+      const isSingle = group.pageIndices.length === 1;
+      wrap.className = `ds-spread-slot ${this.direction}${isSingle ? " ds-spread-single" : ""}`;
+      wrap.dataset.spreadIndex = String(group.spreadIndex);
+      for (const pageIndex of group.pageIndices) {
+        const slot = this.slots[pageIndex];
+        if (slot) wrap.appendChild(slot);
+      }
+      this.strip.appendChild(wrap);
+      this.spreadSlots.push(wrap);
+    }
+  }
+
+  setMode(mode: ReaderMode): void {
+    if (mode === this.mode) return;
+    this.mode = mode;
+    localStorage.setItem("ds-reader-mode", this.mode === "paged" ? "paged" : "scroll");
+    this.recomputeSpreads();
+    this.toolbarImpl.updateLayoutBtns();
+    this.viewportImpl.applyLayoutMode();
+    this.toolbarImpl.updateScrollLockBtn();
+  }
+
+  setPagedLayout(layout: PagedLayout): void {
+    if (layout === this.pagedLayout) return;
+    this.pagedLayout = layout;
+    localStorage.setItem("ds-reader-layout", layout);
+    this.recomputeSpreads();
+    this.toolbarImpl.updateLayoutBtns();
+    this.viewportImpl.applyLayoutMode();
+  }
+
+  setDirection(dir: ReadingDirection): void {
+    this.direction = dir;
+    this.directionAutoDetected = false;
+    localStorage.setItem("ds-reader-direction", dir);
+    this.toolbarImpl.updateLayoutBtns();
+    if (this.isSpread) {
+      this.rebuildSpreadSlots();
+      this.viewportImpl.resetToCurrentPage(true);
+    }
+  }
+
+  toggleCoverOffset(): void {
+    this.coverOffset = !this.coverOffset;
+    localStorage.setItem("ds-reader-cover-offset", this.coverOffset ? "1" : "0");
+    this.recomputeSpreads();
+    this.toolbarImpl.updateLayoutBtns();
+    if (this.isSpread) {
+      this.rebuildSpreadSlots();
+      this.viewportImpl.resetToCurrentPage(true);
+    }
   }
 
   /**
@@ -505,11 +676,35 @@ export class ReaderController {
           this.chapterList = cl;
           this.updateChapterNav();
         }
+        // Series-level `Read left to right` detection is only authoritative when
+        // the reader has not auto-detected or manually chosen a direction yet.
+        if (this.directionAutoDetected) {
+          const newDir = detectReadingDirection(chapter.tags ?? [], s.tags ?? []);
+          if (newDir !== this.direction) {
+            this.direction = newDir;
+            this.toolbarImpl.updateLayoutBtns();
+            if (this.isSpread) {
+              this.rebuildSpreadSlots();
+              this.viewportImpl.resetToCurrentPage(true);
+            }
+          }
+        }
       });
     }
 
     // Display-mode preferences
-    this.isHorizontal = localStorage.getItem("ds-reader-mode") === "paged";
+    this.mode = localStorage.getItem("ds-reader-mode") === "paged" ? "paged" : "scroll";
+    this.pagedLayout = localStorage.getItem("ds-reader-layout") === "spread" ? "spread" : "single";
+    this.coverOffset = localStorage.getItem("ds-reader-cover-offset") === "1";
+    const dirPref = localStorage.getItem("ds-reader-direction");
+    if (dirPref === "ltr" || dirPref === "rtl") {
+      this.direction = dirPref;
+      this.directionAutoDetected = false;
+    } else {
+      this.direction = detectReadingDirection(chapter.tags ?? []);
+      this.directionAutoDetected = true;
+    }
+    this.recomputeSpreads();
     this.fitMode = (localStorage.getItem("ds-reader-fit") as FitMode) || "width";
     this.scrollLock = localStorage.getItem("ds-reader-scroll-lock") === "1";
 

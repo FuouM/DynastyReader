@@ -6,7 +6,20 @@ export type FitMode = "width" | "height" | "original";
 
 export type ReaderMode = "scroll" | "paged";
 
+/** How many pages each Paged-mode slide shows. */
+export type PagedLayout = "single" | "spread";
+
+export type ReadingDirection = "rtl" | "ltr";
+
 export type ReaderTheme = "light" | "dark";
+
+/** One slide in spread layout: a cover standalone, a wide scan, or a page pair. */
+export interface SpreadGroup {
+  spreadIndex: number;
+  pageIndices: number[];
+  isStandaloneCover: boolean;
+  isWide: boolean;
+}
 
 export interface PageDownloadTask {
   index: number;

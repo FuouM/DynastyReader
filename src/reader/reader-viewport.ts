@@ -1,5 +1,6 @@
 import type { ReaderController } from "./reader-controller";
 import { isAutoCacheChapterEnabled, getPrefetchBuffer } from "./settings";
+import { spreadIndexOf } from "./reader-spread";
 
 /**
  * Owns the reader's strip/paged layout engines: viewport + strip DOM, dynamic
@@ -56,15 +57,16 @@ export class ReaderViewport {
         }
         targetSlot.scrollLeft = 0;
       }
+      const slideIndex = c.isSpread ? spreadIndexOf(c.spreads, index) : index;
       if (!c.scrollLock) {
         // Force layout commit so transition:none takes effect before transform
         c.strip.style.transition = "none";
         void c.strip.offsetWidth; // trigger reflow
-        c.strip.style.transform = `translateX(${-index * 100}%)`;
+        c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
       } else {
         // Ensure transition is active then slide
         c.strip.style.transition = "";
-        c.strip.style.transform = `translateX(${-index * 100}%)`;
+        c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
       }
     } else {
       c.isProgrammaticScroll = true;
@@ -92,15 +94,16 @@ export class ReaderViewport {
     };
     updateViewportHeight();
     if (c.isHorizontal) {
+      const slideIndex = c.isSpread ? spreadIndexOf(c.spreads, c.currentIndex) : c.currentIndex;
       if (!smooth) {
         c.strip.style.transition = "none";
         void c.strip.offsetWidth;
-        c.strip.style.transform = `translateX(${-c.currentIndex * 100}%)`;
+        c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
         requestAnimationFrame(() => {
           c.strip.style.transition = "";
         });
       } else {
-        c.strip.style.transform = `translateX(${-c.currentIndex * 100}%)`;
+        c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
       }
     } else {
       c.isProgrammaticScroll = true;
@@ -117,21 +120,21 @@ export class ReaderViewport {
     c.updateProgressText();
   }
 
-  /** Applies the current mode to the viewport/strip and updates the mode button icon. */
+  /** Applies the current mode/layout to the viewport and strip. */
   applyLayoutMode(): void {
     const c = this.c;
+    c.rebuildSpreadSlots();
     if (c.isHorizontal) {
-      c.modeBtn.innerHTML = '<i class="bi bi-distribute-vertical"></i> Scroll';
       c.viewport.classList.add("horizontal");
-      // Jump to current page instantly (no animation on mode switch)
+      // Jump to current slide instantly (no animation on mode switch)
       c.strip.style.transition = "none";
-      c.strip.style.transform = `translateX(${-c.currentIndex * 100}%)`;
+      const slideIndex = c.isSpread ? spreadIndexOf(c.spreads, c.currentIndex) : c.currentIndex;
+      c.strip.style.transform = `translateX(${-slideIndex * 100}%)`;
       // Re-enable transition after the paint
       requestAnimationFrame(() => {
         c.strip.style.transition = "";
       });
     } else {
-      c.modeBtn.innerHTML = '<i class="bi bi-arrow-left-right"></i> Paged';
       c.viewport.classList.remove("horizontal");
       c.strip.style.transform = "";
       c.strip.style.transition = "";
@@ -370,10 +373,13 @@ export class ReaderViewport {
           const targetDir: "next" | "prev" = atBottom ? "next" : "prev";
 
           // If at the first page (no previous) or last page (no next), do not show indicator
-          if (
-            (targetDir === "prev" && c.currentIndex <= 0) ||
-            (targetDir === "next" && c.currentIndex >= c.pages.length - 1)
-          ) {
+          const atFirst = c.isSpread
+            ? spreadIndexOf(c.spreads, c.currentIndex) <= 0
+            : c.currentIndex <= 0;
+          const atLast = c.isSpread
+            ? spreadIndexOf(c.spreads, c.currentIndex) >= c.spreads.length - 1
+            : c.currentIndex >= c.pages.length - 1;
+          if ((targetDir === "prev" && atFirst) || (targetDir === "next" && atLast)) {
             hideIndicator();
             return;
           }
@@ -390,7 +396,9 @@ export class ReaderViewport {
           // Second deliberate scroll in the same direction: flip page
           hideIndicator();
           if (momentumTimer !== null) clearTimeout(momentumTimer);
-          if (targetDir === "next") {
+          if (c.isSpread) {
+            c.stepSpread(targetDir === "next" ? 1 : -1);
+          } else if (targetDir === "next") {
             c.setPage(c.currentIndex + 1, false, false);
           } else {
             c.setPage(c.currentIndex - 1, false, true);
@@ -406,7 +414,9 @@ export class ReaderViewport {
         if (Math.abs(ev.deltaY) < 10 && Math.abs(ev.deltaX) < 10) return;
         this.wheelDebounce = now;
         const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
-        if (delta > 0) {
+        if (c.isSpread) {
+          c.stepSpread(delta > 0 ? 1 : -1);
+        } else if (delta > 0) {
           c.setPage(c.currentIndex + 1);
         } else {
           c.setPage(c.currentIndex - 1);

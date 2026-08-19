@@ -390,6 +390,82 @@
   object-fit: contain;
 }
 
+/* Spread layout — two pages per slide (Paged mode) */
+#ds-reader-viewport.horizontal .ds-spread-slot {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+  user-select: none;
+}
+#ds-reader-viewport.horizontal .ds-spread-slot.ltr {
+  flex-direction: row;
+}
+#ds-reader-viewport.horizontal .ds-spread-slot.rtl {
+  flex-direction: row-reverse;
+}
+#ds-reader-viewport.horizontal .ds-spread-slot .ds-slot {
+  flex: 1 1 50%;
+  min-width: 0;
+  width: auto;
+  height: 100%;
+  max-height: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+/* Single-page spreads (cover standalone / wide scans) fill the whole slide */
+#ds-reader-viewport.horizontal .ds-spread-slot.ds-spread-single .ds-slot {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+#ds-reader-viewport.horizontal .ds-spread-slot .ds-page-img {
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+#ds-reader-viewport.horizontal .ds-spread-slot .ds-slot-state {
+  max-width: 100%;
+}
+.fit-width #ds-reader-viewport.horizontal .ds-spread-slot .ds-page-img {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: contain;
+}
+.fit-height #ds-reader-viewport.horizontal .ds-spread-slot .ds-slot {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 50%;
+}
+.fit-height #ds-reader-viewport.horizontal .ds-spread-slot.ds-spread-single .ds-slot {
+  max-width: 100%;
+}
+.fit-height #ds-reader-viewport.horizontal .ds-spread-slot .ds-page-img {
+  height: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  max-width: 100% !important;
+  object-fit: contain;
+}
+.fit-original #ds-reader-viewport.horizontal .ds-spread-slot .ds-slot {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
 .ds-slot-state {
   display: flex;
   flex-direction: column;

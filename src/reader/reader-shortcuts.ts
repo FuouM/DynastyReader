@@ -11,12 +11,32 @@ export class ReaderShortcuts {
       const tag = (ev.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
 
-      if (ev.key === "ArrowLeft") {
+      if (ev.key === "ArrowLeft" || ev.key === "ArrowRight" || ev.key === " ") {
         ev.preventDefault();
-        c.setPage(c.currentIndex - 1);
-      } else if (ev.key === "ArrowRight" || ev.key === " ") {
+        const rightOrSpace = ev.key === "ArrowRight" || ev.key === " ";
+        if (c.isSpread) {
+          // Direction-aware: LTR → Right/Space next, Left prev; RTL → Left/Space next.
+          const forward = c.direction === "rtl" ? !rightOrSpace : rightOrSpace;
+          c.stepSpread(forward ? 1 : -1);
+        } else {
+          c.setPage(c.currentIndex + (rightOrSpace ? 1 : -1));
+        }
+} else if (ev.key === "m" || ev.key === "M") {
         ev.preventDefault();
-        c.setPage(c.currentIndex + 1);
+        if (c.mode === "scroll") {
+          c.setPagedLayout("single");
+          c.setMode("paged");
+        } else if (c.pagedLayout === "single") {
+          c.setPagedLayout("spread");
+        } else {
+          c.setMode("scroll");
+        }
+      } else if (ev.key === "d" || ev.key === "D") {
+        ev.preventDefault();
+        c.setDirection(c.direction === "rtl" ? "ltr" : "rtl");
+      } else if (ev.key === "c" || ev.key === "C") {
+        ev.preventDefault();
+        if (c.mode === "paged") c.toggleCoverOffset();
       } else if (ev.key === "f" || ev.key === "F") {
         ev.preventDefault();
         c.toolbarImpl.setFullscreen(!c.isFullscreen);

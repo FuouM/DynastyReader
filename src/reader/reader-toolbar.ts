@@ -17,10 +17,8 @@ export class ReaderToolbar {
   wireAfterSlots(): void {
     const c = this.c;
     c.updateChapterNav();
-    if (c.isHorizontal) {
-      c.viewportImpl.applyLayoutMode();
-    }
-    this.updateScrollLockBtn();
+    c.viewportImpl.applyLayoutMode();
+    this.updateLayoutBtns();
     this.applyTheme();
     c.onDispose(onThemeChange(() => this.applyTheme()));
   }
@@ -96,6 +94,27 @@ export class ReaderToolbar {
     modeBtn.innerHTML = c.isHorizontal
       ? '<i class="bi bi-distribute-vertical"></i> Scroll'
       : '<i class="bi bi-arrow-left-right"></i> Paged';
+
+    // Spread layout toggle (two pages per slide, Paged mode only)
+    const spreadBtn = document.createElement("button");
+    spreadBtn.type = "button";
+    spreadBtn.className = "win-button";
+    spreadBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    spreadBtn.innerHTML = '<i class="bi bi-columns-gap"></i> Spread';
+
+    // Reading direction toggle (RTL default / LTR via tag or manual)
+    const dirBtn = document.createElement("button");
+    dirBtn.type = "button";
+    dirBtn.className = "win-button";
+    dirBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    dirBtn.innerHTML = '<i class="bi bi-arrow-left-right"></i> RTL';
+
+    // Cover offset toggle (standalone cover page, Paged+Spread only)
+    const coverBtn = document.createElement("button");
+    coverBtn.type = "button";
+    coverBtn.className = "win-button";
+    coverBtn.style.cssText = "font-size:11px;padding:2px 8px;";
+    coverBtn.innerHTML = '<i class="bi bi-book-half"></i> Cover 1st';
 
     // Fit mode selector
     const fitSelect = document.createElement("select");
@@ -188,6 +207,9 @@ export class ReaderToolbar {
     c.progressFill = progressFill;
     c.scrollLockBtn = scrollLockBtn;
     c.modeBtn = modeBtn;
+    c.spreadBtn = spreadBtn;
+    c.dirBtn = dirBtn;
+    c.coverBtn = coverBtn;
     c.fitSelect = fitSelect;
     c.fullscreenBtn = fullscreenBtn;
     c.themeBtn = themeBtn;
@@ -199,6 +221,9 @@ export class ReaderToolbar {
     nav.appendChild(nextChapterBtn);
     nav.appendChild(scrollLockBtn);
     nav.appendChild(modeBtn);
+    nav.appendChild(coverBtn);
+    nav.appendChild(spreadBtn);
+    nav.appendChild(dirBtn);
     nav.appendChild(fitSelect);
     nav.appendChild(themeBtn);
     nav.appendChild(fullscreenBtn);
@@ -220,8 +245,14 @@ export class ReaderToolbar {
       if (curIdx >= 0 && curIdx < c.chapterList.length - 1) gotoChapter(c.chapterList[curIdx + 1]);
     });
 
-    prevPageBtn.addEventListener("click", () => c.setPage(c.currentIndex - 1));
-    nextPageBtn.addEventListener("click", () => c.setPage(c.currentIndex + 1));
+    prevPageBtn.addEventListener("click", () => {
+      if (c.isSpread) c.stepSpread(-1);
+      else c.setPage(c.currentIndex - 1);
+    });
+    nextPageBtn.addEventListener("click", () => {
+      if (c.isSpread) c.stepSpread(1);
+      else c.setPage(c.currentIndex + 1);
+    });
 
     scrollLockBtn.addEventListener("click", () => {
       c.scrollLock = !c.scrollLock;
@@ -230,10 +261,19 @@ export class ReaderToolbar {
     });
 
     modeBtn.addEventListener("click", () => {
-      c.isHorizontal = !c.isHorizontal;
-      localStorage.setItem("ds-reader-mode", c.isHorizontal ? "paged" : "scroll");
-      c.viewportImpl.applyLayoutMode();
-      this.updateScrollLockBtn();
+      c.setMode(c.mode === "paged" ? "scroll" : "paged");
+    });
+
+    spreadBtn.addEventListener("click", () => {
+      c.setPagedLayout(c.pagedLayout === "spread" ? "single" : "spread");
+    });
+
+    dirBtn.addEventListener("click", () => {
+      c.setDirection(c.direction === "rtl" ? "ltr" : "rtl");
+    });
+
+    coverBtn.addEventListener("click", () => {
+      c.toggleCoverOffset();
     });
 
     fitSelect.addEventListener("change", () => {
@@ -312,6 +352,40 @@ export class ReaderToolbar {
       c.readerContainer.classList.remove("ds-dark");
       c.themeBtn.innerHTML = '<i class="bi bi-sun"></i> Light';
     }
+  }
+
+  /** Refreshes the mode / spread / direction / cover toggle button labels + visibility. */
+  updateLayoutBtns(): void {
+    const c = this.c;
+    if (c.isHorizontal) {
+      c.modeBtn.innerHTML = '<i class="bi bi-distribute-vertical"></i> Scroll';
+      c.modeBtn.title = "Switch to Continuous Scroll (M)";
+    } else {
+      c.modeBtn.innerHTML = '<i class="bi bi-arrow-left-right"></i> Paged';
+      c.modeBtn.title = "Switch to Paged (M)";
+    }
+
+    const inPaged = c.mode === "paged";
+    c.spreadBtn.style.display = inPaged ? "" : "none";
+    c.dirBtn.style.display = inPaged ? "" : "none";
+    c.coverBtn.style.display = c.isSpread ? "" : "none";
+
+    c.spreadBtn.className = `win-button${c.pagedLayout === "spread" ? " primary" : ""}`;
+    c.spreadBtn.innerHTML = `<i class="bi bi-columns-gap"></i> Spread: ${c.pagedLayout === "spread" ? "ON" : "OFF"}`;
+    c.spreadBtn.title = "Pair two pages per slide in Paged mode (M cycles)";
+
+    c.dirBtn.className = `win-button${c.directionAutoDetected ? "" : " primary"}`;
+    const dirIcon = c.direction === "rtl" ? "bi-arrow-left" : "bi-arrow-right";
+    c.dirBtn.innerHTML = `<i class="bi ${dirIcon}"></i> ${c.direction.toUpperCase()}`;
+    c.dirBtn.title = c.directionAutoDetected
+      ? `Reading direction ${c.direction.toUpperCase()} (auto-detected from tags; D overrides)`
+      : `Reading direction ${c.direction.toUpperCase()} (manual; D toggles)`;
+
+    c.coverBtn.className = `win-button${c.coverOffset ? " primary" : ""}`;
+    c.coverBtn.innerHTML = `<i class="bi bi-book-half"></i> Cover 1st: ${c.coverOffset ? "ON" : "OFF"}`;
+    c.coverBtn.title = "Show the cover alone before pairing pages (C)";
+
+    this.updateScrollLockBtn();
   }
 
   updateScrollLockBtn(): void {
