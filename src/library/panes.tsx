@@ -28,17 +28,16 @@ import {
   deleteCollection,
   removeBookmark,
   removeHistory,
+  unfollowSeries,
   type FollowedSeriesRow,
   type BookmarkRow,
   type HistoryRow,
   type CollectionRow,
 } from "../db";
-import { openExternal, refreshFollowedSeriesCover } from "../api";
 import { useDelayedSpinner } from "../browse/browse-state";
-import { Cover } from "../components/Cover";
-import { ConfirmDeleteButton } from "../components/Button";
 import { Loading } from "../components/Loading";
 import { Pager } from "../components/Pager";
+import { LibraryItemRow } from "./LibraryItemRow";
 
 export interface LibraryPaneApi {
   /** Forces a refetch of the panel data (keeps current page). */
@@ -89,56 +88,32 @@ export function FollowedPane(props: LibraryPaneProps) {
         >
           <For each={data()!.rows}>
             {(row) => (
-              <div class="ds-item ds-flex-row" style="padding:4px 6px;">
-                <div
-                  style="cursor:pointer;flex-shrink:0;"
-                  onClick={() => openSeries(row)}
-                >
-                  <Cover path={row.cover} alt={row.name} imgClass="ds-followed-cover" placeholderClass="ds-followed-cover-placeholder" />
-                </div>
-                <div
-                  class="ds-fill ds-clickable"
-                  onClick={() => openSeries(row)}
-                >
-                  <div class="ds-item-title">{decodeEntities(row.name)}</div>
-                  <div class="ds-item-meta">
-                    {row.latest_chapter_title
-                      ? `Latest: ${decodeEntities(row.latest_chapter_title)}`
-                      : `Followed on ${formatDate(Number(row.created_at))}`}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  class="win-button"
-                  style="font-size:10px;padding:2px 6px;flex-shrink:0;"
-                  title="Re-fetch series cover"
-                  onClick={async (ev) => {
-                    ev.stopPropagation();
-                    try {
-                      await refreshFollowedSeriesCover(row.permalink, row.cover);
-                      showBanner(`Cover updated for "${row.name}".`);
-                      refetch();
-                    } catch (err) {
-                      const msg = err instanceof Error ? err.message : String(err);
-                      showBanner(`Cover refresh failed: ${msg}`);
-                    }
-                  }}
-                >
-                  <i class="bi bi-image"></i>
-                </button>
-                <button
-                  type="button"
-                  class="win-button"
-                  style="font-size:10px;padding:2px 6px;flex-shrink:0;"
-                  title="Open on Dynasty Scans in browser"
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    openExternal(`https://dynasty-scans.com/series/${row.permalink}`);
-                  }}
-                >
-                  <i class="bi bi-box-arrow-up-right"></i>
-                </button>
-              </div>
+              <LibraryItemRow
+                title={row.name}
+                subtitle={
+                  row.latest_chapter_title
+                    ? `Latest: ${decodeEntities(row.latest_chapter_title)} · Followed on ${formatDate(Number(row.created_at))}`
+                    : `Followed on ${formatDate(Number(row.created_at))}`
+                }
+                cover={row.cover}
+                coverAlt={row.name}
+                onOpen={() => openSeries(row)}
+                actionLabel="Open"
+                actionIcon="bi-folder2-open"
+                externalUrl={`https://dynasty-scans.com/series/${row.permalink}`}
+                deleteTitle="Unfollow series"
+                onDelete={async () => {
+                  try {
+                    await unfollowSeries(row.permalink);
+                    showBanner(`Unfollowed "${row.name}".`);
+                    refetch();
+                  } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    showBanner(`Could not unfollow: ${msg}`);
+                    throw err;
+                  }
+                }}
+              />
             )}
           </For>
         </Show>
@@ -196,54 +171,33 @@ export function CollectionsPane(props: CollectionsPaneProps) {
       >
         <For each={data()!}>
           {(col) => (
-            <div class="ds-item ds-flex-row" style="padding:5px 8px;border-radius:2px;gap:8px;">
-              <i
-                class={col.is_default ? "bi bi-star-fill" : "bi bi-folder2-open"}
-                style={
-                  col.is_default
-                    ? "color:#d97706;font-size:14px;flex-shrink:0;"
-                    : "color:var(--sys-primary,#0078d4);font-size:14px;flex-shrink:0;"
-                }
-              ></i>
-              <div class="ds-fill ds-clickable" onClick={() => openDetail(col)}>
-                <div
-                  class="ds-item-title"
-                  style={col.is_default ? "font-weight:700;" : "font-weight:600;"}
-                >
-                  {decodeEntities(col.name)}
-                </div>
-                <div class="ds-item-meta">
-                  {col.itemCount ?? 0} item{col.itemCount === 1 ? "" : "s"}
-                  {col.is_default ? " · Default Collection" : ""}
-                </div>
-              </div>
-              <button
-                type="button"
-                class="win-button ds-btn-sm"
-                style="font-size:10px;padding:2px 8px;flex-shrink:0;"
-                onClick={() => openDetail(col)}
-              >
-                <i class="bi bi-folder2-open"></i> Open
-              </button>
-              <Show when={!col.is_default}>
-                <ConfirmDeleteButton
-                  title="Delete collection"
-                  onConfirm={async () => {
-                    try {
-                      await deleteCollection(col.id);
-                      showBanner(`Deleted collection "${col.name}".`);
-                      refetch();
-                    } catch (err) {
-                      const msg = err instanceof Error ? err.message : String(err);
-                      showBanner(`Could not delete collection: ${msg}`);
-                      throw err;
+            <LibraryItemRow
+              title={col.name}
+              subtitle={`${col.itemCount ?? 0} item${col.itemCount === 1 ? "" : "s"}${
+                col.is_default ? " · Default Collection" : ""
+              }`}
+              icon={col.is_default ? "bi-star-fill" : "bi-folder2-open"}
+              iconColor={col.is_default ? "#d97706" : "var(--sys-primary,#0078d4)"}
+              onOpen={() => openDetail(col)}
+              actionLabel="Open"
+              actionIcon="bi-folder2-open"
+              deleteTitle="Delete collection"
+              onDelete={
+                !col.is_default
+                  ? async () => {
+                      try {
+                        await deleteCollection(col.id);
+                        showBanner(`Deleted collection "${col.name}".`);
+                        refetch();
+                      } catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        showBanner(`Could not delete collection: ${msg}`);
+                        throw err;
+                      }
                     }
-                  }}
-                >
-                  <i class="bi bi-trash3"></i>
-                </ConfirmDeleteButton>
-              </Show>
-            </div>
+                  : undefined
+              }
+            />
           )}
         </For>
       </Show>
@@ -289,61 +243,31 @@ export function BookmarksPane(props: LibraryPaneProps) {
         >
           <For each={data()!.res.rows}>
             {(row: BookmarkRow) => (
-              <div class="ds-item ds-flex-row" style="padding:4px 6px;">
-                <div
-                  class="ds-fill ds-clickable"
-                  onClick={() =>
-                    navigate({
-                      view: "reader",
-                      chapterPermalink: row.chapter_permalink,
-                      chapterTitle: row.chapter_title,
-                      seriesPermalink: row.series_permalink,
-                      seriesName: row.series_name,
-                      startPage: row.page_index,
-                    })
-                  }
-                >
-                  <div
-                    class="ds-item-title"
-                    style="display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;"
-                  >
-                    <span>{decodeEntities(row.chapter_title)}</span>
-                    <Show when={data()!.fullyCachedSet.has(row.chapter_permalink)}>
-                      <i
-                        class="bi bi-cloud-check-fill ds-offline-icon"
-                        style="color:var(--sys-primary,#0078d4);font-size:11px;"
-                        title="Available Offline (Fully Cached)"
-                      ></i>
-                    </Show>
-                  </div>
-                  <div class="ds-item-meta">
-                    {row.series_name
-                      ? `${decodeEntities(row.series_name)} · Saved on ${formatDate(Number(row.created_at))}`
-                      : `Saved on ${formatDate(Number(row.created_at))}`}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  class="win-button"
-                  style="font-size:10px;padding:2px 6px;flex-shrink:0;"
-                  title="Open chapter on Dynasty Scans in browser"
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    openExternal(`https://dynasty-scans.com/chapters/${row.chapter_permalink}`);
-                  }}
-                >
-                  <i class="bi bi-box-arrow-up-right"></i>
-                </button>
-                <ConfirmDeleteButton
-                  title="Remove bookmark"
-                  onConfirm={async () => {
-                    await removeBookmark(row.chapter_permalink);
-                    refetch();
-                  }}
-                >
-                  <i class="bi bi-trash3"></i>
-                </ConfirmDeleteButton>
-              </div>
+              <LibraryItemRow
+                title={row.chapter_title}
+                subtitle={
+                  row.series_name
+                    ? `${decodeEntities(row.series_name)} · Saved on ${formatDate(Number(row.created_at))}`
+                    : `Saved on ${formatDate(Number(row.created_at))}`
+                }
+                isFullyCached={data()!.fullyCachedSet.has(row.chapter_permalink)}
+                onOpen={() =>
+                  navigate({
+                    view: "reader",
+                    chapterPermalink: row.chapter_permalink,
+                    chapterTitle: row.chapter_title,
+                    seriesPermalink: row.series_permalink,
+                    seriesName: row.series_name,
+                    startPage: row.page_index,
+                  })
+                }
+                externalUrl={`https://dynasty-scans.com/chapters/${row.chapter_permalink}`}
+                deleteTitle="Remove bookmark"
+                onDelete={async () => {
+                  await removeBookmark(row.chapter_permalink);
+                  refetch();
+                }}
+              />
             )}
           </For>
         </Show>
@@ -394,58 +318,26 @@ export function HistoryPane(props: LibraryPaneProps) {
         >
           <For each={data()!.res.rows}>
             {(row: HistoryRow) => (
-              <div class="ds-item ds-flex-row" style="padding:4px 6px;">
-                <div
-                  class="ds-fill ds-clickable"
-                  onClick={() =>
-                    navigate({
-                      view: "reader",
-                      chapterPermalink: row.chapter_permalink,
-                      chapterTitle: row.chapter_title,
-                      seriesPermalink: row.series_permalink,
-                      seriesName: row.series_name,
-                    })
-                  }
-                >
-                  <div
-                    class="ds-item-title"
-                    style="display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;"
-                  >
-                    <span>{decodeEntities(row.chapter_title)}</span>
-                    <Show when={data()!.fullyCachedSet.has(row.chapter_permalink)}>
-                      <i
-                        class="bi bi-cloud-check-fill ds-offline-icon"
-                        style="color:var(--sys-primary,#0078d4);font-size:11px;"
-                        title="Available Offline (Fully Cached)"
-                      ></i>
-                    </Show>
-                  </div>
-                  <div class="ds-item-meta">
-                    {decodeEntities(row.series_name)} · {formatDate(Number(row.read_at))}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  class="win-button"
-                  style="font-size:10px;padding:2px 6px;flex-shrink:0;"
-                  title="Open chapter on Dynasty Scans in browser"
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    openExternal(`https://dynasty-scans.com/chapters/${row.chapter_permalink}`);
-                  }}
-                >
-                  <i class="bi bi-box-arrow-up-right"></i>
-                </button>
-                <ConfirmDeleteButton
-                  title="Remove from history"
-                  onConfirm={async () => {
-                    await removeHistory(row.id);
-                    refetch();
-                  }}
-                >
-                  <i class="bi bi-trash3"></i>
-                </ConfirmDeleteButton>
-              </div>
+              <LibraryItemRow
+                title={row.chapter_title}
+                subtitle={`${decodeEntities(row.series_name)} · ${formatDate(Number(row.read_at))}`}
+                isFullyCached={data()!.fullyCachedSet.has(row.chapter_permalink)}
+                onOpen={() =>
+                  navigate({
+                    view: "reader",
+                    chapterPermalink: row.chapter_permalink,
+                    chapterTitle: row.chapter_title,
+                    seriesPermalink: row.series_permalink,
+                    seriesName: row.series_name,
+                  })
+                }
+                externalUrl={`https://dynasty-scans.com/chapters/${row.chapter_permalink}`}
+                deleteTitle="Remove from history"
+                onDelete={async () => {
+                  await removeHistory(row.id);
+                  refetch();
+                }}
+              />
             )}
           </For>
         </Show>

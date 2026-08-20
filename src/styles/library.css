@@ -71,10 +71,10 @@
 
 .ds-followed-cover,
 .ds-collection-cover {
-  width: 84px;
-  height: 114px;
-  min-width: 84px;
-  max-width: 84px;
+  width: 42px;
+  height: 58px;
+  min-width: 42px;
+  max-width: 42px;
   object-fit: cover;
   border: 1px solid var(--sys-border-light, #ccc);
   border-radius: 2px;
@@ -86,10 +86,10 @@
 
 .ds-followed-cover-placeholder,
 .ds-collection-cover-placeholder {
-  width: 84px;
-  height: 114px;
-  min-width: 84px;
-  max-width: 84px;
+  width: 42px;
+  height: 58px;
+  min-width: 42px;
+  max-width: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,7 +97,7 @@
   border: 1px solid var(--sys-border-light, #ccc);
   border-radius: 2px;
   color: var(--sys-text-muted, #888);
-  font-size: 24px;
+  font-size: 14px;
   flex-shrink: 0;
   box-sizing: border-box;
 }

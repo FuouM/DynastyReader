@@ -27,7 +27,7 @@ import {
   setTitle,
   showBanner,
 } from "../stores";
-import { getOrHydrateItemCover, getOrHydrateSeriesCover, openExternal } from "../api";
+import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api";
 import {
   clearHistory,
   createCollection,
@@ -41,11 +41,11 @@ import {
   type CollectionRow,
 } from "../db";
 import { useDelayedSpinner } from "../browse/browse-state";
-import { Cover } from "../components/Cover";
 import { ConfirmDeleteButton } from "../components/Button";
 import { Loading } from "../components/Loading";
 import { Modal } from "../components/Modal";
 import { TopbarAction } from "../components/ActionBar";
+import { LibraryItemRow } from "./LibraryItemRow";
 import {
   FollowedPane,
   CollectionsPane,
@@ -579,83 +579,26 @@ function CollectionItemCard(props: {
           : "series";
 
   return (
-    <div
-      class="ds-item ds-flex-row ds-clickable"
-      style="padding:5px 8px;border-radius:2px;gap:8px;cursor:pointer;"
-      onClick={onOpen}
-    >
-      <div style="flex-shrink:0;cursor:pointer;">
-        <Cover
-          path={cover()}
-          alt={props.it.item_title}
-          imgClass="ds-collection-cover"
-          placeholderClass="ds-collection-cover-placeholder"
-        />
-      </div>
-
-      <div class="ds-fill">
-        <div class="ds-flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;">
-          <span class="ds-item-title" style="font-weight:600;font-size:12px;">
-            {decodeEntities(props.it.item_title)}
-          </span>
-          <span
-            class="ds-muted"
-            style="font-size:10px;background:var(--sys-control-bg,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;"
-          >
-            {kindLabel}
-          </span>
-        </div>
-        <div class="ds-item-meta">
-          {props.it.parent_series_name
-            ? `${decodeEntities(props.it.parent_series_name)} · Added on ${formatDate(Number(props.it.created_at))}`
-            : `Added on ${formatDate(Number(props.it.created_at))}`}
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="win-button ds-btn-sm"
-        style="font-size:10px;padding:2px 8px;flex-shrink:0;"
-        onClick={(ev) => {
-          ev.stopPropagation();
-          onOpen();
-        }}
-      >
-        {isChapterLike ? (
-          <>
-            <i class="bi bi-book"></i> Read
-          </>
-        ) : (
-          <>
-            <i class="bi bi-folder2-open"></i> Open
-          </>
-        )}
-      </button>
-
-      <button
-        type="button"
-        class="win-button"
-        style="font-size:10px;padding:2px 6px;flex-shrink:0;"
-        title="Open on Dynasty Scans in browser"
-        onClick={(ev) => {
-          ev.stopPropagation();
-          openExternal(`https://dynasty-scans.com/${endpoint}/${props.it.item_permalink}`);
-        }}
-      >
-        <i class="bi bi-box-arrow-up-right"></i>
-      </button>
-
-      <ConfirmDeleteButton
-        title="Remove from collection"
-        onConfirm={async () => {
-          await removeItemFromCollection(props.collectionId, props.it.item_permalink);
-          showBanner(`Removed "${props.it.item_title}" from collection.`);
-          props.onChanged();
-        }}
-        cssText="font-size:10px;padding:2px 6px;"
-      >
-        <i class="bi bi-trash3"></i>
-      </ConfirmDeleteButton>
-    </div>
+    <LibraryItemRow
+      title={props.it.item_title}
+      subtitle={
+        props.it.parent_series_name
+          ? `${decodeEntities(props.it.parent_series_name)} · Added on ${formatDate(Number(props.it.created_at))}`
+          : `Added on ${formatDate(Number(props.it.created_at))}`
+      }
+      badge={kindLabel}
+      cover={cover()}
+      coverAlt={props.it.item_title}
+      onOpen={onOpen}
+      actionLabel={isChapterLike ? "Read" : "Open"}
+      actionIcon={isChapterLike ? "bi-book" : "bi-folder2-open"}
+      externalUrl={`https://dynasty-scans.com/${endpoint}/${props.it.item_permalink}`}
+      deleteTitle="Remove from collection"
+      onDelete={async () => {
+        await removeItemFromCollection(props.collectionId, props.it.item_permalink);
+        showBanner(`Removed "${props.it.item_title}" from collection.`);
+        props.onChanged();
+      }}
+    />
   );
 }
