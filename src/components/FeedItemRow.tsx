@@ -27,6 +27,7 @@ import {
 } from "../db";
 import { convertFileSrc } from "../ipc";
 import { browseCovers } from "../browse/browse-covers";
+import { ListItem } from "./ListItem";
 import { OfflineBadge } from "./OfflineBadge";
 import { WarningChip } from "./WarningChip";
 import { ExternalLinkButton } from "./ExternalLinkButton";
@@ -208,53 +209,54 @@ export function FeedItemRow(props: FeedItemRowProps) {
     : `View series: ${decodeEntities(coverInfo.seriesName || coverInfo.seriesPermalink)}`;
 
   return (
-    <div
-      class={`ds-item ds-feed-item${isRead() ? " ds-item-read" : ""}`}
-      style={`display:flex;align-items:center;gap:10px;padding:6px 8px;cursor:pointer;${
-        isBlacklisted() ? "opacity:0.8;background:var(--sys-bg-active,#fcf8f8);" : ""
-      }`}
+    <ListItem
+      class="ds-feed-item"
+      cssText="gap:10px;padding:6px 8px;cursor:pointer;"
+      fillCssText="display:flex;flex-direction:column;gap:3px;"
+      read={isRead()}
+      blacklisted={isBlacklisted()}
       onClick={() => guardedOpen(ch.title, openChapter)}
-    >
-      <div
-        ref={(el) => {
-          if (!props.coverPath) browseCovers.observe(el);
-        }}
-        class="ds-feed-cover-wrap"
-        style="flex-shrink:0;cursor:pointer;"
-        data-feed-cover={props.coverPath ? undefined : coverInfo.coverKey}
-        data-chapter-permalink={props.coverPath ? undefined : coverInfo.chapterPermalink}
-        data-series-permalink={props.coverPath ? undefined : coverInfo.seriesPermalink}
-        data-series-type={props.coverPath ? undefined : (coverInfo.seriesType || "")}
-        title={coverTitle}
-        onClick={(ev) => {
-          ev.stopPropagation();
-          if (coverInfo.isStandalone) {
-            guardedOpen(ch.title, openChapter);
-          } else {
-            guardedOpen(coverInfo.seriesName || ch.title, () =>
-              openSeries(coverInfo.seriesPermalink, coverInfo.seriesName || coverInfo.seriesPermalink),
-            );
-          }
-        }}
-      >
-        <Show
-          when={props.coverPath && !coverError()}
-          fallback={
-            <div class="ds-feed-cover-placeholder">
-              <i class="bi bi-book"></i>
-            </div>
-          }
+      leading={
+        <div
+          ref={(el) => {
+            if (!props.coverPath) browseCovers.observe(el);
+          }}
+          class="ds-feed-cover-wrap"
+          style="flex-shrink:0;cursor:pointer;"
+          data-feed-cover={props.coverPath ? undefined : coverInfo.coverKey}
+          data-chapter-permalink={props.coverPath ? undefined : coverInfo.chapterPermalink}
+          data-series-permalink={props.coverPath ? undefined : coverInfo.seriesPermalink}
+          data-series-type={props.coverPath ? undefined : (coverInfo.seriesType || "")}
+          title={coverTitle}
+          onClick={(ev) => {
+            ev.stopPropagation();
+            if (coverInfo.isStandalone) {
+              guardedOpen(ch.title, openChapter);
+            } else {
+              guardedOpen(coverInfo.seriesName || ch.title, () =>
+                openSeries(coverInfo.seriesPermalink, coverInfo.seriesName || coverInfo.seriesPermalink),
+              );
+            }
+          }}
         >
-          <img
-            src={convertFileSrc(props.coverPath!)}
-            class="ds-feed-cover"
-            loading="lazy"
-            onError={() => setCoverError(true)}
-          />
-        </Show>
-      </div>
-
-      <div class="ds-fill" style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+          <Show
+            when={props.coverPath && !coverError()}
+            fallback={
+              <div class="ds-feed-cover-placeholder">
+                <i class="bi bi-book"></i>
+              </div>
+            }
+          >
+            <img
+              src={convertFileSrc(props.coverPath!)}
+              class="ds-feed-cover"
+              loading="lazy"
+              onError={() => setCoverError(true)}
+            />
+          </Show>
+        </div>
+      }
+      title={
         <div class="ds-flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;">
           <span
             class="ds-item-title"
@@ -292,38 +294,44 @@ export function FeedItemRow(props: FeedItemRowProps) {
             <WarningChip mode={blMode} tags={matchedTags()} />
           </Show>
         </div>
-
-        <TagRow label="Artist:" tags={artistTags} />
-        <TagRow label="Scanlation:" tags={groupTags} />
-        <TagRow label="Tags:" tags={otherTags} />
-      </div>
-
-      <button
-        type="button"
-        class={`win-button ds-btn-compact${bookmarked() ? " primary" : ""}`}
-        title={bookmarked() ? "Remove from Read Later" : "Save for Read Later"}
-        onClick={(ev) => {
-          ev.stopPropagation();
-          void toggleBookmark();
-        }}
-      >
-        {bookmarked() ? <i class="bi bi-bookmark-fill"></i> : <i class="bi bi-bookmark-plus"></i>}
-        {bookmarked() ? " Saved" : " Read Later"}
-      </button>
-      <AddToCollectionButton
-        cssText="flex-shrink:0;"
-        title={
-          !coverInfo.isStandalone
-            ? `Add series "${decodeEntities(coverInfo.seriesName || ch.series || "")}" to collection`
-            : "Add to Favorites or custom collections"
-        }
-        onOpen={openAddToCol}
-      />
-      <ExternalLinkButton
-        cssText="flex-shrink:0;"
-        title={`Open "${decodeEntities(ch.title)}" on Dynasty Scans in browser`}
-        url={`https://dynasty-scans.com/chapters/${ch.permalink}`}
-      />
-    </div>
+      }
+      body={
+        <>
+          <TagRow label="Artist:" tags={artistTags} />
+          <TagRow label="Scanlation:" tags={groupTags} />
+          <TagRow label="Tags:" tags={otherTags} />
+        </>
+      }
+      actions={
+        <>
+          <button
+            type="button"
+            class={`win-button ds-btn-compact${bookmarked() ? " primary" : ""}`}
+            title={bookmarked() ? "Remove from Read Later" : "Save for Read Later"}
+            onClick={(ev) => {
+              ev.stopPropagation();
+              void toggleBookmark();
+            }}
+          >
+            {bookmarked() ? <i class="bi bi-bookmark-fill"></i> : <i class="bi bi-bookmark-plus"></i>}
+            {bookmarked() ? " Saved" : " Read Later"}
+          </button>
+          <AddToCollectionButton
+            cssText="flex-shrink:0;"
+            title={
+              !coverInfo.isStandalone
+                ? `Add series "${decodeEntities(coverInfo.seriesName || ch.series || "")}" to collection`
+                : "Add to Favorites or custom collections"
+            }
+            onOpen={openAddToCol}
+          />
+          <ExternalLinkButton
+            cssText="flex-shrink:0;"
+            title={`Open "${decodeEntities(ch.title)}" on Dynasty Scans in browser`}
+            url={`https://dynasty-scans.com/chapters/${ch.permalink}`}
+          />
+        </>
+      }
+    />
   );
 }

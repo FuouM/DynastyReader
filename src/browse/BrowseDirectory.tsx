@@ -17,6 +17,7 @@ import {
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
 import { InputField } from "../components/InputField";
+import { ListItem } from "../components/ListItem";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { EmptyState } from "../components/EmptyState";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
@@ -59,32 +60,35 @@ function DirectoryRow(props: {
   };
 
   return (
-    <div
-      class="ds-item"
-      style="display:flex;align-items:center;justify-content:space-between;padding:3px 6px;"
-    >
-      <div class="ds-item-title ds-fill ds-clickable" onClick={openEntry}>
-        {decodeEntities(props.entry.name)}
-        <Show when={isBl}>
-          <span
-            class="ds-muted"
-            style="font-size:10px;margin-left:6px;color:var(--ds-warn-text,#d97706);font-weight:600;"
-          >
-            <i class="bi bi-shield-slash-fill"></i> Blacklisted
-          </span>
-        </Show>
-      </div>
-      <ExternalLinkButton
-        class="ds-btn-xs"
-        cssText="flex-shrink:0;"
-        title={props.kind === "series" ? "Open series in browser" : "Search tag in browser"}
-        url={
-          props.kind === "series"
-            ? `https://dynasty-scans.com/series/${props.entry.permalink}`
-            : `https://dynasty-scans.com/search?q=${encodeURIComponent(props.entry.name)}`
-        }
-      />
-    </div>
+    <ListItem
+      cssText="justify-content:space-between;padding:3px 6px;cursor:pointer;"
+      onClick={openEntry}
+      title={
+        <span class="ds-item-title" style="display:inline-flex;align-items:center;gap:6px;">
+          {decodeEntities(props.entry.name)}
+          <Show when={isBl}>
+            <span
+              class="ds-muted"
+              style="font-size:10px;margin-left:6px;color:var(--ds-warn-text,#d97706);font-weight:600;"
+            >
+              <i class="bi bi-shield-slash-fill"></i> Blacklisted
+            </span>
+          </Show>
+        </span>
+      }
+      actions={
+        <ExternalLinkButton
+          class="ds-btn-xs"
+          cssText="flex-shrink:0;"
+          title={props.kind === "series" ? "Open series in browser" : "Search tag in browser"}
+          url={
+            props.kind === "series"
+              ? `https://dynasty-scans.com/series/${props.entry.permalink}`
+              : `https://dynasty-scans.com/search?q=${encodeURIComponent(props.entry.name)}`
+          }
+        />
+      }
+    />
   );
 }
 

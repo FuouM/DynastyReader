@@ -36,6 +36,7 @@ import { Pager } from "../components/Pager";
 import { TagPill } from "../components/TagPill";
 import { Loading } from "../components/Loading";
 import { Typeahead } from "../components/Typeahead";
+import { ListItem } from "../components/ListItem";
 import { OfflineBadge } from "../components/OfflineBadge";
 import { WarningChip } from "../components/WarningChip";
 import { AddToCollectionButton } from "../components/AddToCollectionButton";
@@ -147,18 +148,18 @@ function SearchResultRow(props: {
     item.kind === "issue";
 
   return (
-    <div
-      class="ds-item ds-row"
-      style={`border-radius:3px;padding:6px 10px;align-items:flex-start;gap:8px;cursor:pointer;${
-        isBlacklisted ? "opacity:0.8;background:var(--sys-bg-active,#fcf8f8);" : ""
-      }`}
+    <ListItem
+      class="ds-row"
+      cssText="border-radius:3px;padding:6px 10px;align-items:flex-start;gap:8px;cursor:pointer;"
+      blacklisted={isBlacklisted}
       onClick={onOpenItem}
-    >
-      <div style="font-size:16px;margin-top:2px;min-width:20px;text-align:center;">
-        <i class={KIND_ICON[item.kind]} style={`color:${KIND_COLOR[item.kind]};`}></i>
-      </div>
-
-      <div class="ds-fill" style="display:flex;flex-direction:column;gap:3px;">
+      leading={
+        <div style="font-size:16px;margin-top:2px;min-width:20px;text-align:center;">
+          <i class={KIND_ICON[item.kind]} style={`color:${KIND_COLOR[item.kind]};`}></i>
+        </div>
+      }
+      fillCssText="display:flex;flex-direction:column;gap:3px;"
+      title={
         <div class="ds-flex-row" style="flex-wrap:wrap;">
           <span
             class="ds-search-title-link"
@@ -178,91 +179,97 @@ function SearchResultRow(props: {
             <WarningChip mode={props.blMode} tags={matchedTags} />
           </Show>
         </div>
+      }
+      body={
+        <>
+          <Show
+            when={item.author || item.doujin || item.releasedOn}
+          >
+            <div class="ds-row" style="gap:8px;align-items:center;flex-wrap:wrap;">
+              <Show when={item.author}>
+                <span class="ds-muted" style="font-size:11px;">
+                  by{" "}
+                  <a
+                    style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      navigate({
+                        view: "series",
+                        seriesPermalink: item.author!.permalink,
+                        seriesName: item.author!.name,
+                      });
+                    }}
+                  >
+                    {decodeEntities(item.author!.name)}
+                  </a>
+                </span>
+              </Show>
+              <Show when={item.doujin}>
+                <span class="ds-muted" style="font-size:11px;">
+                  <a
+                    style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      navigate({
+                        view: "series",
+                        seriesPermalink: item.doujin!.permalink,
+                        seriesName: item.doujin!.name,
+                      });
+                    }}
+                  >
+                    {decodeEntities(item.doujin!.name)}
+                  </a>
+                </span>
+              </Show>
+              <Show when={item.releasedOn}>
+                <span class="ds-muted" style="font-size:11px;">
+                  released {item.releasedOn}
+                </span>
+              </Show>
+            </div>
+          </Show>
 
-        <Show
-          when={item.author || item.doujin || item.releasedOn}
-        >
-          <div class="ds-row" style="gap:8px;align-items:center;flex-wrap:wrap;">
-            <Show when={item.author}>
-              <span class="ds-muted" style="font-size:11px;">
-                by{" "}
-                <a
-                  style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;"
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    navigate({
-                      view: "series",
-                      seriesPermalink: item.author!.permalink,
-                      seriesName: item.author!.name,
-                    });
-                  }}
-                >
-                  {decodeEntities(item.author!.name)}
-                </a>
-              </span>
-            </Show>
-            <Show when={item.doujin}>
-              <span class="ds-muted" style="font-size:11px;">
-                <a
-                  style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;"
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    navigate({
-                      view: "series",
-                      seriesPermalink: item.doujin!.permalink,
-                      seriesName: item.doujin!.name,
-                    });
-                  }}
-                >
-                  {decodeEntities(item.doujin!.name)}
-                </a>
-              </span>
-            </Show>
-            <Show when={item.releasedOn}>
-              <span class="ds-muted" style="font-size:11px;">
-                released {item.releasedOn}
-              </span>
-            </Show>
-          </div>
-        </Show>
+          <Show when={item.tags.length > 0}>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;">
+              <For each={sortTagsByCategory(item.tags)}>
+                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
+              </For>
+            </div>
+          </Show>
+        </>
+      }
+      actions={
+        <>
+          <Show when={isCollectible}>
+            <AddToCollectionButton
+              cssText="align-self:center;"
+              onOpen={(anchorEl) =>
+                props.onAddToCol(
+                  {
+                    permalink: item.permalink,
+                    title: item.title,
+                    kind: item.kind === "chapter" ? "chapter" : (item.kind as CollectionItemKind),
+                  },
+                  anchorEl,
+                )
+              }
+            />
+          </Show>
 
-        <Show when={item.tags.length > 0}>
-          <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;">
-            <For each={sortTagsByCategory(item.tags)}>
-              {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
-            </For>
-          </div>
-        </Show>
-      </div>
-
-      <Show when={isCollectible}>
-        <AddToCollectionButton
-          cssText="align-self:center;"
-          onOpen={(anchorEl) =>
-            props.onAddToCol(
-              {
-                permalink: item.permalink,
-                title: item.title,
-                kind: item.kind === "chapter" ? "chapter" : (item.kind as CollectionItemKind),
-              },
-              anchorEl,
-            )
-          }
-        />
-      </Show>
-
-      <button
-        type="button"
-        class="win-button ds-btn-sm"
-        style="align-self:center;white-space:nowrap;"
-        onClick={(ev) => {
-          ev.stopPropagation();
-          onOpenItem();
-        }}
-      >
-        <i class={actionIcon}></i> {actionLabel}
-      </button>
-    </div>
+          <button
+            type="button"
+            class="win-button ds-btn-sm"
+            style="align-self:center;white-space:nowrap;"
+            onClick={(ev) => {
+              ev.stopPropagation();
+              onOpenItem();
+            }}
+          >
+            <i class={actionIcon}></i> {actionLabel}
+          </button>
+        </>
+      }
+    />
   );
 }
 
