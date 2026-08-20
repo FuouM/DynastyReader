@@ -277,9 +277,18 @@ export function BrowseSearch(props: BrowseSearchProps) {
   createEffect(() => {
     const t = props.transient;
     if (!t) return;
-    if (t.searchQuery !== undefined) setQ(t.searchQuery);
-    if (t.withTag && !withTags().includes(t.withTag)) {
-      setWithTags((tags) => [...tags, t.withTag!]);
+    if (t.searchQuery !== undefined) {
+      setQ(t.searchQuery);
+      setClasses(new Set<SearchClass>());
+      setWithTags([]);
+      setWithoutTags([]);
+      setSort("");
+    }
+    if (t.withTag) {
+      setQ("");
+      setWithoutTags([]);
+      setSort("");
+      setWithTags([t.withTag]);
     }
     if (t.searchClass !== undefined) {
       if (t.searchClass) setClasses(new Set([t.searchClass as SearchClass]));
