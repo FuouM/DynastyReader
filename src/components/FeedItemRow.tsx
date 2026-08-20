@@ -39,8 +39,10 @@ import type { SeriesTag } from "../types/api";
 export interface FeedItemData {
   permalink: string;
   title: string;
+  kind?: "chapter" | "series" | "anthology" | "doujin" | "issue" | "author" | "scanlator" | "tag" | "pairing";
   series?: string | null;
   tags?: { type?: string; name?: string; permalink?: string }[];
+  url?: string;
 }
 
 export interface FeedItemRowProps {
@@ -93,6 +95,26 @@ export function FeedItemRow(props: FeedItemRowProps) {
   });
 
   const blMode = getBlacklistMode();
+
+  const externalUrl = (): string => {
+    if (ch.url) return ch.url;
+    if (ch.kind === "series") return `https://dynasty-scans.com/series/${ch.permalink}`;
+    if (ch.kind === "anthology") return `https://dynasty-scans.com/anthologies/${ch.permalink}`;
+    if (ch.kind === "doujin") return `https://dynasty-scans.com/doujins/${ch.permalink}`;
+    if (ch.kind === "issue") return `https://dynasty-scans.com/issues/${ch.permalink}`;
+    return `https://dynasty-scans.com/chapters/${ch.permalink}`;
+  };
+
+  const isDirectSeries =
+    ch.kind === "series" || ch.kind === "anthology" || ch.kind === "doujin" || ch.kind === "issue";
+
+  const openMainTarget = (): void => {
+    if (isDirectSeries) {
+      openSeries(ch.permalink, ch.title);
+    } else {
+      openChapter();
+    }
+  };
 
   const openChapter = (): void => {
     navigate({
@@ -214,7 +236,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
       fillCssText="display:flex;flex-direction:column;gap:3px;"
       read={isRead()}
       blacklisted={isBlacklisted()}
-      onClick={() => guardedOpen(ch.title, openChapter)}
+      onClick={() => guardedOpen(ch.title, openMainTarget)}
       leading={
         <HydratedCover
           path={props.coverPath}
@@ -225,7 +247,9 @@ export function FeedItemRow(props: FeedItemRowProps) {
           title={coverTitle}
           onClick={(ev) => {
             ev.stopPropagation();
-            if (coverInfo.isStandalone) {
+            if (isDirectSeries) {
+              guardedOpen(ch.title, () => openSeries(ch.permalink, ch.title));
+            } else if (coverInfo.isStandalone) {
               guardedOpen(ch.title, openChapter);
             } else {
               guardedOpen(coverInfo.seriesName || ch.title, () =>
@@ -242,7 +266,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
             style="font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
             onClick={(ev) => {
               ev.stopPropagation();
-              guardedOpen(ch.title, openChapter);
+              guardedOpen(ch.title, openMainTarget);
             }}
           >
             <span>{decodeEntities(ch.title)}</span>
@@ -307,7 +331,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
           <ExternalLinkButton
             cssText="flex-shrink:0;"
             title={`Open "${decodeEntities(ch.title)}" on Dynasty Scans in browser`}
-            url={`https://dynasty-scans.com/chapters/${ch.permalink}`}
+            url={externalUrl()}
           />
         </>
       }

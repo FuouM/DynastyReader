@@ -16,14 +16,13 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import { decodeEntities, navigate, setBanner, sortTagsByCategory } from "../stores";
+import { decodeEntities, navigate, setBanner } from "../stores";
 import { searchDynasty, suggest } from "../api";
 import {
   getBlacklistMode,
   getFullyCachedChapterPermalinks,
   isItemBlacklisted,
   type BlacklistMode,
-  type CollectionItemKind,
 } from "../db";
 import {
   setPaneError,
@@ -32,16 +31,16 @@ import {
   useDelayedSpinner,
   useTabPane,
 } from "./browse-state";
+import { browseCovers } from "./browse-covers";
 import { Pager } from "../components/Pager";
-import { TagPill } from "../components/TagPill";
 import { Loading } from "../components/Loading";
 import { Typeahead } from "../components/Typeahead";
 import { ListItem } from "../components/ListItem";
-import { OfflineBadge } from "../components/OfflineBadge";
 import { WarningChip } from "../components/WarningChip";
-import { AddToCollectionButton } from "../components/AddToCollectionButton";
+import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { BlacklistNotice } from "../components/BlacklistNotice";
 import { EmptyState } from "../components/EmptyState";
+import { FeedItemRow, type FeedItemData } from "../components/FeedItemRow";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
 import type { AddToCollectionItem } from "../components/AddToCollectionModal";
@@ -64,28 +63,11 @@ const ALL_CLASSES: { id: SearchClass; label: string }[] = [
   { id: "Pairing", label: "Pairing" },
 ];
 
-const KIND_ICON: Record<SearchResultItem["kind"], string> = {
-  chapter: "bi-file-earmark-text",
-  series: "bi-collection-play",
-  anthology: "bi-journal-album",
-  doujin: "bi-book",
-  issue: "bi-newspaper",
-  author: "bi-person",
-  scanlator: "bi-people",
-  pairing: "bi-heart",
-  tag: "bi-tag",
-};
-
-const KIND_COLOR: Record<SearchResultItem["kind"], string> = {
-  chapter: "#0078d4",
-  series: "#d83b01",
-  anthology: "#107c41",
-  doujin: "#8764b8",
-  issue: "#b146c2",
-  author: "#008272",
-  scanlator: "#5c2d91",
-  pairing: "#e3008c",
-  tag: "#69797e",
+const TAXONOMIC_ICONS: Record<string, { icon: string; color: string; path: string; label: string }> = {
+  author: { icon: "bi-person", color: "#008272", path: "authors", label: "Author" },
+  scanlator: { icon: "bi-people", color: "#5c2d91", path: "scanlators", label: "Scanlator" },
+  tag: { icon: "bi-tag", color: "#69797e", path: "tags", label: "Tag" },
+  pairing: { icon: "bi-heart", color: "#e3008c", path: "pairings", label: "Pairing" },
 };
 
 interface SearchRow {
@@ -109,166 +91,129 @@ function SearchResultRow(props: {
 }) {
   const { item, isBlacklisted, matchedTags } = props.row;
 
-  const onOpenItem = (): void => {
-    const doNavigate = (): void => {
-      if (item.kind === "chapter") {
-        navigate({
-          view: "reader",
-          chapterPermalink: item.permalink,
-          chapterTitle: item.title,
-        });
-      } else {
-        navigate({
-          view: "series",
-          seriesPermalink: item.permalink,
-          seriesName: item.title,
-        });
-      }
-    };
-    if (isBlacklisted && matchedTags.length > 0) {
-      props.onWarn(item.title, matchedTags, doNavigate);
-    } else {
-      doNavigate();
+  const isContentKind =
+    item.kind === "chapter" ||
+    item.kind === "series" ||
+    item.kind === "anthology" ||
+    item.kind === "doujin" ||
+    item.kind === "issue";
+
+  // ── 1. Content items (Series, Chapters, Doujins, Anthologies, Issues) ────────
+  if (isContentKind) {
+    const itemTags = (item.tags ?? []).map((t) => ({
+      type: t.type || "General",
+      name: t.name || "",
+      permalink: t.permalink || "",
+    }));
+
+    if (item.author && !itemTags.some((t) => t.permalink === item.author!.permalink)) {
+      itemTags.push({ type: "Author", name: item.author.name, permalink: item.author.permalink });
     }
+
+    if (item.doujin && !itemTags.some((t) => t.permalink === item.doujin!.permalink)) {
+      itemTags.push({ type: "Doujin", name: item.doujin.name, permalink: item.doujin.permalink });
+    }
+
+    const isSeriesType = item.kind !== "chapter";
+
+    const feedData: FeedItemData = {
+      permalink: item.permalink,
+      title: item.title,
+      kind: item.kind,
+      series: isSeriesType ? item.title : item.doujin?.name || null,
+      tags: itemTags,
+    };
+
+    const extraMeta = (
+      <>
+        <span
+          class="ds-muted"
+          style="font-size:10px;background:var(--sys-hover-bg,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;"
+        >
+          {item.kind}
+        </span>
+        <Show when={item.releasedOn}>
+          <span class="ds-muted" style="font-size:11px;">
+            · released {item.releasedOn}
+          </span>
+        </Show>
+      </>
+    );
+
+    return (
+      <FeedItemRow
+        item={feedData}
+        isBlacklisted={isBlacklisted}
+        matchedTags={matchedTags}
+        isFullyCached={props.isFullyCached}
+        extraMeta={extraMeta}
+        onWarn={props.onWarn}
+        onAddToCol={props.onAddToCol}
+      />
+    );
+  }
+
+  // ── 2. Taxonomic metadata items (Authors, Scanlators, Tags, Pairings) ────────
+  const tax = TAXONOMIC_ICONS[item.kind] ?? {
+    icon: "bi-tag",
+    color: "#69797e",
+    path: "tags",
+    label: item.kind,
   };
 
-  const actionLabel =
-    item.kind === "chapter" ? "Read" : ["series", "anthology", "doujin", "issue"].includes(item.kind) ? "Open" : "View";
-  const actionIcon =
-    item.kind === "chapter"
-      ? "bi-book"
-      : ["series", "anthology", "doujin", "issue"].includes(item.kind)
-        ? "bi-folder2-open"
-        : "bi-arrow-right-circle";
-
-  const isCollectible =
-    item.kind === "series" ||
-    item.kind === "chapter" ||
-    item.kind === "doujin" ||
-    item.kind === "anthology" ||
-    item.kind === "issue";
+  const openTaxonomicItem = (): void => {
+    if (item.kind === "tag") {
+      navigate({
+        view: "browse",
+        browseTab: "search",
+        withTag: item.title,
+      });
+    } else {
+      navigate({
+        view: "series",
+        seriesPermalink: item.permalink,
+        seriesName: item.title,
+      });
+    }
+  };
 
   return (
     <ListItem
       class="ds-row"
-      cssText="border-radius:3px;padding:6px 10px;align-items:flex-start;gap:8px;cursor:pointer;"
+      cssText="gap:8px;padding:4px 8px;cursor:pointer;min-height:30px;align-items:center;"
       blacklisted={isBlacklisted}
-      onClick={onOpenItem}
+      onClick={openTaxonomicItem}
       leading={
-        <div style="font-size:16px;margin-top:2px;min-width:20px;text-align:center;">
-          <i class={KIND_ICON[item.kind]} style={`color:${KIND_COLOR[item.kind]};`}></i>
+        <div style="font-size:15px;min-width:24px;text-align:center;color:var(--sys-text-secondary,#555);">
+          <i class={tax.icon} style={`color:${tax.color};`}></i>
         </div>
       }
-      fillCssText="display:flex;flex-direction:column;gap:3px;"
       title={
-        <div class="ds-flex-row" style="flex-wrap:wrap;">
+        <div class="ds-flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;">
           <span
-            class="ds-search-title-link"
-            style="font-size:12px;font-weight:600;color:var(--sys-text-primary,#000);text-decoration:none;display:inline-flex;align-items:center;gap:4px;"
-            title={`Open ${item.title}`}
+            class="ds-item-title"
+            style="font-size:12px;font-weight:600;color:var(--sys-text-primary,#000);cursor:pointer;"
           >
-            <span>{decodeEntities(item.title)}</span>
-            <OfflineBadge when={props.isFullyCached} />
+            {decodeEntities(item.title)}
           </span>
           <span
             class="ds-muted"
             style="font-size:10px;background:var(--sys-hover-bg,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;"
           >
-            {item.kind}
+            {tax.label}
           </span>
           <Show when={isBlacklisted && matchedTags.length > 0}>
             <WarningChip mode={props.blMode} tags={matchedTags} />
           </Show>
         </div>
       }
-      body={
-        <>
-          <Show
-            when={item.author || item.doujin || item.releasedOn}
-          >
-            <div class="ds-row" style="gap:8px;align-items:center;flex-wrap:wrap;">
-              <Show when={item.author}>
-                <span class="ds-muted" style="font-size:11px;">
-                  by{" "}
-                  <a
-                    style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      navigate({
-                        view: "series",
-                        seriesPermalink: item.author!.permalink,
-                        seriesName: item.author!.name,
-                      });
-                    }}
-                  >
-                    {decodeEntities(item.author!.name)}
-                  </a>
-                </span>
-              </Show>
-              <Show when={item.doujin}>
-                <span class="ds-muted" style="font-size:11px;">
-                  <a
-                    style="color:var(--sys-primary,#0078d4);cursor:pointer;text-decoration:underline;"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      navigate({
-                        view: "series",
-                        seriesPermalink: item.doujin!.permalink,
-                        seriesName: item.doujin!.name,
-                      });
-                    }}
-                  >
-                    {decodeEntities(item.doujin!.name)}
-                  </a>
-                </span>
-              </Show>
-              <Show when={item.releasedOn}>
-                <span class="ds-muted" style="font-size:11px;">
-                  released {item.releasedOn}
-                </span>
-              </Show>
-            </div>
-          </Show>
-
-          <Show when={item.tags.length > 0}>
-            <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;">
-              <For each={sortTagsByCategory(item.tags)}>
-                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
-              </For>
-            </div>
-          </Show>
-        </>
-      }
       actions={
-        <>
-          <Show when={isCollectible}>
-            <AddToCollectionButton
-              cssText="align-self:center;"
-              onOpen={(anchorEl) =>
-                props.onAddToCol(
-                  {
-                    permalink: item.permalink,
-                    title: item.title,
-                    kind: item.kind === "chapter" ? "chapter" : (item.kind as CollectionItemKind),
-                  },
-                  anchorEl,
-                )
-              }
-            />
-          </Show>
-
-          <button
-            type="button"
-            class="win-button ds-btn-sm"
-            style="align-self:center;white-space:nowrap;"
-            onClick={(ev) => {
-              ev.stopPropagation();
-              onOpenItem();
-            }}
-          >
-            <i class={actionIcon}></i> {actionLabel}
-          </button>
-        </>
+        <ExternalLinkButton
+          class="ds-btn-xs"
+          cssText="flex-shrink:0;"
+          title={`Open ${tax.label} "${decodeEntities(item.title)}" on Dynasty Scans`}
+          url={`https://dynasty-scans.com/${tax.path}/${item.permalink}`}
+        />
       }
     />
   );
@@ -395,6 +340,8 @@ export function BrowseSearch(props: BrowseSearchProps) {
     pane.goToPage(1);
   };
 
+  let hostEl: HTMLElement | null = null;
+
   createEffect(() => {
     const model = pane.data();
     if (!model) return;
@@ -403,6 +350,10 @@ export function BrowseSearch(props: BrowseSearchProps) {
       currentPage: model.pageData.currentPage,
       onPage: (p) => pane.goToPage(p),
     });
+    if (hostEl) {
+      browseCovers.beginPage(hostEl);
+      browseCovers.reobserveUnloadedCovers(hostEl);
+    }
   });
 
   const model = (): SearchModel | undefined => pane.data();
@@ -443,7 +394,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
   );
 
   return (
-    <div>
+    <div ref={(el) => { hostEl = el; }}>
       <div class="group-box" style="margin-bottom:8px;padding:8px;">
         <div class="group-box-title">
           <i class="bi bi-search"></i> In-App Search &amp; Filter
