@@ -33,12 +33,14 @@ export interface TypeaheadProps {
 export function Typeahead(props: TypeaheadProps) {
   const [inputValue, setInputValue] = createSignal(props.value ?? "");
   const [suggestions, setSuggestions] = createSignal<TypeaheadItem[]>([]);
+  const [selectedIndex, setSelectedIndex] = createSignal<number>(-1);
   const [open, setOpen] = createSignal(false);
   const [isFocused, setIsFocused] = createSignal(false);
   const maxItems = props.maxItems ?? 8;
   const debounceMs = props.debounceMs ?? 200;
 
   let timer: number | undefined;
+  let dropdownRef: HTMLDivElement | undefined;
 
   onCleanup(() => {
     window.clearTimeout(timer);
@@ -56,6 +58,7 @@ export function Typeahead(props: TypeaheadProps) {
     window.clearTimeout(timer);
     if (!val) {
       setSuggestions([]);
+      setSelectedIndex(-1);
       setOpen(false);
       props.onEmpty?.();
       return;
@@ -66,27 +69,74 @@ export function Typeahead(props: TypeaheadProps) {
         items = await props.fetcher(val);
       } catch {
         setSuggestions([]);
+        setSelectedIndex(-1);
         setOpen(false);
         return;
       }
-      setSuggestions(items.slice(0, maxItems));
-      if (isFocused()) {
+      const sliced = items.slice(0, maxItems);
+      setSuggestions(sliced);
+      setSelectedIndex(-1);
+      if (isFocused() && sliced.length > 0) {
         setOpen(true);
       }
     }, debounceMs);
   });
 
+  const handleKeyDown = (ev: KeyboardEvent): void => {
+    const items = suggestions();
+    if (!open() || items.length === 0) return;
+
+    if (ev.key === "ArrowDown") {
+      ev.preventDefault();
+      setSelectedIndex((prev) => {
+        const next = prev + 1 >= items.length ? 0 : prev + 1;
+        scrollIndexIntoView(next);
+        return next;
+      });
+    } else if (ev.key === "ArrowUp") {
+      ev.preventDefault();
+      setSelectedIndex((prev) => {
+        const next = prev - 1 < 0 ? items.length - 1 : prev - 1;
+        scrollIndexIntoView(next);
+        return next;
+      });
+    } else if (ev.key === "Enter") {
+      const idx = selectedIndex();
+      if (idx >= 0 && idx < items.length) {
+        ev.preventDefault();
+        const selected = items[idx];
+        props.onSelect(selected);
+        setOpen(false);
+        setSelectedIndex(-1);
+      }
+    } else if (ev.key === "Escape") {
+      setOpen(false);
+      setSelectedIndex(-1);
+    }
+  };
+
+  const scrollIndexIntoView = (index: number): void => {
+    if (!dropdownRef) return;
+    const children = dropdownRef.children;
+    if (children && children[index]) {
+      (children[index] as HTMLElement).scrollIntoView({ block: "nearest" });
+    }
+  };
+
   const dropdown = (
     <Show when={open()}>
-      <div class="ds-typeahead" style="max-height:160px;">
+      <div ref={dropdownRef} class="ds-typeahead" style="max-height:160px;">
         <For each={suggestions()}>
-          {(item) => (
+          {(item, idx) => (
             <div
               class="ds-typeahead-item"
+              classList={{ selected: selectedIndex() === idx() }}
               onMouseDown={() => {
                 props.onSelect(item);
                 setOpen(false);
+                setSelectedIndex(-1);
               }}
+              onMouseEnter={() => setSelectedIndex(idx())}
             >
               <span class="ds-fill ds-truncate">{decodeEntities(item.name)}</span>
               <span class="ds-typeahead-type">{decodeEntities(item.type)}</span>
@@ -106,13 +156,18 @@ export function Typeahead(props: TypeaheadProps) {
           setInputValue(v);
           props.onInputValue?.(v);
         }}
+        onKeyDown={handleKeyDown}
         onEnter={() => {
           if (inputValue().trim()) props.onEnter?.(inputValue());
         }}
-        onEscape={() => setOpen(false)}
+        onEscape={() => {
+          setOpen(false);
+          setSelectedIndex(-1);
+        }}
         onClear={() => {
           setInputValue("");
           setSuggestions([]);
+          setSelectedIndex(-1);
           setOpen(false);
           props.onInputValue?.("");
         }}
@@ -126,6 +181,7 @@ export function Typeahead(props: TypeaheadProps) {
           window.setTimeout(() => {
             setIsFocused(false);
             setOpen(false);
+            setSelectedIndex(-1);
           }, 150);
         }}
         dropdown={dropdown}

@@ -17,6 +17,7 @@ export interface InputFieldProps {
   onEnter?: () => void;
   onEscape?: () => void;
   onClear?: () => void;
+  onKeyDown?: (ev: KeyboardEvent) => void;
   onFocus?: () => void;
   onBlur?: () => void;
   /** Optional content rendered inside the wrapper (e.g. a typeahead dropdown). */
@@ -47,6 +48,8 @@ export function InputField(props: InputFieldProps) {
           props.onInput?.(next);
         }}
         onKeyDown={(ev) => {
+          props.onKeyDown?.(ev);
+          if (ev.defaultPrevented) return;
           if (ev.key === "Enter") {
             ev.preventDefault();
             props.onEnter?.();

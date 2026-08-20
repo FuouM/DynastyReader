@@ -183,7 +183,8 @@
   gap: 8px;
   align-items: center;
 }
-.ds-typeahead-item:hover {
+.ds-typeahead-item:hover,
+.ds-typeahead-item.selected {
   background: var(--sys-hover-bg, #f0f0f0);
 }
 .ds-typeahead-type {
