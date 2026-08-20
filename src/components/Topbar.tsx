@@ -216,7 +216,7 @@ export function Topbar() {
       <SettingsModal open={settingsOpen()} onClose={() => setSettingsOpen(false)} />
       <HistoryDropdown
         open={historyMenu() !== null}
-        direction={historyMenu()?.direction ?? "back"}
+        direction={historyMenu() ? historyMenu()!.direction : "back"}
         anchorEl={historyMenu()?.anchorEl ?? null}
         onClose={() => setHistoryMenu(null)}
       />

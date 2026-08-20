@@ -71,8 +71,9 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
   });
 
   const selectItem = (originalIdx: number) => {
+    const dir = props.direction;
     props.onClose();
-    if (props.direction === "back") {
+    if (dir === "back") {
       goBackTo(originalIdx);
     } else {
       goForwardTo(originalIdx);

@@ -115,8 +115,8 @@ export function goForwardTo(index: number): void {
   const forward = historyForwardStack();
   if (index < 0 || index >= forward.length) return;
   const targetRoute = forward[index];
-  const popped = forward.slice(index + 1);
   const remaining = forward.slice(0, index);
+  const popped = forward.slice(index + 1);
   setHistoryForwardStack(remaining);
   setHistoryBackStack((s) => [...s, { ...route() }, ...popped.reverse()]);
   isNavigatingHistory = true;
