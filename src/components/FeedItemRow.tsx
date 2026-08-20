@@ -25,9 +25,9 @@ import {
   removeBookmark,
   type CollectionItemKind,
 } from "../db";
-import { convertFileSrc } from "../ipc";
 import { browseCovers } from "../browse/browse-covers";
 import { ListItem } from "./ListItem";
+import { HydratedCover } from "./HydratedCover";
 import { OfflineBadge } from "./OfflineBadge";
 import { WarningChip } from "./WarningChip";
 import { ExternalLinkButton } from "./ExternalLinkButton";
@@ -64,7 +64,6 @@ export function FeedItemRow(props: FeedItemRowProps) {
   const isRead = () => props.isRead ?? false;
 
   const [bookmarked, setBookmarked] = createSignal(props.isBookmarked ?? false);
-  const [coverError, setCoverError] = createSignal(false);
 
   createEffect(() => {
     if (props.isBookmarked !== undefined) {
@@ -217,16 +216,12 @@ export function FeedItemRow(props: FeedItemRowProps) {
       blacklisted={isBlacklisted()}
       onClick={() => guardedOpen(ch.title, openChapter)}
       leading={
-        <div
-          ref={(el) => {
-            if (!props.coverPath) browseCovers.observe(el);
-          }}
-          class="ds-feed-cover-wrap"
-          style="flex-shrink:0;cursor:pointer;"
-          data-feed-cover={props.coverPath ? undefined : coverInfo.coverKey}
-          data-chapter-permalink={props.coverPath ? undefined : coverInfo.chapterPermalink}
-          data-series-permalink={props.coverPath ? undefined : coverInfo.seriesPermalink}
-          data-series-type={props.coverPath ? undefined : (coverInfo.seriesType || "")}
+        <HydratedCover
+          path={props.coverPath}
+          coverKey={coverInfo.coverKey}
+          chapterPermalink={coverInfo.chapterPermalink}
+          seriesPermalink={coverInfo.seriesPermalink}
+          seriesType={coverInfo.seriesType}
           title={coverTitle}
           onClick={(ev) => {
             ev.stopPropagation();
@@ -238,23 +233,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
               );
             }
           }}
-        >
-          <Show
-            when={props.coverPath && !coverError()}
-            fallback={
-              <div class="ds-feed-cover-placeholder">
-                <i class="bi bi-book"></i>
-              </div>
-            }
-          >
-            <img
-              src={convertFileSrc(props.coverPath!)}
-              class="ds-feed-cover"
-              loading="lazy"
-              onError={() => setCoverError(true)}
-            />
-          </Show>
-        </div>
+        />
       }
       title={
         <div class="ds-flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;">

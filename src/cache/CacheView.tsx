@@ -26,8 +26,8 @@ import {
 import { browseCovers } from "../browse/browse-covers";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
+import { HydratedCover } from "../components/HydratedCover";
 import { ConfirmDeleteButton } from "../components/Button";
-import { FeedCover } from "../components/Cover";
 import { Loading } from "../components/Loading";
 
 type CacheData = {
@@ -288,28 +288,12 @@ function CacheBody(props: {
                   <For each={props.filtered()}>
                     {(item) => (
                       <div class="ds-cache-item" style="padding:8px 10px;">
-                        <Show
-                          when={item.coverPath}
-                          fallback={
-                            <div
-                              class="ds-feed-cover-placeholder"
-                              style="width:36px;height:50px;font-size:12px;"
-                            >
-                              <i class="bi bi-book"></i>
-                            </div>
-                          }
-                        >
-                          <div
-                            style="width:36px;height:50px;cursor:pointer;"
-                            onClick={() => props.openItem(item)}
-                          >
-                            <FeedCover
-                              path={item.coverPath}
-                              coverKey={item.seriesName}
-                              cssText="width:36px;height:50px;cursor:pointer;"
-                            />
-                          </div>
-                        </Show>
+                        <HydratedCover
+                          path={item.coverPath}
+                          coverKey={item.seriesName}
+                          size="cache"
+                          onClick={() => props.openItem(item)}
+                        />
                         <div class="ds-fill">
                           <div
                             style="font-size:12px;font-weight:600;cursor:pointer;"
