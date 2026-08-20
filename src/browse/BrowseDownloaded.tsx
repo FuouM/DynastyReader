@@ -143,7 +143,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         </span>
       </div>
 
-      <div id="ds-downloaded-filter-wrap">
+      <div id="ds-downloaded-filter-wrap" style="margin-bottom:8px;">
         <InputField
           placeholder="Filter downloaded chapters & series…"
           value={query()}
@@ -168,7 +168,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         </Show>
 
         <Show when={pageItems().length > 0}>
-          <div class="ds-feed-list" style="display:flex;flex-direction:column;gap:6px;">
+          <div class="ds-feed-list">
             <For each={pageItems()}>
               {(ch) => (
                 <DownloadedRow
