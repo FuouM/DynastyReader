@@ -90,6 +90,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
   const coverInfo = browseCovers.getItemCoverInfo({
     permalink: ch.permalink,
     title: ch.title,
+    kind: ch.kind,
     series: ch.series || "",
     tags: rawTags,
   });

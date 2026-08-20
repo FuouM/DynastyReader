@@ -2,7 +2,6 @@ import { createSignal } from "solid-js";
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
 import { convertFileSrc } from "../ipc";
-import type { FeedChapter } from "../types/api";
 
 /**
  * Module-level reactive signal that mirrors `BrowseCovers.enabled`. Any Solid
@@ -110,8 +109,28 @@ export class BrowseCovers {
     return this.hydrationHost;
   }
 
-  /** Maps a feed chapter to its cover key + series metadata. */
-  getItemCoverInfo(ch: FeedChapter): ItemCoverInfo {
+  /** Maps a feed chapter or series search item to its cover key + series metadata. */
+  getItemCoverInfo(ch: {
+    permalink: string;
+    title: string;
+    kind?: string;
+    series?: string | null;
+    tags?: { type?: string; name?: string; permalink?: string }[];
+  }): ItemCoverInfo {
+    const isDirectSeriesKind =
+      ch.kind === "series" || ch.kind === "anthology" || ch.kind === "doujin" || ch.kind === "issue";
+
+    if (isDirectSeriesKind) {
+      return {
+        coverKey: `series:${ch.permalink}`,
+        chapterPermalink: ch.permalink,
+        seriesPermalink: ch.permalink,
+        seriesName: ch.title,
+        seriesType: ch.kind || "series",
+        isStandalone: false,
+      };
+    }
+
     // A chapter is part of an official series if ch.series is a non-empty string
     const isOfficialSeries = Boolean(ch.series && ch.series.trim().length > 0);
 
@@ -134,7 +153,7 @@ export class BrowseCovers {
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, "_")
               .replace(/^_+|_+$/g, "")
-          : "");
+          : ch.permalink);
       const seriesName = ch.series || seriesTag?.name || "";
       const seriesType = seriesTag?.type || "series";
 
