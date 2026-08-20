@@ -30,6 +30,22 @@ export async function checkFeedOnline(
     const freshData = tryParseJson<Feed>(resp.body);
     if (freshData === null) throw new Error("Invalid JSON from feed endpoint");
     await setCached(key, "feed", resp.body, resp.etag);
+
+    // Opportunistically index series and tags from new feed chapters into directory_entries
+    if (freshData.chapters && freshData.chapters.length > 0) {
+      try {
+        const { saveSuggestEntries } = await import("../db");
+        const itemsToSave: { name: string; type: string }[] = [];
+        for (const ch of freshData.chapters) {
+          if (ch.series) itemsToSave.push({ name: ch.series, type: "Series" });
+          for (const t of ch.tags ?? []) {
+            if (t.name) itemsToSave.push({ name: t.name, type: t.type || "Tag" });
+          }
+        }
+        if (itemsToSave.length > 0) void saveSuggestEntries(itemsToSave);
+      } catch {}
+    }
+
     return { status: 200, data: freshData, isNew: true, etag: resp.etag };
   }
   return { status: resp.status, isNew: false };

@@ -67,14 +67,45 @@ export function directoryGroups(d: Directory | unknown): DirectoryGroup[] {
     .filter((g) => g.entries.length > 0);
 }
 
-/** Search typeahead suggestions. */
+const suggestCache = new Map<string, SuggestResult[]>();
+
+/** Search typeahead suggestions with instant local SQLite lookup + network fallback. */
 export async function suggest(query: string): Promise<SuggestResult[]> {
+  const q = query.trim();
+  if (!q) return [];
+
+  const cacheKey = q.toLowerCase();
+  if (suggestCache.has(cacheKey)) {
+    return suggestCache.get(cacheKey)!;
+  }
+
+  // 1. Try local SQLite directory entries first (zero network latency)
+  try {
+    const { suggestDirectoryEntries } = await import("../db");
+    const local = await suggestDirectoryEntries(q, 8);
+    if (local.length > 0) {
+      suggestCache.set(cacheKey, local);
+      return local;
+    }
+  } catch {}
+
+  // 2. Query online endpoint
   const { status, body } = await httpGetText(absUrl("/tags/suggest"), {
     method: "POST",
-    body: `query=${encodeURIComponent(query)}`,
+    body: `query=${encodeURIComponent(q)}`,
   });
   if (status !== 200) throw new Error(`HTTP ${status} for /tags/suggest`);
   const parsed = tryParseJson<SuggestResult[]>(body);
   if (parsed === null) throw new Error("Invalid JSON from /tags/suggest");
+  suggestCache.set(cacheKey, parsed);
+
+  // Persist newly discovered suggestions into SQLite directory_entries
+  if (parsed.length > 0) {
+    try {
+      const { saveSuggestEntries } = await import("../db");
+      void saveSuggestEntries(parsed);
+    } catch {}
+  }
+
   return parsed;
 }

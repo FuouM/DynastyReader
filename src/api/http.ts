@@ -61,7 +61,7 @@ export async function httpDownloadFull(
   };
 }
 
-/** Cache-first JSON getter: returns a fresh non-expired copy or fetches + stores. */
+/** Cache-first JSON getter: returns a fresh non-expired copy or fetches + stores with ETag revalidation. */
 export async function cachedJson<T>(key: string, url: string, ttlMs?: number): Promise<T> {
   const cached = await getCached(key);
   if (cached && (ttlMs === undefined || Date.now() - cached.cached_at < ttlMs)) {
@@ -69,8 +69,28 @@ export async function cachedJson<T>(key: string, url: string, ttlMs?: number): P
     const parsed = tryParseJson<T>(cached.json_payload);
     if (parsed !== null) return parsed;
   }
-  const { status, body, etag } = await httpGetText(url);
-  if (status !== 200) throw new Error(`HTTP ${status} for ${url}`);
+
+  const headers: Record<string, string> = {};
+  if (cached?.etag) {
+    headers["If-None-Match"] = cached.etag;
+  }
+
+  const { status, body, etag } = await httpGetText(url, { headers });
+
+  if (status === 304 && cached) {
+    recordCacheHit(cached.json_payload.length);
+    const parsed = tryParseJson<T>(cached.json_payload);
+    if (parsed !== null) return parsed;
+  }
+
+  if (status !== 200) {
+    if (cached) {
+      const parsed = tryParseJson<T>(cached.json_payload);
+      if (parsed !== null) return parsed;
+    }
+    throw new Error(`HTTP ${status} for ${url}`);
+  }
+
   const fresh = tryParseJson<T>(body);
   if (fresh === null) throw new Error(`Invalid JSON from ${url}`);
   await setCached(key, key.split(":")[0], body, etag);

@@ -188,8 +188,14 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
   const url = `${SITE_ROOT}/search${qs}`;
   const cacheKey = `${SEARCH_CACHE_PREFIX}${url}`;
 
-  // Check SQLite cache with ETag revalidation
+  // Check SQLite cache (TTL: 1 hour)
+  const SEARCH_TTL_MS = 60 * 60 * 1000;
   const cached = await getCached(cacheKey);
+  if (cached && Date.now() - cached.cached_at < SEARCH_TTL_MS) {
+    recordCacheHit(cached.json_payload.length);
+    return parseSearchHtml(cached.json_payload, query, page);
+  }
+
   const headers: Record<string, string> = {};
   if (cached?.etag) {
     headers["If-None-Match"] = cached.etag;
@@ -205,7 +211,19 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
 
     if (status === 200 && body) {
       await setCached(cacheKey, "search", body, etag);
-      return parseSearchHtml(body, query, page);
+      const parsedPage = parseSearchHtml(body, query, page);
+      // Persist series and tags found in search results into local directory entries
+      if (parsedPage.items.length > 0) {
+        try {
+          const { saveSuggestEntries } = await import("../db");
+          const toSave = parsedPage.items.map((it) => ({
+            name: it.title,
+            type: it.kind === "series" ? "Series" : it.kind === "chapter" ? "Chapter" : "Tag",
+          }));
+          void saveSuggestEntries(toSave);
+        } catch {}
+      }
+      return parsedPage;
     }
   } catch (err) {
     // If network fails but we have cached results, return cached version

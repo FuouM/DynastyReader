@@ -95,9 +95,18 @@ export async function fetchSeries(
   }
 
   let lastErr: Error | null = null;
+  const cached = await getCached(key);
+  const headers: Record<string, string> = {};
+  if (cached?.etag) {
+    headers["If-None-Match"] = cached.etag;
+  }
+
   for (const url of seriesEndpoints(permalink, preferredType)) {
     try {
-      const { status, body, etag } = await httpGetText(url);
+      const { status, body, etag } = await httpGetText(url, { headers });
+      if (status === 304 && cached) {
+        return JSON.parse(cached.json_payload) as Series;
+      }
       if (status === 200 && body) {
         await setCached(key, "series", body, etag);
         return JSON.parse(body) as Series;
@@ -105,6 +114,10 @@ export async function fetchSeries(
     } catch (e) {
       lastErr = e instanceof Error ? e : new Error(String(e));
     }
+  }
+
+  if (cached) {
+    return JSON.parse(cached.json_payload) as Series;
   }
 
   throw lastErr ?? new Error(`Failed to load series for permalink "${permalink}"`);

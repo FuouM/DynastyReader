@@ -72,7 +72,7 @@ export {
   toggleItemInCollection,
   updateCollectionItemCover,
 } from "./collections.repo";
-export { searchDirectoryEntries, saveDirectoryEntries } from "./directory.repo";
+export { searchDirectoryEntries, saveDirectoryEntries, suggestDirectoryEntries, saveSuggestEntries } from "./directory.repo";
 export type {
   CachedMetadata,
   FollowedSeriesRow,
