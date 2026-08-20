@@ -5,7 +5,7 @@
  * so the WinForms design system CSS applies unchanged.
  */
 
-import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import {
   route,
   navigate,
@@ -190,22 +190,7 @@ export function Topbar() {
           <Show when={banner() !== null}>
             <div id="ds-banner">{banner()}</div>
           </Show>
-          <div
-            id="ds-actions"
-            ref={(el) => {
-              createEffect(() => {
-                const act = actions();
-                if (typeof act === "function") {
-                  el.innerHTML = "";
-                  act(el);
-                } else if (act === null) {
-                  el.innerHTML = "";
-                }
-              });
-            }}
-          >
-            {typeof actions() !== "function" ? (actions() as any) : null}
-          </div>
+          <div id="ds-actions">{actions()}</div>
           <div id="ds-topbar-tools">
             <button
               type="button"

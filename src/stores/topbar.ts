@@ -13,8 +13,7 @@ export { _banner as banner };
 
 let bannerTimer: ReturnType<typeof setTimeout> | null = null;
 
-export type ActionsBuilder = (host: HTMLElement) => void;
-export type ActionsContent = JSX.Element | ActionsBuilder | null;
+export type ActionsContent = JSX.Element | null;
 
 const [_actions, _setActions] = createSignal<ActionsContent>(null);
 export const actions = _actions;
@@ -22,11 +21,7 @@ export const actions = _actions;
 export const [title, setTitle] = createSignal<string>("Browse");
 
 export function setActions(content: ActionsContent): void {
-  if (typeof content === "function") {
-    _setActions(() => content as ActionsBuilder);
-  } else {
-    _setActions(content);
-  }
+  _setActions(content);
 }
 
 /** Sets the banner message with auto-dismiss matching legacy behavior. */

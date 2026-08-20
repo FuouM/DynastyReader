@@ -33,12 +33,12 @@ import {
 } from "./reader-spread";
 import { renderSlotImg, renderSlotState } from "./reader-slots";
 import { standardizeCachePaths } from "./path-migration";
-import { buildReaderActions } from "./reader-actions";
 import { ReaderQueue } from "./reader-queue";
 import { ReaderViewport } from "./reader-viewport";
 import { ReaderToolbar } from "./reader-toolbar";
 import { ReaderShortcuts } from "./reader-shortcuts";
-import { renderLoading } from "../components/loading-dom";
+import { mountLoading } from "../components/Loading";
+import { ReaderActions } from "../components/ReaderActions";
 import { isAutoCacheChapterEnabled, getPrefetchBuffer } from "./settings";
 
 export { isAutoCacheChapterEnabled, setAutoCacheChapterEnabled, getPrefetchBuffer, setPrefetchBuffer } from "./settings";
@@ -597,9 +597,7 @@ export class ReaderController {
       bookmarked = false;
     }
 
-    setActions((host) => {
-      buildReaderActions(this, host, bookmarked);
-    });
+    setActions(<ReaderActions ctrl={this} bookmarked={bookmarked} />);
 
     // Restore the resume page. The awaited history/bookmark calls above gave
     // nearby images time to decode, so the instant scroll lands at the correct
@@ -615,7 +613,7 @@ export class ReaderController {
     // Mirrors renderReader's bootstrap; the router keeps the original dispose.
     this.dispose();
     this.container.innerHTML = "";
-    this.container.appendChild(renderLoading());
+    mountLoading(this.container);
     const fresh = new ReaderController(this.route, this.container);
     void fresh.init();
   }
@@ -634,7 +632,7 @@ export function renderReader(container: HTMLElement, route: Route): (() => void)
     return;
   }
 
-  container.appendChild(renderLoading());
+  mountLoading(container);
 
   const ctrl = new ReaderController(route, container);
   void ctrl.init();

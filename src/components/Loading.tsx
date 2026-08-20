@@ -4,6 +4,7 @@
  */
 
 import { createEffect, createSignal, onCleanup, Show, type JSX } from "solid-js";
+import { render } from "solid-js/web";
 
 export const PRAYING_MESSAGES = [
   "Girls are now praying",
@@ -37,6 +38,16 @@ export function Loading(props: LoadingProps) {
       <span class="ds-loading-text">{message}…</span>
     </div>
   );
+}
+
+/**
+ * Imperative anchor for mounting the Solid `<Loading>` markup into a container.
+ * Used by the imperative reader island (port of `loading-dom`'s `renderLoading`).
+ * The container must be cleared before calling; the reader wipes `innerHTML` on
+ * its next render pass.
+ */
+export function mountLoading(container: HTMLElement, message?: string): void {
+  render(() => <Loading message={message} />, container);
 }
 
 export interface DelayedLoadingProps {
