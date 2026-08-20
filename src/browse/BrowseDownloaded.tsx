@@ -156,7 +156,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         <Show when={filtered().length === 0 && pane.data() !== undefined}>
           <EmptyState
             cssText="padding:24px;text-align:center;"
-            iconClass="bi bi-cloud-arrow-down"
+            iconName="cloud-arrow-down"
             iconCssText="font-size:28px;opacity:0.6;display:block;margin-bottom:8px;"
           >
             <span class="ds-muted">

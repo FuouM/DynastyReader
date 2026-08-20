@@ -7,6 +7,7 @@
  */
 
 import { createEffect, createSignal, type JSX } from "solid-js";
+import { CloseIcon } from "./Icon";
 
 export interface InputFieldProps {
   value?: string;
@@ -69,7 +70,7 @@ export function InputField(props: InputFieldProps) {
           props.onClear?.();
         }}
       >
-        <i class="bi bi-x-lg"></i>
+        <CloseIcon />
       </button>
       {props.dropdown}
     </div>

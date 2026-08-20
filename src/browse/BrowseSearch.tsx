@@ -50,6 +50,14 @@ import type {
   SearchResultPage,
   SearchSort,
 } from "../types/api";
+import {
+  EntityIcon,
+  SearchIcon,
+  ClearIcon,
+  CheckIcon,
+  RefreshIcon,
+  Icon,
+} from "../components/Icon";
 
 const ALL_CLASSES: { id: SearchClass; label: string }[] = [
   { id: "Series", label: "Series" },
@@ -62,13 +70,6 @@ const ALL_CLASSES: { id: SearchClass; label: string }[] = [
   { id: "General", label: "Tag" },
   { id: "Pairing", label: "Pairing" },
 ];
-
-const TAXONOMIC_ICONS: Record<string, { icon: string; color: string; path: string; label: string }> = {
-  author: { icon: "bi-person", color: "#008272", path: "authors", label: "Author" },
-  scanlator: { icon: "bi-people", color: "#5c2d91", path: "scanlators", label: "Scanlator" },
-  tag: { icon: "bi-tag", color: "#69797e", path: "tags", label: "Tag" },
-  pairing: { icon: "bi-heart", color: "#e3008c", path: "pairings", label: "Pairing" },
-};
 
 interface SearchRow {
   item: SearchResultItem;
@@ -154,13 +155,6 @@ function SearchResultRow(props: {
   }
 
   // ── 2. Taxonomic metadata items (Authors, Scanlators, Tags, Pairings) ────────
-  const tax = TAXONOMIC_ICONS[item.kind] ?? {
-    icon: "bi-tag",
-    color: "#69797e",
-    path: "tags",
-    label: item.kind,
-  };
-
   const openTaxonomicItem = (): void => {
     if (item.kind === "tag") {
       navigate({
@@ -177,6 +171,13 @@ function SearchResultRow(props: {
     }
   };
 
+  const pathForKind = (kind: string): string => {
+    if (kind === "author") return "authors";
+    if (kind === "scanlator") return "scanlators";
+    if (kind === "pairing") return "pairings";
+    return "tags";
+  };
+
   return (
     <ListItem
       class="ds-row"
@@ -184,8 +185,8 @@ function SearchResultRow(props: {
       blacklisted={isBlacklisted}
       onClick={openTaxonomicItem}
       leading={
-        <div style="font-size:15px;min-width:24px;text-align:center;color:var(--sys-text-secondary,#555);">
-          <i class={tax.icon} style={`color:${tax.color};`}></i>
+        <div style="font-size:15px;min-width:24px;text-align:center;">
+          <EntityIcon kind={item.kind} />
         </div>
       }
       title={
@@ -200,7 +201,7 @@ function SearchResultRow(props: {
             class="ds-muted"
             style="font-size:10px;background:var(--sys-hover-bg,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;"
           >
-            {tax.label}
+            {item.kind}
           </span>
           <Show when={isBlacklisted && matchedTags.length > 0}>
             <WarningChip mode={props.blMode} tags={matchedTags} />
@@ -211,8 +212,8 @@ function SearchResultRow(props: {
         <ExternalLinkButton
           class="ds-btn-xs"
           cssText="flex-shrink:0;"
-          title={`Open ${tax.label} "${decodeEntities(item.title)}" on Dynasty Scans`}
-          url={`https://dynasty-scans.com/${tax.path}/${item.permalink}`}
+          title={`Open ${item.kind} "${decodeEntities(item.title)}" on Dynasty Scans`}
+          url={`https://dynasty-scans.com/${pathForKind(item.kind)}/${item.permalink}`}
         />
       }
     />
@@ -406,7 +407,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
     <div ref={(el) => { hostEl = el; }}>
       <div class="group-box" style="margin-bottom:8px;padding:8px;">
         <div class="group-box-title">
-          <i class="bi bi-search"></i> In-App Search &amp; Filter
+          <SearchIcon /> In-App Search &amp; Filter
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <div class="ds-row" style="gap:6px;">
@@ -432,7 +433,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               style="font-weight:600;"
               onClick={() => runSearch(q())}
             >
-              <i class="bi bi-search"></i> Search
+              <SearchIcon /> Search
             </button>
             <button
               type="button"
@@ -441,7 +442,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               title="Reset all search filters"
               onClick={clearAll}
             >
-              <i class="bi bi-x-circle"></i> Clear
+              <ClearIcon /> Clear
             </button>
           </div>
 
@@ -459,7 +460,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 }}
               >
                 <Show when={classes().size === 0}>
-                  <i class="bi bi-check2" style="font-size:11px;"></i>
+                  <CheckIcon size={11} />
                 </Show>
                 <span>All Categories</span>
               </button>
@@ -473,7 +474,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                       onClick={() => toggleClass(c.id)}
                     >
                       <Show when={isActive()}>
-                        <i class="bi bi-check2" style="font-size:11px;"></i>
+                        <CheckIcon size={11} />
                       </Show>
                       <span>{c.label}</span>
                     </button>
@@ -488,7 +489,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
           >
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-                <i class="bi bi-plus-circle"></i> With Tags:
+                <Icon name="plus-circle" /> With Tags:
               </div>
               <div style="position:relative;">
                 <Typeahead
@@ -510,7 +511,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                       style="background:var(--sys-bg-active,#e8f0fe);color:var(--sys-primary,#0078d4);border:1px solid var(--sys-primary,#0078d4);border-radius:3px;padding:1px 5px;font-size:10px;align-items:center;gap:4px;"
                     >
                       <span>+ {decodeEntities(t)}</span>
-                      <i class="bi bi-x" style="cursor:pointer;font-size:12px;" onClick={() => removeWithTag(t)}></i>
+                      <Icon name="x" style={{ cursor: "pointer", "font-size": "12px" }} onClick={() => removeWithTag(t)} />
                     </span>
                   )}
                 </For>
@@ -519,7 +520,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-                <i class="bi bi-dash-circle"></i> Without Tags (Exclude):
+                <Icon name="dash-circle" /> Without Tags (Exclude):
               </div>
               <div style="position:relative;">
                 <Typeahead
@@ -541,7 +542,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                       style="background:var(--ds-danger-bg);color:var(--ds-danger-text);border:1px solid var(--ds-danger-border);border-radius:3px;padding:1px 5px;font-size:10px;align-items:center;gap:4px;"
                     >
                       <span>- {decodeEntities(t)}</span>
-                      <i class="bi bi-x" style="cursor:pointer;font-size:12px;" onClick={() => removeWithoutTag(t)}></i>
+                      <Icon name="x" style={{ cursor: "pointer", "font-size": "12px" }} onClick={() => removeWithoutTag(t)} />
                     </span>
                   )}
                 </For>
@@ -550,7 +551,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-                <i class="bi bi-sort-down"></i> Sort Order:
+                <Icon name="sort-down" /> Sort Order:
               </div>
               <select
                 class="input-field"
@@ -583,7 +584,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
             style="justify-content:space-between;align-items:center;padding:4px 2px;border-bottom:1px solid var(--sys-border-light,#ddd);margin-bottom:6px;"
           >
             <div style="font-size:12px;font-weight:600;">
-              <i class="bi bi-list-stars"></i> Search Results
+              <Icon name="list-stars" /> Search Results
               {model()!.pageData.query ? ` for "${decodeEntities(model()!.pageData.query)}"` : ""}{" "}
               <span class="ds-muted" style="font-weight:normal;font-size:11px;">
                 ({model()!.pageData.items.length} items on page {model()!.pageData.currentPage} of{" "}
@@ -595,7 +596,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
           <Show when={model()!.pageData.items.length === 0}>
             <EmptyState cssText="padding:24px;text-align:center;">
               <div style="font-size:14px;margin-bottom:4px;">
-                <i class="bi bi-search"></i> No matching results found
+                <SearchIcon /> No matching results found
               </div>
               <div style="font-size:11px;">
                 Try adjusting keywords, clearing category filters, or removing excluded tags.
@@ -650,7 +651,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
           <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
             <span class="ds-muted">Search request failed: {errorMessage()}</span>
             <button type="button" class="win-button" onClick={() => pane.reload()}>
-              <i class="bi bi-arrow-clockwise"></i> Retry
+              <RefreshIcon /> Retry
             </button>
           </div>
         </Show>

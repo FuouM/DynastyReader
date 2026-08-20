@@ -14,6 +14,7 @@
 import { createEffect, createSignal, on, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { browseCovers } from "../browse/browse-covers";
+import { BookIcon } from "./Icon";
 
 export interface HydratedCoverProps {
   /** Local file path; when absent the cover is lazy-hydrated instead. */
@@ -79,7 +80,7 @@ export function HydratedCover(props: HydratedCoverProps) {
         when={!hydrated() && !error()}
         fallback={
           <div class="ds-feed-cover-placeholder" style={size().placeholder}>
-            <i class="bi bi-book"></i>
+            <BookIcon />
           </div>
         }
       >

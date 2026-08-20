@@ -4,6 +4,12 @@
  */
 
 import { createEffect, createSignal } from "solid-js";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+} from "./Icon";
 
 export interface PagerProps {
   totalPages: number;
@@ -41,7 +47,7 @@ export function Pager(props: PagerProps) {
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(1)}
       >
-        <i class="bi bi-chevron-double-left"></i>
+        <ChevronDoubleLeftIcon />
       </button>
       <button
         type="button"
@@ -50,7 +56,7 @@ export function Pager(props: PagerProps) {
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(props.currentPage - 1)}
       >
-        <i class="bi bi-chevron-left"></i>
+        <ChevronLeftIcon />
       </button>
 
       <div class="ds-row" style="align-items:center;gap:3px;margin:0 2px;">
@@ -88,7 +94,7 @@ export function Pager(props: PagerProps) {
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.currentPage + 1)}
       >
-        <i class="bi bi-chevron-right"></i>
+        <ChevronRightIcon />
       </button>
       <button
         type="button"
@@ -97,7 +103,7 @@ export function Pager(props: PagerProps) {
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.totalPages)}
       >
-        <i class="bi bi-chevron-double-right"></i>
+        <ChevronDoubleRightIcon />
       </button>
     </div>
   );

@@ -17,6 +17,12 @@ import {
 import { useDelayedSpinner } from "../browse/browse-state";
 import { BackRefreshActions } from "../components/ActionBar";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
+import {
+  RefreshIcon,
+  BlacklistIcon,
+  ListCheckIcon,
+  TrashIcon,
+} from "../components/Icon";
 import { Loading } from "../components/Loading";
 
 export function BlacklistView() {
@@ -74,7 +80,7 @@ export function BlacklistView() {
               <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
                 <span class="ds-muted">Failed to load series blacklist: {errorMessage()}</span>
                 <button type="button" class="win-button" onClick={() => void refetch()}>
-                  <i class="bi bi-arrow-clockwise"></i> Retry
+                  <RefreshIcon /> Retry
                 </button>
               </div>
             </Show>
@@ -83,7 +89,7 @@ export function BlacklistView() {
       >
         <div class="group-box">
           <div class="group-box-title">
-            <i class="bi bi-shield-slash"></i> Series Blacklist Preferences
+            <BlacklistIcon filled={false} /> Series Blacklist Preferences
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);line-height:1.4;">
@@ -98,26 +104,26 @@ export function BlacklistView() {
               <div style="font-size:11px;font-weight:600;color:var(--sys-window-text,#333);">
                 Blacklist Behavior:
               </div>
-              <div style="display:flex;align-items:center;gap:12px;">
-                <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;">
+              <div class="ds-radio-group" style="display:flex;gap:12px;">
+                <label style="font-size:11px;cursor:pointer;">
                   <input
                     type="radio"
-                    name="ds-bl-view-mode"
+                    name="ds-bl-mode"
                     value="hide"
                     checked={mode() === "hide"}
                     onChange={() => changeMode("hide")}
-                  />
-                  <span>Hide releases</span>
+                  />{" "}
+                  Hide completely
                 </label>
-                <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;">
+                <label style="font-size:11px;cursor:pointer;">
                   <input
                     type="radio"
-                    name="ds-bl-view-mode"
+                    name="ds-bl-mode"
                     value="warn"
                     checked={mode() === "warn"}
                     onChange={() => changeMode("warn")}
-                  />
-                  <span>Trigger warning on click</span>
+                  />{" "}
+                  Trigger warning dialog
                 </label>
               </div>
             </div>
@@ -127,7 +133,7 @@ export function BlacklistView() {
         <div class="group-box">
           <div class="group-box-title" style="display:flex;justify-content:space-between;align-items:center;">
             <div style="display:flex;align-items:center;gap:6px;">
-              <i class="bi bi-list-check"></i> Blacklisted Series ({data()!.length})
+              <ListCheckIcon /> Blacklisted Series ({data()!.length})
             </div>
           </div>
 
@@ -135,10 +141,15 @@ export function BlacklistView() {
             when={data()!.length > 0}
             fallback={
               <div class="ds-muted" style="padding:20px 8px;text-align:center;font-size:11px;">
-                <i
-                  class="bi bi-shield-check"
-                  style="font-size:26px;display:block;margin-bottom:8px;color:var(--sys-primary,#0078d4);"
-                ></i>
+                <BlacklistIcon
+                  filled={false}
+                  style={{
+                    "font-size": "26px",
+                    display: "block",
+                    "margin-bottom": "8px",
+                    color: "var(--sys-primary,#0078d4)",
+                  }}
+                />
                 No series currently blacklisted.
                 <br />
                 <span
@@ -158,10 +169,14 @@ export function BlacklistView() {
                     style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;gap:8px;border-radius:2px;"
                   >
                     <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
-                      <i
-                        class="bi bi-shield-slash-fill"
-                        style="color:var(--ds-warn-text,#d97706);font-size:13px;flex-shrink:0;"
-                      ></i>
+                      <BlacklistIcon
+                        filled={true}
+                        style={{
+                          color: "var(--ds-warn-text,#d97706)",
+                          "font-size": "13px",
+                          "flex-shrink": "0",
+                        }}
+                      />
                       <div style="display:flex;flex-direction:column;min-width:0;flex:1;">
                         <div
                           class="ds-item-title ds-clickable ds-truncate"
@@ -196,7 +211,7 @@ export function BlacklistView() {
                         title="Remove series from blacklist"
                         onClick={() => void removeSeries(item)}
                       >
-                        <i class="bi bi-trash"></i> Remove
+                        <TrashIcon /> Remove
                       </button>
                     </div>
                   </div>

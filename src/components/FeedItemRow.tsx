@@ -26,6 +26,7 @@ import {
   type CollectionItemKind,
 } from "../db";
 import { browseCovers } from "../browse/browse-covers";
+import { BookmarkIcon } from "./Icon";
 import { ListItem } from "./ListItem";
 import { HydratedCover } from "./HydratedCover";
 import { OfflineBadge } from "./OfflineBadge";
@@ -317,7 +318,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
               void toggleBookmark();
             }}
           >
-            {bookmarked() ? <i class="bi bi-bookmark-fill"></i> : <i class="bi bi-bookmark-plus"></i>}
+            <BookmarkIcon filled={bookmarked()} />
             {bookmarked() ? " Saved" : " Read Later"}
           </button>
           <AddToCollectionButton

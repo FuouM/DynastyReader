@@ -28,6 +28,21 @@ import {
 import { Typeahead } from "./Typeahead";
 import { Modal } from "./Modal";
 import { ExternalLinkButton } from "./ExternalLinkButton";
+import {
+  SettingsIcon,
+  SunIcon,
+  MoonIcon,
+  ImageIcon,
+  BlacklistIcon,
+  AddIcon,
+  CloseIcon,
+  DoublePageIcon,
+  CloudDownloadIcon,
+  StorageIcon,
+  ExternalLinkIcon,
+  RefreshIcon,
+  Icon,
+} from "./Icon";
 import { checkUpdates } from "./UpdateDialog";
 import * as ipc from "../ipc";
 
@@ -104,7 +119,7 @@ export function SettingsModal(props: SettingsModalProps) {
     <Modal
       open={props.open}
       backdropId="ds-settings-modal-backdrop"
-      title={<><i class="bi bi-gear-fill"></i> Application Settings</>}
+      title={<><SettingsIcon /> Application Settings</>}
       width={480}
       onClose={props.onClose}
       footer={
@@ -117,13 +132,13 @@ export function SettingsModal(props: SettingsModalProps) {
     >
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="group-box" style="margin-top:4px;">
-          <div class="group-box-title"><i class="bi bi-aspect-ratio"></i> Display &amp; Scaling</div>
+          <div class="group-box-title"><Icon name="aspect-ratio" /> Display &amp; Scaling</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <label for="ds-settings-scale-select" style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">UI Scale Factor:</label>
               <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
                 <button type="button" class="win-button ds-btn-sm" id="ds-settings-scale-dec" title="Decrease Scale (-10%)" onClick={() => syncScale(Math.max(0.5, Math.round((scale() - 0.1) * 10) / 10))}>
-                  <i class="bi bi-dash-lg"></i>
+                  <Icon name="dash-lg" />
                 </button>
                 <select
                   id="ds-settings-scale-select"
@@ -145,7 +160,7 @@ export function SettingsModal(props: SettingsModalProps) {
                   </Show>
                 </select>
                 <button type="button" class="win-button ds-btn-sm" id="ds-settings-scale-inc" title="Increase Scale (+10%)" onClick={() => syncScale(Math.min(2.0, Math.round((scale() + 0.1) * 10) / 10))}>
-                  <i class="bi bi-plus-lg"></i>
+                  <AddIcon />
                 </button>
                 <button type="button" class="win-button ds-btn-sm" id="ds-settings-scale-reset" title="Reset to 100%" onClick={() => syncScale(1.0)}>
                   100%
@@ -162,10 +177,10 @@ export function SettingsModal(props: SettingsModalProps) {
               </div>
               <div class="ds-segmented-switch" id="ds-settings-theme-switch" style="flex-shrink:0;">
                 <button type="button" class={`ds-segmented-btn${theme() === "light" ? " active" : ""}`} id="ds-settings-theme-light" title="Light theme" onClick={() => setTheme("light")}>
-                  <i class="bi bi-sun"></i> Light
+                  <SunIcon /> Light
                 </button>
                 <button type="button" class={`ds-segmented-btn${theme() === "dark" ? " active" : ""}`} id="ds-settings-theme-dark" title="Dark theme" onClick={() => setTheme("dark")}>
-                  <i class="bi bi-moon-fill"></i> Dark
+                  <MoonIcon /> Dark
                 </button>
               </div>
             </div>
@@ -175,15 +190,15 @@ export function SettingsModal(props: SettingsModalProps) {
                 <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">Load and display cover thumbnails in browse feeds.</div>
               </div>
               <button type="button" class={`win-button${coversEnabled() ? " primary" : ""}`} id="ds-settings-covers-toggle" style="font-size:11px;padding:2px 10px;min-width:90px;flex-shrink:0;" onClick={toggleCovers}>
-                <Show when={coversEnabled()} fallback={<><i class="bi bi-image-slash"></i> Covers: OFF</>}>
-                  <i class="bi bi-image"></i> Covers: ON
+                <Show when={coversEnabled()} fallback={<><Icon name="eye-slash" /> Covers: OFF</>}>
+                  <ImageIcon /> Covers: ON
                 </Show>
               </button>
             </div>
           </div>
         </div>
         <div class="group-box">
-          <div class="group-box-title"><i class="bi bi-shield-slash"></i> Tag Blacklist</div>
+          <div class="group-box-title"><BlacklistIcon /> Tag Blacklist</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
               Hide or show trigger warnings for releases and chapters matching these tags.
@@ -213,7 +228,7 @@ export function SettingsModal(props: SettingsModalProps) {
               />
             </div>
               <button type="button" class="win-button" id="ds-settings-blacklist-add" style="font-size:11px;padding:2px 10px;" onClick={() => void addTag(blInput())}>
-                <i class="bi bi-plus-lg"></i> Add
+                <AddIcon /> Add
               </button>
             </div>
             <div id="ds-settings-blacklist-chips" style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;max-height:120px;overflow-y:auto;padding:2px 0;">
@@ -231,7 +246,7 @@ export function SettingsModal(props: SettingsModalProps) {
                           {(item: BlacklistedTag) => (
                             <span class="ds-row" style="background:var(--ds-danger-bg);color:var(--ds-danger-text);border:1px solid var(--ds-danger-border);border-radius:3px;padding:1px 6px;font-size:10px;align-items:center;gap:4px;">
                               <span>{item.tag_name}</span>
-                              <i class="bi bi-x" style="cursor:pointer;font-size:13px;" title="Remove from blacklist" onClick={() => void removeTag(item.tag_name)}></i>
+                              <CloseIcon style={{ cursor: "pointer", "font-size": "13px" }} title="Remove from blacklist" onClick={() => void removeTag(item.tag_name)} />
                             </span>
                           )}
                         </For>
@@ -248,7 +263,7 @@ export function SettingsModal(props: SettingsModalProps) {
           </div>
         </div>
         <div class="group-box">
-          <div class="group-box-title"><i class="bi bi-book-half"></i> Reading &amp; Cache</div>
+          <div class="group-box-title"><DoublePageIcon /> Reading &amp; Cache</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <div>
@@ -268,8 +283,8 @@ export function SettingsModal(props: SettingsModalProps) {
                   setAutoCacheEnabled(!autoCacheEnabled());
                 }}
               >
-                <Show when={autoCacheEnabled()} fallback={<><i class="bi bi-cloud-slash"></i> OFF</>}>
-                  <i class="bi bi-cloud-arrow-down-fill"></i> ON
+                <Show when={autoCacheEnabled()} fallback={<><Icon name="cloud-slash" /> OFF</>}>
+                  <CloudDownloadIcon /> ON
                 </Show>
               </button>
             </div>
@@ -306,27 +321,27 @@ export function SettingsModal(props: SettingsModalProps) {
                   setReaderNavPosition("top");
                   setNavPosition("top");
                 }}>
-                  <i class="bi bi-align-top"></i> Top
+                  <Icon name="align-top" /> Top
                 </button>
                 <button type="button" class={`ds-segmented-btn${navPosition() === "bottom" ? " active" : ""}`} id="ds-settings-nav-pos-bottom" title="Bottom (mobile / thumb friendly)" onClick={() => {
                   setReaderNavPosition("bottom");
                   setNavPosition("bottom");
                 }}>
-                  <i class="bi bi-align-bottom"></i> Bottom
+                  <Icon name="align-bottom" /> Bottom
                 </button>
               </div>
             </div>
           </div>
         </div>
         <div class="group-box">
-          <div class="group-box-title"><i class="bi bi-hdd-stack"></i> Storage &amp; Cache</div>
+          <div class="group-box-title"><StorageIcon /> Storage &amp; Cache</div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">
             <span style="font-size:12px;color:var(--sys-window-text,#333);">Manage disk footprint &amp; scans:</span>
             <button type="button" class="win-button" id="ds-settings-goto-cache" onClick={() => {
               props.onClose();
               navigate({ view: "cache" });
             }}>
-              <i class="bi bi-box-arrow-in-right"></i> Open Cache Manager
+              <ExternalLinkIcon /> Open Cache Manager
             </button>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;margin-top:4px;">
@@ -335,7 +350,7 @@ export function SettingsModal(props: SettingsModalProps) {
               props.onClose();
               navigate({ view: "blacklist" });
             }}>
-              <i class="bi bi-shield-slash"></i> Open Series Blacklist
+              <BlacklistIcon /> Open Series Blacklist
             </button>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;margin-top:4px;">
@@ -345,12 +360,12 @@ export function SettingsModal(props: SettingsModalProps) {
                 console.error("dynasty-scans-reader: open logs folder failed:", err);
               });
             }}>
-              <i class="bi bi-folder2-open"></i> Open Logs Folder
+              <Icon name="folder2-open" /> Open Logs Folder
             </button>
           </div>
         </div>
         <div class="group-box">
-          <div class="group-box-title"><i class="bi bi-info-circle"></i> About DynastyReader</div>
+          <div class="group-box-title"><Icon name="info-circle" /> About DynastyReader</div>
           <div style="display:flex;align-items:center;gap:12px;padding:4px 0;">
             <img src="/icon.svg" width="34" height="34" alt="DynastyReader" style="border-radius:4px;flex-shrink:0;user-select:none;pointer-events:none;" />
             <div class="ds-fill">
@@ -363,12 +378,12 @@ export function SettingsModal(props: SettingsModalProps) {
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
               <button type="button" class="win-button ds-btn-compact" id="ds-about-check-update" title="Check for DynastyReader updates" disabled={checking()} onClick={() => void runCheckUpdates()}>
-                <Show when={checking()} fallback={<><i class="bi bi-arrow-repeat"></i> Check Updates</>}>
-                  <i class="bi bi-arrow-repeat spin"></i> Checking...
+                <Show when={checking()} fallback={<><RefreshIcon /> Check Updates</>}>
+                  <RefreshIcon spin={true} /> Checking...
                 </Show>
               </button>
               <button type="button" class="win-button ds-btn-compact" id="ds-about-open-github" title="Open DynastyReader GitHub repository" onClick={() => void openExternal("https://github.com/FuouM/DynastyReader")}>
-                <i class="bi bi-github"></i> GitHub
+                <Icon name="github" /> GitHub
               </button>
               <ExternalLinkButton
                 id="ds-about-open-site"

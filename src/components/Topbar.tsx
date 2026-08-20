@@ -1,10 +1,3 @@
-/**
- * Solid top bar for the dynasty-scans plugin. Port of the imperative shell
- * builder in `src/index.ts:48-83` plus the banner/session-tab DOM writes from
- * `src/topbar.ts` and `src/router.ts`. All ids/classes are reproduced verbatim
- * so the WinForms design system CSS applies unchanged.
- */
-
 import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import {
   route,
@@ -19,10 +12,20 @@ import {
   title,
   banner,
   actions,
+  decodeEntities,
 } from "../stores";
-import { decodeEntities } from "../stores";
 import { SettingsModal } from "./SettingsModal";
 import { HistoryDropdown } from "./HistoryDropdown";
+import {
+  StorageIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  DoublePageIcon,
+  CloseIcon,
+  RefreshIcon,
+  SettingsIcon,
+  Icon,
+} from "./Icon";
 
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
@@ -34,18 +37,18 @@ export function Topbar() {
   let holdTimer: number | null = null;
   let didHold = false;
 
-  const startHold = (direction: "back" | "forward", el: HTMLElement) => {
+  const startHold = (direction: "back" | "forward", anchorEl: HTMLElement): void => {
     didHold = false;
     if (holdTimer !== null) window.clearTimeout(holdTimer);
     holdTimer = window.setTimeout(() => {
       didHold = true;
-      setHistoryMenu({ direction, anchorEl: el });
+      setHistoryMenu({ direction, anchorEl });
     }, 450);
   };
 
-  const cancelHold = () => {
+  const cancelHold = (): void => {
     if (holdTimer !== null) {
-      window.clearTimeout(holdTimer);
+      clearTimeout(holdTimer);
       holdTimer = null;
     }
   };
@@ -84,7 +87,7 @@ export function Topbar() {
                 title="Browse &amp; Recent"
                 onClick={() => navigate({ view: "browse" })}
               >
-                <i class="bi bi-compass"></i> <span class="ds-tab-text-full">Browse &amp; Recent</span>
+                <Icon name="compass" /> <span class="ds-tab-text-full">Browse &amp; Recent</span>
                 <span class="ds-tab-text-short">Browse</span>
               </button>
               <button
@@ -95,7 +98,7 @@ export function Topbar() {
                 title="Library"
                 onClick={() => navigate({ view: "library" })}
               >
-                <i class="bi bi-collection"></i> <span class="ds-tab-text-full">Library</span>
+                <StorageIcon /> <span class="ds-tab-text-full">Library</span>
                 <span class="ds-tab-text-short">Library</span>
               </button>
             </div>
@@ -125,7 +128,7 @@ export function Topbar() {
                   }
                 }}
               >
-                <i class="bi bi-arrow-left"></i>
+                <ArrowLeftIcon />
               </button>
               <button
                 type="button"
@@ -152,7 +155,7 @@ export function Topbar() {
                   }
                 }}
               >
-                <i class="bi bi-arrow-right"></i>
+                <ArrowRightIcon />
               </button>
             </div>
             <Show when={sessionTab() !== null}>
@@ -167,19 +170,21 @@ export function Topbar() {
                     if (tab) navigate(tab.route);
                   }}
                 >
-                  <i class="bi bi-book-half"></i>
+                  <DoublePageIcon />
                   <span class="ds-truncate">{decodeEntities(sessionTab()!.title)}</span>
-                  <i
-                    class="bi bi-x"
+                  <CloseIcon
                     title="Close tab"
-                    style="cursor:pointer;font-size:13px;opacity:0.75;padding:0 2px;"
-                    onMouseOver={(ev) => (ev.currentTarget.style.opacity = "1")}
-                    onMouseOut={(ev) => (ev.currentTarget.style.opacity = "0.75")}
-                    onClick={(ev) => {
+                    style={{
+                      cursor: "pointer",
+                      "font-size": "13px",
+                      opacity: 0.75,
+                      padding: "0 2px",
+                    }}
+                    onClick={(ev: MouseEvent) => {
                       ev.stopPropagation();
                       closeSessionMangaTab();
                     }}
-                  ></i>
+                  />
                 </button>
               </div>
             </Show>
@@ -199,7 +204,7 @@ export function Topbar() {
               title="Refresh Page"
               onClick={() => window.location.reload()}
             >
-              <i class="bi bi-arrow-clockwise"></i>
+              <RefreshIcon />
             </button>
             <button
               type="button"
@@ -208,7 +213,7 @@ export function Topbar() {
               title="Settings (UI Scale &amp; Preferences)"
               onClick={() => setSettingsOpen(true)}
             >
-              <i class="bi bi-gear-fill"></i>
+              <SettingsIcon />
             </button>
           </div>
         </div>

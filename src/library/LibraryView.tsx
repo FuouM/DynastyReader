@@ -44,6 +44,20 @@ import { useDelayedSpinner } from "../browse/browse-state";
 import { ConfirmDeleteButton } from "../components/Button";
 import { Loading } from "../components/Loading";
 import { Modal } from "../components/Modal";
+import {
+  RefreshIcon,
+  CheckIcon,
+  StorageIcon,
+  BlacklistIcon,
+  BookmarkIcon,
+  FolderIcon,
+  AddIcon,
+  TrashIcon,
+  ArrowLeftIcon,
+  StarIcon,
+  CloseIcon,
+  Icon,
+} from "../components/Icon";
 import { TopbarAction } from "../components/ActionBar";
 import { LibraryItemRow } from "./LibraryItemRow";
 import {
@@ -116,15 +130,15 @@ function LibraryGrid() {
         >
           {refreshing() ? (
             <>
-              <i class="bi bi-arrow-clockwise ds-spin"></i> Refreshing...
+              <RefreshIcon spin={true} /> Refreshing...
             </>
           ) : justUpdated() ? (
             <>
-              <i class="bi bi-check2"></i> Updated
+              <CheckIcon /> Updated
             </>
           ) : (
             <>
-              <i class="bi bi-arrow-clockwise"></i> Refresh Library
+              <RefreshIcon /> Refresh Library
             </>
           )}
         </button>
@@ -132,13 +146,13 @@ function LibraryGrid() {
           title="View cache storage statistics and manage cached series/pages"
           onClick={() => navigate({ view: "cache" })}
         >
-          <i class="bi bi-hdd-stack"></i> Cache Management
+          <StorageIcon /> Cache Management
         </TopbarAction>
         <TopbarAction
           title="Manage blacklisted series and view hidden works"
           onClick={() => navigate({ view: "blacklist" })}
         >
-          <i class="bi bi-shield-slash"></i> Series Blacklist
+          <BlacklistIcon /> Series Blacklist
         </TopbarAction>
       </>
     );
@@ -158,7 +172,7 @@ function LibraryGrid() {
         <div class="group-box ds-library-panel">
           <div class="group-box-title">
             <span>
-              <i class="bi bi-bookmark-heart"></i> Followed Series
+              <Icon name="bookmark-heart" /> Followed Series
             </span>
           </div>
           <div class="ds-library-panel-body">
@@ -174,7 +188,7 @@ function LibraryGrid() {
             style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
           >
             <span>
-              <i class="bi bi-folder-fill"></i> Collections
+              <FolderIcon /> Collections
             </span>
             <button
               type="button"
@@ -183,7 +197,7 @@ function LibraryGrid() {
               title="Create a new custom collection"
               onClick={() => setCreating(true)}
             >
-              <i class="bi bi-plus-lg" style="font-size:9px;line-height:1;"></i>{" "}
+              <AddIcon style={{ "font-size": "9px", "line-height": 1 }} />{" "}
               <span>New</span>
             </button>
           </div>
@@ -202,7 +216,7 @@ function LibraryGrid() {
         <div class="group-box ds-library-panel">
           <div class="group-box-title">
             <span>
-              <i class="bi bi-bookmark"></i> Bookmarks
+              <BookmarkIcon /> Bookmarks
             </span>
           </div>
           <div class="ds-library-panel-body">
@@ -218,14 +232,14 @@ function LibraryGrid() {
             style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
           >
             <span>
-              <i class="bi bi-clock-history"></i> Reading History
+              <Icon name="clock-history" /> Reading History
             </span>
             <ConfirmDeleteButton
               title="Clear all reading history"
               onConfirm={clearHistoryAll}
               cssText="font-size:10px;padding:0 6px;height:18px;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
             >
-              <i class="bi bi-trash3" style="line-height:1;"></i> Clear
+              <TrashIcon style={{ "line-height": 1 }} /> Clear
             </ConfirmDeleteButton>
           </div>
           <div class="ds-library-panel-body">
@@ -293,7 +307,7 @@ function CreateCollectionModal(props: {
       onClose={props.onClose}
       title={
         <>
-          <i class="bi bi-folder-plus" style="color:var(--sys-primary,#0078d4);"></i>{" "}
+          <FolderIcon color="var(--sys-primary,#0078d4)" />{" "}
           New Collection
         </>
       }
@@ -322,7 +336,7 @@ function CreateCollectionModal(props: {
               title="Clear"
               onClick={() => setName("")}
             >
-              <i class="bi bi-x-lg"></i>
+              <CloseIcon />
             </button>
           </div>
         </div>
@@ -344,7 +358,7 @@ function CreateCollectionModal(props: {
             disabled={creating()}
             onClick={() => void submit()}
           >
-            <i class="bi bi-plus-lg" style="font-size:10px;line-height:1;"></i>{" "}
+            <AddIcon style={{ "font-size": "10px", "line-height": 1 }} />{" "}
             <span>Create</span>
           </button>
         </div>
@@ -388,10 +402,10 @@ function CollectionDetailView(props: { collectionId: number }) {
           title="Back"
           onClick={() => navigate({ view: "library" })}
         >
-          <i class="bi bi-arrow-left"></i> Back to Collections
+          <ArrowLeftIcon /> Back to Collections
         </TopbarAction>
         <TopbarAction title="Refresh" onClick={() => setTick((t) => t + 1)}>
-          <i class="bi bi-arrow-clockwise"></i> Refresh
+          <RefreshIcon /> Refresh
         </TopbarAction>
       </>
     );
@@ -439,14 +453,12 @@ function CollectionDetailView(props: { collectionId: number }) {
       >
         <div class="ds-collection-header-bar">
           <div class="ds-collection-stats">
-            <i
-              class={collection()?.is_default ? "bi bi-star-fill" : "bi bi-folder2-open"}
-              style={
-                collection()?.is_default
-                  ? "color:#d97706;font-size:13px;"
-                  : "color:var(--sys-primary,#0078d4);font-size:13px;"
-              }
-            ></i>
+            <Show
+              when={collection()?.is_default}
+              fallback={<FolderIcon color="var(--sys-primary,#0078d4)" style={{ "font-size": "13px" }} />}
+            >
+              <StarIcon filled={true} style={{ color: "#d97706", "font-size": "13px" }} />
+            </Show>
             <span>
               <b>{decodeEntities(collection()?.name ?? "")}</b> — <b>{totalItems()}</b> item
               {totalItems() === 1 ? "" : "s"}
@@ -468,7 +480,7 @@ function CollectionDetailView(props: { collectionId: number }) {
               title="Clear"
               onClick={() => setFilter("")}
             >
-              <i class="bi bi-x-lg"></i>
+              <CloseIcon />
             </button>
           </div>
         </div>
@@ -478,7 +490,7 @@ function CollectionDetailView(props: { collectionId: number }) {
             <div class="ds-muted" style="padding:16px 8px;font-size:11px;">
               No items in this collection yet. Click{" "}
               <b>
-                <i class="bi bi-folder-plus"></i> Add to...
+                <FolderIcon /> Add to...
               </b>{" "}
               on any series or chapter in Browse / Search / Series pages to add items here.
             </div>

@@ -7,6 +7,7 @@
 import type { ReaderController } from "./reader-controller";
 import { WIDE_RATIO } from "./reader-spread";
 import { convertFileSrc } from "../ipc";
+import { iconHtml } from "../components/Icon";
 
 /** Renders a cached page image into a slot, wiring wide-image spread detection. */
 export function renderSlotImg(
@@ -73,14 +74,14 @@ export function renderSlotState(
   state.className = `ds-slot-state${kind === "error" ? " ds-slot-error" : ""}`;
   if (kind === "spinner") {
     state.innerHTML =
-      '<i class="bi bi-cloud-arrow-down" style="font-size:20px;color:var(--sys-primary,#0078d4);"></i>' +
+      `${iconHtml("cloud-arrow-down", { style: "font-size:20px;color:var(--sys-primary,#0078d4);" })}` +
       '<div class="ds-slot-pulse-wrap"><div class="ds-slot-pulse-bar"></div></div>';
   } else if (kind === "offline") {
-    state.innerHTML = '<i class="bi bi-wifi-off" style="font-size:20px;"></i>';
+    state.innerHTML = iconHtml("wifi-off", { style: "font-size:20px;" });
   } else if (kind === "idle") {
-    state.innerHTML = '<i class="bi bi-book" style="font-size:20px;color:var(--sys-text-muted,#888);"></i>';
+    state.innerHTML = iconHtml("book", { style: "font-size:20px;color:var(--sys-text-muted,#888);" });
   } else {
-    state.innerHTML = '<i class="bi bi-exclamation-triangle" style="font-size:20px;"></i>';
+    state.innerHTML = iconHtml("exclamation-triangle", { style: "font-size:20px;" });
   }
   const text = document.createElement("span");
   if (kind === "spinner") {

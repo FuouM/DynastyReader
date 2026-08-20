@@ -1,0 +1,148 @@
+import type { JSX } from "solid-js";
+import iconData from "bootstrap-icons/font/bootstrap-icons.json";
+import type { SearchResultItem } from "../types/api";
+
+/**
+ * Strongly-typed union of all 2,000+ official Bootstrap Icon names.
+ * e.g. "search", "arrow-clockwise", "bookmark-fill", "cloud-arrow-down", etc.
+ */
+export type BootstrapIconName = keyof typeof iconData;
+
+export interface IconProps {
+  /** The Bootstrap icon name without the `bi-` prefix (e.g. "search", "arrow-clockwise"). */
+  name: BootstrapIconName;
+  /** Whether to apply continuous spinning animation (`ds-spin`). */
+  spin?: boolean;
+  /** Explicit font-size (number in px or CSS string). */
+  size?: number | string;
+  /** Custom text/icon color. */
+  color?: string;
+  /** Additional CSS class names. */
+  class?: string;
+  /** Custom inline styles. */
+  style?: string | JSX.CSSProperties;
+  /** Accessible label / tooltip. */
+  title?: string;
+  onClick?: (ev: MouseEvent) => void;
+}
+
+/**
+ * Standard typed icon component for Bootstrap Icons.
+ */
+export function Icon(props: IconProps) {
+  const customStyle = (): JSX.CSSProperties => {
+    const s: Record<string, string | undefined> = {};
+    if (props.size !== undefined) {
+      s["font-size"] = typeof props.size === "number" ? `${props.size}px` : props.size;
+    }
+    if (props.color !== undefined) {
+      s["color"] = props.color;
+    }
+    if (typeof props.style === "object" && props.style !== null) {
+      Object.assign(s, props.style);
+    }
+    return s;
+  };
+
+  return (
+    <i
+      class={`bi bi-${props.name}${props.spin ? " ds-spin" : ""}${props.class ? ` ${props.class}` : ""}`}
+      style={customStyle()}
+      title={props.title}
+      onClick={props.onClick}
+    />
+  );
+}
+
+/**
+ * Returns a typed Bootstrap Icon HTML string for imperative DOM construction.
+ */
+export function iconHtml(
+  name: BootstrapIconName,
+  options?: { spin?: boolean; class?: string; style?: string; title?: string },
+): string {
+  const spinClass = options?.spin ? " ds-spin" : "";
+  const extraClass = options?.class ? ` ${options.class}` : "";
+  const styleAttr = options?.style ? ` style="${options.style}"` : "";
+  const titleAttr = options?.title ? ` title="${options.title}"` : "";
+  return `<i class="bi bi-${name}${spinClass}${extraClass}"${styleAttr}${titleAttr}></i>`;
+}
+
+/** Canonical icon mappings for Dynasty domain entity kinds. */
+export const ENTITY_ICONS: Record<
+  SearchResultItem["kind"],
+  { name: BootstrapIconName; color: string; path: string; label: string }
+> = {
+  chapter: { name: "file-earmark-text", color: "#0078d4", path: "chapters", label: "Chapter" },
+  series: { name: "collection-play", color: "#d83b01", path: "series", label: "Series" },
+  anthology: { name: "journal-album", color: "#107c41", path: "anthologies", label: "Anthology" },
+  doujin: { name: "book", color: "#8764b8", path: "doujins", label: "Doujin" },
+  issue: { name: "newspaper", color: "#b146c2", path: "issues", label: "Issue" },
+  author: { name: "person", color: "#008272", path: "authors", label: "Author" },
+  scanlator: { name: "people", color: "#5c2d91", path: "scanlators", label: "Scanlator" },
+  pairing: { name: "heart", color: "#e3008c", path: "pairings", label: "Pairing" },
+  tag: { name: "tag", color: "#69797e", path: "tags", label: "Tag" },
+};
+
+export type BaseIconProps = Omit<IconProps, "name">;
+
+// ── Common Semantic UI Icons ───────────────────────────────────────────────
+export const SearchIcon = (props: BaseIconProps) => <Icon name="search" {...props} />;
+export const RefreshIcon = (props: BaseIconProps) => <Icon name="arrow-clockwise" {...props} />;
+export const ClearIcon = (props: BaseIconProps) => <Icon name="x-circle" {...props} />;
+export const CloseIcon = (props: BaseIconProps) => <Icon name="x-lg" {...props} />;
+export const CheckIcon = (props: BaseIconProps) => <Icon name="check2" {...props} />;
+export const TrashIcon = (props: BaseIconProps) => <Icon name="trash3" {...props} />;
+export const AddIcon = (props: BaseIconProps) => <Icon name="plus-lg" {...props} />;
+export const WarningIcon = (props: BaseIconProps) => <Icon name="exclamation-triangle" {...props} />;
+export const ExternalLinkIcon = (props: BaseIconProps) => <Icon name="box-arrow-up-right" {...props} />;
+export const FolderIcon = (props: BaseIconProps) => <Icon name="folder-plus" {...props} />;
+export const SettingsIcon = (props: BaseIconProps) => <Icon name="gear-fill" {...props} />;
+export const CloudDownloadIcon = (props: BaseIconProps) => <Icon name="cloud-arrow-down" {...props} />;
+export const DatabaseIcon = (props: BaseIconProps) => <Icon name="database" {...props} />;
+export const NetworkIcon = (props: BaseIconProps) => <Icon name="hdd-network" {...props} />;
+export const HashIcon = (props: BaseIconProps) => <Icon name="hash" {...props} />;
+export const TrafficIcon = (props: BaseIconProps) => <Icon name="arrow-down-up" {...props} />;
+export const ArrowUpIcon = (props: BaseIconProps) => <Icon name="arrow-up" {...props} />;
+export const ArrowDownIcon = (props: BaseIconProps) => <Icon name="arrow-down" {...props} />;
+export const ChevronDownIcon = (props: BaseIconProps) => <Icon name="chevron-down" {...props} />;
+export const ChevronLeftIcon = (props: BaseIconProps) => <Icon name="chevron-left" {...props} />;
+export const ChevronRightIcon = (props: BaseIconProps) => <Icon name="chevron-right" {...props} />;
+export const ClipboardIcon = (props: BaseIconProps) => <Icon name="clipboard" {...props} />;
+export const BookmarkIcon = (props: { filled?: boolean } & BaseIconProps) => (
+  <Icon name={props.filled ? "bookmark-fill" : "bookmark-plus"} {...props} />
+);
+export const BlacklistIcon = (props: { filled?: boolean } & BaseIconProps) => (
+  <Icon name={props.filled ? "shield-slash-fill" : "shield-slash"} {...props} />
+);
+export const EntityIcon = (props: { kind: SearchResultItem["kind"] } & BaseIconProps) => {
+  const meta = ENTITY_ICONS[props.kind] ?? {
+    name: "tag" as const,
+    color: "#69797e",
+    path: "tags",
+    label: props.kind,
+  };
+  return <Icon name={meta.name} color={props.color ?? meta.color} {...props} />;
+};
+
+export const ChevronDoubleLeftIcon = (props: BaseIconProps) => <Icon name="chevron-double-left" {...props} />;
+export const ChevronDoubleRightIcon = (props: BaseIconProps) => <Icon name="chevron-double-right" {...props} />;
+export const ArrowLeftIcon = (props: BaseIconProps) => <Icon name="arrow-left" {...props} />;
+export const ArrowRightIcon = (props: BaseIconProps) => <Icon name="arrow-right" {...props} />;
+export const StarIcon = (props: { filled?: boolean } & BaseIconProps) => (
+  <Icon name={props.filled ? "star-fill" : "star"} {...props} />
+);
+export const BookIcon = (props: BaseIconProps) => <Icon name="book" {...props} />;
+export const SinglePageIcon = (props: BaseIconProps) => <Icon name="book" {...props} />;
+export const DoublePageIcon = (props: BaseIconProps) => <Icon name="book-half" {...props} />;
+export const ContinuousIcon = (props: BaseIconProps) => <Icon name="distribute-vertical" {...props} />;
+export const FullscreenIcon = (props: { exit?: boolean } & BaseIconProps) => (
+  <Icon name={props.exit ? "fullscreen-exit" : "arrows-fullscreen"} {...props} />
+);
+export const SunIcon = (props: BaseIconProps) => <Icon name="sun" {...props} />;
+export const MoonIcon = (props: BaseIconProps) => <Icon name="moon-fill" {...props} />;
+export const ToolIcon = (props: BaseIconProps) => <Icon name="tools" {...props} />;
+export const ChartIcon = (props: BaseIconProps) => <Icon name="pie-chart" {...props} />;
+export const StorageIcon = (props: BaseIconProps) => <Icon name="hdd-stack" {...props} />;
+export const ImageIcon = (props: BaseIconProps) => <Icon name="image" {...props} />;
+export const ListCheckIcon = (props: BaseIconProps) => <Icon name="list-check" {...props} />;

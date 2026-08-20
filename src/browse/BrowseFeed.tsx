@@ -48,6 +48,16 @@ import {
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
+import {
+  RefreshIcon,
+  CheckIcon,
+  WarningIcon,
+  DatabaseIcon,
+  NetworkIcon,
+  HashIcon,
+  TrafficIcon,
+  ArrowUpIcon,
+} from "../components/Icon";
 import { BlacklistNotice } from "../components/BlacklistNotice";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
@@ -254,34 +264,34 @@ function FeedStatusFooter(props: {
     if (checkState() === "checking") {
       return (
         <>
-          <i class="bi bi-arrow-clockwise ds-spin"></i> Checking...
+          <RefreshIcon spin={true} /> Checking...
         </>
       );
     }
     if (checkState() === "ready") {
       return (
         <>
-          <i class="bi bi-arrow-up-circle"></i> Update Ready
+          <ArrowUpIcon /> Update Ready
         </>
       );
     }
     if (checkState() === "synced") {
       return (
         <>
-          <i class="bi bi-check-lg"></i> Up to Date
+          <CheckIcon /> Up to Date
         </>
       );
     }
     if (checkState() === "failed") {
       return (
         <>
-          <i class="bi bi-exclamation-triangle"></i> Failed
+          <WarningIcon /> Failed
         </>
       );
     }
     return (
       <>
-        <i class="bi bi-arrow-clockwise"></i> Check Updates
+        <RefreshIcon /> Check Updates
       </>
     );
   };
@@ -293,20 +303,20 @@ function FeedStatusFooter(props: {
           class="ds-status-item ds-status-db"
           title="Timestamp when metadata was stored in local SQLite database"
         >
-          <i class="bi bi-database"></i> DB Cache: <b>{formatDateTime(props.state.cachedAt)}</b>
+          <DatabaseIcon /> DB Cache: <b>{formatDateTime(props.state.cachedAt)}</b>
         </span>
         <span class="ds-status-item ds-status-state" title="Current cache state">
-          <i class="bi bi-hdd-network"></i> Status:{" "}
+          <NetworkIcon /> Status:{" "}
           <span class={`ds-status-pill ${props.state.isStale ? "stale" : "fresh"}`}>
             {props.state.status}
           </span>
         </span>
         <span class="ds-status-item ds-status-etag-wrap" title="HTTP ETag conditional caching status">
-          <i class="bi bi-shield-check"></i> ETag:{" "}
+          <CheckIcon /> ETag:{" "}
           <span class="ds-etag-status-label">{props.state.etagStatus || "Cached"}</span>
           <Show when={props.state.etag}>
             <span class="ds-etag-tag" title={`HTTP ETag: ${props.state.etag}`}>
-              <i class="bi bi-hash"></i>{" "}
+              <HashIcon />{" "}
               <span class="ds-etag-hash">
                 {props.state.etag!.replace(/^"|"$/g, "").slice(0, 8)}
               </span>
@@ -317,7 +327,7 @@ function FeedStatusFooter(props: {
           class="ds-status-item ds-status-traffic"
           title="Online network bandwidth consumed in this session"
         >
-          <i class="bi bi-arrow-down-up"></i> Traffic:{" "}
+          <TrafficIcon /> Traffic:{" "}
           <b class="ds-traffic-bytes">{formatBytes(traffic().bytesDownloaded, "", 1)}</b>{" "}
           <span class="ds-traffic-counts ds-muted" style="font-size:10px;">
             ({traffic().networkRequests} reqs{traffic().cacheHits > 0 ? `, ${traffic().cacheHits} cached` : ""})
@@ -343,7 +353,7 @@ function FeedStatusFooter(props: {
           title="Scroll to top of list"
           onClick={onScrollTop}
         >
-          <i class="bi bi-arrow-up"></i> Top
+          <ArrowUpIcon /> Top
         </button>
       </div>
     </div>
@@ -583,7 +593,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
               class="win-button ds-feed-update-btn"
               onClick={() => pane.goToPage(1)}
             >
-              <i class="bi bi-arrow-clockwise"></i> New chapters available — Click to update
+              <RefreshIcon /> New chapters available — Click to update
             </button>
           </div>
         </Show>

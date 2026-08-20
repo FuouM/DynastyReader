@@ -14,6 +14,17 @@ import { parseDynastyUrl, suggest } from "../api";
 import { Pager } from "../components/Pager";
 import { Typeahead } from "../components/Typeahead";
 import {
+  SearchIcon,
+  RefreshIcon,
+  CheckIcon,
+  WarningIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  ClipboardIcon,
+  ArrowDownIcon,
+  ExternalLinkIcon,
+} from "../components/Icon";
+import {
   getPaneError,
   getPaneLoading,
   getTopPagerFor,
@@ -166,27 +177,27 @@ export function BrowseView() {
     if (checkBtn() === "checking") {
       return (
         <>
-          <i class="bi bi-arrow-clockwise ds-spin"></i> Checking...
+          <RefreshIcon spin={true} /> Checking...
         </>
       );
     }
     if (checkBtn() === "updated") {
       return (
         <>
-          <i class="bi bi-check2"></i> Updated
+          <CheckIcon /> Updated
         </>
       );
     }
     if (checkBtn() === "error") {
       return (
         <>
-          <i class="bi bi-exclamation-triangle"></i> Error
+          <WarningIcon /> Error
         </>
       );
     }
     return (
       <>
-        <i class="bi bi-arrow-clockwise"></i> Check Updates
+        <RefreshIcon /> Check Updates
       </>
     );
   };
@@ -200,7 +211,7 @@ export function BrowseView() {
         classList={{ collapsed: searchGoCollapsed() }}
       >
         <div class="group-box-title" onClick={toggleSearchGo}>
-          <i class="bi bi-search"></i> Search &amp; Go
+          <SearchIcon /> Search &amp; Go
           <button
             type="button"
             class="group-box-collapse-btn"
@@ -210,7 +221,7 @@ export function BrowseView() {
               toggleSearchGo();
             }}
           >
-            <i class="bi bi-chevron-down"></i>
+            <ChevronDownIcon />
           </button>
         </div>
         <div class="group-box-body">
@@ -233,7 +244,7 @@ export function BrowseView() {
               style="width:86px;justify-content:center;flex-shrink:0;"
               onClick={() => runSearch(searchBoxValue())}
             >
-              <i class="bi bi-search"></i>
+              <SearchIcon />
               <span>Search</span>
             </button>
           </div>
@@ -258,7 +269,7 @@ export function BrowseView() {
                 title="Clear"
                 onClick={() => setUrlValue("")}
               >
-                <i class="bi bi-x-lg"></i>
+                <CloseIcon />
               </button>
             </div>
             <button
@@ -268,7 +279,7 @@ export function BrowseView() {
               title="Paste URL from clipboard"
               onClick={() => void pasteUrl()}
             >
-              <i class="bi bi-clipboard"></i>
+              <ClipboardIcon />
               <span>Paste</span>
             </button>
             <button
@@ -278,7 +289,7 @@ export function BrowseView() {
               style="width:86px;justify-content:center;flex-shrink:0;"
               onClick={openByUrl}
             >
-              <i class="bi bi-box-arrow-in-right"></i>
+              <ExternalLinkIcon />
               <span>Open</span>
             </button>
           </div>
@@ -323,7 +334,7 @@ export function BrowseView() {
                 title="Scroll to bottom of list"
                 onClick={scrollBrowseToBottom}
               >
-                <i class="bi bi-arrow-down"></i> Bottom
+                <ArrowDownIcon /> Bottom
               </button>
             </Show>
           </div>

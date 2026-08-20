@@ -18,6 +18,7 @@
 
 import { createEffect, onCleanup, Show, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
+import { CloseIcon } from "./Icon";
 import { uiScale } from "../stores";
 
 export interface ModalProps {
@@ -94,7 +95,7 @@ export function Modal(props: ModalProps) {
               <div class="ds-modal-header">
                 <span class="ds-modal-title">{props.title}</span>
                 <button type="button" class="win-button ds-modal-close" title="Close (Esc)" onClick={close}>
-                  <i class="bi bi-x-lg"></i>
+                  <CloseIcon />
                 </button>
               </div>
             </Show>

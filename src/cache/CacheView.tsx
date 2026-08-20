@@ -29,6 +29,14 @@ import { EmptyState } from "../components/EmptyState";
 import { HydratedCover } from "../components/HydratedCover";
 import { ConfirmDeleteButton } from "../components/Button";
 import { Loading } from "../components/Loading";
+import {
+  ChartIcon,
+  ToolIcon,
+  TrashIcon,
+  ImageIcon,
+  StorageIcon,
+  RefreshIcon,
+} from "../components/Icon";
 
 type CacheData = {
   stats: Awaited<ReturnType<typeof getCacheOverviewStats>>;
@@ -145,7 +153,7 @@ export function CacheView() {
             {data.error instanceof Error ? data.error.message : String(data.error)}
           </span>
           <button type="button" class="win-button" onClick={() => void refetch()}>
-            <i class="bi bi-arrow-clockwise"></i> Retry
+            <RefreshIcon /> Retry
           </button>
         </div>
       </Show>
@@ -190,7 +198,7 @@ function CacheBody(props: {
     <>
       <div class="group-box">
         <div class="group-box-title">
-          <i class="bi bi-pie-chart"></i> Disk Space &amp; Storage Overview
+          <ChartIcon /> Disk Space &amp; Storage Overview
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
           <div class="ds-stat-card">
@@ -214,33 +222,33 @@ function CacheBody(props: {
 
       <div class="group-box">
         <div class="group-box-title">
-          <i class="bi bi-tools"></i> Global Maintenance
+          <ToolIcon /> Global Maintenance
         </div>
         <div class="ds-cache-actions">
           <ConfirmDeleteButton
             title="Purge all cached pages, covers, and metadata"
             onConfirm={props.purgeAll}
           >
-            <i class="bi bi-trash3"></i> Clear All Cache Storage
+            <TrashIcon /> Clear All Cache Storage
           </ConfirmDeleteButton>
           <ConfirmDeleteButton
             title="Purge only high-res reader page scans on disk"
             onConfirm={props.purgePages}
           >
-            <i class="bi bi-images"></i> Clear Page Scans Only
+            <ImageIcon /> Clear Page Scans Only
           </ConfirmDeleteButton>
           <ConfirmDeleteButton
             title="Purge only cached cover thumbnails on disk"
             onConfirm={props.purgeCovers}
           >
-            <i class="bi bi-card-image"></i> Clear Cached Covers Only
+            <ImageIcon /> Clear Cached Covers Only
           </ConfirmDeleteButton>
         </div>
       </div>
 
       <div class="group-box" style="display:flex;flex-direction:column;">
         <div class="group-box-title">
-          <i class="bi bi-collection"></i> Cached Works &amp; Series ({groups.length})
+          <StorageIcon /> Cached Works &amp; Series ({groups.length})
         </div>
 
         <Show
@@ -312,7 +320,7 @@ function CacheBody(props: {
                           title={`Delete all cached files for "${item.seriesName}"`}
                           onConfirm={() => props.deleteGroup(item)}
                         >
-                          <i class="bi bi-trash3"></i>
+                          <TrashIcon />
                         </ConfirmDeleteButton>
                       </div>
                     )}

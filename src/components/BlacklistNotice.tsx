@@ -4,6 +4,7 @@
  */
 
 import { DsButton } from "./Button";
+import { BlacklistIcon, Icon } from "./Icon";
 
 export interface BlacklistNoticeProps {
   count: number;
@@ -22,14 +23,14 @@ export function BlacklistNotice(props: BlacklistNoticeProps) {
       style={`background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:4px 10px;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11px;${props.cssText ?? ""}`}
     >
       <div class="ds-flex-row">
-        <i class="bi bi-shield-slash-fill" style="color:#dc3545;"></i>
+        <BlacklistIcon filled={true} color="#dc3545" />
         <span>
           <b>{props.count}</b> {props.noun}
           {props.count === 1 ? "" : "s"} hidden by blacklist.
         </span>
       </div>
       <DsButton className="ds-btn-sm" onClick={props.onToggle}>
-        <i class={`bi bi-${props.showHidden ? "eye-slash" : "eye"}`}></i>{" "}
+        <Icon name={props.showHidden ? "eye-slash" : "eye"} />{" "}
         {props.showHidden
           ? "Hide Blacklisted"
           : `Show Blacklisted (${props.count})`}

@@ -50,6 +50,14 @@ import { OfflineBadge } from "../components/OfflineBadge";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { AddToCollectionButton } from "../components/AddToCollectionButton";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
+import {
+  BookmarkIcon,
+  BlacklistIcon,
+  RefreshIcon,
+  StorageIcon,
+  BookIcon,
+  Icon,
+} from "../components/Icon";
 
 interface ChapterMeta extends ChapterRef {
   volumeHeader?: string;
@@ -431,9 +439,9 @@ export function SeriesView() {
           onClick={() => void toggleFollow()}
         >
           {followed ? (
-            <i class="bi bi-bookmark-check-fill"></i>
+            <BookmarkIcon filled={true} />
           ) : (
-            <i class="bi bi-bookmark"></i>
+            <BookmarkIcon />
           )}{" "}
           <span class="ds-btn-text">{followed ? "Following" : "Follow"}</span>
         </button>
@@ -465,9 +473,9 @@ export function SeriesView() {
           onClick={() => void toggleBlacklist()}
         >
           {blacklisted ? (
-            <i class="bi bi-shield-slash-fill" style="color:var(--ds-warn-text,#d97706);"></i>
+            <BlacklistIcon filled={true} color="var(--ds-warn-text,#d97706)" />
           ) : (
-            <i class="bi bi-shield-slash"></i>
+            <BlacklistIcon />
           )}{" "}
           <span class="ds-btn-text">{blacklisted ? "Blacklisted" : "Blacklist"}</span>
         </button>
@@ -477,7 +485,7 @@ export function SeriesView() {
           title="Re-fetch series data from the server"
           onClick={() => setForceTick((t) => t + 1)}
         >
-          <i class="bi bi-arrow-clockwise"></i> <span class="ds-btn-text">Refresh</span>
+          <RefreshIcon /> <span class="ds-btn-text">Refresh</span>
         </button>
         <ExternalLinkButton
           class=""
@@ -514,7 +522,7 @@ export function SeriesView() {
             class="win-button"
             onClick={() => void refetch()}
           >
-            <i class="bi bi-arrow-clockwise"></i> Retry
+            <RefreshIcon /> Retry
           </button>
         </div>
       </Show>
@@ -575,10 +583,14 @@ function SeriesBody(props: {
           class="ds-row ds-blacklist-notice"
           style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:6px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:11px;"
         >
-          <i
-            class="bi bi-shield-slash-fill"
-            style="font-size:14px;color:var(--ds-warn-text,#d97706);flex-shrink:0;"
-          ></i>
+          <BlacklistIcon
+            filled={true}
+            style={{
+              "font-size": "14px",
+              color: "var(--ds-warn-text,#d97706)",
+              "flex-shrink": 0,
+            }}
+          />
           <span>
             This series is on your <b>blacklist</b>. Its releases are hidden from browse feeds and
             search results.
@@ -632,7 +644,7 @@ function SeriesBody(props: {
       <Show when={series().taggables && series().taggables!.length > 0}>
         <div class="group-box" style="margin-top:10px;">
           <div class="group-box-title">
-            <i class="bi bi-collection"></i> Series &amp; Anthologies ({series().taggables!.length})
+            <StorageIcon /> Series &amp; Anthologies ({series().taggables!.length})
           </div>
           <div
             style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:6px;margin-top:4px;"
@@ -651,7 +663,7 @@ function SeriesBody(props: {
                     })
                   }
                 >
-                  <i class="bi bi-book" style="color:var(--sys-primary,#0078d4);margin-top:1px;flex-shrink:0;"></i>
+                  <BookIcon style={{ color: "var(--sys-primary,#0078d4)", "margin-top": "1px", "flex-shrink": 0 }} />
                   <span
                     style="flex:1;min-width:0;line-height:1.3;word-break:break-word;font-size:11px;font-weight:500;"
                   >
@@ -686,11 +698,7 @@ function SeriesBody(props: {
                   props.setSortOrder(props.sortOrder() === "asc" ? "desc" : "asc")
                 }
               >
-                {props.sortOrder() === "asc" ? (
-                  <i class="bi bi-sort-numeric-down"></i>
-                ) : (
-                  <i class="bi bi-sort-numeric-down-alt"></i>
-                )}{" "}
+                <Icon name={props.sortOrder() === "asc" ? "sort-numeric-down" : "sort-numeric-down-alt"} />{" "}
                 Sort: {props.sortOrder() === "asc" ? "Ascending" : "Descending"}
               </button>
             </div>

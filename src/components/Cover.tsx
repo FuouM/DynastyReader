@@ -1,16 +1,14 @@
-/**
- * Cover thumbnail components with error → placeholder fallback. Port of `cover.ts`.
- * Replaces the three divergent cover implementations (Library, Series, Cache).
- */
-
 import { createEffect, createSignal, on, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
+import { ImageIcon, Icon, type BootstrapIconName } from "./Icon";
 
 export interface CoverProps {
   path?: string | null;
   alt: string;
   imgClass?: string;
   placeholderClass?: string;
+  glyphClass?: string;
+  iconName?: BootstrapIconName;
 }
 
 /** A cover <img> that falls back to a placeholder on load error. */
@@ -21,8 +19,8 @@ export function Cover(props: CoverProps) {
     on(
       () => props.path,
       () => setError(false),
-      { defer: true }
-    )
+      { defer: true },
+    ),
   );
 
   const isValidLocalPath = () =>
@@ -31,12 +29,19 @@ export function Cover(props: CoverProps) {
     !props.path!.startsWith("series:") &&
     !props.path!.startsWith("chapter:");
 
-  const showImage = () => isValidLocalPath() && props.path !== undefined && props.path !== null && !error();
+  const showImage = () =>
+    isValidLocalPath() && props.path !== undefined && props.path !== null && !error();
 
   return (
     <Show
       when={showImage()}
-      fallback={<CoverPlaceholder placeholderClass={props.placeholderClass} />}
+      fallback={
+        <CoverPlaceholder
+          placeholderClass={props.placeholderClass}
+          glyphClass={props.glyphClass}
+          iconName={props.iconName}
+        />
+      }
     >
       <img
         class={props.imgClass ?? "ds-cover"}
@@ -53,10 +58,17 @@ export function Cover(props: CoverProps) {
 export function CoverPlaceholder(props: {
   placeholderClass?: string;
   glyphClass?: string;
+  iconName?: BootstrapIconName;
 }) {
   return (
     <div class={props.placeholderClass ?? "ds-cover-placeholder"}>
-      <i class={props.glyphClass ?? "bi bi-image"}></i>
+      {props.iconName ? (
+        <Icon name={props.iconName} />
+      ) : props.glyphClass ? (
+        <Icon name={props.glyphClass.replace(/^bi\s+bi-|^bi-/, "") as BootstrapIconName} />
+      ) : (
+        <ImageIcon />
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type { FitMode } from "../types/reader";
 import type { ChapterRef } from "../types/routes";
 import { getAppTheme, onThemeChange, toggleAppTheme } from "../stores/theme";
 import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
+import { iconHtml } from "../components/Icon";
 
 /**
  * Builds the reader's sticky navigation bars: chapter/page navigation
@@ -79,37 +80,37 @@ export class ReaderToolbar {
     prevChapterBtn.type = "button";
     prevChapterBtn.className = "win-button";
     prevChapterBtn.title = "Previous Chapter";
-    prevChapterBtn.innerHTML = '<i class="bi bi-chevron-double-left"></i> Ch';
+    prevChapterBtn.innerHTML = `${iconHtml("chevron-double-left")} Ch`;
 
     const nextChapterBtn = document.createElement("button");
     nextChapterBtn.type = "button";
     nextChapterBtn.className = "win-button";
     nextChapterBtn.title = "Next Chapter";
-    nextChapterBtn.innerHTML = 'Ch <i class="bi bi-chevron-double-right"></i>';
+    nextChapterBtn.innerHTML = `Ch ${iconHtml("chevron-double-right")}`;
 
     const prevPageBtn = document.createElement("button");
     prevPageBtn.type = "button";
     prevPageBtn.className = "win-button";
     prevPageBtn.title = "Previous Page (Left Arrow)";
-    prevPageBtn.innerHTML = '<i class="bi bi-chevron-left"></i>';
+    prevPageBtn.innerHTML = iconHtml("chevron-left");
 
     const nextPageBtn = document.createElement("button");
     nextPageBtn.type = "button";
     nextPageBtn.className = "win-button";
     nextPageBtn.title = "Next Page (Right Arrow / Space)";
-    nextPageBtn.innerHTML = '<i class="bi bi-chevron-right"></i>';
+    nextPageBtn.innerHTML = iconHtml("chevron-right");
 
     const firstPageBtn = document.createElement("button");
     firstPageBtn.type = "button";
     firstPageBtn.className = "win-button";
     firstPageBtn.title = "Jump to First Page";
-    firstPageBtn.innerHTML = '<i class="bi bi-chevron-double-left"></i>';
+    firstPageBtn.innerHTML = iconHtml("chevron-double-left");
 
     const lastPageBtn = document.createElement("button");
     lastPageBtn.type = "button";
     lastPageBtn.className = "win-button";
     lastPageBtn.title = "Jump to Last Page";
-    lastPageBtn.innerHTML = '<i class="bi bi-chevron-double-right"></i>';
+    lastPageBtn.innerHTML = iconHtml("chevron-double-right");
 
     const progressWrap = document.createElement("div");
     progressWrap.className = "ds-reader-progress-wrap";
@@ -136,8 +137,8 @@ export class ReaderToolbar {
     scrollLockBtn.className = `win-button${c.scrollLock ? " primary" : ""}`;
     scrollLockBtn.title = "Scroll Lock: mouse wheel flips exactly one page at a time";
     scrollLockBtn.innerHTML = c.scrollLock
-      ? '<i class="bi bi-lock-fill"></i> Scroll Lock'
-      : '<i class="bi bi-unlock"></i> Scroll Lock';
+      ? `${iconHtml("lock-fill")} Scroll Lock`
+      : `${iconHtml("unlock")} Scroll Lock`;
 
     // Layout mode toggle (Vertical Scroll vs Single Page Paged)
     const modeBtn = document.createElement("button");
@@ -145,26 +146,26 @@ export class ReaderToolbar {
     modeBtn.className = "win-button";
     modeBtn.title = "Toggle Horizontal / Vertical reading mode";
     modeBtn.innerHTML = c.isHorizontal
-      ? '<i class="bi bi-distribute-vertical"></i> Scroll'
-      : '<i class="bi bi-arrow-left-right"></i> Paged';
+      ? `${iconHtml("distribute-vertical")} Scroll`
+      : `${iconHtml("arrow-left-right")} Paged`;
 
     // Spread layout toggle (two pages per slide, Paged mode only)
     const spreadBtn = document.createElement("button");
     spreadBtn.type = "button";
     spreadBtn.className = "win-button";
-    spreadBtn.innerHTML = '<i class="bi bi-columns-gap"></i> Spread';
+    spreadBtn.innerHTML = `${iconHtml("columns-gap")} Spread`;
 
     // Reading direction toggle (RTL default / LTR via tag or manual)
     const dirBtn = document.createElement("button");
     dirBtn.type = "button";
     dirBtn.className = "win-button";
-    dirBtn.innerHTML = '<i class="bi bi-arrow-left-right"></i> RTL';
+    dirBtn.innerHTML = `${iconHtml("arrow-left-right")} RTL`;
 
     // Cover offset toggle (standalone cover page, Paged+Spread only)
     const coverBtn = document.createElement("button");
     coverBtn.type = "button";
     coverBtn.className = "win-button";
-    coverBtn.innerHTML = '<i class="bi bi-book-half"></i> Cover 1st';
+    coverBtn.innerHTML = `${iconHtml("book-half")} Cover 1st`;
 
     // Fit mode selector
     const fitSelect = document.createElement("select");
@@ -180,7 +181,7 @@ export class ReaderToolbar {
     fullscreenBtn.type = "button";
     fullscreenBtn.className = "win-button";
     fullscreenBtn.title = "Toggle Fullscreen (F)";
-    fullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i> Fullscreen';
+    fullscreenBtn.innerHTML = `${iconHtml("arrows-fullscreen")} Fullscreen`;
 
     // Reader theme mode (Light default vs Dark)
     const themeBtn = document.createElement("button");
@@ -193,7 +194,7 @@ export class ReaderToolbar {
     zoomOutBtn.type = "button";
     zoomOutBtn.className = "win-button";
     zoomOutBtn.title = "Zoom Out (Ctrl - / -)";
-    zoomOutBtn.innerHTML = '<i class="bi bi-dash-lg"></i>';
+    zoomOutBtn.innerHTML = iconHtml("dash-lg");
 
     const zoomResetBtn = document.createElement("button");
     zoomResetBtn.type = "button";
@@ -206,7 +207,7 @@ export class ReaderToolbar {
     zoomInBtn.type = "button";
     zoomInBtn.className = "win-button";
     zoomInBtn.title = "Zoom In (Ctrl + / +)";
-    zoomInBtn.innerHTML = '<i class="bi bi-plus-lg"></i>';
+    zoomInBtn.innerHTML = iconHtml("plus-lg");
 
     this.zoomOutBtn = zoomOutBtn;
     this.zoomResetBtn = zoomResetBtn;
@@ -349,7 +350,7 @@ export class ReaderToolbar {
     if (c.isFullscreen) {
       c.readerContainer.classList.add("ds-fullscreen");
       c.fullscreenBtn.className = "win-button primary";
-      c.fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> Exit';
+      c.fullscreenBtn.innerHTML = `${iconHtml("fullscreen-exit")} Exit`;
       c.fullscreenBtn.title = "Exit Fullscreen (Esc / F)";
       try {
         if (!document.fullscreenElement && document.fullscreenEnabled) {
@@ -359,7 +360,7 @@ export class ReaderToolbar {
     } else {
       c.readerContainer.classList.remove("ds-fullscreen");
       c.fullscreenBtn.className = "win-button";
-      c.fullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i> Fullscreen';
+      c.fullscreenBtn.innerHTML = `${iconHtml("arrows-fullscreen")} Fullscreen`;
       c.fullscreenBtn.title = "Toggle Fullscreen (F)";
       try {
         if (document.fullscreenElement) {
@@ -381,10 +382,10 @@ export class ReaderToolbar {
     const c = this.c;
     if (getAppTheme() === "dark") {
       c.readerContainer.classList.add("ds-dark");
-      c.themeBtn.innerHTML = '<i class="bi bi-moon-fill"></i>';
+      c.themeBtn.innerHTML = iconHtml("moon-fill");
     } else {
       c.readerContainer.classList.remove("ds-dark");
-      c.themeBtn.innerHTML = '<i class="bi bi-sun"></i>';
+      c.themeBtn.innerHTML = iconHtml("sun");
     }
   }
 
@@ -392,10 +393,10 @@ export class ReaderToolbar {
   updateLayoutBtns(): void {
     const c = this.c;
     if (c.isHorizontal) {
-      c.modeBtn.innerHTML = '<i class="bi bi-distribute-vertical"></i> Scroll';
+      c.modeBtn.innerHTML = `${iconHtml("distribute-vertical")} Scroll`;
       c.modeBtn.title = "Switch to Continuous Scroll (M)";
     } else {
-      c.modeBtn.innerHTML = '<i class="bi bi-arrow-left-right"></i> Paged';
+      c.modeBtn.innerHTML = `${iconHtml("arrow-left-right")} Paged`;
       c.modeBtn.title = "Switch to Paged (M)";
     }
 
@@ -405,18 +406,18 @@ export class ReaderToolbar {
     c.coverBtn.style.display = c.isSpread ? "" : "none";
 
     c.spreadBtn.className = `win-button${c.pagedLayout === "spread" ? " primary" : ""}`;
-    c.spreadBtn.innerHTML = `<i class="bi bi-columns-gap"></i> Spread: ${c.pagedLayout === "spread" ? "ON" : "OFF"}`;
+    c.spreadBtn.innerHTML = `${iconHtml("columns-gap")} Spread: ${c.pagedLayout === "spread" ? "ON" : "OFF"}`;
     c.spreadBtn.title = "Pair two pages per slide in Paged mode (M cycles)";
 
     c.dirBtn.className = `win-button${c.directionAutoDetected ? "" : " primary"}`;
-    const dirIcon = c.direction === "rtl" ? "bi-arrow-left" : "bi-arrow-right";
-    c.dirBtn.innerHTML = `<i class="bi ${dirIcon}"></i> ${c.direction.toUpperCase()}`;
+    const dirIcon = c.direction === "rtl" ? "arrow-left" : "arrow-right";
+    c.dirBtn.innerHTML = `${iconHtml(dirIcon)} ${c.direction.toUpperCase()}`;
     c.dirBtn.title = c.directionAutoDetected
       ? `Reading direction ${c.direction.toUpperCase()} (auto-detected from tags; D overrides)`
       : `Reading direction ${c.direction.toUpperCase()} (manual; D toggles)`;
 
     c.coverBtn.className = `win-button${c.coverOffset ? " primary" : ""}`;
-    c.coverBtn.innerHTML = `<i class="bi bi-book-half"></i> Cover 1st: ${c.coverOffset ? "ON" : "OFF"}`;
+    c.coverBtn.innerHTML = `${iconHtml("book-half")} Cover 1st: ${c.coverOffset ? "ON" : "OFF"}`;
     c.coverBtn.title = "Show the cover alone before pairing pages (C)";
 
     this.updateScrollLockBtn();
@@ -470,12 +471,12 @@ export class ReaderToolbar {
     const c = this.c;
     if (c.isHorizontal) {
       c.scrollLockBtn.className = `win-button${c.scrollLock ? " primary" : ""}`;
-      c.scrollLockBtn.innerHTML = '<i class="bi bi-arrow-left-right"></i> Scroll Smooth';
+      c.scrollLockBtn.innerHTML = `${iconHtml("arrow-left-right")} Scroll Smooth`;
     } else {
       c.scrollLockBtn.className = `win-button${c.scrollLock ? " primary" : ""}`;
       c.scrollLockBtn.innerHTML = c.scrollLock
-        ? '<i class="bi bi-lock-fill"></i> Scroll Lock'
-        : '<i class="bi bi-unlock"></i> Scroll Lock';
+        ? `${iconHtml("lock-fill")} Scroll Lock`
+        : `${iconHtml("unlock")} Scroll Lock`;
     }
   }
 }

@@ -7,6 +7,7 @@
 
 import type { ReaderController } from "./reader-controller";
 import { spreadIndexOf } from "./reader-spread";
+import { iconHtml } from "../components/Icon";
 
 /** Attaches the wheel handler (with debounce + momentum state) to the window. */
 export function attachReaderWheel(c: ReaderController): void {
@@ -24,8 +25,8 @@ export function attachReaderWheel(c: ReaderController): void {
     indicator.className = `ds-snap-indicator ${type === "next" ? "bottom" : "top"} visible`;
     indicator.innerHTML =
       type === "next"
-        ? '<i class="bi bi-chevron-double-down"></i> Scroll again for Next Page'
-        : '<i class="bi bi-chevron-double-up"></i> Scroll again for Prev Page';
+        ? `${iconHtml("chevron-double-down")} Scroll again for Next Page`
+        : `${iconHtml("chevron-double-up")} Scroll again for Prev Page`;
   };
 
   const hideIndicator = (): void => {

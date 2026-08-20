@@ -18,8 +18,9 @@ import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
 import { InputField } from "../components/InputField";
 import { ListItem } from "../components/ListItem";
-import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { EmptyState } from "../components/EmptyState";
+import { BlacklistIcon } from "../components/Icon";
+import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import type { Directory, DirectoryGroup } from "../types/api";
 
@@ -71,7 +72,7 @@ function DirectoryRow(props: {
               class="ds-muted"
               style="font-size:10px;margin-left:6px;color:var(--ds-warn-text,#d97706);font-weight:600;"
             >
-              <i class="bi bi-shield-slash-fill"></i> Blacklisted
+              <BlacklistIcon filled={true} /> Blacklisted
             </span>
           </Show>
         </span>
@@ -223,7 +224,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
       <Show when={model() !== undefined && displayGroups().length === 0 && model()!.groups.length > 0}>
         <EmptyState
           cssText="padding:24px;text-align:center;"
-          iconClass="bi bi-search"
+          iconName="search"
           iconCssText="font-size:24px;opacity:0.6;display:block;margin-bottom:8px;"
         >
           <span class="ds-muted">

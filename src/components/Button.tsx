@@ -4,92 +4,83 @@
  */
 
 import { createSignal, onCleanup, Show, type JSX } from "solid-js";
-import { showBanner } from "../stores";
+import { CheckIcon, Icon } from "./Icon";
 
 export interface DsButtonProps {
-  html?: JSX.Element;
-  title?: string;
-  cssText?: string;
+  id?: string;
   className?: string;
-  type?: "button" | "submit" | "reset";
+  cssText?: string;
+  title?: string;
   disabled?: boolean;
   onClick?: (ev: MouseEvent) => void;
   children?: JSX.Element;
-  /** Optional DOM id (preserved for any legacy element hooks). */
-  id?: string;
 }
 
-/** Standard WinForms-style push button. */
+/**
+ * Standard WinForms desktop-style command button (`.win-button`).
+ */
 export function DsButton(props: DsButtonProps) {
   return (
     <button
+      type="button"
       id={props.id}
-      type={props.type ?? "button"}
-      class={["win-button", props.className ?? "ds-btn-compact"].join(" ")}
+      class={`win-button ${props.className ?? "ds-btn-compact"}`.trim()}
       style={props.cssText}
       title={props.title}
       disabled={props.disabled}
       onClick={props.onClick}
     >
-      {props.children ?? props.html}
+      {props.children}
     </button>
   );
 }
 
 export interface ConfirmDeleteButtonProps {
-  title: string;
-  onConfirm: () => Promise<void>;
+  onConfirm: () => Promise<void> | void;
+  title?: string;
+  class?: string;
   cssText?: string;
   children?: JSX.Element;
 }
 
 /**
- * Two-click destructive button: first click arms the "Delete?" confirmation,
- * a second click inside the button confirms. Clicking anywhere else cancels.
+ * Two-stage confirmation button: first click shows a "Delete?" prompt with a
+ * checkmark; clicking again within 3 seconds invokes `onConfirm()`.
  */
 export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
   const [confirming, setConfirming] = createSignal(false);
   const [busy, setBusy] = createSignal(false);
-  let btnEl: HTMLButtonElement | undefined;
-
-  const onDocClick = (ev: MouseEvent): void => {
-    if (!btnEl?.contains(ev.target as Node)) {
-      setConfirming(false);
-      document.removeEventListener("click", onDocClick);
-    }
-  };
+  let timer: number | null = null;
 
   onCleanup(() => {
-    document.removeEventListener("click", onDocClick);
+    if (timer !== null) window.clearTimeout(timer);
   });
 
   const handleClick = async (): Promise<void> => {
+    if (busy()) return;
     if (!confirming()) {
       setConfirming(true);
-      setTimeout(() => {
-        document.addEventListener("click", onDocClick);
-      }, 0);
+      timer = window.setTimeout(() => setConfirming(false), 3000);
       return;
     }
-
-    document.removeEventListener("click", onDocClick);
+    if (timer !== null) {
+      window.clearTimeout(timer);
+      timer = null;
+    }
+    setConfirming(false);
     setBusy(true);
     try {
       await props.onConfirm();
-    } catch (err) {
+    } finally {
       setBusy(false);
-      setConfirming(false);
-      const msg = err instanceof Error ? err.message : String(err);
-      showBanner(`Deletion failed: ${msg}`);
     }
   };
 
   return (
     <button
-      ref={btnEl}
       type="button"
-      class={confirming() ? "win-button primary ds-danger ds-btn-compact" : "win-button ds-btn-compact"}
-      style={`flex-shrink:0;${props.cssText ?? ""}`}
+      class={`win-button ${props.class ?? "ds-btn-compact"}${confirming() ? " ds-btn-danger" : ""}`}
+      style={props.cssText}
       title={
         confirming()
           ? "Click again to confirm deletion, or click outside to cancel"
@@ -101,8 +92,8 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
         void handleClick();
       }}
     >
-      <Show when={busy()} fallback={<Show when={confirming()} fallback={props.children}><i class="bi bi-check-lg"></i> Delete?</Show>}>
-        <i class="bi bi-hourglass-split"></i>
+      <Show when={busy()} fallback={<Show when={confirming()} fallback={props.children}><CheckIcon /> Delete?</Show>}>
+        <Icon name="hourglass-split" />
       </Show>
     </button>
   );

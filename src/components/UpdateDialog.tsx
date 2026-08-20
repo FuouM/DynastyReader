@@ -7,6 +7,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { UpdateInfo, DownloadProgress } from "../types/api";
 import { formatBytes } from "../lib/format";
 import { Modal } from "./Modal";
+import { CheckIcon, CloudDownloadIcon, Icon } from "./Icon";
 import * as ipc from "../ipc";
 
 export const [updateDialogInfo, setUpdateDialogInfo] = createSignal<UpdateInfo | null>(null);
@@ -37,7 +38,7 @@ function UpToDateModal() {
     <Modal
       open={upToDateVersion() !== null}
       backdropId="ds-update-modal-backdrop"
-      title={<><i class="bi bi-check-circle-fill"></i> Check for Updates</>}
+      title={<><CheckIcon color="var(--sys-primary,#0078d4)" /> Check for Updates</>}
       width={360}
       footer={
         <button type="button" class="win-button primary ds-modal-done" style="min-width:70px;" onClick={() => setUpToDateVersion(null)}>
@@ -109,7 +110,7 @@ function UpdateModal(props: { info: UpdateInfo }) {
     <Modal
       open={true}
       backdropId="ds-update-modal-backdrop"
-      title={<><i class="bi bi-cloud-arrow-down-fill"></i> Software Update Available</>}
+      title={<><CloudDownloadIcon /> Software Update Available</>}
       width={480}
       canClose={() => !isUpdating()}
       onClose={close}
@@ -135,9 +136,9 @@ function UpdateModal(props: { info: UpdateInfo }) {
           >
             <Show
               when={!isUpdating()}
-              fallback={<><i class="bi bi-hourglass-split"></i> Updating...</>}
+              fallback={<><Icon name="hourglass-split" /> Updating...</>}
             >
-              <i class="bi bi-download"></i> {failed() ? "Retry Update" : "Update & Restart"}
+              <CloudDownloadIcon /> {failed() ? "Retry Update" : "Update & Restart"}
             </Show>
           </button>
         </div>
@@ -153,7 +154,7 @@ function UpdateModal(props: { info: UpdateInfo }) {
         </div>
 
         <div class="group-box" style="margin:0;">
-          <div class="group-box-title"><i class="bi bi-journal-text"></i> Release Notes</div>
+          <div class="group-box-title"><Icon name="journal-text" /> Release Notes</div>
           <div style="max-height:160px;overflow-y:auto;font-size:11px;line-height:1.4;white-space:pre-wrap;background:var(--sys-bg-window,#fff);padding:6px;border:1px solid var(--sys-border-light,#e2e2e2);border-radius:3px;" id="ds-update-notes">
             {info.release_notes || "No release notes provided for this version."}
           </div>

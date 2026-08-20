@@ -5,6 +5,7 @@
  */
 
 import { Show } from "solid-js";
+import { Icon } from "./Icon";
 
 export interface OfflineBadgeProps {
   /** Renders nothing when false. */
@@ -14,11 +15,15 @@ export interface OfflineBadgeProps {
 export function OfflineBadge(props: OfflineBadgeProps) {
   return (
     <Show when={props.when ?? true}>
-      <i
-        class="bi bi-cloud-check-fill ds-offline-icon"
-        style="color:var(--sys-primary,#0078d4);font-size:11px;"
+      <Icon
+        name="cloud-check-fill"
+        class="ds-offline-icon"
+        style={{
+          color: "var(--sys-primary,#0078d4)",
+          "font-size": "11px",
+        }}
         title="Available Offline (Fully Cached)"
-      ></i>
+      />
     </Show>
   );
 }

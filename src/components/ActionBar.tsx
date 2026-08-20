@@ -3,6 +3,7 @@
  */
 
 import type { JSX } from "solid-js";
+import { ArrowLeftIcon, RefreshIcon } from "./Icon";
 
 export interface TopbarActionProps {
   html?: JSX.Element;
@@ -39,10 +40,10 @@ export function BackRefreshActions(props: BackRefreshActionsProps) {
         title="Back"
         onClick={props.onBack}
       >
-        <i class="bi bi-arrow-left"></i> {props.backLabel}
+        <ArrowLeftIcon /> {props.backLabel}
       </TopbarAction>
       <TopbarAction title="Refresh" onClick={props.onRefresh}>
-        <i class="bi bi-arrow-clockwise"></i> Refresh
+        <RefreshIcon /> Refresh
       </TopbarAction>
     </>
   );

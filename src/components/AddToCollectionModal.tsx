@@ -8,6 +8,13 @@
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import {
+  FolderIcon,
+  CloseIcon,
+  StarIcon,
+  AddIcon,
+  Icon,
+} from "./Icon";
+import {
   getCollections,
   createCollection,
   getItemCollectionIds,
@@ -198,10 +205,10 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
           <div class="ds-add-to-collection-dropdown" style={positionStyle()}>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--sys-control-bg,#f0f0f0);border-bottom:1px solid var(--sys-border-light,#ddd);font-weight:600;font-size:11px;">
               <span style="display:flex;align-items:center;gap:5px;">
-                <i class="bi bi-folder-plus" style="color:var(--sys-primary,#0078d4);"></i> Add to Collection
+                <FolderIcon color="var(--sys-primary,#0078d4)" /> Add to Collection
               </span>
               <button type="button" class="win-button ds-dropdown-close" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;font-size:9px;line-height:1;min-width:18px;box-sizing:border-box;" title="Close" onClick={props.onClose}>
-                <i class="bi bi-x-lg" style="display:inline-flex;align-items:center;justify-content:center;line-height:1;"></i>
+                <CloseIcon style={{ display: "inline-flex", "align-items": "center", "justify-content": "center", "line-height": 1 }} />
               </button>
             </div>
             <div style="padding:4px 8px;border-bottom:1px solid var(--sys-border-light,#eee);background:var(--sys-window-bg,#fafafa);">
@@ -224,13 +231,17 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                     onClick={() => void toggle(col)}
                   >
                     <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
-                      <i
-                        class={col.active ? "bi bi-check-circle-fill" : "bi bi-circle"}
-                        style={col.active ? "color:var(--sys-primary,#0078d4);font-size:12px;flex-shrink:0;" : "color:var(--sys-text-muted,#888);font-size:12px;flex-shrink:0;"}
-                      ></i>
+                      <Icon
+                        name={col.active ? "check-circle-fill" : "circle"}
+                        style={{
+                          color: col.active ? "var(--sys-primary,#0078d4)" : "var(--sys-text-muted,#888)",
+                          "font-size": "12px",
+                          "flex-shrink": "0",
+                        }}
+                      />
                       <span class="ds-truncate" style={col.is_default ? "font-weight:600;font-size:11px;" : "font-size:11px;"}>
                         <Show when={col.is_default}>
-                          <i class="bi bi-star-fill" style="color:#d97706;font-size:10px;margin-right:2px;"></i>
+                          <StarIcon filled={true} style={{ color: "#d97706", "font-size": "10px", "margin-right": "2px" }} />
                         </Show>
                         {col.name}
                       </span>
@@ -255,7 +266,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                   }}
                 />
                 <button type="button" class="input-clear-btn" tabIndex={-1} title="Clear" onClick={() => setNewName("")}>
-                  <i class="bi bi-x-lg"></i>
+                  <CloseIcon />
                 </button>
               </div>
               <button
@@ -266,7 +277,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                 disabled={creating()}
                 onClick={() => void handleCreate()}
               >
-                <i class="bi bi-plus-lg" style="display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:10px;"></i> <span>Create</span>
+                <AddIcon style={{ display: "inline-flex", "align-items": "center", "justify-content": "center", "line-height": 1, "font-size": "10px" }} /> <span>Create</span>
               </button>
             </div>
           </div>

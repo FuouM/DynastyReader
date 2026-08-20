@@ -7,6 +7,7 @@
 
 import type { JSX } from "solid-js";
 import { DsButton } from "./Button";
+import { FolderIcon } from "./Icon";
 
 export interface AddToCollectionButtonProps {
   onOpen: (anchorEl: HTMLElement) => void;
@@ -29,7 +30,7 @@ export function AddToCollectionButton(props: AddToCollectionButtonProps) {
         props.onOpen(ev.currentTarget as HTMLElement);
       }}
     >
-      <i class="bi bi-folder-plus"></i>
+      <FolderIcon />
       {props.children}
     </DsButton>
   );

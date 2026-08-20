@@ -13,6 +13,7 @@ import {
   routeLabel,
   uiScale,
 } from "../stores";
+import { ArrowLeftIcon, ArrowRightIcon, Icon, type BootstrapIconName } from "./Icon";
 
 export interface HistoryDropdownProps {
   direction: "back" | "forward";
@@ -58,22 +59,20 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
     const screenBottom = rect.bottom / scale;
     const screenLeft = rect.left / scale;
     const screenRight = rect.right / scale;
-    const vpWidth = window.innerWidth / scale;
 
-    let left = screenLeft;
-    if (left + width > vpWidth - 8) {
-      left = Math.max(8, screenRight - width);
+    let x = props.direction === "back" ? screenLeft : screenRight - width;
+    if (x + width > window.innerWidth / scale - 8) {
+      x = window.innerWidth / scale - width - 8;
     }
+    if (x < 8) x = 8;
 
-    setPositionStyle(
-      `${baseStyle}top:${Math.max(4, Math.round(screenBottom + 2))}px;left:${Math.max(4, Math.round(left))}px;`,
-    );
+    const y = screenBottom + 4;
+    setPositionStyle(`${baseStyle}top:${y}px;left:${x}px;`);
   });
 
-  const selectItem = (originalIdx: number) => {
-    const dir = props.direction;
+  const selectItem = (originalIdx: number): void => {
     props.onClose();
-    if (dir === "back") {
+    if (props.direction === "back") {
       goBackTo(originalIdx);
     } else {
       goForwardTo(originalIdx);
@@ -101,7 +100,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
           >
             <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--sys-control-bg,#f0f0f0);border-bottom:1px solid var(--sys-border-light,#ddd);font-weight:600;font-size:10px;color:var(--sys-text-secondary,#555);">
               <span style="display:flex;align-items:center;gap:4px;">
-                <i class={`bi bi-arrow-${props.direction === "back" ? "left" : "right"}`}></i>
+                {props.direction === "back" ? <ArrowLeftIcon /> : <ArrowRightIcon />}
                 <span>{props.direction === "back" ? "Back History" : "Forward History"}</span>
               </span>
               <span>{items().length} entries</span>
@@ -111,16 +110,21 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
               <For each={items()}>
                 {(entry) => {
                   const meta = routeLabel(entry.route);
+                  const iconName = meta.icon.replace(/^bi-/, "") as BootstrapIconName;
                   return (
                     <div
                       class="ds-history-item ds-item"
                       style="display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;border:none;border-bottom:1px solid var(--sys-border-light,#f0f0f0);margin-bottom:0;"
                       onClick={() => selectItem(entry.index)}
                     >
-                      <i
-                        class={`bi ${meta.icon}`}
-                        style="font-size:13px;color:var(--sys-primary,#0078d4);flex-shrink:0;"
-                      ></i>
+                      <Icon
+                        name={iconName}
+                        style={{
+                          "font-size": "13px",
+                          color: "var(--sys-primary,#0078d4)",
+                          "flex-shrink": 0,
+                        }}
+                      />
                       <div class="ds-fill" style="overflow:hidden;line-height:1.2;">
                         <div
                           class="ds-truncate"

@@ -5,6 +5,7 @@
 
 import { For } from "solid-js";
 import { Modal } from "./Modal";
+import { WarningIcon, ExternalLinkIcon, BlacklistIcon } from "./Icon";
 
 export interface TriggerWarningModalProps {
   open: boolean;
@@ -22,7 +23,7 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
       width={380}
       title={
         <span style="color:#d9534f;">
-          <i class="bi bi-exclamation-triangle-fill"></i> Content Warning
+          <WarningIcon /> Content Warning
         </span>
       }
       onClose={props.onClose}
@@ -41,7 +42,7 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
               proceed();
             }}
           >
-            <i class="bi bi-box-arrow-in-right"></i> Proceed
+            <ExternalLinkIcon /> Proceed
           </button>
         </div>
       }
@@ -57,7 +58,7 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
           <For each={props.matchedTags}>
             {(tag) => (
               <span class="tag-pill" style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);font-weight:600;font-size:11px;padding:2px 7px;">
-                <i class="bi bi-shield-slash-fill"></i> {tag}
+                <BlacklistIcon filled={true} /> {tag}
               </span>
             )}
           </For>

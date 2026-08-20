@@ -7,6 +7,7 @@
 import type { JSX } from "solid-js";
 import { openExternal } from "../api";
 import { DsButton } from "./Button";
+import { ExternalLinkIcon } from "./Icon";
 
 export interface ExternalLinkButtonProps {
   url: string;
@@ -32,7 +33,7 @@ export function ExternalLinkButton(props: ExternalLinkButtonProps) {
         void openExternal(props.url);
       }}
     >
-      <i class="bi bi-box-arrow-up-right"></i>
+      <ExternalLinkIcon />
       {props.children}
     </DsButton>
   );

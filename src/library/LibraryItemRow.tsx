@@ -14,6 +14,7 @@ import { Cover } from "../components/Cover";
 import { OfflineBadge } from "../components/OfflineBadge";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { ConfirmDeleteButton } from "../components/Button";
+import { TrashIcon } from "../components/Icon";
 
 export interface LibraryItemRowProps {
   title: string;
@@ -122,7 +123,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
                 await props.onDelete!();
               }}
             >
-              <i class="bi bi-trash3"></i>
+              <TrashIcon />
             </ConfirmDeleteButton>
           </Show>
         </>

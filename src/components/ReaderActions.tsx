@@ -10,6 +10,14 @@ import { navigate, setBanner } from "../state";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
 import { DsButton } from "./Button";
+import {
+  StorageIcon,
+  BookmarkIcon,
+  CloudDownloadIcon,
+  CheckIcon,
+  ExternalLinkIcon,
+  Icon,
+} from "./Icon";
 
 export interface ReaderActionsProps {
   ctrl: ReaderController;
@@ -30,6 +38,7 @@ export function ReaderActions(props: ReaderActionsProps) {
   const chapterUrl = () => `https://dynasty-scans.com/chapters/${props.ctrl.permalink}`;
 
   const toggleBookmark = async () => {
+    if (pending()) return;
     setPending(true);
     try {
       if (bookmarked()) {
@@ -86,7 +95,7 @@ export function ReaderActions(props: ReaderActionsProps) {
             })
           }
         >
-          <i class="bi bi-collection"></i> Series
+          <StorageIcon /> Series
         </DsButton>
       </Show>
       <DsButton
@@ -95,28 +104,28 @@ export function ReaderActions(props: ReaderActionsProps) {
         disabled={pending()}
         onClick={() => void toggleBookmark()}
       >
-        <i class={bookmarked() ? "bi bi-bookmark-fill" : "bi bi-bookmark"}></i>
+        <BookmarkIcon filled={bookmarked()} />
       </DsButton>
       <DsButton
         className=""
         title="Download every uncached page of this chapter"
         onClick={cacheChapter}
       >
-        <i class="bi bi-download"></i> <span class="ds-btn-text">Cache Chapter</span>
+        <CloudDownloadIcon /> <span class="ds-btn-text">Cache Chapter</span>
       </DsButton>
       <DsButton
         className=""
         title="Copy chapter link to clipboard"
         onClick={() => void copyLink()}
       >
-        <i class={copied() ? "bi bi-check-lg" : "bi bi-link-45deg"}></i>
+        {copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
       </DsButton>
       <DsButton
         className=""
         title="Open this chapter in your browser"
         onClick={() => void openExternal(chapterUrl())}
       >
-        <i class="bi bi-box-arrow-up-right"></i>
+        <ExternalLinkIcon />
       </DsButton>
     </>
   );

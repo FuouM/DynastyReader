@@ -39,6 +39,7 @@ import { ReaderToolbar } from "./reader-toolbar";
 import { ReaderShortcuts } from "./reader-shortcuts";
 import { mountLoading } from "../components/Loading";
 import { ReaderActions } from "../components/ReaderActions";
+import { iconHtml } from "../components/Icon";
 import { isAutoCacheChapterEnabled, getPrefetchBuffer } from "./settings";
 
 export { isAutoCacheChapterEnabled, setAutoCacheChapterEnabled, getPrefetchBuffer, setPrefetchBuffer } from "./settings";
@@ -420,7 +421,7 @@ export class ReaderController {
       const retry = document.createElement("button");
       retry.type = "button";
       retry.className = "win-button";
-      retry.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Retry';
+      retry.innerHTML = `${iconHtml("arrow-clockwise")} Retry`;
       retry.addEventListener("click", () => this.retry());
       container.appendChild(retry);
       return;

@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
 import { convertFileSrc } from "../ipc";
+import { iconHtml } from "../components/Icon";
 
 /**
  * Module-level reactive signal that mirrors `BrowseCovers.enabled`. Any Solid
@@ -328,7 +329,7 @@ export class BrowseCovers {
       img.style.display = "none";
       const ph = document.createElement("div");
       ph.className = "ds-feed-cover-placeholder";
-      ph.innerHTML = '<i class="bi bi-book"></i>';
+      ph.innerHTML = iconHtml("book");
       node.appendChild(ph);
       // Evict broken path from memory and SQLite cache
       this.memoryCache.delete(coverKey);
