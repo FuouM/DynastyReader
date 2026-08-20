@@ -81,11 +81,20 @@ export function navigate(r: Route): void {
 export function goBack(): void {
   const back = historyBackStack();
   if (back.length === 0) return;
-  const prevRoute = back[back.length - 1];
-  setHistoryBackStack((s) => s.slice(0, -1));
-  setHistoryForwardStack((s) => [...s, { ...route() }]);
+  goBackTo(back.length - 1);
+}
+
+/** Navigates back to a specific entry in the back stack by index. */
+export function goBackTo(index: number): void {
+  const back = historyBackStack();
+  if (index < 0 || index >= back.length) return;
+  const targetRoute = back[index];
+  const popped = back.slice(index + 1);
+  const remaining = back.slice(0, index);
+  setHistoryBackStack(remaining);
+  setHistoryForwardStack((s) => [...s, { ...route() }, ...popped.reverse()]);
   isNavigatingHistory = true;
-  navigate(prevRoute);
+  navigate(targetRoute);
   isNavigatingHistory = false;
 }
 
@@ -93,11 +102,20 @@ export function goBack(): void {
 export function goForward(): void {
   const forward = historyForwardStack();
   if (forward.length === 0) return;
-  const nextRoute = forward[forward.length - 1];
-  setHistoryForwardStack((s) => s.slice(0, -1));
-  setHistoryBackStack((s) => [...s, { ...route() }]);
+  goForwardTo(forward.length - 1);
+}
+
+/** Navigates forward to a specific entry in the forward stack by index. */
+export function goForwardTo(index: number): void {
+  const forward = historyForwardStack();
+  if (index < 0 || index >= forward.length) return;
+  const targetRoute = forward[index];
+  const popped = forward.slice(index + 1);
+  const remaining = forward.slice(0, index);
+  setHistoryForwardStack(remaining);
+  setHistoryBackStack((s) => [...s, { ...route() }, ...popped.reverse()]);
   isNavigatingHistory = true;
-  navigate(nextRoute);
+  navigate(targetRoute);
   isNavigatingHistory = false;
 }
 

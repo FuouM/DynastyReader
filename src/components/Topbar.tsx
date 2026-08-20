@@ -5,7 +5,7 @@
  * so the WinForms design system CSS applies unchanged.
  */
 
-import { createEffect, createSignal, onMount, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import {
   route,
   navigate,
@@ -22,9 +22,35 @@ import {
 } from "../stores";
 import { decodeEntities } from "../stores";
 import { SettingsModal } from "./SettingsModal";
+import { HistoryDropdown } from "./HistoryDropdown";
 
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
+  const [historyMenu, setHistoryMenu] = createSignal<{
+    direction: "back" | "forward";
+    anchorEl: HTMLElement;
+  } | null>(null);
+
+  let holdTimer: number | null = null;
+  let didHold = false;
+
+  const startHold = (direction: "back" | "forward", el: HTMLElement) => {
+    didHold = false;
+    if (holdTimer !== null) window.clearTimeout(holdTimer);
+    holdTimer = window.setTimeout(() => {
+      didHold = true;
+      setHistoryMenu({ direction, anchorEl: el });
+    }, 450);
+  };
+
+  const cancelHold = () => {
+    if (holdTimer !== null) {
+      window.clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+  };
+
+  onCleanup(() => cancelHold());
 
   let topbarEl: HTMLDivElement | undefined;
 
@@ -78,10 +104,26 @@ export function Topbar() {
                 type="button"
                 class="ds-segmented-btn ds-nav-history-btn"
                 id="ds-nav-back"
-                title="Back"
+                title="Back (click to go back, hold or right-click for history)"
                 disabled={!canGoBack()}
-                onMouseDown={(ev) => ev.preventDefault()}
-                onClick={() => goBack()}
+                onMouseDown={(ev) => {
+                  if (ev.button === 0 && canGoBack()) {
+                    startHold("back", ev.currentTarget);
+                  }
+                }}
+                onMouseUp={() => cancelHold()}
+                onMouseLeave={() => cancelHold()}
+                onContextMenu={(ev) => {
+                  ev.preventDefault();
+                  if (canGoBack()) {
+                    setHistoryMenu({ direction: "back", anchorEl: ev.currentTarget });
+                  }
+                }}
+                onClick={() => {
+                  if (!didHold && canGoBack()) {
+                    goBack();
+                  }
+                }}
               >
                 <i class="bi bi-arrow-left"></i>
               </button>
@@ -89,10 +131,26 @@ export function Topbar() {
                 type="button"
                 class="ds-segmented-btn ds-nav-history-btn"
                 id="ds-nav-forward"
-                title="Forward"
+                title="Forward (click to go forward, hold or right-click for history)"
                 disabled={!canGoForward()}
-                onMouseDown={(ev) => ev.preventDefault()}
-                onClick={() => goForward()}
+                onMouseDown={(ev) => {
+                  if (ev.button === 0 && canGoForward()) {
+                    startHold("forward", ev.currentTarget);
+                  }
+                }}
+                onMouseUp={() => cancelHold()}
+                onMouseLeave={() => cancelHold()}
+                onContextMenu={(ev) => {
+                  ev.preventDefault();
+                  if (canGoForward()) {
+                    setHistoryMenu({ direction: "forward", anchorEl: ev.currentTarget });
+                  }
+                }}
+                onClick={() => {
+                  if (!didHold && canGoForward()) {
+                    goForward();
+                  }
+                }}
               >
                 <i class="bi bi-arrow-right"></i>
               </button>
@@ -171,6 +229,12 @@ export function Topbar() {
         </div>
       </div>
       <SettingsModal open={settingsOpen()} onClose={() => setSettingsOpen(false)} />
+      <HistoryDropdown
+        open={historyMenu() !== null}
+        direction={historyMenu()?.direction ?? "back"}
+        anchorEl={historyMenu()?.anchorEl ?? null}
+        onClose={() => setHistoryMenu(null)}
+      />
     </>
   );
 }
