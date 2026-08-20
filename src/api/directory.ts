@@ -5,8 +5,48 @@ import { tryParseJson } from "../utils/json";
 import type { Directory, DirectoryGroup, SuggestResult } from "../types/api";
 
 /** Series / tag directories, cached for one hour. */
-export function fetchDirectory(urlPath: string, key: string): Promise<Directory> {
-  return cachedJson<Directory>(key, absUrl(urlPath), FEED_TTL_MS);
+export async function fetchDirectory(urlPath: string, key: string, kind?: "series" | "tags"): Promise<Directory> {
+  const dir = await cachedJson<Directory>(key, absUrl(urlPath), FEED_TTL_MS);
+  if (kind) {
+    try {
+      const { saveDirectoryEntries } = await import("../db");
+      const groups = directoryGroups(dir);
+      void saveDirectoryEntries(kind, groups);
+    } catch {}
+  }
+  return dir;
+}
+
+const syncActive = { series: false, tags: false };
+
+/**
+ * Background-syncs all directory pages into SQLite so global directory search covers all series/tags.
+ */
+export async function syncAllDirectoryPages(kind: "series" | "tags", totalPages: number): Promise<void> {
+  if (syncActive[kind] || totalPages <= 1) return;
+  syncActive[kind] = true;
+  try {
+    const promises: Promise<unknown>[] = [];
+    for (let p = 1; p <= totalPages; p++) {
+      const url = kind === "series" ? `/series.json?page=${p}` : `/tags.json?page=${p}`;
+      const key = `${kind === "series" ? "dir:series" : "dir:tags"}:${p}`;
+      promises.push(fetchDirectory(url, key, kind));
+    }
+    await Promise.allSettled(promises);
+  } finally {
+    syncActive[kind] = false;
+  }
+}
+
+/**
+ * Searches directory entries directly in SQLite with indexed SQL queries.
+ */
+export async function searchAllDirectoryEntries(
+  kind: "series" | "tags",
+  query: string,
+): Promise<DirectoryGroup[]> {
+  const { searchDirectoryEntries } = await import("../db");
+  return searchDirectoryEntries(kind, query);
 }
 
 /** Normalized, ordered letter → entries groups from a directory payload. */

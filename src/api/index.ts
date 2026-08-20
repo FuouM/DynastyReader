@@ -9,7 +9,7 @@ export {
   cachedJson,
 } from "./client";
 export { checkFeedOnline, fetchFeedWithRevalidation } from "./feed";
-export { fetchDirectory, directoryGroups, suggest } from "./directory";
+export { fetchDirectory, directoryGroups, searchAllDirectoryEntries, syncAllDirectoryPages, suggest } from "./directory";
 export {
   fetchSeries,
   seriesEndpoints,

@@ -235,6 +235,50 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 2,
+    name: "create directory_entries table with indexes for fast SQLite directory search",
+    up: async () => {
+      await runStep(
+        `CREATE TABLE IF NOT EXISTS directory_entries (
+          kind TEXT NOT NULL,
+          letter TEXT NOT NULL,
+          permalink TEXT NOT NULL,
+          name TEXT NOT NULL,
+          updated_at INTEGER NOT NULL,
+          PRIMARY KEY (kind, permalink)
+        )`,
+        "create directory_entries table",
+      );
+      await runStep(
+        "CREATE INDEX IF NOT EXISTS idx_directory_entries_kind_name ON directory_entries(kind, name COLLATE NOCASE)",
+        "index directory_entries.kind_name",
+      );
+      await runStep(
+        "CREATE INDEX IF NOT EXISTS idx_directory_entries_kind_letter ON directory_entries(kind, letter)",
+        "index directory_entries.kind_letter",
+      );
+
+      // Backfill any existing cached directory pages from cached_metadata into directory_entries
+      try {
+        const rows = await query<{ cache_key: string; json_payload: string }>(
+          `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key LIKE 'dir:%'`,
+        );
+        const { directoryGroups } = await import("../api/directory");
+        const { saveDirectoryEntries } = await import("./directory.repo");
+        for (const row of rows) {
+          const kind = row.cache_key.startsWith("dir:series") ? "series" : "tags";
+          try {
+            const parsed = JSON.parse(row.json_payload);
+            const groups = directoryGroups(parsed);
+            await saveDirectoryEntries(kind, groups);
+          } catch {}
+        }
+      } catch (err) {
+        console.error("[db/schema] backfill directory_entries failed:", err);
+      }
+    },
+  },
 ];
 
 let initDbPromise: Promise<void> | null = null;

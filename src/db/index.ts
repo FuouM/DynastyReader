@@ -1,7 +1,7 @@
 export { execute, query } from "./client";
 export type { Row } from "./client";
 export { initDb } from "./schema";
-export { getCached, getBatchCached, setCached, touchCached, deleteCached } from "./metadata.repo";
+export { getCached, getCachedByPrefix, getBatchCached, setCached, touchCached, deleteCached } from "./metadata.repo";
 export {
   getFollowedSeriesCount,
   getFollowedSeriesPage,
@@ -72,6 +72,7 @@ export {
   toggleItemInCollection,
   updateCollectionItemCover,
 } from "./collections.repo";
+export { searchDirectoryEntries, saveDirectoryEntries } from "./directory.repo";
 export type {
   CachedMetadata,
   FollowedSeriesRow,
