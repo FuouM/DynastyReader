@@ -452,9 +452,28 @@ function FeedItemRow(props: {
     }
   };
 
-  const tags = sortTagsByCategory(
-    (ch.tags ?? []).filter((t) => (t.type ?? "").toLowerCase() !== "series"),
-  ).slice(0, 8);
+  const artistTags = (ch.tags ?? []).filter((t) => {
+    const type = (t.type ?? "").toLowerCase();
+    return type === "author" || type === "artist";
+  });
+
+  const groupTags = (ch.tags ?? []).filter((t) => {
+    const type = (t.type ?? "").toLowerCase();
+    return type === "scanlator" || type === "group";
+  });
+
+  const otherTags = sortTagsByCategory(
+    (ch.tags ?? []).filter((t) => {
+      const type = (t.type ?? "").toLowerCase();
+      return (
+        type !== "author" &&
+        type !== "artist" &&
+        type !== "scanlator" &&
+        type !== "group" &&
+        type !== "series"
+      );
+    }),
+  );
 
   const coverTitle = coverInfo.isStandalone
     ? `Read "${decodeEntities(ch.title)}"`
@@ -493,27 +512,31 @@ function FeedItemRow(props: {
         </div>
       </div>
 
-      <div class="ds-fill" style="display:flex;flex-direction:column;gap:4px;">
+      <div class="ds-fill" style="display:flex;flex-direction:column;gap:3px;min-width:0;">
         <div
-          class="ds-item-title"
-          style="font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;flex-wrap:wrap;"
-          onClick={(ev) => {
-            ev.stopPropagation();
-            guardedOpen(ch.title, openChapter);
-          }}
+          class="ds-flex-row"
+          style="align-items:center;gap:6px;flex-wrap:wrap;"
         >
-          <span>{decodeEntities(ch.title)}</span>
-          <Show when={isFullyCached}>
-            <i
-              class="bi bi-cloud-check-fill ds-offline-icon"
-              style="color:var(--sys-primary,#0078d4);font-size:11px;"
-              title="Available Offline (Fully Cached)"
-            ></i>
-          </Show>
-        </div>
+          <span
+            class="ds-item-title"
+            style="font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
+            onClick={(ev) => {
+              ev.stopPropagation();
+              guardedOpen(ch.title, openChapter);
+            }}
+          >
+            <span>{decodeEntities(ch.title)}</span>
+            <Show when={isFullyCached}>
+              <i
+                class="bi bi-cloud-check-fill ds-offline-icon"
+                style="color:var(--sys-primary,#0078d4);font-size:11px;"
+                title="Available Offline (Fully Cached)"
+              ></i>
+            </Show>
+          </span>
 
-        <div class="ds-flex-row" style="flex-wrap:wrap;">
-          <Show when={ch.series}>
+          <Show when={ch.series && ch.series !== ch.title}>
+            <span class="ds-muted" style="font-size:11px;">in</span>
             <span
               class="ds-series-link"
               title={`Go to series: ${decodeEntities(ch.series!)}`}
@@ -527,9 +550,7 @@ function FeedItemRow(props: {
               {decodeEntities(ch.series!)}
             </span>
           </Show>
-          <For each={tags}>
-            {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
-          </For>
+
           <Show when={isBlacklisted && matchedTags.length > 0}>
             <span
               style="font-size:9px;background:var(--ds-danger-bg);color:var(--ds-danger-text);padding:1px 5px;border-radius:2px;border:1px solid var(--ds-danger-border);display:inline-flex;align-items:center;gap:3px;font-weight:600;"
@@ -539,6 +560,45 @@ function FeedItemRow(props: {
             </span>
           </Show>
         </div>
+
+        <Show when={artistTags.length > 0}>
+          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;">
+            <span style="font-weight:600;color:var(--sys-text-secondary,#555);font-size:10px;width:72px;min-width:72px;flex-shrink:0;padding-top:1px;">
+              Artist:
+            </span>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;flex:1;">
+              <For each={artistTags}>
+                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
+              </For>
+            </div>
+          </div>
+        </Show>
+
+        <Show when={groupTags.length > 0}>
+          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;">
+            <span style="font-weight:600;color:var(--sys-text-secondary,#555);font-size:10px;width:72px;min-width:72px;flex-shrink:0;padding-top:1px;">
+              Scanlation:
+            </span>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;flex:1;">
+              <For each={groupTags}>
+                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
+              </For>
+            </div>
+          </div>
+        </Show>
+
+        <Show when={otherTags.length > 0}>
+          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;">
+            <span style="font-weight:600;color:var(--sys-text-secondary,#555);font-size:10px;width:72px;min-width:72px;flex-shrink:0;padding-top:1px;">
+              Tags:
+            </span>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;flex:1;">
+              <For each={otherTags}>
+                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
+              </For>
+            </div>
+          </div>
+        </Show>
       </div>
 
       <button
