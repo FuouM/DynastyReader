@@ -9,6 +9,7 @@
 
 import { createSignal } from "solid-js";
 import { clearActions } from "./topbar";
+import { decodeEntities } from "../utils/html";
 import type { Route, SessionMangaTab } from "../types/routes";
 export type { Route, ViewName, ChapterRef, SessionMangaTab } from "../types/routes";
 
@@ -132,21 +133,69 @@ export function closeSessionMangaTab(): void {
   }
 }
 
+export interface RouteLabel {
+  title: string;
+  subtitle?: string;
+  icon: string;
+}
+
+/** Single route-label taxonomy: title, optional subtitle, and icon per view. */
+export function routeLabel(r: Route): RouteLabel {
+  switch (r.view) {
+    case "browse": {
+      const tab = r.browseTab || "releases";
+      const tabNames: Record<string, string> = {
+        releases: "Recent Releases",
+        added: "Recently Added",
+        downloaded: "Downloaded",
+        "series-dir": "Series Directory",
+        "tags-dir": "Tags Directory",
+        search: "Tag & Search",
+      };
+      return {
+        title: tabNames[tab] || "Browse",
+        subtitle: "Browse",
+        icon: "bi-compass",
+      };
+    }
+    case "library":
+      return {
+        title: r.collectionId !== undefined ? "Collection Detail" : "Library",
+        subtitle: "Library",
+        icon: "bi-collection",
+      };
+    case "series":
+      return {
+        title: decodeEntities(r.seriesName || r.seriesPermalink || "Series"),
+        subtitle: "Series",
+        icon: "bi-collection-play",
+      };
+    case "reader":
+      return {
+        title: decodeEntities(r.chapterTitle || r.chapterPermalink || "Reader"),
+        subtitle: r.seriesName ? decodeEntities(r.seriesName) : "Chapter",
+        icon: "bi-book",
+      };
+    case "cache":
+      return {
+        title: "Cache Management",
+        icon: "bi-hdd-stack",
+      };
+    case "blacklist":
+      return {
+        title: "Series Blacklist",
+        icon: "bi-shield-slash",
+      };
+    default:
+      return {
+        title: "Unknown",
+        icon: "bi-link-45deg",
+      };
+  }
+}
+
 /** Site title shown in the plugin top bar. */
 export function routeTitle(r: Route): string {
-  switch (r.view) {
-    case "browse":
-      return "Browse";
-    case "series":
-      return r.seriesName ?? "Series";
-    case "reader":
-      return r.chapterTitle ?? "Reader";
-    case "cache":
-      return "Cache Management";
-    case "blacklist":
-      return "Series Blacklist";
-    case "library":
-    default:
-      return "Library";
-  }
+  if (r.view === "browse") return "Browse";
+  return routeLabel(r).title;
 }

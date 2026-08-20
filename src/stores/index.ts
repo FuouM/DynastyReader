@@ -37,8 +37,9 @@ export {
   isSameRoute,
   closeSessionMangaTab,
   routeTitle,
+  routeLabel,
 } from "./router";
-export type { Route, ViewName, ChapterRef, SessionMangaTab } from "./router";
+export type { Route, ViewName, ChapterRef, SessionMangaTab, RouteLabel } from "./router";
 
 export {
   title,

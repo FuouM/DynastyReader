@@ -6,68 +6,13 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import {
-  decodeEntities,
   goBackTo,
   goForwardTo,
   historyBackStack,
   historyForwardStack,
+  routeLabel,
   uiScale,
-  type Route,
 } from "../stores";
-
-export function formatRouteLabel(r: Route): { title: string; subtitle?: string; icon: string } {
-  switch (r.view) {
-    case "browse": {
-      const tab = r.browseTab || "releases";
-      const tabNames: Record<string, string> = {
-        releases: "Recent Releases",
-        added: "Recently Added",
-        downloaded: "Downloaded",
-        "series-dir": "Series Directory",
-        "tags-dir": "Tags Directory",
-        search: "Tag & Search",
-      };
-      return {
-        title: tabNames[tab] || "Browse",
-        subtitle: "Browse",
-        icon: "bi-compass",
-      };
-    }
-    case "library":
-      return {
-        title: r.collectionId !== undefined ? "Collection Detail" : "Library",
-        subtitle: "Library",
-        icon: "bi-collection",
-      };
-    case "series":
-      return {
-        title: decodeEntities(r.seriesName || r.seriesPermalink || "Series"),
-        subtitle: "Series",
-        icon: "bi-collection-play",
-      };
-    case "reader":
-      return {
-        title: decodeEntities(r.chapterTitle || r.chapterPermalink || "Reader"),
-        subtitle: r.seriesName ? decodeEntities(r.seriesName) : "Chapter",
-        icon: "bi-book",
-      };
-    case "cache":
-      return {
-        title: "Cache Management",
-        icon: "bi-hdd-stack",
-      };
-    case "blacklist":
-      return {
-        title: "Series Blacklist",
-        icon: "bi-shield-slash",
-      };
-    default:
-      return {
-        title: "Unknown",
-        icon: "bi-link-45deg",
-      };
-  }
-}
 
 export interface HistoryDropdownProps {
   direction: "back" | "forward";
@@ -164,7 +109,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
             <div style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;padding:2px 0;">
               <For each={items()}>
                 {(entry) => {
-                  const meta = formatRouteLabel(entry.route);
+                  const meta = routeLabel(entry.route);
                   return (
                     <div
                       class="ds-history-item ds-item"
