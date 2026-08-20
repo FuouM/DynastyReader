@@ -328,8 +328,11 @@ export class ReaderController {
 
   setDirection(dir: ReadingDirection): void {
     this.direction = dir;
-    this.directionAutoDetected = false;
-    localStorage.setItem("ds-reader-direction", dir);
+    // If the chapter or series has an auto-detected tag (such as 'Read left to right'),
+    // changing direction only overrides for the current session and does not clobber the global setting.
+    if (!this.directionAutoDetected) {
+      localStorage.setItem("ds-reader-direction", dir);
+    }
     this.toolbarImpl.updateLayoutBtns();
     if (this.isHorizontal) {
       this.viewportImpl.applyLayoutMode();
@@ -490,13 +493,22 @@ export class ReaderController {
     this.mode = localStorage.getItem("ds-reader-mode") === "paged" ? "paged" : "scroll";
     this.pagedLayout = localStorage.getItem("ds-reader-layout") === "spread" ? "spread" : "single";
     this.coverOffset = localStorage.getItem("ds-reader-cover-offset") === "1";
-    const dirPref = localStorage.getItem("ds-reader-direction");
-    if (dirPref === "ltr" || dirPref === "rtl") {
-      this.direction = dirPref;
-      this.directionAutoDetected = false;
-    } else {
-      this.direction = detectReadingDirection(chapter.tags ?? []);
+    
+    // Direction: Check if chapter tags indicate LTR (soft-override).
+    // If tagged, soft-override to LTR. Otherwise use saved global preference or RTL default.
+    const tagDir = detectReadingDirection(chapter.tags ?? []);
+    if (tagDir === "ltr") {
+      this.direction = "ltr";
       this.directionAutoDetected = true;
+    } else {
+      const dirPref = localStorage.getItem("ds-reader-direction");
+      if (dirPref === "ltr" || dirPref === "rtl") {
+        this.direction = dirPref;
+        this.directionAutoDetected = false;
+      } else {
+        this.direction = "rtl";
+        this.directionAutoDetected = true;
+      }
     }
     this.recomputeSpreads();
     this.fitMode = (localStorage.getItem("ds-reader-fit") as FitMode) || "width";
