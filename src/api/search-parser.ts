@@ -1,4 +1,4 @@
-import { decodeEntities } from "../state";
+import { decodeEntities } from "../stores";
 import { KIND_BY_PATH_SEGMENT } from "./navigation";
 import type { ChapterTag, SearchResultItem, SearchResultPage } from "../types/api";
 

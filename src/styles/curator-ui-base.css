@@ -289,6 +289,30 @@ body.ds-dark .win-button.primary:active {
   color: #ffffff;
 }
 
+.win-button.active {
+  background-color: var(--sys-highlight-bg, #0078d4);
+  color: var(--sys-highlight-text, #ffffff);
+  border-color: #005a9e;
+  font-weight: 600;
+}
+.win-button.active:hover {
+  background-color: #106ebe;
+  border-color: #004578;
+}
+:root[data-theme="dark"] .win-button.active,
+[data-theme="dark"] .win-button.active,
+body.ds-dark .win-button.active {
+  background-color: #0067c0;
+  border-color: #005a9e;
+  color: #ffffff;
+}
+:root[data-theme="dark"] .win-button.active:hover,
+[data-theme="dark"] .win-button.active:hover,
+body.ds-dark .win-button.active:hover {
+  background-color: #1879cd;
+  border-color: #2b88d8;
+}
+
 .input-field {
   background-color: var(--sys-window-bg);
   color: var(--sys-window-text);

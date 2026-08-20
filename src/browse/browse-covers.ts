@@ -1,7 +1,27 @@
+import { createSignal } from "solid-js";
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
 import { convertFileSrc } from "../ipc";
 import type { FeedChapter } from "../types/api";
+
+/**
+ * Module-level reactive signal that mirrors `BrowseCovers.enabled`. Any Solid
+ * component that reads `coversEnabledSignal()` will automatically re-run its
+ * effect when the user toggles the "Show covers" setting — replacing the old
+ * imperative `renderCurrent()` call that was used in the vanilla-JS version.
+ */
+const [coversEnabledSignal, setCoversEnabledSignal] = createSignal(
+  (() => {
+    try {
+      const saved = localStorage.getItem("ds_covers_enabled");
+      return saved !== null ? saved === "true" : true;
+    } catch {
+      return true;
+    }
+  })()
+);
+
+export { coversEnabledSignal };
 
 export interface CoverTarget {
   coverKey: string;
@@ -71,6 +91,7 @@ export class BrowseCovers {
 
   setCoversEnabled(v: boolean): void {
     this.enabled = v;
+    setCoversEnabledSignal(v);
     try {
       localStorage.setItem("ds_covers_enabled", v ? "true" : "false");
     } catch {}

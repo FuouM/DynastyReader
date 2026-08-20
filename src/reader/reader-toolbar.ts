@@ -1,7 +1,7 @@
 import type { ReaderController } from "./reader-controller";
 import type { FitMode } from "../types/reader";
 import type { ChapterRef } from "../types/routes";
-import { getAppTheme, onThemeChange, toggleAppTheme } from "../theme";
+import { getAppTheme, onThemeChange, toggleAppTheme } from "../stores/theme";
 import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
 
 /**

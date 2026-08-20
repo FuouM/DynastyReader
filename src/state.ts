@@ -15,26 +15,17 @@ export const PAGES_PREFIX = "pages";
 export const COVERS_PREFIX = "covers";
 
 export {
-  type PluginState,
-  state,
-  loadPluginView,
-  type Renderer,
-  registerRenderer,
-  onRouteChange,
-  renderCurrent,
   navigate,
   goBack,
   goForward,
   canGoBack,
   canGoForward,
-  updateHistoryButtonsUI,
   closeSessionMangaTab,
-  updateSessionMangaTabUI,
   routeTitle,
-} from "./router";
-export type { Route, ViewName, ChapterRef, SessionMangaTab } from "./router";
+} from "./stores/router";
+export type { Route, ViewName, ChapterRef, SessionMangaTab } from "./stores/router";
 
-export { setTitle, setBanner, setActions, clearBanner, clearActions } from "./topbar";
+export { setTitle, setBanner, setActions, clearBanner, clearActions } from "./stores/topbar";
 
 export { tagClass, sortTagsByCategory } from "./tags";
 

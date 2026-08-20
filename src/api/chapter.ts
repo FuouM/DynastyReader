@@ -1,4 +1,4 @@
-import { SITE_ROOT } from "../state";
+import { SITE_ROOT } from "../stores";
 import { cachedJson } from "./client";
 import type { Chapter } from "../types/api";
 

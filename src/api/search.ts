@@ -1,4 +1,4 @@
-import { SITE_ROOT } from "../state";
+import { SITE_ROOT } from "../stores";
 import { httpGetText } from "./client";
 import { parseSearchHtml } from "./search-parser";
 import type { SearchParams, SearchResultPage } from "../types/api";

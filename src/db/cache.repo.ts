@@ -1,7 +1,7 @@
 import { query, execute } from "./client";
 import { inClause } from "./paging";
 import { loadCachedChapterContext } from "./cache-aggregate";
-import { DB_NAME } from "../state";
+import { DB_NAME } from "../stores";
 import * as ipc from "../ipc";
 import type {
   CachedPageRow,

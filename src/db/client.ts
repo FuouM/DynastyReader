@@ -1,5 +1,5 @@
 import { createPluginDb } from "../lib";
-import { DB_NAME } from "../state";
+import { DB_NAME } from "../stores";
 import type { Row } from "../types/db";
 
 export type { Row };

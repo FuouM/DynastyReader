@@ -58,6 +58,9 @@ export {
 export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode } from "./blacklist.repo";
 export {
   getCollections,
+  getCollectionsRevision,
+  onCollectionsChanged,
+  notifyCollectionsChanged,
   getCollectionById,
   createCollection,
   renameCollection,

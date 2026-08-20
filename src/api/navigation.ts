@@ -1,4 +1,4 @@
-import { PAGES_PREFIX } from "../state";
+import { PAGES_PREFIX } from "../stores";
 import * as ipc from "../ipc";
 import type { ParsedDynastyUrl } from "../types/api";
 
@@ -38,7 +38,7 @@ export async function openExternal(url: string): Promise<void> {
 export function parseDynastyUrl(input: string): ParsedDynastyUrl | null {
   const t = input.trim().replace(/\/+$/, "");
   const m =
-    /^https?:\/\/(?:www\.)?dynasty-scans\.com\/(series|chapters|anthologies|doujins|issues)\/([^\/?#]+)$/i.exec(
+    /^https?:\/\/(?:www\.)?dynasty-scans\.com\/(series|chapters|anthologies|doujins|issues|authors|scanlators|pairings|tags)\/([^\/?#]+)$/i.exec(
       t,
     );
   if (!m) return null;

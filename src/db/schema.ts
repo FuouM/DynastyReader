@@ -1,4 +1,5 @@
 import { execute, query } from "./client";
+import { initBlacklistCache } from "./blacklist.repo";
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS followed_series (
@@ -223,7 +224,6 @@ const MIGRATIONS: Migration[] = [
       if (!seeded) failures.push("seed Favorites collection");
 
       try {
-        const { initBlacklistCache } = await import("./blacklist.repo");
         await initBlacklistCache();
       } catch (err) {
         failures.push("blacklist cache init");

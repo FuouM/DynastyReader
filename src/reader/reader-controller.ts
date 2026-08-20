@@ -38,7 +38,7 @@ import { ReaderQueue } from "./reader-queue";
 import { ReaderViewport } from "./reader-viewport";
 import { ReaderToolbar } from "./reader-toolbar";
 import { ReaderShortcuts } from "./reader-shortcuts";
-import { renderLoading } from "../components/loading";
+import { renderLoading } from "../components/loading-dom";
 import { isAutoCacheChapterEnabled, getPrefetchBuffer } from "./settings";
 
 export { isAutoCacheChapterEnabled, setAutoCacheChapterEnabled, getPrefetchBuffer, setPrefetchBuffer } from "./settings";

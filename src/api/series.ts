@@ -1,4 +1,4 @@
-import { absUrl, COVERS_PREFIX, SITE_ROOT } from "../state";
+import { absUrl, COVERS_PREFIX, SITE_ROOT } from "../stores";
 import { getCached, setCached, deleteCached, updateFollowedSeriesCover } from "../db";
 import { httpGetText, httpDownloadFull, fileDelete, fileExists, fileResolve } from "./client";
 import { fetchChapter } from "./chapter";

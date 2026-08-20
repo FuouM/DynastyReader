@@ -1,6 +1,33 @@
 import { query, execute } from "./client";
 import type { CollectionRow, CollectionItemRow, CollectionItemKind } from "../types/db";
 
+let collectionsRevision = 0;
+type CollectionsListener = () => void;
+const collectionsListeners: CollectionsListener[] = [];
+
+export function getCollectionsRevision(): number {
+  return collectionsRevision;
+}
+
+export function onCollectionsChanged(fn: CollectionsListener): () => void {
+  collectionsListeners.push(fn);
+  return () => {
+    const idx = collectionsListeners.indexOf(fn);
+    if (idx >= 0) collectionsListeners.splice(idx, 1);
+  };
+}
+
+export function notifyCollectionsChanged(): void {
+  collectionsRevision++;
+  for (const fn of [...collectionsListeners]) {
+    try {
+      fn();
+    } catch (e) {
+      console.error("Collections listener error:", e);
+    }
+  }
+}
+
 /**
  * Returns all collections sorted with Favorites (is_default = 1) first, then alphabetical.
  * Includes total item count per collection.
@@ -52,6 +79,7 @@ export async function createCollection(name: string): Promise<CollectionRow> {
   if (rows.length === 0) {
     throw new Error("Failed to create collection.");
   }
+  notifyCollectionsChanged();
   return { ...rows[0], itemCount: 0 };
 }
 
@@ -71,6 +99,7 @@ export async function renameCollection(id: number, newName: string): Promise<voi
     throw new Error("The default Favorites collection cannot be renamed.");
   }
   await execute("UPDATE collections SET name = ? WHERE id = ?", [cleanName, id]);
+  notifyCollectionsChanged();
 }
 
 /**
@@ -84,6 +113,7 @@ export async function deleteCollection(id: number): Promise<void> {
     throw new Error("The default Favorites collection cannot be deleted.");
   }
   await execute("DELETE FROM collections WHERE id = ?", [id]);
+  notifyCollectionsChanged();
 }
 
 /**
@@ -105,6 +135,7 @@ export async function updateCollectionItemCover(
   coverPath: string,
 ): Promise<void> {
   await execute("UPDATE collection_items SET cover = ? WHERE id = ?", [coverPath, id]);
+  notifyCollectionsChanged();
 }
 
 /**
@@ -163,6 +194,7 @@ export async function addItemToCollection(
       now,
     ],
   );
+  notifyCollectionsChanged();
 }
 
 /**
@@ -176,6 +208,7 @@ export async function removeItemFromCollection(
     "DELETE FROM collection_items WHERE collection_id = ? AND item_permalink = ?",
     [collectionId, itemPermalink.trim()],
   );
+  notifyCollectionsChanged();
 }
 
 /**
