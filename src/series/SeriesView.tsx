@@ -635,13 +635,14 @@ function SeriesBody(props: {
             <i class="bi bi-collection"></i> Series &amp; Anthologies ({series().taggables!.length})
           </div>
           <div
-            style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:6px;margin-top:4px;"
+            style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:6px;margin-top:4px;"
           >
             <For each={series().taggables}>
               {(tg) => (
                 <div
                   class="ds-row"
-                  style="padding:4px 6px;background:var(--sys-bg-active, #f5f5f5);border:1px solid var(--sys-border-light, #e0e0e0);border-radius:3px;cursor:pointer;align-items:center;gap:6px;"
+                  style="padding:5px 8px;background:var(--sys-bg-active, #f5f5f5);border:1px solid var(--sys-border-light, #e0e0e0);border-radius:3px;cursor:pointer;align-items:flex-start;gap:6px;"
+                  title={decodeEntities(tg.name)}
                   onClick={() =>
                     navigate({
                       view: "series",
@@ -650,13 +651,13 @@ function SeriesBody(props: {
                     })
                   }
                 >
-                  <i class="bi bi-book" style="color:var(--sys-primary,#0078d4);"></i>
+                  <i class="bi bi-book" style="color:var(--sys-primary,#0078d4);margin-top:1px;flex-shrink:0;"></i>
                   <span
-                    style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;"
+                    style="flex:1;min-width:0;line-height:1.3;word-break:break-word;font-size:11px;font-weight:500;"
                   >
                     {decodeEntities(tg.name)}
                   </span>
-                  <span class="ds-muted" style="font-size:10px;">{tg.type}</span>
+                  <span class="ds-muted" style="font-size:10px;flex-shrink:0;margin-top:1px;">{tg.type}</span>
                 </div>
               )}
             </For>
