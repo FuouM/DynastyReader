@@ -3,6 +3,8 @@
  * inline copies (BrowseFeed, BrowseSearch).
  */
 
+import { DsButton } from "./Button";
+
 export interface BlacklistNoticeProps {
   count: number;
   /** Singular noun describing the hidden items, e.g. "chapter" or "result". */
@@ -26,12 +28,12 @@ export function BlacklistNotice(props: BlacklistNoticeProps) {
           {props.count === 1 ? "" : "s"} hidden by blacklist.
         </span>
       </div>
-      <button type="button" class="win-button ds-btn-sm" onClick={props.onToggle}>
+      <DsButton className="ds-btn-sm" onClick={props.onToggle}>
         <i class={`bi bi-${props.showHidden ? "eye-slash" : "eye"}`}></i>{" "}
         {props.showHidden
           ? "Hide Blacklisted"
           : `Show Blacklisted (${props.count})`}
-      </button>
+      </DsButton>
     </div>
   );
 }

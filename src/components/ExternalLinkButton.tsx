@@ -6,6 +6,7 @@
 
 import type { JSX } from "solid-js";
 import { openExternal } from "../api";
+import { DsButton } from "./Button";
 
 export interface ExternalLinkButtonProps {
   url: string;
@@ -20,15 +21,11 @@ export interface ExternalLinkButtonProps {
 }
 
 export function ExternalLinkButton(props: ExternalLinkButtonProps) {
-  const cls = ["win-button", props.class ?? "ds-btn-compact"]
-    .filter(Boolean)
-    .join(" ");
   return (
-    <button
-      type="button"
+    <DsButton
       id={props.id}
-      class={cls}
-      style={props.cssText}
+      className={props.class}
+      cssText={props.cssText}
       title={props.title}
       onClick={(ev) => {
         ev.stopPropagation();
@@ -37,6 +34,6 @@ export function ExternalLinkButton(props: ExternalLinkButtonProps) {
     >
       <i class="bi bi-box-arrow-up-right"></i>
       {props.children}
-    </button>
+    </DsButton>
   );
 }

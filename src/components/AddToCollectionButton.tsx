@@ -6,6 +6,7 @@
  */
 
 import type { JSX } from "solid-js";
+import { DsButton } from "./Button";
 
 export interface AddToCollectionButtonProps {
   onOpen: (anchorEl: HTMLElement) => void;
@@ -18,14 +19,10 @@ export interface AddToCollectionButtonProps {
 }
 
 export function AddToCollectionButton(props: AddToCollectionButtonProps) {
-  const cls = ["win-button", props.class ?? "ds-btn-compact"]
-    .filter(Boolean)
-    .join(" ");
   return (
-    <button
-      type="button"
-      class={cls}
-      style={props.cssText}
+    <DsButton
+      className={props.class}
+      cssText={props.cssText}
       title={props.title ?? "Add to Favorites or custom collections"}
       onClick={(ev) => {
         ev.stopPropagation();
@@ -34,6 +31,6 @@ export function AddToCollectionButton(props: AddToCollectionButtonProps) {
     >
       <i class="bi bi-folder-plus"></i>
       {props.children}
-    </button>
+    </DsButton>
   );
 }

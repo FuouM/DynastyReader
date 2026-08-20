@@ -40,6 +40,7 @@ import { ListItem } from "../components/ListItem";
 import { OfflineBadge } from "../components/OfflineBadge";
 import { WarningChip } from "../components/WarningChip";
 import { AddToCollectionButton } from "../components/AddToCollectionButton";
+import { BlacklistNotice } from "../components/BlacklistNotice";
 import { EmptyState } from "../components/EmptyState";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
@@ -642,30 +643,15 @@ export function BrowseSearch(props: BrowseSearchProps) {
             </EmptyState>
           </Show>
 
-          <Show when={model()!.pageData.items.length > 0}>
+<Show when={model()!.pageData.items.length > 0}>
             <Show when={model()!.blMode === "hide" && blacklistedRows().length > 0}>
-              <div
-                class="ds-row ds-blacklist-notice"
-                style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:4px 10px;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px;"
-              >
-                <div class="ds-flex-row">
-                  <i class="bi bi-shield-slash-fill" style="color:#dc3545;"></i>
-                  <span>
-                    <b>{blacklistedRows().length}</b> result{blacklistedRows().length === 1 ? "" : "s"}{" "}
-                    hidden by blacklist.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  class="win-button ds-btn-sm"
-                  onClick={() => setShowHidden(!showHidden())}
-                >
-                  <i class={`bi bi-${showHidden() ? "eye-slash" : "eye"}`}></i>{" "}
-                  {showHidden()
-                    ? "Hide Blacklisted"
-                    : `Show Blacklisted (${blacklistedRows().length})`}
-                </button>
-              </div>
+              <BlacklistNotice
+                count={blacklistedRows().length}
+                noun="result"
+                showHidden={showHidden()}
+                onToggle={() => setShowHidden(!showHidden())}
+                cssText="margin-bottom:8px;"
+              />
               <Show when={showHidden()}>
                 <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
                   <For each={blacklistedRows()}>{renderResultRow}</For>

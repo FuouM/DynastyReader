@@ -9,6 +9,7 @@ import type { ReaderController } from "../reader/reader-controller";
 import { navigate, setBanner } from "../state";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
+import { DsButton } from "./Button";
 
 export interface ReaderActionsProps {
   ctrl: ReaderController;
@@ -74,9 +75,8 @@ export function ReaderActions(props: ReaderActionsProps) {
   return (
     <>
       <Show when={props.ctrl.seriesPermalink}>
-        <button
-          type="button"
-          class="win-button"
+        <DsButton
+          className=""
           title="Open the containing series"
           onClick={() =>
             navigate({
@@ -87,41 +87,37 @@ export function ReaderActions(props: ReaderActionsProps) {
           }
         >
           <i class="bi bi-collection"></i> Series
-        </button>
+        </DsButton>
       </Show>
-      <button
-        type="button"
-        class="win-button"
+      <DsButton
+        className=""
         title={bookmarked() ? "Remove bookmark" : "Bookmark this chapter"}
         disabled={pending()}
         onClick={() => void toggleBookmark()}
       >
         <i class={bookmarked() ? "bi bi-bookmark-fill" : "bi bi-bookmark"}></i>
-      </button>
-      <button
-        type="button"
-        class="win-button"
+      </DsButton>
+      <DsButton
+        className=""
         title="Download every uncached page of this chapter"
         onClick={cacheChapter}
       >
         <i class="bi bi-download"></i> <span class="ds-btn-text">Cache Chapter</span>
-      </button>
-      <button
-        type="button"
-        class="win-button"
+      </DsButton>
+      <DsButton
+        className=""
         title="Copy chapter link to clipboard"
         onClick={() => void copyLink()}
       >
         <i class={copied() ? "bi bi-check-lg" : "bi bi-link-45deg"}></i>
-      </button>
-      <button
-        type="button"
-        class="win-button"
+      </DsButton>
+      <DsButton
+        className=""
         title="Open this chapter in your browser"
         onClick={() => void openExternal(chapterUrl())}
       >
         <i class="bi bi-box-arrow-up-right"></i>
-      </button>
+      </DsButton>
     </>
   );
 }

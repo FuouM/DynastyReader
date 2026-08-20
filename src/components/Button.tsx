@@ -15,12 +15,15 @@ export interface DsButtonProps {
   disabled?: boolean;
   onClick?: (ev: MouseEvent) => void;
   children?: JSX.Element;
+  /** Optional DOM id (preserved for any legacy element hooks). */
+  id?: string;
 }
 
 /** Standard WinForms-style push button. */
 export function DsButton(props: DsButtonProps) {
   return (
     <button
+      id={props.id}
       type={props.type ?? "button"}
       class={["win-button", props.className ?? "ds-btn-compact"].join(" ")}
       style={props.cssText}
