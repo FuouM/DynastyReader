@@ -14,9 +14,9 @@ import {
   type BlacklistedSeries,
   type BlacklistMode,
 } from "../db";
-import { openExternal } from "../api";
 import { useDelayedSpinner } from "../browse/browse-state";
 import { BackRefreshActions } from "../components/ActionBar";
+import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { Loading } from "../components/Loading";
 
 export function BlacklistView() {
@@ -185,18 +185,11 @@ export function BlacklistView() {
                       </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-                      <button
-                        type="button"
-                        class="win-button ds-btn-xs"
+                      <ExternalLinkButton
+                        class="ds-btn-xs"
                         title="Open on dynasty-scans.com"
-                        onClick={() =>
-                          void openExternal(
-                            `https://dynasty-scans.com/series/${item.series_permalink}`,
-                          )
-                        }
-                      >
-                        <i class="bi bi-box-arrow-up-right"></i>
-                      </button>
+                        url={`https://dynasty-scans.com/series/${item.series_permalink}`}
+                      />
                       <button
                         type="button"
                         class="win-button ds-btn-xs"

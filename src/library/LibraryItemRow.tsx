@@ -9,8 +9,9 @@
 
 import { Show } from "solid-js";
 import { decodeEntities } from "../stores";
-import { openExternal } from "../api";
 import { Cover } from "../components/Cover";
+import { OfflineBadge } from "../components/OfflineBadge";
+import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { ConfirmDeleteButton } from "../components/Button";
 
 export interface LibraryItemRowProps {
@@ -66,13 +67,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
             style="font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:4px;"
           >
             <span>{decodeEntities(props.title)}</span>
-            <Show when={props.isFullyCached}>
-              <i
-                class="bi bi-cloud-check-fill ds-offline-icon"
-                style="color:var(--sys-primary,#0078d4);font-size:11px;"
-                title="Available Offline (Fully Cached)"
-              ></i>
-            </Show>
+            <OfflineBadge when={props.isFullyCached} />
           </span>
           <Show when={props.badge}>
             <span
@@ -106,18 +101,12 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
       </Show>
 
       <Show when={props.externalUrl}>
-        <button
-          type="button"
-          class="win-button"
-          style="font-size:10px;padding:2px 6px;flex-shrink:0;"
+        <ExternalLinkButton
+          class=""
+          cssText="font-size:10px;padding:2px 6px;flex-shrink:0;"
           title="Open on Dynasty Scans in browser"
-          onClick={(ev) => {
-            ev.stopPropagation();
-            openExternal(props.externalUrl!);
-          }}
-        >
-          <i class="bi bi-box-arrow-up-right"></i>
-        </button>
+          url={props.externalUrl!}
+        />
       </Show>
 
       <Show when={props.onDelete}>

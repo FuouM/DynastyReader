@@ -18,7 +18,9 @@ import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
 import { InputField } from "../components/InputField";
 import { FeedItemRow } from "../components/FeedItemRow";
-import { AddToCollectionModal, type AddToCollectionItem } from "../components/AddToCollectionModal";
+import { EmptyState } from "../components/EmptyState";
+import { useAddToCollection } from "../components/hooks/useAddToCollection";
+import type { AddToCollectionItem } from "../components/AddToCollectionModal";
 
 const PAGE_SIZE = 25;
 
@@ -71,10 +73,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
 
   const [query, setQuery] = createSignal("");
   const [page, setPage] = createSignal(1);
-  const [addToCol, setAddToCol] = createSignal<{
-    item: AddToCollectionItem;
-    anchorEl: HTMLElement;
-  } | null>(null);
+  const addToCol = useAddToCollection();
 
   createEffect(() => setPaneLoading(props.tabId, pane.loading()));
 
@@ -155,14 +154,17 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
 
       <div id="ds-downloaded-body">
         <Show when={filtered().length === 0 && pane.data() !== undefined}>
-          <div class="ds-empty-state" style="padding:24px;text-align:center;">
-            <i class="bi bi-cloud-arrow-down" style="font-size:28px;opacity:0.6;display:block;margin-bottom:8px;"></i>
+          <EmptyState
+            cssText="padding:24px;text-align:center;"
+            iconClass="bi bi-cloud-arrow-down"
+            iconCssText="font-size:28px;opacity:0.6;display:block;margin-bottom:8px;"
+          >
             <span class="ds-muted">
               {query().trim()
                 ? "No downloaded chapters match your filter."
                 : "No downloaded chapters found. Read a chapter with Auto-Cache enabled to save it for offline reading."}
             </span>
-          </div>
+          </EmptyState>
         </Show>
 
         <Show when={pageItems().length > 0}>
@@ -171,7 +173,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
               {(ch) => (
                 <DownloadedRow
                   ch={ch}
-                  onAddToCol={(item, anchorEl) => setAddToCol({ item, anchorEl })}
+                  onAddToCol={addToCol.onAddToCol}
                 />
               )}
             </For>
@@ -189,12 +191,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         <Loading message="Loading downloaded chapters..." />
       </Show>
 
-      <AddToCollectionModal
-        open={addToCol() !== null}
-        item={addToCol()?.item ?? { permalink: "", title: "" }}
-        anchorEl={addToCol()?.anchorEl ?? null}
-        onClose={() => setAddToCol(null)}
-      />
+      {addToCol.host}
     </div>
   );
 }

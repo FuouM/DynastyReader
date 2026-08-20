@@ -11,14 +11,13 @@
  *  - Actions: Bookmark toggle, Add to collection, Open in browser
  */
 
-import { createEffect, createSignal, For, onMount, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, onMount, Show, type JSX } from "solid-js";
 import {
   decodeEntities,
   navigate,
   setBanner,
   sortTagsByCategory,
 } from "../stores";
-import { openExternal } from "../api";
 import {
   addBookmark,
   getBlacklistMode,
@@ -28,7 +27,11 @@ import {
 } from "../db";
 import { convertFileSrc } from "../ipc";
 import { browseCovers } from "../browse/browse-covers";
-import { TagPill } from "./TagPill";
+import { OfflineBadge } from "./OfflineBadge";
+import { WarningChip } from "./WarningChip";
+import { ExternalLinkButton } from "./ExternalLinkButton";
+import { AddToCollectionButton } from "./AddToCollectionButton";
+import { TagRow } from "./TagRow";
 import type { AddToCollectionItem } from "./AddToCollectionModal";
 import type { SeriesTag } from "../types/api";
 
@@ -262,13 +265,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
             }}
           >
             <span>{decodeEntities(ch.title)}</span>
-            <Show when={isFullyCached()}>
-              <i
-                class="bi bi-cloud-check-fill ds-offline-icon"
-                style="color:var(--sys-primary,#0078d4);font-size:11px;"
-                title="Available Offline (Fully Cached)"
-              ></i>
-            </Show>
+            <OfflineBadge when={isFullyCached()} />
           </span>
 
           <Show when={ch.series && ch.series !== ch.title}>
@@ -292,53 +289,13 @@ export function FeedItemRow(props: FeedItemRowProps) {
           </Show>
 
           <Show when={isBlacklisted() && matchedTags().length > 0}>
-            <span
-              style="font-size:9px;background:var(--ds-danger-bg);color:var(--ds-danger-text);padding:1px 5px;border-radius:2px;border:1px solid var(--ds-danger-border);display:inline-flex;align-items:center;gap:3px;font-weight:600;"
-            >
-              <i class="bi bi-exclamation-triangle-fill"></i>{" "}
-              {blMode === "warn" ? "Content Warning" : "Blacklisted"}: {decodeEntities(matchedTags().join(", "))}
-            </span>
+            <WarningChip mode={blMode} tags={matchedTags()} />
           </Show>
         </div>
 
-        <Show when={artistTags.length > 0}>
-          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;">
-            <span style="font-weight:600;color:var(--sys-text-secondary,#555);font-size:10px;width:72px;min-width:72px;flex-shrink:0;padding-top:1px;">
-              Artist:
-            </span>
-            <div style="display:flex;flex-wrap:wrap;gap:3px;flex:1;">
-              <For each={artistTags}>
-                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
-              </For>
-            </div>
-          </div>
-        </Show>
-
-        <Show when={groupTags.length > 0}>
-          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;">
-            <span style="font-weight:600;color:var(--sys-text-secondary,#555);font-size:10px;width:72px;min-width:72px;flex-shrink:0;padding-top:1px;">
-              Scanlation:
-            </span>
-            <div style="display:flex;flex-wrap:wrap;gap:3px;flex:1;">
-              <For each={groupTags}>
-                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
-              </For>
-            </div>
-          </div>
-        </Show>
-
-        <Show when={otherTags.length > 0}>
-          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;">
-            <span style="font-weight:600;color:var(--sys-text-secondary,#555);font-size:10px;width:72px;min-width:72px;flex-shrink:0;padding-top:1px;">
-              Tags:
-            </span>
-            <div style="display:flex;flex-wrap:wrap;gap:3px;flex:1;">
-              <For each={otherTags}>
-                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
-              </For>
-            </div>
-          </div>
-        </Show>
+        <TagRow label="Artist:" tags={artistTags} />
+        <TagRow label="Scanlation:" tags={groupTags} />
+        <TagRow label="Tags:" tags={otherTags} />
       </div>
 
       <button
@@ -353,34 +310,20 @@ export function FeedItemRow(props: FeedItemRowProps) {
         {bookmarked() ? <i class="bi bi-bookmark-fill"></i> : <i class="bi bi-bookmark-plus"></i>}
         {bookmarked() ? " Saved" : " Read Later"}
       </button>
-      <button
-        type="button"
-        class="win-button ds-btn-compact"
-        style="flex-shrink:0;"
+      <AddToCollectionButton
+        cssText="flex-shrink:0;"
         title={
           !coverInfo.isStandalone
             ? `Add series "${decodeEntities(coverInfo.seriesName || ch.series || "")}" to collection`
             : "Add to Favorites or custom collections"
         }
-        onClick={(ev) => {
-          ev.stopPropagation();
-          openAddToCol(ev.currentTarget as HTMLElement);
-        }}
-      >
-        <i class="bi bi-folder-plus"></i>
-      </button>
-      <button
-        type="button"
-        class="win-button ds-btn-compact"
-        style="flex-shrink:0;"
+        onOpen={openAddToCol}
+      />
+      <ExternalLinkButton
+        cssText="flex-shrink:0;"
         title={`Open "${decodeEntities(ch.title)}" on Dynasty Scans in browser`}
-        onClick={(ev) => {
-          ev.stopPropagation();
-          openExternal(`https://dynasty-scans.com/chapters/${ch.permalink}`);
-        }}
-      >
-        <i class="bi bi-box-arrow-up-right"></i>
-      </button>
+        url={`https://dynasty-scans.com/chapters/${ch.permalink}`}
+      />
     </div>
   );
 }

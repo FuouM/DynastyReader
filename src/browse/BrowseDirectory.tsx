@@ -6,7 +6,7 @@
 
 import { createEffect, createMemo, createResource, createSignal, For, Show, type Accessor } from "solid-js";
 import { decodeEntities, navigate } from "../stores";
-import { directoryGroups, fetchDirectory, openExternal, searchAllDirectoryEntries, syncAllDirectoryPages } from "../api";
+import { directoryGroups, fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages } from "../api";
 import { getBlacklistMode, isSeriesBlacklisted, type BlacklistMode } from "../db";
 import {
   setPaneLoading,
@@ -17,7 +17,9 @@ import {
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
 import { InputField } from "../components/InputField";
-import { TriggerWarningModal } from "../components/TriggerWarning";
+import { ExternalLinkButton } from "../components/ExternalLinkButton";
+import { EmptyState } from "../components/EmptyState";
+import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import type { Directory, DirectoryGroup } from "../types/api";
 
 interface DirectoryModel {
@@ -72,24 +74,16 @@ function DirectoryRow(props: {
           </span>
         </Show>
       </div>
-      <button
-        type="button"
-        class="win-button ds-btn-xs"
-        style="flex-shrink:0;"
+      <ExternalLinkButton
+        class="ds-btn-xs"
+        cssText="flex-shrink:0;"
         title={props.kind === "series" ? "Open series in browser" : "Search tag in browser"}
-        onClick={(ev) => {
-          ev.stopPropagation();
-          if (props.kind === "series") {
-            void openExternal(`https://dynasty-scans.com/series/${props.entry.permalink}`);
-          } else {
-            void openExternal(
-              `https://dynasty-scans.com/search?q=${encodeURIComponent(props.entry.name)}`,
-            );
-          }
-        }}
-      >
-        <i class="bi bi-box-arrow-up-right"></i>
-      </button>
+        url={
+          props.kind === "series"
+            ? `https://dynasty-scans.com/series/${props.entry.permalink}`
+            : `https://dynasty-scans.com/search?q=${encodeURIComponent(props.entry.name)}`
+        }
+      />
     </div>
   );
 }
@@ -116,11 +110,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
   });
   const showSpinner = useDelayedSpinner(pane.loading);
   const [query, setQuery] = createSignal("");
-  const [warning, setWarning] = createSignal<{
-    title: string;
-    matchedTags: string[];
-    onProceed: () => void;
-  } | null>(null);
+  const triggerWarning = useTriggerWarning();
 
   createEffect(() => setPaneLoading(props.tabId, pane.loading()));
 
@@ -209,9 +199,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
                       kind={props.kind}
                       entry={entry}
                       blMode={model()!.blMode}
-                      onWarn={(title, matchedTags, proceed) =>
-                        setWarning({ title, matchedTags, onProceed: proceed })
-                      }
+                      onWarn={(title, matchedTags, proceed) => triggerWarning.warn(title, matchedTags, proceed)}
                     />
                   )}
                 </For>
@@ -229,12 +217,15 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
       </Show>
 
       <Show when={model() !== undefined && displayGroups().length === 0 && model()!.groups.length > 0}>
-        <div class="ds-empty-state" style="padding:24px;text-align:center;">
-          <i class="bi bi-search" style="font-size:24px;opacity:0.6;display:block;margin-bottom:8px;"></i>
+        <EmptyState
+          cssText="padding:24px;text-align:center;"
+          iconClass="bi bi-search"
+          iconCssText="font-size:24px;opacity:0.6;display:block;margin-bottom:8px;"
+        >
           <span class="ds-muted">
             No {props.kind === "series" ? "series" : "tags"} match "{query()}".
           </span>
-        </div>
+        </EmptyState>
       </Show>
 
       <Show when={model() !== undefined && model()!.groups.length === 0}>
@@ -245,13 +236,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
         <Loading message="Loading directory..." />
       </Show>
 
-      <TriggerWarningModal
-        open={warning() !== null}
-        title={warning()?.title ?? ""}
-        matchedTags={warning()?.matchedTags ?? []}
-        onClose={() => setWarning(null)}
-        onProceed={warning()?.onProceed ?? (() => {})}
-      />
+      {triggerWarning.host}
     </div>
   );
 }

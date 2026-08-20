@@ -1,0 +1,37 @@
+/**
+ * Blacklist hide-notice bar with a Show/Hide toggle. Consolidated from two
+ * inline copies (BrowseFeed, BrowseSearch).
+ */
+
+export interface BlacklistNoticeProps {
+  count: number;
+  /** Singular noun describing the hidden items, e.g. "chapter" or "result". */
+  noun: string;
+  showHidden: boolean;
+  onToggle: () => void;
+  /** Optional trailing CSS appended to the bar style (default margin is 6px). */
+  cssText?: string;
+}
+
+export function BlacklistNotice(props: BlacklistNoticeProps) {
+  return (
+    <div
+      class="ds-row ds-blacklist-notice"
+      style={`background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:4px 10px;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11px;${props.cssText ?? ""}`}
+    >
+      <div class="ds-flex-row">
+        <i class="bi bi-shield-slash-fill" style="color:#dc3545;"></i>
+        <span>
+          <b>{props.count}</b> {props.noun}
+          {props.count === 1 ? "" : "s"} hidden by blacklist.
+        </span>
+      </div>
+      <button type="button" class="win-button ds-btn-sm" onClick={props.onToggle}>
+        <i class={`bi bi-${props.showHidden ? "eye-slash" : "eye"}`}></i>{" "}
+        {props.showHidden
+          ? "Hide Blacklisted"
+          : `Show Blacklisted (${props.count})`}
+      </button>
+    </div>
+  );
+}

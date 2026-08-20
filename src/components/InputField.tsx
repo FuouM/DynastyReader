@@ -15,7 +15,12 @@ export interface InputFieldProps {
   title?: string;
   onInput?: (value: string) => void;
   onEnter?: () => void;
+  onEscape?: () => void;
   onClear?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  /** Optional content rendered inside the wrapper (e.g. a typeahead dropdown). */
+  dropdown?: JSX.Element;
   children?: JSX.Element;
 }
 
@@ -34,6 +39,8 @@ export function InputField(props: InputFieldProps) {
         placeholder={props.placeholder}
         title={props.title}
         value={value()}
+        onFocus={props.onFocus}
+        onBlur={props.onBlur}
         onInput={(ev) => {
           const next = (ev.target as HTMLInputElement).value;
           setValue(next);
@@ -43,6 +50,8 @@ export function InputField(props: InputFieldProps) {
           if (ev.key === "Enter") {
             ev.preventDefault();
             props.onEnter?.();
+          } else if (ev.key === "Escape") {
+            props.onEscape?.();
           }
         }}
       />
@@ -59,6 +68,7 @@ export function InputField(props: InputFieldProps) {
       >
         <i class="bi bi-x-lg"></i>
       </button>
+      {props.dropdown}
     </div>
   );
 }

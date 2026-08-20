@@ -2,7 +2,7 @@
  * Small action-bar / empty-state components shared across views. Port of `action-bar.ts`.
  */
 
-import { Show, type JSX } from "solid-js";
+import type { JSX } from "solid-js";
 
 export interface TopbarActionProps {
   html?: JSX.Element;
@@ -48,19 +48,3 @@ export function BackRefreshActions(props: BackRefreshActionsProps) {
   );
 }
 
-export interface EmptyStateProps {
-  iconClass?: string;
-  children?: JSX.Element;
-}
-
-/** Centered empty-state block. */
-export function EmptyState(props: EmptyStateProps) {
-  return (
-    <div class="ds-empty-state">
-      <Show when={props.iconClass}>
-        <i class={props.iconClass} aria-hidden="true"></i>
-      </Show>
-      {props.children}
-    </div>
-  );
-}

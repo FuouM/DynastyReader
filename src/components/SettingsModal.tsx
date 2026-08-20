@@ -27,6 +27,7 @@ import {
 } from "../reader/settings";
 import { Typeahead } from "./Typeahead";
 import { Modal } from "./Modal";
+import { ExternalLinkButton } from "./ExternalLinkButton";
 import { checkUpdates } from "./UpdateDialog";
 import * as ipc from "../ipc";
 
@@ -199,18 +200,18 @@ export function SettingsModal(props: SettingsModalProps) {
               </label>
             </div>
             <div style="display:flex;gap:6px;position:relative;">
-              <div class="input-wrapper" style="flex:1;">
-                <Typeahead
-                  fetcher={suggest}
-                  value={blInput()}
-                  onInputValue={(val) => setBlInput(val)}
-                  onSelect={(item) => void addTag(item.name, (item as any).permalink)}
-                  onEnter={(val) => void addTag(val || blInput())}
-                  placeholder="Search or enter tag to blacklist (e.g. NSFW, Het)..."
-                  maxItems={6}
-                  debounceMs={200}
-                />
-              </div>
+              <div style="flex:1;">
+              <Typeahead
+                fetcher={suggest}
+                value={blInput()}
+                onInputValue={(val) => setBlInput(val)}
+                onSelect={(item) => void addTag(item.name, (item as any).permalink)}
+                onEnter={(val) => void addTag(val || blInput())}
+                placeholder="Search or enter tag to blacklist (e.g. NSFW, Het)..."
+                maxItems={6}
+                debounceMs={200}
+              />
+            </div>
               <button type="button" class="win-button" id="ds-settings-blacklist-add" style="font-size:11px;padding:2px 10px;" onClick={() => void addTag(blInput())}>
                 <i class="bi bi-plus-lg"></i> Add
               </button>
@@ -369,9 +370,13 @@ export function SettingsModal(props: SettingsModalProps) {
               <button type="button" class="win-button ds-btn-compact" id="ds-about-open-github" title="Open DynastyReader GitHub repository" onClick={() => void openExternal("https://github.com/FuouM/DynastyReader")}>
                 <i class="bi bi-github"></i> GitHub
               </button>
-              <button type="button" class="win-button ds-btn-compact" id="ds-about-open-site" title="Open Dynasty Scans website in browser" onClick={() => void openExternal("https://dynasty-scans.com")}>
-                <i class="bi bi-box-arrow-up-right"></i> dynasty-scans.com
-              </button>
+              <ExternalLinkButton
+                id="ds-about-open-site"
+                title="Open Dynasty Scans website in browser"
+                url="https://dynasty-scans.com"
+              >
+                dynasty-scans.com
+              </ExternalLinkButton>
             </div>
           </div>
         </div>

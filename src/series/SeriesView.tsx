@@ -46,10 +46,10 @@ import { useDelayedSpinner } from "../browse/browse-state";
 import { TagPill } from "../components/TagPill";
 import { Cover } from "../components/Cover";
 import { Loading } from "../components/Loading";
-import {
-  AddToCollectionModal,
-  type AddToCollectionItem,
-} from "../components/AddToCollectionModal";
+import { OfflineBadge } from "../components/OfflineBadge";
+import { ExternalLinkButton } from "../components/ExternalLinkButton";
+import { AddToCollectionButton } from "../components/AddToCollectionButton";
+import { useAddToCollection } from "../components/hooks/useAddToCollection";
 
 interface ChapterMeta extends ChapterRef {
   volumeHeader?: string;
@@ -270,13 +270,7 @@ function ChapterRow(props: {
     >
       <div class="ds-chapter-title" style="display:inline-flex;align-items:center;gap:4px;">
         <span>{decodeEntities(props.ch.title)}</span>
-        {isFullyCached ? (
-          <i
-            class="bi bi-cloud-check-fill ds-offline-icon"
-            style="color:var(--sys-primary,#0078d4);font-size:11px;"
-            title="Available Offline (Fully Cached)"
-          ></i>
-        ) : null}
+        <OfflineBadge when={isFullyCached} />
       </div>
       {badges.length > 0 ? <div class="ds-chapter-badge">{badges.join(" · ")}</div> : null}
     </div>
@@ -288,10 +282,7 @@ export function SeriesView() {
   const [busyFollow, setBusyFollow] = createSignal(false);
   const [busyBlacklist, setBusyBlacklist] = createSignal(false);
   const [sortOrder, setSortOrder] = createSignal<"asc" | "desc">("asc");
-  const [addToCol, setAddToCol] = createSignal<{
-    item: AddToCollectionItem;
-    anchorEl: HTMLElement;
-  } | null>(null);
+  const addToCol = useAddToCollection();
 
   const [data, { refetch }] = createResource(
     () => ({ permalink: route().seriesPermalink, forceTick: forceTick() }),
@@ -362,6 +353,22 @@ export function SeriesView() {
     const seriesPermalink = series.permalink;
     const seriesName = series.name;
     const latest = chapters[chapters.length - 1];
+    const rawType = (series.type ?? "series").toLowerCase();
+    const segmentMap: Record<string, string> = {
+      series: "series",
+      anthology: "anthologies",
+      doujin: "doujins",
+      doujinshi: "doujins",
+      issue: "issues",
+      author: "authors",
+      artist: "authors",
+      scanlator: "scanlators",
+      group: "scanlators",
+      pairing: "pairings",
+      tag: "tags",
+      general: "tags",
+    };
+    const openUrl = `https://dynasty-scans.com/${segmentMap[rawType] || "series"}/${encodeURIComponent(seriesPermalink)}`;
 
     setTitle(decodeEntities(seriesName));
     setSessionTab((current) => {
@@ -430,24 +437,22 @@ export function SeriesView() {
           )}{" "}
           <span class="ds-btn-text">{followed ? "Following" : "Follow"}</span>
         </button>
-        <button
-          type="button"
-          class="win-button"
-          title="Add to Favorites or custom collections"
-          onClick={(ev) =>
-            setAddToCol({
-              item: {
+        <AddToCollectionButton
+          class=""
+          onOpen={(anchorEl) =>
+            addToCol.open(
+              {
                 permalink: seriesPermalink,
                 title: seriesName,
                 kind: "series",
                 cover: coverPath,
               },
-              anchorEl: ev.currentTarget as HTMLElement,
-            })
+              anchorEl,
+            )
           }
         >
-          <i class="bi bi-folder-plus"></i> <span class="ds-btn-text">Add to...</span>
-        </button>
+          <span class="ds-btn-text">Add to...</span>
+        </AddToCollectionButton>
         <button
           type="button"
           class={`win-button${blacklisted ? " active" : ""}`}
@@ -474,32 +479,11 @@ export function SeriesView() {
         >
           <i class="bi bi-arrow-clockwise"></i> <span class="ds-btn-text">Refresh</span>
         </button>
-        <button
-          type="button"
-          class="win-button"
+        <ExternalLinkButton
+          class=""
           title={`Open this ${series.type ? series.type.toLowerCase() : "series"} in your browser`}
-          onClick={() => {
-            const rawType = (series.type ?? "series").toLowerCase();
-            const segmentMap: Record<string, string> = {
-              series: "series",
-              anthology: "anthologies",
-              doujin: "doujins",
-              doujinshi: "doujins",
-              issue: "issues",
-              author: "authors",
-              artist: "authors",
-              scanlator: "scanlators",
-              group: "scanlators",
-              pairing: "pairings",
-              tag: "tags",
-              general: "tags",
-            };
-            const segment = segmentMap[rawType] || "series";
-            void openExternal(`https://dynasty-scans.com/${segment}/${encodeURIComponent(seriesPermalink)}`);
-          }}
-        >
-          <i class="bi bi-box-arrow-up-right"></i>
-        </button>
+          url={openUrl}
+        />
       </>,
     );
   });
@@ -543,12 +527,7 @@ export function SeriesView() {
         />
       </Show>
 
-      <AddToCollectionModal
-        open={addToCol() !== null}
-        item={addToCol()?.item ?? { permalink: "", title: "" }}
-        anchorEl={addToCol()?.anchorEl ?? null}
-        onClose={() => setAddToCol(null)}
-      />
+      {addToCol.host}
     </>
   );
 }

@@ -48,8 +48,9 @@ import {
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
-import { TriggerWarningModal } from "../components/TriggerWarning";
-import { AddToCollectionModal, type AddToCollectionItem } from "../components/AddToCollectionModal";
+import { BlacklistNotice } from "../components/BlacklistNotice";
+import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
+import { useAddToCollection } from "../components/hooks/useAddToCollection";
 import { FeedItemRow } from "../components/FeedItemRow";
 import type { Feed, FeedChapter, FeedRevalidationResult } from "../types/api";
 
@@ -376,15 +377,8 @@ export function BrowseFeed(props: BrowseFeedProps) {
     etagStatus: "Cached",
     isStale: false,
   });
-  const [warning, setWarning] = createSignal<{
-    title: string;
-    matchedTags: string[];
-    onProceed: () => void;
-  } | null>(null);
-  const [addToCol, setAddToCol] = createSignal<{
-    item: AddToCollectionItem;
-    anchorEl: HTMLElement;
-  } | null>(null);
+  const triggerWarning = useTriggerWarning();
+  const addToCol = useAddToCollection();
 
   let hostEl: HTMLElement | null = null;
 
@@ -574,8 +568,8 @@ export function BrowseFeed(props: BrowseFeedProps) {
       isBlacklisted={row.isBlacklisted}
       matchedTags={row.matchedTags}
       isFullyCached={row.isFullyCached}
-      onWarn={(title, matchedTags, proceed) => setWarning({ title, matchedTags, onProceed: proceed })}
-      onAddToCol={(item, anchorEl) => setAddToCol({ item, anchorEl })}
+      onWarn={(title, matchedTags, proceed) => triggerWarning.warn(title, matchedTags, proceed)}
+      onAddToCol={addToCol.onAddToCol}
     />
   );
 
@@ -595,28 +589,12 @@ export function BrowseFeed(props: BrowseFeedProps) {
         </Show>
 
         <Show when={model()!.blMode === "hide" && model()!.blacklistedRows.length > 0}>
-          <div
-            class="ds-row ds-blacklist-notice"
-            style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:4px 10px;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11px;"
-          >
-            <div class="ds-flex-row">
-              <i class="bi bi-shield-slash-fill" style="color:#dc3545;"></i>
-              <span>
-                <b>{model()!.blacklistedRows.length}</b> chapter
-                {model()!.blacklistedRows.length === 1 ? "" : "s"} hidden by blacklist.
-              </span>
-            </div>
-            <button
-              type="button"
-              class="win-button ds-btn-sm"
-              onClick={() => setShowHidden(!showHidden())}
-            >
-              <i class={`bi bi-${showHidden() ? "eye-slash" : "eye"}`}></i>{" "}
-              {showHidden()
-                ? "Hide Blacklisted"
-                : `Show Blacklisted (${model()!.blacklistedRows.length})`}
-            </button>
-          </div>
+          <BlacklistNotice
+            count={model()!.blacklistedRows.length}
+            noun="chapter"
+            showHidden={showHidden()}
+            onToggle={() => setShowHidden(!showHidden())}
+          />
           <Show when={showHidden()}>
             <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px;">
               <For each={model()!.blacklistedRows}>{renderRow}</For>
@@ -659,19 +637,8 @@ export function BrowseFeed(props: BrowseFeedProps) {
         <Loading message="Loading chapters..." />
       </Show>
 
-      <TriggerWarningModal
-        open={warning() !== null}
-        title={warning()?.title ?? ""}
-        matchedTags={warning()?.matchedTags ?? []}
-        onClose={() => setWarning(null)}
-        onProceed={warning()?.onProceed ?? (() => {})}
-      />
-      <AddToCollectionModal
-        open={addToCol() !== null}
-        item={addToCol()?.item ?? { permalink: "", title: "" }}
-        anchorEl={addToCol()?.anchorEl ?? null}
-        onClose={() => setAddToCol(null)}
-      />
+      {triggerWarning.host}
+      {addToCol.host}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
 } from "../db";
 import { browseCovers } from "../browse/browse-covers";
 import { BackRefreshActions } from "../components/ActionBar";
+import { EmptyState } from "../components/EmptyState";
 import { ConfirmDeleteButton } from "../components/Button";
 import { FeedCover } from "../components/Cover";
 import { Loading } from "../components/Loading";
@@ -279,9 +280,9 @@ function CacheBody(props: {
                 <Show
                   when={props.filtered().length > 0}
                   fallback={
-                    <div class="ds-muted" style="padding:12px;">
-                      No matching cached works found.
-                    </div>
+                    <EmptyState cssText="padding:12px;">
+                      <span class="ds-muted">No matching cached works found.</span>
+                    </EmptyState>
                   }
                 >
                   <For each={props.filtered()}>
@@ -337,9 +338,9 @@ function CacheBody(props: {
             </>
           }
         >
-          <div class="ds-muted" style="padding:24px;text-align:center;">
-            No cached chapters or series found on disk.
-          </div>
+          <EmptyState cssText="padding:24px;text-align:center;">
+            <span class="ds-muted">No cached chapters or series found on disk.</span>
+          </EmptyState>
         </Show>
       </div>
     </>

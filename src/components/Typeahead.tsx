@@ -1,14 +1,16 @@
 /**
  * Debounced fetch-on-input typeahead component. Port of `typeahead.ts`.
  *
- * Owns its input and suggestion dropdown. Renders `ds-typeahead-item` rows
- * (mousedown selects), hides on Escape/blur/empty, and calls `onEnter` when
- * Enter is pressed in the input. The clear-button and suggestion host are
- * component-local (the global `setupInputClearButtons` delegation is retired).
+ * Owns its input and suggestion dropdown. Composes `InputField` (so the
+ * clear-button/wrapper markup lives in exactly one place) and renders
+ * `ds-typeahead-item` rows inside the input wrapper (mousedown selects),
+ * hiding on Escape/blur/empty, and calling `onEnter` when Enter is pressed
+ * in the input.
  */
 
 import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 import { decodeEntities } from "../stores";
+import { InputField } from "./InputField";
 
 export interface TypeaheadItem {
   name: string;
@@ -16,7 +18,6 @@ export interface TypeaheadItem {
 }
 
 export interface TypeaheadProps {
-  id?: string;
   fetcher: (q: string) => Promise<TypeaheadItem[]>;
   onSelect: (item: TypeaheadItem) => void;
   onEnter?: (value: string) => void;
@@ -75,73 +76,60 @@ export function Typeahead(props: TypeaheadProps) {
     }, debounceMs);
   });
 
+  const dropdown = (
+    <Show when={open()}>
+      <div class="ds-typeahead" style="max-height:160px;">
+        <For each={suggestions()}>
+          {(item) => (
+            <div
+              class="ds-typeahead-item"
+              onMouseDown={() => {
+                props.onSelect(item);
+                setOpen(false);
+              }}
+            >
+              <span class="ds-fill ds-truncate">{decodeEntities(item.name)}</span>
+              <span class="ds-typeahead-type">{decodeEntities(item.type)}</span>
+            </div>
+          )}
+        </For>
+      </div>
+    </Show>
+  );
+
   return (
     <Show when={props.fetcher !== undefined}>
-      <div class="input-wrapper" classList={{ "has-value": inputValue().length > 0 }}>
-        <input
-          type="text"
-          id={props.id}
-          class="input-field has-clear"
-          placeholder={props.placeholder}
-          value={inputValue()}
-          onFocus={() => {
-            setIsFocused(true);
-            if (suggestions().length > 0 && inputValue().trim()) {
-              setOpen(true);
-            }
-          }}
-          onInput={(ev) => {
-            const v = (ev.target as HTMLInputElement).value;
-            setInputValue(v);
-            props.onInputValue?.(v);
-          }}
-          onKeyDown={(ev) => {
-            if (ev.key === "Enter") {
-              if (inputValue().trim()) props.onEnter?.(inputValue());
-            } else if (ev.key === "Escape") {
-              setOpen(false);
-            }
-          }}
-          onBlur={() => {
-            window.setTimeout(() => {
-              setIsFocused(false);
-              setOpen(false);
-            }, 150);
-          }}
-        />
-        <button
-          type="button"
-          class="input-clear-btn"
-          tabIndex={-1}
-          title="Clear"
-          onClick={() => {
-            setInputValue("");
-            setSuggestions([]);
+      <InputField
+        value={inputValue()}
+        placeholder={props.placeholder}
+        onInput={(v) => {
+          setInputValue(v);
+          props.onInputValue?.(v);
+        }}
+        onEnter={() => {
+          if (inputValue().trim()) props.onEnter?.(inputValue());
+        }}
+        onEscape={() => setOpen(false)}
+        onClear={() => {
+          setInputValue("");
+          setSuggestions([]);
+          setOpen(false);
+          props.onInputValue?.("");
+        }}
+        onFocus={() => {
+          setIsFocused(true);
+          if (suggestions().length > 0 && inputValue().trim()) {
+            setOpen(true);
+          }
+        }}
+        onBlur={() => {
+          window.setTimeout(() => {
+            setIsFocused(false);
             setOpen(false);
-            props.onInputValue?.("");
-          }}
-        >
-          <i class="bi bi-x-lg"></i>
-        </button>
-        <Show when={open()}>
-          <div class="ds-typeahead" style="max-height:160px;">
-            <For each={suggestions()}>
-              {(item) => (
-                <div
-                  class="ds-typeahead-item"
-                  onMouseDown={() => {
-                    props.onSelect(item);
-                    setOpen(false);
-                  }}
-                >
-                  <span class="ds-fill ds-truncate">{decodeEntities(item.name)}</span>
-                  <span class="ds-typeahead-type">{decodeEntities(item.type)}</span>
-                </div>
-              )}
-            </For>
-          </div>
-        </Show>
-      </div>
+          }, 150);
+        }}
+        dropdown={dropdown}
+      />
     </Show>
   );
 }

@@ -36,8 +36,13 @@ import { Pager } from "../components/Pager";
 import { TagPill } from "../components/TagPill";
 import { Loading } from "../components/Loading";
 import { Typeahead } from "../components/Typeahead";
-import { TriggerWarningModal } from "../components/TriggerWarning";
-import { AddToCollectionModal, type AddToCollectionItem } from "../components/AddToCollectionModal";
+import { OfflineBadge } from "../components/OfflineBadge";
+import { WarningChip } from "../components/WarningChip";
+import { AddToCollectionButton } from "../components/AddToCollectionButton";
+import { EmptyState } from "../components/EmptyState";
+import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
+import { useAddToCollection } from "../components/hooks/useAddToCollection";
+import type { AddToCollectionItem } from "../components/AddToCollectionModal";
 import type {
   SearchClass,
   SearchResultItem,
@@ -161,13 +166,7 @@ function SearchResultRow(props: {
             title={`Open ${item.title}`}
           >
             <span>{decodeEntities(item.title)}</span>
-            <Show when={props.isFullyCached}>
-              <i
-                class="bi bi-cloud-check-fill ds-offline-icon"
-                style="color:var(--sys-primary,#0078d4);font-size:11px;"
-                title="Available Offline (Fully Cached)"
-              ></i>
-            </Show>
+            <OfflineBadge when={props.isFullyCached} />
           </span>
           <span
             class="ds-muted"
@@ -176,13 +175,7 @@ function SearchResultRow(props: {
             {item.kind}
           </span>
           <Show when={isBlacklisted && matchedTags.length > 0}>
-            <span
-              style="font-size:9px;background:var(--ds-danger-bg);color:var(--ds-danger-text);padding:1px 5px;border-radius:2px;border:1px solid var(--ds-danger-border);display:inline-flex;align-items:center;gap:3px;font-weight:600;"
-            >
-              <i class="bi bi-exclamation-triangle-fill"></i>{" "}
-              {props.blMode === "warn" ? "Content Warning" : "Blacklisted"}:{" "}
-              {decodeEntities(matchedTags.join(", "))}
-            </span>
+            <WarningChip mode={props.blMode} tags={matchedTags} />
           </Show>
         </div>
 
@@ -243,25 +236,19 @@ function SearchResultRow(props: {
       </div>
 
       <Show when={isCollectible}>
-        <button
-          type="button"
-          class="win-button ds-btn-compact"
-          style="align-self:center;"
-          title="Add to Favorites or custom collections"
-          onClick={(ev) => {
-            ev.stopPropagation();
+        <AddToCollectionButton
+          cssText="align-self:center;"
+          onOpen={(anchorEl) =>
             props.onAddToCol(
               {
                 permalink: item.permalink,
                 title: item.title,
                 kind: item.kind === "chapter" ? "chapter" : (item.kind as CollectionItemKind),
               },
-              ev.currentTarget as HTMLElement,
-            );
-          }}
-        >
-          <i class="bi bi-folder-plus"></i>
-        </button>
+              anchorEl,
+            )
+          }
+        />
       </Show>
 
       <button
@@ -296,15 +283,8 @@ export function BrowseSearch(props: BrowseSearchProps) {
   const [withDraft, setWithDraft] = createSignal("");
   const [withoutDraft, setWithoutDraft] = createSignal("");
   const [showHidden, setShowHidden] = createSignal(false);
-  const [warning, setWarning] = createSignal<{
-    title: string;
-    matchedTags: string[];
-    onProceed: () => void;
-  } | null>(null);
-  const [addToCol, setAddToCol] = createSignal<{
-    item: AddToCollectionItem;
-    anchorEl: HTMLElement;
-  } | null>(null);
+  const triggerWarning = useTriggerWarning();
+  const addToCol = useAddToCollection();
 
   const pane = useTabPane<SearchModel>({
     active: props.active,
@@ -449,8 +429,8 @@ export function BrowseSearch(props: BrowseSearchProps) {
       row={row}
       isFullyCached={model()?.fullyCachedSet.has(row.item.permalink) ?? false}
       blMode={model()?.blMode ?? "hide"}
-      onWarn={(title, matchedTags, proceed) => setWarning({ title, matchedTags, onProceed: proceed })}
-      onAddToCol={(item, anchorEl) => setAddToCol({ item, anchorEl })}
+      onWarn={(title, matchedTags, proceed) => triggerWarning.warn(title, matchedTags, proceed)}
+      onAddToCol={addToCol.onAddToCol}
     />
   );
 
@@ -645,14 +625,14 @@ export function BrowseSearch(props: BrowseSearchProps) {
           </div>
 
           <Show when={model()!.pageData.items.length === 0}>
-            <div class="ds-muted" style="padding:24px;text-align:center;">
+            <EmptyState cssText="padding:24px;text-align:center;">
               <div style="font-size:14px;margin-bottom:4px;">
                 <i class="bi bi-search"></i> No matching results found
               </div>
               <div style="font-size:11px;">
                 Try adjusting keywords, clearing category filters, or removing excluded tags.
               </div>
-            </div>
+            </EmptyState>
           </Show>
 
           <Show when={model()!.pageData.items.length > 0}>
@@ -723,19 +703,8 @@ export function BrowseSearch(props: BrowseSearchProps) {
         </Show>
       </div>
 
-      <TriggerWarningModal
-        open={warning() !== null}
-        title={warning()?.title ?? ""}
-        matchedTags={warning()?.matchedTags ?? []}
-        onClose={() => setWarning(null)}
-        onProceed={warning()?.onProceed ?? (() => {})}
-      />
-      <AddToCollectionModal
-        open={addToCol() !== null}
-        item={addToCol()?.item ?? { permalink: "", title: "" }}
-        anchorEl={addToCol()?.anchorEl ?? null}
-        onClose={() => setAddToCol(null)}
-      />
+      {triggerWarning.host}
+      {addToCol.host}
     </div>
   );
 }
