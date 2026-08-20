@@ -251,7 +251,7 @@ body {
   }
 }
 #ds-banner {
-  display: none;
+  display: inline-flex;
   font-size: 11px;
   color: var(--sys-window-text, #333);
   background: var(--sys-control-bg, #ececec);

@@ -18,8 +18,6 @@
 import { createEffect, Show, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import {
-  clearActions,
-  clearBanner,
   route,
   routeTitle,
   setTitle,
@@ -46,12 +44,8 @@ export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
 };
 
 export function App() {
-  // Reproduce legacy `renderCurrent`: reset title/banner/actions on every
-  // top-level route change. Views re-publish their own title/actions after.
   createEffect(() => {
     const r = route();
-    clearBanner();
-    clearActions();
     setTitle(routeTitle(r));
   });
 

@@ -283,7 +283,6 @@ const MIGRATIONS: Migration[] = [
 
 let initDbPromise: Promise<void> | null = null;
 
-/** Applies pending migrations in order, then records the schema version. */
 export async function initDb(): Promise<void> {
   if (!initDbPromise) {
     initDbPromise = (async () => {
@@ -294,6 +293,7 @@ export async function initDb(): Promise<void> {
         await migration.up();
         await setSchemaVersion(migration.version);
       }
+      await initBlacklistCache();
     })();
   }
   return initDbPromise;

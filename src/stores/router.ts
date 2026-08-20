@@ -8,6 +8,7 @@
  */
 
 import { createSignal } from "solid-js";
+import { clearActions } from "./topbar";
 import type { Route, SessionMangaTab } from "../types/routes";
 export type { Route, ViewName, ChapterRef, SessionMangaTab } from "../types/routes";
 
@@ -66,6 +67,9 @@ export function navigate(r: Route): void {
   if (isSameRoute(route(), r)) {
     return;
   }
+
+  // Clear actions before switching routes
+  clearActions();
 
   // Track in history stack if this is a fresh user navigation
   if (!isNavigatingHistory) {
@@ -139,6 +143,9 @@ export function routeTitle(r: Route): string {
       return r.chapterTitle ?? "Reader";
     case "cache":
       return "Cache Management";
+    case "blacklist":
+      return "Series Blacklist";
+    case "library":
     default:
       return "Library";
   }
