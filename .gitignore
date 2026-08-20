@@ -12,6 +12,7 @@ node_modules
 
 .plans/
 implementation_plan_*.md
+*PLAN*.md
 
 # symlinks from Project Curator locally
 
