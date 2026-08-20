@@ -5,9 +5,8 @@
  */
 
 import { createEffect, createSignal, For, Show, type Accessor } from "solid-js";
-import { decodeEntities, formatBytes, formatDate, navigate, route } from "../stores";
+import { formatBytes, formatDate, route } from "../stores";
 import { getFullyCachedChapters, type FullyCachedChapterRow } from "../db";
-import { convertFileSrc } from "../ipc";
 import {
   scrollBrowseToTop,
   setPaneLoading,
@@ -18,76 +17,28 @@ import {
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
 import { InputField } from "../components/InputField";
+import { FeedItemRow } from "../components/FeedItemRow";
+import { AddToCollectionModal, type AddToCollectionItem } from "../components/AddToCollectionModal";
 
 const PAGE_SIZE = 25;
 
-function DownloadedRow(props: { ch: FullyCachedChapterRow }) {
+function DownloadedRow(props: {
+  ch: FullyCachedChapterRow;
+  onAddToCol: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
+}) {
   const { ch } = props;
-  const [coverError, setCoverError] = createSignal(false);
-
-  const openChapter = (): void => {
-    navigate({
-      view: "reader",
-      seriesPermalink: ch.seriesPermalink ?? undefined,
-      seriesName: ch.seriesName ?? undefined,
-      chapterPermalink: ch.chapterPermalink,
-      chapterTitle: ch.chapterTitle,
-    });
-  };
-
   return (
-    <div
-      class="ds-item ds-feed-item"
-      style="display:flex;align-items:center;gap:10px;padding:6px 8px;cursor:pointer;"
-      onClick={openChapter}
-    >
-      <div
-        class="ds-feed-cover-wrap"
-        style="flex-shrink:0;width:38px;height:52px;background:var(--sys-control-bg,#e2e2e2);border:1px solid var(--sys-border-light,#ccc);border-radius:2px;overflow:hidden;display:flex;align-items:center;justify-content:center;"
-      >
-        <Show
-          when={ch.coverPath && !coverError()}
-          fallback={
-            <i class="bi bi-book" style="color:var(--sys-text-muted,#888);font-size:16px;"></i>
-          }
-        >
-          <img
-            src={convertFileSrc(ch.coverPath!)}
-            style="width:100%;height:100%;object-fit:cover;display:block;"
-            loading="lazy"
-            onError={() => setCoverError(true)}
-          />
-        </Show>
-      </div>
-
-      <div class="ds-fill" style="display:flex;flex-direction:column;gap:4px;">
-        <div class="ds-flex-row" style="flex-wrap:wrap;">
-          <span class="ds-item-title" style="font-weight:600;font-size:12px;color:var(--sys-window-text,#111);">
-            {decodeEntities(ch.chapterTitle)}
-          </span>
-          <i
-            class="bi bi-cloud-check-fill ds-offline-icon"
-            style="color:var(--sys-primary,#0078d4);font-size:11px;"
-            title="Available Offline (Fully Cached)"
-          ></i>
-        </div>
-        <div class="ds-flex-row" style="flex-wrap:wrap;font-size:11px;">
-          <Show when={ch.seriesName && ch.seriesPermalink}>
-            <span
-              class="ds-series-link"
-              title={`Go to series: ${decodeEntities(ch.seriesName!)}`}
-              onClick={(ev) => {
-                ev.stopPropagation();
-                navigate({
-                  view: "series",
-                  seriesPermalink: ch.seriesPermalink!,
-                  seriesName: ch.seriesName!,
-                });
-              }}
-            >
-              {decodeEntities(ch.seriesName!)}
-            </span>
-          </Show>
+    <FeedItemRow
+      item={{
+        permalink: ch.chapterPermalink,
+        title: ch.chapterTitle,
+        series: ch.seriesName,
+        tags: ch.tags,
+      }}
+      coverPath={ch.coverPath}
+      isFullyCached={true}
+      extraMeta={
+        <>
           <span class="ds-muted">✓ {ch.pageCount} pages</span>
           <Show when={ch.totalSizeBytes > 0}>
             <span class="ds-muted">· {formatBytes(ch.totalSizeBytes)}</span>
@@ -95,22 +46,10 @@ function DownloadedRow(props: { ch: FullyCachedChapterRow }) {
           <Show when={ch.lastCachedAt > 0}>
             <span class="ds-muted">· {formatDate(ch.lastCachedAt)}</span>
           </Show>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="win-button ds-btn-sm"
-        style="font-size:11px;padding:2px 10px;flex-shrink:0;"
-        title={`Read "${decodeEntities(ch.chapterTitle)}"`}
-        onClick={(ev) => {
-          ev.stopPropagation();
-          openChapter();
-        }}
-      >
-        <i class="bi bi-book"></i> Read
-      </button>
-    </div>
+        </>
+      }
+      onAddToCol={props.onAddToCol}
+    />
   );
 }
 
@@ -132,6 +71,10 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
 
   const [query, setQuery] = createSignal("");
   const [page, setPage] = createSignal(1);
+  const [addToCol, setAddToCol] = createSignal<{
+    item: AddToCollectionItem;
+    anchorEl: HTMLElement;
+  } | null>(null);
 
   createEffect(() => setPaneLoading(props.tabId, pane.loading()));
 
@@ -224,7 +167,14 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
 
         <Show when={pageItems().length > 0}>
           <div class="ds-feed-list" style="display:flex;flex-direction:column;gap:6px;">
-            <For each={pageItems()}>{(ch) => <DownloadedRow ch={ch} />}</For>
+            <For each={pageItems()}>
+              {(ch) => (
+                <DownloadedRow
+                  ch={ch}
+                  onAddToCol={(item, anchorEl) => setAddToCol({ item, anchorEl })}
+                />
+              )}
+            </For>
           </div>
         </Show>
       </div>
@@ -238,6 +188,13 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
       <Show when={showSpinner() && model() === undefined}>
         <Loading message="Loading downloaded chapters..." />
       </Show>
+
+      <AddToCollectionModal
+        open={addToCol() !== null}
+        item={addToCol()?.item ?? { permalink: "", title: "" }}
+        anchorEl={addToCol()?.anchorEl ?? null}
+        onClose={() => setAddToCol(null)}
+      />
     </div>
   );
 }

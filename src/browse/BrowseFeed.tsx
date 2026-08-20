@@ -20,31 +20,23 @@ import {
   type JSX,
 } from "solid-js";
 import {
-  decodeEntities,
   formatBytes,
   formatDateTime,
-  navigate,
-  setBanner,
-  sortTagsByCategory,
 } from "../stores";
 import {
   checkFeedOnline,
   fetchFeedWithRevalidation,
   getSessionTraffic,
-  openExternal,
   subscribeSessionTraffic,
 } from "../api";
 import {
-  addBookmark,
   getBlacklistMode,
   getBookmarkPermalinks,
   getCached,
   getFullyCachedChapterPermalinks,
   getHistoryPermalinks,
   isItemBlacklisted,
-  removeBookmark,
   type BlacklistMode,
-  type CollectionItemKind,
 } from "../db";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import {
@@ -55,10 +47,10 @@ import {
   useTabPane,
 } from "./browse-state";
 import { Pager } from "../components/Pager";
-import { TagPill } from "../components/TagPill";
 import { Loading } from "../components/Loading";
 import { TriggerWarningModal } from "../components/TriggerWarning";
 import { AddToCollectionModal, type AddToCollectionItem } from "../components/AddToCollectionModal";
+import { FeedItemRow } from "../components/FeedItemRow";
 import type { Feed, FeedChapter, FeedRevalidationResult } from "../types/api";
 
 const FEED_TAB_TO_URL: Record<string, string> = {
@@ -357,293 +349,7 @@ function FeedStatusFooter(props: {
   );
 }
 
-function FeedItemRow(props: {
-  row: FeedRowData;
-  onWarn: (title: string, matchedTags: string[], proceed: () => void) => void;
-  onAddToCol: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
-}) {
-  const { ch, isBlacklisted, matchedTags, isFullyCached } = props.row;
-  const [bookmarked, setBookmarked] = createSignal(props.row.isBookmarked);
 
-  const coverInfo = browseCovers.getItemCoverInfo(ch);
-  const blMode = getBlacklistMode();
-
-  const openChapter = (): void => {
-    navigate({
-      view: "reader",
-      chapterPermalink: ch.permalink,
-      chapterTitle: ch.title,
-    });
-  };
-
-  const openSeries = (permalink: string, name: string): void => {
-    navigate({
-      view: "series",
-      seriesPermalink: permalink,
-      seriesName: name,
-    });
-  };
-
-  const guardedOpen = (title: string, proceed: () => void): void => {
-    if (isBlacklisted && matchedTags.length > 0) {
-      props.onWarn(title, matchedTags, proceed);
-    } else {
-      proceed();
-    }
-  };
-
-  const toggleBookmark = async (): Promise<void> => {
-    try {
-      if (bookmarked()) {
-        await removeBookmark(ch.permalink);
-        setBookmarked(false);
-        setBanner(`Removed "${ch.title}" from bookmarks.`);
-      } else {
-        await addBookmark({
-          chapterPermalink: ch.permalink,
-          seriesPermalink: "",
-          seriesName: ch.series ?? "",
-          chapterTitle: ch.title,
-          pageIndex: 0,
-        });
-        setBookmarked(true);
-        setBanner(`Saved "${ch.title}" to Read Later!`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setBanner(`Bookmark failed: ${msg}`);
-    }
-  };
-
-  const openAddToCol = (anchorEl: HTMLElement): void => {
-    if (!coverInfo.isStandalone) {
-      const sPermalink =
-        coverInfo.seriesPermalink ||
-        (ch.series ? ch.series.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") : ch.permalink);
-      props.onAddToCol(
-        {
-          permalink: sPermalink,
-          title: coverInfo.seriesName || ch.series || ch.title,
-          kind: (coverInfo.seriesType === "anthology" ? "anthology" : "series") as CollectionItemKind,
-          cover: coverInfo.coverKey,
-        },
-        anchorEl,
-      );
-    } else {
-      const doujinTag = (ch.tags ?? []).find((t) => {
-        const type = (t.type ?? "").toLowerCase();
-        return type === "doujin" || type === "doujinshi";
-      });
-      const anthologyTag = (ch.tags ?? []).find((t) => (t.type ?? "").toLowerCase() === "anthology");
-      const kind: CollectionItemKind = doujinTag
-        ? "doujin"
-        : anthologyTag
-          ? "anthology"
-          : "oneshot";
-      props.onAddToCol(
-        {
-          permalink: ch.permalink,
-          title: ch.title,
-          kind,
-          cover: coverInfo.coverKey,
-        },
-        anchorEl,
-      );
-    }
-  };
-
-  const artistTags = (ch.tags ?? []).filter((t) => {
-    const type = (t.type ?? "").toLowerCase();
-    return type === "author" || type === "artist";
-  });
-
-  const groupTags = (ch.tags ?? []).filter((t) => {
-    const type = (t.type ?? "").toLowerCase();
-    return type === "scanlator" || type === "group";
-  });
-
-  const otherTags = sortTagsByCategory(
-    (ch.tags ?? []).filter((t) => {
-      const type = (t.type ?? "").toLowerCase();
-      return (
-        type !== "author" &&
-        type !== "artist" &&
-        type !== "scanlator" &&
-        type !== "group" &&
-        type !== "series"
-      );
-    }),
-  );
-
-  const coverTitle = coverInfo.isStandalone
-    ? `Read "${decodeEntities(ch.title)}"`
-    : `View series: ${decodeEntities(coverInfo.seriesName || coverInfo.seriesPermalink)}`;
-
-  return (
-    <div
-      class={`ds-item ds-feed-item${props.row.isRead ? " ds-item-read" : ""}`}
-      style={`display:flex;align-items:center;gap:10px;padding:6px 8px;${
-        isBlacklisted ? "opacity:0.8;background:var(--sys-bg-active,#fcf8f8);" : ""
-      }`}
-      onClick={() => guardedOpen(ch.title, openChapter)}
-    >
-      <div
-        ref={(el) => browseCovers.observe(el)}
-        class="ds-feed-cover-wrap"
-        style="flex-shrink:0;cursor:pointer;"
-        data-feed-cover={coverInfo.coverKey}
-        data-chapter-permalink={coverInfo.chapterPermalink}
-        data-series-permalink={coverInfo.seriesPermalink}
-        data-series-type={coverInfo.seriesType || ""}
-        title={coverTitle}
-        onClick={(ev) => {
-          ev.stopPropagation();
-          if (coverInfo.isStandalone) {
-            guardedOpen(ch.title, openChapter);
-          } else {
-            guardedOpen(coverInfo.seriesName || ch.title, () =>
-              openSeries(coverInfo.seriesPermalink, coverInfo.seriesName || coverInfo.seriesPermalink),
-            );
-          }
-        }}
-      >
-        <div class="ds-feed-cover-placeholder">
-          <i class="bi bi-book"></i>
-        </div>
-      </div>
-
-      <div class="ds-fill" style="display:flex;flex-direction:column;gap:3px;min-width:0;">
-        <div
-          class="ds-flex-row"
-          style="align-items:center;gap:6px;flex-wrap:wrap;"
-        >
-          <span
-            class="ds-item-title"
-            style="font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
-            onClick={(ev) => {
-              ev.stopPropagation();
-              guardedOpen(ch.title, openChapter);
-            }}
-          >
-            <span>{decodeEntities(ch.title)}</span>
-            <Show when={isFullyCached}>
-              <i
-                class="bi bi-cloud-check-fill ds-offline-icon"
-                style="color:var(--sys-primary,#0078d4);font-size:11px;"
-                title="Available Offline (Fully Cached)"
-              ></i>
-            </Show>
-          </span>
-
-          <Show when={ch.series && ch.series !== ch.title}>
-            <span class="ds-muted" style="font-size:11px;">in</span>
-            <span
-              class="ds-series-link"
-              title={`Go to series: ${decodeEntities(ch.series!)}`}
-              onClick={(ev) => {
-                ev.stopPropagation();
-                guardedOpen(ch.series!, () =>
-                  openSeries(coverInfo.seriesPermalink || ch.series!, ch.series!),
-                );
-              }}
-            >
-              {decodeEntities(ch.series!)}
-            </span>
-          </Show>
-
-          <Show when={isBlacklisted && matchedTags.length > 0}>
-            <span
-              style="font-size:9px;background:var(--ds-danger-bg);color:var(--ds-danger-text);padding:1px 5px;border-radius:2px;border:1px solid var(--ds-danger-border);display:inline-flex;align-items:center;gap:3px;font-weight:600;"
-            >
-              <i class="bi bi-exclamation-triangle-fill"></i>{" "}
-              {blMode === "warn" ? "Content Warning" : "Blacklisted"}: {decodeEntities(matchedTags.join(", "))}
-            </span>
-          </Show>
-        </div>
-
-        <Show when={artistTags.length > 0}>
-          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;">
-            <span style="font-weight:600;color:var(--sys-text-secondary,#555);font-size:10px;width:72px;min-width:72px;flex-shrink:0;padding-top:1px;">
-              Artist:
-            </span>
-            <div style="display:flex;flex-wrap:wrap;gap:3px;flex:1;">
-              <For each={artistTags}>
-                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
-              </For>
-            </div>
-          </div>
-        </Show>
-
-        <Show when={groupTags.length > 0}>
-          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;">
-            <span style="font-weight:600;color:var(--sys-text-secondary,#555);font-size:10px;width:72px;min-width:72px;flex-shrink:0;padding-top:1px;">
-              Scanlation:
-            </span>
-            <div style="display:flex;flex-wrap:wrap;gap:3px;flex:1;">
-              <For each={groupTags}>
-                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
-              </For>
-            </div>
-          </div>
-        </Show>
-
-        <Show when={otherTags.length > 0}>
-          <div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;">
-            <span style="font-weight:600;color:var(--sys-text-secondary,#555);font-size:10px;width:72px;min-width:72px;flex-shrink:0;padding-top:1px;">
-              Tags:
-            </span>
-            <div style="display:flex;flex-wrap:wrap;gap:3px;flex:1;">
-              <For each={otherTags}>
-                {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} />}
-              </For>
-            </div>
-          </div>
-        </Show>
-      </div>
-
-      <button
-        type="button"
-        class={`win-button ds-btn-compact${bookmarked() ? " primary" : ""}`}
-        title={bookmarked() ? "Remove from Read Later" : "Save for Read Later"}
-        onClick={(ev) => {
-          ev.stopPropagation();
-          void toggleBookmark();
-        }}
-      >
-        {bookmarked() ? <i class="bi bi-bookmark-fill"></i> : <i class="bi bi-bookmark-plus"></i>}
-        {bookmarked() ? " Saved" : " Read Later"}
-      </button>
-      <button
-        type="button"
-        class="win-button ds-btn-compact"
-        style="flex-shrink:0;"
-        title={
-          !coverInfo.isStandalone
-            ? `Add series "${decodeEntities(coverInfo.seriesName || ch.series || "")}" to collection`
-            : "Add to Favorites or custom collections"
-        }
-        onClick={(ev) => {
-          ev.stopPropagation();
-          openAddToCol(ev.currentTarget as HTMLElement);
-        }}
-      >
-        <i class="bi bi-folder-plus"></i>
-      </button>
-      <button
-        type="button"
-        class="win-button ds-btn-compact"
-        style="flex-shrink:0;"
-        title={`Open "${decodeEntities(ch.title)}" on Dynasty Scans in browser`}
-        onClick={(ev) => {
-          ev.stopPropagation();
-          openExternal(`https://dynasty-scans.com/chapters/${ch.permalink}`);
-        }}
-      >
-        <i class="bi bi-box-arrow-up-right"></i>
-      </button>
-    </div>
-  );
-}
 
 export interface BrowseFeedProps {
   tabId: "releases" | "added";
@@ -862,7 +568,12 @@ export function BrowseFeed(props: BrowseFeedProps) {
 
   const renderRow = (row: FeedRowData): JSX.Element => (
     <FeedItemRow
-      row={row}
+      item={row.ch}
+      isRead={row.isRead}
+      isBookmarked={row.isBookmarked}
+      isBlacklisted={row.isBlacklisted}
+      matchedTags={row.matchedTags}
+      isFullyCached={row.isFullyCached}
       onWarn={(title, matchedTags, proceed) => setWarning({ title, matchedTags, onProceed: proceed })}
       onAddToCol={(item, anchorEl) => setAddToCol({ item, anchorEl })}
     />
