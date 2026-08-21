@@ -452,27 +452,23 @@ export function SettingsModal(props: SettingsModalProps) {
         </div>
         <div class="group-box" id="ds-settings-sec-storage">
           <div class="group-box-title"><StorageIcon /> Storage &amp; Cache</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">
+          <div style="display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:2px 0;">
             <span style="font-size:12px;color:var(--sys-window-text,#333);">Manage disk footprint &amp; scans:</span>
-            <button type="button" class="win-button" id="ds-settings-goto-cache" onClick={() => {
+            <button type="button" class="win-button" id="ds-settings-goto-cache" style="width:100%;justify-content:flex-start;" onClick={() => {
               props.onClose();
               navigate({ view: "cache" });
             }}>
               <ExternalLinkIcon /> Open Cache Manager
             </button>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;margin-top:4px;">
             <span style="font-size:12px;color:var(--sys-window-text,#333);">Series Blacklist:</span>
-            <button type="button" class="win-button" id="ds-settings-goto-blacklist" title="Manage blacklisted series" onClick={() => {
+            <button type="button" class="win-button" id="ds-settings-goto-blacklist" style="width:100%;justify-content:flex-start;" title="Manage blacklisted series" onClick={() => {
               props.onClose();
               navigate({ view: "blacklist" });
             }}>
               <BlacklistIcon /> Open Series Blacklist
             </button>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;margin-top:4px;">
             <span style="font-size:12px;color:var(--sys-window-text,#333);">Troubleshooting:</span>
-            <button type="button" class="win-button" id="ds-settings-open-logs" title="Reveal the rolling log file in Explorer" onClick={() => {
+            <button type="button" class="win-button" id="ds-settings-open-logs" style="width:100%;justify-content:flex-start;" title="Reveal the rolling log file in Explorer" onClick={() => {
               void ipc.openLogsDir().catch((err) => {
                 console.error("dynasty-scans-reader: open logs folder failed:", err);
               });
