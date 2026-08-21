@@ -73,6 +73,16 @@ export {
   updateCollectionItemCover,
 } from "./collections.repo";
 export { searchDirectoryEntries, saveDirectoryEntries, suggestDirectoryEntries, saveSuggestEntries } from "./directory.repo";
+export {
+  getDbFileStats,
+  getDbTableCounts,
+  getDbStats,
+  wipeDatabase,
+  backupDatabase,
+  listDatabaseBackups,
+  restoreDatabase,
+  restoreDatabaseFromPath,
+} from "./db.manage";
 export type {
   CachedMetadata,
   FollowedSeriesRow,

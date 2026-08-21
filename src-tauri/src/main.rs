@@ -16,6 +16,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(log_plugin)
         .plugin(tauri_plugin_window_state::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             commands::updater::cleanup_old_executables();
             let root = data_root_for(app)?;
@@ -32,6 +33,10 @@ fn main() {
             commands::db::db_execute,
             commands::db::db_query,
             commands::db::db_execute_batch,
+            commands::db::db_backup,
+            commands::db::db_list_backups,
+            commands::db::db_restore,
+            commands::db::db_restore_from_path,
             commands::fs::file_exists,
             commands::fs::file_exists_batch,
             commands::fs::file_move,

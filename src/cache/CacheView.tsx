@@ -1,6 +1,7 @@
 /**
  * Solid Cache Management view. Port of `ui-cache.ts`:
  *  - overview storage stats grid (disk, pages, chapters, works)
+ *  - database stats grid (file size, row counts) with wipe/backup
  *  - global maintenance buttons (clear all / pages-only / covers-only)
  *  - granular cached-works list with filter + sort and per-series delete
  */
@@ -21,9 +22,15 @@ import {
   clearCachedGroupPages,
   getCacheOverviewStats,
   getCachedSeriesGroups,
+  getDbStats,
+  wipeDatabase,
+  backupDatabase,
+  restoreDatabaseFromPath,
   type CachedSeriesGroup,
+  type DbStats,
 } from "../db";
 import { browseCovers } from "../browse/browse-covers";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
 import { HydratedCover } from "../components/HydratedCover";
@@ -36,18 +43,21 @@ import {
   ImageIcon,
   StorageIcon,
   RefreshIcon,
+  DatabaseIcon,
 } from "../components/Icon";
 
 type CacheData = {
   stats: Awaited<ReturnType<typeof getCacheOverviewStats>>;
   groups: CachedSeriesGroup[];
+  dbStats: DbStats;
 };
 
 export function CacheView() {
   const [data, { refetch }] = createResource<CacheData>(async () => {
-    const [stats, groups] = await Promise.all([getCacheOverviewStats(), getCachedSeriesGroups()]);
-    return { stats, groups };
+    const [stats, groups, dbStats] = await Promise.all([getCacheOverviewStats(), getCachedSeriesGroups(), getDbStats()]);
+    return { stats, groups, dbStats };
   });
+
 
   const [filterText, setFilterText] = createSignal("");
   const [sortMode, setSortMode] = createSignal("size-desc");
@@ -88,11 +98,66 @@ export function CacheView() {
     void refetch();
   };
 
+  const wipeDb = async (): Promise<void> => {
+    await wipeDatabase();
+    browseCovers.clearMemoryCache();
+    showBanner("Database wiped — all local records cleared.");
+    void refetch();
+  };
+
+  const backupDb = async (): Promise<void> => {
+    try {
+      const res = await backupDatabase();
+      showBanner(`Database backup created: ${res.backup_path} (${formatBytes(res.size_bytes)})`);
+      void refetch();
+    } catch (err) {
+      showBanner(`Backup failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  const restoreFromPicker = async (): Promise<void> => {
+    try {
+      let picked: string | string[] | null;
+      try {
+        picked = await openDialog({
+          multiple: false,
+          filters: [{ name: "Database", extensions: ["db"] }],
+          title: "Choose backup database file",
+        });
+      } catch (dlgErr) {
+        console.error("dynasty-reader: openDialog failed:", dlgErr);
+        showBanner(`Restore failed: file picker not available (rebuild app) — ${dlgErr instanceof Error ? dlgErr.message : String(dlgErr)}`);
+        return;
+      }
+      if (!picked || Array.isArray(picked)) return;
+      try {
+        await restoreDatabaseFromPath(picked);
+      } catch (e) {
+        console.error("dynasty-reader: restoreDatabaseFromPath failed:", e);
+        throw e;
+      }
+      try {
+        browseCovers.clearMemoryCache();
+      } catch (e) {
+        console.warn("dynasty-reader: clearMemoryCache failed (non-fatal):", e);
+      }
+      showBanner(`Database restored from ${picked} — reloading...`);
+      void refetch();
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("dynasty-reader: restoreFromPicker failed:", err);
+      showBanner(`Restore failed: ${msg}`);
+    }
+  };
+
+
   const deleteGroup = async (item: CachedSeriesGroup): Promise<void> => {
     await clearCachedGroupPages(item.chapterPermalinks);
     showBanner(`Cleared cache for "${item.seriesName}".`);
     void refetch();
   };
+
 
   const filtered = createMemo<CachedSeriesGroup[]>(() => {
     const groups = data()?.groups ?? [];
@@ -161,6 +226,7 @@ export function CacheView() {
       <Show when={data() !== undefined && data.error === undefined}>
         <CacheBody
           stats={data()!.stats}
+          dbStats={data()!.dbStats}
           groups={data()!.groups}
           filtered={filtered}
           filterText={filterText}
@@ -171,6 +237,9 @@ export function CacheView() {
           purgeAll={purgeAll}
           purgePages={purgePages}
           purgeCovers={purgeCovers}
+          wipeDb={wipeDb}
+          backupDb={backupDb}
+          restoreFromPicker={restoreFromPicker}
           deleteGroup={deleteGroup}
         />
       </Show>
@@ -180,6 +249,7 @@ export function CacheView() {
 
 function CacheBody(props: {
   stats: CacheData["stats"];
+  dbStats: DbStats;
   groups: CachedSeriesGroup[];
   filtered: () => CachedSeriesGroup[];
   filterText: () => string;
@@ -190,9 +260,12 @@ function CacheBody(props: {
   purgeAll: () => Promise<void>;
   purgePages: () => Promise<void>;
   purgeCovers: () => Promise<void>;
+  wipeDb: () => Promise<void>;
+  backupDb: () => Promise<void>;
+  restoreFromPicker: () => Promise<void>;
   deleteGroup: (item: CachedSeriesGroup) => Promise<void>;
 }) {
-  const { stats, groups } = props;
+  const { stats, groups, dbStats } = props;
 
   return (
     <>
@@ -222,6 +295,55 @@ function CacheBody(props: {
 
       <div class="group-box">
         <div class="group-box-title">
+          <DatabaseIcon /> Database
+        </div>
+        <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="ds-stat-card">
+            <span class="ds-stat-val">{formatBytes(dbStats.file.totalSizeBytes)}</span>
+            <span class="ds-stat-lbl">DB Size (total)</span>
+          </div>
+          <div class="ds-stat-card">
+            <span class="ds-stat-val">{formatBytes(dbStats.file.dbSizeBytes)}</span>
+            <span class="ds-stat-lbl">DB File</span>
+          </div>
+          <div class="ds-stat-card">
+            <span class="ds-stat-val">{dbStats.totalRows}</span>
+            <span class="ds-stat-lbl">Total Records</span>
+          </div>
+          <div class="ds-stat-card">
+            <span class="ds-stat-val">{formatBytes(dbStats.file.walSizeBytes)}</span>
+            <span class="ds-stat-lbl">WAL Size</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:2px 16px;margin-top:10px;padding:8px;background:var(--sys-bg-active,#f8f9fa);border:1px solid var(--sys-border-light,#e2e2e2);border-radius:3px;font-size:11px;">
+          <span>Followed series: <strong>{dbStats.counts.followedSeries}</strong></span>
+          <span>Reading progress: <strong>{dbStats.counts.readingProgress}</strong></span>
+          <span>History: <strong>{dbStats.counts.readingHistory}</strong></span>
+          <span>Bookmarks: <strong>{dbStats.counts.bookmarks}</strong></span>
+          <span>Collections: <strong>{dbStats.counts.collections}</strong> ({dbStats.counts.collectionItems} items)</span>
+          <span>Cached pages: <strong>{dbStats.counts.cachedPages}</strong></span>
+          <span>Cached metadata: <strong>{dbStats.counts.cachedMetadata}</strong></span>
+          <span>Directory entries: <strong>{dbStats.counts.directoryEntries}</strong></span>
+          <span>Tag blacklist: <strong>{dbStats.counts.tagBlacklist}</strong></span>
+          <span>Series blacklist: <strong>{dbStats.counts.seriesBlacklist}</strong></span>
+        </div>
+        <div class="ds-cache-actions" style="margin-top:10px;">
+          <button type="button" class="win-button" title="Create a timestamped backup via VACUUM INTO" onClick={() => void props.backupDb()}>
+            <DatabaseIcon /> Backup Database
+          </button>
+          <button type="button" class="win-button" title="Choose a .db backup file to restore — replaces current DB, deletes WAL/SHM, then reloads" onClick={() => void props.restoreFromPicker()}>
+            <RefreshIcon /> Restore from File...
+          </button>
+          <ConfirmDeleteButton
+            title="Delete all rows from every table (keeps schema) — cannot be undone"
+            onConfirm={props.wipeDb}
+          >
+            <TrashIcon /> Wipe Database
+          </ConfirmDeleteButton>
+        </div>
+      </div>
+      <div class="group-box">
+        <div class="group-box-title">
           <ToolIcon /> Global Maintenance
         </div>
         <div class="ds-cache-actions">
@@ -245,7 +367,6 @@ function CacheBody(props: {
           </ConfirmDeleteButton>
         </div>
       </div>
-
       <div class="group-box" style="display:flex;flex-direction:column;">
         <div class="group-box-title">
           <StorageIcon /> Cached Works &amp; Series ({groups.length})
