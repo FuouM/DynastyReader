@@ -184,13 +184,8 @@ export function Topbar() {
                   <DoublePageIcon />
                   <span class="ds-truncate">{decodeEntities(sessionTab()!.title)}</span>
                   <CloseIcon
+                    class="ds-tab-close"
                     title="Close tab"
-                    style={{
-                      cursor: "pointer",
-                      "font-size": "13px",
-                      opacity: 0.75,
-                      padding: "0 2px",
-                    }}
                     onClick={(ev: MouseEvent) => {
                       ev.stopPropagation();
                       closeSessionMangaTab();

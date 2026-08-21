@@ -1,5 +1,6 @@
 import { execute, query } from "./client";
 import { initBlacklistCache } from "./blacklist.repo";
+import { directoryGroups } from "../utils/directory";
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS followed_series (
@@ -278,7 +279,6 @@ const MIGRATIONS: Migration[] = [
         const rows = await query<{ cache_key: string; json_payload: string }>(
           `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key LIKE 'dir:%'`,
         );
-        const { directoryGroups } = await import("../api/directory");
         const { saveDirectoryEntries } = await import("./directory.repo");
         for (const row of rows) {
           const kind = row.cache_key.startsWith("dir:series") ? "series" : "tags";
