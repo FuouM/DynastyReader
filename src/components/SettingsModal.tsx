@@ -44,9 +44,22 @@ import {
   Icon,
   type BootstrapIconName,
 } from "./Icon";
-import { checkUpdates } from "./UpdateDialog";
+import {
+  checkUpdates,
+  installUpdate,
+  updateInfo,
+  upToDateVersion,
+  setUpToDateVersion,
+  updateChecking,
+  updateError,
+  setUpdateError,
+  updateProgress,
+  isUpdating,
+  updateStatusText,
+} from "./UpdateDialog";
 import { HotkeysModal } from "./HotkeysModal";
 import * as ipc from "../ipc";
+import { formatBytes } from "../stores";
 
 const SCALE_PRESETS = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
 
@@ -78,7 +91,6 @@ export function SettingsModal(props: SettingsModalProps) {
   const [navPosition, setNavPosition] = createSignal(getReaderNavPosition());
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
-  const [checking, setChecking] = createSignal(false);
   const [hotkeysOpen, setHotkeysOpen] = createSignal(false);
   const [activeSection, setActiveSection] = createSignal<string>("display");
 
@@ -89,7 +101,11 @@ export function SettingsModal(props: SettingsModalProps) {
   const [blacklist, { refetch }] = createResource(() => props.open, () => getBlacklistedTags());
 
   createEffect(() => {
-    if (!props.open) return;
+    if (!props.open) {
+      setUpToDateVersion(null);
+      setUpdateError(null);
+      return;
+    }
     setScale(uiScale());
     setCoversEnabledLocal(browseCovers.coversEnabled);
     setAutoCacheEnabled(isAutoCacheChapterEnabled());
@@ -112,6 +128,21 @@ export function SettingsModal(props: SettingsModalProps) {
       }, 400);
     }
   };
+
+  createEffect(() => {
+    if (!props.open) return;
+    const info = updateInfo();
+    const upToDate = upToDateVersion();
+    const err = updateError();
+    if (info || upToDate || err) {
+      setTimeout(() => {
+        const updateTarget = contentRef?.querySelector("#ds-about-update-target") as HTMLElement | null;
+        if (updateTarget) {
+          updateTarget.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }, 50);
+    }
+  });
 
   const handleScroll = (): void => {
     if (isProgrammaticScroll || !contentRef) return;
@@ -159,16 +190,6 @@ export function SettingsModal(props: SettingsModalProps) {
   const setMode = (mode: "hide" | "warn"): void => {
     setBlacklistMode(mode);
     setBlMode(mode);
-  };
-
-  const runCheckUpdates = async (): Promise<void> => {
-    if (checking()) return;
-    setChecking(true);
-    try {
-      await checkUpdates(true);
-    } finally {
-      setChecking(false);
-    }
   };
 
   return (
@@ -473,8 +494,15 @@ export function SettingsModal(props: SettingsModalProps) {
               </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-              <button type="button" class="win-button ds-btn-compact" id="ds-about-check-update" title="Check for DynastyReader updates" disabled={checking()} onClick={() => void runCheckUpdates()}>
-                <Show when={checking()} fallback={<><RefreshIcon /> Check Updates</>}>
+              <button
+                type="button"
+                class="win-button ds-btn-compact"
+                id="ds-about-check-update"
+                title="Check for DynastyReader updates"
+                disabled={updateChecking() || isUpdating()}
+                onClick={() => void checkUpdates(true)}
+              >
+                <Show when={updateChecking()} fallback={<><RefreshIcon /> Check Updates</>}>
                   <RefreshIcon spin={true} /> Checking...
                 </Show>
               </button>
@@ -489,6 +517,103 @@ export function SettingsModal(props: SettingsModalProps) {
                 dynasty-scans.com
               </ExternalLinkButton>
             </div>
+          </div>
+
+          {/* Inline: Update status target container */}
+          <div id="ds-about-update-target">
+            {/* Inline: Up-to-date notice */}
+            <Show when={upToDateVersion() !== null}>
+              <div
+                class="ds-row"
+                style="background:var(--ds-status-fresh-bg);border:1px solid var(--ds-status-fresh-border);color:var(--ds-status-fresh-text);padding:6px 10px;border-radius:3px;font-size:11px;align-items:center;gap:8px;margin-top:8px;"
+              >
+                <Icon name="check-circle-fill" style={{ "font-size": "13px", "flex-shrink": "0" }} />
+                <div style="flex:1;">
+                  <strong>DynastyReader is up to date!</strong> You are currently running version <strong>v{upToDateVersion()}</strong>.
+                </div>
+              </div>
+            </Show>
+
+            {/* Inline: Update Available & Download progress */}
+            <Show when={updateInfo() !== null}>
+              <div
+                style="display:flex;flex-direction:column;gap:8px;background:var(--sys-bg-active,#f8f9fa);border:1px solid var(--sys-border-medium,#ccc);border-radius:3px;padding:8px 10px;margin-top:8px;"
+              >
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                  <div>
+                    <div style="font-size:12px;font-weight:bold;color:var(--sys-window-text,#222);">
+                      DynastyReader v{updateInfo()!.latest_version}
+                    </div>
+                    <div class="ds-muted" style="font-size:10px;">
+                      Current: v{updateInfo()!.current_version}{updateInfo()!.asset_size ? ` · Size: ${formatBytes(updateInfo()!.asset_size)}` : ""}
+                    </div>
+                  </div>
+                  <span
+                    class="ds-etag-tag"
+                    style="font-size:10px;padding:2px 8px;font-weight:600;background:var(--ds-status-fresh-bg);color:var(--ds-status-fresh-text);border:1px solid var(--ds-status-fresh-border);"
+                  >
+                    Update Available
+                  </span>
+                </div>
+
+                <Show when={updateInfo()!.release_notes}>
+                  <div
+                    style="max-height:100px;overflow-y:auto;font-size:10px;line-height:1.4;white-space:pre-wrap;background:var(--sys-window-bg,#fff);padding:6px 8px;border:1px solid var(--sys-border-light,#e2e2e2);border-radius:2px;color:var(--sys-window-text,#333);"
+                  >
+                    {updateInfo()!.release_notes}
+                  </div>
+                </Show>
+
+                <Show when={isUpdating() || updateError()}>
+                  <div style="display:flex;flex-direction:column;gap:4px;">
+                    <div style="display:flex;justify-content:space-between;font-size:10px;">
+                      <span>
+                        {updateStatusText() || (updateProgress() ? `Downloading (${formatBytes(updateProgress()!.downloaded_bytes)} / ${formatBytes(updateProgress()!.total_bytes)})...` : "Downloading update...")}
+                      </span>
+                      <span style="font-weight:600;">{updateProgress() ? Math.round(updateProgress()!.percentage) : 0}%</span>
+                    </div>
+                    <div style="width:100%;height:10px;background:var(--sys-border-light,#e2e2e2);border-radius:2px;overflow:hidden;border:1px solid var(--sys-border-medium,#ccc);">
+                      <div
+                        style={{
+                          width: `${updateProgress() ? Math.round(updateProgress()!.percentage) : 0}%`,
+                          height: "100%",
+                          background: "var(--sys-primary,#0078d4)",
+                          transition: "width 0.2s ease",
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                </Show>
+
+                <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:2px;">
+                  <button
+                    type="button"
+                    class="win-button primary ds-btn-sm"
+                    style="min-width:120px;"
+                    disabled={isUpdating()}
+                    onClick={() => void installUpdate()}
+                  >
+                    <Show when={!isUpdating()} fallback={<><Icon name="hourglass-split" spin /> Updating...</>}>
+                      <CloudDownloadIcon /> {updateError() ? "Retry Update" : "Download & Restart"}
+                    </Show>
+                  </button>
+                </div>
+              </div>
+            </Show>
+
+            {/* Inline: Error notice if check failed */}
+            <Show when={updateError() !== null && updateInfo() === null}>
+              <div
+                class="ds-row"
+                style="background:var(--ds-danger-bg);border:1px solid var(--ds-danger-border);color:var(--ds-danger-text);padding:6px 10px;border-radius:3px;font-size:11px;align-items:center;gap:8px;margin-top:8px;"
+              >
+                <Icon name="exclamation-circle-fill" style={{ "font-size": "13px", "flex-shrink": "0" }} />
+                <div style="flex:1;">{updateError()}</div>
+                <button type="button" class="win-button ds-btn-sm" onClick={() => void checkUpdates(true)}>
+                  Retry
+                </button>
+              </div>
+            </Show>
           </div>
         </div>
         </div>
