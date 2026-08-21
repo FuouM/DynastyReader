@@ -578,3 +578,81 @@ body.ds-dark .tag-pill:hover {
   padding-top: 8px;
   flex-shrink: 0;
 }
+
+/* Hotkey Badges & Configuration UI */
+.ds-hotkeys-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ds-hotkeys-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--sys-border-light, #eaeaea);
+  gap: 12px;
+}
+.ds-hotkeys-row:last-child {
+  border-bottom: none;
+}
+.ds-hotkeys-info {
+  flex: 1;
+  min-width: 0;
+}
+.ds-hotkeys-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sys-window-text, #222);
+}
+.ds-hotkeys-desc {
+  font-size: 11px;
+  color: var(--sys-text-muted, #666);
+}
+.ds-hotkeys-keys {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.ds-key-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  background: var(--sys-window-bg, #fff);
+  color: var(--sys-window-text, #333);
+  border: 1px solid var(--sys-border-dark, #b0b0b0);
+  border-bottom: 2px solid var(--sys-border-dark, #888);
+  border-radius: 3px;
+  user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.ds-key-badge-remove {
+  cursor: pointer;
+  opacity: 0.6;
+  font-size: 11px;
+}
+.ds-key-badge-remove:hover {
+  opacity: 1;
+  color: var(--ds-danger-text, #a80000);
+}
+.ds-key-recording {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: var(--sys-highlight-bg, #0078d7);
+  color: var(--sys-highlight-text, #fff);
+  border-radius: 3px;
+  animation: ds-pulse 1.5s infinite;
+}
+@keyframes ds-pulse {
+  0% { opacity: 0.85; }
+  50% { opacity: 1; }
+  100% { opacity: 0.85; }
+}

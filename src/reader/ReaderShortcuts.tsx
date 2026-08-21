@@ -1,31 +1,55 @@
 /**
- * Reader keyboard bindings: Navigation keys are ignored while the user is
- * typing in an input/select. Effect-only component registering key bindings.
+ * Reader keyboard shortcuts: Navigation and view control bindings.
+ * Unified with the centralized hotkeys store.
  */
 
 import { onCleanup, onMount } from "solid-js";
 import type { ReaderSession } from "./reader-session";
+import { isTextInputTarget, matchesHotkey } from "../hotkeys";
 
 export function ReaderShortcuts(props: { session: ReaderSession }) {
   const c = props.session;
 
   onMount(() => {
     const onKeyDown = (ev: KeyboardEvent): void => {
-      // Ignore if user is typing in an input or textarea
-      const tag = (ev.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      // Ignore if user is currently typing in an input or textarea
+      if (isTextInputTarget(ev.target)) return;
 
-      if (ev.key === "ArrowLeft" || ev.key === "ArrowRight" || ev.key === " ") {
+      if (matchesHotkey(ev, "reader.nextPage")) {
         ev.preventDefault();
-        const rightOrSpace = ev.key === "ArrowRight" || ev.key === " ";
         if (c.isSpread()) {
-          // Direction-aware: LTR → Right/Space next, Left prev; RTL → Left/Space next.
-          const forward = c.direction() === "rtl" ? !rightOrSpace : rightOrSpace;
-          c.stepSpread(forward ? 1 : -1);
+          c.stepSpread(1);
         } else {
-          c.setPage(c.currentIndex() + (rightOrSpace ? 1 : -1));
+          c.setPage(c.currentIndex() + 1);
         }
-      } else if (ev.key === "m" || ev.key === "M") {
+      } else if (matchesHotkey(ev, "reader.prevPage")) {
+        ev.preventDefault();
+        if (c.isSpread()) {
+          c.stepSpread(-1);
+        } else {
+          c.setPage(c.currentIndex() - 1);
+        }
+      } else if (matchesHotkey(ev, "reader.firstPage")) {
+        ev.preventDefault();
+        c.setPage(0, true);
+      } else if (matchesHotkey(ev, "reader.lastPage")) {
+        ev.preventDefault();
+        c.setPage(c.pages().length - 1, true);
+      } else if (matchesHotkey(ev, "reader.nextChapter")) {
+        const list = c.chapterList();
+        const curIdx = list.findIndex((x) => x.permalink === c.permalink);
+        if (curIdx >= 0 && curIdx < list.length - 1) {
+          ev.preventDefault();
+          c.gotoChapter(list[curIdx + 1]);
+        }
+      } else if (matchesHotkey(ev, "reader.prevChapter")) {
+        const list = c.chapterList();
+        const curIdx = list.findIndex((x) => x.permalink === c.permalink);
+        if (curIdx > 0) {
+          ev.preventDefault();
+          c.gotoChapter(list[curIdx - 1]);
+        }
+      } else if (matchesHotkey(ev, "reader.toggleMode")) {
         ev.preventDefault();
         if (c.mode() === "scroll") {
           c.setPagedLayout("single");
@@ -35,45 +59,41 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
         } else {
           c.setMode("scroll");
         }
-      } else if (ev.key === "d" || ev.key === "D") {
+      } else if (matchesHotkey(ev, "reader.toggleSpread")) {
+        ev.preventDefault();
+        if (c.mode() === "paged") {
+          c.setPagedLayout(c.pagedLayout() === "spread" ? "single" : "spread");
+        }
+      } else if (matchesHotkey(ev, "reader.toggleDirection")) {
         ev.preventDefault();
         c.setDirection(c.direction() === "rtl" ? "ltr" : "rtl");
-      } else if (ev.key === "c" || ev.key === "C") {
+      } else if (matchesHotkey(ev, "reader.toggleCoverOffset")) {
         ev.preventDefault();
         if (c.mode() === "paged") c.toggleCoverOffset();
-      } else if (ev.key === "f" || ev.key === "F") {
+      } else if (matchesHotkey(ev, "reader.toggleScrollLock")) {
+        ev.preventDefault();
+        c.setScrollLock();
+      } else if (matchesHotkey(ev, "reader.toggleFullscreen")) {
         ev.preventDefault();
         c.setFullscreen(!c.isFullscreen());
-      } else if (ev.key === "t" || ev.key === "T") {
-        ev.preventDefault();
-        c.toggleTheme();
-      } else if (ev.key === "Escape" && c.isFullscreen()) {
-        ev.preventDefault();
-        c.setFullscreen(false);
-      } else if (
-        ((ev.ctrlKey || ev.metaKey) && (ev.key === "=" || ev.key === "+")) ||
-        (!ev.ctrlKey && !ev.metaKey && !ev.altKey && (ev.key === "+" || ev.key === "="))
-      ) {
+      } else if (matchesHotkey(ev, "reader.zoomIn")) {
         if (c.fitMode() === "original") {
           ev.preventDefault();
           c.zoomIn();
         }
-      } else if (
-        ((ev.ctrlKey || ev.metaKey) && (ev.key === "-" || ev.key === "_")) ||
-        (!ev.ctrlKey && !ev.metaKey && !ev.altKey && (ev.key === "-" || ev.key === "_"))
-      ) {
+      } else if (matchesHotkey(ev, "reader.zoomOut")) {
         if (c.fitMode() === "original") {
           ev.preventDefault();
           c.zoomOut();
         }
-      } else if (
-        ((ev.ctrlKey || ev.metaKey) && ev.key === "0") ||
-        (!ev.ctrlKey && !ev.metaKey && !ev.altKey && ev.key === "0")
-      ) {
+      } else if (matchesHotkey(ev, "reader.resetZoom")) {
         if (c.fitMode() === "original") {
           ev.preventDefault();
           c.resetZoom();
         }
+      } else if (ev.key === "Escape" && c.isFullscreen()) {
+        ev.preventDefault();
+        c.setFullscreen(false);
       }
     };
 

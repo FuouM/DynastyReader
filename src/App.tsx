@@ -26,6 +26,7 @@ import {
 } from "./stores";
 import { Topbar } from "./components/Topbar";
 import { UpdateDialog } from "./components/UpdateDialog";
+import { GlobalShortcuts } from "./hotkeys";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
 import { SeriesView } from "./series/SeriesView";
@@ -51,6 +52,7 @@ export function App() {
 
   return (
     <div id="ds-root" style={{ zoom: String(uiScale()) }}>
+      <GlobalShortcuts />
       <Topbar />
       <UpdateDialog />
       <div id="ds-view">

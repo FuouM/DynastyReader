@@ -44,6 +44,7 @@ import {
   Icon,
 } from "./Icon";
 import { checkUpdates } from "./UpdateDialog";
+import { HotkeysModal } from "./HotkeysModal";
 import * as ipc from "../ipc";
 
 const SCALE_PRESETS = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
@@ -62,6 +63,7 @@ export function SettingsModal(props: SettingsModalProps) {
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
   const [checking, setChecking] = createSignal(false);
+  const [hotkeysOpen, setHotkeysOpen] = createSignal(false);
 
   const [blacklist, { refetch }] = createResource(() => props.open, () => getBlacklistedTags());
 
@@ -334,6 +336,26 @@ export function SettingsModal(props: SettingsModalProps) {
           </div>
         </div>
         <div class="group-box">
+          <div class="group-box-title"><Icon name="keyboard" /> Keyboard Shortcuts</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0;">
+            <div>
+              <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Custom Hotkeys &amp; Keybindings:</div>
+              <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+                View, modify, and assign custom key combinations for reader and navigation actions.
+              </div>
+            </div>
+            <button
+              type="button"
+              class="win-button"
+              id="ds-settings-open-hotkeys"
+              style="font-size:11px;padding:2px 10px;flex-shrink:0;"
+              onClick={() => setHotkeysOpen(true)}
+            >
+              <Icon name="keyboard" /> Hotkeys Menu...
+            </button>
+          </div>
+        </div>
+        <div class="group-box">
           <div class="group-box-title"><StorageIcon /> Storage &amp; Cache</div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">
             <span style="font-size:12px;color:var(--sys-window-text,#333);">Manage disk footprint &amp; scans:</span>
@@ -396,6 +418,7 @@ export function SettingsModal(props: SettingsModalProps) {
           </div>
         </div>
       </div>
+      <HotkeysModal open={hotkeysOpen()} onClose={() => setHotkeysOpen(false)} />
     </Modal>
   );
 }

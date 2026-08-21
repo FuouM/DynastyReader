@@ -58,7 +58,15 @@ export function Topbar() {
   let topbarEl: HTMLDivElement | undefined;
 
   onMount(() => {
-    if (!topbarEl || typeof ResizeObserver === "undefined") return;
+    const handleOpenSettings = (): void => {
+      setSettingsOpen(true);
+    };
+    window.addEventListener("ds-open-settings", handleOpenSettings);
+
+    if (!topbarEl || typeof ResizeObserver === "undefined") {
+      onCleanup(() => window.removeEventListener("ds-open-settings", handleOpenSettings));
+      return;
+    }
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
@@ -70,7 +78,10 @@ export function Topbar() {
       }
     });
     ro.observe(topbarEl);
-    return () => ro.disconnect();
+    onCleanup(() => {
+      window.removeEventListener("ds-open-settings", handleOpenSettings);
+      ro.disconnect();
+    });
   });
 
   return (
