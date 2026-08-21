@@ -9,7 +9,8 @@
  * reactive state that the JSX components render.
  */
 
-import { batch, createMemo, createSignal } from "solid-js";
+import { batch, createComponent, createMemo, createRoot, createSignal, getOwner, runWithOwner } from "solid-js";
+import type { JSX } from "solid-js";
 import { createStore } from "solid-js/store";
 import {
   navigate,
@@ -49,7 +50,7 @@ import {
   isAutoCacheChapterEnabled,
 } from "./settings";
 import { standardizeCachePaths } from "./path-migration";
-import { ReaderActions } from "../components/ReaderActions";
+import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
 
 export {
   isAutoCacheChapterEnabled,
@@ -165,7 +166,8 @@ export class ReaderSession implements ReaderQueueHost {
   programmaticScrollTimer: number | null = null;
   scrollRaf: number | null = null;
   private readonly cleanupFns: (() => void)[] = [];
-
+  private actionsDispose: (() => void) | null = null;
+  private readonly sessionOwner = getOwner();
   // Derived state -----------------------------------------------------------
   readonly isHorizontal: () => boolean;
   readonly isSpread: () => boolean;
@@ -413,6 +415,10 @@ export class ReaderSession implements ReaderQueueHost {
     if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
     for (const fn of this.cleanupFns) fn();
     this.cleanupFns.length = 0;
+    if (this.actionsDispose) {
+      this.actionsDispose();
+      this.actionsDispose = null;
+    }
     clearActions();
   }
 
@@ -792,9 +798,34 @@ export class ReaderSession implements ReaderQueueHost {
     }
   }
 
-  // Publish topbar actions
+  // Publish topbar actions — must run inside a Solid root so
+  // createSignal / onCleanup inside ReaderActions are owned and disposable.
+  // init() is async so the call loses the component owner after await;
+  // we capture sessionOwner at construction and use createRoot/runWithOwner.
   publishActions(): void {
-    setActions(ReaderActions({ ctrl: this as any, bookmarked: this.bookmarked() }));
+    if (this.actionsDispose) {
+      this.actionsDispose();
+      this.actionsDispose = null;
+    }
+    const create = () =>
+      createComponent(ReaderActions, {
+        ctrl: this as unknown as ReaderActionsController,
+        bookmarked: this.bookmarked(),
+      }) as unknown as JSX.Element;
+    const owner = this.sessionOwner;
+    if (owner) {
+      runWithOwner(owner, () => {
+        this.actionsDispose = createRoot((dispose) => {
+          setActions(create());
+          return dispose;
+        });
+      });
+    } else {
+      this.actionsDispose = createRoot((dispose) => {
+        setActions(create());
+        return dispose;
+      });
+    }
   }
 
   // Bootstrap ----------------------------------------------------------------
