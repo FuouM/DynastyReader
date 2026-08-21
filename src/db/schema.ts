@@ -92,14 +92,13 @@ interface Migration {
   up(): Promise<void>;
 }
 
-/** Runs one best-effort step; returns true on success, false on failure. */
-async function runStep(sql: string, label: string, params: unknown[] = []): Promise<boolean> {
+/** Executes one schema step; throws on failure after logging (no silent swallow). */
+async function runStep(sql: string, label: string, params: unknown[] = []): Promise<void> {
   try {
     await execute(sql, params);
-    return true;
   } catch (err) {
     console.error(`[db/schema] ${label} failed:`, err);
-    return false;
+    throw err;
   }
 }
 
@@ -132,53 +131,54 @@ const MIGRATIONS: Migration[] = [
     name: "base schema, indexes, reading-history uniqueness, cover-key normalization",
     up: async () => {
       const failures: string[] = [];
+      const tryStep = async (sql: string, label: string, params: unknown[] = []): Promise<boolean> => {
+        try {
+          await runStep(sql, label, params);
+          return true;
+        } catch {
+          failures.push(label);
+          return false;
+        }
+      };
       for (const sql of SCHEMA) {
-        const ok = await runStep(sql, "create table");
-        if (!ok) failures.push(`table: ${sql.slice(0, 60)}`);
+        await tryStep(sql, `table: ${sql.slice(0, 60)}`);
       }
 
       // Conditional column patches: only run ALTER TABLE if column does not exist yet.
       if (!(await columnExists("cached_pages", "size_bytes"))) {
-        if (!(await runStep("ALTER TABLE cached_pages ADD COLUMN size_bytes INTEGER DEFAULT 0", "patch cached_pages.size_bytes"))) {
-          failures.push("patch cached_pages.size_bytes");
-        }
+        await tryStep("ALTER TABLE cached_pages ADD COLUMN size_bytes INTEGER DEFAULT 0", "patch cached_pages.size_bytes");
       }
       if (!(await columnExists("cached_metadata", "etag"))) {
-        if (!(await runStep("ALTER TABLE cached_metadata ADD COLUMN etag TEXT", "patch cached_metadata.etag"))) {
-          failures.push("patch cached_metadata.etag");
-        }
+        await tryStep("ALTER TABLE cached_metadata ADD COLUMN etag TEXT", "patch cached_metadata.etag");
       }
 
       // Dedupe history to one row per chapter (keeps the most recent read),
       // then enforce uniqueness so addHistory can be a single atomic upsert.
-      const deduped = await runStep(
+      const deduped = await tryStep(
         `DELETE FROM reading_history WHERE id NOT IN (SELECT MAX(id) FROM reading_history GROUP BY chapter_permalink)`,
         "dedupe reading_history",
       );
       if (deduped) {
-        const uniqueOk = await runStep(
+        await tryStep(
           "CREATE UNIQUE INDEX IF NOT EXISTS idx_reading_history_chapter ON reading_history(chapter_permalink)",
           "unique reading_history.chapter_permalink",
         );
-        if (!uniqueOk) failures.push("unique reading_history.chapter_permalink");
-      } else {
-        failures.push("dedupe reading_history");
       }
 
       // Hot-path indexes (verified by EXPLAIN QUERY PLAN).
-      await runStep(
+      await tryStep(
         "CREATE INDEX IF NOT EXISTS idx_cached_metadata_data_type ON cached_metadata(data_type)",
         "index cached_metadata.data_type",
       );
-      await runStep(
+      await tryStep(
         "CREATE INDEX IF NOT EXISTS idx_reading_progress_series ON reading_progress(series_permalink)",
         "index reading_progress.series_permalink",
       );
-      await runStep(
+      await tryStep(
         "CREATE INDEX IF NOT EXISTS idx_collection_items_collection ON collection_items(collection_id)",
         "index collection_items.collection_id",
       );
-      await runStep(
+      await tryStep(
         "CREATE INDEX IF NOT EXISTS idx_collection_items_permalink ON collection_items(item_permalink)",
         "index collection_items.item_permalink",
       );
@@ -186,7 +186,7 @@ const MIGRATIONS: Migration[] = [
       // Cover-key normalization: the legacy `cover:<permalink>` scheme wrote bare
       // keys for series covers (chapters always used `cover:chapter:<permalink>`).
       // Migrate `cover:X` → `cover:series:X`, dropping the twin when both exist.
-      const normalizeOk = await runStep(
+      const normalizeOk = await tryStep(
         `UPDATE cached_metadata
          SET cache_key = 'cover:series:' || substr(cache_key, 7)
          WHERE cache_key LIKE 'cover:%'
@@ -199,7 +199,7 @@ const MIGRATIONS: Migration[] = [
         "normalize legacy cover keys",
       );
       if (normalizeOk) {
-        await runStep(
+        await tryStep(
           `DELETE FROM cached_metadata
            WHERE cache_key LIKE 'cover:%'
              AND cache_key NOT LIKE 'cover:series:%'
@@ -210,18 +210,15 @@ const MIGRATIONS: Migration[] = [
              )`,
           "drop legacy cover-key twins",
         );
-      } else {
-        failures.push("normalize legacy cover keys");
       }
 
       // Seed default 'Favorites' collection if not already present
       const now = Date.now();
-      const seeded = await runStep(
+      await tryStep(
         "INSERT OR IGNORE INTO collections (id, name, is_default, created_at) VALUES (1, 'Favorites', 1, ?)",
         "seed Favorites collection",
         [now],
       );
-      if (!seeded) failures.push("seed Favorites collection");
 
       try {
         await initBlacklistCache();
@@ -231,7 +228,9 @@ const MIGRATIONS: Migration[] = [
       }
 
       if (failures.length > 0) {
-        console.error(`[db/schema] migration v1: ${failures.length} step(s) failed:`, failures.join(", "));
+        const msg = `[db/schema] migration v1: ${failures.length} step(s) failed: ${failures.join(", ")}`;
+        console.error(msg);
+        throw new Error(msg);
       }
     },
   },
@@ -239,7 +238,15 @@ const MIGRATIONS: Migration[] = [
     version: 2,
     name: "create directory_entries table with indexes for fast SQLite directory search",
     up: async () => {
-      await runStep(
+      const failures: string[] = [];
+      const tryStep = async (sql: string, label: string): Promise<void> => {
+        try {
+          await runStep(sql, label);
+        } catch {
+          failures.push(label);
+        }
+      };
+      await tryStep(
         `CREATE TABLE IF NOT EXISTS directory_entries (
           kind TEXT NOT NULL,
           letter TEXT NOT NULL,
@@ -250,16 +257,23 @@ const MIGRATIONS: Migration[] = [
         )`,
         "create directory_entries table",
       );
-      await runStep(
+      await tryStep(
         "CREATE INDEX IF NOT EXISTS idx_directory_entries_kind_name ON directory_entries(kind, name COLLATE NOCASE)",
         "index directory_entries.kind_name",
       );
-      await runStep(
+      await tryStep(
         "CREATE INDEX IF NOT EXISTS idx_directory_entries_kind_letter ON directory_entries(kind, letter)",
         "index directory_entries.kind_letter",
       );
+      if (failures.length > 0) {
+        const msg = `[db/schema] migration v2: ${failures.length} step(s) failed: ${failures.join(", ")}`;
+        console.error(msg);
+        throw new Error(msg);
+      }
 
       // Backfill any existing cached directory pages from cached_metadata into directory_entries
+      // Best-effort: logs but does not fail the migration (data can be re-synced).
+      // Dynamic import avoids circular dependency: directory.repo -> schema is already imported at top-level.
       try {
         const rows = await query<{ cache_key: string; json_payload: string }>(
           `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key LIKE 'dir:%'`,
@@ -286,14 +300,20 @@ let initDbPromise: Promise<void> | null = null;
 export async function initDb(): Promise<void> {
   if (!initDbPromise) {
     initDbPromise = (async () => {
-      const current = await getSchemaVersion();
-      for (const migration of MIGRATIONS) {
-        if (migration.version <= current) continue;
-        console.info(`[db/schema] applying migration v${migration.version}: ${migration.name}`);
-        await migration.up();
-        await setSchemaVersion(migration.version);
+      try {
+        const current = await getSchemaVersion();
+        for (const migration of MIGRATIONS) {
+          if (migration.version <= current) continue;
+          console.info(`[db/schema] applying migration v${migration.version}: ${migration.name}`);
+          await migration.up();
+          await setSchemaVersion(migration.version);
+        }
+        await initBlacklistCache();
+      } catch (err) {
+        initDbPromise = null;
+        console.error("[db/schema] initDb failed — user_version not advanced:", err);
+        throw err;
       }
-      await initBlacklistCache();
     })();
   }
   return initDbPromise;
