@@ -264,13 +264,9 @@ export function SettingsModal(props: SettingsModalProps) {
                 </button>
               </div>
             </div>
-            <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Scales all application typography, panels, buttons, and navigation controls.
-            </div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <div style="flex:1;min-width:0;">
                 <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">Theme:</div>
-                <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">Switch the entire application between light and dark mode.</div>
               </div>
               <div class="ds-segmented-switch" id="ds-settings-theme-switch" style="flex-shrink:0;">
                 <button type="button" class={`ds-segmented-btn${theme() === "light" ? " active" : ""}`} id="ds-settings-theme-light" title="Light theme" onClick={() => setTheme("light")}>
@@ -435,9 +431,6 @@ export function SettingsModal(props: SettingsModalProps) {
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0;">
             <div>
               <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Custom Hotkeys &amp; Keybindings:</div>
-              <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-                View, modify, and assign custom key combinations for reader and navigation actions.
-              </div>
             </div>
             <button
               type="button"
