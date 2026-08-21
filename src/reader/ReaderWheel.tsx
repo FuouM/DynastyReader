@@ -158,33 +158,10 @@ export function ReaderWheel(props: { session: ReaderSession }) {
       wheelDebounce = now;
       const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
 
-      const vpEl = c.viewportEl;
-      const vpRect = vpEl?.getBoundingClientRect();
-      if (!vpRect) return;
       if (delta > 0) {
-        let targetIdx = c.currentIndex() + 1;
-        for (let i = 0; i < c.slotEls.length; i++) {
-          const el = c.slotEls[i];
-          if (!el) continue;
-          const r = el.getBoundingClientRect();
-          if (r.top > vpRect.top + 20) {
-            targetIdx = i;
-            break;
-          }
-        }
-        c.setPage(Math.min(c.pages().length - 1, targetIdx));
+        c.setPage(Math.min(c.pages().length - 1, c.currentIndex() + 1));
       } else {
-        let targetIdx = c.currentIndex() - 1;
-        for (let i = c.slotEls.length - 1; i >= 0; i--) {
-          const el = c.slotEls[i];
-          if (!el) continue;
-          const r = el.getBoundingClientRect();
-          if (r.top < vpRect.top - 20) {
-            targetIdx = i;
-            break;
-          }
-        }
-        c.setPage(Math.max(0, targetIdx));
+        c.setPage(Math.max(0, c.currentIndex() - 1));
       }
     };
 

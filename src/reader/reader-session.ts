@@ -165,6 +165,7 @@ export class ReaderSession implements ReaderQueueHost {
   isProgrammaticScroll = false;
   programmaticScrollTimer: number | null = null;
   scrollRaf: number | null = null;
+  scrollAnimRaf: number | null = null;
   private readonly cleanupFns: (() => void)[] = [];
   private actionsDispose: (() => void) | null = null;
   private readonly sessionOwner = getOwner();
@@ -413,6 +414,7 @@ export class ReaderSession implements ReaderQueueHost {
     this.disposedFlag = true;
     window.clearTimeout(this.persistTimer);
     if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
+    if (this.scrollAnimRaf !== null) cancelAnimationFrame(this.scrollAnimRaf);
     for (const fn of this.cleanupFns) fn();
     this.cleanupFns.length = 0;
     if (this.actionsDispose) {
@@ -715,19 +717,42 @@ export class ReaderSession implements ReaderQueueHost {
     } else {
       this.isProgrammaticScroll = true;
       if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
-      this.programmaticScrollTimer = window.setTimeout(() => {
-        this.isProgrammaticScroll = false;
-      }, 500);
+      if (this.scrollAnimRaf !== null) {
+        cancelAnimationFrame(this.scrollAnimRaf);
+        this.scrollAnimRaf = null;
+      }
 
       const target = this.slotEls[index];
       if (target && this.viewportEl) {
-        if (instant) {
+        if (instant || !this.scrollLock()) {
           target.scrollIntoView({ behavior: "auto", block: "start" });
+          this.isProgrammaticScroll = false;
         } else {
-          const vpRect = this.viewportEl.getBoundingClientRect();
+          const vp = this.viewportEl;
+          const vpRect = vp.getBoundingClientRect();
           const targetRect = target.getBoundingClientRect();
-          const targetTop = this.viewportEl.scrollTop + (targetRect.top - vpRect.top);
-          this.viewportEl.scrollTo({ top: targetTop, behavior: "smooth" });
+          const startScrollTop = vp.scrollTop;
+          const targetScrollTop = startScrollTop + (targetRect.top - vpRect.top);
+          const distance = targetScrollTop - startScrollTop;
+          const startTime = performance.now();
+          const duration = 280; // responsive 280ms duration matching paged 0.35s bezier
+
+          const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
+
+          const step = (currentTime: number) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            vp.scrollTop = startScrollTop + distance * easeOutCubic(progress);
+
+            if (progress < 1) {
+              this.scrollAnimRaf = requestAnimationFrame(step);
+            } else {
+              this.scrollAnimRaf = null;
+              this.isProgrammaticScroll = false;
+            }
+          };
+
+          this.scrollAnimRaf = requestAnimationFrame(step);
         }
       }
     }
