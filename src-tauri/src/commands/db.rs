@@ -58,17 +58,26 @@ fn open(db_name: &str) -> Result<Connection, String> {
 }
 
 fn get_conn(
-    pool: &mut HashMap<String, Arc<Mutex<Connection>>>,
+    pool: &Mutex<HashMap<String, Arc<Mutex<Connection>>>>,
     db_name: &str,
 ) -> Result<Arc<Mutex<Connection>>, String> {
     let key = db_name.trim().to_ascii_lowercase();
-    if !pool.contains_key(&key) {
-        let conn = Arc::new(Mutex::new(open(&key)?));
-        pool.insert(key.clone(), conn);
+    if key.is_empty() {
+        return Err("missing db name".to_string());
     }
-    pool.get(&key).cloned().ok_or_else(|| "database not initialized".to_string())
+    {
+        let guard = pool.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(conn) = guard.get(&key) {
+            return Ok(conn.clone());
+        }
+    }
+    let conn = Arc::new(Mutex::new(open(&key)?));
+    let mut guard = pool.lock().unwrap_or_else(|e| e.into_inner());
+    let entry = guard.entry(key).or_insert(conn);
+    Ok(entry.clone())
 }
 
+#[allow(dead_code)]
 fn bind_value(p: &Value) -> rusqlite::types::Value {
     match p {
         Value::Null => rusqlite::types::Value::Null,
@@ -85,6 +94,26 @@ fn bind_value(p: &Value) -> rusqlite::types::Value {
             }
         }
         Value::String(s) => rusqlite::types::Value::Text(s.clone()),
+        other => rusqlite::types::Value::Text(other.to_string()),
+    }
+}
+
+fn bind_value_owned(v: Value) -> rusqlite::types::Value {
+    match v {
+        Value::Null => rusqlite::types::Value::Null,
+        Value::Bool(b) => rusqlite::types::Value::Integer(b as i64),
+        Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                rusqlite::types::Value::Integer(i)
+            } else if let Some(u) = n.as_u64() {
+                rusqlite::types::Value::Integer(u as i64)
+            } else if let Some(f) = n.as_f64() {
+                rusqlite::types::Value::Real(f)
+            } else {
+                rusqlite::types::Value::Integer(0)
+            }
+        }
+        Value::String(s) => rusqlite::types::Value::Text(s),
         other => rusqlite::types::Value::Text(other.to_string()),
     }
 }
@@ -115,12 +144,12 @@ pub async fn db_execute(
     sql: String,
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
-    let conn = {
-        let mut pool = state.0.lock().unwrap_or_else(|e| e.into_inner());
-        get_conn(&mut pool, &db_name)?
-    };
-    let values: Vec<rusqlite::types::Value> =
-        params.unwrap_or_default().iter().map(bind_value).collect();
+    let conn = get_conn(&state.0, &db_name)?;
+    let values: Vec<rusqlite::types::Value> = params
+        .unwrap_or_default()
+        .into_iter()
+        .map(bind_value_owned)
+        .collect();
     let affected = tokio::task::spawn_blocking(move || -> Result<usize, String> {
         let conn = conn.lock().unwrap_or_else(|e| e.into_inner());
         conn.execute(&sql, params_from_iter(values))
@@ -138,12 +167,12 @@ pub async fn db_query(
     sql: String,
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
-    let conn = {
-        let mut pool = state.0.lock().unwrap_or_else(|e| e.into_inner());
-        get_conn(&mut pool, &db_name)?
-    };
-    let values: Vec<rusqlite::types::Value> =
-        params.unwrap_or_default().iter().map(bind_value).collect();
+    let conn = get_conn(&state.0, &db_name)?;
+    let values: Vec<rusqlite::types::Value> = params
+        .unwrap_or_default()
+        .into_iter()
+        .map(bind_value_owned)
+        .collect();
     let rows = tokio::task::spawn_blocking(move || -> Result<Vec<Value>, String> {
         let conn = conn.lock().unwrap_or_else(|e| e.into_inner());
         let mut stmt = conn
@@ -170,28 +199,19 @@ pub async fn db_execute_batch(
     statements: Vec<String>,
     params: Option<Vec<Option<Vec<Value>>>>,
 ) -> Result<serde_json::Value, String> {
-    let normalized = db_name.trim().to_ascii_lowercase();
-    if normalized.is_empty() {
-        return Err("missing db name".to_string());
-    }
-    let pool_arc = {
-        let mut pool = state.0.lock().map_err(|_| "db pool poisoned".to_string())?;
-        get_conn(&mut pool, &db_name)?
-    };
-    let st = statements.clone();
-    let pr = params.clone();
+    let pool_arc = get_conn(&state.0, &db_name)?;
     let affected = tokio::task::spawn_blocking(move || {
         let conn = pool_arc.lock().map_err(|_| "db connection poisoned".to_string())?;
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
-        let mut results: Vec<i64> = Vec::with_capacity(st.len());
-        for (idx, sql) in st.iter().enumerate() {
-            let p = pr
+        let mut results: Vec<i64> = Vec::with_capacity(statements.len());
+        for (idx, sql) in statements.iter().enumerate() {
+            let p = params
                 .as_ref()
                 .and_then(|v| v.get(idx).cloned().flatten())
                 .unwrap_or_default();
             let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
             let n = stmt
-                .execute(params_from_iter(p.iter().map(bind_value)))
+                .execute(params_from_iter(p.into_iter().map(bind_value_owned)))
                 .map_err(|e| e.to_string())?;
             results.push(n as i64);
         }
@@ -220,10 +240,7 @@ pub async fn db_backup(
     if !safe || normalized.starts_with('.') || normalized.contains("..") {
         return Err("invalid database name".to_string());
     }
-    let pool_arc = {
-        let mut pool = state.0.lock().map_err(|_| "db pool poisoned".to_string())?;
-        get_conn(&mut pool, &db_name)?
-    };
+    let pool_arc = get_conn(&state.0, &db_name)?;
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
