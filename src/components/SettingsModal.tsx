@@ -42,12 +42,28 @@ import {
   ExternalLinkIcon,
   RefreshIcon,
   Icon,
+  type BootstrapIconName,
 } from "./Icon";
 import { checkUpdates } from "./UpdateDialog";
 import { HotkeysModal } from "./HotkeysModal";
 import * as ipc from "../ipc";
 
 const SCALE_PRESETS = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
+
+export interface SettingsSection {
+  id: string;
+  label: string;
+  icon: BootstrapIconName;
+}
+
+const SETTINGS_SECTIONS: SettingsSection[] = [
+  { id: "display", label: "Display & Scaling", icon: "aspect-ratio" },
+  { id: "blacklist", label: "Tag Blacklist", icon: "shield-slash" },
+  { id: "reading", label: "Reading & Cache", icon: "book" },
+  { id: "hotkeys", label: "Keyboard Shortcuts", icon: "keyboard" },
+  { id: "storage", label: "Storage & Cache", icon: "hdd-stack" },
+  { id: "about", label: "About DynastyReader", icon: "info-circle" },
+];
 
 export interface SettingsModalProps {
   open: boolean;
@@ -64,6 +80,11 @@ export function SettingsModal(props: SettingsModalProps) {
   const [blInput, setBlInput] = createSignal("");
   const [checking, setChecking] = createSignal(false);
   const [hotkeysOpen, setHotkeysOpen] = createSignal(false);
+  const [activeSection, setActiveSection] = createSignal<string>("display");
+
+  let contentRef: HTMLDivElement | undefined;
+  let isProgrammaticScroll = false;
+  let scrollTimer: number | null = null;
 
   const [blacklist, { refetch }] = createResource(() => props.open, () => getBlacklistedTags());
 
@@ -75,7 +96,40 @@ export function SettingsModal(props: SettingsModalProps) {
     setPrefetchBufferLocal(getPrefetchBuffer());
     setNavPosition(getReaderNavPosition());
     setBlMode(getBlacklistMode());
+    setActiveSection("display");
   });
+
+  const scrollToSection = (id: string): void => {
+    setActiveSection(id);
+    if (!contentRef) return;
+    const target = contentRef.querySelector(`#ds-settings-sec-${id}`) as HTMLElement | null;
+    if (target) {
+      isProgrammaticScroll = true;
+      if (scrollTimer !== null) clearTimeout(scrollTimer);
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollTimer = window.setTimeout(() => {
+        isProgrammaticScroll = false;
+      }, 400);
+    }
+  };
+
+  const handleScroll = (): void => {
+    if (isProgrammaticScroll || !contentRef) return;
+    const containerTop = contentRef.scrollTop;
+    const containerOffset = contentRef.offsetTop;
+
+    let currentId = SETTINGS_SECTIONS[0].id;
+    for (const sec of SETTINGS_SECTIONS) {
+      const el = contentRef.querySelector(`#ds-settings-sec-${sec.id}`) as HTMLElement | null;
+      if (el) {
+        const top = el.offsetTop - containerOffset;
+        if (top <= containerTop + 50) {
+          currentId = sec.id;
+        }
+      }
+    }
+    setActiveSection(currentId);
+  };
 
   const hasScalePreset = createMemo(() => SCALE_PRESETS.some((s) => Math.abs(s - scale()) < 0.01));
 
@@ -122,7 +176,7 @@ export function SettingsModal(props: SettingsModalProps) {
       open={props.open}
       backdropId="ds-settings-modal-backdrop"
       title={<><SettingsIcon /> Application Settings</>}
-      width={480}
+      width={640}
       onClose={props.onClose}
       footer={
         <div style="display:flex;justify-content:flex-end;gap:8px;width:100%;">
@@ -132,9 +186,29 @@ export function SettingsModal(props: SettingsModalProps) {
         </div>
       }
     >
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div class="group-box" style="margin-top:4px;">
-          <div class="group-box-title"><Icon name="aspect-ratio" /> Display &amp; Scaling</div>
+      <div class="ds-settings-layout">
+        {/* Left Quick-Jump Navigation Sidebar */}
+        <div class="ds-settings-sidebar">
+          <For each={SETTINGS_SECTIONS}>
+            {(sec) => (
+              <button
+                type="button"
+                class="ds-settings-nav-item"
+                classList={{ active: activeSection() === sec.id }}
+                title={`Jump to ${sec.label}`}
+                onClick={() => scrollToSection(sec.id)}
+              >
+                <Icon name={sec.icon} />
+                <span>{sec.label}</span>
+              </button>
+            )}
+          </For>
+        </div>
+
+        {/* Right Scrollable Settings Content Panel */}
+        <div class="ds-settings-content" ref={contentRef} onScroll={handleScroll}>
+          <div class="group-box" id="ds-settings-sec-display">
+            <div class="group-box-title"><Icon name="aspect-ratio" /> Display &amp; Scaling</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <label for="ds-settings-scale-select" style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">UI Scale Factor:</label>
@@ -199,7 +273,7 @@ export function SettingsModal(props: SettingsModalProps) {
             </div>
           </div>
         </div>
-        <div class="group-box">
+        <div class="group-box" id="ds-settings-sec-blacklist">
           <div class="group-box-title"><BlacklistIcon /> Tag Blacklist</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
@@ -264,7 +338,7 @@ export function SettingsModal(props: SettingsModalProps) {
             </div>
           </div>
         </div>
-        <div class="group-box">
+        <div class="group-box" id="ds-settings-sec-reading">
           <div class="group-box-title"><DoublePageIcon /> Reading &amp; Cache</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -335,7 +409,7 @@ export function SettingsModal(props: SettingsModalProps) {
             </div>
           </div>
         </div>
-        <div class="group-box">
+        <div class="group-box" id="ds-settings-sec-hotkeys">
           <div class="group-box-title"><Icon name="keyboard" /> Keyboard Shortcuts</div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0;">
             <div>
@@ -355,7 +429,7 @@ export function SettingsModal(props: SettingsModalProps) {
             </button>
           </div>
         </div>
-        <div class="group-box">
+        <div class="group-box" id="ds-settings-sec-storage">
           <div class="group-box-title"><StorageIcon /> Storage &amp; Cache</div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 0;">
             <span style="font-size:12px;color:var(--sys-window-text,#333);">Manage disk footprint &amp; scans:</span>
@@ -386,7 +460,7 @@ export function SettingsModal(props: SettingsModalProps) {
             </button>
           </div>
         </div>
-        <div class="group-box">
+        <div class="group-box" id="ds-settings-sec-about">
           <div class="group-box-title"><Icon name="info-circle" /> About DynastyReader</div>
           <div style="display:flex;align-items:center;gap:12px;padding:4px 0;">
             <img src="/icon.svg" width="34" height="34" alt="DynastyReader" style="border-radius:4px;flex-shrink:0;user-select:none;pointer-events:none;" />
@@ -416,6 +490,7 @@ export function SettingsModal(props: SettingsModalProps) {
               </ExternalLinkButton>
             </div>
           </div>
+        </div>
         </div>
       </div>
       <HotkeysModal open={hotkeysOpen()} onClose={() => setHotkeysOpen(false)} />
