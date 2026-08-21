@@ -1,8 +1,26 @@
-import type { ReaderController } from "./reader-controller";
+import { absUrl } from "../stores";
 import { fileResolve, httpDownloadFull, pageOutputPath } from "../api";
 import { setCachedPage } from "../db";
-import { absUrl, setBanner } from "../state";
-import { renderSlotImg, renderSlotState, updateCacheCount } from "./reader-slots";
+import type { ChapterPage } from "../types/api";
+
+export type SlotStateKind = "spinner" | "offline" | "error" | "idle";
+
+/**
+ * The host a `ReaderQueue` drives: a Solid `ReaderSession`. Downloads update
+ * reactive cache/slot state through the host instead of mutating DOM slots
+ * directly, so the JSX slot components re-render on their own.
+ */
+export interface ReaderQueueHost {
+  getPages(): ChapterPage[];
+  permalink: string;
+  getSeriesPermalink(): string | null;
+  getCurrentIndex(): number;
+  isDisposed(): boolean;
+  getCachedPath(index: number): string | undefined;
+  setCachedPath(index: number, path: string): void;
+  setSlotState(index: number, kind: SlotStateKind, message: string): void;
+  showErrorBanner(message: string): void;
+}
 
 /**
  * Bounded page download pool for a single chapter session.
@@ -21,7 +39,7 @@ export class ReaderQueue {
   private readonly failed = new Set<number>();
   private firstErrorShown = false;
 
-  constructor(private readonly c: ReaderController) {}
+  constructor(private readonly c: ReaderQueueHost) {}
 
   get failedSet(): Set<number> {
     return this.failed;
@@ -45,7 +63,7 @@ export class ReaderQueue {
 
   /** Marks a page as needing a (re)download. Priorities jump to the queue head. */
   enqueue(index: number, priority = false): void {
-    const pages = this.c.pages;
+    const pages = this.c.getPages();
     if (index < 0 || index >= pages.length) return;
     if (this.inFlight.has(index) || this.failed.has(index)) return;
     if (!this.queue.includes(index)) {
@@ -56,9 +74,10 @@ export class ReaderQueue {
       }
     }
     // Keep queue sorted by proximity to the user's reading position
+    const current = this.c.getCurrentIndex();
     this.queue.sort((a, b) => {
-      const distA = Math.abs(a - this.c.currentIndex) + (a < this.c.currentIndex ? 1000 : 0);
-      const distB = Math.abs(b - this.c.currentIndex) + (b < this.c.currentIndex ? 1000 : 0);
+      const distA = Math.abs(a - current) + (a < current ? 1000 : 0);
+      const distB = Math.abs(b - current) + (b < current ? 1000 : 0);
       return distA - distB;
     });
     this.pump();
@@ -78,10 +97,10 @@ export class ReaderQueue {
 
   private async downloadPage(index: number): Promise<void> {
     const c = this.c;
-    const page = c.pages[index];
+    const pages = c.getPages();
+    const page = pages[index];
     if (!page) return;
-    const slot = c.slots[index];
-    const outPath = pageOutputPath(c.seriesPermalink ?? "", c.permalink, index, page.url);
+    const outPath = pageOutputPath(c.getSeriesPermalink() ?? "", c.permalink, index, page.url);
     try {
       // If the file already exists at the canonical path, skip the network entirely
       const existing = await fileResolve(outPath);
@@ -95,20 +114,16 @@ export class ReaderQueue {
         sizeBytes = res.sizeBytes;
       }
       await setCachedPage(c.permalink, index, absPath, sizeBytes);
-      c.cachedMap.set(index, absPath);
-      if (!c.disposed && slot) {
-        renderSlotImg(c, slot, absPath, index + 1);
-      }
-      updateCacheCount(c);
+      c.setCachedPath(index, absPath);
     } catch (err) {
-      if (c.disposed) return;
+      if (c.isDisposed()) return;
       this.failed.add(index);
       const msg = err instanceof Error ? err.message : String(err);
-      if (slot) renderSlotState(c, slot, "error", `Download failed: ${msg}`);
+      c.setSlotState(index, "error", `Download failed: ${msg}`);
       if (!this.firstErrorShown) {
         this.firstErrorShown = true;
-        setBanner(
-          `Page download failed (page ${index + 1} of ${c.pages.length}). Use the slot's Retry.`,
+        c.showErrorBanner(
+          `Page download failed (page ${index + 1} of ${pages.length}). Use the slot's Retry.`,
         );
       }
     }

@@ -1,0 +1,130 @@
+/**
+ * Reader page-slot rendering for the strip: cached-page images, per-slot
+ * states (spinner / offline / error / idle), and wide-image spread detection.
+ * Port of `reader-slots.ts`' render helpers into a reactive JSX component.
+ */
+
+import { Show } from "solid-js";
+import type { ReaderSession } from "./reader-session";
+import type { SlotStateKind } from "./reader-queue-solid";
+import { convertFileSrc } from "../ipc";
+import { WIDE_RATIO } from "./reader-spread";
+
+export interface ReaderSlotProps {
+  session: ReaderSession;
+  index: number;
+}
+
+/**
+ * Renders one page slot. When the page is cached it shows the `<img>`; when the
+ * queue/tooling has set a slot state it shows that state; otherwise it idles.
+ */
+export function ReaderSlot(props: ReaderSlotProps) {
+  const s = props.session;
+  const idx = props.index;
+  const cachedPath = (): string | undefined => s.cachedPages[0][idx];
+
+  return (
+    <div
+      class="ds-slot"
+      data-index={idx}
+      ref={(el) => {
+        s.slotEls[idx] = el;
+      }}
+    >
+      <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={idx} />}>
+        <SlotImgContent session={s} index={idx} path={cachedPath()!} />
+      </Show>
+    </div>
+  );
+}
+
+/** Cached page: page badge + `<img>` with re-download + wide-spread detection. */
+function SlotImgContent(props: { session: ReaderSession; index: number; path: string }) {
+  const s = props.session;
+  const idx = props.index;
+  return (
+    <>
+      <div class="ds-slot-page-badge">
+        {idx + 1} / {s.pages().length}
+      </div>
+      <img
+        class="ds-page-img"
+        alt={`Page ${idx + 1}`}
+        src={convertFileSrc(props.path)}
+        onError={() => s.onPageImgError(idx)}
+        onLoad={(ev) => {
+          const img = ev.currentTarget as HTMLImageElement;
+          const isWide = img.naturalWidth > img.naturalHeight * WIDE_RATIO;
+          if (isWide !== s.widePages().has(idx)) {
+            const next = new Set(s.widePages());
+            if (isWide) {
+              next.add(idx);
+            } else {
+              next.delete(idx);
+            }
+            s.setWidePages(next);
+            // Rebuild only once every slot exists so page order stays intact.
+            if (s.isSpread() && s.slotEls.length === s.pages().length) {
+              s.resetToCurrentPage(true);
+            }
+          }
+        }}
+      />
+    </>
+  );
+}
+
+/** Non-image slot state (download spinner, offline, error, idle). */
+function SlotStateContent(props: { session: ReaderSession; index: number }) {
+  const s = props.session;
+  const idx = props.index;
+  const state = (): { kind: SlotStateKind; message: string } | undefined => s.slotStates[0][idx];
+  const kind = (): SlotStateKind => state()?.kind ?? "idle";
+  const pct = (): number =>
+    s.pages().length > 0 ? Math.round((s.cachedCount() / s.pages().length) * 100) : 0;
+
+  return (
+    <>
+      <div class="ds-slot-page-badge">
+        {idx + 1} / {s.pages().length}
+      </div>
+      <div class={`ds-slot-state${kind() === "error" ? " ds-slot-error" : ""}`}>
+        <Show when={kind() === "spinner"}>
+          <i
+            class="bi bi-cloud-arrow-down"
+            style="font-size:20px;color:var(--sys-primary,#0078d4);"
+          ></i>
+          <div class="ds-slot-pulse-wrap">
+            <div class="ds-slot-pulse-bar"></div>
+          </div>
+          <span>
+            Downloading page {idx + 1} of {s.pages().length} ({s.cachedCount()}/{s.pages().length} cached · {pct()}%)
+          </span>
+        </Show>
+        <Show when={kind() === "offline"}>
+          <i class="bi bi-wifi-off" style="font-size:20px;"></i>
+          <span>{state()?.message}</span>
+        </Show>
+        <Show when={kind() === "idle"}>
+          <i class="bi bi-book" style="font-size:20px;color:var(--sys-text-muted,#888);"></i>
+          <span>
+            Page {idx + 1} of {s.pages().length} · Waiting to read…
+          </span>
+        </Show>
+        <Show when={kind() === "error"}>
+          <i class="bi bi-exclamation-triangle" style="font-size:20px;"></i>
+          <span>{state()?.message}</span>
+          <button
+            type="button"
+            class="win-button"
+            style="font-size:10px;padding:1px 8px;"
+            onClick={() => s.retrySlot(idx)}
+          >
+            Retry
+          </button>
+        </Show>
+      </div>
+    </>
+  );
+}

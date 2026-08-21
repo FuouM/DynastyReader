@@ -5,38 +5,33 @@
  * them so `pageOutputPath` becomes the single source of truth.
  */
 
-import type { ReaderController } from "./reader-controller";
-import { PAGES_PREFIX } from "../state";
+import type { ReaderSession } from "./reader-session";
+import { PAGES_PREFIX } from "../stores";
 import { fileMove, fileResolve, pageOutputPath } from "../api";
 import { setCachedPage } from "../db";
-import { renderSlotImg, updateCacheCount } from "./reader-slots";
 
 /** Background legacy-filename standardization. Zero network traffic. */
-export function standardizeCachePaths(ctrl: ReaderController): void {
+export function standardizeCachePaths(session: ReaderSession): void {
   window.setTimeout(async () => {
-    if (ctrl.disposed) return;
-    const cleanSeries = (ctrl.seriesPermalink || "_singles").replace(/[^a-zA-Z0-9_-]/g, "_");
-    const cleanChapter = ctrl.permalink.replace(/[^a-zA-Z0-9_-]/g, "_");
+    if (session.disposed) return;
+    const seriesPermalink = session.seriesPermalink();
+    const cleanSeries = (seriesPermalink || "_singles").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const cleanChapter = session.permalink.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const pages = session.pages();
 
-    for (let i = 0; i < ctrl.pages.length; i++) {
-      if (ctrl.disposed) return;
-      const page = ctrl.pages[i];
+    for (let i = 0; i < pages.length; i++) {
+      if (session.disposed) return;
+      const page = pages[i];
       if (!page) continue;
-      const targetPath = pageOutputPath(ctrl.seriesPermalink ?? "", ctrl.permalink, i, page.url);
+      const targetPath = pageOutputPath(seriesPermalink ?? "", session.permalink, i, page.url);
 
-      // Skip if already at canonical path. `cachedMap` holds absolute paths,
-      // so compare against the resolved absolute form (not the relative
-      // `targetPath`) — otherwise every cached page gets re-rendered here and
-      // the visible image flashes.
+      // Skip if already at canonical path. `cachedPages` holds absolute paths,
+      // so compare against the resolved absolute form (not the relative `targetPath`).
       const alreadyThere = await fileResolve(targetPath);
       if (alreadyThere) {
-        if (ctrl.cachedMap.get(i) !== alreadyThere) {
-          await setCachedPage(ctrl.permalink, i, alreadyThere, 0);
-          ctrl.cachedMap.set(i, alreadyThere);
-          if (!ctrl.disposed && ctrl.slots[i]) {
-            renderSlotImg(ctrl, ctrl.slots[i], alreadyThere, i + 1);
-          }
-          updateCacheCount(ctrl);
+        if (session.getCachedPath(i) !== alreadyThere) {
+          await setCachedPage(session.permalink, i, alreadyThere, 0);
+          session.setCachedPage(i, alreadyThere);
         }
         continue;
       }
@@ -63,12 +58,8 @@ export function standardizeCachePaths(ctrl: ReaderController): void {
       if (found) {
         try {
           const newAbsPath = await fileMove(found, targetPath);
-          await setCachedPage(ctrl.permalink, i, newAbsPath, 0);
-          ctrl.cachedMap.set(i, newAbsPath);
-          if (!ctrl.disposed && ctrl.slots[i]) {
-            renderSlotImg(ctrl, ctrl.slots[i], newAbsPath, i + 1);
-          }
-          updateCacheCount(ctrl);
+          await setCachedPage(session.permalink, i, newAbsPath, 0);
+          session.setCachedPage(i, newAbsPath);
         } catch (e) {
           console.warn(`dynasty-scans: could not move page ${i + 1} to canonical path:`, e);
         }

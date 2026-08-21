@@ -5,8 +5,7 @@
  */
 
 import { createSignal, onCleanup, Show } from "solid-js";
-import type { ReaderController } from "../reader/reader-controller";
-import { navigate, setBanner } from "../state";
+import { navigate, setBanner } from "../stores";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
 import { DsButton } from "./Button";
@@ -19,8 +18,21 @@ import {
   Icon,
 } from "./Icon";
 
+export interface ReaderActionsController {
+  permalink: string;
+  seriesPermalink: string | null | (() => string | null);
+  seriesName: string | (() => string);
+  chapterTitle: string | (() => string);
+  currentIndex: number | (() => number);
+  pages: any[] | (() => any[]);
+  cachedMap?: Map<number, string>;
+  getCachedPath?: (index: number) => string | undefined;
+  isPageFailed: (index: number) => boolean;
+  enqueue: (index: number) => void;
+}
+
 export interface ReaderActionsProps {
-  ctrl: ReaderController;
+  ctrl: ReaderActionsController;
   /** Seeds the bookmark toggle state. */
   bookmarked: boolean;
 }
@@ -29,6 +41,33 @@ export function ReaderActions(props: ReaderActionsProps) {
   const [bookmarked, setBookmarked] = createSignal(props.bookmarked);
   const [pending, setPending] = createSignal(false);
   const [copied, setCopied] = createSignal(false);
+
+  const getSeriesPermalink = () =>
+    typeof props.ctrl.seriesPermalink === "function"
+      ? props.ctrl.seriesPermalink()
+      : props.ctrl.seriesPermalink;
+  const getSeriesName = () =>
+    typeof props.ctrl.seriesName === "function"
+      ? props.ctrl.seriesName()
+      : props.ctrl.seriesName;
+  const getChapterTitle = () =>
+    typeof props.ctrl.chapterTitle === "function"
+      ? props.ctrl.chapterTitle()
+      : props.ctrl.chapterTitle;
+  const getCurrentIndex = () =>
+    typeof props.ctrl.currentIndex === "function"
+      ? props.ctrl.currentIndex()
+      : props.ctrl.currentIndex;
+  const getPagesLength = () =>
+    typeof props.ctrl.pages === "function"
+      ? props.ctrl.pages().length
+      : props.ctrl.pages.length;
+
+  const isCached = (i: number) => {
+    if (props.ctrl.getCachedPath) return props.ctrl.getCachedPath(i) !== undefined;
+    if (props.ctrl.cachedMap) return props.ctrl.cachedMap.has(i);
+    return false;
+  };
 
   let copyTimer: number | null = null;
   onCleanup(() => {
@@ -47,10 +86,10 @@ export function ReaderActions(props: ReaderActionsProps) {
       } else {
         await addBookmark({
           chapterPermalink: props.ctrl.permalink,
-          seriesPermalink: props.ctrl.seriesPermalink ?? "",
-          seriesName: props.ctrl.seriesName ?? "",
-          chapterTitle: props.ctrl.chapterTitle,
-          pageIndex: props.ctrl.currentIndex,
+          seriesPermalink: getSeriesPermalink() ?? "",
+          seriesName: getSeriesName() ?? "",
+          chapterTitle: getChapterTitle(),
+          pageIndex: getCurrentIndex(),
         });
         setBookmarked(true);
       }
@@ -62,8 +101,9 @@ export function ReaderActions(props: ReaderActionsProps) {
   };
 
   const cacheChapter = () => {
-    for (let i = 0; i < props.ctrl.pages.length; i++) {
-      if (!props.ctrl.cachedMap.has(i) && !props.ctrl.isPageFailed(i)) props.ctrl.enqueue(i);
+    const total = getPagesLength();
+    for (let i = 0; i < total; i++) {
+      if (!isCached(i) && !props.ctrl.isPageFailed(i)) props.ctrl.enqueue(i);
     }
     setBanner("Caching chapter…");
   };
@@ -83,15 +123,15 @@ export function ReaderActions(props: ReaderActionsProps) {
 
   return (
     <>
-      <Show when={props.ctrl.seriesPermalink}>
+      <Show when={getSeriesPermalink()}>
         <DsButton
           className=""
           title="Open the containing series"
           onClick={() =>
             navigate({
               view: "series",
-              seriesPermalink: props.ctrl.seriesPermalink ?? undefined,
-              seriesName: props.ctrl.seriesName ?? props.ctrl.chapterTitle,
+              seriesPermalink: getSeriesPermalink() ?? undefined,
+              seriesName: getSeriesName() ?? getChapterTitle(),
             })
           }
         >
