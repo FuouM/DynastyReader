@@ -129,6 +129,13 @@ export async function dbListBackups(dbName: string): Promise<DbListBackupsResult
   return invoke<DbListBackupsResult>("dbListBackups", { dbName });
 }
 
+export interface DbRestoreResult {
+  restored: boolean;
+  backup_filename?: string;
+  source_path?: string;
+  target: string;
+}
+
 export async function dbRestore(dbName: string, backupFilename: string): Promise<DbRestoreResult> {
   return invoke<DbRestoreResult>("dbRestore", { dbName, backupFilename });
 }

@@ -42,8 +42,8 @@ async function countTable(table: string): Promise<number> {
 export async function getDbFileStats(): Promise<DbFileStats> {
   const extractSizes = (batch: unknown): DbFileStats | null => {
     if (!batch || typeof batch !== "object" || !("items" in batch)) return null;
-    const batchRec = batch as Record<string, unknown>;
-    const items = batchRec.items;
+    const batchRec = batch as { items?: unknown[] };
+    const items = Array.isArray(batchRec.items) ? batchRec.items : [];
     const getSize = (idx: number): number => {
       const entry = items[idx];
       if (!entry || typeof entry !== "object" || !("size_bytes" in entry)) return 0;

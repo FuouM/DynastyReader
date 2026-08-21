@@ -83,6 +83,7 @@ export {
   restoreDatabase,
   restoreDatabaseFromPath,
 } from "./db.manage";
+export type { DbStats, DbFileStats, DbTableCounts } from "./db.manage";
 export type {
   CachedMetadata,
   FollowedSeriesRow,
