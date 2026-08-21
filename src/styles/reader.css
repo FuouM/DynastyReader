@@ -136,6 +136,33 @@
   padding-top: 2px;
   border-top: 1px solid var(--sys-border-light, rgba(0, 0, 0, 0.06));
 }
+#ds-reader-container.ds-dark .ds-reader-nav-top > .nav-controls:not(:first-child) {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Widescreen 1-row reader toolbar */
+@media (min-width: 1080px) {
+  .ds-reader-nav.ds-reader-nav-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 8px;
+  }
+  .ds-reader-nav.ds-reader-nav-top .ds-reader-nav-row.nav-main {
+    width: auto;
+    flex: 1 1 auto;
+    justify-content: flex-start;
+  }
+  .ds-reader-nav.ds-reader-nav-top .ds-reader-nav-row.nav-controls {
+    width: auto;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    border-top: none !important;
+    padding-top: 0 !important;
+  }
+}
 .ds-reader-progress-wrap {
   display: flex;
   flex-direction: column;
