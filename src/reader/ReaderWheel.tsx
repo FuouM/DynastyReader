@@ -133,7 +133,7 @@ export function ReaderWheel(props: { session: ReaderSession }) {
         hideIndicator();
         ev.preventDefault();
         const now = Date.now();
-        if (now - wheelDebounce < 180) return;
+        if (now - wheelDebounce < 120) return;
         if (Math.abs(ev.deltaY) < 10 && Math.abs(ev.deltaX) < 10) return;
         wheelDebounce = now;
         const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
@@ -153,7 +153,7 @@ export function ReaderWheel(props: { session: ReaderSession }) {
       if (!c.scrollLock()) return;
       ev.preventDefault();
       const now = Date.now();
-      if (now - wheelDebounce < 180) return;
+      if (now - wheelDebounce < 120) return;
       if (Math.abs(ev.deltaY) < 10 && Math.abs(ev.deltaX) < 10) return;
       wheelDebounce = now;
       const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
