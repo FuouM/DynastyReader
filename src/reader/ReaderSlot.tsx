@@ -4,7 +4,7 @@
  * Port of `reader-slots.ts`' render helpers into a reactive JSX component.
  */
 
-import { Show } from "solid-js";
+import { Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import type { SlotStateKind } from "./reader-queue-solid";
 import { convertFileSrc } from "../ipc";
@@ -13,6 +13,7 @@ import { WIDE_RATIO } from "./reader-spread";
 export interface ReaderSlotProps {
   session: ReaderSession;
   index: number;
+  style?: string | JSX.CSSProperties;
 }
 
 /**
@@ -28,6 +29,7 @@ export function ReaderSlot(props: ReaderSlotProps) {
     <div
       class="ds-slot"
       data-index={idx}
+      style={props.style}
       ref={(el) => {
         s.slotEls[idx] = el;
       }}
@@ -53,8 +55,14 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
         alt={`Page ${idx + 1}`}
         src={convertFileSrc(props.path)}
         onError={() => s.onPageImgError(idx)}
+        ref={(img) => {
+          if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+            s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
+          }
+        }}
         onLoad={(ev) => {
           const img = ev.currentTarget as HTMLImageElement;
+          s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
           const isWide = img.naturalWidth > img.naturalHeight * WIDE_RATIO;
           if (isWide !== s.widePages().has(idx)) {
             const next = new Set(s.widePages());

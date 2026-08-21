@@ -142,6 +142,7 @@ export class ReaderSession implements ReaderQueueHost {
   // Reactive cache / slot state (index -> path / {kind, message}) -----------
   readonly cachedPages: ReturnType<typeof createStore<Record<number, string | undefined>>>;
   readonly slotStates: ReturnType<typeof createStore<Record<number, SlotStateRecord | undefined>>>;
+  readonly pageDimensions: ReturnType<typeof createStore<Record<number, { width: number; height: number } | undefined>>>;
 
   readonly cachedCount: () => number;
   readonly setCachedCount: (val: number) => void;
@@ -279,6 +280,7 @@ export class ReaderSession implements ReaderQueueHost {
 
     this.cachedPages = createStore<Record<number, string | undefined>>({});
     this.slotStates = createStore<Record<number, SlotStateRecord | undefined>>({});
+    this.pageDimensions = createStore<Record<number, { width: number; height: number } | undefined>>({});
 
     const [cachedCount, setCachedCount] = createSignal(0);
     this.cachedCount = cachedCount;
@@ -593,6 +595,12 @@ export class ReaderSession implements ReaderQueueHost {
 
   setWidePages(next: ReadonlySet<number>): void {
     this.setWidePagesSignal(next);
+  }
+
+  setPageDimension(index: number, width: number, height: number): void {
+    const cur = this.pageDimensions[0][index];
+    if (cur?.width === width && cur?.height === height) return;
+    this.pageDimensions[1](index, { width, height });
   }
 
   zoomIn(): void {

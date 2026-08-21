@@ -527,11 +527,12 @@
   max-height: none !important;
   margin: 0 auto !important;
   display: flex !important;
+  align-items: stretch !important;
 }
 .fit-width #ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot {
-  flex: 0 0 50% !important;
-  width: 50% !important;
-  max-width: 50% !important;
+  flex: var(--spread-flex, 0 0 50%) !important;
+  width: auto !important;
+  max-width: 100% !important;
   height: auto !important;
   max-height: none !important;
   display: flex !important;
@@ -565,11 +566,14 @@
   max-width: 100% !important;
   margin: auto !important;
   display: inline-flex !important;
+  flex-direction: row;
+  align-items: center !important;
+  justify-content: center !important;
 }
 .fit-height #ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot {
   flex: 0 1 auto !important;
   width: auto !important;
-  max-width: 50% !important;
+  max-width: none !important;
   height: 100% !important;
   max-height: 100% !important;
   display: flex !important;
@@ -586,6 +590,7 @@
   width: auto !important;
   max-width: 100% !important;
   object-fit: contain !important;
+  display: block;
 }
 
 .fit-original #ds-reader-viewport.horizontal .ds-spread-slot {
@@ -596,6 +601,8 @@
   height: auto;
   max-width: none;
   max-height: none;
+  display: inline-flex !important;
+  align-items: center !important;
 }
 .fit-original #ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot {
   flex: 0 0 auto !important;
@@ -608,7 +615,7 @@
 .fit-original #ds-reader-viewport.horizontal .ds-spread-canvas .ds-page-img {
   zoom: var(--ds-zoom-scale, 1);
   width: auto !important;
-  height: auto !important;
+  height: var(--spread-orig-height, auto) !important;
   max-width: none !important;
   max-height: none !important;
 }
