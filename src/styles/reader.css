@@ -85,6 +85,11 @@
 #ds-reader-container.ds-dark .ds-progress-text {
   color: #cccccc;
 }
+#ds-reader-container.ds-dark .ds-slot-state {
+  color: #aaa;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
 #ds-reader-container.ds-dark.ds-fullscreen {
   --ds-reader-viewport-bg: #121212;
 }
@@ -221,7 +226,7 @@
   flex-direction: column;
   align-items: center;
   padding: 0;
-  background: #eaeaea;
+  background: var(--ds-reader-viewport-bg, #eaeaea);
   user-select: none;
 }
 #ds-reader-viewport.ds-dragging {
