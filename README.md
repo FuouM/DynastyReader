@@ -1,6 +1,6 @@
 # DynastyReader: Unofficial Dynasty Scans Desktop Client
 
-DynastyReader is an unofficial desktop reader for [Dynasty Scans](https://dynasty-scans.com/), built with Rust and Tauri v2. It stores metadata, reading progress, and downloaded chapters locally in SQLite, using conditional ETag caching to keep upstream server requests minimal.
+DynastyReader is an unofficial desktop reader for [Dynasty Scans](https://dynasty-scans.com/), built with Rust, Tauri v2, and SolidJS. It stores metadata, reading progress, custom collections, and downloaded chapters locally in SQLite, using conditional ETag caching to keep upstream server requests minimal.
 
 - [DynastyReader: Unofficial Dynasty Scans Desktop Client](#dynastyreader-unofficial-dynasty-scans-desktop-client)
   - [1. Overview \& Design Goals](#1-overview--design-goals)
@@ -21,46 +21,61 @@ DynastyReader is an unofficial desktop reader for [Dynasty Scans](https://dynast
 DynastyReader was extracted from [Project Curator](https://github.com/FuouM/Project-Curator) into a standalone desktop application with a few specific design priorities:
 
 - **Low Server Impact**: Uses conditional HTTP requests (`If-None-Match` / `ETag`) and connection pooling to avoid re-downloading unchanged metadata. Mass scraping and bulk chapter downloader features are intentionally omitted.
-- **Local & Anonymous**: No accounts or logins. Bookmarks, history, subscriptions, and cached metadata stay on your local machine.
+- **Local & Anonymous**: No accounts or logins. Bookmarks, history, subscriptions, custom collections, and cached metadata stay on your local machine.
 - **Self-Contained & Portable**: Configuration, database files, covers, and cached pages live in a single `.data/` folder next to the executable.
 - **Offline Reading**: Individual chapters can be cached for offline viewing, with page-level progress saved locally.
+- **Reactive Desktop Performance**: Fine-grained reactive SolidJS frontend coupled with an asynchronous Rust backend, supporting slot window virtualization, zero-flicker cover hydration, and smooth scrolling.
+
+| Browse | Reader |
+|:-:|:-:|
+| ![img-desktop-browse](assets/desktop_browse.png) | ![img-desktop-reader-spread](assets/desktop_reader_spread.png) |
 
 ## 2. Tech Stack
 
-- **Backend / Runtime**: Rust (2021 edition), Tauri v2
-- **Async Runtime**: Tokio
+- **Backend / Runtime**: Rust (2021 edition), Tauri v2, Tokio async runtime
 - **HTTP Client**: Reqwest (`rustls-tls`, HTTP/2 connection pooling)
-- **Database**: SQLite 3 via `rusqlite` (WAL mode, foreign keys enabled)
-- **Image Processing**: `image` crate (WebP transcoding)
-- **Frontend**: TypeScript, Vite 6, Vanilla CSS (`curator-ui-base.css`)
+- **Database**: SQLite 3 via `rusqlite` (bundled, WAL mode, foreign keys, connection pooling, online backup)
+- **Image Engine**: `image` crate (WebP transcoding, SIMD/accelerated JPEG/PNG decoders)
+- **Frontend**: TypeScript, Vite 6, SolidJS (reactive signals and stores), WinForms control styling (`curator-ui-base.css`)
 - **Icons**: Bootstrap Icons font
 
 ## 3. Features
 
-### 3.1. Metadata & Feed Caching
+### 3.1. High-Performance Reader
 
-Directory listings and feed endpoints (`/chapters.json`, `/chapters/added.json`) are cached in SQLite using a stale-while-revalidate strategy. Stored entries render instantly, while a background request checks for updates via `If-None-Match`. A `304 Not Modified` response simply refreshes the local timestamp without re-fetching data.
+- **Flexible Reading Modes**: Single-Page, Continuous Vertical Scroll, and Dual-Page Spread (RTL/LTR with first-page cover offset).
+- **Smart Webtoon Handling**: Automatically detects long-strip chapters to suppress spread mode and enforce fit-to-width.
+- **Rendering & Physics**: Slot window virtualization for massive chapters, $O(\log N)$ binary search scroll tracking, smooth wheel animation easing, and stationary tabular progress counters.
+- **Exact Resumption & Offline Pages**: Saves page-level progress and completion to SQLite on turn; supports chapter prefetching and offline storage.
 
-### 3.2. Offline Chapters & Cache Control
+### 3.2. Library & Custom Collections
 
-Chapters can be saved locally for offline reading into `.data/pages/<series>/<chapter>/`. The built-in Cache Management panel shows on-disk storage usage by series and allows deleting specific chapters or clearing all stored images.
+- **Reactive Four-Panel Hub**: Followed Series (with unread indicators), Custom Collections/Favorites, Bookmarks, and timestamped Reading History.
+- **Collection Management**: Create, rename, and organize user-defined collections with series or chapter entries via modal dialogs.
+- **Instant State Sync**: Reactive SolidJS state refreshes all library views immediately upon mutation without reloads.
 
-### 3.3. Reader & Progress Tracking
+### 3.3. Browse, Search & Metadata Caching
 
-- Supports single-page and continuous vertical scroll modes.
-- Fit-to-width, fit-to-height, and custom zoom controls with keyboard navigation.
-- Progress (current page, total pages, completion status) writes to SQLite on page changes, allowing exact resumption when reopening a chapter.
+- **Sub-Tab Navigation**: Recent Releases, Recently Added, Downloaded, Series Directory, and Tags Directory.
+- **Search & Go**: Collapsible header with category-filtered Typeahead search and direct Dynasty URL pasting.
+- **Low-Impact Caching**: Stale-while-revalidate (SWR) caching with `If-None-Match` / `ETag` validation and real-time lifetime bandwidth diagnostics.
+- **Zero-Flicker Cover Hydration**: Reactive image cache with memory store and placeholder hydration to prevent layout shifts.
 
-### 3.4. Tag Management & Blacklisting
+### 3.4. Storage & Database Management
 
-Dynasty tags are grouped by category (Author, Scanlator, Pairing, Doujin, Series, Anthology, Issue, General). Blacklisted tags can be configured to either hide matching entries completely or require a confirmation prompt before opening.
+- **Granular Cache Inspection**: Disk footprint overview, per-series chapter breakdown, and one-click purge tools for scans and covers.
+- **SQLite Database Utilities**: Live table row statistics, online SQLite database backup creation, restoration from file with validation, and database wipe.
+
+### 3.5. Customization, Shell & Maintenance
+
+- **Tag Taxonomy & Blacklist**: Categorized tags (Author, Scanlator, Pairing, Doujin, Series, etc.) with customizable Hide or Trigger-Warning overlay modes.
+- **Theming & Scaling**: Full Dark, Light, and System themes with dynamic UI scaling from 50% to 200%.
+- **Custom Keyboard Shortcuts**: Interactive shortcut manager with key combination recording and conflict detection.
+- **Responsive Mobile Shell**: Adaptive layout with compact topbar, segmented bottom navigation bar, mobile 4px overlay scrollbars, touch overscroll containment, and collapsible reader controls drawer.
+- **In-App Updates & Logs**: Automated GitHub release SemVer update checker with direct binary replacement on Windows, plus one-click access to application logs.
 
 ## 4. Roadmap
 
-- [ ] **Dual-Page Spread Mode**: Two-page spread reading with RTL/LTR order and cover page offset alignment.
-- [ ] **Custom Collections / Favorites**: User-defined lists and custom tag groups beyond followed series.
-- [ ] **App-Wide Dark Theme**: Extend dark mode styling to the rest of the app (currently limited to the reader view).
-- [ ] **Linux Distribution**: AppImage, Flatpak, and native packages for Linux desktop environments.
 - [ ] **Android Port**: Mobile touch-optimized UI and build targets using Tauri Mobile.
 
 ## 5. Data Storage & Layout
@@ -69,7 +84,7 @@ All application data is stored in the `.data/` folder next to the executable:
 
 ```text
 .data/
-├── dynasty_reader.db       # SQLite database (history, bookmarks, subscriptions, progress, blacklists)
+├── dynasty_reader.db       # SQLite database (history, bookmarks, subscriptions, progress, blacklists, collections)
 ├── covers/                 # Cached series and chapter covers (.webp)
 ├── pages/                  # Downloaded offline chapter pages
 │   └── <series_slug>/
@@ -78,7 +93,7 @@ All application data is stored in the `.data/` folder next to the executable:
 │           ├── page_0002.jpg
 │           └── ...
 └── logs/
-    └── dynasty-reader.log  # Application logs
+    └── dynasty-reader.log  # Application rolling logs
 ```
 
 ## 6. Build & Setup
@@ -145,4 +160,4 @@ Distributed under the MIT License. See `LICENSE` for details.
 
 *DynastyReader is an independent open-source project and is not affiliated with Dynasty Scans.*
 
->Yuri shall conquer the earth!
+> Yuri shall conquer the earth!
