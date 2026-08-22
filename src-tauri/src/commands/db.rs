@@ -225,7 +225,7 @@ pub async fn db_backup(
     let escaped = backup_str.replace('\'', "''");
     let sql = format!("VACUUM INTO '{}'", escaped);
     let backup_path_clone = backup_path.clone();
-    tokio::task::spawn_blocking(move || {
+    let size = tokio::task::spawn_blocking(move || {
         let conn = pool_arc.lock().map_err(|_| "db connection poisoned".to_string())?;
         conn.execute(&sql, []).map_err(|e| e.to_string())?;
         let meta = std::fs::metadata(&backup_path_clone).map_err(|e| e.to_string())?;
@@ -233,8 +233,6 @@ pub async fn db_backup(
     })
     .await
     .map_err(|e| e.to_string())??;
-    // Report backup file size via dirStat-style shape.
-    let size = std::fs::metadata(&backup_path).map(|m| m.len()).unwrap_or(0);
     Ok(json!({
         "backup_path": backup_filename,
         "absolute_path": backup_str,

@@ -105,9 +105,12 @@ export async function fetchSeries(
     headers["If-None-Match"] = cached.etag;
   }
 
-  for (const url of seriesEndpoints(permalink, preferredType)) {
+  const endpoints = seriesEndpoints(permalink, preferredType);
+  for (let i = 0; i < endpoints.length; i++) {
+    const url = endpoints[i];
+    const timeoutMs = i === 0 ? 15000 : 5000;
     try {
-      const { status, body, etag } = await httpGetText(url, { headers });
+      const { status, body, etag } = await httpGetText(url, { headers, timeoutMs });
       if (status === 304 && cached) {
         return SeriesSchema.parse(JSON.parse(cached.json_payload));
       }

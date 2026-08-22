@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, State};
+use crate::commands::http::HttpState;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateInfo {
@@ -39,21 +40,17 @@ fn is_version_newer(latest: &str, current: &str) -> bool {
 
 /// Checks the official GitHub repository for new releases.
 #[tauri::command(rename = "checkForUpdates")]
-pub async fn check_for_updates(app: AppHandle) -> Result<UpdateInfo, String> {
+pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>) -> Result<UpdateInfo, String> {
     let current_version = app.package_info().version.to_string();
 
-    let client = reqwest::Client::builder()
-        .user_agent("DynastyReader-Updater")
-        .build()
-        .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
-
-    let resp = client
+    let resp = http_state
+        .0
         .get("https://api.github.com/repos/FuouM/DynastyReader/releases/latest")
+        .header("User-Agent", "DynastyReader-Updater")
         .header("Accept", "application/vnd.github.v3+json")
         .send()
         .await
         .map_err(|e| format!("Failed to query GitHub releases: {e}"))?;
-
     if !resp.status().is_success() {
         return Err(format!("GitHub API returned HTTP {}", resp.status()));
     }
@@ -107,7 +104,7 @@ pub async fn check_for_updates(app: AppHandle) -> Result<UpdateInfo, String> {
 
 /// Downloads the new executable and performs the atomic replacement dance on Windows.
 #[tauri::command(rename = "installUpdate")]
-pub async fn install_update(app: AppHandle, download_url: String) -> Result<(), String> {
+pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, download_url: String) -> Result<(), String> {
     if download_url.is_empty() {
         return Err("Download URL cannot be empty".to_string());
     }
@@ -124,17 +121,13 @@ pub async fn install_update(app: AppHandle, download_url: String) -> Result<(), 
     let old_exe: PathBuf = exe_dir.join(format!("{}.old", file_name.to_string_lossy()));
 
     log::info!("Downloading update from: {download_url}");
-    let client = reqwest::Client::builder()
-        .user_agent("DynastyReader-Updater")
-        .build()
-        .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
-
-    let response = client
+    let response = http_state
+        .0
         .get(&download_url)
+        .header("User-Agent", "DynastyReader-Updater")
         .send()
         .await
         .map_err(|e| format!("Failed to start download: {e}"))?;
-
     if !response.status().is_success() {
         return Err(format!("Download failed with HTTP {}", response.status()));
     }

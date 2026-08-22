@@ -62,7 +62,7 @@ export async function httpDownloadFull(
 }
 
 /** Cache-first JSON getter: returns a fresh non-expired copy or fetches + stores with ETag revalidation. */
-export async function cachedJson<T>(key: string, url: string, ttlMs?: number): Promise<T> {
+export async function cachedJson<T>(key: string, url: string, ttlMs?: number, dataType?: string): Promise<T> {
   const cached = await getCached(key);
   if (cached && (ttlMs === undefined || Date.now() - cached.cached_at < ttlMs)) {
     recordCacheHit(cached.json_payload.length);
@@ -93,6 +93,7 @@ export async function cachedJson<T>(key: string, url: string, ttlMs?: number): P
 
   const fresh = tryParseJson<T>(body);
   if (fresh === null) throw new Error(`Invalid JSON from ${url}`);
-  await setCached(key, key.split(":")[0], body, etag);
+  const computedType = dataType ?? key.split(":")[0].replace(/_v\d+$/, "");
+  await setCached(key, computedType, body, etag);
   return fresh;
 }
