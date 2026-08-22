@@ -191,6 +191,9 @@ export class ReaderSession implements ReaderQueueHost {
   readonly progress: () => {
     full: string;
     short: string;
+    currentNumStr: string;
+    totalNumStr: string;
+    maxCurrentChars: number;
     pct: number;
     width: number;
     cachedNote: string;
@@ -332,26 +335,34 @@ export class ReaderSession implements ReaderQueueHost {
       const pct = total > 0 ? Math.round(((idx + 1) / total) * 100) : 0;
       const count = this.cachedCount();
       const cachedNote = count > 0 ? `${count}/${total} cached` : "";
+      const isSpreadActive = this.isSpread() && this.spreads().length > 0;
 
+      let currentNumStr = `${idx + 1}`;
       let fullPageStr = `Page ${idx + 1} of ${total}`;
       let shortPageStr = `${idx + 1} / ${total}`;
-      if (this.isSpread() && this.spreads().length > 0) {
+
+      if (isSpreadActive) {
         const group = this.spreads()[spreadIndexOf(this.spreads(), idx)];
         if (group && group.pageIndices.length > 1) {
           const first = group.pageIndices[0] + 1;
           const last = group.pageIndices[group.pageIndices.length - 1] + 1;
+          currentNumStr = `${first}–${last}`;
           fullPageStr = `Pages ${first}–${last} of ${total}`;
           shortPageStr = `${first}–${last} / ${total}`;
         } else if (group) {
           const first = group.pageIndices[0] + 1;
+          currentNumStr = `${first}`;
           fullPageStr = `Page ${first} of ${total}`;
           shortPageStr = `${first} / ${total}`;
         }
       }
 
+      const totalDigits = Math.max(1, total.toString().length);
+      const maxCurrentChars = isSpreadActive ? totalDigits * 2 + 1 : totalDigits;
+
       let prevDisabled = false;
       let nextDisabled = false;
-      if (this.isSpread() && this.spreads().length > 0) {
+      if (isSpreadActive) {
         const cur = spreadIndexOf(this.spreads(), idx);
         prevDisabled = cur <= 0;
         nextDisabled = cur >= this.spreads().length - 1;
@@ -363,6 +374,9 @@ export class ReaderSession implements ReaderQueueHost {
       return {
         full: fullPageStr,
         short: shortPageStr,
+        currentNumStr,
+        totalNumStr: `${total}`,
+        maxCurrentChars,
         pct,
         width: pct,
         cachedNote,

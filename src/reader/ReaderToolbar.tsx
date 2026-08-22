@@ -64,7 +64,28 @@ export function ReaderMainRow(props: NavRowProps) {
       <div class="ds-reader-progress-wrap">
         <div class="ds-reader-progress-pill">
           <span class="ds-reader-progress-label" title={s.progress().title}>
-            <span class="ds-prog-text">{isNarrow() ? s.progress().short : s.progress().full}</span>
+            <span class="ds-prog-page-slot">
+              <Show when={!isNarrow()}>
+                <span class="ds-prog-prefix">Page </span>
+              </Show>
+              <span
+                class="ds-prog-current"
+                style={{
+                  "min-width": `${s.progress().maxCurrentChars}ch`,
+                }}
+              >
+                {s.progress().currentNumStr}
+              </span>
+              <span class="ds-prog-sep"> / </span>
+              <span
+                class="ds-prog-total"
+                style={{
+                  "min-width": `${s.progress().totalNumStr.length}ch`,
+                }}
+              >
+                {s.progress().totalNumStr}
+              </span>
+            </span>
             <span class="ds-prog-pct">({s.progress().pct}%)</span>
             <Show when={s.progress().cachedNote !== ""}>
               <span class="ds-prog-cached-dot">·</span>
