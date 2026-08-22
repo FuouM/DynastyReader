@@ -1,5 +1,4 @@
 import { createSignal } from "solid-js";
-import { makePersisted } from "@solid-primitives/storage";
 import type { HotkeyActionId, CustomHotkeysMap } from "./types";
 import { HOTKEY_DEFINITIONS, getDefaultHotkeys, HOTKEY_DEFINITIONS_MAP } from "./registry";
 import { matchesEvent, normalizeKeyCombo } from "./key-combo";
@@ -25,15 +24,29 @@ function deserializeHotkeys(raw: string | null): CustomHotkeysMap {
   }
 }
 
-export const [hotkeysMap, setHotkeysMap] = (makePersisted as any)(
-  createSignal<CustomHotkeysMap>(getDefaultHotkeys()),
-  {
-    name: STORAGE_KEY,
-    storage: typeof localStorage !== "undefined" ? localStorage : undefined,
-    deserialize: deserializeHotkeys,
-    serialize: (val: CustomHotkeysMap) => JSON.stringify(val),
+function readPersistedHotkeys(): CustomHotkeysMap {
+  if (typeof localStorage === "undefined") return getDefaultHotkeys();
+  try {
+    return deserializeHotkeys(localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return getDefaultHotkeys();
   }
-);
+}
+
+const [hotkeysSignal, setHotkeysSignal] = createSignal<CustomHotkeysMap>(readPersistedHotkeys());
+
+export const hotkeysMap = hotkeysSignal;
+export const setHotkeysMap = (val: CustomHotkeysMap | ((prev: CustomHotkeysMap) => CustomHotkeysMap)) => {
+  const next = typeof val === "function" ? val(hotkeysSignal()) : val;
+  setHotkeysSignal(next);
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    }
+  } catch (err) {
+    console.error("[hotkeys] failed saving hotkeys to localStorage:", err);
+  }
+};
 export const [isRecordingHotkeys, setIsRecordingHotkeys] = createSignal<boolean>(false);
 
 export function getHotkeys(id: HotkeyActionId): string[] {
