@@ -234,8 +234,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
   return (
     <ListItem
       class="ds-feed-item"
-      cssText="gap:10px;padding:6px 8px;cursor:pointer;"
-      fillCssText="display:flex;flex-direction:column;gap:3px;"
+      cssText="cursor:pointer;"
       read={isRead()}
       blacklisted={isBlacklisted()}
       onClick={() => guardedOpen(ch.title, openMainTarget)}
@@ -262,42 +261,73 @@ export function FeedItemRow(props: FeedItemRowProps) {
         />
       }
       title={
-        <div class="ds-flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;">
-          <span
-            class="ds-item-title"
-            style="font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
-            onClick={(ev) => {
-              ev.stopPropagation();
-              guardedOpen(ch.title, openMainTarget);
-            }}
-          >
-            <span>{decodeEntities(ch.title)}</span>
-            <OfflineBadge when={isFullyCached()} />
-          </span>
-
-          <Show when={ch.series && ch.series !== ch.title}>
-            <span class="ds-muted" style="font-size:11px;">in</span>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;width:100%;">
+          <div class="ds-flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0;">
             <span
-              class="ds-series-link"
-              title={`Go to series: ${decodeEntities(ch.series!)}`}
+              class="ds-item-title"
+              style="font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
               onClick={(ev) => {
                 ev.stopPropagation();
-                guardedOpen(ch.series!, () =>
-                  openSeries(coverInfo.seriesPermalink || ch.series!, ch.series!),
-                );
+                guardedOpen(ch.title, openMainTarget);
               }}
             >
-              {decodeEntities(ch.series!)}
+              <span>{decodeEntities(ch.title)}</span>
+              <OfflineBadge when={isFullyCached()} />
             </span>
-          </Show>
 
-          <Show when={props.extraMeta}>
-            {props.extraMeta}
-          </Show>
+            <Show when={ch.series && ch.series !== ch.title}>
+              <span class="ds-muted" style="font-size:11px;">in</span>
+              <span
+                class="ds-series-link"
+                title={`Go to series: ${decodeEntities(ch.series!)}`}
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  guardedOpen(ch.series!, () =>
+                    openSeries(coverInfo.seriesPermalink || ch.series!, ch.series!),
+                  );
+                }}
+              >
+                {decodeEntities(ch.series!)}
+              </span>
+            </Show>
 
-          <Show when={isBlacklisted() && matchedTags().length > 0}>
-            <WarningChip mode={blMode} tags={matchedTags()} />
-          </Show>
+            <Show when={props.extraMeta}>
+              {props.extraMeta}
+            </Show>
+
+            <Show when={isBlacklisted() && matchedTags().length > 0}>
+              <WarningChip mode={blMode} tags={matchedTags()} />
+            </Show>
+          </div>
+
+          <div class="ds-feed-actions" onClick={(ev) => ev.stopPropagation()}>
+            <button
+              type="button"
+              class={`win-button ds-btn-compact${bookmarked() ? " primary" : ""}`}
+              title={bookmarked() ? "Remove from Read Later" : "Save for Read Later"}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                void toggleBookmark();
+              }}
+            >
+              <BookmarkIcon filled={bookmarked()} />
+              <span class="ds-action-btn-text">{bookmarked() ? " Saved" : " Read Later"}</span>
+            </button>
+            <AddToCollectionButton
+              cssText="flex-shrink:0;"
+              title={
+                !coverInfo.isStandalone
+                  ? `Add series "${decodeEntities(coverInfo.seriesName || ch.series || "")}" to collection`
+                  : "Add to Favorites or custom collections"
+              }
+              onOpen={openAddToCol}
+            />
+            <ExternalLinkButton
+              cssText="flex-shrink:0;"
+              title={`Open "${decodeEntities(ch.title)}" on Dynasty Scans in browser`}
+              url={externalUrl()}
+            />
+          </div>
         </div>
       }
       body={
@@ -305,36 +335,6 @@ export function FeedItemRow(props: FeedItemRowProps) {
           <TagRow label="Artist:" tags={artistTags} />
           <TagRow label="Scanlation:" tags={groupTags} />
           <TagRow label="Tags:" tags={otherTags} />
-        </>
-      }
-      actions={
-        <>
-          <button
-            type="button"
-            class={`win-button ds-btn-compact${bookmarked() ? " primary" : ""}`}
-            title={bookmarked() ? "Remove from Read Later" : "Save for Read Later"}
-            onClick={(ev) => {
-              ev.stopPropagation();
-              void toggleBookmark();
-            }}
-          >
-            <BookmarkIcon filled={bookmarked()} />
-            {bookmarked() ? " Saved" : " Read Later"}
-          </button>
-          <AddToCollectionButton
-            cssText="flex-shrink:0;"
-            title={
-              !coverInfo.isStandalone
-                ? `Add series "${decodeEntities(coverInfo.seriesName || ch.series || "")}" to collection`
-                : "Add to Favorites or custom collections"
-            }
-            onOpen={openAddToCol}
-          />
-          <ExternalLinkButton
-            cssText="flex-shrink:0;"
-            title={`Open "${decodeEntities(ch.title)}" on Dynasty Scans in browser`}
-            url={externalUrl()}
-          />
         </>
       }
     />

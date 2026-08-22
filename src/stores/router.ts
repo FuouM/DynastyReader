@@ -40,13 +40,21 @@ let isNavigatingHistory = false;
 export function isSameRoute(a: Route, b: Route): boolean {
   if (a.view !== b.view) return false;
   if (a.view === "reader") {
-    return a.chapterPermalink === b.chapterPermalink;
+    return (
+      a.chapterPermalink === b.chapterPermalink &&
+      a.startPage === b.startPage
+    );
   }
   if (a.view === "series") {
     return a.seriesPermalink === b.seriesPermalink;
   }
   if (a.view === "browse") {
-    return (a.browseTab ?? "releases") === (b.browseTab ?? "releases");
+    return (
+      (a.browseTab ?? "releases") === (b.browseTab ?? "releases") &&
+      (a.searchQuery ?? "") === (b.searchQuery ?? "") &&
+      (a.searchClass ?? "") === (b.searchClass ?? "") &&
+      (a.withTag ?? "") === (b.withTag ?? "")
+    );
   }
   if (a.view === "library") {
     return a.collectionId === b.collectionId;
@@ -64,8 +72,8 @@ export function navigate(r: Route): void {
     });
   }
 
-  // If already at the exact same route/chapter, do not destroy and rebuild the view
-  if (isSameRoute(route(), r)) {
+  // If already at the exact same route/chapter and not navigating history, do not rebuild
+  if (!isNavigatingHistory && isSameRoute(route(), r)) {
     return;
   }
 

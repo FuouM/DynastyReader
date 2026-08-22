@@ -10,7 +10,7 @@
  * slots so no view is forced to lose content or class names.
  */
 
-import type { JSX } from "solid-js";
+import { Show, type JSX } from "solid-js";
 
 export interface ListItemProps {
   /** Extra classes on the root row (e.g. `ds-feed-item`, `ds-flex-row`). */
@@ -31,7 +31,7 @@ export interface ListItemProps {
   title?: JSX.Element;
   /** Content below the title line (subtitle, links, tag rows). */
   body?: JSX.Element;
-  /** Right-side action cluster (rendered as direct flex children). */
+  /** Right-side action cluster (rendered inside .ds-item-actions). */
   actions?: JSX.Element;
 }
 
@@ -39,7 +39,7 @@ export function ListItem(props: ListItemProps) {
   return (
     <div
       class={`ds-item${props.read ? " ds-item-read" : ""}${props.class ? ` ${props.class}` : ""}`}
-      style={`display:flex;align-items:center;${props.blacklisted ? "opacity:0.8;background:var(--sys-bg-active,#fcf8f8);" : ""}${props.cssText ?? ""}`}
+      style={`display:flex;${props.blacklisted ? "opacity:0.8;background:var(--sys-bg-active,#fcf8f8);" : ""}${props.cssText ?? ""}`}
       onClick={props.onClick}
     >
       {props.leading}
@@ -47,7 +47,11 @@ export function ListItem(props: ListItemProps) {
         {props.title}
         {props.body}
       </div>
-      {props.actions}
+      <Show when={props.actions}>
+        <div class="ds-item-actions">
+          {props.actions}
+        </div>
+      </Show>
     </div>
   );
 }
