@@ -12,13 +12,13 @@
   padding-bottom: 56px;
 }
 
-/* Compact Mobile Topbar (32px height matching WinForms) */
+/* Compact Mobile Topbar (38px height) */
 #ds-root[data-mobile] #ds-topbar {
   flex-direction: row;
   align-items: center;
-  padding: 4px 8px;
-  height: 32px;
-  min-height: 32px;
+  padding: 0 8px;
+  height: 38px;
+  min-height: 38px;
   box-sizing: border-box;
 }
 
@@ -38,14 +38,14 @@
 }
 
 #ds-root[data-mobile] #ds-nav-history {
-  height: 24px;
+  height: 26px;
 }
 
 #ds-root[data-mobile] #ds-nav-history .ds-segmented-btn {
-  width: 26px;
+  width: 28px;
   height: 24px;
   min-height: 24px;
-  min-width: 26px;
+  min-width: 28px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -58,7 +58,7 @@
   font-weight: 600;
   flex: 1 1 auto;
   text-align: left;
-  margin: 0 4px;
+  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -74,10 +74,10 @@
 }
 
 #ds-root[data-mobile] #ds-topbar-tools .win-button {
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
-  min-width: 24px;
+  width: 28px;
+  height: 26px;
+  min-height: 26px;
+  min-width: 28px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -129,21 +129,26 @@
   font-weight: 600;
 }
 
-/* Browse horizontal sub-tabs strip */
+/* Browse sub-tabs & pager stacked layout on mobile */
 #ds-root[data-mobile] .ds-subtabs {
-  flex-wrap: nowrap;
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  align-items: stretch;
+  margin-bottom: 6px;
 }
 
 #ds-root[data-mobile] .ds-subtabs-left {
+  display: flex;
+  width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   flex-wrap: nowrap;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  flex: 1 1 auto;
-  min-width: 0;
-  gap: 3px;
+  gap: 4px;
+  padding-bottom: 2px;
+  box-sizing: border-box;
 }
 
 #ds-root[data-mobile] .ds-subtabs-left::-webkit-scrollbar {
@@ -156,7 +161,50 @@
   height: 26px;
   min-height: 26px;
   font-size: 11px;
+  padding: 0 10px;
+}
+
+#ds-root[data-mobile] .ds-subtabs-right {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 0;
+  gap: 4px;
+}
+
+#ds-root[data-mobile] .ds-subtabs-right .ds-scroll-top-btn {
+  display: none !important;
+}
+
+#ds-root[data-mobile] #ds-browse-top-pager {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 4px !important;
+}
+
+#ds-root[data-mobile] #ds-browse-check-updates-btn {
   padding: 0 8px;
+  height: 24px;
+  font-size: 11px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+#ds-root[data-mobile] .ds-pager-widget {
+  margin: 0 !important;
+  gap: 2px !important;
+  justify-content: flex-start !important;
+}
+
+/* Search & Go inputs on mobile */
+#ds-root[data-mobile] #ds-search-btn,
+#ds-root[data-mobile] #ds-url-btn {
+  width: 64px !important;
+  padding: 0 6px !important;
+}
+#ds-root[data-mobile] #ds-url-paste-btn {
+  padding: 0 6px !important;
 }
 
 /* Feed items layout on mobile */
