@@ -222,7 +222,13 @@
 }
 
 #ds-root[data-mobile] .ds-subtabs-right .ds-scroll-top-btn {
-  display: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 
 #ds-root[data-mobile] #ds-browse-check-updates-btn {
