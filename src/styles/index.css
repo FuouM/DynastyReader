@@ -200,24 +200,23 @@ body {
   margin-left: 0;
 }
 
-#ds-topbar.ds-narrow #ds-topbar-tools {
-  margin-left: auto !important;
-}
 #ds-topbar.ds-narrow #ds-actions {
-  width: 100%;
-  order: 10;
-  margin-left: 0;
-  justify-content: flex-end;
-  padding-top: 0;
-  margin-top: 0;
-  border-top: none;
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
   gap: 3px;
+  width: auto;
 }
 #ds-topbar.ds-narrow #ds-actions .ds-btn-text {
   display: none;
 }
 #ds-topbar.ds-narrow #ds-actions .win-button {
-  padding: 2px 6px;
+  padding: 0 4px;
+  height: 24px;
+  min-width: 24px;
+}
+#ds-topbar.ds-narrow #ds-topbar-tools {
+  margin-left: 4px !important;
 }
 
 @media (max-width: 680px) {

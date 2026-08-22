@@ -72,8 +72,13 @@
   gap: 3px;
   margin-left: auto;
   flex-shrink: 0;
+  width: auto !important;
+  order: unset !important;
 }
 
+#ds-root[data-mobile] #ds-actions .ds-btn-text {
+  display: none !important;
+}
 #ds-root[data-mobile] #ds-actions .win-button {
   width: 24px;
   height: 24px;
