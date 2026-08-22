@@ -36,23 +36,23 @@
   gap: 4px;
   flex-shrink: 0;
 }
-
 #ds-root[data-mobile] #ds-nav-history {
+  display: inline-flex;
+  align-items: stretch;
   height: 26px;
 }
 
 #ds-root[data-mobile] #ds-nav-history .ds-segmented-btn {
-  width: 28px;
+  width: 26px;
   height: 24px;
   min-height: 24px;
-  min-width: 28px;
+  min-width: 26px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
 }
-
 #ds-root[data-mobile] #ds-title {
   font-size: 13px;
   font-weight: 600;
@@ -85,9 +85,8 @@
   box-sizing: border-box;
 }
 
-/* Hide desktop segmented view switch, forward button, and refresh button on mobile */
+/* Hide desktop segmented view switch and refresh button on mobile */
 #ds-root[data-mobile] #ds-view-switch,
-#ds-root[data-mobile] #ds-nav-history .ds-nav-history-btn:last-child,
 #ds-root[data-mobile] #ds-page-refresh-btn {
   display: none !important;
 }
