@@ -1,4 +1,5 @@
 import { Show } from "solid-js";
+import { APP_VERSION } from "../../stores";
 import { formatBytes } from "../../lib/format";
 import { openExternal } from "../../api";
 import {
@@ -38,7 +39,7 @@ export function AboutSettings() {
               class="ds-etag-tag"
               style="font-size:10px;font-weight:normal;padding:1px 6px;"
             >
-              v0.1.0
+              v{APP_VERSION}
             </span>
           </div>
           <div class="ds-muted" style="font-size:11px;margin-top:2px;">

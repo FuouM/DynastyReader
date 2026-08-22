@@ -88,7 +88,9 @@ Write-Host "Portable build staged successfully at: $OutDir\DynastyReader.exe" -F
 
 # 5. Optional .zip archive creation
 if ($Zip) {
-    $ZipPath = "$Root\DynastyReader-v0.1.0-portable.zip"
+    $pkg = Get-Content "$Root\package.json" -Raw | ConvertFrom-Json
+    $ver = $pkg.version
+    $ZipPath = "$Root\DynastyReader-v$ver-portable.zip"
     Write-Host "Creating zip archive: $ZipPath..." -ForegroundColor Cyan
     if (Test-Path $ZipPath) {
         Remove-Item -LiteralPath $ZipPath -Force
