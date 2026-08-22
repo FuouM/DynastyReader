@@ -38,7 +38,6 @@ import {
   CloseIcon,
   Icon,
 } from "../components/Icon";
-import { TopbarAction } from "../components/ActionBar";
 import {
   FollowedPane,
   CollectionsPane,
@@ -349,26 +348,37 @@ function LibraryActions(props: {
         <Show
           when={props.refreshing()}
           fallback={
-            <Show when={props.justUpdated()} fallback={<><RefreshIcon /> Refresh Library</>}>
-              <CheckIcon /> Updated
+            <Show
+              when={props.justUpdated()}
+              fallback={
+                <>
+                  <RefreshIcon /> <span class="ds-btn-text">Refresh Library</span>
+                </>
+              }
+            >
+              <CheckIcon /> <span class="ds-btn-text">Updated</span>
             </Show>
           }
         >
-          <RefreshIcon spin={true} /> Refreshing...
+          <RefreshIcon spin={true} /> <span class="ds-btn-text">Refreshing...</span>
         </Show>
       </button>
-      <TopbarAction
+      <button
+        type="button"
+        class="win-button ds-btn-compact"
         title="View cache storage statistics and manage cached series/pages"
         onClick={() => navigate({ view: "cache" })}
       >
-        <StorageIcon /> Cache Management
-      </TopbarAction>
-      <TopbarAction
+        <StorageIcon /> <span class="ds-btn-text">Cache Management</span>
+      </button>
+      <button
+        type="button"
+        class="win-button ds-btn-compact"
         title="Manage blacklisted series and view hidden works"
         onClick={() => navigate({ view: "blacklist" })}
       >
-        <BlacklistIcon /> Series Blacklist
-      </TopbarAction>
+        <BlacklistIcon /> <span class="ds-btn-text">Series Blacklist</span>
+      </button>
     </>
   );
 }

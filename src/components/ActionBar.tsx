@@ -40,10 +40,10 @@ export function BackRefreshActions(props: BackRefreshActionsProps) {
         title="Back"
         onClick={props.onBack}
       >
-        <ArrowLeftIcon /> {props.backLabel}
+        <ArrowLeftIcon /> <span class="ds-btn-text">{props.backLabel}</span>
       </TopbarAction>
       <TopbarAction title="Refresh" onClick={props.onRefresh}>
-        <RefreshIcon /> Refresh
+        <RefreshIcon /> <span class="ds-btn-text">Refresh</span>
       </TopbarAction>
     </>
   );
