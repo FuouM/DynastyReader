@@ -19,8 +19,14 @@ import {
 import { decodeEntities, formatDate, navigate, showBanner } from "../stores";
 import {
   getFollowedSeriesPage,
+  getFollowedRevision,
+  onFollowedChanged,
   getBookmarksPage,
+  getBookmarksRevision,
+  onBookmarksChanged,
   getHistoryPage,
+  getHistoryRevision,
+  onHistoryChanged,
   getFullyCachedChapterPermalinks,
   getCollections,
   getCollectionsRevision,
@@ -56,9 +62,14 @@ export interface LibraryPaneProps {
 
 export function FollowedPane(props: LibraryPaneProps) {
   const [page, setPage] = createSignal(1);
+  const [rev, setRev] = createSignal(getFollowedRevision());
+  onMount(() => {
+    const unsub = onFollowedChanged(() => setRev(getFollowedRevision()));
+    onCleanup(unsub);
+  });
   const [data, { refetch }] = createResource(
-    page,
-    async (p) => getFollowedSeriesPage(p, 10),
+    () => ({ page: page(), rev: rev() }),
+    async ({ page: p }) => getFollowedSeriesPage(p, 10),
   );
   const showSpinner = useDelayedSpinner(() => data.loading);
 
@@ -209,9 +220,14 @@ export function CollectionsPane(props: CollectionsPaneProps) {
 
 export function BookmarksPane(props: LibraryPaneProps) {
   const [page, setPage] = createSignal(1);
+  const [rev, setRev] = createSignal(getBookmarksRevision());
+  onMount(() => {
+    const unsub = onBookmarksChanged(() => setRev(getBookmarksRevision()));
+    onCleanup(unsub);
+  });
   const [data, { refetch }] = createResource(
-    page,
-    async (p) => {
+    () => ({ page: page(), rev: rev() }),
+    async ({ page: p }) => {
       const [res, fullyCachedSet] = await Promise.all([
         getBookmarksPage(p, 15),
         getFullyCachedChapterPermalinks(),
@@ -288,9 +304,14 @@ export function BookmarksPane(props: LibraryPaneProps) {
 
 export function HistoryPane(props: LibraryPaneProps) {
   const [page, setPage] = createSignal(1);
+  const [rev, setRev] = createSignal(getHistoryRevision());
+  onMount(() => {
+    const unsub = onHistoryChanged(() => setRev(getHistoryRevision()));
+    onCleanup(unsub);
+  });
   const [data, { refetch }] = createResource(
-    page,
-    async (p) => {
+    () => ({ page: page(), rev: rev() }),
+    async ({ page: p }) => {
       const [res, fullyCachedSet] = await Promise.all([
         getHistoryPage(p, 15),
         getFullyCachedChapterPermalinks(),

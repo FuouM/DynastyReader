@@ -11,6 +11,114 @@ import type {
   BookmarkPageResult,
 } from "../types/db";
 
+let followedRevision = 0;
+type FollowedListener = () => void;
+const followedListeners: FollowedListener[] = [];
+
+export function getFollowedRevision(): number {
+  return followedRevision;
+}
+
+export function onFollowedChanged(fn: FollowedListener): () => void {
+  followedListeners.push(fn);
+  return () => {
+    const idx = followedListeners.indexOf(fn);
+    if (idx !== -1) followedListeners.splice(idx, 1);
+  };
+}
+
+export function notifyFollowedChanged(): void {
+  followedRevision++;
+  for (const fn of [...followedListeners]) {
+    try {
+      fn();
+    } catch (e) {
+      console.error("[library.repo] followed listener error", e);
+    }
+  }
+}
+
+let bookmarksRevision = 0;
+type BookmarksListener = () => void;
+const bookmarksListeners: BookmarksListener[] = [];
+
+export function getBookmarksRevision(): number {
+  return bookmarksRevision;
+}
+
+export function onBookmarksChanged(fn: BookmarksListener): () => void {
+  bookmarksListeners.push(fn);
+  return () => {
+    const idx = bookmarksListeners.indexOf(fn);
+    if (idx !== -1) bookmarksListeners.splice(idx, 1);
+  };
+}
+
+export function notifyBookmarksChanged(): void {
+  bookmarksRevision++;
+  for (const fn of [...bookmarksListeners]) {
+    try {
+      fn();
+    } catch (e) {
+      console.error("[library.repo] bookmarks listener error", e);
+    }
+  }
+}
+
+let historyRevision = 0;
+type HistoryListener = () => void;
+const historyListeners: HistoryListener[] = [];
+
+export function getHistoryRevision(): number {
+  return historyRevision;
+}
+
+export function onHistoryChanged(fn: HistoryListener): () => void {
+  historyListeners.push(fn);
+  return () => {
+    const idx = historyListeners.indexOf(fn);
+    if (idx !== -1) historyListeners.splice(idx, 1);
+  };
+}
+
+export function notifyHistoryChanged(): void {
+  historyRevision++;
+  for (const fn of [...historyListeners]) {
+    try {
+      fn();
+    } catch (e) {
+      console.error("[library.repo] history listener error", e);
+    }
+  }
+}
+
+let progressRevision = 0;
+type ProgressListener = () => void;
+const progressListeners: ProgressListener[] = [];
+
+export function getProgressRevision(): number {
+  return progressRevision;
+}
+
+export function onProgressChanged(fn: ProgressListener): () => void {
+  progressListeners.push(fn);
+  return () => {
+    const idx = progressListeners.indexOf(fn);
+    if (idx !== -1) progressListeners.splice(idx, 1);
+  };
+}
+
+export function notifyProgressChanged(): void {
+  progressRevision++;
+  for (const fn of [...progressListeners]) {
+    try {
+      fn();
+    } catch (e) {
+      console.error("[library.repo] progress listener error", e);
+    }
+  }
+}
+
 export async function getFollowedSeriesCount(): Promise<number> {
   const rows = await query<{ count: number }>(`SELECT COUNT(*) as count FROM followed_series`);
   return rows[0]?.count ?? 0;
@@ -69,10 +177,12 @@ export async function followSeries(row: {
       Date.now(),
     ],
   );
+  notifyFollowedChanged();
 }
 
 export async function unfollowSeries(permalink: string): Promise<void> {
   await execute(`DELETE FROM followed_series WHERE permalink = ?`, [permalink]);
+  notifyFollowedChanged();
 }
 
 /**
@@ -84,6 +194,7 @@ export async function updateFollowedSeriesCover(
   cover: string | null,
 ): Promise<void> {
   await execute(`UPDATE followed_series SET cover = ? WHERE permalink = ?`, [cover, permalink]);
+  notifyFollowedChanged();
 }
 
 export async function getReadingProgress(
@@ -130,6 +241,7 @@ export async function setReadingProgress(p: {
       Date.now(),
     ],
   );
+  notifyProgressChanged();
 }
 
 /** Reading progress for every chapter of a series (one query, no per-chapter calls). */
@@ -161,14 +273,17 @@ export async function addHistory(p: {
        read_at = excluded.read_at`,
     [p.chapterPermalink, p.seriesPermalink, p.seriesName, p.chapterTitle, Date.now()],
   );
+  notifyHistoryChanged();
 }
 
 export async function removeHistory(id: number): Promise<void> {
   await execute(`DELETE FROM reading_history WHERE id = ?`, [id]);
+  notifyHistoryChanged();
 }
 
 export async function clearHistory(): Promise<void> {
   await execute(`DELETE FROM reading_history`);
+  notifyHistoryChanged();
 }
 
 export async function getHistory(limit = 100): Promise<HistoryRow[]> {
@@ -260,8 +375,10 @@ export async function addBookmark(p: {
        created_at = excluded.created_at`,
     [p.chapterPermalink, p.seriesPermalink, p.seriesName, p.chapterTitle, p.pageIndex, Date.now()],
   );
+  notifyBookmarksChanged();
 }
 
 export async function removeBookmark(chapterPermalink: string): Promise<void> {
   await execute(`DELETE FROM bookmarks WHERE chapter_permalink = ?`, [chapterPermalink]);
+  notifyBookmarksChanged();
 }
