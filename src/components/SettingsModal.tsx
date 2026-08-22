@@ -445,7 +445,7 @@ export function SettingsModal(props: SettingsModalProps) {
         </div>
         <div class="group-box" id="ds-settings-sec-storage">
           <div class="group-box-title"><StorageIcon /> Storage &amp; Cache</div>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:2px 0;">
+          <div class="ds-settings-storage-grid">
             <span style="font-size:12px;color:var(--sys-window-text,#333);">Manage disk footprint &amp; scans:</span>
             <button type="button" class="win-button" id="ds-settings-goto-cache" style="width:100%;justify-content:flex-start;" onClick={() => {
               props.onClose();
@@ -472,7 +472,7 @@ export function SettingsModal(props: SettingsModalProps) {
         </div>
         <div class="group-box" id="ds-settings-sec-about">
           <div class="group-box-title"><Icon name="info-circle" /> About DynastyReader</div>
-          <div style="display:flex;align-items:center;gap:12px;padding:4px 0;">
+          <div class="ds-settings-about-header">
             <img src="/icon.svg" width="34" height="34" alt="DynastyReader" style="border-radius:4px;flex-shrink:0;user-select:none;pointer-events:none;" />
             <div class="ds-fill">
               <div style="font-size:12px;font-weight:600;color:var(--sys-window-text,#222);display:flex;align-items:center;gap:6px;">
@@ -482,7 +482,7 @@ export function SettingsModal(props: SettingsModalProps) {
                 Local-first desktop reader &amp; offline manga catalog for Dynasty Scans.
               </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+            <div class="ds-settings-about-actions">
               <button
                 type="button"
                 class="win-button ds-btn-compact"
