@@ -391,12 +391,7 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   gap: 6px !important;
 }
 
-/* Floating banner toast when mobile */
+/* Floating banner toast position when mobile (clears bottom nav) */
 #ds-root[data-mobile] #ds-banner {
-  position: fixed;
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }

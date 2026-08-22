@@ -246,20 +246,62 @@ body {
     display: none;
   }
 }
+@keyframes ds-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Floating toast banner by default / compact / medium screens */
 #ds-banner {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
   display: inline-flex;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--sys-window-text, #333);
-  background: var(--sys-control-bg, #ececec);
-  border: 1px solid var(--sys-border-light, #bbb);
-  border-radius: 3px;
-  padding: 1px 8px;
-  margin-left: 6px;
-  margin-right: 4px;
+  background: var(--sys-control-bg, #f0f0f0);
+  border: 1px solid var(--sys-border-medium, #bbb);
+  border-radius: 4px;
+  padding: 6px 14px;
   white-space: nowrap;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  gap: 6px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+  pointer-events: auto;
+  animation: ds-toast-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Inline topbar banner only on very wide screens (desktop >= 1200px) */
+@media (min-width: 1200px) {
+  #ds-root:not([data-mobile]) #ds-banner {
+    position: static;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    z-index: auto;
+    box-shadow: none;
+    animation: none;
+    font-size: 11px;
+    font-weight: normal;
+    background: var(--sys-control-bg, #ececec);
+    border: 1px solid var(--sys-border-light, #bbb);
+    border-radius: 3px;
+    padding: 1px 8px;
+    margin-left: 6px;
+    margin-right: 4px;
+    flex-shrink: 0;
+    max-width: none;
+  }
 }
 #ds-view {
   flex: 1;
