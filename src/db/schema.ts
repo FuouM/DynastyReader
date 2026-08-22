@@ -293,6 +293,37 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 3,
+    name: "add hot indexes for reading_history, bookmarks, and cached_pages page0",
+    up: async () => {
+      const failures: string[] = [];
+      const tryStep = async (sql: string, label: string): Promise<void> => {
+        try {
+          await runStep(sql, label);
+        } catch {
+          failures.push(label);
+        }
+      };
+      await tryStep(
+        "CREATE INDEX IF NOT EXISTS idx_reading_history_read_at ON reading_history(read_at DESC, id DESC)",
+        "index reading_history.read_at",
+      );
+      await tryStep(
+        "CREATE INDEX IF NOT EXISTS idx_bookmarks_created_at ON bookmarks(created_at DESC)",
+        "index bookmarks.created_at",
+      );
+      await tryStep(
+        "CREATE INDEX IF NOT EXISTS idx_cached_pages_page0 ON cached_pages(page_index, chapter_permalink)",
+        "index cached_pages.page0",
+      );
+      if (failures.length > 0) {
+        const msg = `[db/schema] migration v3: ${failures.length} step(s) failed: ${failures.join(", ")}`;
+        console.error(msg);
+        throw new Error(msg);
+      }
+    },
+  },
 ];
 
 let initDbPromise: Promise<void> | null = null;

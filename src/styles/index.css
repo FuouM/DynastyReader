@@ -595,7 +595,7 @@ body.ds-dark .tag-pill:hover {
   overflow-y: auto;
 }
 .ds-modal-footer {
-  border-top: 1px solid var(--sys-border-light, #ffffff);
+  border-top: 1px solid var(--sys-border-dark, #b0b0b0);
   padding-top: 8px;
   flex-shrink: 0;
 }

@@ -407,6 +407,7 @@ export class ReaderSession implements ReaderQueueHost {
   }
 
   setCachedPath(index: number, path: string): void {
+    this.retrying.delete(index);
     this.cachedPages[1](index, path);
     this.slotStates[1](index, undefined);
     this.recountCached();
@@ -480,6 +481,7 @@ export class ReaderSession implements ReaderQueueHost {
 
   /** Slot Retry button: clears the failure and re-queues the page. */
   retrySlot(index: number): void {
+    this.retrying.delete(index);
     this.queue.clearFailed(index);
     this.setSlotState(index, "spinner", "Downloading…");
     this.queue.enqueue(index);

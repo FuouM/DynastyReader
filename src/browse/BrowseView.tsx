@@ -8,7 +8,7 @@
  *  - transient search directives consumed at this dispatch boundary
  */
 
-import { createEffect, createSignal, For, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, For, Show, untrack, type JSX } from "solid-js";
 import { navigate, route, setRoute, showBanner } from "../stores";
 import { parseDynastyUrl, suggest } from "../api";
 import { Pager } from "../components/Pager";
@@ -95,7 +95,9 @@ export function BrowseView() {
     if ((r.browseTab ?? "releases") !== "search") return;
     if (r.searchQuery === undefined && r.withTag === undefined && r.searchClass === undefined) return;
     setPendingSearch({ searchQuery: r.searchQuery, withTag: r.withTag, searchClass: r.searchClass });
-    setRoute({ ...r, searchQuery: undefined, withTag: undefined, searchClass: undefined });
+    untrack(() => {
+      setRoute({ ...r, searchQuery: undefined, withTag: undefined, searchClass: undefined });
+    });
   });
 
   const runSearch = (query: string): void => {

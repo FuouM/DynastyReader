@@ -72,8 +72,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
     };
 
     window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("scroll", onScroll, { capture: true, once: true });
-
+    window.addEventListener("scroll", onScroll, { capture: true, once: true, passive: true });
     onCleanup(() => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("scroll", onScroll, { capture: true });
@@ -252,7 +251,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
               </For>
             </div>
             <div style="padding:5px 6px;border-top:1px solid var(--sys-border-light,#ddd);background:var(--sys-control-bg,#f9f9f9);display:flex;gap:3px;">
-              <div class="input-wrapper" style="flex:1;">
+              <div class="input-wrapper" classList={{ "has-value": Boolean(newName().trim()) }} style="flex:1;">
                 <input
                   type="text"
                   id="ds-add-to-col-new-input"

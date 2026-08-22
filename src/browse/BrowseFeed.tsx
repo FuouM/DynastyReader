@@ -202,9 +202,13 @@ function FeedStatusFooter(props: {
   const [traffic, setTraffic] = createSignal(getSessionTraffic());
   const [checkState, setCheckState] = createSignal<"idle" | "checking" | "ready" | "synced" | "failed">("idle");
 
+  let cleanupScrollTop: (() => void) | null = null;
   onMount(() => {
     const unsub = subscribeSessionTraffic((t) => setTraffic(t));
-    onCleanup(unsub);
+    onCleanup(() => {
+      unsub();
+      cleanupScrollTop?.();
+    });
   });
 
   const handleCheck = async (): Promise<void> => {
@@ -236,9 +240,12 @@ function FeedStatusFooter(props: {
 
     let settled = false;
     let topTimer: number | null = null;
+    cleanupScrollTop?.();
+
     const settle = (): void => {
       if (settled) return;
       settled = true;
+      cleanupScrollTop = null;
       dsView.removeEventListener("scroll", checkArrival);
       dsView.removeEventListener("scrollend", settle);
       if (topTimer !== null) {
@@ -252,6 +259,14 @@ function FeedStatusFooter(props: {
     };
     const checkArrival = (): void => {
       if (dsView.scrollTop <= 0) settle();
+    };
+    cleanupScrollTop = () => {
+      dsView.removeEventListener("scroll", checkArrival);
+      dsView.removeEventListener("scrollend", settle);
+      if (topTimer !== null) {
+        window.clearInterval(topTimer);
+        topTimer = null;
+      }
     };
     dsView.addEventListener("scrollend", settle, { passive: true });
     dsView.addEventListener("scroll", checkArrival, { passive: true });

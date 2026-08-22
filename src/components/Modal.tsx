@@ -58,6 +58,27 @@ export function Modal(props: ModalProps) {
       if (ev.key === "Escape") {
         ev.preventDefault();
         close();
+      } else if (ev.key === "Tab" && windowEl) {
+        const focusable = windowEl.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) {
+          ev.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (ev.shiftKey) {
+          if (document.activeElement === first || document.activeElement === windowEl) {
+            ev.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            ev.preventDefault();
+            first.focus();
+          }
+        }
       }
     };
 
@@ -73,6 +94,7 @@ export function Modal(props: ModalProps) {
     windowEl.style.setProperty("zoom", String(scale));
     windowEl.style.maxHeight = `calc((100vh - 40px) / ${scale})`;
     windowEl.style.maxWidth = `calc((100vw - 40px) / ${scale})`;
+    windowEl.focus();
   });
 
   return (
@@ -89,11 +111,15 @@ export function Modal(props: ModalProps) {
           <div
             ref={windowEl}
             class="ds-modal-window"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={props.title !== undefined ? "ds-modal-title" : undefined}
+            tabIndex={-1}
             style={props.width ? { width: `${props.width}px` } : undefined}
           >
             <Show when={props.title !== undefined}>
               <div class="ds-modal-header">
-                <span class="ds-modal-title">{props.title}</span>
+                <span class="ds-modal-title" id="ds-modal-title">{props.title}</span>
                 <button type="button" class="win-button ds-modal-close" title="Close (Esc)" onClick={close}>
                   <CloseIcon />
                 </button>

@@ -1,12 +1,10 @@
 import type { JSX } from "solid-js";
-import iconData from "bootstrap-icons/font/bootstrap-icons.json";
 import type { SearchResultItem } from "../types/api";
 
 /**
- * Strongly-typed union of all 2,000+ official Bootstrap Icon names.
- * e.g. "search", "arrow-clockwise", "bookmark-fill", "cloud-arrow-down", etc.
+ * Bootstrap Icon name identifier (e.g. "search", "arrow-clockwise", "bookmark-fill").
  */
-export type BootstrapIconName = keyof typeof iconData;
+export type BootstrapIconName = string;
 
 export interface IconProps {
   /** The Bootstrap icon name without the `bi-` prefix (e.g. "search", "arrow-clockwise"). */

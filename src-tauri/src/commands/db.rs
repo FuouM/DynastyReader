@@ -176,7 +176,7 @@ pub async fn db_query(
     let rows = tokio::task::spawn_blocking(move || -> Result<Vec<Value>, String> {
         let conn = conn.lock().unwrap_or_else(|e| e.into_inner());
         let mut stmt = conn
-            .prepare(&sql)
+            .prepare_cached(&sql)
             .map_err(|e| format!("db query prepare failed: {e}"))?;
         let mapped = stmt
             .query_map(params_from_iter(values), row_to_json)
