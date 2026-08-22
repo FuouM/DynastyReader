@@ -9,40 +9,21 @@
 
 import {
   createEffect,
-  createMemo,
-  createResource,
   createSignal,
-  For,
-  onCleanup,
-  onMount,
   Show,
   type Accessor,
 } from "solid-js";
 import {
-  decodeEntities,
-  formatDate,
   navigate,
   route,
   setActions,
-  setTitle,
   showBanner,
 } from "../stores";
-import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api";
 import {
   clearHistory,
   createCollection,
-  getCollectionById,
-  getCollectionItems,
-  getCollectionsRevision,
-  onCollectionsChanged,
-  removeItemFromCollection,
-  updateCollectionItemCover,
-  type CollectionItemRow,
-  type CollectionRow,
 } from "../db";
-import { useDelayedSpinner } from "../browse/browse-state";
 import { ConfirmDeleteButton } from "../components/Button";
-import { Loading } from "../components/Loading";
 import { Modal } from "../components/Modal";
 import {
   RefreshIcon,
@@ -53,8 +34,6 @@ import {
   FolderIcon,
   AddIcon,
   TrashIcon,
-  ArrowLeftIcon,
-  StarIcon,
   CloseIcon,
   Icon,
 } from "../components/Icon";

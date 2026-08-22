@@ -14,7 +14,7 @@ import {
   onCleanup,
   onMount,
   Show,
-  type Accessor,
+
 } from "solid-js";
 import { decodeEntities, formatDate, navigate, showBanner } from "../stores";
 import {

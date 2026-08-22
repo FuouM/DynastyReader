@@ -3,16 +3,15 @@
  * Unified with the centralized hotkeys store.
  */
 
-import { onCleanup, onMount } from "solid-js";
+import { createEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { isTextInputTarget, matchesHotkey } from "../hotkeys";
 
 export function ReaderShortcuts(props: { session: ReaderSession }) {
   const c = props.session;
 
-  onMount(() => {
-    const onKeyDown = (ev: KeyboardEvent): void => {
-      // Ignore if user is currently typing in an input or textarea
+  const onKeyDown = (ev: KeyboardEvent): void => {
+    // Ignore if user is currently typing in an input or textarea
       if (isTextInputTarget(ev.target)) return;
 
       if (matchesHotkey(ev, "reader.nextPage")) {
@@ -97,9 +96,7 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
       }
     };
 
-    window.addEventListener("keydown", onKeyDown);
-    onCleanup(() => window.removeEventListener("keydown", onKeyDown));
-  });
+  createEventListener(window, "keydown", onKeyDown);
 
   return null;
 }

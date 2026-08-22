@@ -25,6 +25,8 @@ walkdir = "2"
 webp = "0.3"
 image = { version = "0.25", default-features = false, features = ["webp", "jpeg", "png", "gif", "bmp", "tiff", "qoi", "tga", "pnm", "hdr", "ico"] }
 open = "5"
+semver = "1.0"
+tempfile = "3"
 
 [profile.dev]
 opt-level = 0

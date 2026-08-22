@@ -80,7 +80,8 @@ export function HotkeysSection(props: HotkeysSectionProps) {
       if (!combo) return;
 
       // Check conflict against active map
-      const conflict = findConflict(combo, actionId);
+      const scope = HOTKEY_DEFINITIONS_MAP[actionId]?.scope ?? "global";
+      const conflict = findConflict(combo, actionId, scope, hotkeysMap());
       if (conflict) {
         setPendingConflict({ combo, targetActionId: actionId, conflict });
         return;
@@ -128,7 +129,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
     if (!pending) return;
 
     if (reassign) {
-      removeKeyFromHotkey(pending.conflict.existingActionId, pending.combo);
+      removeKeyFromHotkey(pending.conflict.actionId, pending.combo);
       addKeyToHotkey(pending.targetActionId, pending.combo);
     }
     stopRecording();
@@ -210,7 +211,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
       {/* Conflict Resolution Banner */}
       <Show when={pendingConflict()}>
         {(pending) => {
-          const existingDef = () => HOTKEY_DEFINITIONS_MAP[pending().conflict.existingActionId];
+          const existingDef = () => HOTKEY_DEFINITIONS_MAP[pending().conflict.actionId];
           const targetDef = () => HOTKEY_DEFINITIONS_MAP[pending().targetActionId];
           return (
             <div
@@ -221,7 +222,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               </div>
               <div>
                 The key combo <kbd class="ds-key-badge">{formatKeyCombo(pending().combo)}</kbd> is
-                already bound to <strong>{existingDef()?.label ?? pending().conflict.existingActionId}</strong>.
+                already bound to <strong>{existingDef()?.label ?? pending().conflict.actionId}</strong>.
               </div>
               <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:2px;">
                 <button

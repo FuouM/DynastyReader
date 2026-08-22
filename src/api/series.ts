@@ -258,14 +258,14 @@ export async function getOrHydrateSeriesCover(
   if (seriesCached?.json_payload) {
     try {
       const s = JSON.parse(seriesCached.json_payload) as Series;
-      coverUrl = s.cover;
+      coverUrl = s.cover ?? null;
     } catch {}
   }
 
   if (!coverUrl) {
     try {
       const s = await fetchSeries(permalink, false, seriesType || undefined);
-      coverUrl = s.cover;
+      coverUrl = s.cover ?? null;
     } catch {
       return null;
     }

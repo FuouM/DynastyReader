@@ -26,22 +26,13 @@ pub struct DownloadProgress {
     pub percentage: f64,
 }
 
-/// Helper to parse semver strings like "0.1.0" or "v0.2.1" into (major, minor, patch)
-fn parse_version(v: &str) -> Option<(u32, u32, u32)> {
-    let clean = v.trim().trim_start_matches('v');
-    let parts: Vec<&str> = clean.split('.').collect();
-    if parts.len() < 3 {
-        return None;
-    }
-    let major = parts[0].parse::<u32>().ok()?;
-    let minor = parts[1].parse::<u32>().ok()?;
-    let patch = parts[2].split('-').next()?.parse::<u32>().ok()?;
-    Some((major, minor, patch))
-}
-
 fn is_version_newer(latest: &str, current: &str) -> bool {
-    match (parse_version(latest), parse_version(current)) {
-        (Some(l), Some(c)) => l > c,
+    let parse = |v: &str| {
+        let clean = v.trim().trim_start_matches('v');
+        semver::Version::parse(clean)
+    };
+    match (parse(latest), parse(current)) {
+        (Ok(l), Ok(c)) => l > c,
         _ => latest != current && !latest.is_empty(),
     }
 }
@@ -132,12 +123,9 @@ pub async fn install_update(app: AppHandle, download_url: String) -> Result<(), 
         .file_name()
         .ok_or_else(|| "Cannot determine executable filename".to_string())?;
 
-    let new_exe: PathBuf = exe_dir.join(format!("{}.new", file_name.to_string_lossy()));
     let old_exe: PathBuf = exe_dir.join(format!("{}.old", file_name.to_string_lossy()));
 
     log::info!("Downloading update from: {download_url}");
-    log::info!("Target temporary binary: {}", new_exe.display());
-
     let client = reqwest::Client::builder()
         .user_agent("DynastyReader-Updater")
         .build()
@@ -157,10 +145,15 @@ pub async fn install_update(app: AppHandle, download_url: String) -> Result<(), 
     use tokio::io::AsyncWriteExt;
     use tokio_stream::StreamExt;
 
-    let mut file = tokio::fs::File::create(&new_exe)
-        .await
+    let temp_update = tempfile::Builder::new()
+        .prefix(".tmp-update-")
+        .tempfile_in(exe_dir)
         .map_err(|e| format!("Failed to create temporary update file: {e}"))?;
+    let temp_path = temp_update.path().to_path_buf();
 
+    let mut file = tokio::fs::File::create(&temp_path)
+        .await
+        .map_err(|e| format!("Failed to open temporary update file: {e}"))?;
     let mut stream = response.bytes_stream();
     let mut downloaded: u64 = 0;
 
@@ -186,11 +179,14 @@ pub async fn install_update(app: AppHandle, download_url: String) -> Result<(), 
             },
         );
     }
-
     file.flush()
         .await
         .map_err(|e| format!("Failed to finalize update file: {e}"))?;
     drop(file);
+
+    let (_, new_exe) = temp_update
+        .keep()
+        .map_err(|e| format!("Failed to retain temporary update file: {e}"))?;
 
     log::info!("Download complete ({downloaded} bytes). Applying self-replacement...");
 
@@ -261,5 +257,23 @@ pub fn cleanup_old_executables() {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_version_newer() {
+        assert!(is_version_newer("v0.2.0", "v0.1.0"));
+        assert!(is_version_newer("0.2.0", "0.1.0"));
+        assert!(is_version_newer("v1.0.0", "v0.9.9"));
+        assert!(is_version_newer("0.1.1", "0.1.0"));
+        assert!(!is_version_newer("0.1.0", "0.1.0"));
+        assert!(!is_version_newer("v0.1.0", "0.1.0"));
+        assert!(!is_version_newer("0.1.0", "0.2.0"));
+        assert!(!is_version_newer("0.1.0-alpha", "0.1.0"));
+        assert!(is_version_newer("0.1.0", "0.1.0-alpha"));
     }
 }

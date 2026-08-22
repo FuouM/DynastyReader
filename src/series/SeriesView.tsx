@@ -67,7 +67,7 @@ function collectChapters(series: Series): ChapterMeta[] {
       out.push({
         title: t.title,
         permalink: t.permalink,
-        released_on: t.released_on,
+        released_on: t.released_on ?? undefined,
         volumeHeader,
       });
     }
@@ -111,7 +111,7 @@ export function SeriesView() {
 
       let coverPath: string | null = null;
       try {
-        coverPath = await getSeriesCover(permalink, series.cover);
+        coverPath = await getSeriesCover(permalink, series.cover ?? null);
       } catch {
         // Cover is decorative; a failed download must not block the page.
       }

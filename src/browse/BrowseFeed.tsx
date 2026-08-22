@@ -152,7 +152,7 @@ async function loadFeedModel(tabId: string, page: number): Promise<FeedModel> {
   const blacklistedRows: FeedRowData[] = [];
   const rows: FeedRowData[] = [];
   for (const ch of feed.chapters) {
-    const check = isItemBlacklisted(ch.tags, { name: ch.series });
+    const check = isItemBlacklisted(ch.tags, { name: ch.series ?? undefined });
     const row: FeedRowData = {
       ch,
       isRead: readSet.has(ch.permalink),

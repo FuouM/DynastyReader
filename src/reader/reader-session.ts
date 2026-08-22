@@ -933,7 +933,7 @@ export class ReaderSession implements ReaderQueueHost {
         const cl: ChapterRef[] = [];
         for (const t of s.taggings ?? []) {
           if (t.title && t.permalink) {
-            cl.push({ title: t.title, permalink: t.permalink, released_on: t.released_on });
+            cl.push({ title: t.title, permalink: t.permalink, released_on: t.released_on ?? undefined });
           }
         }
         if (cl.length > 0) {

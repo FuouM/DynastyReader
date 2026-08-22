@@ -92,7 +92,7 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
           permalink: tg.permalink,
           author,
           doujin,
-          releasedOn: tg.released_on,
+          releasedOn: tg.released_on ?? undefined,
           tags: itemTags,
         });
       }

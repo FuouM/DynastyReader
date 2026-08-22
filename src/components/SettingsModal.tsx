@@ -55,7 +55,7 @@ export function SettingsModal(props: SettingsModalProps) {
     const target = contentRef.querySelector(`#ds-settings-sec-${id}`) as HTMLElement | null;
     if (target) {
       isProgrammaticScroll = true;
-      clearTimeout(scrollTimer);
+      if (scrollTimer !== null) clearTimeout(scrollTimer);
       target.scrollIntoView({ behavior: "smooth", block: "start" });
       scrollTimer = window.setTimeout(() => {
         isProgrammaticScroll = false;

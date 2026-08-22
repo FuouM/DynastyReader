@@ -16,7 +16,7 @@ export function DisplaySettings() {
 
   const toggleCovers = (): void => {
     const next = !coversEnabled();
-    browseCovers.coversEnabled = next;
+    browseCovers.setCoversEnabled(next);
     setCoversEnabledLocal(next);
   };
 

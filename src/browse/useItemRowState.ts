@@ -47,13 +47,12 @@ export function computeItemFlags(
   tags: ChapterTag[] | undefined,
   name: string | undefined,
   sets: ItemStateSets,
-  blacklistMode: BlacklistMode,
+  _blacklistMode?: BlacklistMode,
 ): ItemRowFlags {
   const isRead = sets.readHistorySet.has(permalink);
   const isBookmarked = sets.bookmarkSet.has(permalink);
   const isFullyCached = sets.fullyCachedSet.has(permalink);
-  const isBlacklisted = isItemBlacklisted(tags, name, blacklistMode);
-
+  const isBlacklisted = isItemBlacklisted(tags, { name }).blacklisted;
   return {
     isRead,
     isBookmarked,

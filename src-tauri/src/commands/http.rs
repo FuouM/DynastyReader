@@ -137,9 +137,8 @@ pub async fn http_download(
     timeout_ms: Option<u64>,
 ) -> Result<serde_json::Value, String> {
     let target = crate::paths::resolve_in_root(&output_path)?;
-    if let Some(parent) = target.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| format!("failed creating output dir: {e}"))?;
-    }
+    let parent = target.parent().unwrap_or(&target);
+    std::fs::create_dir_all(parent).map_err(|e| format!("failed creating output dir: {e}"))?;
     let client = &state.0;
     let req = apply_timeout(client.get(&url), timeout_ms);
     let resp = req
@@ -150,11 +149,16 @@ pub async fn http_download(
         return Err(format!("http download failed: status {}", resp.status()));
     }
 
-    // Write through a temp file, then rename (mirrors the Curator handler).
-    // Any mid-stream failure removes the temp file before returning.
-    let tmp = target.with_extension("tmp");
+    // Write through a unique RAII temp file in the parent dir, then persist to target.
+    // If dropped on error/panic, tempfile deletes the unfinalized temp file automatically.
+    let temp_file = tempfile::Builder::new()
+        .prefix(".tmp-download-")
+        .tempfile_in(parent)
+        .map_err(|e| format!("failed creating temp download file: {e}"))?;
+
+    let temp_path = temp_file.path().to_path_buf();
     let write_result: Result<u64, String> = async {
-        let mut out = tokio::fs::File::create(&tmp)
+        let mut out = tokio::fs::File::create(&temp_path)
             .await
             .map_err(|e| format!("failed writing download: {e}"))?;
         let mut stream = resp.bytes_stream();
@@ -164,8 +168,7 @@ pub async fn http_download(
             total += chunk.len() as u64;
             if total > MAX_DOWNLOAD_BYTES {
                 return Err(format!(
-                    "download exceeds size cap of {} bytes",
-                    MAX_DOWNLOAD_BYTES
+                    "download exceeds size cap of {MAX_DOWNLOAD_BYTES} bytes"
                 ));
             }
             out.write_all(&chunk)
@@ -178,14 +181,11 @@ pub async fn http_download(
         Ok(total)
     }
     .await;
-    if let Err(e) = write_result {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(e);
-    }
-    if let Err(e) = std::fs::rename(&tmp, &target) {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(format!("failed finalizing download: {e}"));
-    }
+
+    let _ = write_result?;
+    temp_file
+        .persist(&target)
+        .map_err(|e| format!("failed finalizing download: {e}"))?;
     let size = std::fs::metadata(&target).map(|m| m.len()).unwrap_or(0);
     Ok(json!({
         "written_to": output_path,

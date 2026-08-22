@@ -5,7 +5,6 @@
  * localStorage persistence (`ds-theme`, with legacy `ds-reader-theme`
  * migration), the DOM application (`data-theme` + `.ds-dark`), and the legacy
  * `THEME_CHANGE_EVENT` dispatch so non-Solid listeners keep working.
- * Independent of `src/theme.ts` so the flip can deprecate that module cleanly.
  */
 import { createSignal } from "solid-js";
 import { makePersisted } from "@solid-primitives/storage";
@@ -33,10 +32,10 @@ function applyThemeToDom(t: AppTheme): void {
   }
 }
 
-const [rawTheme, setRawTheme] = makePersisted(createSignal<AppTheme>("light"), {
+const [rawTheme, setRawTheme] = (makePersisted as any)(createSignal<AppTheme>("light"), {
   name: STORAGE_KEY,
   storage: typeof localStorage !== "undefined" ? localStorage : undefined,
-  deserialize: (val) => (isAppTheme(val) ? val : "light"),
+  deserialize: (val: string | null) => (isAppTheme(val) ? val : "light"),
 });
 
 export const theme = rawTheme;

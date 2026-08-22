@@ -16,7 +16,8 @@
  * inside the viewport even when zoomed.
  */
 
-import { createEffect, onCleanup, Show, type JSX } from "solid-js";
+import { createEffect, Show, type JSX } from "solid-js";
+import { createEventListener } from "@solid-primitives/event-listener";
 import { Portal } from "solid-js/web";
 import { CloseIcon } from "./Icon";
 import { uiScale } from "../stores";
@@ -82,10 +83,7 @@ export function Modal(props: ModalProps) {
       }
     };
 
-    window.addEventListener("keydown", onKeyDown);
-    onCleanup(() => {
-      window.removeEventListener("keydown", onKeyDown);
-    });
+    createEventListener(window, "keydown", onKeyDown);
   });
 
   createEffect(() => {

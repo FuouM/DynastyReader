@@ -15,12 +15,12 @@ export interface ChapterPage {
 
 export interface Chapter {
   title: string;
-  long_title: string;
-  permalink: string;
-  tags: ChapterTag[];
-  pages: ChapterPage[];
-  released_on?: string;
-  added_on?: string;
+  long_title?: string | null;
+  permalink?: string | null;
+  tags?: ChapterTag[];
+  pages?: ChapterPage[];
+  released_on?: string | null;
+  added_on?: string | null;
 }
 
 export interface SeriesTag {
@@ -30,10 +30,10 @@ export interface SeriesTag {
 }
 
 export interface SeriesTaggings {
-  header?: string;
-  title?: string;
-  permalink?: string;
-  released_on?: string;
+  header?: string | null;
+  title?: string | null;
+  permalink?: string | null;
+  released_on?: string | null;
   tags?: SeriesTag[];
 }
 
@@ -49,9 +49,9 @@ export interface Series {
   type: string;
   permalink: string;
   tags: SeriesTag[];
-  cover: string | null;
-  link: string | null;
-  description: string | null;
+  cover?: string | null;
+  link?: string | null;
+  description?: string | null;
   aliases: string[];
   taggings: SeriesTaggings[];
   taggables?: SeriesTaggable[];
@@ -59,9 +59,14 @@ export interface Series {
 
 export interface FeedChapter {
   title: string;
-  series: string;
+  series?: string | null;
+  series_type?: string | null;
+  author?: string | null;
+  doujin?: string | null;
   permalink: string;
   tags: SeriesTag[];
+  released_on?: string | null;
+  cover_url?: string | null;
 }
 
 export interface Feed {

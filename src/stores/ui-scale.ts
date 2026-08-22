@@ -13,11 +13,11 @@ import { makePersisted } from "@solid-primitives/storage";
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 2.5;
 
-const [rawScale, setRawScale] = makePersisted(createSignal<number>(1.0), {
+const [rawScale, setRawScale] = (makePersisted as any)(createSignal<number>(1.0), {
   name: "ds-ui-scale",
   storage: typeof localStorage !== "undefined" ? localStorage : undefined,
-  deserialize: (val) => {
-    const parsed = parseFloat(val);
+  deserialize: (val: string | null) => {
+    const parsed = parseFloat(val ?? "");
     return !isNaN(parsed) && parsed >= MIN_SCALE && parsed <= MAX_SCALE ? parsed : 1.0;
   },
 });

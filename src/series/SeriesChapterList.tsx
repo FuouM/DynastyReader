@@ -5,7 +5,8 @@
 import { For, Show, type Accessor } from "solid-js";
 import { decodeEntities, navigate } from "../stores";
 import type { ChapterRef } from "../types/routes";
-import type { Series, SeriesProgressRow } from "../types/api";
+import type { Series } from "../types/api";
+import type { SeriesProgressRow } from "../db";
 import { OfflineBadge } from "../components/OfflineBadge";
 import { Icon } from "../components/Icon";
 

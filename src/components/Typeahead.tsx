@@ -8,7 +8,8 @@
  * in the input.
  */
 
-import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
+import { createEffect, createSignal, For, Show } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { decodeEntities } from "../stores";
 import { InputField } from "./InputField";
 
@@ -39,12 +40,7 @@ export function Typeahead(props: TypeaheadProps) {
   const maxItems = props.maxItems ?? 8;
   const debounceMs = props.debounceMs ?? 200;
 
-  let timer: number | undefined;
   let dropdownRef: HTMLDivElement | undefined;
-
-  onCleanup(() => {
-    window.clearTimeout(timer);
-  });
 
   // Mirror externally-controlled value into the internal state.
   createEffect(() => {
@@ -53,33 +49,35 @@ export function Typeahead(props: TypeaheadProps) {
     }
   });
 
+  const debouncedFetch = debounce(async (val: string) => {
+    let items: TypeaheadItem[];
+    try {
+      items = await props.fetcher(val);
+    } catch {
+      setSuggestions([]);
+      setSelectedIndex(-1);
+      setOpen(false);
+      return;
+    }
+    const sliced = items.slice(0, maxItems);
+    setSuggestions(sliced);
+    setSelectedIndex(-1);
+    if (isFocused() && sliced.length > 0) {
+      setOpen(true);
+    }
+  }, debounceMs);
+
   createEffect(() => {
     const val = inputValue().trim();
-    window.clearTimeout(timer);
     if (!val) {
+      debouncedFetch.clear();
       setSuggestions([]);
       setSelectedIndex(-1);
       setOpen(false);
       props.onEmpty?.();
       return;
     }
-    timer = window.setTimeout(async () => {
-      let items: TypeaheadItem[];
-      try {
-        items = await props.fetcher(val);
-      } catch {
-        setSuggestions([]);
-        setSelectedIndex(-1);
-        setOpen(false);
-        return;
-      }
-      const sliced = items.slice(0, maxItems);
-      setSuggestions(sliced);
-      setSelectedIndex(-1);
-      if (isFocused() && sliced.length > 0) {
-        setOpen(true);
-      }
-    }, debounceMs);
+    debouncedFetch(val);
   });
 
   const handleKeyDown = (ev: KeyboardEvent): void => {
