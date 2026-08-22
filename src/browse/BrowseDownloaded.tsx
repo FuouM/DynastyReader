@@ -206,9 +206,9 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         </Show>
       </div>
 
-      <div id="ds-downloaded-pager">
+      <div id="ds-downloaded-pager" style="display:flex;justify-content:flex-end;margin-top:8px;">
         <Show when={totalPages() > 1}>
-          <Pager totalPages={totalPages()} currentPage={currentPage()} onPage={(p) => goToPage(p)} />
+          <Pager totalPages={totalPages()} currentPage={currentPage()} onPage={(p) => goToPage(p)} cssText="justify-content:flex-end;margin:0;" />
         </Show>
       </div>
 

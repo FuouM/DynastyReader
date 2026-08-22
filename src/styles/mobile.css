@@ -294,8 +294,17 @@
 }
 
 #ds-root[data-mobile] .ds-feed-status-right {
+  display: flex;
   justify-content: space-between;
+  align-items: center;
   width: 100%;
+}
+
+#ds-root[data-mobile] .ds-feed-status-pager-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end !important;
+  margin-left: auto;
 }
 
 /* Series View Mobile Layout */

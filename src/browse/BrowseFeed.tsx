@@ -329,9 +329,6 @@ function FeedStatusFooter(props: {
         </span>
       </div>
       <div class="ds-feed-status-right">
-        <div class="ds-feed-status-pager-wrap">
-          <Show when={props.pager}>{props.pager}</Show>
-        </div>
         <button
           type="button"
           class="win-button ds-status-refresh-btn"
@@ -341,6 +338,9 @@ function FeedStatusFooter(props: {
         >
           {checkBtnLabel()}
         </button>
+        <div class="ds-feed-status-pager-wrap" style="margin-left:auto;">
+          <Show when={props.pager}>{props.pager}</Show>
+        </div>
         <button
           type="button"
           class="win-button ds-scroll-top-btn"

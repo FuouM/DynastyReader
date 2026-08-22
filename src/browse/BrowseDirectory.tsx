@@ -213,11 +213,14 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
           )}
         </For>
         <Show when={query().trim().length === 0}>
-          <Pager
-            totalPages={model()!.dir.total_pages}
-            currentPage={model()!.dir.current_page}
-            onPage={(p) => pane.goToPage(p)}
-          />
+          <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+            <Pager
+              totalPages={model()!.dir.total_pages}
+              currentPage={model()!.dir.current_page}
+              onPage={(p) => pane.goToPage(p)}
+              cssText="justify-content:flex-end;margin:0;"
+            />
+          </div>
         </Show>
       </Show>
 
