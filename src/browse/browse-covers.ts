@@ -1,8 +1,6 @@
 import { createSignal } from "solid-js";
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
-import { convertFileSrc } from "../ipc";
-import { iconHtml } from "../components/Icon";
 
 /**
  * Module-level reactive signal that mirrors `BrowseCovers.enabled`. Any Solid
@@ -20,6 +18,8 @@ const [coversEnabledSignal, setCoversEnabledSignal] = createSignal(
     }
   })()
 );
+
+const [coverPathMap, setCoverPathMap] = createSignal<Map<string, string>>(new Map(), { equals: false });
 
 export { coversEnabledSignal };
 
@@ -39,28 +39,19 @@ export interface ItemCoverInfo {
   isStandalone: boolean;
 }
 
-interface PendingDomUpdate {
-  coverKey: string;
-  coverPath: string;
-  host: HTMLElement;
-}
-
-const SCROLL_IDLE_MS = 400; // conservative — covers only load when truly idle
+const SCROLL_IDLE_MS = 300;
 
 /**
- * Feed cover-hydration engine. Singleton instance because only one feed view is
- * ever rendered at a time and the lazy observers live for the plugin's lifetime.
- *
- * Diagnostics: a persisted `coversEnabled` toggle disables all cover imagery for
- * A/B scroll testing.
+ * Feed cover-hydration engine. Reactive singleton that drives cover image paths
+ * through Solid signals instead of mutating raw DOM nodes, preventing unmount
+ * flicker and reconciliation race conditions.
  */
 export class BrowseCovers {
   private readonly memoryCache = new Map<string, string | null>();
   private readonly inflight = new Map<string, Promise<string | null>>();
   private readonly queue: CoverTarget[] = [];
   private readonly queuedKeys = new Set<string>();
-  private readonly pendingDomUpdates: PendingDomUpdate[] = [];
-  private readonly MAX_CONCURRENCY = 2;
+  private readonly MAX_CONCURRENCY = 4;
   private activeWorkers = 0;
   private hydrationHost: HTMLElement | null = null;
   private enabled: boolean;
@@ -78,11 +69,28 @@ export class BrowseCovers {
     }
   }
 
+  /** Reactively looks up a cached cover path. */
+  getCover(coverKey: string): string | undefined {
+    return coverPathMap().get(coverKey) || this.memoryCache.get(coverKey) || undefined;
+  }
+
   clearMemoryCache(): void {
     this.memoryCache.clear();
     this.queuedKeys.clear();
     this.queue.length = 0;
-    this.pendingDomUpdates.length = 0;
+    setCoverPathMap(new Map());
+  }
+
+  /** Evicts a broken/missing cover path from memory cache and SQLite. */
+  evict(coverKey: string): void {
+    this.memoryCache.delete(coverKey);
+    setCoverPathMap((prev) => {
+      if (!prev.has(coverKey)) return prev;
+      const next = new Map(prev);
+      next.delete(coverKey);
+      return next;
+    });
+    void deleteCached(`cover:${coverKey}`);
   }
 
   get coversEnabled(): boolean {
@@ -98,14 +106,12 @@ export class BrowseCovers {
     if (!v) {
       this.queue.length = 0;
       this.queuedKeys.clear();
-      this.pendingDomUpdates.length = 0;
       if (this.lazyObserver) {
         this.lazyObserver.disconnect();
         this.lazyObserver = null;
       }
     }
   }
-
   get currentHydrationHost(): HTMLElement | null {
     return this.hydrationHost;
   }
@@ -190,7 +196,6 @@ export class BrowseCovers {
     this.hydrationHost = host;
     this.queue.length = 0; // reset queue for new page
     this.queuedKeys.clear();
-    this.pendingDomUpdates.length = 0; // discard buffered updates from previous page
     if (this.lazyObserver) {
       this.lazyObserver.disconnect();
       this.lazyObserver = null;
@@ -221,9 +226,20 @@ export class BrowseCovers {
     if (keysToQuery.length > 0) {
       try {
         const cachedMap = await getBatchCached(keysToQuery);
+        let changed = false;
+        const currentMap = coverPathMap();
         for (const [fullKey, payload] of cachedMap) {
           const rawKey = fullKey.replace(/^cover:/, "");
-          if (payload) this.memoryCache.set(rawKey, payload);
+          if (payload) {
+            this.memoryCache.set(rawKey, payload);
+            if (currentMap.get(rawKey) !== payload) {
+              currentMap.set(rawKey, payload);
+              changed = true;
+            }
+          }
+        }
+        if (changed) {
+          setCoverPathMap(new Map(currentMap));
         }
       } catch {}
     }
@@ -275,7 +291,6 @@ export class BrowseCovers {
     this.scrollIdleTimer = window.setTimeout(() => {
       this.isScrolling = false;
       this.scrollIdleTimer = null;
-      this.flushPendingDomUpdates();
       this.pumpCoverHydration();
     }, SCROLL_IDLE_MS);
   }
@@ -310,69 +325,9 @@ export class BrowseCovers {
     this.scrollIdleTimer = window.setTimeout(() => {
       this.isScrolling = false;
       this.scrollIdleTimer = null;
-      this.flushPendingDomUpdates();
       this.pumpCoverHydration();
     }, SCROLL_IDLE_MS);
   };
-
-  private applyCoverToNode(node: HTMLElement, coverKey: string, coverPath: string): void {
-    if (node.querySelector("img.ds-feed-cover")) return;
-    node.innerHTML = "";
-    const img = document.createElement("img");
-    img.className = "ds-feed-cover";
-    img.alt = coverKey;
-    img.width = 42;
-    img.height = 58;
-    img.decoding = "async";
-    img.src = convertFileSrc(coverPath);
-    img.addEventListener("error", () => {
-      img.style.display = "none";
-      const ph = document.createElement("div");
-      ph.className = "ds-feed-cover-placeholder";
-      ph.innerHTML = iconHtml("book");
-      node.appendChild(ph);
-      // Evict broken path from memory and SQLite cache
-      this.memoryCache.delete(coverKey);
-      void deleteCached(`cover:${coverKey}`);
-    });
-    node.appendChild(img);
-  }
-
-  private flushPendingDomUpdates(): void {
-    if (this.pendingDomUpdates.length === 0) return;
-    const updates = this.pendingDomUpdates.splice(0);
-    requestAnimationFrame(() => {
-      if (this.isScrolling) {
-        // Scroll resumed before this frame — re-buffer; flushed on next idle.
-        this.pendingDomUpdates.push(...updates);
-        return;
-      }
-      for (const { coverKey, coverPath, host } of updates) {
-        if (host !== this.hydrationHost) continue;
-        const nodes = host.querySelectorAll<HTMLElement>(`[data-feed-cover="${coverKey}"]`);
-        for (const node of nodes) this.applyCoverToNode(node, coverKey, coverPath);
-      }
-    });
-  }
-
-  private scheduleCoverDomUpdate(coverKey: string, coverPath: string, host: HTMLElement): void {
-    if (this.isScrolling) {
-      // Buffer the update — will be flushed in a single RAF batch when scroll goes idle.
-      this.pendingDomUpdates.push({ coverKey, coverPath, host });
-      return;
-    }
-    requestAnimationFrame(() => {
-      if (this.isScrolling) {
-        // Scroll resumed before this frame — re-buffer; flushed on next idle.
-        this.pendingDomUpdates.push({ coverKey, coverPath, host });
-        return;
-      }
-      if (host !== this.hydrationHost) return;
-      const nodes = host.querySelectorAll<HTMLElement>(`[data-feed-cover="${coverKey}"]`);
-      for (const node of nodes) this.applyCoverToNode(node, coverKey, coverPath);
-    });
-  }
-
   private getLazyObserver(): IntersectionObserver {
     if (!this.lazyObserver) {
       this.lazyObserver = new IntersectionObserver(
@@ -388,20 +343,18 @@ export class BrowseCovers {
               const seriesType = el.dataset.seriesType;
 
               if (coverKey) {
-                // undefined = not resolved yet; null = known-missing; string = cached.
                 const resolved = this.memoryCache.get(coverKey);
                 if (resolved !== undefined) {
-                  // Hydration resolved — stop watching this wrap permanently.
                   this.lazyObserver?.unobserve(el);
-                  if (resolved && this.hydrationHost) {
-                    this.scheduleCoverDomUpdate(coverKey, resolved, this.hydrationHost);
+                  if (resolved) {
+                    setCoverPathMap((prev) => {
+                      if (prev.get(coverKey) === resolved) return prev;
+                      const next = new Map(prev);
+                      next.set(coverKey, resolved);
+                      return next;
+                    });
                   }
                 } else if (chapterPermalink) {
-                  // Unhydrated. Keep observing so a re-entry (up-scroll) moves it
-                  // to the front of the queue — the pump pops nearest-viewport
-                  // first in BOTH directions. A stale down-scroll LIFO order
-                  // would hydrate covers already passed while covers being
-                  // approached stay placeholders.
                   if (!this.queuedKeys.has(coverKey)) {
                     this.queuedKeys.add(coverKey);
                     this.queue.unshift({
@@ -410,12 +363,6 @@ export class BrowseCovers {
                       seriesPermalink: seriesPermalink || null,
                       seriesType: seriesType || null,
                     });
-                  } else {
-                    const idx = this.queue.findIndex((t) => t.coverKey === coverKey);
-                    if (idx > 0) {
-                      const [target] = this.queue.splice(idx, 1);
-                      this.queue.unshift(target);
-                    }
                   }
                   if (!this.isScrolling) this.pumpCoverHydration();
                 }
@@ -423,14 +370,12 @@ export class BrowseCovers {
             }
           }
         },
-        { rootMargin: "150px" },
+        { rootMargin: "300px" },
       );
     }
     return this.lazyObserver;
   }
-
   private pumpCoverHydration(): void {
-    // Hard gate — no IPC work if disabled or while scrolling.
     if (!this.enabled || this.isScrolling || !this.hydrationHost || this.queue.length === 0) return;
 
     while (
@@ -438,13 +383,10 @@ export class BrowseCovers {
       this.activeWorkers < this.MAX_CONCURRENCY &&
       this.queue.length > 0
     ) {
-      // Front-pop: the observer pushes/re-prioritizes nearest-viewport covers to
-      // the front on every entry, so this stays correct for down- AND up-scrolls.
       const target = this.queue.shift();
       if (!target) break;
 
       this.activeWorkers++;
-      const host = this.hydrationHost;
 
       void (async () => {
         try {
@@ -462,15 +404,19 @@ export class BrowseCovers {
           const coverPath = await task;
           this.memoryCache.set(target.coverKey, coverPath);
 
-          if (coverPath && host === this.hydrationHost) {
-            this.scheduleCoverDomUpdate(target.coverKey, coverPath, host);
+          if (coverPath) {
+            setCoverPathMap((prev) => {
+              if (prev.get(target.coverKey) === coverPath) return prev;
+              const next = new Map(prev);
+              next.set(target.coverKey, coverPath);
+              return next;
+            });
           }
         } catch (err) {
           console.warn(`[ds-covers] worker error: ${target.coverKey}`, err);
         } finally {
           this.inflight.delete(target.coverKey);
           this.activeWorkers--;
-          // Yield one tick then resume if still idle.
           setTimeout(() => {
             if (!this.isScrolling) this.pumpCoverHydration();
           }, 0);

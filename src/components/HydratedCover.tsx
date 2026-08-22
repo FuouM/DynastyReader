@@ -11,9 +11,9 @@
  * - `size` maps to the 42×58 feed or 36×50 cache dimensions.
  */
 
-import { createEffect, createSignal, on, Show } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
-import { browseCovers } from "../browse/browse-covers";
+import { browseCovers, coversEnabledSignal } from "../browse/browse-covers";
 import { BookIcon } from "./Icon";
 
 export interface HydratedCoverProps {
@@ -49,15 +49,13 @@ const SIZES = {
 
 export function HydratedCover(props: HydratedCoverProps) {
   const [error, setError] = createSignal(false);
-  const hydrated = (): boolean => !props.path;
 
-  createEffect(
-    on(
-      () => props.path,
-      () => setError(false),
-      { defer: true },
-    ),
-  );
+  const resolvedPath = () => props.path || (props.coverKey ? browseCovers.getCover(props.coverKey) : undefined);
+  const isLoaded = () => Boolean(resolvedPath()) && !error() && coversEnabledSignal();
+
+  createEffect(() => {
+    if (resolvedPath()) setError(false);
+  });
 
   const size = () => SIZES[props.size ?? "feed"];
   const isCache = () => props.size === "cache";
@@ -65,19 +63,19 @@ export function HydratedCover(props: HydratedCoverProps) {
   return (
     <div
       ref={(el) => {
-        if (hydrated()) browseCovers.observe(el);
+        if (!resolvedPath() && el) browseCovers.observe(el);
       }}
       class="ds-feed-cover-wrap"
       style={`${size().wrap}${props.cssText ?? ""}`}
-      data-feed-cover={hydrated() ? props.coverKey : undefined}
-      data-chapter-permalink={hydrated() ? props.chapterPermalink : undefined}
-      data-series-permalink={hydrated() ? props.seriesPermalink : undefined}
-      data-series-type={hydrated() ? props.seriesType : undefined}
+      data-feed-cover={props.coverKey}
+      data-chapter-permalink={props.chapterPermalink}
+      data-series-permalink={props.seriesPermalink}
+      data-series-type={props.seriesType}
       title={props.title}
       onClick={props.onClick}
     >
       <Show
-        when={!hydrated() && !error()}
+        when={isLoaded()}
         fallback={
           <div class="ds-feed-cover-placeholder" style={size().placeholder}>
             <BookIcon />
@@ -91,8 +89,11 @@ export function HydratedCover(props: HydratedCoverProps) {
           width={isCache() ? 36 : 42}
           height={isCache() ? 50 : 58}
           decoding="async"
-          src={convertFileSrc(props.path!)}
-          onError={() => setError(true)}
+          src={convertFileSrc(resolvedPath()!)}
+          onError={() => {
+            setError(true);
+            if (props.coverKey) browseCovers.evict(props.coverKey);
+          }}
         />
       </Show>
     </div>
