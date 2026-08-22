@@ -71,10 +71,8 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
               next.delete(props.index);
             }
             s.setWidePages(next);
-            // Rebuild only once every slot exists so page order stays intact.
-            if (s.isSpread() && s.slotEls.length === s.pages().length) {
-              s.resetToCurrentPage(true);
-            }
+            // Debounce rebuild so concurrent wide scans don't trigger multiple rapid jumps.
+            s.scheduleWidePageLayoutReset();
           }
         }}
       />

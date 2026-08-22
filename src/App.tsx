@@ -15,7 +15,7 @@
  * to the `<LegacyView>` strangler adapter.
  */
 
-import { createEffect, Show, type Component } from "solid-js";
+import { createEffect, lazy, Show, Suspense, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import {
   route,
@@ -29,12 +29,12 @@ import { UpdateDialog } from "./components/UpdateDialog";
 import { GlobalShortcuts } from "./hotkeys";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
-import { SeriesView } from "./series/SeriesView";
-import { ReaderView } from "./reader/ReaderView";
-import { CacheView } from "./cache/CacheView";
-import { BlacklistView } from "./blacklist/BlacklistView";
 import type { ViewName, Route } from "./types/routes";
 
+const SeriesView = lazy(() => import("./series/SeriesView").then((m) => ({ default: m.SeriesView })));
+const ReaderView = lazy(() => import("./reader/ReaderView").then((m) => ({ default: m.ReaderView })));
+const CacheView = lazy(() => import("./cache/CacheView").then((m) => ({ default: m.CacheView })));
+const BlacklistView = lazy(() => import("./blacklist/BlacklistView").then((m) => ({ default: m.BlacklistView })));
 export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
   browse: () => <BrowseView />,
   library: () => <LibraryView />,
@@ -72,7 +72,9 @@ export function App() {
           {(show) =>
             show ? (
               <div id="ds-pane-dynamic">
-                <Dynamic component={viewComponents[route().view]} route={route()} />
+                <Suspense fallback={<div class="ds-pane-loading" style="padding:20px;text-align:center;"><span class="ds-muted" style="font-size:11px;">Loading...</span></div>}>
+                  <Dynamic component={viewComponents[route().view]} route={route()} />
+                </Suspense>
               </div>
             ) : null
           }

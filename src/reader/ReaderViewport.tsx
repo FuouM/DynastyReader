@@ -17,37 +17,75 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     const vpEl = s.viewportEl;
     if (!vpEl) return;
 
-    // Compute exact available viewport height dynamically
-    const ro = new ResizeObserver(() => s.updateViewportHeight());
+    // Compute exact available viewport height dynamically with RAF throttle
+    let roRaf: number | null = null;
+    const ro = new ResizeObserver(() => {
+      if (roRaf !== null) cancelAnimationFrame(roRaf);
+      roRaf = requestAnimationFrame(() => {
+        roRaf = null;
+        s.updateViewportHeight();
+        slotTopCacheDirty = true;
+      });
+    });
     ro.observe(vpEl);
-    s.onDispose(() => ro.disconnect());
+    s.onDispose(() => {
+      ro.disconnect();
+      if (roRaf !== null) cancelAnimationFrame(roRaf);
+    });
     window.setTimeout(() => {
       s.updateViewportHeight();
       s.applyLayoutMode();
     }, 0);
 
-    // Scroll-position tracking (continuous scroll mode)
+    // Fast O(log N) scroll-position tracking with cached slot positions
+    let slotTopCache: Float64Array | null = null;
+    let slotTopCacheDirty = true;
+
+    const rebuildSlotTopCache = (): void => {
+      const count = s.slotEls.length;
+      if (count === 0) {
+        slotTopCache = null;
+        return;
+      }
+      if (!slotTopCache || slotTopCache.length !== count) {
+        slotTopCache = new Float64Array(count);
+      }
+      for (let i = 0; i < count; i++) {
+        const el = s.slotEls[i];
+        slotTopCache[i] = el ? el.offsetTop : 0;
+      }
+      slotTopCacheDirty = false;
+    };
+
     const computeCurrentPageFromScroll = (): void => {
       if (s.isHorizontal() || s.isProgrammaticScroll) return;
-      const vpEl2 = s.viewportEl;
-      if (!vpEl2) return;
-      const vpRect = vpEl2.getBoundingClientRect();
-      const focalY = vpRect.top + vpRect.height * 0.35;
+      const vp = s.viewportEl;
+      if (!vp) return;
 
-      let bestIdx = s.currentIndex();
-      for (let i = 0; i < s.slotEls.length; i++) {
-        const el = s.slotEls[i];
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        if (r.top <= focalY && r.bottom > focalY) {
-          bestIdx = i;
-          break;
+      const totalSlots = s.slotEls.length;
+      if (totalSlots === 0) return;
+
+      if (slotTopCacheDirty || !slotTopCache || slotTopCache.length !== totalSlots) {
+        rebuildSlotTopCache();
+      }
+
+      if (!slotTopCache || slotTopCache.length === 0) return;
+
+      const focalY = vp.scrollTop + vp.clientHeight * 0.35;
+
+      // Binary search for the active slot matching focalY
+      let low = 0;
+      let high = slotTopCache.length - 1;
+      let bestIdx = 0;
+
+      while (low <= high) {
+        const mid = (low + high) >> 1;
+        if (slotTopCache[mid] <= focalY) {
+          bestIdx = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
         }
-        if (r.top > focalY) {
-          bestIdx = i > 0 ? i - 1 : 0;
-          break;
-        }
-        bestIdx = i;
       }
 
       if (bestIdx !== s.currentIndex()) {

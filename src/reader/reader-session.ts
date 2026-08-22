@@ -259,10 +259,15 @@ export class ReaderSession implements ReaderQueueHost {
     this.progress = createMemo(() => {
       const total = this.pages().length;
       const idx = this.currentIndex();
-      const pct = total > 0 ? Math.round(((idx + 1) / total) * 100) : 0;
       const count = this.cachedCount();
       const cachedNote = count > 0 ? `${count}/${total} cached` : "";
       const isSpreadActive = this.isSpread() && this.spreads().length > 0;
+      let pct = total > 0 ? Math.round(((idx + 1) / total) * 100) : 0;
+      if (isSpreadActive) {
+        const spreads = this.spreads();
+        const curSpread = spreadIndexOf(spreads, idx);
+        pct = spreads.length > 0 ? Math.round(((curSpread + 1) / spreads.length) * 100) : 0;
+      }
 
       let currentNumStr = `${idx + 1}`;
       let fullPageStr = `Page ${idx + 1} of ${total}`;
@@ -454,12 +459,23 @@ export class ReaderSession implements ReaderQueueHost {
   setPage(index: number, instant = false, scrollToBottom = false): void {
     if (index < 0 || index >= this.pages().length) return;
     batch(() => {
+      const wasAtEnd = this.atEnd();
+      const isNowAtEnd = index >= this.pages().length - 1;
       this.setCurrentIndex(index);
-      this.setAtEnd(index >= this.pages().length - 1);
+      this.setAtEnd(isNowAtEnd);
+      if (!wasAtEnd && isNowAtEnd && this.pages().length > 1 && !this.loading()) {
+        const list = this.chapterList();
+        const curIdx = list.findIndex((c) => c.permalink === this.permalink);
+        const nextCh = curIdx >= 0 && curIdx < list.length - 1 ? list[curIdx + 1] : null;
+        if (nextCh) {
+          showBanner(`End of chapter — Next: "${nextCh.title}" (']' or toolbar)`);
+        } else {
+          showBanner("End of chapter");
+        }
+      }
     });
     this.schedulePersist();
     if (this.atEnd()) void this.persistNow();
-
     if (this.isSpread()) {
       this.enqueueSpreadNeighborhood();
     } else {
@@ -483,13 +499,24 @@ export class ReaderSession implements ReaderQueueHost {
 
   setPageFromScroll(index: number): void {
     batch(() => {
+      const wasAtEnd = this.atEnd();
+      const isNowAtEnd = index >= this.pages().length - 1;
       this.setCurrentIndex(index);
-      this.setAtEnd(index >= this.pages().length - 1);
+      this.setAtEnd(isNowAtEnd);
+      if (!wasAtEnd && isNowAtEnd && this.pages().length > 1 && !this.loading()) {
+        const list = this.chapterList();
+        const curIdx = list.findIndex((c) => c.permalink === this.permalink);
+        const nextCh = curIdx >= 0 && curIdx < list.length - 1 ? list[curIdx + 1] : null;
+        if (nextCh) {
+          showBanner(`End of chapter — Next: "${nextCh.title}" (']' or toolbar)`);
+        } else {
+          showBanner("End of chapter");
+        }
+      }
     });
     this.schedulePersist();
     if (this.atEnd()) void this.persistNow();
   }
-
   /** Enqueues the current and next two spreads so paired pages load together. */
   private enqueueSpreadNeighborhood(): void {
     if (this.spreads().length === 0) return;
@@ -802,7 +829,7 @@ export class ReaderSession implements ReaderQueueHost {
     const create = () =>
       createComponent(ReaderActions, {
         ctrl: this as unknown as ReaderActionsController,
-        bookmarked: this.bookmarked(),
+        bookmarked: () => this.bookmarked(),
       }) as unknown as JSX.Element;
     const owner = this.sessionOwner;
     if (owner) {
@@ -1017,8 +1044,11 @@ export class ReaderSession implements ReaderQueueHost {
     this.publishActions();
 
     if (startPage > 0) {
-      this.setPage(startPage, true);
-      this.revealAfterRestore();
+      requestAnimationFrame(() => {
+        if (this.disposedFlag) return;
+        this.setPage(startPage, true);
+        this.revealAfterRestore();
+      });
     }
   }
 
@@ -1038,16 +1068,13 @@ export class ReaderSession implements ReaderQueueHost {
   }
 
   private revealAfterRestore(): void {
-    if (this.isHorizontal()) {
-      this.setRestoring(false);
-      return;
-    }
-    const deadline = window.performance.now() + 1000;
+    const deadline = window.performance.now() + 1200;
     const poll = (): void => {
       if (this.disposedFlag) return;
       let ready = true;
-      const start = Math.max(0, this.currentIndex() - 1);
-      const end = Math.min(this.pages().length - 1, this.currentIndex() + 1);
+      const cur = this.currentIndex();
+      const start = Math.max(0, cur - 1);
+      const end = Math.min(this.pages().length - 1, cur + 1);
       for (let i = start; i <= end; i++) {
         const img = this.slotEls[i]?.querySelector<HTMLImageElement>("img.ds-page-img");
         if (img && !img.complete) {
@@ -1063,5 +1090,18 @@ export class ReaderSession implements ReaderQueueHost {
       this.setRestoring(false);
     };
     window.setTimeout(poll, 0);
+  }
+
+  private wideResetScheduled = false;
+  scheduleWidePageLayoutReset(): void {
+    if (this.wideResetScheduled || !this.isSpread()) return;
+    this.wideResetScheduled = true;
+    queueMicrotask(() => {
+      this.wideResetScheduled = false;
+      if (this.disposedFlag || !this.isSpread()) return;
+      if (this.slotEls.length === this.pages().length) {
+        this.resetToCurrentPage(true);
+      }
+    });
   }
 }
