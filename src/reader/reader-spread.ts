@@ -16,11 +16,32 @@ export const WIDE_RATIO = 1.3;
 const LTR_TAG_PERMALINK = "read_left_to_right";
 const LTR_NAME_FAMILY = new Set(["read left to right", "left to right", "left_to_right", "left-to-right", "ltr"]);
 
-function isLtrTag(tag: { type: string; name: string; permalink: string }): boolean {
+const LONG_STRIP_TAG_PERMALINKS = new Set(["long_strip", "webtoon"]);
+const LONG_STRIP_NAME_FAMILY = new Set([
+  "long strip",
+  "long_strip",
+  "long-strip",
+  "webtoon",
+  "vertical",
+]);
+
+function isLtrTag(tag: { type?: string; name?: string; permalink?: string }): boolean {
+  if (!tag) return false;
   return (
     tag.permalink === LTR_TAG_PERMALINK ||
-    LTR_NAME_FAMILY.has(tag.name.trim().toLowerCase())
+    (tag.name !== undefined && LTR_NAME_FAMILY.has(tag.name.trim().toLowerCase()))
   );
+}
+
+export function isLongStripTag(tag: { type?: string; name?: string; permalink?: string }): boolean {
+  if (!tag) return false;
+  if (tag.permalink && LONG_STRIP_TAG_PERMALINKS.has(tag.permalink.toLowerCase())) {
+    return true;
+  }
+  if (tag.name && LONG_STRIP_NAME_FAMILY.has(tag.name.trim().toLowerCase())) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -105,4 +126,15 @@ export function detectReadingDirection(
 ): ReadingDirection {
   const tags = [...(chapterTags ?? []), ...(seriesTags ?? [])];
   return tags.some(isLtrTag) ? "ltr" : "rtl";
+}
+
+/**
+ * Detects whether the chapter or series is tagged as "Long strip" / "Webtoon".
+ */
+export function detectIsLongStrip(
+  chapterTags: ChapterTag[],
+  seriesTags?: SeriesTag[],
+): boolean {
+  const tags = [...(chapterTags ?? []), ...(seriesTags ?? [])];
+  return tags.some(isLongStripTag);
 }

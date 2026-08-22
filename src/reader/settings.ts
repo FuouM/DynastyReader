@@ -28,6 +28,77 @@ export function setPrefetchBuffer(count: number): void {
 }
 
 export type ReaderNavPosition = "top" | "bottom";
+export type ReaderModeSetting = "scroll" | "paged";
+export type PagedLayoutSetting = "single" | "spread";
+export type ReadingDirectionSetting = "auto" | "rtl" | "ltr";
+export type FitModeSetting = "width" | "height" | "original";
+
+export function getDefaultReaderMode(): ReaderModeSetting {
+  return localStorage.getItem("ds-reader-mode") === "paged" ? "paged" : "scroll";
+}
+
+export function setDefaultReaderMode(mode: ReaderModeSetting): void {
+  localStorage.setItem("ds-reader-mode", mode);
+}
+
+export function getDefaultPagedLayout(): PagedLayoutSetting {
+  return localStorage.getItem("ds-reader-layout") === "spread" ? "spread" : "single";
+}
+
+export function setDefaultPagedLayout(layout: PagedLayoutSetting): void {
+  localStorage.setItem("ds-reader-layout", layout);
+}
+
+export function isLongStripSpreadOverrideEnabled(): boolean {
+  const val = localStorage.getItem("ds-reader-long-strip-override");
+  return val === null || val === "1" || val === "true";
+}
+
+export function setLongStripSpreadOverrideEnabled(enabled: boolean): void {
+  localStorage.setItem("ds-reader-long-strip-override", enabled ? "1" : "0");
+}
+
+export function isLongStripFitWidthEnabled(): boolean {
+  const val = localStorage.getItem("ds-reader-long-strip-fit-width");
+  return val === null || val === "1" || val === "true";
+}
+
+export function setLongStripFitWidthEnabled(enabled: boolean): void {
+  localStorage.setItem("ds-reader-long-strip-fit-width", enabled ? "1" : "0");
+}
+
+export function getDefaultReadingDirection(): ReadingDirectionSetting {
+  const val = localStorage.getItem("ds-reader-direction-mode") ?? localStorage.getItem("ds-reader-direction");
+  if (val === "ltr" || val === "rtl" || val === "auto") return val;
+  return "auto";
+}
+
+export function setDefaultReadingDirection(dir: ReadingDirectionSetting): void {
+  localStorage.setItem("ds-reader-direction-mode", dir);
+  if (dir === "ltr" || dir === "rtl") {
+    localStorage.setItem("ds-reader-direction", dir);
+  } else {
+    localStorage.removeItem("ds-reader-direction");
+  }
+}
+
+export function isCoverOffsetDefaultEnabled(): boolean {
+  return localStorage.getItem("ds-reader-cover-offset") === "1";
+}
+
+export function setCoverOffsetDefaultEnabled(enabled: boolean): void {
+  localStorage.setItem("ds-reader-cover-offset", enabled ? "1" : "0");
+}
+
+export function getDefaultFitMode(): FitModeSetting {
+  const val = localStorage.getItem("ds-reader-fit");
+  if (val === "height" || val === "original") return val;
+  return "width";
+}
+
+export function setDefaultFitMode(fit: FitModeSetting): void {
+  localStorage.setItem("ds-reader-fit", fit);
+}
 
 export function getReaderNavPosition(): ReaderNavPosition {
   const val = localStorage.getItem("ds-reader-nav-position");

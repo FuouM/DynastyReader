@@ -147,7 +147,11 @@ export function ReaderControlsRow(props: NavRowProps) {
           type="button"
           class="win-button"
           classList={{ primary: s.pagedLayout() === "spread" }}
-          title="Pair two pages per slide in Paged mode (M cycles)"
+          title={
+            s.isLongStrip() && s.layoutAutoDetected()
+              ? "Spread mode soft-disabled for Long Strip / Webtoon (click to force spread; M cycles)"
+              : "Pair two pages per slide in Paged mode (M cycles)"
+          }
           onClick={() => s.setPagedLayout(s.pagedLayout() === "spread" ? "single" : "spread")}
         >
           <i class="bi bi-columns-gap"></i> Spread: {s.pagedLayout() === "spread" ? "ON" : "OFF"}

@@ -41,13 +41,21 @@ import type {
 import {
   anchorPageOf,
   computeSpreads,
+  detectIsLongStrip,
   detectReadingDirection,
   spreadIndexOf,
 } from "./reader-spread";
 import { ReaderQueue, type ReaderQueueHost, type SlotStateKind } from "./reader-queue-solid";
 import {
+  getDefaultFitMode,
+  getDefaultPagedLayout,
+  getDefaultReaderMode,
+  getDefaultReadingDirection,
   getPrefetchBuffer,
   isAutoCacheChapterEnabled,
+  isCoverOffsetDefaultEnabled,
+  isLongStripFitWidthEnabled,
+  isLongStripSpreadOverrideEnabled,
 } from "./settings";
 import { standardizeCachePaths } from "./path-migration";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
@@ -100,6 +108,12 @@ export class ReaderSession implements ReaderQueueHost {
 
   readonly pagedLayout: () => PagedLayout;
   readonly setPagedLayoutSignal: (val: PagedLayout) => void;
+
+  readonly layoutAutoDetected: () => boolean;
+  readonly setLayoutAutoDetected: (val: boolean) => void;
+
+  readonly isLongStrip: () => boolean;
+  readonly setIsLongStrip: (val: boolean) => void;
 
   readonly direction: () => ReadingDirection;
   readonly setDirectionSignal: (val: ReadingDirection) => void;
@@ -228,6 +242,14 @@ export class ReaderSession implements ReaderQueueHost {
     const [pagedLayout, setPagedLayoutSignal] = createSignal<PagedLayout>("single");
     this.pagedLayout = pagedLayout;
     this.setPagedLayoutSignal = setPagedLayoutSignal;
+
+    const [layoutAutoDetected, setLayoutAutoDetected] = createSignal(false);
+    this.layoutAutoDetected = layoutAutoDetected;
+    this.setLayoutAutoDetected = setLayoutAutoDetected;
+
+    const [isLongStrip, setIsLongStrip] = createSignal(false);
+    this.isLongStrip = isLongStrip;
+    this.setIsLongStrip = setIsLongStrip;
 
     const [direction, setDirectionSignal] = createSignal<ReadingDirection>("rtl");
     this.direction = direction;
@@ -558,6 +580,7 @@ export class ReaderSession implements ReaderQueueHost {
   setPagedLayout(layout: PagedLayout): void {
     if (layout === this.pagedLayout()) return;
     this.setPagedLayoutSignal(layout);
+    this.setLayoutAutoDetected(false);
     localStorage.setItem("ds-reader-layout", layout);
     this.applyLayoutMode();
   }
@@ -912,7 +935,7 @@ export class ReaderSession implements ReaderQueueHost {
         if (cl.length > 0) {
           this.setChapterList(cl);
         }
-        if (this.directionAutoDetected()) {
+        if (this.directionAutoDetected() && getDefaultReadingDirection() === "auto") {
           const newDir = detectReadingDirection(chapter.tags ?? [], s.tags ?? []);
           if (newDir !== this.direction()) {
             this.setDirectionSignal(newDir);
@@ -921,29 +944,56 @@ export class ReaderSession implements ReaderQueueHost {
             }
           }
         }
+        if (this.layoutAutoDetected() && isLongStripSpreadOverrideEnabled()) {
+          const isLong = detectIsLongStrip(chapter.tags ?? [], s.tags ?? []);
+          this.setIsLongStrip(isLong);
+          if (isLong && this.pagedLayout() === "spread") {
+            this.setPagedLayoutSignal("single");
+            if (this.isSpread()) {
+              this.resetToCurrentPage(true);
+            }
+          }
+        }
+        if (isLongStripFitWidthEnabled()) {
+          const isLong = detectIsLongStrip(chapter.tags ?? [], s.tags ?? []);
+          if (isLong && this.fitMode() !== "width") {
+            this.setFitMode("width");
+          }
+        }
       });
     }
 
     // Display-mode preferences
-    this.setModeSignal(localStorage.getItem("ds-reader-mode") === "paged" ? "paged" : "scroll");
-    this.setPagedLayoutSignal(localStorage.getItem("ds-reader-layout") === "spread" ? "spread" : "single");
-    this.setCoverOffsetSignal(localStorage.getItem("ds-reader-cover-offset") === "1");
+    this.setModeSignal(getDefaultReaderMode());
+
+    const isLong = detectIsLongStrip(chapter.tags ?? []);
+    this.setIsLongStrip(isLong);
+
+    if (isLong && isLongStripSpreadOverrideEnabled()) {
+      // Soft disable spread mode for long strip chapters
+      this.setPagedLayoutSignal("single");
+      this.setLayoutAutoDetected(true);
+    } else {
+      this.setPagedLayoutSignal(getDefaultPagedLayout());
+      this.setLayoutAutoDetected(false);
+    }
+
+    this.setCoverOffsetSignal(isCoverOffsetDefaultEnabled());
     
-    const tagDir = detectReadingDirection(chapter.tags ?? []);
-    if (tagDir === "ltr") {
-      this.setDirectionSignal("ltr");
+    const dirPref = getDefaultReadingDirection();
+    if (dirPref === "auto") {
+      const tagDir = detectReadingDirection(chapter.tags ?? []);
+      this.setDirectionSignal(tagDir);
       this.setDirectionAutoDetected(true);
     } else {
-      const dirPref = localStorage.getItem("ds-reader-direction");
-      if (dirPref === "ltr" || dirPref === "rtl") {
-        this.setDirectionSignal(dirPref);
-        this.setDirectionAutoDetected(false);
-      } else {
-        this.setDirectionSignal("rtl");
-        this.setDirectionAutoDetected(true);
-      }
+      this.setDirectionSignal(dirPref);
+      this.setDirectionAutoDetected(false);
     }
-    this.setFitModeSignal((localStorage.getItem("ds-reader-fit") as FitMode) || "width");
+    if (isLong && isLongStripFitWidthEnabled()) {
+      this.setFitModeSignal("width");
+    } else {
+      this.setFitModeSignal(getDefaultFitMode());
+    }
     this.setScrollLockSignal(localStorage.getItem("ds-reader-scroll-lock") === "1");
 
     // Restore cached page paths from SQLite

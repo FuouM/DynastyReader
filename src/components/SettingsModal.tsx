@@ -24,6 +24,24 @@ import {
   setPrefetchBuffer,
   getReaderNavPosition,
   setReaderNavPosition,
+  getDefaultReaderMode,
+  setDefaultReaderMode,
+  getDefaultPagedLayout,
+  setDefaultPagedLayout,
+  isLongStripSpreadOverrideEnabled,
+  setLongStripSpreadOverrideEnabled,
+  isLongStripFitWidthEnabled,
+  setLongStripFitWidthEnabled,
+  getDefaultReadingDirection,
+  setDefaultReadingDirection,
+  isCoverOffsetDefaultEnabled,
+  setCoverOffsetDefaultEnabled,
+  getDefaultFitMode,
+  setDefaultFitMode,
+  type ReaderModeSetting,
+  type PagedLayoutSetting,
+  type ReadingDirectionSetting,
+  type FitModeSetting,
 } from "../reader/settings";
 import { Typeahead } from "./Typeahead";
 import { Modal } from "./Modal";
@@ -89,6 +107,13 @@ export function SettingsModal(props: SettingsModalProps) {
   const [autoCacheEnabled, setAutoCacheEnabled] = createSignal(isAutoCacheChapterEnabled());
   const [prefetchBuffer, setPrefetchBufferLocal] = createSignal(getPrefetchBuffer());
   const [navPosition, setNavPosition] = createSignal(getReaderNavPosition());
+  const [readerModePref, setReaderModePref] = createSignal<ReaderModeSetting>(getDefaultReaderMode());
+  const [pagedLayoutPref, setPagedLayoutPref] = createSignal<PagedLayoutSetting>(getDefaultPagedLayout());
+  const [longStripOverride, setLongStripOverride] = createSignal<boolean>(isLongStripSpreadOverrideEnabled());
+  const [longStripFitWidth, setLongStripFitWidth] = createSignal<boolean>(isLongStripFitWidthEnabled());
+  const [directionPref, setDirectionPref] = createSignal<ReadingDirectionSetting>(getDefaultReadingDirection());
+  const [coverOffsetPref, setCoverOffsetPref] = createSignal<boolean>(isCoverOffsetDefaultEnabled());
+  const [fitModePref, setFitModePref] = createSignal<FitModeSetting>(getDefaultFitMode());
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
   const [currentPage, setCurrentPage] = createSignal<"main" | "hotkeys">("main");
@@ -112,6 +137,13 @@ export function SettingsModal(props: SettingsModalProps) {
     setAutoCacheEnabled(isAutoCacheChapterEnabled());
     setPrefetchBufferLocal(getPrefetchBuffer());
     setNavPosition(getReaderNavPosition());
+    setReaderModePref(getDefaultReaderMode());
+    setPagedLayoutPref(getDefaultPagedLayout());
+    setLongStripOverride(isLongStripSpreadOverrideEnabled());
+    setLongStripFitWidth(isLongStripFitWidthEnabled());
+    setDirectionPref(getDefaultReadingDirection());
+    setCoverOffsetPref(isCoverOffsetDefaultEnabled());
+    setFitModePref(getDefaultFitMode());
     setBlMode(getBlacklistMode());
     setActiveSection("display");
     setCurrentPage("main");
@@ -386,9 +418,233 @@ export function SettingsModal(props: SettingsModalProps) {
         <div class="group-box" id="ds-settings-sec-reading">
           <div class="group-box-title"><DoublePageIcon /> Reading &amp; Cache</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-              <div>
-                <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Auto-Cache Entire Chapter</div>
+            {/* Reading Direction */}
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
+                <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Reading Direction:</div>
+                <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+                  Auto checks 'read_left_to_right' tags; defaults to Japanese Manga (Right-to-Left).
+                </div>
+              </div>
+              <div class="ds-segmented-switch" id="ds-settings-direction-switch" style="flex-shrink:0;">
+                <button
+                  type="button"
+                  class={`ds-segmented-btn${directionPref() === "auto" ? " active" : ""}`}
+                  id="ds-settings-dir-auto"
+                  title="Auto-detect from chapter & series tags (default)"
+                  onClick={() => {
+                    setDefaultReadingDirection("auto");
+                    setDirectionPref("auto");
+                  }}
+                >
+                  <Icon name="magic" /> Auto (Tags)
+                </button>
+                <button
+                  type="button"
+                  class={`ds-segmented-btn${directionPref() === "rtl" ? " active" : ""}`}
+                  id="ds-settings-dir-rtl"
+                  title="Force Right-to-Left (Japanese Manga standard)"
+                  onClick={() => {
+                    setDefaultReadingDirection("rtl");
+                    setDirectionPref("rtl");
+                  }}
+                >
+                  <Icon name="arrow-left" /> RTL
+                </button>
+                <button
+                  type="button"
+                  class={`ds-segmented-btn${directionPref() === "ltr" ? " active" : ""}`}
+                  id="ds-settings-dir-ltr"
+                  title="Force Left-to-Right (Western / Manhwa standard)"
+                  onClick={() => {
+                    setDefaultReadingDirection("ltr");
+                    setDirectionPref("ltr");
+                  }}
+                >
+                  <Icon name="arrow-right" /> LTR
+                </button>
+              </div>
+            </div>
+
+            {/* Default Reading Mode */}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
+                <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Default Reading Mode:</div>
+                <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+                  Continuous vertical scroll or single/dual page slides.
+                </div>
+              </div>
+              <div class="ds-segmented-switch" id="ds-settings-mode-switch" style="flex-shrink:0;">
+                <button
+                  type="button"
+                  class={`ds-segmented-btn${readerModePref() === "scroll" ? " active" : ""}`}
+                  id="ds-settings-mode-scroll"
+                  title="Continuous vertical scroll (default)"
+                  onClick={() => {
+                    setDefaultReaderMode("scroll");
+                    setReaderModePref("scroll");
+                  }}
+                >
+                  <Icon name="view-stacked" /> Scroll
+                </button>
+                <button
+                  type="button"
+                  class={`ds-segmented-btn${readerModePref() === "paged" ? " active" : ""}`}
+                  id="ds-settings-mode-paged"
+                  title="Paged slides"
+                  onClick={() => {
+                    setDefaultReaderMode("paged");
+                    setReaderModePref("paged");
+                  }}
+                >
+                  <Icon name="book" /> Paged
+                </button>
+              </div>
+            </div>
+
+            {/* Default Paged Layout */}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
+                <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Default Paged Layout:</div>
+                <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+                  Single page view or dual-page spread in Paged mode.
+                </div>
+              </div>
+              <div class="ds-segmented-switch" id="ds-settings-layout-switch" style="flex-shrink:0;">
+                <button
+                  type="button"
+                  class={`ds-segmented-btn${pagedLayoutPref() === "single" ? " active" : ""}`}
+                  id="ds-settings-layout-single"
+                  title="Single page per slide"
+                  onClick={() => {
+                    setDefaultPagedLayout("single");
+                    setPagedLayoutPref("single");
+                  }}
+                >
+                  <Icon name="file-earmark" /> Single
+                </button>
+                <button
+                  type="button"
+                  class={`ds-segmented-btn${pagedLayoutPref() === "spread" ? " active" : ""}`}
+                  id="ds-settings-layout-spread"
+                  title="Dual-page spread per slide"
+                  onClick={() => {
+                    setDefaultPagedLayout("spread");
+                    setPagedLayoutPref("spread");
+                  }}
+                >
+                  <Icon name="columns-gap" /> Dual Spread
+                </button>
+              </div>
+            </div>
+
+            {/* Long Strip Spread Override */}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
+                <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Long Strip Spread Override:</div>
+                <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+                  Soft-disable Spread mode on Long Strip / Webtoon tags to display continuous vertical art.
+                </div>
+              </div>
+              <button
+                type="button"
+                class={`win-button${longStripOverride() ? " primary" : ""}`}
+                id="ds-settings-longstrip-toggle"
+                style="font-size:11px;padding:2px 10px;min-width:105px;flex-shrink:0;"
+                title="When ON, automatically soft-disables spread mode for Long Strip / Webtoon chapters"
+                onClick={() => {
+                  const next = !longStripOverride();
+                  setLongStripSpreadOverrideEnabled(next);
+                  setLongStripOverride(next);
+                }}
+              >
+                <Show when={longStripOverride()} fallback={<><Icon name="slash-circle" /> Disabled</>}>
+                  <Icon name="check-circle" /> Auto-Disable: ON
+                </Show>
+              </button>
+            </div>
+
+            {/* Long Strip Auto Fit Width */}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
+                <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Long Strip Fit Width:</div>
+                <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+                  Automatically default to Fit Width when opening Long Strip / Webtoon chapters.
+                </div>
+              </div>
+              <button
+                type="button"
+                class={`win-button${longStripFitWidth() ? " primary" : ""}`}
+                id="ds-settings-longstrip-fit-toggle"
+                style="font-size:11px;padding:2px 10px;min-width:105px;flex-shrink:0;"
+                title="When ON, automatically sets Fit Width for Long Strip / Webtoon chapters"
+                onClick={() => {
+                  const next = !longStripFitWidth();
+                  setLongStripFitWidthEnabled(next);
+                  setLongStripFitWidth(next);
+                }}
+              >
+                <Show when={longStripFitWidth()} fallback={<><Icon name="slash-circle" /> Disabled</>}>
+                  <Icon name="check-circle" /> Fit Width: ON
+                </Show>
+              </button>
+            </div>
+
+            {/* Spread Cover 1st (Cover Offset) */}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
+                <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Spread Standalone Cover:</div>
+                <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+                  Display the first page (cover) alone before pairing double-page spreads.
+                </div>
+              </div>
+              <button
+                type="button"
+                class={`win-button${coverOffsetPref() ? " primary" : ""}`}
+                id="ds-settings-cover-offset-toggle"
+                style="font-size:11px;padding:2px 10px;min-width:95px;flex-shrink:0;"
+                title="When ON, first page in dual spread is rendered alone"
+                onClick={() => {
+                  const next = !coverOffsetPref();
+                  setCoverOffsetDefaultEnabled(next);
+                  setCoverOffsetPref(next);
+                }}
+              >
+                <Show when={coverOffsetPref()} fallback={<><Icon name="dash-circle" /> Cover 1st: OFF</>}>
+                  <Icon name="book-half" /> Cover 1st: ON
+                </Show>
+              </button>
+            </div>
+
+            {/* Default Fit Mode */}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
+                <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Default Fit Mode:</div>
+                <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+                  Image scaling behavior when opening chapters.
+                </div>
+              </div>
+              <select
+                id="ds-settings-fit-select"
+                class="input-field"
+                style="width:130px;height:24px;font-size:11px;flex-shrink:0;"
+                value={fitModePref()}
+                onChange={(ev) => {
+                  const val = (ev.target as HTMLSelectElement).value as FitModeSetting;
+                  setDefaultFitMode(val);
+                  setFitModePref(val);
+                }}
+              >
+                <option value="width">Fit Width (Default)</option>
+                <option value="height">Fit Height</option>
+                <option value="original">Original Size</option>
+              </select>
+            </div>
+
+            {/* Auto Cache Entire Chapter */}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
+                <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Auto-Cache Entire Chapter:</div>
                 <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
                   When ON, pre-downloads all pages in a chapter. When OFF, only caches pages as you read them.
                 </div>
@@ -397,7 +653,7 @@ export function SettingsModal(props: SettingsModalProps) {
                 type="button"
                 class={`win-button${autoCacheEnabled() ? " primary" : ""}`}
                 id="ds-settings-autocache-toggle"
-                style="font-size:11px;padding:2px 10px;min-width:70px;"
+                style="font-size:11px;padding:2px 10px;min-width:70px;flex-shrink:0;"
                 title={autoCacheEnabled() ? "Pre-downloads full chapters in background (click to cache only as you read)" : "Only caches pages as you read (click to auto-download full chapters)"}
                 onClick={() => {
                   setAutoCacheChapterEnabled(!autoCacheEnabled());
@@ -409,14 +665,16 @@ export function SettingsModal(props: SettingsModalProps) {
                 </Show>
               </button>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">
-              <div>
+
+            {/* Page Prefetch Buffer */}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
                 <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Page Prefetch Buffer:</div>
                 <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
                   Number of upcoming pages to preload ahead when auto-cache is off (default: 0).
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:4px;">
+              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
                 <button type="button" class="win-button ds-btn-sm" id="ds-settings-prefetch-dec" onClick={() => {
                   const next = Math.max(0, prefetchBuffer() - 1);
                   setPrefetchBuffer(next);
@@ -430,8 +688,10 @@ export function SettingsModal(props: SettingsModalProps) {
                 }}>+</button>
               </div>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">
-              <div>
+
+            {/* Navigation Bar Position */}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
                 <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Page Navigation Bar Position:</div>
                 <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
                   Dock page navigation &amp; progress at top or bottom (recommended for mobile/narrow screens).
