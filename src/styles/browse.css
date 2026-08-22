@@ -70,24 +70,12 @@
   min-width: 0;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 680px) {
   .ds-feed-item {
     gap: 8px;
     padding: 5px 6px;
   }
 
-  .ds-tag-row {
-    gap: 4px;
-  }
-
-  .ds-tag-row-label {
-    width: 52px;
-    min-width: 52px;
-    font-size: 9.5px;
-  }
-}
-
-@media (max-width: 500px) {
   .ds-action-btn-text {
     display: none;
   }
@@ -97,13 +85,17 @@
     padding: 2px 5px;
     font-size: 11px;
     min-width: 22px;
-    height: 20px;
+    height: 22px;
+  }
+
+  .ds-tag-row {
+    gap: 4px;
   }
 
   .ds-tag-row-label {
-    width: 46px;
-    min-width: 46px;
-    font-size: 9px;
+    width: 48px;
+    min-width: 48px;
+    font-size: 9.5px;
   }
 }
 
