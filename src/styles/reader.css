@@ -825,18 +825,26 @@
   position: relative;
 }
 .ds-slot-pulse-bar {
-  width: 60%;
+  width: 35%;
   height: 100%;
   background: var(--sys-primary, #0078d4);
   border-radius: 2px;
   position: absolute;
-  left: -60%;
-  animation: ds-pulse-anim 1.4s ease-in-out infinite;
+  left: 0;
+  transform: translateX(-100%);
+  animation: ds-pulse-bar-slide 1.4s ease-in-out infinite;
 }
-@keyframes ds-pulse-anim {
-  0% { left: -60%; }
-  50% { left: 40%; width: 50%; }
-  100% { left: 100%; width: 30%; }
+@keyframes ds-pulse-bar-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-slot-pulse-bar,
+  .ds-yinyang-spinner,
+  .ds-reader-progress-fill {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 .ds-slot-error {
   color: #f87171;

@@ -200,21 +200,6 @@ body {
   margin-left: 0;
 }
 
-@container (max-width: 780px) {
-  #ds-topbar-tools {
-    margin-left: auto !important;
-  }
-  #ds-actions {
-    width: 100%;
-    order: 10;
-    margin-left: 0;
-    justify-content: flex-end;
-    padding-top: 0;
-    margin-top: 0;
-    border-top: none;
-  }
-}
-
 #ds-topbar.ds-narrow #ds-topbar-tools {
   margin-left: auto !important;
 }
@@ -226,28 +211,13 @@ body {
   padding-top: 0;
   margin-top: 0;
   border-top: none;
+  gap: 3px;
 }
-
-@media (max-width: 780px) {
-  #ds-topbar-tools {
-    margin-left: auto !important;
-  }
-  #ds-actions {
-    width: 100%;
-    order: 10;
-    margin-left: 0;
-    justify-content: flex-end;
-    padding-top: 0;
-    margin-top: 0;
-    border-top: none;
-    gap: 3px;
-  }
-  #ds-actions .ds-btn-text {
-    display: none;
-  }
-  #ds-actions .win-button {
-    padding: 2px 6px;
-  }
+#ds-topbar.ds-narrow #ds-actions .ds-btn-text {
+  display: none;
+}
+#ds-topbar.ds-narrow #ds-actions .win-button {
+  padding: 2px 6px;
 }
 
 @media (max-width: 680px) {
@@ -881,4 +851,4 @@ body.ds-dark .tag-pill:hover {
   .ds-settings-storage-grid span {
     margin-top: 4px;
   }
-}
+}
