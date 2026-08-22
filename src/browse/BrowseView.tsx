@@ -54,6 +54,8 @@ export interface BrowseTabDef {
 
 export const BROWSE_TABS: readonly BrowseTabDef[] = [
   { id: "releases", label: "Recent Releases", shortLabel: "Releases" },
+  { id: "added", label: "Recently Added", shortLabel: "Added" },
+  { id: "downloaded", label: "Downloaded", shortLabel: "Downloaded" },
   { id: "series-dir", label: "Series Directory", shortLabel: "Series" },
   { id: "tags-dir", label: "Tags Directory", shortLabel: "Tags" },
   { id: "search", label: "Tag & Search", shortLabel: "Search" },
