@@ -203,6 +203,7 @@ body {
   font-size: 13px;
   font-weight: 600;
   min-width: 0;
+  flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -272,6 +273,20 @@ body {
     padding-top: 0;
     margin-top: 0;
     border-top: none;
+    gap: 3px;
+  }
+  #ds-actions .ds-btn-text {
+    display: none;
+  }
+  #ds-actions .win-button {
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 680px) {
+  #ds-title {
+    max-width: 140px;
+    font-size: 12px;
   }
 }
 
@@ -282,6 +297,10 @@ body {
 }
 
 @media (max-width: 480px) {
+  #ds-title {
+    max-width: 85px;
+    font-size: 11px;
+  }
   .ds-session-tab {
     max-width: 70px;
     padding: 2px 4px !important;

@@ -21,7 +21,7 @@ export function ReaderMainRow(props: NavRowProps) {
     <div class="ds-reader-nav-row nav-main">
       <button
         type="button"
-        class="win-button"
+        class="win-button ds-nav-btn-ch"
         title="Previous Chapter"
         disabled={s.chapterNav().prevDisabled}
         onClick={() => {
@@ -30,14 +30,19 @@ export function ReaderMainRow(props: NavRowProps) {
           if (curIdx > 0) s.gotoChapter(list[curIdx - 1]);
         }}
       >
-        <i class="bi bi-chevron-double-left"></i> Ch
-      </button>
-      <button type="button" class="win-button" title="Jump to First Page" onClick={() => s.setPage(0, true)}>
-        <i class="bi bi-chevron-double-left"></i>
+        <i class="bi bi-chevron-double-left"></i><span class="ds-ch-btn-text"> Ch</span>
       </button>
       <button
         type="button"
-        class="win-button"
+        class="win-button ds-nav-btn-jump"
+        title="Jump to First Page (Home)"
+        onClick={() => s.setPage(0, true)}
+      >
+        <i class="bi bi-chevron-bar-left"></i>
+      </button>
+      <button
+        type="button"
+        class="win-button ds-nav-btn-page"
         title="Previous Page (Left Arrow)"
         disabled={s.progress().prevDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
@@ -62,7 +67,7 @@ export function ReaderMainRow(props: NavRowProps) {
       </div>
       <button
         type="button"
-        class="win-button"
+        class="win-button ds-nav-btn-page"
         title="Next Page (Right Arrow / Space)"
         disabled={s.progress().nextDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(1) : s.setPage(s.currentIndex() + 1))}
@@ -71,15 +76,15 @@ export function ReaderMainRow(props: NavRowProps) {
       </button>
       <button
         type="button"
-        class="win-button"
-        title="Jump to Last Page"
+        class="win-button ds-nav-btn-jump"
+        title="Jump to Last Page (End)"
         onClick={() => s.setPage(s.pages().length - 1, true)}
       >
-        <i class="bi bi-chevron-double-right"></i>
+        <i class="bi bi-chevron-bar-right"></i>
       </button>
       <button
         type="button"
-        class="win-button"
+        class="win-button ds-nav-btn-ch"
         title="Next Chapter"
         disabled={s.chapterNav().nextDisabled}
         onClick={() => {
@@ -90,7 +95,7 @@ export function ReaderMainRow(props: NavRowProps) {
           }
         }}
       >
-        Ch <i class="bi bi-chevron-double-right"></i>
+        <span class="ds-ch-btn-text">Ch </span><i class="bi bi-chevron-double-right"></i>
       </button>
     </div>
   );
@@ -102,7 +107,7 @@ export function ReaderControlsRow(props: NavRowProps) {
     <div class="ds-reader-nav-row nav-controls">
       <button
         type="button"
-        class="win-button"
+        class="win-button ds-ctrl-btn"
         classList={{ primary: s.scrollLock() }}
         title={
           s.isHorizontal()
@@ -118,17 +123,17 @@ export function ReaderControlsRow(props: NavRowProps) {
           fallback={
             <>
               <i class={s.scrollLock() ? "bi bi-lock-fill" : "bi bi-unlock"}></i>
-              <span> Scroll Lock</span>
+              <span class="ds-ctrl-text"> Scroll Lock</span>
             </>
           }
         >
           <i class="bi bi-arrow-left-right"></i>
-          <span> Scroll Smooth</span>
+          <span class="ds-ctrl-text"> Scroll Smooth</span>
         </Show>
       </button>
       <button
         type="button"
-        class="win-button"
+        class="win-button ds-ctrl-btn"
         title="Toggle Horizontal / Vertical reading mode"
         onClick={() => s.setMode(s.mode() === "paged" ? "scroll" : "paged")}
       >
@@ -138,27 +143,28 @@ export function ReaderControlsRow(props: NavRowProps) {
         >
           <i class="bi bi-distribute-vertical"></i>
         </Show>
-        <Show when={s.isHorizontal()} fallback={<span> Paged</span>}>
-          <span> Scroll</span>
+        <Show when={s.isHorizontal()} fallback={<span class="ds-ctrl-text"> Paged</span>}>
+          <span class="ds-ctrl-text"> Scroll</span>
         </Show>
       </button>
       <Show when={s.mode() === "paged"}>
         <button
           type="button"
-          class="win-button"
+          class="win-button ds-ctrl-btn"
           classList={{ primary: s.pagedLayout() === "spread" }}
           title={
             s.isLongStrip() && s.layoutAutoDetected()
               ? "Spread mode soft-disabled for Long Strip / Webtoon (click to force spread; M cycles)"
-              : "Pair two pages per slide in Paged mode (M cycles)"
+              : `Dual-page spread: ${s.pagedLayout() === "spread" ? "ON" : "OFF"} (M cycles)`
           }
           onClick={() => s.setPagedLayout(s.pagedLayout() === "spread" ? "single" : "spread")}
         >
-          <i class="bi bi-columns-gap"></i> Spread: {s.pagedLayout() === "spread" ? "ON" : "OFF"}
+          <i class="bi bi-columns-gap"></i>
+          <span class="ds-ctrl-text"> Spread: {s.pagedLayout() === "spread" ? "ON" : "OFF"}</span>
         </button>
         <button
           type="button"
-          class="win-button"
+          class="win-button ds-ctrl-btn"
           classList={{ primary: !s.directionAutoDetected() }}
           title={
             s.directionAutoDetected()
@@ -167,22 +173,23 @@ export function ReaderControlsRow(props: NavRowProps) {
           }
           onClick={() => s.setDirection(s.direction() === "rtl" ? "ltr" : "rtl")}
         >
-          <i class={`bi ${s.direction() === "rtl" ? "bi-arrow-left" : "bi-arrow-right"}`}></i>{" "}
-          {s.direction().toUpperCase()}
+          <i class={`bi ${s.direction() === "rtl" ? "bi-arrow-left" : "bi-arrow-right"}`}></i>
+          <span class="ds-ctrl-text"> {s.direction().toUpperCase()}</span>
         </button>
         <button
           type="button"
-          class="win-button"
+          class="win-button ds-ctrl-btn"
           classList={{ primary: s.coverOffset() }}
           title="Show the cover alone before pairing pages (C)"
           style={s.isSpread() ? undefined : "display:none;"}
           onClick={() => s.toggleCoverOffset()}
         >
-          <i class="bi bi-book-half"></i> Cover 1st: {s.coverOffset() ? "ON" : "OFF"}
+          <i class="bi bi-book-half"></i>
+          <span class="ds-ctrl-text"> Cover 1st: {s.coverOffset() ? "ON" : "OFF"}</span>
         </button>
       </Show>
       <select
-        class="win-input"
+        class="win-input ds-ctrl-fit-select"
         value={s.fitMode()}
         onChange={(ev) => s.setFitMode(ev.currentTarget.value as FitMode)}
       >
@@ -192,7 +199,7 @@ export function ReaderControlsRow(props: NavRowProps) {
       </select>
       <button
         type="button"
-        class="win-button"
+        class="win-button ds-ctrl-btn"
         title="Toggle Light / Dark Theme (T)"
         onClick={() => s.toggleTheme()}
       >
@@ -202,7 +209,7 @@ export function ReaderControlsRow(props: NavRowProps) {
       </button>
       <button
         type="button"
-        class="win-button"
+        class="win-button ds-ctrl-btn"
         classList={{ primary: s.isFullscreen() }}
         title={s.isFullscreen() ? "Exit Fullscreen (Esc / F)" : "Toggle Fullscreen (F)"}
         onClick={() => s.setFullscreen(!s.isFullscreen())}
@@ -213,46 +220,48 @@ export function ReaderControlsRow(props: NavRowProps) {
         >
           <i class="bi bi-fullscreen-exit"></i>
         </Show>
-        <Show when={s.isFullscreen()} fallback={<span> Fullscreen</span>}>
-          <span> Exit</span>
+        <Show when={s.isFullscreen()} fallback={<span class="ds-ctrl-text"> Fullscreen</span>}>
+          <span class="ds-ctrl-text"> Exit</span>
         </Show>
       </button>
-      <button
-        type="button"
-        class="win-button"
-        title={
-          s.fitMode() !== "original"
-            ? "Zoom disabled when Fit mode is active (set to Original Size to zoom)"
-            : "Zoom Out (Ctrl - / -)"
-        }
-        disabled={s.fitMode() !== "original" || s.zoomScale() <= 0.25}
-        onClick={() => s.zoomOut()}
-      >
-        <i class="bi bi-dash-lg"></i>
-      </button>
-      <button
-        type="button"
-        class="win-button"
-        style="min-width:44px;"
-        title={s.fitMode() !== "original" ? "Zoom disabled when Fit mode is active" : "Reset Zoom (Ctrl 0)"}
-        disabled={s.fitMode() !== "original"}
-        onClick={() => s.resetZoom()}
-      >
-        {Math.round(s.zoomScale() * 100)}%
-      </button>
-      <button
-        type="button"
-        class="win-button"
-        title={
-          s.fitMode() !== "original"
-            ? "Zoom disabled when Fit mode is active (set to Original Size to zoom)"
-            : "Zoom In (Ctrl + / +)"
-        }
-        disabled={s.fitMode() !== "original" || s.zoomScale() >= 3.0}
-        onClick={() => s.zoomIn()}
-      >
-        <i class="bi bi-plus-lg"></i>
-      </button>
+      <div class="ds-ctrl-zoom-group" classList={{ "ds-zoom-disabled": s.fitMode() !== "original" }}>
+        <button
+          type="button"
+          class="win-button"
+          title={
+            s.fitMode() !== "original"
+              ? "Zoom disabled when Fit mode is active (set to Original Size to zoom)"
+              : "Zoom Out (Ctrl - / -)"
+          }
+          disabled={s.fitMode() !== "original" || s.zoomScale() <= 0.25}
+          onClick={() => s.zoomOut()}
+        >
+          <i class="bi bi-dash-lg"></i>
+        </button>
+        <button
+          type="button"
+          class="win-button"
+          style="min-width:38px;padding:2px 4px;"
+          title={s.fitMode() !== "original" ? "Zoom disabled when Fit mode is active" : "Reset Zoom (Ctrl 0)"}
+          disabled={s.fitMode() !== "original"}
+          onClick={() => s.resetZoom()}
+        >
+          {Math.round(s.zoomScale() * 100)}%
+        </button>
+        <button
+          type="button"
+          class="win-button"
+          title={
+            s.fitMode() !== "original"
+              ? "Zoom disabled when Fit mode is active (set to Original Size to zoom)"
+              : "Zoom In (Ctrl + / +)"
+          }
+          disabled={s.fitMode() !== "original" || s.zoomScale() >= 3.0}
+          onClick={() => s.zoomIn()}
+        >
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
     </div>
   );
 }

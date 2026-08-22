@@ -135,7 +135,7 @@ export function ReaderActions(props: ReaderActionsProps) {
             })
           }
         >
-          <StorageIcon /> Series
+          <StorageIcon /> <span class="ds-btn-text">Series</span>
         </DsButton>
       </Show>
       <DsButton
