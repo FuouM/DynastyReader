@@ -23,8 +23,10 @@ import {
   setTitle,
   uiScale,
   isPersistentView,
+  isMobile,
 } from "./stores";
 import { Topbar } from "./components/Topbar";
+import { BottomNav } from "./components/BottomNav";
 import { UpdateDialog } from "./components/UpdateDialog";
 import { GlobalShortcuts } from "./hotkeys";
 import { BrowseView } from "./browse/BrowseView";
@@ -51,7 +53,11 @@ export function App() {
   });
 
   return (
-    <div id="ds-root" style={{ zoom: String(uiScale()) }}>
+    <div
+      id="ds-root"
+      data-mobile={isMobile() ? "1" : undefined}
+      style={{ zoom: isMobile() ? "1" : String(uiScale()) }}
+    >
       <GlobalShortcuts />
       <Topbar />
       <UpdateDialog />
@@ -80,6 +86,7 @@ export function App() {
           }
         </Show>
       </div>
+      <BottomNav />
     </div>
   );
 }

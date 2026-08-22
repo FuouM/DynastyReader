@@ -14,6 +14,7 @@ import {
   banner,
   actions,
   decodeEntities,
+  isMobile,
 } from "../stores";
 import { SettingsModal } from "./SettingsModal";
 import { HistoryDropdown } from "./HistoryDropdown";
@@ -163,13 +164,16 @@ export function Topbar() {
                   type="button"
                   class="win-button ds-nav-tab ds-session-tab"
                   classList={{ active: isInMangaView() }}
+                  title={isMobile() ? `${sessionTab()!.title} (hold to close)` : sessionTab()!.title}
                   onClick={() => {
                     const tab = sessionTab();
                     if (tab) navigate(tab.route);
                   }}
                 >
                   <DoublePageIcon />
-                  <span class="ds-truncate">{decodeEntities(sessionTab()!.title)}</span>
+                  <span class="ds-truncate" style={{ "max-width": isMobile() ? "90px" : "160px" }}>
+                    {decodeEntities(sessionTab()!.title)}
+                  </span>
                   <CloseIcon
                     class="ds-tab-close"
                     title="Close tab"

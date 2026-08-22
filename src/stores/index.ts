@@ -58,6 +58,8 @@ export type { AppTheme } from "./theme";
 
 export { uiScale, setUiScale, applyUiScale } from "./ui-scale";
 
+export { isMobile } from "./platform";
+
 export { tagClass, sortTagsByCategory } from "../tags";
 
 /** Returns true when the webview believes it has a network connection. */

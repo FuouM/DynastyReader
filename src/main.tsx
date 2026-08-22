@@ -31,6 +31,7 @@ import "./styles/library.css";
 import "./styles/browse.css";
 import "./styles/cache.css";
 import "./styles/reader.css";
+import "./styles/mobile.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 // Initialize database schema and then mount the SolidJS app
