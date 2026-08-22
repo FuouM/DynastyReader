@@ -3,6 +3,51 @@
  * Gated by `#ds-root[data-mobile]` and media queries.
  */
 
+/* Mobile-style narrow disappearing overlay scrollbar */
+#ds-root[data-mobile] * {
+  -webkit-overflow-scrolling: touch;
+}
+
+#ds-root[data-mobile] ::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+#ds-root[data-mobile] ::-webkit-scrollbar-track {
+  background: transparent;
+  border: none;
+}
+
+#ds-root[data-mobile] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 4px;
+  border: none;
+}
+
+#ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="dark"] #ds-root[data-mobile] ::-webkit-scrollbar-track,
+[data-theme="dark"] #ds-root[data-mobile] ::-webkit-scrollbar-track,
+body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-track {
+  background: transparent;
+  border: none;
+}
+
+:root[data-theme="dark"] #ds-root[data-mobile] ::-webkit-scrollbar-thumb,
+[data-theme="dark"] #ds-root[data-mobile] ::-webkit-scrollbar-thumb,
+body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+}
+
+:root[data-theme="dark"] #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover,
+body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
 /* Root viewport sizing */
 #ds-root[data-mobile] {
   height: 100dvh;
@@ -12,6 +57,12 @@
   padding-bottom: 56px;
 }
 
+#ds-root[data-mobile] #ds-pane-browse,
+#ds-root[data-mobile] #ds-pane-library,
+#ds-root[data-mobile] #ds-pane-dynamic,
+#ds-root[data-mobile] .ds-settings-content {
+  overscroll-behavior-y: contain;
+}
 /* Compact Mobile Topbar (38px height) */
 #ds-root[data-mobile] #ds-topbar {
   flex-direction: row;
