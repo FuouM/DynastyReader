@@ -5,8 +5,8 @@
 
 import { createSignal, Show, type JSX } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
+import { t } from "../i18n";
 import { CheckIcon, Icon } from "./Icon";
-
 export interface DsButtonProps {
   id?: string;
   className?: string;
@@ -77,7 +77,7 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
       style={props.cssText}
       title={
         confirming()
-          ? "Click again to confirm deletion, or click outside to cancel"
+          ? t("common.confirm")
           : props.title
       }
       disabled={busy()}
@@ -86,7 +86,7 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
         void handleClick();
       }}
     >
-      <Show when={busy()} fallback={<Show when={confirming()} fallback={props.children}><CheckIcon /> Delete?</Show>}>
+      <Show when={busy()} fallback={<Show when={confirming()} fallback={props.children}><CheckIcon /> {t("common.delete")}?</Show>}>
         <Icon name="hourglass-split" />
       </Show>
     </button>

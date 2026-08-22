@@ -17,6 +17,7 @@ import {
   Show,
 } from "solid-js";
 import { decodeEntities, formatBytes, formatDate, navigate, setActions, showBanner } from "../stores";
+import { t } from "../i18n";
 import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api";
 import {
   clearAllCacheStorage,
@@ -204,7 +205,7 @@ export function CacheView() {
     if (data() === undefined) return;
     setActions(
       <BackRefreshActions
-        backLabel="Back to Library"
+        backLabel={t("cache.backToLibrary")}
         onBack={() => navigate({ view: "library" })}
         onRefresh={() => void refetch()}
       />,
@@ -227,7 +228,7 @@ export function CacheView() {
             {data.error instanceof Error ? data.error.message : String(data.error)}
           </span>
           <button type="button" class="win-button" onClick={() => void refetch()}>
-            <RefreshIcon /> Retry
+            <RefreshIcon /> {t("common.retry")}
           </button>
         </div>
       </Show>
@@ -282,31 +283,31 @@ function CacheBody(props: {
     <>
       <div class="group-box">
         <div class="group-box-title">
-          <ChartIcon /> Disk Space &amp; Storage Overview
+          <ChartIcon /> {t("cache.overviewTitle")}
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
           <div class="ds-stat-card">
             <span class="ds-stat-val">{formatBytes(stats.totalSizeBytes)}</span>
-            <span class="ds-stat-lbl">Disk Space Taken</span>
+            <span class="ds-stat-lbl">{t("cache.diskFootprint")}</span>
           </div>
           <div class="ds-stat-card">
             <span class="ds-stat-val">{stats.totalCachedPages}</span>
-            <span class="ds-stat-lbl">Cached Page Scans</span>
+            <span class="ds-stat-lbl">{t("cache.pagesCached")}</span>
           </div>
           <div class="ds-stat-card">
             <span class="ds-stat-val">{stats.totalCachedChapters}</span>
-            <span class="ds-stat-lbl">Cached Chapters</span>
+            <span class="ds-stat-lbl">{t("cache.chaptersCached")}</span>
           </div>
           <div class="ds-stat-card">
             <span class="ds-stat-val">{groups.length}</span>
-            <span class="ds-stat-lbl">Cached Works</span>
+            <span class="ds-stat-lbl">{t("cache.seriesCached")}</span>
           </div>
         </div>
       </div>
 
       <div class="group-box">
         <div class="group-box-title">
-          <DatabaseIcon /> Database
+          <DatabaseIcon /> {t("cache.dbStatsTitle")}
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
           <div class="ds-stat-card">
@@ -340,22 +341,22 @@ function CacheBody(props: {
         </div>
         <div class="ds-cache-actions" style="margin-top:10px;">
           <button type="button" class="win-button" title="Create a timestamped backup via VACUUM INTO" onClick={() => void props.backupDb()}>
-            <DatabaseIcon /> Backup Database
+            <DatabaseIcon /> {t("cache.dbBackup")}
           </button>
           <button type="button" class="win-button" title="Choose a .db backup file to restore — replaces current DB, deletes WAL/SHM, then reloads" onClick={() => void props.restoreFromPicker()}>
-            <RefreshIcon /> Restore from File...
+            <RefreshIcon /> {t("cache.dbRestore")}
           </button>
           <ConfirmDeleteButton
             title="Delete all rows from every table (keeps schema) — cannot be undone"
             onConfirm={props.wipeDb}
           >
-            <TrashIcon /> Wipe Database
+            <TrashIcon /> {t("cache.dbWipe")}
           </ConfirmDeleteButton>
         </div>
       </div>
       <div class="group-box">
         <div class="group-box-title">
-          <TrafficIcon /> Network Bandwidth &amp; Traffic
+          <TrafficIcon /> {t("cache.trafficTitle")}
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
           <div class="ds-stat-card">
@@ -389,26 +390,26 @@ function CacheBody(props: {
       </div>
       <div class="group-box">
         <div class="group-box-title">
-          <ToolIcon /> Global Maintenance
+          <ToolIcon /> {t("cache.maintenanceTitle")}
         </div>
         <div class="ds-cache-actions">
           <ConfirmDeleteButton
             title="Purge all cached pages, covers, and metadata"
             onConfirm={props.purgeAll}
           >
-            <TrashIcon /> Clear All Cache Storage
+            <TrashIcon /> {t("cache.clearAll")}
           </ConfirmDeleteButton>
           <ConfirmDeleteButton
             title="Purge only high-res reader page scans on disk"
             onConfirm={props.purgePages}
           >
-            <ImageIcon /> Clear Page Scans Only
+            <ImageIcon /> {t("cache.clearPagesOnly")}
           </ConfirmDeleteButton>
           <ConfirmDeleteButton
             title="Purge only cached cover thumbnails on disk"
             onConfirm={props.purgeCovers}
           >
-            <ImageIcon /> Clear Cached Covers Only
+            <ImageIcon /> {t("cache.clearCoversOnly")}
           </ConfirmDeleteButton>
         </div>
       </div>

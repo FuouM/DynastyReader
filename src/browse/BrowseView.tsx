@@ -11,6 +11,7 @@
 import { createEffect, createSignal, onCleanup, For, Show, untrack, type JSX } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { navigate, route, setRoute, showBanner } from "../stores";
+import { t } from "../i18n";
 import { parseDynastyUrl, suggest } from "../api";
 import { Pager } from "../components/Pager";
 import { Typeahead } from "../components/Typeahead";
@@ -52,14 +53,15 @@ export interface BrowseTabDef {
   shortLabel?: string;
 }
 
-export const BROWSE_TABS: readonly BrowseTabDef[] = [
-  { id: "releases", label: "Recent Releases", shortLabel: "Releases" },
-  { id: "added", label: "Recently Added", shortLabel: "Added" },
-  { id: "downloaded", label: "Downloaded", shortLabel: "Downloaded" },
-  { id: "series-dir", label: "Series Directory", shortLabel: "Series" },
-  { id: "tags-dir", label: "Tags Directory", shortLabel: "Tags" },
-  { id: "search", label: "Tag & Search", shortLabel: "Search" },
+export const getBrowseTabs = (): readonly BrowseTabDef[] => [
+  { id: "releases", label: t("browse.tabs.releases"), shortLabel: t("browse.tabsShort.releases") },
+  { id: "added", label: t("browse.tabs.added"), shortLabel: t("browse.tabsShort.added") },
+  { id: "downloaded", label: t("browse.tabs.downloaded"), shortLabel: t("browse.tabsShort.downloaded") },
+  { id: "series-dir", label: t("browse.tabs.seriesDir"), shortLabel: t("browse.tabsShort.seriesDir") },
+  { id: "tags-dir", label: t("browse.tabs.tagsDir"), shortLabel: t("browse.tabsShort.tagsDir") },
+  { id: "search", label: t("browse.tabs.search"), shortLabel: t("browse.tabsShort.search") },
 ];
+export const BROWSE_TABS = getBrowseTabs();
 
 export function BrowseView() {
   const [searchGoCollapsed, setSearchGoCollapsed] = createSignal(
@@ -199,27 +201,27 @@ export function BrowseView() {
     if (checkBtn() === "checking") {
       return (
         <>
-          <RefreshIcon spin={true} /> Checking...
+          <RefreshIcon spin={true} /> {t("browse.feed.checkBtnChecking")}
         </>
       );
     }
     if (checkBtn() === "updated") {
       return (
         <>
-          <CheckIcon /> Updated
+          <CheckIcon /> {t("browse.feed.checkBtnUpdated")}
         </>
       );
     }
     if (checkBtn() === "error") {
       return (
         <>
-          <WarningIcon /> Error
+          <WarningIcon /> {t("browse.feed.checkBtnError")}
         </>
       );
     }
     return (
       <>
-        <RefreshIcon /> Check Updates
+        <RefreshIcon /> {t("browse.feed.checkBtnCheckUpdates")}
       </>
     );
   };
@@ -325,7 +327,7 @@ export function BrowseView() {
       {/* ── Sub-tabs ────────────────────────────────────────────────────── */}
       <div class="ds-subtabs">
         <div class="ds-subtabs-left">
-          <For each={BROWSE_TABS}>
+          <For each={getBrowseTabs()}>
             {(tab) => (
               <button
                 type="button"
@@ -345,7 +347,7 @@ export function BrowseView() {
             type="button"
             class="win-button ds-btn-sm"
             id="ds-browse-check-updates-btn"
-            title="Force check for updates online"
+            title={t("browse.feed.checkBtnTooltip")}
             disabled={checkBtn() === "checking"}
             onClick={() => void checkUpdates()}
           >

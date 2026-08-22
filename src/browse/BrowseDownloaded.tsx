@@ -6,6 +6,7 @@
 
 import { createEffect, createSignal, For, Show, type Accessor } from "solid-js";
 import { formatBytes, formatDate, route } from "../stores";
+import { t } from "../i18n";
 import {
   getFullyCachedChapters,
   getBookmarkPermalinks,
@@ -159,7 +160,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     <div class="ds-tab-pane active" id="ds-tab-downloaded">
       <div id="ds-downloaded-header">
         <span class="ds-downloaded-count">
-          {filtered().length} downloaded {filtered().length === 1 ? "chapter" : "chapters"}
+          {t("browse.downloaded.chaptersCount", { count: filtered().length })}
           <Show when={totalBytes() > 0}>
             <span class="ds-downloaded-size"> · {formatBytes(totalBytes())}</span>
           </Show>
@@ -168,7 +169,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
 
       <div id="ds-downloaded-filter-wrap" style="margin-bottom:8px;">
         <InputField
-          placeholder="Filter downloaded chapters & series…"
+          placeholder={t("browse.downloaded.filterPlaceholder")}
           value={query()}
           onInput={setQuery}
           onClear={() => setQuery("")}
@@ -184,8 +185,8 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
           >
             <span class="ds-muted">
               {query().trim()
-                ? "No downloaded chapters match your filter."
-                : "No downloaded chapters found. Read a chapter with Auto-Cache enabled to save it for offline reading."}
+                ? t("browse.downloaded.noMatching")
+                : t("browse.downloaded.emptyTitle")}
             </span>
           </EmptyState>
         </Show>
@@ -213,7 +214,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
       </div>
 
       <Show when={showSpinner() && model() === undefined}>
-        <Loading message="Loading downloaded chapters..." />
+        <Loading message={t("common.loading")} />
       </Show>
 
       {addToCol.host}

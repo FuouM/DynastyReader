@@ -7,6 +7,7 @@
 import { createEffect, createSignal, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { navigate, setBanner } from "../stores";
+import { t } from "../i18n";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
 import { DsButton } from "./Button";
@@ -115,7 +116,7 @@ export function ReaderActions(props: ReaderActionsProps) {
       <Show when={getSeriesPermalink()}>
         <DsButton
           className=""
-          title="Open the containing series"
+          title={t("reader.toolbar.viewSeries")}
           onClick={() =>
             navigate({
               view: "series",
@@ -129,7 +130,7 @@ export function ReaderActions(props: ReaderActionsProps) {
       </Show>
       <DsButton
         className=""
-        title={bookmarked() ? "Remove bookmark" : "Bookmark this chapter"}
+        title={bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
         disabled={pending()}
         onClick={() => void toggleBookmark()}
       >
@@ -137,21 +138,21 @@ export function ReaderActions(props: ReaderActionsProps) {
       </DsButton>
       <DsButton
         className=""
-        title="Download every uncached page of this chapter"
+        title={t("reader.toolbar.cacheChapterTooltip")}
         onClick={cacheChapter}
       >
-        <CloudDownloadIcon /> <span class="ds-btn-text">Cache Chapter</span>
+        <CloudDownloadIcon /> <span class="ds-btn-text">{t("reader.toolbar.cacheChapter")}</span>
       </DsButton>
       <DsButton
         className=""
-        title="Copy chapter link to clipboard"
+        title={t("reader.toolbar.copyLink")}
         onClick={() => void copyLink()}
       >
         {copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
       </DsButton>
       <DsButton
         className=""
-        title="Open this chapter in your browser"
+        title={t("reader.toolbar.openInBrowser")}
         onClick={() => void openExternal(chapterUrl())}
       >
         <ExternalLinkIcon />

@@ -4,6 +4,7 @@
 
 import { For, Show } from "solid-js";
 import { decodeEntities, navigate } from "../stores";
+import { t } from "../i18n";
 import type { Series } from "../types/api";
 import { StorageIcon, BookIcon } from "../components/Icon";
 
@@ -18,7 +19,7 @@ export function SeriesTaggables(props: SeriesTaggablesProps) {
     <Show when={taggables() && taggables()!.length > 0}>
       <div class="group-box" style="margin-top:10px;">
         <div class="group-box-title">
-          <StorageIcon /> Series &amp; Anthologies ({taggables()!.length})
+          <StorageIcon /> {t("series.relatedAnthologies", { count: taggables()!.length })}
         </div>
         <div
           style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:6px;margin-top:4px;"

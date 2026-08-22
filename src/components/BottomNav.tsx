@@ -1,5 +1,6 @@
 import { Show } from "solid-js";
 import { isMobile, navigate, route } from "../stores";
+import { t } from "../i18n";
 import { Icon, StorageIcon } from "./Icon";
 
 export function BottomNav() {
@@ -13,7 +14,7 @@ export function BottomNav() {
           onClick={() => navigate({ view: "browse" })}
         >
           <Icon name="compass" />
-          <span>Browse</span>
+          <span>{t("bottomNav.browse")}</span>
         </button>
         <button
           type="button"
@@ -22,7 +23,7 @@ export function BottomNav() {
           onClick={() => navigate({ view: "library" })}
         >
           <StorageIcon />
-          <span>Library</span>
+          <span>{t("bottomNav.library")}</span>
         </button>
       </nav>
     </Show>

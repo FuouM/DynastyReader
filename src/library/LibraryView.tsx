@@ -20,6 +20,7 @@ import {
   setActions,
   showBanner,
 } from "../stores";
+import { t } from "../i18n";
 import {
   clearHistory,
   createCollection,
@@ -127,7 +128,7 @@ function LibraryGrid() {
         <div class="group-box ds-library-panel">
           <div class="group-box-title">
             <span>
-              <Icon name="bookmark-heart" /> Followed Series
+              <Icon name="bookmark-heart" /> {t("library.followed")}
             </span>
           </div>
           <div class="ds-library-panel-body">
@@ -143,7 +144,7 @@ function LibraryGrid() {
             style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
           >
             <span>
-              <FolderIcon /> Collections
+              <FolderIcon /> {t("library.collections")}
             </span>
             <button
               type="button"
@@ -170,7 +171,7 @@ function LibraryGrid() {
         <div class="group-box ds-library-panel">
           <div class="group-box-title">
             <span>
-              <BookmarkIcon /> Bookmarks
+              <BookmarkIcon /> {t("library.bookmarks")}
             </span>
           </div>
           <div class="ds-library-panel-body">
@@ -186,7 +187,7 @@ function LibraryGrid() {
             style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
           >
             <span>
-              <Icon name="clock-history" /> Reading History
+              <Icon name="clock-history" /> {t("library.history")}
             </span>
             <ConfirmDeleteButton
               title="Clear all reading history"
@@ -271,7 +272,7 @@ function CreateCollectionModal(props: {
       title={
         <>
           <FolderIcon color="var(--sys-primary,#0078d4)" />{" "}
-          New Collection
+          {t("library.createCollectionModalTitle")}
         </>
       }
       body={
@@ -312,7 +313,7 @@ function CreateCollectionModal(props: {
             style="font-size:11px;padding:2px 10px;"
             onClick={props.onClose}
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -321,8 +322,7 @@ function CreateCollectionModal(props: {
             disabled={creating()}
             onClick={() => void submit()}
           >
-            <AddIcon style={{ "font-size": "10px", "line-height": 1 }} />{" "}
-            <span>Create</span>
+            <AddIcon /> {t("library.createCollectionConfirm")}
           </button>
         </div>
       }

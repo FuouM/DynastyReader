@@ -6,6 +6,7 @@
  */
 
 import type { JSX } from "solid-js";
+import { t } from "../i18n";
 import { DsButton } from "./Button";
 import { FolderIcon } from "./Icon";
 
@@ -24,7 +25,7 @@ export function AddToCollectionButton(props: AddToCollectionButtonProps) {
     <DsButton
       className={props.class}
       cssText={props.cssText}
-      title={props.title ?? "Add to Favorites or custom collections"}
+      title={props.title ?? t("browse.feed.addToFavoritesOrCustom")}
       onClick={(ev) => {
         ev.stopPropagation();
         props.onOpen(ev.currentTarget as HTMLElement);

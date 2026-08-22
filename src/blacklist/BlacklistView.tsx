@@ -6,6 +6,7 @@
 
 import { createEffect, createResource, createSignal, For, Show } from "solid-js";
 import { decodeEntities, formatDate, navigate, safeHtml, setActions, showBanner } from "../stores";
+import { t } from "../i18n";
 import {
   getBlacklistMode,
   getBlacklistedSeries,
@@ -51,7 +52,7 @@ export function BlacklistView() {
     if (data() === undefined) return;
     setActions(
       <BackRefreshActions
-        backLabel="Back to Library"
+        backLabel={t("blacklist.backToLibrary")}
         onBack={() => navigate({ view: "library" })}
         onRefresh={() => void refetch()}
       />,
@@ -80,7 +81,7 @@ export function BlacklistView() {
               <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
                 <span class="ds-muted">Failed to load series blacklist: {errorMessage()}</span>
                 <button type="button" class="win-button" onClick={() => void refetch()}>
-                  <RefreshIcon /> Retry
+                  <RefreshIcon /> {t("common.retry")}
                 </button>
               </div>
             </Show>
@@ -89,7 +90,7 @@ export function BlacklistView() {
       >
         <div class="group-box">
           <div class="group-box-title">
-            <BlacklistIcon filled={false} /> Series Blacklist Preferences
+            <BlacklistIcon filled={false} /> {t("blacklist.title")}
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);line-height:1.4;">
@@ -102,7 +103,7 @@ export function BlacklistView() {
               style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:var(--sys-control-bg,#f8f8f8);border:1px solid var(--sys-border-light,#e0e0e0);border-radius:3px;flex-wrap:wrap;"
             >
               <div style="font-size:11px;font-weight:600;color:var(--sys-window-text,#333);">
-                Blacklist Behavior:
+                {t("blacklist.modeHeader")}:
               </div>
               <div class="ds-radio-group" style="display:flex;gap:12px;">
                 <label style="font-size:11px;cursor:pointer;">
@@ -113,7 +114,7 @@ export function BlacklistView() {
                     checked={mode() === "hide"}
                     onChange={() => changeMode("hide")}
                   />{" "}
-                  Hide completely
+                  {t("blacklist.modeHide")}
                 </label>
                 <label style="font-size:11px;cursor:pointer;">
                   <input
@@ -123,7 +124,7 @@ export function BlacklistView() {
                     checked={mode() === "warn"}
                     onChange={() => changeMode("warn")}
                   />{" "}
-                  Trigger warning dialog
+                  {t("blacklist.modeWarn")}
                 </label>
               </div>
             </div>

@@ -24,6 +24,7 @@ import {
   setTitle,
   showBanner,
 } from "../stores";
+import { t } from "../i18n";
 import { fetchChapter, fetchSeries, getSeriesCover } from "../api";
 import {
   addBlacklistedSeries,
@@ -367,7 +368,7 @@ function SeriesActions(props: SeriesActionsProps) {
         onClick={props.onToggleFollow}
       >
         {props.followed() ? <BookmarkIcon filled={true} /> : <BookmarkIcon />}{" "}
-        <span class="ds-btn-text">{props.followed() ? "Following" : "Follow"}</span>
+        <span class="ds-btn-text">{props.followed() ? t("series.following") : t("series.follow")}</span>
       </button>
       <AddToCollectionButton
         class=""
@@ -380,8 +381,8 @@ function SeriesActions(props: SeriesActionsProps) {
         class={`win-button${props.blacklisted() ? " active" : ""}`}
         title={
           props.blacklisted()
-            ? "Remove series from blacklist"
-            : "Add series to blacklist (hides releases from browse & search)"
+            ? t("series.unblacklistTooltip")
+            : t("series.blacklistTooltip")
         }
         disabled={props.busyBlacklist()}
         onClick={props.onToggleBlacklist}
@@ -391,15 +392,15 @@ function SeriesActions(props: SeriesActionsProps) {
         ) : (
           <BlacklistIcon />
         )}{" "}
-        <span class="ds-btn-text">{props.blacklisted() ? "Blacklisted" : "Blacklist"}</span>
+        <span class="ds-btn-text">{props.blacklisted() ? t("series.blacklistedBadge") : t("blacklist.title").split(" ")[0]}</span>
       </button>
       <button
         type="button"
         class="win-button"
-        title="Re-fetch series data from the server"
+        title={t("series.reloadTooltip")}
         onClick={props.onRefresh}
       >
-        <RefreshIcon /> <span class="ds-btn-text">Refresh</span>
+        <RefreshIcon /> <span class="ds-btn-text">{t("common.refresh")}</span>
       </button>
       <ExternalLinkButton
         class=""

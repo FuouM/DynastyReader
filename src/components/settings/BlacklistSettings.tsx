@@ -8,9 +8,9 @@ import {
   type BlacklistedTag,
 } from "../../db";
 import { suggest } from "../../api";
+import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { BlacklistIcon, AddIcon, CloseIcon } from "../Icon";
-
 export function BlacklistSettings() {
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
@@ -45,7 +45,7 @@ export function BlacklistSettings() {
   return (
     <div class="group-box" id="ds-settings-sec-blacklist">
       <div class="group-box-title">
-        <BlacklistIcon /> Tag Blacklist
+        <BlacklistIcon /> {t("blacklist.settingsTitle")}
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
@@ -55,7 +55,7 @@ export function BlacklistSettings() {
         {/* Mode Selector */}
         <div style="display:flex;align-items:center;gap:12px;background:var(--sys-bg-active,#f8f9fa);border:1px solid var(--sys-border-light,#e2e2e2);border-radius:3px;padding:4px 8px;">
           <span style="font-size:11px;font-weight:600;color:var(--sys-window-text,#333);">
-            Mode:
+            {t("blacklist.modeHeader")}:
           </span>
           <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;">
             <input
@@ -66,7 +66,7 @@ export function BlacklistSettings() {
               checked={blMode() === "hide"}
               onChange={() => setMode("hide")}
             />
-            <span>Hide releases</span>
+            <span>{t("blacklist.modeHide")}</span>
           </label>
           <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;">
             <input
@@ -77,7 +77,7 @@ export function BlacklistSettings() {
               checked={blMode() === "warn"}
               onChange={() => setMode("warn")}
             />
-            <span>Trigger warning on click</span>
+            <span>{t("blacklist.modeWarn")}</span>
           </label>
         </div>
 
@@ -93,7 +93,7 @@ export function BlacklistSettings() {
                 void addTag(item.name, permalink);
               }}
               onEnter={(val) => void addTag(val || blInput())}
-              placeholder="Search or enter tag to blacklist (e.g. NSFW, Het)..."
+              placeholder={t("blacklist.addTagPlaceholder")}
               maxItems={6}
               debounceMs={200}
             />
@@ -105,7 +105,7 @@ export function BlacklistSettings() {
             style="font-size:11px;padding:2px 10px;"
             onClick={() => void addTag(blInput())}
           >
-            <AddIcon /> Add
+            <AddIcon /> {t("blacklist.addTagButton")}
           </button>
         </div>
 

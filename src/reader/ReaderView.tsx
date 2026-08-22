@@ -12,6 +12,7 @@ import { ReaderShortcuts } from "./ReaderShortcuts";
 import { ReaderWheel } from "./ReaderWheel";
 import { Loading } from "../components/Loading";
 import { theme } from "../stores";
+import { t } from "../i18n";
 
 export function ReaderView(props: { route: Route }) {
   // Keyed on permalink so a new chapter always gets a fresh session
@@ -40,14 +41,14 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
           <div style="padding:24px;text-align:center;">
             <div style="color:var(--sys-error,#d13438);margin-bottom:12px;">{msg()}</div>
             <button type="button" class="win-button" onClick={() => session.retry()}>
-              <i class="bi bi-arrow-clockwise"></i> Retry
+              <i class="bi bi-arrow-clockwise"></i> {t("reader.session.retry")}
             </button>
           </div>
         )}
       </Show>
       <Show when={session.empty()}>
         <div class="ds-muted" style="padding:24px;text-align:center;">
-          This chapter has no pages.
+          {t("reader.session.empty")}
         </div>
       </Show>
       <Show when={!session.loading() && !session.error() && !session.empty()}>

@@ -1,5 +1,6 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { theme, setTheme, uiScale, applyUiScale } from "../../stores";
+import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
 import { SCALE_PRESETS } from "./types";
@@ -27,7 +28,7 @@ export function DisplaySettings() {
   return (
     <div class="group-box" id="ds-settings-sec-display">
       <div class="group-box-title">
-        <Icon name="aspect-ratio" /> Display &amp; Scaling
+        <Icon name="aspect-ratio" /> {t("settings.display.title")}
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         {/* Scale Factor */}
@@ -36,7 +37,7 @@ export function DisplaySettings() {
             for="ds-settings-scale-select"
             style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;"
           >
-            UI Scale Factor:
+            {t("settings.display.uiScale")}:
           </label>
           <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
             <button
@@ -95,26 +96,26 @@ export function DisplaySettings() {
         {/* Theme Switcher */}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div style="flex:1;min-width:0;">
-            <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">Theme:</div>
+            <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">{t("settings.display.theme")}:</div>
           </div>
           <div class="ds-segmented-switch" id="ds-settings-theme-switch" style="flex-shrink:0;">
             <button
               type="button"
               class={`ds-segmented-btn${theme() === "light" ? " active" : ""}`}
               id="ds-settings-theme-light"
-              title="Light theme"
+              title={t("settings.display.themeLight")}
               onClick={() => setTheme("light")}
             >
-              <SunIcon /> Light
+              <SunIcon /> {t("settings.display.themeLight").split(" ")[0]}
             </button>
             <button
               type="button"
               class={`ds-segmented-btn${theme() === "dark" ? " active" : ""}`}
               id="ds-settings-theme-dark"
-              title="Dark theme"
+              title={t("settings.display.themeDark")}
               onClick={() => setTheme("dark")}
             >
-              <MoonIcon /> Dark
+              <MoonIcon /> {t("settings.display.themeDark").split(" ")[0]}
             </button>
           </div>
         </div>
@@ -123,10 +124,10 @@ export function DisplaySettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
-              Feed Cover Thumbnails:
+              {t("settings.display.feedCovers")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Load and display cover thumbnails in browse feeds.
+              {t("settings.display.feedCoversDesc")}
             </div>
           </div>
           <button
@@ -140,6 +141,30 @@ export function DisplaySettings() {
               <ImageIcon /> Covers: ON
             </Show>
           </button>
+        </div>
+
+        {/* Language Selector */}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
+              {t("settings.display.language")}
+            </div>
+          </div>
+          <select
+            id="ds-settings-language-select"
+            class="input-field"
+            style="width:115px;height:24px;font-size:11px;flex-shrink:0;"
+            value={locale()}
+            onChange={(ev) => setLocale((ev.target as HTMLSelectElement).value as Locale)}
+          >
+            <For each={SUPPORTED_LOCALES}>
+              {(loc) => (
+                <option value={loc.code}>
+                  {loc.label}
+                </option>
+              )}
+            </For>
+          </select>
         </div>
       </div>
     </div>

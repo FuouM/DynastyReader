@@ -16,6 +16,7 @@ import {
   decodeEntities,
   isMobile,
 } from "../stores";
+import { t } from "../i18n";
 import { SettingsModal } from "./SettingsModal";
 import { HistoryDropdown } from "./HistoryDropdown";
 import {
@@ -86,20 +87,20 @@ export function Topbar() {
                 class="ds-segmented-btn"
                 id="ds-tab-browse"
                 classList={{ active: route().view === "browse" }}
-                title="Browse &amp; Recent"
+                title={t("topbar.browseRecent")}
                 onClick={() => navigate({ view: "browse" })}
               >
-                <Icon name="compass" /> <span>{isNarrow() ? "Browse" : "Browse & Recent"}</span>
+                <Icon name="compass" /> <span>{isNarrow() ? t("topbar.browse") : t("topbar.browseRecent")}</span>
               </button>
               <button
                 type="button"
                 class="ds-segmented-btn"
                 id="ds-tab-library"
                 classList={{ active: route().view === "library" }}
-                title="Library"
+                title={t("topbar.library")}
                 onClick={() => navigate({ view: "library" })}
               >
-                <StorageIcon /> <span>Library</span>
+                <StorageIcon /> <span>{t("topbar.library")}</span>
               </button>
             </div>
             <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
@@ -107,7 +108,7 @@ export function Topbar() {
                 type="button"
                 class="ds-segmented-btn ds-nav-history-btn"
                 id="ds-nav-back"
-                title="Back (click to go back, hold or right-click for history)"
+                title={t("topbar.navBackTooltip")}
                 disabled={!canGoBack()}
                 onMouseDown={(ev) => {
                   if (ev.button === 0 && canGoBack()) {
@@ -134,7 +135,7 @@ export function Topbar() {
                 type="button"
                 class="ds-segmented-btn ds-nav-history-btn"
                 id="ds-nav-forward"
-                title="Forward (click to go forward, hold or right-click for history)"
+                title={t("topbar.navForwardTooltip")}
                 disabled={!canGoForward()}
                 onMouseDown={(ev) => {
                   if (ev.button === 0 && canGoForward()) {
@@ -164,7 +165,7 @@ export function Topbar() {
                   type="button"
                   class="win-button ds-nav-tab ds-session-tab"
                   classList={{ active: isInMangaView() }}
-                  title={isMobile() ? `${sessionTab()!.title} (hold to close)` : sessionTab()!.title}
+                  title={isMobile() ? t("topbar.closeTabMobileTooltip", { title: sessionTab()!.title }) : sessionTab()!.title}
                   onClick={() => {
                     const tab = sessionTab();
                     if (tab) navigate(tab.route);
@@ -176,7 +177,7 @@ export function Topbar() {
                   </span>
                   <CloseIcon
                     class="ds-tab-close"
-                    title="Close tab"
+                    title={t("topbar.closeTabTooltip")}
                     onClick={(ev: MouseEvent) => {
                       ev.stopPropagation();
                       closeSessionMangaTab();
@@ -198,7 +199,7 @@ export function Topbar() {
               type="button"
               class="win-button ds-btn-sm"
               id="ds-page-refresh-btn"
-              title="Refresh Page"
+              title={t("topbar.refreshPageTooltip")}
               onClick={() => window.location.reload()}
             >
               <RefreshIcon />
@@ -207,7 +208,7 @@ export function Topbar() {
               type="button"
               class="win-button ds-btn-sm"
               id="ds-settings-btn"
-              title="Settings (UI Scale &amp; Preferences)"
+              title={t("topbar.settingsTooltip")}
               onClick={() => setSettingsOpen(true)}
             >
               <SettingsIcon />

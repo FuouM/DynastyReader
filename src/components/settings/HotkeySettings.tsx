@@ -1,5 +1,6 @@
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
+import { t } from "../../i18n";
 import { Icon, CloseIcon, AddIcon, RefreshIcon } from "../Icon";
 import {
   HOTKEY_DEFINITIONS,
@@ -145,7 +146,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
           <input
             type="text"
             class="input-field has-clear"
-            placeholder="Search shortcuts..."
+            placeholder={t("settings.hotkeys.searchPlaceholder")}
             style="width:100%;box-sizing:border-box;font-size:11px;height:24px;"
             value={search()}
             onInput={(ev) => setSearch((ev.target as HTMLInputElement).value)}
@@ -161,7 +162,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               type="button"
               class="input-clear-btn"
               tabIndex={-1}
-              title="Clear"
+              title={t("common.clear")}
               onClick={() => setSearch("")}
             >
               <CloseIcon />
@@ -180,7 +181,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                 title="Reset all shortcuts to defaults"
                 onClick={() => setResetConfirm(true)}
               >
-                <RefreshIcon /> Reset All
+                <RefreshIcon /> {t("settings.hotkeys.resetAllButton")}
               </button>
             }
           >
@@ -231,7 +232,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                   style="font-size:10px;padding:2px 8px;"
                   onClick={() => resolveConflict(false)}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="button"
@@ -297,7 +298,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                                     <Show when={keys().length > 1 || !isDefault(def)}>
                                       <span
                                         class="ds-key-badge-remove"
-                                        title="Remove shortcut"
+                                        title={t("common.delete")}
                                         onClick={() => removeKeyFromHotkey(def.id, keyCombo)}
                                       >
                                         ×
@@ -311,7 +312,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                                 type="button"
                                 class="win-button ds-btn-sm"
                                 style="font-size:10px;padding:1px 5px;height:20px;"
-                                title="Add shortcut key"
+                                title={t("settings.hotkeys.addKeyTooltip")}
                                 onClick={() => {
                                   stopRecording();
                                   setRecordingActionId(def.id);
@@ -325,7 +326,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                                   type="button"
                                   class="win-button ds-btn-sm"
                                   style="font-size:10px;padding:1px 4px;height:20px;"
-                                  title="Reset to default"
+                                  title={t("settings.hotkeys.resetActionTooltip")}
                                   onClick={() => resetHotkey(def.id)}
                                 >
                                   <RefreshIcon />

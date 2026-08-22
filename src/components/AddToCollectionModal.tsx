@@ -8,6 +8,7 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
+import { t } from "../i18n";
 import {
   FolderIcon,
   CloseIcon,
@@ -155,7 +156,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
         parent_series_permalink: props.item.parentSeriesPermalink,
         parent_series_name: props.item.parentSeriesName,
       });
-      showBanner(added ? `Added to "${col.name}".` : `Removed from "${col.name}".`);
+      showBanner(added ? t("dialogs.addToCollection.addedToBanner", { collection: col.name }) : t("dialogs.addToCollection.removedFromBanner", { collection: col.name }));
       await loadRows();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -201,9 +202,9 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
           <div class="ds-add-to-collection-dropdown" style={positionStyle()}>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--sys-control-bg,#f0f0f0);border-bottom:1px solid var(--sys-border-light,#ddd);font-weight:600;font-size:11px;">
               <span style="display:flex;align-items:center;gap:5px;">
-                <FolderIcon color="var(--sys-primary,#0078d4)" /> Add to Collection
+                <FolderIcon color="var(--sys-primary,#0078d4)" /> {t("dialogs.addToCollection.title")}
               </span>
-              <button type="button" class="win-button ds-dropdown-close" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;font-size:9px;line-height:1;min-width:18px;box-sizing:border-box;" title="Close" onClick={props.onClose}>
+              <button type="button" class="win-button ds-dropdown-close" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;font-size:9px;line-height:1;min-width:18px;box-sizing:border-box;" title={t("common.close")} onClick={props.onClose}>
                 <CloseIcon style={{ display: "inline-flex", "align-items": "center", "justify-content": "center", "line-height": 1 }} />
               </button>
             </div>
@@ -214,10 +215,10 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
             </div>
             <div id="ds-add-to-col-list" style="max-height:180px;overflow-y:auto;padding:3px 4px;display:flex;flex-direction:column;gap:1px;">
               <Show when={loading()} fallback={null}>
-                <span class="ds-muted" style="font-size:10px;padding:6px;text-align:center;">Loading collections…</span>
+                <span class="ds-muted" style="font-size:10px;padding:6px;text-align:center;">{t("dialogs.addToCollection.loading")}</span>
               </Show>
               <Show when={loadError()}>
-                <span class="ds-muted" style="color:var(--ds-danger-text);padding:6px;font-size:10px;">Failed to load collections.</span>
+                <span class="ds-muted" style="color:var(--ds-danger-text);padding:6px;font-size:10px;">{t("dialogs.addToCollection.loadError")}</span>
               </Show>
               <For each={rows()}>
                 {(col) => (
@@ -262,7 +263,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                   type="text"
                   id="ds-add-to-col-new-input"
                   class="input-field has-clear"
-                  placeholder="New collection..."
+                  placeholder={t("dialogs.addToCollection.createPrompt")}
                   style="width:100%;box-sizing:border-box;font-size:10px;height:20px;"
                   value={newName()}
                   onInput={(ev) => setNewName((ev.target as HTMLInputElement).value)}
@@ -270,7 +271,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                     if (ev.key === "Enter") void handleCreate();
                   }}
                 />
-                <button type="button" class="input-clear-btn" tabIndex={-1} title="Clear" onClick={() => setNewName("")}>
+                <button type="button" class="input-clear-btn" tabIndex={-1} title={t("common.clear")} onClick={() => setNewName("")}>
                   <CloseIcon />
                 </button>
               </div>
@@ -282,7 +283,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                 disabled={creating()}
                 onClick={() => void handleCreate()}
               >
-                <AddIcon style={{ display: "inline-flex", "align-items": "center", "justify-content": "center", "line-height": 1, "font-size": "10px" }} /> <span>Create</span>
+                <AddIcon style={{ display: "inline-flex", "align-items": "center", "justify-content": "center", "line-height": 1, "font-size": "10px" }} /> <span>{t("common.create")}</span>
               </button>
             </div>
           </div>

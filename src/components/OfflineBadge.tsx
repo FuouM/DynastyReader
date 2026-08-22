@@ -5,6 +5,7 @@
  */
 
 import { Show } from "solid-js";
+import { t } from "../i18n";
 import { Icon } from "./Icon";
 
 export interface OfflineBadgeProps {
@@ -22,7 +23,7 @@ export function OfflineBadge(props: OfflineBadgeProps) {
           color: "var(--sys-primary,#0078d4)",
           "font-size": "11px",
         }}
-        title="Available Offline (Fully Cached)"
+        title={t("dialogs.offlineBadge.tooltip")}
       />
     </Show>
   );

@@ -17,6 +17,7 @@ import {
 
 } from "solid-js";
 import { decodeEntities, formatDate, navigate, showBanner } from "../stores";
+import { t } from "../i18n";
 import {
   getFollowedSeriesPage,
   getFollowedRevision,
@@ -91,7 +92,7 @@ export function FollowedPane(props: LibraryPaneProps) {
           when={data()!.rows.length > 0}
           fallback={
             <div class="ds-muted">
-              No followed series yet. Open a series and click Follow to see it here.
+              {t("library.emptyFollowed")}
             </div>
           }
         >
@@ -176,13 +177,13 @@ export function CollectionsPane(props: CollectionsPaneProps) {
     >
       <Show
         when={data()!.length > 0}
-        fallback={<div class="ds-muted">No collections found.</div>}
+        fallback={<div class="ds-muted">{t("library.emptyCollections")}</div>}
       >
         <For each={data()!}>
           {(col) => (
             <LibraryItemRow
               title={col.name}
-              subtitle={`${col.itemCount ?? 0} item${col.itemCount === 1 ? "" : "s"}${
+              subtitle={`${col.itemCount ?? 0} items${
                 col.is_default ? " · Default Collection" : ""
               }`}
               icon={col.is_default ? "bi-star-fill" : "bi-folder2-open"}
@@ -251,7 +252,7 @@ export function BookmarksPane(props: LibraryPaneProps) {
           when={data()!.res.rows.length > 0}
           fallback={
             <div class="ds-muted">
-              No bookmarks yet. Click Read Later on any chapter to bookmark it.
+              {t("library.emptyBookmarks")}
             </div>
           }
         >
@@ -333,7 +334,7 @@ export function HistoryPane(props: LibraryPaneProps) {
       >
         <Show
           when={data()!.res.rows.length > 0}
-          fallback={<div class="ds-muted">Nothing read yet.</div>}
+          fallback={<div class="ds-muted">{t("library.emptyHistory")}</div>}
         >
           <For each={data()!.res.rows}>
             {(row: HistoryRow) => (

@@ -2,8 +2,8 @@
  * Blacklist hide-notice bar with a Show/Hide toggle. Consolidated from two
  * inline copies (BrowseFeed, BrowseSearch).
  */
-
 import { DsButton } from "./Button";
+import { t } from "../i18n";
 import { BlacklistIcon, Icon } from "./Icon";
 
 export interface BlacklistNoticeProps {
@@ -26,7 +26,7 @@ export function BlacklistNotice(props: BlacklistNoticeProps) {
         <BlacklistIcon filled={true} color="#dc3545" />
         <span>
           <b>{props.count}</b> {props.noun}
-          {props.count === 1 ? "" : "s"} hidden by blacklist.
+          {props.count === 1 ? "" : "s"} {t("browse.search.hiddenByBlacklist", { count: props.count }).replace(/^[0-9]+\s+/, "").replace(/results\s+/, "")}
         </span>
       </div>
       <DsButton className="ds-btn-sm" onClick={props.onToggle}>

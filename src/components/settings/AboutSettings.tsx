@@ -1,5 +1,6 @@
 import { Show } from "solid-js";
 import { APP_VERSION } from "../../stores";
+import { t } from "../../i18n";
 import { formatBytes } from "../../lib/format";
 import { openExternal } from "../../api";
 import {
@@ -20,7 +21,7 @@ export function AboutSettings() {
   return (
     <div class="group-box" id="ds-settings-sec-about">
       <div class="group-box-title">
-        <Icon name="info-circle" /> About DynastyReader
+        <Icon name="info-circle" /> {t("settings.about.title")}
       </div>
       <div class="ds-settings-about-header">
         <img
@@ -43,7 +44,7 @@ export function AboutSettings() {
             </span>
           </div>
           <div class="ds-muted" style="font-size:11px;margin-top:2px;">
-            Local-first desktop reader &amp; offline manga catalog for Dynasty Scans.
+            {t("settings.about.subtitle")}
           </div>
         </div>
         <div class="ds-settings-about-actions">
@@ -51,12 +52,12 @@ export function AboutSettings() {
             type="button"
             class="win-button ds-btn-compact"
             id="ds-about-check-update"
-            title="Check for DynastyReader updates"
+            title={t("settings.about.checkUpdates")}
             disabled={updateChecking() || isUpdating()}
             onClick={() => void checkUpdates(true)}
           >
-            <Show when={updateChecking()} fallback={<><RefreshIcon /> Check Updates</>}>
-              <RefreshIcon spin={true} /> Checking...
+            <Show when={updateChecking()} fallback={<><RefreshIcon /> {t("settings.about.checkUpdates")}</>}>
+              <RefreshIcon spin={true} /> {t("settings.about.checkingUpdates")}
             </Show>
           </button>
           <button
@@ -88,8 +89,7 @@ export function AboutSettings() {
           >
             <Icon name="check-circle-fill" style={{ "font-size": "13px", "flex-shrink": "0" }} />
             <div style="flex:1;">
-              <strong>DynastyReader is up to date!</strong> You are currently running version{" "}
-              <strong>v{upToDateVersion()}</strong>.
+              <strong>{t("settings.about.upToDate", { version: upToDateVersion() })}</strong>
             </div>
           </div>
         </Show>
@@ -115,7 +115,7 @@ export function AboutSettings() {
                 class="ds-etag-tag"
                 style="font-size:10px;padding:2px 8px;font-weight:600;background:var(--ds-status-fresh-bg);color:var(--ds-status-fresh-text);border:1px solid var(--ds-status-fresh-border);"
               >
-                Update Available
+                {t("settings.about.updateAvailable", { version: updateInfo()!.latest_version })}
               </span>
             </div>
 

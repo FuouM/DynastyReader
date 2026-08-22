@@ -4,6 +4,7 @@
 
 import { createMemo, For, Show, type JSX } from "solid-js";
 import { decodeEntities } from "../stores";
+import { t } from "../i18n";
 import { openExternal } from "../api";
 import type { Series, SeriesTag } from "../types/api";
 import { TagPill } from "../components/TagPill";
@@ -204,13 +205,13 @@ export function SeriesHeader(props: SeriesHeaderProps) {
         </Show>
         <Show when={hasMetaRows()}>
           <div class="ds-meta-rows">
-            <MetaRow label="Author:" tags={tags().authorTags} />
-            <MetaRow label="Scanlation Group:" tags={tags().groupTags} />
-            <MetaRow label="Doujin:" tags={tags().doujinTags} />
-            <MetaRow label="Pairings:" tags={tags().pairingTags} />
-            <MetaRow label="Characters:" tags={tags().characterTags} />
-            <MetaRow label="Status / Format:" tags={tags().statusTags} />
-            <MetaRow label="Tags:" tags={tags().otherTags} />
+            <MetaRow label={`${t("series.authorsLabel")}:`} tags={tags().authorTags} />
+            <MetaRow label={`${t("series.scanlatorsLabel")}:`} tags={tags().groupTags} />
+            <MetaRow label={`${t("series.doujinLabel")}:`} tags={tags().doujinTags} />
+            <MetaRow label={`${t("series.pairingLabel")}:`} tags={tags().pairingTags} />
+            <MetaRow label={`${t("series.charactersLabel")}:`} tags={tags().characterTags} />
+            <MetaRow label={`${t("series.statusLabel")}:`} tags={tags().statusTags} />
+            <MetaRow label={`${t("series.tagsLabel")}:`} tags={tags().otherTags} />
           </div>
         </Show>
       </div>

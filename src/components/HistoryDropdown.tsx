@@ -13,6 +13,7 @@ import {
   routeLabel,
   uiScale,
 } from "../stores";
+import { t } from "../i18n";
 import { ArrowLeftIcon, ArrowRightIcon, Icon, type BootstrapIconName } from "./Icon";
 
 export interface HistoryDropdownProps {
@@ -100,9 +101,9 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
             <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--sys-control-bg,#f0f0f0);border-bottom:1px solid var(--sys-border-light,#ddd);font-weight:600;font-size:10px;color:var(--sys-text-secondary,#555);">
               <span style="display:flex;align-items:center;gap:4px;">
                 {props.direction === "back" ? <ArrowLeftIcon /> : <ArrowRightIcon />}
-                <span>{props.direction === "back" ? "Back History" : "Forward History"}</span>
+                <span>{props.direction === "back" ? t("topbar.backHistoryTitle") : t("topbar.forwardHistoryTitle")}</span>
               </span>
-              <span>{items().length} entries</span>
+              <span>{t("topbar.historyEntries", { count: items().length })}</span>
             </div>
 
             <div style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;padding:2px 0;">

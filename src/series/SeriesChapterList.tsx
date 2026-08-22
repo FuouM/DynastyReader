@@ -4,6 +4,7 @@
 
 import { For, Show, type Accessor } from "solid-js";
 import { decodeEntities, navigate } from "../stores";
+import { t } from "../i18n";
 import type { ChapterRef } from "../types/routes";
 import type { Series } from "../types/api";
 import type { SeriesProgressRow } from "../db";
@@ -31,14 +32,14 @@ export function ChapterRow(props: {
 
   const badges: string[] = [];
   if (isCompleted) {
-    badges.push("✓ Completed");
+    badges.push(`✓ ${t("series.completedBadge")}`);
   } else if (props.prog && props.prog.page_index > 0) {
-    badges.push(`page ${props.prog.page_index + 1}/${props.prog.page_total}`);
+    badges.push(t("series.pageProgress", { current: props.prog.page_index + 1, total: props.prog.page_total }));
   } else if (props.isReadInHistory) {
-    badges.push("✓ Read");
+    badges.push(`✓ ${t("series.readBadge")}`);
   }
   if (props.cachedCount > 0) {
-    badges.push(`${props.cachedCount} cached`);
+    badges.push(t("series.cachedBadge", { count: props.cachedCount }));
   }
   if (props.ch.released_on) {
     badges.push(props.ch.released_on);

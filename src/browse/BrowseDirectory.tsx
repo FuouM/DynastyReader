@@ -6,6 +6,7 @@
 
 import { createEffect, createMemo, createResource, createSignal, For, Show, type Accessor } from "solid-js";
 import { decodeEntities, navigate } from "../stores";
+import { t } from "../i18n";
 import { directoryGroups, fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages } from "../api";
 import { getBlacklistMode, isSeriesBlacklisted, type BlacklistMode } from "../db";
 import {
@@ -179,7 +180,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
     <div>
       <div style="margin-bottom:8px;">
         <InputField
-          placeholder={props.kind === "series" ? "Filter series in directory…" : "Filter tags in directory…"}
+          placeholder={props.kind === "series" ? t("browse.directory.filterSeriesPlaceholder") : t("browse.directory.filterTagsPlaceholder")}
           value={query()}
           onInput={setQuery}
           onClear={() => setQuery("")}
@@ -231,7 +232,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
           iconCssText="font-size:24px;opacity:0.6;display:block;margin-bottom:8px;"
         >
           <span class="ds-muted">
-            No {props.kind === "series" ? "series" : "tags"} match "{query()}".
+            {props.kind === "series" ? t("browse.directory.noMatchingSeries") : t("browse.directory.noMatchingTags")}
           </span>
         </EmptyState>
       </Show>

@@ -10,6 +10,7 @@ import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode } from "../types/reader";
 import { theme, isMobile } from "../stores";
+import { t } from "../i18n";
 import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
 import { ToolIcon } from "../components/Icon";
 
@@ -35,7 +36,7 @@ export function ReaderMainRow(props: NavRowProps) {
       <button
         type="button"
         class="win-button ds-nav-btn-ch"
-        title="Previous Chapter"
+        title={t("reader.toolbar.prevChapter")}
         disabled={s.chapterNav().prevDisabled}
         onClick={() => {
           const list = s.chapterList();
@@ -48,7 +49,7 @@ export function ReaderMainRow(props: NavRowProps) {
       <button
         type="button"
         class="win-button ds-nav-btn-jump"
-        title="Jump to First Page (Home)"
+        title={t("reader.toolbar.firstPage")}
         onClick={() => s.setPage(0, true)}
       >
         <i class="bi bi-chevron-bar-left"></i>
@@ -56,7 +57,7 @@ export function ReaderMainRow(props: NavRowProps) {
       <button
         type="button"
         class="win-button ds-nav-btn-page"
-        title="Previous Page (Left Arrow)"
+        title={t("reader.toolbar.prevPage")}
         disabled={s.progress().prevDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
       >
@@ -101,7 +102,7 @@ export function ReaderMainRow(props: NavRowProps) {
       <button
         type="button"
         class="win-button ds-nav-btn-page"
-        title="Next Page (Right Arrow / Space)"
+        title={t("reader.toolbar.nextPage")}
         disabled={s.progress().nextDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(1) : s.setPage(s.currentIndex() + 1))}
       >
@@ -110,7 +111,7 @@ export function ReaderMainRow(props: NavRowProps) {
       <button
         type="button"
         class="win-button ds-nav-btn-jump"
-        title="Jump to Last Page (End)"
+        title={t("reader.toolbar.lastPage", { total: s.pages().length })}
         onClick={() => s.setPage(s.pages().length - 1, true)}
       >
         <i class="bi bi-chevron-bar-right"></i>
@@ -118,7 +119,7 @@ export function ReaderMainRow(props: NavRowProps) {
       <button
         type="button"
         class="win-button ds-nav-btn-ch"
-        title="Next Chapter"
+        title={t("reader.toolbar.nextChapter")}
         disabled={s.chapterNav().nextDisabled}
         onClick={() => {
           const list = s.chapterList();
@@ -238,14 +239,14 @@ export function ReaderControlsRow(props: NavRowProps) {
         value={s.fitMode()}
         onChange={(ev) => s.setFitMode(ev.currentTarget.value as FitMode)}
       >
-        <option value="width">Fit Width</option>
-        <option value="height">Fit Height</option>
-        <option value="original">Original Size</option>
+        <option value="width">{t("reader.toolbar.fitModes.width")}</option>
+        <option value="height">{t("reader.toolbar.fitModes.height")}</option>
+        <option value="original">{t("reader.toolbar.fitModes.original")}</option>
       </select>
       <button
         type="button"
         class="win-button ds-ctrl-btn"
-        title="Toggle Light / Dark Theme (T)"
+        title={t("reader.toolbar.themeToggle")}
         onClick={() => s.toggleTheme()}
       >
         <Show when={theme() === "dark"} fallback={<i class="bi bi-sun"></i>}>
@@ -256,7 +257,7 @@ export function ReaderControlsRow(props: NavRowProps) {
         type="button"
         class="win-button ds-ctrl-btn"
         classList={{ primary: s.isFullscreen() }}
-        title={s.isFullscreen() ? "Exit Fullscreen (Esc / F)" : "Toggle Fullscreen (F)"}
+        title={t("reader.toolbar.fullscreen")}
         onClick={() => s.setFullscreen(!s.isFullscreen())}
       >
         <Show

@@ -17,6 +17,7 @@ import {
   type JSX,
 } from "solid-js";
 import { decodeEntities, navigate, setBanner } from "../stores";
+import { t } from "../i18n";
 import { searchDynasty, suggest } from "../api";
 import {
   getBlacklistMode,
@@ -421,8 +422,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   pane.goToPage(1);
                 }}
                 onEnter={(value) => runSearch(value)}
-                placeholder="Search keywords (e.g. Bloom Into You, Nakatani, romance)..."
-                maxItems={8}
+                placeholder={t("browse.search.inputPlaceholder")}
                 debounceMs={250}
               />
             </div>
@@ -433,7 +433,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               style="font-weight:600;"
               onClick={() => runSearch(q())}
             >
-              <SearchIcon /> Search
+              <SearchIcon /> {t("browse.search.searchButton")}
             </button>
             <button
               type="button"
@@ -442,7 +442,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               title="Reset all search filters"
               onClick={clearAll}
             >
-              <ClearIcon /> Clear
+              <ClearIcon /> {t("common.clear")}
             </button>
           </div>
 
@@ -462,7 +462,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 <Show when={classes().size === 0}>
                   <CheckIcon size={11} />
                 </Show>
-                <span>All Categories</span>
+                <span>{t("browse.search.classesAll")}</span>
               </button>
               <For each={ALL_CLASSES}>
                 {(c) => {
@@ -563,10 +563,10 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   pane.goToPage(1);
                 }}
               >
-                <option value="">Best Match</option>
-                <option value="name">Alphabetical</option>
-                <option value="created_at">Date Added</option>
-                <option value="released_on">Release Date</option>
+                <option value="">{t("browse.search.sorts.bestMatch")}</option>
+                <option value="name">{t("browse.search.sorts.alphabetical")}</option>
+                <option value="created_at">{t("browse.search.sorts.dateAdded")}</option>
+                <option value="released_on">{t("browse.search.sorts.releaseDate")}</option>
               </select>
             </div>
           </div>
@@ -575,7 +575,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
       <div id="ds-search-results-area" style="display:flex;flex-direction:column;gap:6px;">
         <Show when={showSpinner() && pane.loading() && pane.error() === undefined}>
-          <Loading message="Searching..." />
+          <Loading message={t("browse.search.searching")} />
         </Show>
 
         <Show when={!pane.loading() && model() !== undefined && pane.error() === undefined}>

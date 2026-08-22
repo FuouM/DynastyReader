@@ -12,6 +12,7 @@
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Modal } from "./Modal";
 import { Icon } from "./Icon";
+import { t } from "../i18n";
 import {
   SETTINGS_SECTIONS,
   SettingsSidebar,
@@ -90,7 +91,7 @@ export function SettingsModal(props: SettingsModalProps) {
       backdropId="ds-settings-modal-backdrop"
       title={
         <>
-          <Icon name="gear-fill" /> Application Settings
+          <Icon name="gear-fill" /> {t("settings.title")}
         </>
       }
       width={680}
@@ -104,7 +105,7 @@ export function SettingsModal(props: SettingsModalProps) {
             style="min-width:70px;"
             onClick={props.onClose}
           >
-            Done
+            {t("settings.done")}
           </button>
         </div>
       }
@@ -126,7 +127,7 @@ export function SettingsModal(props: SettingsModalProps) {
               {/* Hotkeys Section trigger banner */}
               <div class="group-box" id="ds-settings-sec-hotkeys">
                 <div class="group-box-title">
-                  <Icon name="keyboard" /> Keyboard Shortcuts
+                  <Icon name="keyboard" /> {t("settings.sections.hotkeys")}
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0;">
                   <div>
@@ -144,7 +145,7 @@ export function SettingsModal(props: SettingsModalProps) {
                     style="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;"
                     onClick={() => setCurrentPage("hotkeys")}
                   >
-                    <Icon name="keyboard" /> Configure Shortcuts...
+                    <Icon name="keyboard" /> {t("settings.openHotkeysModal")}
                   </button>
                 </div>
               </div>
@@ -163,7 +164,7 @@ export function SettingsModal(props: SettingsModalProps) {
               style="display:inline-flex;align-items:center;gap:5px;font-weight:600;"
               onClick={() => setCurrentPage("main")}
             >
-              <Icon name="arrow-left" /> Back to Settings
+              <Icon name="arrow-left" /> {t("library.backToLibrary")}
             </button>
             <span style="font-size:11px;color:var(--sys-text-muted,#666);">
               All changes are saved automatically.

@@ -4,6 +4,7 @@
  */
 
 import { navigate, tagClass } from "../stores";
+import { t } from "../i18n";
 
 export interface TagPillProps {
   type: string;
@@ -43,7 +44,7 @@ export function TagPill(props: TagPillProps) {
           ? "font-size:10px;padding:1px 6px;border-radius:2px;cursor:pointer;"
           : "font-size:10px;padding:2px 6px;border-radius:2px;cursor:pointer;"
       }
-      title={`${props.type}: ${props.name} (click to open)`}
+      title={t("series.clickToOpen", { type: props.type, name: props.name })}
       onClick={activate}
       onKeyDown={(ev) => {
         if (ev.key === "Enter" || ev.key === " ") {

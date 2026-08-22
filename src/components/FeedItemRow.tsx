@@ -18,6 +18,7 @@ import {
   setBanner,
   sortTagsByCategory,
 } from "../stores";
+import { t } from "../i18n";
 import {
   addBookmark,
   getBlacklistMode,
@@ -279,7 +280,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
               <span class="ds-muted" style="font-size:11px;">in</span>
               <span
                 class="ds-series-link"
-                title={`Go to series: ${decodeEntities(ch.series!)}`}
+                title={t("browse.feed.goToSeriesTooltip", { series: decodeEntities(ch.series!) })}
                 onClick={(ev) => {
                   ev.stopPropagation();
                   guardedOpen(ch.series!, () =>
@@ -304,27 +305,27 @@ export function FeedItemRow(props: FeedItemRowProps) {
             <button
               type="button"
               class={`win-button ds-btn-compact${bookmarked() ? " primary" : ""}`}
-              title={bookmarked() ? "Remove from Read Later" : "Save for Read Later"}
+              title={bookmarked() ? t("browse.feed.removeFromReadLater") : t("browse.feed.saveForReadLater")}
               onClick={(ev) => {
                 ev.stopPropagation();
                 void toggleBookmark();
               }}
             >
               <BookmarkIcon filled={bookmarked()} />
-              <span class="ds-action-btn-text">{bookmarked() ? " Saved" : " Read Later"}</span>
+              <span class="ds-action-btn-text">{bookmarked() ? ` ${t("browse.feed.saved")}` : ` ${t("browse.feed.readLater")}`}</span>
             </button>
             <AddToCollectionButton
               cssText="flex-shrink:0;"
               title={
                 !coverInfo.isStandalone
-                  ? `Add series "${decodeEntities(coverInfo.seriesName || ch.series || "")}" to collection`
-                  : "Add to Favorites or custom collections"
+                  ? t("browse.feed.addSeriesToCollection", { series: decodeEntities(coverInfo.seriesName || ch.series || "") })
+                  : t("browse.feed.addToFavoritesOrCustom")
               }
               onOpen={openAddToCol}
             />
             <ExternalLinkButton
               cssText="flex-shrink:0;"
-              title={`Open "${decodeEntities(ch.title)}" on Dynasty Scans in browser`}
+              title={t("browse.feed.openOnDynastyTooltip", { title: decodeEntities(ch.title) })}
               url={externalUrl()}
             />
           </div>

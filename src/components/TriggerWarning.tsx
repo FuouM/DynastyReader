@@ -4,6 +4,7 @@
  */
 
 import { For } from "solid-js";
+import { t } from "../i18n";
 import { Modal } from "./Modal";
 import { WarningIcon, ExternalLinkIcon, BlacklistIcon } from "./Icon";
 
@@ -23,14 +24,14 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
       width={380}
       title={
         <span style="color:#d9534f;">
-          <WarningIcon /> Content Warning
+          <WarningIcon /> {t("dialogs.triggerWarning.title")}
         </span>
       }
       onClose={props.onClose}
       footer={
         <div style="display:flex;justify-content:flex-end;gap:8px;width:100%;">
           <button type="button" class="win-button ds-modal-cancel" style="min-width:70px;" onClick={props.onClose}>
-            Cancel
+            {t("dialogs.triggerWarning.cancelButton")}
           </button>
           <button
             type="button"
@@ -42,7 +43,7 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
               proceed();
             }}
           >
-            <ExternalLinkIcon /> Proceed
+            <ExternalLinkIcon /> {t("dialogs.triggerWarning.proceedButton")}
           </button>
         </div>
       }
@@ -52,7 +53,7 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
           {props.title}
         </div>
         <div style="font-size:11px;color:var(--sys-text-muted,#555);line-height:1.4;">
-          This item matches tags or series on your blacklist:
+          {t("dialogs.triggerWarning.message", { title: props.title })}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow-y:auto;padding:2px 0;">
           <For each={props.matchedTags}>

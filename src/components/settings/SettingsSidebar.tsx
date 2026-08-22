@@ -1,6 +1,6 @@
 import { For } from "solid-js";
 import { Icon } from "../Icon";
-import { SETTINGS_SECTIONS, type SettingsSectionId } from "./types";
+import { getSettingsSections, type SettingsSectionId } from "./types";
 
 export interface SettingsSidebarProps {
   activeSection: string;
@@ -10,7 +10,7 @@ export interface SettingsSidebarProps {
 export function SettingsSidebar(props: SettingsSidebarProps) {
   return (
     <div class="ds-settings-sidebar">
-      <For each={SETTINGS_SECTIONS}>
+      <For each={getSettingsSections()}>
         {(sec) => (
           <button
             type="button"

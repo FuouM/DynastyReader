@@ -25,8 +25,8 @@ import {
   type ReadingDirectionSetting,
   type FitModeSetting,
 } from "../../reader/settings";
+import { t } from "../../i18n";
 import { DoublePageIcon, CloudDownloadIcon, Icon } from "../Icon";
-
 export function ReaderSettings() {
   const [autoCacheEnabled, setAutoCacheEnabled] = createSignal(isAutoCacheChapterEnabled());
   const [prefetchBuffer, setPrefetchBufferLocal] = createSignal(getPrefetchBuffer());
@@ -42,14 +42,14 @@ export function ReaderSettings() {
   return (
     <div class="group-box" id="ds-settings-sec-reading">
       <div class="group-box-title">
-        <DoublePageIcon /> Reading &amp; Cache
+        <DoublePageIcon /> {t("settings.reader.title")}
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         {/* Reading Direction */}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Reading Direction:
+              {t("settings.reader.readingDirection")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
               Auto checks 'read_left_to_right' tags; defaults to Japanese Manga (Right-to-Left).
@@ -99,7 +99,7 @@ export function ReaderSettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Default Reading Mode:
+              {t("settings.reader.defaultMode")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
               Continuous vertical scroll or single/dual page slides.
@@ -137,7 +137,7 @@ export function ReaderSettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Default Paged Layout:
+              {t("settings.reader.pagedLayout")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
               Single page view or dual-page spread in Paged mode.
@@ -231,7 +231,7 @@ export function ReaderSettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Spread Standalone Cover:
+              {t("settings.reader.coverOffset")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
               Display the first page (cover) alone before pairing double-page spreads.
@@ -259,7 +259,7 @@ export function ReaderSettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Default Fit Mode:
+              {t("settings.reader.fitMode")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
               Image scaling behavior when opening chapters.
@@ -286,7 +286,7 @@ export function ReaderSettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Auto-Cache Entire Chapter:
+              {t("settings.reader.autoCache")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
               When ON, pre-downloads all pages in a chapter. When OFF, only caches pages as you read them.
@@ -318,7 +318,7 @@ export function ReaderSettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Page Prefetch Buffer:
+              {t("settings.reader.prefetchBuffer")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
               Number of upcoming pages to preload ahead when auto-cache is off (default: 0).
@@ -362,7 +362,7 @@ export function ReaderSettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Page Navigation Bar Position:
+              {t("settings.reader.navPosition")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
               Dock page navigation &amp; progress at top or bottom (recommended for mobile/narrow screens).

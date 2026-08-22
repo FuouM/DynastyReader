@@ -3,7 +3,6 @@
  *
  * Renders the standard native WinForms-style scaffold through a `<Portal>`
  * mounted to `document.body`:
- *
  *   .ds-modal-backdrop
  *     └─ .ds-modal-window
  *          ├─ .ds-modal-header (title + close button)
@@ -13,10 +12,12 @@
  * One Escape keydown listener + one backdrop-click listener are registered per
  * open modal and torn down on close. The window is zoom-scaled to match the
  * saved UI scale and its max-height/max-width are compensated so it stays
+ * within the visible viewport.
  */
 
 import { createEffect, Show, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
+import { t } from "../i18n";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { CloseIcon } from "./Icon";
 import { uiScale } from "../stores";
@@ -115,7 +116,7 @@ export function Modal(props: ModalProps) {
             <Show when={props.title !== undefined}>
               <div class="ds-modal-header">
                 <span class="ds-modal-title" id="ds-modal-title">{props.title}</span>
-                <button type="button" class="win-button ds-modal-close" title="Close (Esc)" onClick={close}>
+                <button type="button" class="win-button ds-modal-close" title={`${t("common.close")} (Esc)`} onClick={close}>
                   <CloseIcon />
                 </button>
               </div>

@@ -17,11 +17,11 @@ import {
   decodeEntities,
   formatDate,
   navigate,
-  route,
   setActions,
   setTitle,
   showBanner,
 } from "../stores";
+import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api";
 import {
   getCollectionById,
@@ -69,23 +69,19 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
     },
   );
   const showSpinner = useDelayedSpinner(() => data.loading);
-
-  // Publish the detail view's top-bar actions whenever it is active.
   createEffect(() => {
-    const r = route();
-    if (r.view !== "library" || r.collectionId !== props.collectionId) return;
     setActions(
       <>
         <TopbarAction
-          title="Back"
+          title={t("library.backToLibrary")}
           onClick={() => navigate({ view: "library" })}
         >
-          <ArrowLeftIcon /> Back to Collections
+          <ArrowLeftIcon /> {t("library.backToLibrary")}
         </TopbarAction>
-        <TopbarAction title="Refresh" onClick={() => setTick((t) => t + 1)}>
-          <RefreshIcon /> Refresh
+        <TopbarAction title={t("common.refresh")} onClick={() => setTick((t) => t + 1)}>
+          <RefreshIcon /> {t("common.refresh")}
         </TopbarAction>
-      </>
+      </>,
     );
   });
 

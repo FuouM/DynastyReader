@@ -23,6 +23,7 @@ import {
   formatBytes,
   formatDateTime,
 } from "../stores";
+import { t } from "../i18n";
 import {
   checkFeedOnline,
   fetchFeedWithRevalidation,
@@ -587,7 +588,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
               class="win-button ds-feed-update-btn"
               onClick={() => pane.goToPage(1)}
             >
-              <RefreshIcon /> New chapters available — Click to update
+              <RefreshIcon /> {t("browse.feed.newChaptersNotice")}
             </button>
           </div>
         </Show>
