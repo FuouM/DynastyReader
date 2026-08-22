@@ -5,15 +5,18 @@
  * writes back through session control methods.
  */
 
-import { createEffect, createSignal, Show } from "solid-js";
+import { createEffect, createSignal, Show, type Accessor } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode } from "../types/reader";
-import { theme } from "../stores";
+import { theme, isMobile } from "../stores";
 import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
+import { ToolIcon } from "../components/Icon";
 
 interface NavRowProps {
   session: ReaderSession;
+  controlsOpen?: Accessor<boolean>;
+  onToggleControls?: () => void;
 }
 
 export function ReaderMainRow(props: NavRowProps) {
@@ -127,6 +130,18 @@ export function ReaderMainRow(props: NavRowProps) {
       >
         <span class="ds-ch-btn-text">Ch </span><i class="bi bi-chevron-double-right"></i>
       </button>
+      <Show when={isMobile()}>
+        <button
+          type="button"
+          class="win-button ds-nav-btn-page"
+          classList={{ active: props.controlsOpen?.() }}
+          style={{ "margin-left": "auto" }}
+          title="Toggle Reader Controls (Zoom, Fit, Layout)"
+          onClick={props.onToggleControls}
+        >
+          <ToolIcon />
+        </button>
+      </Show>
     </div>
   );
 }
@@ -299,8 +314,7 @@ export function ReaderControlsRow(props: NavRowProps) {
 export function ReaderToolbar(props: { session: ReaderSession }) {
   const s = props.session;
   const [navPos, setNavPos] = createSignal<ReaderNavPosition>(getReaderNavPosition());
-
-  // Zoom CSS variable follows the zoom scale.
+  const [controlsOpen, setControlsOpen] = createSignal(false);
   createEffect(() => {
     const z = s.zoomScale();
     if (s.containerEl) {
@@ -327,11 +341,19 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
     <>
       <nav class="ds-reader-nav ds-reader-nav-top">
         <Show when={navPos() === "top"}>
-          <ReaderMainRow session={s} />
-          <ReaderControlsRow session={s} />
+          <ReaderMainRow
+            session={s}
+            controlsOpen={controlsOpen}
+            onToggleControls={() => setControlsOpen((o) => !o)}
+          />
+          <Show when={!isMobile() || controlsOpen()}>
+            <ReaderControlsRow session={s} />
+          </Show>
         </Show>
         <Show when={navPos() === "bottom"}>
-          <ReaderControlsRow session={s} />
+          <Show when={!isMobile() || controlsOpen()}>
+            <ReaderControlsRow session={s} />
+          </Show>
         </Show>
       </nav>
     </>
@@ -341,6 +363,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
 export function ReaderBottomNav(props: { session: ReaderSession }) {
   const s = props.session;
   const [navPos, setNavPos] = createSignal<ReaderNavPosition>(getReaderNavPosition());
+  const [controlsOpen, setControlsOpen] = createSignal(false);
 
   const onNavPosChange = (ev: Event): void => {
     const customEv = ev as CustomEvent<ReaderNavPosition>;
@@ -351,7 +374,14 @@ export function ReaderBottomNav(props: { session: ReaderSession }) {
   return (
     <Show when={navPos() === "bottom"}>
       <nav class="ds-reader-nav ds-reader-nav-bottom">
-        <ReaderMainRow session={s} />
+        <ReaderMainRow
+          session={s}
+          controlsOpen={controlsOpen}
+          onToggleControls={() => setControlsOpen((o) => !o)}
+        />
+        <Show when={controlsOpen()}>
+          <ReaderControlsRow session={s} />
+        </Show>
       </nav>
     </Show>
   );
