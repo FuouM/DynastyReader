@@ -8,8 +8,8 @@ import { Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import type { SlotStateKind } from "./reader-queue-solid";
 import { convertFileSrc } from "../ipc";
+import { isMobile } from "../stores";
 import { WIDE_RATIO } from "./reader-spread";
-
 export interface ReaderSlotProps {
   session: ReaderSession;
   index: number;
@@ -23,6 +23,12 @@ export interface ReaderSlotProps {
 export function ReaderSlot(props: ReaderSlotProps) {
   const s = props.session;
   const cachedPath = (): string | undefined => s.cachedPages[0][props.index];
+  const isVisible = () => {
+    const cur = s.currentIndex();
+    const behind = isMobile() ? 2 : 5;
+    const ahead = isMobile() ? 4 : 8;
+    return props.index >= cur - behind && props.index <= cur + ahead;
+  };
 
   return (
     <div
@@ -34,7 +40,9 @@ export function ReaderSlot(props: ReaderSlotProps) {
       }}
     >
       <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={props.index} />}>
-        <SlotImgContent session={s} index={props.index} path={cachedPath()!} />
+        <Show when={isVisible()} fallback={<div class="ds-slot-placeholder" style="min-height:200px;" />}>
+          <SlotImgContent session={s} index={props.index} path={cachedPath()!} />
+        </Show>
       </Show>
     </div>
   );

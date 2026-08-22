@@ -49,7 +49,8 @@ export interface CachedChapterContext {
 }
 
 /** Raw `GROUP BY chapter_permalink` aggregate over cached_pages. */
-async function groupCachedPages(): Promise<ChapterAggRow[]> {
+async function groupCachedPages(limit?: number): Promise<ChapterAggRow[]> {
+  const limitClause = limit !== undefined ? ` LIMIT ${limit}` : "";
   const rows = await query<{
     chapter_permalink: string;
     page_count: number;
@@ -57,7 +58,7 @@ async function groupCachedPages(): Promise<ChapterAggRow[]> {
     last_cached: number;
   }>(
     `SELECT chapter_permalink, COUNT(*) as page_count, SUM(COALESCE(size_bytes, 0)) as size_bytes, MAX(cached_at) as last_cached
-     FROM cached_pages GROUP BY chapter_permalink`,
+     FROM cached_pages GROUP BY chapter_permalink ORDER BY last_cached DESC${limitClause}`,
   );
   return rows.map((r) => ({
     chapterPermalink: r.chapter_permalink,
@@ -72,8 +73,8 @@ async function groupCachedPages(): Promise<ChapterAggRow[]> {
  * key-filtered (only the `cover:series:*` / `cover:chapter:*` keys this page
  * set can use) instead of scanning the whole `cached_metadata` table.
  */
-export async function loadCachedChapterContext(): Promise<CachedChapterContext> {
-  const aggs = await groupCachedPages();
+export async function loadCachedChapterContext(limit = 200): Promise<CachedChapterContext> {
+  const aggs = await groupCachedPages(limit);
   const empty: CachedChapterContext = {
     aggs,
     chapterInfo: new Map(),

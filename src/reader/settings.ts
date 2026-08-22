@@ -5,18 +5,24 @@
  * reads these during render) does not need to import from the controller,
  * breaking the controller ↔ viewport import cycle.
  */
+import { isMobile } from "../stores";
+
 const getBool = (key: string, def = true): boolean => {
   const val = localStorage.getItem(key);
   return val === null ? def : val === "1" || val === "true";
 };
 const setBool = (key: string, val: boolean): void => localStorage.setItem(key, val ? "1" : "0");
 
-export const isAutoCacheChapterEnabled = (): boolean => getBool("ds-auto-cache-chapter", true);
+export const isAutoCacheChapterEnabled = (): boolean => {
+  const val = localStorage.getItem("ds-auto-cache-chapter");
+  if (val === null) return !isMobile();
+  return val === "1" || val === "true";
+};
 export const setAutoCacheChapterEnabled = (enabled: boolean): void => setBool("ds-auto-cache-chapter", enabled);
 
 export function getPrefetchBuffer(): number {
   const val = localStorage.getItem("ds-reader-prefetch");
-  if (val === null) return 0;
+  if (val === null) return isMobile() ? 3 : 0;
   const num = parseInt(val, 10);
   return isNaN(num) ? 0 : Math.max(0, Math.min(10, num));
 }
