@@ -139,6 +139,14 @@ pub fn resolve_in_root(raw: &str) -> Result<PathBuf, String> {
     Ok(target)
 }
 
+/// Returns true if `target` resolves to the data root directory itself.
+pub fn is_root_dir(target: &Path) -> Result<bool, String> {
+    let root = data_root();
+    let canonical_root = canonicalize_ancestor(&root)?;
+    let canonical_target = canonicalize_ancestor(target)?;
+    Ok(canonical_target == canonical_root)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -181,5 +189,15 @@ mod tests {
         assert!(reject_unsafe_components("covers/x.webp.").is_err());
         assert!(reject_unsafe_components("covers/x.webp ").is_err());
         assert!(reject_unsafe_components("covers/a:b.webp").is_err());
+    }
+
+    #[test]
+    fn test_is_root_dir() {
+        let root = temp_root("shared");
+        set_root(root.clone());
+
+        assert!(is_root_dir(&root).unwrap());
+        assert!(is_root_dir(&resolve_in_root("").unwrap()).unwrap());
+        assert!(!is_root_dir(&resolve_in_root("pages/ch1").unwrap()).unwrap());
     }
 }

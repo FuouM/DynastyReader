@@ -35,6 +35,49 @@ fn validate_db_name(db_name: &str) -> Result<String, String> {
     Ok(normalized)
 }
 
+/// Validates that `sql` does not attempt to attach/detach external files or execute unsafe PRAGMAs.
+pub fn validate_sql(sql: &str) -> Result<(), String> {
+    let upper = sql.trim().to_ascii_uppercase();
+    for statement in upper.split(';') {
+        let stmt = statement.trim();
+        if stmt.is_empty() {
+            continue;
+        }
+        let words: Vec<&str> = stmt.split_whitespace().collect();
+        if words.is_empty() {
+            continue;
+        }
+        let first = words[0];
+        if first == "ATTACH" || first == "DETACH" {
+            return Err("ATTACH/DETACH DATABASE statements are forbidden over IPC".to_string());
+        }
+        if first == "PRAGMA" && words.len() > 1 {
+            let raw_pragma = words[1];
+            let pragma_base = raw_pragma.split('(').next().unwrap_or(raw_pragma);
+            let pragma_base = pragma_base.split('=').next().unwrap_or(pragma_base);
+            let pragma_name = pragma_base.trim_matches(|c: char| !c.is_alphanumeric() && c != '_');
+            let allowed_pragmas = [
+                "USER_VERSION",
+                "TABLE_INFO",
+                "JOURNAL_MODE",
+                "SYNCHRONOUS",
+                "FOREIGN_KEYS",
+                "BUSY_TIMEOUT",
+                "WAL_CHECKPOINT",
+                "PAGE_COUNT",
+                "PAGE_SIZE",
+                "FREELIST_COUNT",
+                "INDEX_LIST",
+                "INDEX_INFO",
+            ];
+            if !allowed_pragmas.contains(&pragma_name) {
+                return Err(format!("PRAGMA '{pragma_name}' is not permitted over IPC"));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn open(db_name: &str) -> Result<Connection, String> {
     let normalized = validate_db_name(db_name)?;
     let path = crate::paths::data_root().join(&normalized);
@@ -126,6 +169,7 @@ pub async fn db_execute(
     sql: String,
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
+    validate_sql(&sql)?;
     let conn = get_conn(&state.0, &db_name)?;
     let values: Vec<rusqlite::types::Value> = params
         .unwrap_or_default()
@@ -149,6 +193,7 @@ pub async fn db_query(
     sql: String,
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
+    validate_sql(&sql)?;
     let conn = get_conn(&state.0, &db_name)?;
     let values: Vec<rusqlite::types::Value> = params
         .unwrap_or_default()
@@ -181,6 +226,9 @@ pub async fn db_execute_batch(
     statements: Vec<String>,
     params: Option<Vec<Option<Vec<Value>>>>,
 ) -> Result<serde_json::Value, String> {
+    for s in &statements {
+        validate_sql(s)?;
+    }
     let pool_arc = get_conn(&state.0, &db_name)?;
     let affected = tokio::task::spawn_blocking(move || {
         let conn = pool_arc.lock().map_err(|_| "db connection poisoned".to_string())?;
@@ -221,13 +269,18 @@ pub async fn db_backup(
     let backup_filename = format!("{}.backup.{}.db", normalized, ts);
     let backup_path = crate::paths::data_root().join(&backup_filename);
     let backup_str = backup_path.to_string_lossy().to_string();
-    // Escape single quotes for the VACUUM INTO literal.
-    let escaped = backup_str.replace('\'', "''");
-    let sql = format!("VACUUM INTO '{}'", escaped);
     let backup_path_clone = backup_path.clone();
     let size = tokio::task::spawn_blocking(move || {
-        let conn = pool_arc.lock().map_err(|_| "db connection poisoned".to_string())?;
-        conn.execute(&sql, []).map_err(|e| e.to_string())?;
+        let src_conn = pool_arc.lock().map_err(|_| "db connection poisoned".to_string())?;
+        let mut dst_conn = Connection::open(&backup_path_clone)
+            .map_err(|e| format!("failed creating backup target: {e}"))?;
+        let backup = rusqlite::backup::Backup::new(&src_conn, &mut dst_conn)
+            .map_err(|e| format!("failed initializing backup: {e}"))?;
+        backup
+            .run_to_completion(100, std::time::Duration::from_millis(250), None)
+            .map_err(|e| format!("backup execution failed: {e}"))?;
+        drop(backup);
+        drop(dst_conn);
         let meta = std::fs::metadata(&backup_path_clone).map_err(|e| e.to_string())?;
         Ok::<u64, String>(meta.len())
     })
@@ -470,5 +523,20 @@ mod tests {
         );
         assert_eq!(bind_value_owned(Value::String("x".into())), Rv::Text("x".into()));
         assert_eq!(bind_value_owned(json!(["a"])), Rv::Text("[\"a\"]".to_string()));
+    }
+
+    #[test]
+    fn test_validate_sql() {
+        assert!(validate_sql("SELECT * FROM cached_pages WHERE page_index = 0").is_ok());
+        assert!(validate_sql("INSERT INTO history (id) VALUES (1)").is_ok());
+        assert!(validate_sql("PRAGMA user_version = 2").is_ok());
+        assert!(validate_sql("PRAGMA table_info(cached_pages)").is_ok());
+
+        // Forbidden statements
+        assert!(validate_sql("ATTACH DATABASE '/etc/passwd' AS pwned").is_err());
+        assert!(validate_sql("ATTACH 'c:\\windows\\system32\\evil.db' AS evil").is_err());
+        assert!(validate_sql("DETACH DATABASE evil").is_err());
+        assert!(validate_sql("PRAGMA writable_schema = 1").is_err());
+        assert!(validate_sql("PRAGMA load_extension('evil.dll')").is_err());
     }
 }

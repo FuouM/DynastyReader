@@ -38,6 +38,33 @@ fn is_version_newer(latest: &str, current: &str) -> bool {
     }
 }
 
+const OFFICIAL_RELEASE_PREFIX: &str = "https://github.com/FuouM/DynastyReader/releases/download/";
+
+pub fn validate_update_download_url(url: &str) -> Result<(), String> {
+    if url.is_empty() {
+        return Err("Download URL cannot be empty".to_string());
+    }
+    if !url.starts_with("https://") {
+        return Err("Update download URL must use HTTPS".to_string());
+    }
+    if !url.starts_with(OFFICIAL_RELEASE_PREFIX) {
+        return Err("Update download URL must originate from the official DynastyReader repository releases".to_string());
+    }
+
+    #[cfg(target_os = "windows")]
+    let target_ext = ".exe";
+    #[cfg(target_os = "linux")]
+    let target_ext = ".AppImage";
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    let target_ext = "";
+
+    if !target_ext.is_empty() && !url.ends_with(target_ext) {
+        return Err(format!("Update asset must have the expected extension ({target_ext})"));
+    }
+
+    Ok(())
+}
+
 /// Checks the official GitHub repository for new releases.
 #[tauri::command(rename = "checkForUpdates")]
 pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>) -> Result<UpdateInfo, String> {
@@ -105,9 +132,7 @@ pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>)
 /// Downloads the new executable and performs the atomic replacement dance on Windows.
 #[tauri::command(rename = "installUpdate")]
 pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, download_url: String) -> Result<(), String> {
-    if download_url.is_empty() {
-        return Err("Download URL cannot be empty".to_string());
-    }
+    validate_update_download_url(&download_url)?;
 
     let current_exe = env::current_exe().map_err(|e| format!("Cannot locate current executable: {e}"))?;
     let exe_dir = current_exe
@@ -266,5 +291,18 @@ mod tests {
         assert!(!is_version_newer("0.1.0", "0.2.0"));
         assert!(!is_version_newer("0.1.0-alpha", "0.1.0"));
         assert!(is_version_newer("0.1.0", "0.1.0-alpha"));
+    }
+
+    #[test]
+    fn test_validate_update_download_url() {
+        #[cfg(target_os = "windows")]
+        {
+            assert!(validate_update_download_url("https://github.com/FuouM/DynastyReader/releases/download/v0.2.0/DynastyReader.exe").is_ok());
+            assert!(validate_update_download_url("http://github.com/FuouM/DynastyReader/releases/download/v0.2.0/DynastyReader.exe").is_err());
+            assert!(validate_update_download_url("https://evil.com/releases/download/v0.2.0/DynastyReader.exe").is_err());
+            assert!(validate_update_download_url("https://github.com/OtherRepo/DynastyReader/releases/download/v0.2.0/DynastyReader.exe").is_err());
+            assert!(validate_update_download_url("https://github.com/FuouM/DynastyReader/releases/download/v0.2.0/malicious.bat").is_err());
+            assert!(validate_update_download_url("").is_err());
+        }
     }
 }

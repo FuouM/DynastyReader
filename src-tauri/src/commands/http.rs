@@ -20,6 +20,55 @@ const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 
 pub struct HttpState(pub reqwest::Client);
 
+/// Validates that `raw` is a valid HTTP/HTTPS URL and does not target private or loopback networks (SSRF defense).
+pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
+    let parsed = reqwest::Url::parse(raw).map_err(|e| format!("invalid URL '{raw}': {e}"))?;
+    let scheme = parsed.scheme();
+    if scheme != "http" && scheme != "https" {
+        return Err(format!("unsupported URL scheme '{scheme}': only http and https are permitted"));
+    }
+
+    match parsed.host() {
+        Some(url::Host::Domain(host_str)) => {
+            let host_lower = host_str.to_ascii_lowercase();
+            if host_lower == "localhost"
+                || host_lower.ends_with(".localhost")
+                || host_lower.ends_with(".local")
+                || host_lower.ends_with(".internal")
+                || host_lower.ends_with(".localdomain")
+            {
+                return Err(format!("requests to local/internal host '{host_str}' are forbidden"));
+            }
+        }
+        Some(url::Host::Ipv4(ipv4)) => {
+            if ipv4.is_loopback()
+                || ipv4.is_private()
+                || ipv4.is_link_local()
+                || ipv4.is_broadcast()
+                || ipv4.is_unspecified()
+                || ipv4.is_multicast()
+            {
+                return Err(format!("requests to private/loopback IP '{ipv4}' are forbidden"));
+            }
+        }
+        Some(url::Host::Ipv6(ipv6)) => {
+            if ipv6.is_loopback() || ipv6.is_unspecified() || ipv6.is_multicast() {
+                return Err(format!("requests to private/loopback IPv6 '{ipv6}' are forbidden"));
+            }
+            let seg = ipv6.segments();
+            // fe80::/10 link-local or fc00::/7 unique local
+            if (seg[0] & 0xffc0) == 0xfe80 || (seg[0] & 0xfe00) == 0xfc00 {
+                return Err(format!("requests to link-local/unique-local IPv6 '{ipv6}' are forbidden"));
+            }
+        }
+        None => {
+            return Err("URL has no host".to_string());
+        }
+    }
+
+    Ok(parsed)
+}
+
 pub fn build_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .user_agent(USER_AGENT)
@@ -73,13 +122,14 @@ pub async fn http_get(
     headers: Option<serde_json::Value>,
     timeout_ms: Option<u64>,
 ) -> Result<serde_json::Value, String> {
+    let validated_url = validate_http_url(&url)?;
     let method_str = method.as_deref().unwrap_or("GET");
     let hdrs = headers
         .and_then(|h| h.as_object().cloned())
         .unwrap_or_default();
     let req = build_request(
         &state.0,
-        &url,
+        validated_url.as_str(),
         method_str,
         body.as_deref(),
         content_type.as_deref(),
@@ -136,11 +186,12 @@ pub async fn http_download(
     output_path: String,
     timeout_ms: Option<u64>,
 ) -> Result<serde_json::Value, String> {
+    let validated_url = validate_http_url(&url)?;
     let target = crate::paths::resolve_in_root(&output_path)?;
     let parent = target.parent().unwrap_or(&target);
     std::fs::create_dir_all(parent).map_err(|e| format!("failed creating output dir: {e}"))?;
     let client = &state.0;
-    let req = apply_timeout(client.get(&url), timeout_ms);
+    let req = apply_timeout(client.get(validated_url.as_str()), timeout_ms);
     let resp = req
         .send()
         .await
@@ -192,4 +243,37 @@ pub async fn http_download(
         "size_bytes": size,
         "absolute_path": target.to_string_lossy().into_owned(),
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_http_url() {
+        assert!(validate_http_url("https://dynasty-scans.com/chapters/example").is_ok());
+        assert!(validate_http_url("http://dynasty-scans.com/images/cover.jpg").is_ok());
+        assert!(validate_http_url("https://api.github.com/repos/FuouM/DynastyReader/releases").is_ok());
+
+        // Block non-http schemes
+        assert!(validate_http_url("file:///etc/passwd").is_err());
+        assert!(validate_http_url("javascript:alert(1)").is_err());
+        assert!(validate_http_url("ftp://ftp.example.com").is_err());
+
+        // Block localhost / internal hostnames
+        assert!(validate_http_url("http://localhost:8080/secret").is_err());
+        assert!(validate_http_url("http://service.localhost/").is_err());
+        assert!(validate_http_url("http://printer.local/").is_err());
+        assert!(validate_http_url("http://server.internal/").is_err());
+
+        // Block private/loopback IP ranges
+        assert!(validate_http_url("http://127.0.0.1:8080/").is_err());
+        assert!(validate_http_url("http://127.0.0.2/").is_err());
+        assert!(validate_http_url("http://10.0.0.1/admin").is_err());
+        assert!(validate_http_url("http://192.168.1.1/").is_err());
+        assert!(validate_http_url("http://172.16.0.1/").is_err());
+        assert!(validate_http_url("http://169.254.169.254/metadata").is_err());
+        assert!(validate_http_url("http://0.0.0.0/").is_err());
+        assert!(validate_http_url("http://[::1]/").is_err());
+    }
 }

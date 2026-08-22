@@ -26,6 +26,11 @@ function normalizeToSeriesKind(kind: string): ParsedDynastyUrl["kind"] {
  * unavailable or the scheme is rejected.
  */
 export async function openExternal(url: string): Promise<void> {
+  const lower = url.trim().toLowerCase();
+  if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+    console.warn(`[navigation] rejected non-http/https external URL: ${url}`);
+    return;
+  }
   try {
     await ipc.openUrl(url);
     return;

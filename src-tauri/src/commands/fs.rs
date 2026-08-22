@@ -67,8 +67,17 @@ pub async fn file_exists_batch(
 
 #[tauri::command(rename = "fileMove")]
 pub fn file_move(src: String, dst: String) -> Result<serde_json::Value, String> {
+    if src.trim().is_empty() || dst.trim().is_empty() {
+        return Err("src and dst cannot be empty".to_string());
+    }
     let src_target = crate::paths::resolve_in_root(&src)?;
     let dst_target = crate::paths::resolve_in_root(&dst)?;
+    if crate::paths::is_root_dir(&src_target)? {
+        return Err("cannot move root data directory".to_string());
+    }
+    if crate::paths::is_root_dir(&dst_target)? {
+        return Err("cannot overwrite root data directory".to_string());
+    }
     if let Some(parent) = dst_target.parent() {
         std::fs::create_dir_all(parent)
             .map_err(|e| format!("failed creating parent directory: {e}"))?;
@@ -123,7 +132,13 @@ fn copy_tree(src: &std::path::Path, dst: &std::path::Path) -> Result<(), String>
 
 #[tauri::command(rename = "fileDelete")]
 pub fn file_delete(path: String) -> Result<serde_json::Value, String> {
+    if path.trim().is_empty() {
+        return Err("cannot delete root data directory".to_string());
+    }
     let target = crate::paths::resolve_in_root(&path)?;
+    if crate::paths::is_root_dir(&target)? {
+        return Err("cannot delete root data directory".to_string());
+    }
     if target.is_dir() {
         std::fs::remove_dir_all(&target)
             .map_err(|e| format!("directory delete failed: {e}"))?;
