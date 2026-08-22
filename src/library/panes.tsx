@@ -47,8 +47,6 @@ export interface LibraryPaneApi {
 }
 
 export interface LibraryPaneProps {
-  /** Bumped by the parent grid to force a full reload of all panels. */
-  tick: Accessor<number>;
   register: (api: LibraryPaneApi) => void;
 }
 
@@ -59,8 +57,8 @@ export interface LibraryPaneProps {
 export function FollowedPane(props: LibraryPaneProps) {
   const [page, setPage] = createSignal(1);
   const [data, { refetch }] = createResource(
-    () => ({ page: page(), tick: props.tick() }),
-    async ({ page: p }) => getFollowedSeriesPage(p, 10),
+    page,
+    async (p) => getFollowedSeriesPage(p, 10),
   );
   const showSpinner = useDelayedSpinner(() => data.loading);
 
@@ -147,7 +145,7 @@ export function CollectionsPane(props: CollectionsPaneProps) {
   });
 
   const [data, { refetch }] = createResource(
-    () => ({ tick: props.tick(), rev: rev() }),
+    rev,
     async () => getCollections(),
   );
   const showSpinner = useDelayedSpinner(() => data.loading);
@@ -212,8 +210,8 @@ export function CollectionsPane(props: CollectionsPaneProps) {
 export function BookmarksPane(props: LibraryPaneProps) {
   const [page, setPage] = createSignal(1);
   const [data, { refetch }] = createResource(
-    () => ({ page: page(), tick: props.tick() }),
-    async ({ page: p }) => {
+    page,
+    async (p) => {
       const [res, fullyCachedSet] = await Promise.all([
         getBookmarksPage(p, 15),
         getFullyCachedChapterPermalinks(),
@@ -291,8 +289,8 @@ export function BookmarksPane(props: LibraryPaneProps) {
 export function HistoryPane(props: LibraryPaneProps) {
   const [page, setPage] = createSignal(1);
   const [data, { refetch }] = createResource(
-    () => ({ page: page(), tick: props.tick() }),
-    async ({ page: p }) => {
+    page,
+    async (p) => {
       const [res, fullyCachedSet] = await Promise.all([
         getHistoryPage(p, 15),
         getFullyCachedChapterPermalinks(),

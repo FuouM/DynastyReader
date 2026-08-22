@@ -31,13 +31,11 @@ import {
 } from "../api";
 import {
   getBlacklistMode,
-  getBookmarkPermalinks,
   getCached,
-  getFullyCachedChapterPermalinks,
-  getHistoryPermalinks,
   isItemBlacklisted,
   type BlacklistMode,
 } from "../db";
+import { fetchItemStateSets } from "./useItemRowState";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import {
   setPaneError,
@@ -142,23 +140,8 @@ async function loadFeedModel(tabId: string, page: number): Promise<FeedModel> {
   if (!feed.chapters) feed.chapters = [];
 
   const permalinks = feed.chapters.map((c) => c.permalink);
-  let readSet = new Set<string>();
-  let bookmarkSet = new Set<string>();
-  let fullyCachedSet = new Set<string>();
-  try {
-    const [h, b, fc] = await Promise.all([
-      getHistoryPermalinks(permalinks),
-      getBookmarkPermalinks(permalinks),
-      getFullyCachedChapterPermalinks(),
-    ]);
-    readSet = h;
-    bookmarkSet = b;
-    fullyCachedSet = fc;
-  } catch {
-    readSet = new Set();
-    bookmarkSet = new Set();
-    fullyCachedSet = new Set();
-  }
+  const { readHistorySet: readSet, bookmarkSet, fullyCachedSet } =
+    await fetchItemStateSets(permalinks);
 
   if (browseCovers.coversEnabled) {
     const coverTargets = feed.chapters.map((c) => browseCovers.getItemCoverInfo(c));

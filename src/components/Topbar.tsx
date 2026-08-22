@@ -200,7 +200,11 @@ export function Topbar() {
           <Show when={banner() !== null}>
             <div id="ds-banner">{banner()}</div>
           </Show>
-          <div id="ds-actions">{actions()}</div>
+          <div id="ds-actions">
+            <Show when={actions()}>
+              {(act) => (typeof act() === "function" ? (act() as () => JSX.Element)() : act())}
+            </Show>
+          </div>
           <div id="ds-topbar-tools">
             <button
               type="button"

@@ -91,7 +91,6 @@ export function HydratedCover(props: HydratedCoverProps) {
           width={isCache() ? 36 : 42}
           height={isCache() ? 50 : 58}
           decoding="async"
-          loading="lazy"
           src={convertFileSrc(props.path!)}
           onError={() => setError(true)}
         />

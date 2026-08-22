@@ -1,11 +1,10 @@
 /**
  * Solid Series detail view. Port of `ui-series.ts`:
- *
- *  - metadata + categorized tag rows, sanitized description, cover
- *  - Series & Anthologies taggables grid
- *  - volume-grouped chapter list with sort toggle and per-chapter badges
- *  - top-bar actions: Follow / Add to... / Blacklist / Refresh / open-external
- *  - standalone chapter/oneshot permalink fallback → reader
+ * - metadata + categorized tag rows, sanitized description, cover
+ * - Series & Anthologies taggables grid
+ * - volume-grouped chapter list with sort toggle and per-chapter badges
+ * - top-bar actions: Follow / Add to... / Blacklist / Refresh / open-external
+ * - standalone chapter/oneshot permalink fallback -> reader
  */
 
 import {
@@ -13,10 +12,8 @@ import {
   createMemo,
   createResource,
   createSignal,
-  For,
   Show,
   type Accessor,
-  type JSX,
 } from "solid-js";
 import {
   decodeEntities,
@@ -27,7 +24,7 @@ import {
   setTitle,
   showBanner,
 } from "../stores";
-import { fetchChapter, fetchSeries, getSeriesCover, openExternal } from "../api";
+import { fetchChapter, fetchSeries, getSeriesCover } from "../api";
 import {
   addBlacklistedSeries,
   followSeries,
@@ -40,13 +37,9 @@ import {
   unfollowSeries,
   type SeriesProgressRow,
 } from "../db";
-import type { Series, SeriesTag } from "../types/api";
-import type { ChapterRef } from "../types/routes";
+import type { Series } from "../types/api";
 import { useDelayedSpinner } from "../browse/browse-state";
-import { TagPill } from "../components/TagPill";
-import { Cover } from "../components/Cover";
 import { Loading } from "../components/Loading";
-import { OfflineBadge } from "../components/OfflineBadge";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { AddToCollectionButton } from "../components/AddToCollectionButton";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
@@ -54,14 +47,10 @@ import {
   BookmarkIcon,
   BlacklistIcon,
   RefreshIcon,
-  StorageIcon,
-  BookIcon,
-  Icon,
 } from "../components/Icon";
-
-interface ChapterMeta extends ChapterRef {
-  volumeHeader?: string;
-}
+import { SeriesHeader } from "./SeriesHeader";
+import { SeriesChapterList, type ChapterMeta } from "./SeriesChapterList";
+import { SeriesTaggables } from "./SeriesTaggables";
 
 /** Thrown when the permalink turned out to be a standalone chapter (redirected). */
 class SeriesRedirected extends Error {}
@@ -84,205 +73,6 @@ function collectChapters(series: Series): ChapterMeta[] {
     }
   }
   return out;
-}
-
-function groupTags(
-  series: Series,
-): {
-  authorTags: SeriesTag[];
-  groupTags: SeriesTag[];
-  doujinTags: SeriesTag[];
-  pairingTags: SeriesTag[];
-  characterTags: SeriesTag[];
-  statusTags: SeriesTag[];
-  otherTags: SeriesTag[];
-} {
-  const authorTags: SeriesTag[] = [];
-  const groupMap = new Map<string, SeriesTag>();
-  const doujinTags: SeriesTag[] = [];
-  const pairingTags: SeriesTag[] = [];
-  const characterTags: SeriesTag[] = [];
-  const statusTags: SeriesTag[] = [];
-  const otherTags: SeriesTag[] = [];
-
-  for (const t of series.tags ?? []) {
-    const type = (t.type ?? "").toLowerCase();
-    const nameLower = (t.name ?? "").toLowerCase();
-    if (type === "author" || type === "artist") {
-      authorTags.push(t);
-    } else if (type === "scanlator" || type === "group") {
-      groupMap.set(t.permalink || t.name, t);
-    } else if (
-      type === "doujin" ||
-      type === "doujinshi" ||
-      type === "copyright" ||
-      type === "parody"
-    ) {
-      doujinTags.push(t);
-    } else if (type === "pairing") {
-      pairingTags.push(t);
-    } else if (type === "character") {
-      characterTags.push(t);
-    } else if (
-      type === "status" ||
-      type === "format" ||
-      nameLower === "oneshot" ||
-      nameLower === "one-shot" ||
-      nameLower === "anthology" ||
-      nameLower === "completed" ||
-      nameLower === "ongoing" ||
-      nameLower === "discontinued" ||
-      nameLower === "hiatus"
-    ) {
-      statusTags.push(t);
-    } else {
-      otherTags.push(t);
-    }
-  }
-
-  // Also collect any scanlation groups from chapter taggings if not in series.tags
-  for (const tagging of series.taggings ?? []) {
-    for (const t of tagging.tags ?? []) {
-      const type = (t.type ?? "").toLowerCase();
-      if (type === "scanlator" || type === "group") {
-        if (!groupMap.has(t.permalink || t.name)) {
-          groupMap.set(t.permalink || t.name, t);
-        }
-      }
-    }
-  }
-  const groupTags = Array.from(groupMap.values());
-
-  return { authorTags, groupTags, doujinTags, pairingTags, characterTags, statusTags, otherTags };
-}
-
-/** Recursively renders a sanitized (tag-whitelist) description tree. */
-function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {
-  const out: JSX.Element[] = [];
-  for (const node of nodes) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = decodeEntities(node.textContent || "");
-      if (text) out.push(text);
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      const tag = el.tagName.toLowerCase();
-      const kids = () => renderSanitizedNodes(Array.from(el.childNodes));
-      if (tag === "p") {
-        const children = kids();
-        if (children.length > 0) out.push(<p style="margin:4px 0;">{children}</p>);
-      } else if (tag === "br") {
-        out.push(<br />);
-      } else if (tag === "a") {
-        const href = el.getAttribute("href") || "";
-        const text = decodeEntities(el.textContent?.trim() || "");
-        if (href) {
-          out.push(
-            <a
-              class="ds-external-link"
-              style="color:var(--sys-primary,#0078d4);text-decoration:underline;cursor:pointer;word-break:break-all;"
-              title={href}
-              onClick={(ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                void openExternal(href);
-              }}
-            >
-              {text && text !== href ? `${text} — ${href}` : href}
-            </a>,
-          );
-        } else {
-          out.push(text);
-        }
-      } else if (tag === "b" || tag === "strong") {
-        out.push(<strong>{kids()}</strong>);
-      } else if (tag === "i" || tag === "em") {
-        out.push(<em>{kids()}</em>);
-      } else {
-        out.push(...kids());
-      }
-    }
-  }
-  return out;
-}
-
-function SanitizedDescription(props: { html: string }) {
-  const nodes = createMemo<JSX.Element[]>(() => {
-    if (!props.html) return [];
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(props.html, "text/html");
-    return renderSanitizedNodes(Array.from(doc.body.childNodes));
-  });
-
-  return <div class="ds-series-desc">{nodes()}</div>;
-}
-
-function MetaRow(props: { label: string; tags: SeriesTag[] }) {
-  return (
-    <Show when={props.tags.length > 0}>
-      <div class="ds-meta-row">
-        <span class="ds-meta-label">{props.label}</span>
-        <div class="ds-meta-pills">
-          <For each={props.tags}>
-            {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} compact={false} />}
-          </For>
-        </div>
-      </div>
-    </Show>
-  );
-}
-
-function ChapterRow(props: {
-  ch: ChapterMeta;
-  prog: SeriesProgressRow | undefined;
-  cachedCount: number;
-  chapters: ChapterMeta[];
-  seriesPermalink: string;
-  seriesName: string;
-  isReadInHistory: boolean;
-}) {
-  const isCompleted = props.prog?.completed === 1;
-  const isRead = isCompleted || props.isReadInHistory;
-  const isFullyCached =
-    props.cachedCount > 0 &&
-    (props.prog && props.prog.page_total > 0 ? props.cachedCount >= props.prog.page_total : true);
-
-  const badges: string[] = [];
-  if (isCompleted) {
-    badges.push("✓ Completed");
-  } else if (props.prog && props.prog.page_index > 0) {
-    badges.push(`page ${props.prog.page_index + 1}/${props.prog.page_total}`);
-  } else if (props.isReadInHistory) {
-    badges.push("✓ Read");
-  }
-  if (props.cachedCount > 0) {
-    badges.push(`${props.cachedCount} cached`);
-  }
-  if (props.ch.released_on) {
-    badges.push(props.ch.released_on);
-  }
-
-  return (
-    <div
-      class={`ds-chapter-row${isRead ? " ds-chapter-read" : ""}`}
-      onClick={() =>
-        navigate({
-          view: "reader",
-          seriesPermalink: props.seriesPermalink,
-          chapterPermalink: props.ch.permalink,
-          chapterTitle: props.ch.title,
-          seriesName: props.seriesName,
-          chapterList: props.chapters,
-          startPage: props.prog && props.prog.completed !== 1 ? props.prog.page_index : 0,
-        })
-      }
-    >
-      <div class="ds-chapter-title" style="display:inline-flex;align-items:center;gap:4px;">
-        <span>{decodeEntities(props.ch.title)}</span>
-        <OfflineBadge when={isFullyCached} />
-      </div>
-      {badges.length > 0 ? <div class="ds-chapter-badge">{badges.join(" · ")}</div> : null}
-    </div>
-  );
 }
 
 export function SeriesView() {
@@ -438,11 +228,7 @@ export function SeriesView() {
           disabled={busyFollow()}
           onClick={() => void toggleFollow()}
         >
-          {followed ? (
-            <BookmarkIcon filled={true} />
-          ) : (
-            <BookmarkIcon />
-          )}{" "}
+          {followed ? <BookmarkIcon filled={true} /> : <BookmarkIcon />}{" "}
           <span class="ds-btn-text">{followed ? "Following" : "Follow"}</span>
         </button>
         <AddToCollectionButton
@@ -554,31 +340,9 @@ function SeriesBody(props: {
   sortOrder: Accessor<"asc" | "desc">;
   setSortOrder: (v: "asc" | "desc") => void;
 }) {
-  const series = () => props.data.series;
-  const coverPath = () => props.data.coverPath;
-  const blacklisted = () => props.data.blacklisted;
-  const chapters = () => props.data.chapters;
-  const progress = () => props.data.progress;
-  const cacheCounts = () => props.data.cacheCounts;
-  const readHistorySet = () => props.data.readHistorySet;
-
-  const tags = createMemo(() => groupTags(series()));
-  const hasMetaRows = createMemo(() => {
-    const t = tags();
-    return (
-      t.authorTags.length > 0 ||
-      t.groupTags.length > 0 ||
-      t.doujinTags.length > 0 ||
-      t.pairingTags.length > 0 ||
-      t.characterTags.length > 0 ||
-      t.statusTags.length > 0 ||
-      t.otherTags.length > 0
-    );
-  });
-
   return (
     <>
-      <Show when={blacklisted()}>
+      <Show when={props.data.blacklisted}>
         <div
           class="ds-row ds-blacklist-notice"
           style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:6px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:11px;"
@@ -598,144 +362,20 @@ function SeriesBody(props: {
         </div>
       </Show>
 
-      <div class="ds-series-head">
-        <Cover
-          path={coverPath()}
-          alt={series().name}
-          imgClass="ds-cover"
-          placeholderClass="ds-cover-placeholder"
-        />
-        <div class="ds-fill">
-          <div style="font-size:14px;font-weight:600;">{decodeEntities(series().name)}</div>
-          <div class="ds-muted">{series().type ?? "Series"}</div>
-          <Show when={series().description}>
-            <SanitizedDescription html={series().description!} />
-          </Show>
-          <Show when={series().link}>
-            <div class="ds-series-desc" style="margin:4px 0;">
-              <a
-                class="ds-external-link"
-                style="color:var(--sys-primary,#0078d4);text-decoration:underline;cursor:pointer;word-break:break-all;"
-                title={series().link!}
-                onClick={(ev) => {
-                  ev.preventDefault();
-                  ev.stopPropagation();
-                  void openExternal(series().link!);
-                }}
-              >
-                Official / Source Link — {series().link}
-              </a>
-            </div>
-          </Show>
-          <Show when={hasMetaRows()}>
-            <div class="ds-meta-rows">
-              <MetaRow label="Author:" tags={tags().authorTags} />
-              <MetaRow label="Scanlation Group:" tags={tags().groupTags} />
-              <MetaRow label="Doujin:" tags={tags().doujinTags} />
-              <MetaRow label="Pairings:" tags={tags().pairingTags} />
-              <MetaRow label="Characters:" tags={tags().characterTags} />
-              <MetaRow label="Status / Format:" tags={tags().statusTags} />
-              <MetaRow label="Tags:" tags={tags().otherTags} />
-            </div>
-          </Show>
-        </div>
-      </div>
+      <SeriesHeader series={props.data.series} coverPath={props.data.coverPath} />
 
-      <Show when={series().taggables && series().taggables!.length > 0}>
-        <div class="group-box" style="margin-top:10px;">
-          <div class="group-box-title">
-            <StorageIcon /> Series &amp; Anthologies ({series().taggables!.length})
-          </div>
-          <div
-            style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:6px;margin-top:4px;"
-          >
-            <For each={series().taggables}>
-              {(tg) => (
-                <div
-                  class="ds-row"
-                  style="padding:5px 8px;background:var(--sys-bg-active, #f5f5f5);border:1px solid var(--sys-border-light, #e0e0e0);border-radius:3px;cursor:pointer;align-items:flex-start;gap:6px;"
-                  title={decodeEntities(tg.name)}
-                  onClick={() =>
-                    navigate({
-                      view: "series",
-                      seriesPermalink: tg.permalink,
-                      seriesName: tg.name,
-                    })
-                  }
-                >
-                  <BookIcon style={{ color: "var(--sys-primary,#0078d4)", "margin-top": "1px", "flex-shrink": 0 }} />
-                  <span
-                    style="flex:1;min-width:0;line-height:1.3;word-break:break-word;font-size:11px;font-weight:500;"
-                  >
-                    {decodeEntities(tg.name)}
-                  </span>
-                  <span class="ds-muted" style="font-size:10px;flex-shrink:0;margin-top:1px;">{tg.type}</span>
-                </div>
-              )}
-            </For>
-          </div>
-        </div>
-      </Show>
+      <SeriesTaggables series={props.data.series} />
 
-      <Show
-        when={chapters().length === 0}
-        fallback={
-          <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
-            <div
-              class="ds-row"
-              style="justify-content:space-between;align-items:center;padding:4px 2px;border-bottom:1px solid var(--sys-border-light, #ddd);"
-            >
-              <div style="font-size:12px;font-weight:600;">Chapters ({chapters().length})</div>
-              <button
-                type="button"
-                class="win-button ds-btn-compact"
-                title={
-                  props.sortOrder() === "asc"
-                    ? "Oldest first (click to sort newest first)"
-                    : "Newest first (click to sort oldest first)"
-                }
-                onClick={() =>
-                  props.setSortOrder(props.sortOrder() === "asc" ? "desc" : "asc")
-                }
-              >
-                <Icon name={props.sortOrder() === "asc" ? "sort-numeric-down" : "sort-numeric-down-alt"} />{" "}
-                Sort: {props.sortOrder() === "asc" ? "Ascending" : "Descending"}
-              </button>
-            </div>
-            <div style="display:flex;flex-direction:column;">
-              <For each={props.ordered()}>
-                {(ch, i) => (
-                  <>
-                    <Show
-                      when={
-                        ch.volumeHeader &&
-                        (i() === 0 || props.ordered()[i() - 1].volumeHeader !== ch.volumeHeader)
-                      }
-                    >
-                      <div class="ds-vol-header">{ch.volumeHeader}</div>
-                    </Show>
-                    <ChapterRow
-                      ch={ch}
-                      prog={progress().get(ch.permalink)}
-                      cachedCount={cacheCounts().get(ch.permalink) ?? 0}
-                      chapters={chapters()}
-                      seriesPermalink={series().permalink}
-                      seriesName={series().name}
-                      isReadInHistory={readHistorySet().has(ch.permalink)}
-                    />
-                  </>
-                )}
-              </For>
-            </div>
-          </div>
-        }
-      >
-        <Show when={!(series().taggables && series().taggables!.length > 0)}>
-          <div class="ds-muted" style="margin-top:12px;">
-            This entry has no chapters or series listed here.
-          </div>
-        </Show>
-      </Show>
+      <SeriesChapterList
+        series={props.data.series}
+        chapters={props.data.chapters}
+        ordered={props.ordered}
+        progress={props.data.progress}
+        cacheCounts={props.data.cacheCounts}
+        readHistorySet={props.data.readHistorySet}
+        sortOrder={props.sortOrder}
+        setSortOrder={props.setSortOrder}
+      />
     </>
   );
 }
