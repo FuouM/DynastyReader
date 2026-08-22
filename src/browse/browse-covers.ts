@@ -48,7 +48,8 @@ const SCROLL_IDLE_MS = 300;
  * flicker and reconciliation race conditions.
  */
 export class BrowseCovers {
-  private readonly memoryCache = new Map<string, string | null>();
+  private readonly memoryCache = new Map<string, string>();
+  private readonly failedAttempts = new Map<string, { count: number; lastTried: number }>();
   private readonly inflight = new Map<string, Promise<string | null>>();
   private readonly queue: CoverTarget[] = [];
   private readonly queuedKeys = new Set<string>();
@@ -69,6 +70,7 @@ export class BrowseCovers {
 
   clearMemoryCache(): void {
     this.memoryCache.clear();
+    this.failedAttempts.clear();
     this.queuedKeys.clear();
     this.queue.length = 0;
     setCoverPathMap(new Map());
@@ -77,6 +79,8 @@ export class BrowseCovers {
   /** Evicts a broken/missing cover path from memory cache and SQLite. */
   evict(coverKey: string): void {
     this.memoryCache.delete(coverKey);
+    this.failedAttempts.delete(coverKey);
+    this.queuedKeys.delete(coverKey);
     setCoverPathMap((prev) => {
       if (!prev.has(coverKey)) return prev;
       const next = new Map(prev);
@@ -84,6 +88,19 @@ export class BrowseCovers {
       return next;
     });
     void deleteCached(`cover:${coverKey}`);
+  }
+
+  /** Manually forces a retry for a cover target. */
+  retryCover(target: CoverTarget, el?: HTMLElement): void {
+    this.evict(target.coverKey);
+    if (el && this.lazyObserver) {
+      this.lazyObserver.observe(el);
+    }
+    if (!this.queuedKeys.has(target.coverKey)) {
+      this.queuedKeys.add(target.coverKey);
+      this.queue.unshift(target);
+      this.pumpCoverHydration();
+    }
   }
 
   get coversEnabled(): boolean {
@@ -322,18 +339,20 @@ export class BrowseCovers {
 
               if (coverKey) {
                 const resolved = this.memoryCache.get(coverKey);
-                if (resolved !== undefined) {
+                if (resolved) {
                   this.lazyObserver?.unobserve(el);
-                  if (resolved) {
-                    setCoverPathMap((prev) => {
-                      if (prev.get(coverKey) === resolved) return prev;
-                      const next = new Map(prev);
-                      next.set(coverKey, resolved);
-                      return next;
-                    });
-                  }
+                  setCoverPathMap((prev) => {
+                    if (prev.get(coverKey) === resolved) return prev;
+                    const next = new Map(prev);
+                    next.set(coverKey, resolved);
+                    return next;
+                  });
                 } else if (chapterPermalink) {
-                  if (!this.queuedKeys.has(coverKey)) {
+                  const fail = this.failedAttempts.get(coverKey);
+                  const cooldown = fail ? Math.min(30000, 3000 * fail.count) : 0;
+                  const readyToRetry = !fail || Date.now() - fail.lastTried > cooldown;
+
+                  if (readyToRetry && !this.queuedKeys.has(coverKey)) {
                     this.queuedKeys.add(coverKey);
                     this.queue.unshift({
                       coverKey,
@@ -341,8 +360,8 @@ export class BrowseCovers {
                       seriesPermalink: seriesPermalink || null,
                       seriesType: seriesType || null,
                     });
+                    if (!this.isScrolling) this.pumpCoverHydration();
                   }
-                  if (!this.isScrolling) this.pumpCoverHydration();
                 }
               }
             }
@@ -379,19 +398,29 @@ export class BrowseCovers {
           }
 
           const coverPath = await task;
-          this.memoryCache.set(target.coverKey, coverPath);
-
           if (coverPath) {
+            this.memoryCache.set(target.coverKey, coverPath);
+            this.failedAttempts.delete(target.coverKey);
             setCoverPathMap((prev) => {
               if (prev.get(target.coverKey) === coverPath) return prev;
               const next = new Map(prev);
               next.set(target.coverKey, coverPath);
               return next;
             });
+          } else {
+            this.memoryCache.delete(target.coverKey);
+            const prevFail = this.failedAttempts.get(target.coverKey);
+            const count = (prevFail?.count ?? 0) + 1;
+            this.failedAttempts.set(target.coverKey, { count, lastTried: Date.now() });
           }
         } catch (err) {
           console.warn(`[ds-covers] worker error: ${target.coverKey}`, err);
+          this.memoryCache.delete(target.coverKey);
+          const prevFail = this.failedAttempts.get(target.coverKey);
+          const count = (prevFail?.count ?? 0) + 1;
+          this.failedAttempts.set(target.coverKey, { count, lastTried: Date.now() });
         } finally {
+          this.queuedKeys.delete(target.coverKey);
           this.inflight.delete(target.coverKey);
           this.activeWorkers--;
           setTimeout(() => {

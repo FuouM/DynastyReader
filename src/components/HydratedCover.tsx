@@ -11,7 +11,7 @@
  * - `size` maps to the 42×58 feed or 36×50 cache dimensions.
  */
 
-import { createEffect, createSignal, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { browseCovers, coversEnabledSignal } from "../browse/browse-covers";
 import { BookIcon } from "./Icon";
@@ -49,13 +49,66 @@ const SIZES = {
 
 export function HydratedCover(props: HydratedCoverProps) {
   const [error, setError] = createSignal(false);
+  let wrapEl: HTMLDivElement | undefined;
+  let retryTimer: number | null = null;
+  let retryAttempts = 0;
+
+  onCleanup(() => {
+    if (retryTimer !== null) window.clearTimeout(retryTimer);
+  });
 
   const resolvedPath = () => props.path || (props.coverKey ? browseCovers.getCover(props.coverKey) : undefined);
   const isLoaded = () => Boolean(resolvedPath()) && !error() && coversEnabledSignal();
 
   createEffect(() => {
-    if (resolvedPath()) setError(false);
+    if (resolvedPath()) {
+      setError(false);
+      retryAttempts = 0;
+    }
   });
+
+  // Keep unhydrated element observed whenever covers are enabled
+  createEffect(() => {
+    if (wrapEl && !resolvedPath() && coversEnabledSignal()) {
+      browseCovers.observe(wrapEl);
+    }
+  });
+
+  const triggerRetry = () => {
+    if (props.coverKey && props.chapterPermalink) {
+      browseCovers.retryCover({
+        coverKey: props.coverKey,
+        chapterPermalink: props.chapterPermalink,
+        seriesPermalink: props.seriesPermalink || null,
+        seriesType: props.seriesType || null,
+      }, wrapEl);
+    }
+  };
+
+  const handleImageError = () => {
+    if (props.coverKey) {
+      browseCovers.evict(props.coverKey);
+    }
+    // Auto-retry up to 2 times with a slight delay before giving up to placeholder
+    if (retryAttempts < 2) {
+      retryAttempts++;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        setError(false);
+        triggerRetry();
+      }, retryAttempts * 1200);
+    } else {
+      setError(true);
+    }
+  };
+
+  const handleClick = (ev: MouseEvent) => {
+    if (!isLoaded()) {
+      triggerRetry();
+    }
+    props.onClick?.(ev);
+  };
 
   const size = () => SIZES[props.size ?? "feed"];
   const isCache = () => props.size === "cache";
@@ -63,6 +116,7 @@ export function HydratedCover(props: HydratedCoverProps) {
   return (
     <div
       ref={(el) => {
+        wrapEl = el;
         if (!resolvedPath() && el) browseCovers.observe(el);
       }}
       class="ds-feed-cover-wrap"
@@ -72,7 +126,7 @@ export function HydratedCover(props: HydratedCoverProps) {
       data-series-permalink={props.seriesPermalink}
       data-series-type={props.seriesType}
       title={props.title}
-      onClick={props.onClick}
+      onClick={handleClick}
     >
       <Show
         when={isLoaded()}
@@ -90,10 +144,7 @@ export function HydratedCover(props: HydratedCoverProps) {
           height={isCache() ? 50 : 58}
           decoding="async"
           src={convertFileSrc(resolvedPath()!)}
-          onError={() => {
-            setError(true);
-            if (props.coverKey) browseCovers.evict(props.coverKey);
-          }}
+          onError={handleImageError}
         />
       </Show>
     </div>

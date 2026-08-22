@@ -1,4 +1,4 @@
-import { createEffect, createSignal, on, Show } from "solid-js";
+import { createEffect, createSignal, on, onCleanup, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { ImageIcon, Icon, type BootstrapIconName } from "./Icon";
 
@@ -9,16 +9,27 @@ export interface CoverProps {
   placeholderClass?: string;
   glyphClass?: string;
   iconName?: BootstrapIconName;
+  onClick?: (ev: MouseEvent) => void;
 }
 
-/** A cover <img> that falls back to a placeholder on load error. */
+/** A cover <img> that falls back to a placeholder on load error, with automatic and manual retry. */
 export function Cover(props: CoverProps) {
   const [error, setError] = createSignal(false);
+  const [retryNonce, setRetryNonce] = createSignal(0);
+  let retryTimer: number | null = null;
+  let retryAttempts = 0;
+
+  onCleanup(() => {
+    if (retryTimer !== null) window.clearTimeout(retryTimer);
+  });
 
   createEffect(
     on(
-      () => props.path,
-      () => setError(false),
+      () => [props.path, retryNonce()] as const,
+      () => {
+        setError(false);
+        retryAttempts = 0;
+      },
       { defer: true },
     ),
   );
@@ -32,6 +43,29 @@ export function Cover(props: CoverProps) {
   const showImage = () =>
     isValidLocalPath() && props.path !== undefined && props.path !== null && !error();
 
+  const handleImageError = () => {
+    if (retryAttempts < 2) {
+      retryAttempts++;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        setError(false);
+        setRetryNonce((n) => n + 1);
+      }, retryAttempts * 1200);
+    } else {
+      setError(true);
+    }
+  };
+
+  const handlePlaceholderClick = (ev: MouseEvent) => {
+    if (props.path) {
+      retryAttempts = 0;
+      setError(false);
+      setRetryNonce((n) => n + 1);
+    }
+    props.onClick?.(ev);
+  };
+
   return (
     <Show
       when={showImage()}
@@ -40,6 +74,7 @@ export function Cover(props: CoverProps) {
           placeholderClass={props.placeholderClass}
           glyphClass={props.glyphClass}
           iconName={props.iconName}
+          onClick={handlePlaceholderClick}
         />
       }
     >
@@ -48,7 +83,8 @@ export function Cover(props: CoverProps) {
         title={props.alt}
         alt={props.alt}
         src={convertFileSrc(props.path!)}
-        onError={() => setError(true)}
+        onError={handleImageError}
+        onClick={props.onClick}
       />
     </Show>
   );
@@ -59,9 +95,10 @@ export function CoverPlaceholder(props: {
   placeholderClass?: string;
   glyphClass?: string;
   iconName?: BootstrapIconName;
+  onClick?: (ev: MouseEvent) => void;
 }) {
   return (
-    <div class={props.placeholderClass ?? "ds-cover-placeholder"}>
+    <div class={props.placeholderClass ?? "ds-cover-placeholder"} onClick={props.onClick}>
       {props.iconName ? (
         <Icon name={props.iconName} />
       ) : props.glyphClass ? (
