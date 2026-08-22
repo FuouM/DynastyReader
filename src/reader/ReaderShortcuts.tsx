@@ -2,8 +2,7 @@
  * Reader keyboard shortcuts: Navigation and view control bindings.
  * Unified with the centralized hotkeys store.
  */
-
-import { createEventListener } from "@solid-primitives/event-listener";
+import { onCleanup, onMount } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import { isTextInputTarget, matchesHotkey } from "../hotkeys";
 
@@ -96,7 +95,10 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
       }
     };
 
-  createEventListener(window, "keydown", onKeyDown);
+  onMount(() => {
+    window.addEventListener("keydown", onKeyDown);
+    onCleanup(() => window.removeEventListener("keydown", onKeyDown));
+  });
 
   return null;
 }

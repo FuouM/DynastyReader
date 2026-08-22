@@ -5,8 +5,7 @@
  * registering the window wheel listener.
  */
 
-import { onMount } from "solid-js";
-import { createEventListener } from "@solid-primitives/event-listener";
+import { onCleanup, onMount } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import { spreadIndexOf } from "./reader-spread";
 
@@ -166,7 +165,8 @@ export function ReaderWheel(props: { session: ReaderSession }) {
       }
     };
 
-    createEventListener(window, "wheel", onWheel, { passive: false });
+    window.addEventListener("wheel", onWheel, { passive: false });
+    onCleanup(() => window.removeEventListener("wheel", onWheel));
   });
 
   return null;

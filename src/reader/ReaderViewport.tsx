@@ -7,7 +7,6 @@
  */
 
 import { createEffect, onCleanup, onMount, type JSX } from "solid-js";
-import { createEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { getPrefetchBuffer, isAutoCacheChapterEnabled } from "./settings";
 
@@ -152,9 +151,14 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       isViewportPan = false;
     };
 
-    createEventListener(vpEl, "mousedown", onMouseDown);
-    createEventListener(window, "mousemove", onMouseMove);
-    createEventListener(window, "mouseup", onMouseUp);
+    vpEl.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    s.onDispose(() => {
+      vpEl.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    });
   });
 
   // Preloader: re-establish the IntersectionObserver whenever the slot set

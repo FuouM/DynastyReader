@@ -13,11 +13,9 @@
  * One Escape keydown listener + one backdrop-click listener are registered per
  * open modal and torn down on close. The window is zoom-scaled to match the
  * saved UI scale and its max-height/max-width are compensated so it stays
- * inside the viewport even when zoomed.
  */
 
-import { createEffect, Show, type JSX } from "solid-js";
-import { createEventListener } from "@solid-primitives/event-listener";
+import { createEffect, onCleanup, Show, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
 import { CloseIcon } from "./Icon";
 import { uiScale } from "../stores";
@@ -82,8 +80,8 @@ export function Modal(props: ModalProps) {
         }
       }
     };
-
-    createEventListener(window, "keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    onCleanup(() => window.removeEventListener("keydown", onKeyDown));
   });
 
   createEffect(() => {

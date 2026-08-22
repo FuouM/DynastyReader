@@ -7,33 +7,26 @@
  * Stable category ordering for browse tag pills: Author, Scanlator, Pairing,
  * Doujin, Series, Anthology, Issue, then everything else (General) last.
  */
-const TAG_CATEGORY_ORDER = [
-  "author",
-  "scanlator",
-  "pairing",
-  "doujin",
-  "series",
-  "anthology",
-  "issue",
-  "general",
-];
-
-function tagCategoryRank(type: string): number {
-  const t = (type ?? "").toLowerCase();
-  const idx = TAG_CATEGORY_ORDER.indexOf(t);
-  return idx === -1 ? TAG_CATEGORY_ORDER.length : idx;
-}
+const TAG_CATEGORY_RANK: Record<string, number> = Object.fromEntries(
+  [
+    "author",
+    "scanlator",
+    "pairing",
+    "doujin",
+    "series",
+    "anthology",
+    "issue",
+    "general",
+  ].map((c, i) => [c, i]),
+);
 
 /** Sorts tags by browse category order (author first), stable within a category. */
 export function sortTagsByCategory<T extends { type: string }>(tags: T[]): T[] {
-  return tags
-    .map((t, i) => ({ t, i }))
-    .sort((a, b) => {
-      const rankDiff = tagCategoryRank(a.t.type) - tagCategoryRank(b.t.type);
-      if (rankDiff !== 0) return rankDiff;
-      return a.i - b.i;
-    })
-    .map((x) => x.t);
+  return [...tags].sort((a, b) => {
+    const rankA = TAG_CATEGORY_RANK[(a.type ?? "").toLowerCase()] ?? 8;
+    const rankB = TAG_CATEGORY_RANK[(b.type ?? "").toLowerCase()] ?? 8;
+    return rankA - rankB;
+  });
 }
 
 /** Status names rendered as green status pills regardless of tag type. */

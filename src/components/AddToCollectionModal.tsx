@@ -5,8 +5,7 @@
  * Port of `add-to-collection-modal.ts`.
  */
 
-import { createEffect, createSignal, For, Show } from "solid-js";
-import { createEventListener } from "@solid-primitives/event-listener";
+import { createEffect, createSignal, onCleanup, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import {
   FolderIcon,
@@ -72,8 +71,12 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
       props.onClose();
     };
 
-    createEventListener(window, "keydown", onKeyDown);
-    createEventListener(window, "scroll", onScroll, { capture: true, once: true, passive: true });
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", onScroll, { capture: true, once: true, passive: true });
+    onCleanup(() => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", onScroll, true);
+    });
   });
 
   createEffect(() => {
