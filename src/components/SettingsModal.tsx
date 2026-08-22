@@ -57,7 +57,7 @@ import {
   isUpdating,
   updateStatusText,
 } from "./UpdateDialog";
-import { HotkeysModal } from "./HotkeysModal";
+import { HotkeysSection } from "./HotkeysModal";
 import * as ipc from "../ipc";
 import { formatBytes } from "../stores";
 
@@ -91,7 +91,7 @@ export function SettingsModal(props: SettingsModalProps) {
   const [navPosition, setNavPosition] = createSignal(getReaderNavPosition());
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
-  const [hotkeysOpen, setHotkeysOpen] = createSignal(false);
+  const [currentPage, setCurrentPage] = createSignal<"main" | "hotkeys">("main");
   const [activeSection, setActiveSection] = createSignal<string>("display");
 
   let contentRef: HTMLDivElement | undefined;
@@ -104,6 +104,7 @@ export function SettingsModal(props: SettingsModalProps) {
     if (!props.open) {
       setUpToDateVersion(null);
       setUpdateError(null);
+      setCurrentPage("main");
       return;
     }
     setScale(uiScale());
@@ -113,9 +114,13 @@ export function SettingsModal(props: SettingsModalProps) {
     setNavPosition(getReaderNavPosition());
     setBlMode(getBlacklistMode());
     setActiveSection("display");
+    setCurrentPage("main");
   });
 
   const scrollToSection = (id: string): void => {
+    if (currentPage() !== "main") {
+      setCurrentPage("main");
+    }
     setActiveSection(id);
     if (!contentRef) return;
     const target = contentRef.querySelector(`#ds-settings-sec-${id}`) as HTMLElement | null;
@@ -196,40 +201,63 @@ export function SettingsModal(props: SettingsModalProps) {
     <Modal
       open={props.open}
       backdropId="ds-settings-modal-backdrop"
-      title={<><SettingsIcon /> Application Settings</>}
+      title={
+        currentPage() === "hotkeys" ? (
+          <>
+            <Icon name="keyboard" /> Keyboard Shortcuts
+          </>
+        ) : (
+          <>
+            <SettingsIcon /> Application Settings
+          </>
+        )
+      }
       width={640}
       onClose={props.onClose}
       footer={
-        <div style="display:flex;justify-content:flex-end;gap:8px;width:100%;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;">
+          <Show when={currentPage() === "hotkeys"} fallback={<div />}>
+            <button
+              type="button"
+              class="win-button ds-btn-sm"
+              style="display:inline-flex;align-items:center;gap:4px;"
+              onClick={() => setCurrentPage("main")}
+            >
+              <Icon name="arrow-left" /> Back to Settings
+            </button>
+          </Show>
           <button type="button" class="win-button primary ds-modal-done" style="min-width:70px;" onClick={props.onClose}>
             Done
           </button>
         </div>
       }
     >
-      <div class="ds-settings-layout">
-        {/* Left Quick-Jump Navigation Sidebar */}
-        <div class="ds-settings-sidebar">
-          <For each={SETTINGS_SECTIONS}>
-            {(sec) => (
-              <button
-                type="button"
-                class="ds-settings-nav-item"
-                classList={{ active: activeSection() === sec.id }}
-                title={`Jump to ${sec.label}`}
-                onClick={() => scrollToSection(sec.id)}
-              >
-                <Icon name={sec.icon} />
-                <span>{sec.label}</span>
-              </button>
-            )}
-          </For>
-        </div>
+      <Show
+        when={currentPage() === "hotkeys"}
+        fallback={
+          <div class="ds-settings-layout">
+            {/* Left Quick-Jump Navigation Sidebar */}
+            <div class="ds-settings-sidebar">
+              <For each={SETTINGS_SECTIONS}>
+                {(sec) => (
+                  <button
+                    type="button"
+                    class="ds-settings-nav-item"
+                    classList={{ active: activeSection() === sec.id }}
+                    title={`Jump to ${sec.label}`}
+                    onClick={() => scrollToSection(sec.id)}
+                  >
+                    <Icon name={sec.icon} />
+                    <span>{sec.label}</span>
+                  </button>
+                )}
+              </For>
+            </div>
 
-        {/* Right Scrollable Settings Content Panel */}
-        <div class="ds-settings-content" ref={contentRef} onScroll={handleScroll}>
-          <div class="group-box" id="ds-settings-sec-display">
-            <div class="group-box-title"><Icon name="aspect-ratio" /> Display &amp; Scaling</div>
+            {/* Right Scrollable Settings Content Panel */}
+            <div class="ds-settings-content" ref={contentRef} onScroll={handleScroll}>
+              <div class="group-box" id="ds-settings-sec-display">
+                <div class="group-box-title"><Icon name="aspect-ratio" /> Display &amp; Scaling</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <label for="ds-settings-scale-select" style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">UI Scale Factor:</label>
@@ -430,16 +458,19 @@ export function SettingsModal(props: SettingsModalProps) {
           <div class="group-box-title"><Icon name="keyboard" /> Keyboard Shortcuts</div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0;">
             <div>
-              <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Custom Hotkeys &amp; Keybindings:</div>
+              <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">Custom Hotkeys &amp; Keybindings</div>
+              <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+                Configure custom hotkeys for reading controls, page navigation, and app actions.
+              </div>
             </div>
             <button
               type="button"
               class="win-button"
               id="ds-settings-open-hotkeys"
-              style="font-size:11px;padding:2px 10px;flex-shrink:0;"
-              onClick={() => setHotkeysOpen(true)}
+              style="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;"
+              onClick={() => setCurrentPage("hotkeys")}
             >
-              <Icon name="keyboard" /> Hotkeys Menu...
+              <Icon name="keyboard" /> Configure Shortcuts...
             </button>
           </div>
         </div>
@@ -604,10 +635,30 @@ export function SettingsModal(props: SettingsModalProps) {
               </div>
             </Show>
           </div>
-        </div>
+          </div>
         </div>
       </div>
-      <HotkeysModal open={hotkeysOpen()} onClose={() => setHotkeysOpen(false)} />
-    </Modal>
+    }
+  >
+    <div class="ds-settings-subpage">
+      <div class="ds-settings-subpage-header">
+        <button
+          type="button"
+          class="win-button ds-btn-sm"
+          style="display:inline-flex;align-items:center;gap:5px;font-weight:600;"
+          onClick={() => setCurrentPage("main")}
+        >
+          <Icon name="arrow-left" /> Back to Settings
+        </button>
+        <span style="font-size:11px;color:var(--sys-text-muted,#666);">
+          All changes are saved automatically.
+        </span>
+      </div>
+      <div class="ds-settings-subpage-content">
+        <HotkeysSection active={props.open && currentPage() === "hotkeys"} />
+      </div>
+    </div>
+  </Show>
+</Modal>
   );
 }

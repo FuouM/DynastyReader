@@ -680,12 +680,41 @@ body.ds-dark .tag-pill:hover {
 
 /* Settings Modal Quick-Jump Sidebar Layout */
 .ds-modal-body:has(.ds-settings-layout),
+.ds-modal-body:has(.ds-settings-subpage),
 #ds-settings-modal-backdrop .ds-modal-body {
   overflow: hidden;
   padding: 0;
   display: flex;
   flex-direction: column;
 }
+
+.ds-settings-subpage {
+  display: flex;
+  flex-direction: column;
+  height: 440px;
+  max-height: calc(100vh - 180px);
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 4px 2px;
+  flex: 1 1 auto;
+}
+.ds-settings-subpage-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--sys-border-light, #eaeaea);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.ds-settings-subpage-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
 
 .ds-settings-layout {
   display: flex;
@@ -776,7 +805,8 @@ body.ds-dark .tag-pill:hover {
 }
 
 @media (max-width: 600px) {
-  .ds-settings-layout {
+  .ds-settings-layout,
+  .ds-settings-subpage {
     flex-direction: column;
     height: 100%;
     max-height: calc(100vh - 140px);
@@ -813,6 +843,15 @@ body.ds-dark .tag-pill:hover {
     flex: 1 1 auto;
     text-align: center;
     justify-content: center;
+  }
+  .ds-hotkeys-row {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 4px;
+  }
+  .ds-hotkeys-keys {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 
