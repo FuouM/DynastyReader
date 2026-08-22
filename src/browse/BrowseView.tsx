@@ -341,13 +341,23 @@ export function BrowseView() {
           </For>
         </div>
         <div class="ds-subtabs-right">
-          <div id="ds-browse-top-pager" style="display:flex;align-items:center;gap:8px;">
+          <button
+            type="button"
+            class="win-button ds-btn-sm"
+            id="ds-browse-check-updates-btn"
+            title="Force check for updates online"
+            disabled={checkBtn() === "checking"}
+            onClick={() => void checkUpdates()}
+          >
+            {checkBtnContent()}
+          </button>
+          <div id="ds-browse-top-pager" style="display:flex;align-items:center;gap:8px;margin-left:auto;">
             <Show when={topCfg() && topCfg()!.totalPages > 1}>
               <Pager
                 totalPages={topCfg()!.totalPages}
                 currentPage={topCfg()!.currentPage}
                 onPage={topCfg()!.onPage}
-                cssText="align-items:center;margin:0;"
+                cssText="align-items:center;justify-content:flex-end;margin:0;"
               />
               <button
                 type="button"
@@ -359,16 +369,6 @@ export function BrowseView() {
               </button>
             </Show>
           </div>
-          <button
-            type="button"
-            class="win-button ds-btn-sm"
-            id="ds-browse-check-updates-btn"
-            title="Force check for updates online"
-            disabled={checkBtn() === "checking"}
-            onClick={() => void checkUpdates()}
-          >
-            {checkBtnContent()}
-          </button>
         </div>
       </div>
 

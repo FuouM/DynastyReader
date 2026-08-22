@@ -197,14 +197,19 @@
 #ds-root[data-mobile] .ds-subtabs-left::-webkit-scrollbar {
   display: none;
 }
-
 #ds-root[data-mobile] .ds-subtab {
-  flex-shrink: 0;
+  flex: 1 1 0;
+  min-width: 0;
   white-space: nowrap;
   height: 26px;
   min-height: 26px;
   font-size: 11px;
-  padding: 0 10px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 #ds-root[data-mobile] .ds-subtabs-right {
@@ -220,12 +225,6 @@
   display: none !important;
 }
 
-#ds-root[data-mobile] #ds-browse-top-pager {
-  flex: 1 1 auto;
-  min-width: 0;
-  gap: 4px !important;
-}
-
 #ds-root[data-mobile] #ds-browse-check-updates-btn {
   padding: 0 8px;
   height: 24px;
@@ -234,10 +233,18 @@
   flex-shrink: 0;
 }
 
+#ds-root[data-mobile] #ds-browse-top-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end !important;
+  margin-left: auto;
+  gap: 4px !important;
+}
+
 #ds-root[data-mobile] .ds-pager-widget {
   margin: 0 !important;
   gap: 2px !important;
-  justify-content: flex-start !important;
+  justify-content: flex-end !important;
 }
 
 /* Search & Go inputs on mobile */
