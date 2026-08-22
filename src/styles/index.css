@@ -31,7 +31,7 @@ body {
 #ds-topbar-main {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   width: 100%;
   box-sizing: border-box;
@@ -42,9 +42,12 @@ body {
   align-items: center;
   gap: 4px;
   min-width: 0;
-  flex-shrink: 1;
+  flex-shrink: 0;
 }
 #ds-view-switch {
+  flex-shrink: 0;
+}
+#ds-nav-history {
   flex-shrink: 0;
 }
 #ds-session-tab-wrap {
@@ -158,8 +161,11 @@ body {
   background: transparent !important;
 }
 .ds-nav-history-btn {
-  padding: 0 7px;
+  padding: 0 8px;
   font-size: 12px;
+  min-width: 24px;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 @media (max-width: 480px) {
   .ds-segmented-btn {
@@ -174,6 +180,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex-shrink: 1;
 }
 #ds-title:empty {
   display: none;
@@ -181,9 +188,10 @@ body {
 #ds-actions {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 #ds-actions:empty {
   display: none !important;
@@ -199,7 +207,12 @@ body {
 #ds-actions:not(:empty) + #ds-topbar-tools {
   margin-left: 0;
 }
-
+#ds-topbar.ds-narrow #ds-view-switch .ds-segmented-btn {
+  padding: 0 6px;
+}
+#ds-topbar.ds-narrow #ds-view-switch .ds-segmented-btn span {
+  display: none;
+}
 #ds-topbar.ds-narrow #ds-actions {
   display: inline-flex;
   align-items: center;

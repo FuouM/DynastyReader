@@ -69,7 +69,7 @@ export function Topbar() {
       for (const entry of entries) {
         const width = entry.contentRect.width;
         setIsNarrow(width < 680);
-        setIsCompact(width < 780);
+        setIsCompact(width < 860);
       }
     });
     ro.observe(topbarEl);

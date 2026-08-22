@@ -168,8 +168,28 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   font-size: 12px;
 }
 
-/* Hide desktop segmented view switch and refresh button on mobile */
-#ds-root[data-mobile] #ds-view-switch,
+/* Compact icon-only segmented view switch on mobile */
+#ds-root[data-mobile] #ds-view-switch {
+  display: inline-flex;
+  align-items: stretch;
+  height: 26px;
+}
+#ds-root[data-mobile] #ds-view-switch .ds-segmented-btn {
+  width: 26px;
+  height: 24px;
+  min-height: 24px;
+  min-width: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+#ds-root[data-mobile] #ds-view-switch .ds-segmented-btn span {
+  display: none !important;
+}
+
+/* Hide desktop refresh button on mobile */
 #ds-root[data-mobile] #ds-page-refresh-btn {
   display: none !important;
 }
