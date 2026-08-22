@@ -223,8 +223,17 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                 {(col) => (
                   <div
                     class={`ds-item${col.active ? " active" : ""}`}
+                    role="checkbox"
+                    tabIndex={0}
+                    aria-checked={col.active}
                     style="display:flex;align-items:center;justify-content:space-between;padding:3px 6px;border-radius:2px;cursor:pointer;user-select:none;"
                     onClick={() => void toggle(col)}
+                    onKeyDown={(ev) => {
+                      if (ev.key === "Enter" || ev.key === " ") {
+                        ev.preventDefault();
+                        void toggle(col);
+                      }
+                    }}
                   >
                     <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
                       <Icon

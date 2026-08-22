@@ -10,6 +10,7 @@
 import {
   createEffect,
   createSignal,
+  onCleanup,
   Show,
   type Accessor,
 } from "solid-js";
@@ -65,6 +66,12 @@ function LibraryGrid() {
   const [refreshing, setRefreshing] = createSignal(false);
   const [justUpdated, setJustUpdated] = createSignal(false);
   const [creating, setCreating] = createSignal(false);
+  let updateTimer: number | null = null;
+
+  onCleanup(() => {
+    if (updateTimer !== null) window.clearTimeout(updateTimer);
+  });
+
   const paneApis: Record<string, LibraryPaneApi> = {};
   const register = (key: string) => (api: LibraryPaneApi) => {
     paneApis[key] = api;
@@ -77,7 +84,11 @@ function LibraryGrid() {
       for (const api of apis) api.reset();
       await Promise.all(apis.map((api) => api.refetch()));
       setJustUpdated(true);
-      window.setTimeout(() => setJustUpdated(false), 1200);
+      if (updateTimer !== null) window.clearTimeout(updateTimer);
+      updateTimer = window.setTimeout(() => {
+        updateTimer = null;
+        setJustUpdated(false);
+      }, 1200);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       showBanner(`Library refresh failed: ${msg}`);
@@ -95,42 +106,11 @@ function LibraryGrid() {
     const r = route();
     if (r.view !== "library" || r.collectionId !== undefined) return;
     setActions(
-      <>
-        <button
-          type="button"
-          id="ds-library-refresh-btn"
-          class="win-button ds-btn-sm"
-          title="Refresh library from local database"
-          disabled={refreshing() || justUpdated()}
-          onClick={() => void refreshAll()}
-        >
-          {refreshing() ? (
-            <>
-              <RefreshIcon spin={true} /> Refreshing...
-            </>
-          ) : justUpdated() ? (
-            <>
-              <CheckIcon /> Updated
-            </>
-          ) : (
-            <>
-              <RefreshIcon /> Refresh Library
-            </>
-          )}
-        </button>
-        <TopbarAction
-          title="View cache storage statistics and manage cached series/pages"
-          onClick={() => navigate({ view: "cache" })}
-        >
-          <StorageIcon /> Cache Management
-        </TopbarAction>
-        <TopbarAction
-          title="Manage blacklisted series and view hidden works"
-          onClick={() => navigate({ view: "blacklist" })}
-        >
-          <BlacklistIcon /> Series Blacklist
-        </TopbarAction>
-      </>
+      <LibraryActions
+        refreshing={refreshing}
+        justUpdated={justUpdated}
+        onRefresh={() => void refreshAll()}
+      />,
     );
   });
 
@@ -248,10 +228,19 @@ function CreateCollectionModal(props: {
   const [name, setName] = createSignal("");
   const [creating, setCreating] = createSignal(false);
   let inputEl: HTMLInputElement | undefined;
+  let focusTimer: number | null = null;
+
+  onCleanup(() => {
+    if (focusTimer !== null) window.clearTimeout(focusTimer);
+  });
 
   createEffect(() => {
     if (props.open()) {
-      window.setTimeout(() => inputEl?.focus(), 50);
+      if (focusTimer !== null) window.clearTimeout(focusTimer);
+      focusTimer = window.setTimeout(() => {
+        focusTimer = null;
+        inputEl?.focus();
+      }, 50);
     } else {
       setName("");
       setCreating(false);
@@ -339,5 +328,47 @@ function CreateCollectionModal(props: {
         </div>
       }
     />
+  );
+}
+
+function LibraryActions(props: {
+  refreshing: () => boolean;
+  justUpdated: () => boolean;
+  onRefresh: () => void;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        id="ds-library-refresh-btn"
+        class="win-button ds-btn-sm"
+        title="Refresh library from local database"
+        disabled={props.refreshing() || props.justUpdated()}
+        onClick={props.onRefresh}
+      >
+        <Show
+          when={props.refreshing()}
+          fallback={
+            <Show when={props.justUpdated()} fallback={<><RefreshIcon /> Refresh Library</>}>
+              <CheckIcon /> Updated
+            </Show>
+          }
+        >
+          <RefreshIcon spin={true} /> Refreshing...
+        </Show>
+      </button>
+      <TopbarAction
+        title="View cache storage statistics and manage cached series/pages"
+        onClick={() => navigate({ view: "cache" })}
+      >
+        <StorageIcon /> Cache Management
+      </TopbarAction>
+      <TopbarAction
+        title="Manage blacklisted series and view hidden works"
+        onClick={() => navigate({ view: "blacklist" })}
+      >
+        <BlacklistIcon /> Series Blacklist
+      </TopbarAction>
+    </>
   );
 }

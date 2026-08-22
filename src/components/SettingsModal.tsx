@@ -9,7 +9,7 @@
  * - About DynastyReader & Updater
  */
 
-import { createEffect, createSignal, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Modal } from "./Modal";
 import { Icon } from "./Icon";
 import {
@@ -63,17 +63,20 @@ export function SettingsModal(props: SettingsModalProps) {
     }
   };
 
+  onCleanup(() => {
+    if (scrollTimer) window.clearTimeout(scrollTimer);
+  });
+
   const handleScroll = (): void => {
     if (isProgrammaticScroll || !contentRef) return;
-    const containerTop = contentRef.scrollTop;
-    const containerOffset = contentRef.offsetTop;
+    const containerRect = contentRef.getBoundingClientRect();
 
     let currentId: SettingsSectionId = SETTINGS_SECTIONS[0].id;
     for (const sec of SETTINGS_SECTIONS) {
       const el = contentRef.querySelector(`#ds-settings-sec-${sec.id}`) as HTMLElement | null;
       if (el) {
-        const top = el.offsetTop - containerOffset;
-        if (top <= containerTop + 50) {
+        const relativeTop = el.getBoundingClientRect().top - containerRect.top;
+        if (relativeTop <= 60) {
           currentId = sec.id;
         }
       }

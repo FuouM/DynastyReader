@@ -221,64 +221,28 @@ export function SeriesView() {
     };
 
     setActions(
-      <>
-        <button
-          type="button"
-          class="win-button"
-          disabled={busyFollow()}
-          onClick={() => void toggleFollow()}
-        >
-          {followed ? <BookmarkIcon filled={true} /> : <BookmarkIcon />}{" "}
-          <span class="ds-btn-text">{followed ? "Following" : "Follow"}</span>
-        </button>
-        <AddToCollectionButton
-          class=""
-          onOpen={(anchorEl) =>
-            addToCol.open(
-              {
-                permalink: seriesPermalink,
-                title: seriesName,
-                kind: "series",
-                cover: coverPath,
-              },
-              anchorEl,
-            )
-          }
-        >
-          <span class="ds-btn-text">Add to...</span>
-        </AddToCollectionButton>
-        <button
-          type="button"
-          class={`win-button${blacklisted ? " active" : ""}`}
-          title={
-            blacklisted
-              ? "Remove series from blacklist"
-              : "Add series to blacklist (hides releases from browse & search)"
-          }
-          disabled={busyBlacklist()}
-          onClick={() => void toggleBlacklist()}
-        >
-          {blacklisted ? (
-            <BlacklistIcon filled={true} color="var(--ds-warn-text,#d97706)" />
-          ) : (
-            <BlacklistIcon />
-          )}{" "}
-          <span class="ds-btn-text">{blacklisted ? "Blacklisted" : "Blacklist"}</span>
-        </button>
-        <button
-          type="button"
-          class="win-button"
-          title="Re-fetch series data from the server"
-          onClick={() => setForceTick((t) => t + 1)}
-        >
-          <RefreshIcon /> <span class="ds-btn-text">Refresh</span>
-        </button>
-        <ExternalLinkButton
-          class=""
-          title={`Open this ${series.type ? series.type.toLowerCase() : "series"} in your browser`}
-          url={openUrl}
-        />
-      </>,
+      <SeriesActions
+        followed={() => followed}
+        busyFollow={busyFollow}
+        onToggleFollow={() => void toggleFollow()}
+        blacklisted={() => blacklisted}
+        busyBlacklist={busyBlacklist}
+        onToggleBlacklist={() => void toggleBlacklist()}
+        onRefresh={() => setForceTick((t) => t + 1)}
+        onOpenAddToCol={(anchorEl) =>
+          addToCol.open(
+            {
+              permalink: seriesPermalink,
+              title: seriesName,
+              kind: "series",
+              cover: coverPath,
+            },
+            anchorEl,
+          )
+        }
+        openUrl={openUrl}
+        seriesType={series.type}
+      />,
     );
   });
 
@@ -375,6 +339,72 @@ function SeriesBody(props: {
         readHistorySet={props.data.readHistorySet}
         sortOrder={props.sortOrder}
         setSortOrder={props.setSortOrder}
+      />
+    </>
+  );
+}
+
+interface SeriesActionsProps {
+  followed: () => boolean;
+  busyFollow: () => boolean;
+  onToggleFollow: () => void;
+  blacklisted: () => boolean;
+  busyBlacklist: () => boolean;
+  onToggleBlacklist: () => void;
+  onRefresh: () => void;
+  onOpenAddToCol: (anchorEl: HTMLElement) => void;
+  openUrl: string;
+  seriesType?: string;
+}
+
+function SeriesActions(props: SeriesActionsProps) {
+  return (
+    <>
+      <button
+        type="button"
+        class="win-button"
+        disabled={props.busyFollow()}
+        onClick={props.onToggleFollow}
+      >
+        {props.followed() ? <BookmarkIcon filled={true} /> : <BookmarkIcon />}{" "}
+        <span class="ds-btn-text">{props.followed() ? "Following" : "Follow"}</span>
+      </button>
+      <AddToCollectionButton
+        class=""
+        onOpen={props.onOpenAddToCol}
+      >
+        <span class="ds-btn-text">Add to...</span>
+      </AddToCollectionButton>
+      <button
+        type="button"
+        class={`win-button${props.blacklisted() ? " active" : ""}`}
+        title={
+          props.blacklisted()
+            ? "Remove series from blacklist"
+            : "Add series to blacklist (hides releases from browse & search)"
+        }
+        disabled={props.busyBlacklist()}
+        onClick={props.onToggleBlacklist}
+      >
+        {props.blacklisted() ? (
+          <BlacklistIcon filled={true} color="var(--ds-warn-text,#d97706)" />
+        ) : (
+          <BlacklistIcon />
+        )}{" "}
+        <span class="ds-btn-text">{props.blacklisted() ? "Blacklisted" : "Blacklist"}</span>
+      </button>
+      <button
+        type="button"
+        class="win-button"
+        title="Re-fetch series data from the server"
+        onClick={props.onRefresh}
+      >
+        <RefreshIcon /> <span class="ds-btn-text">Refresh</span>
+      </button>
+      <ExternalLinkButton
+        class=""
+        title={`Open this ${props.seriesType ? props.seriesType.toLowerCase() : "series"} in your browser`}
+        url={props.openUrl}
       />
     </>
   );

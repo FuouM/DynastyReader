@@ -8,7 +8,7 @@
  * in the input.
  */
 
-import { createEffect, createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, For, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { decodeEntities } from "../stores";
 import { InputField } from "./InputField";
@@ -41,7 +41,11 @@ export function Typeahead(props: TypeaheadProps) {
   const debounceMs = props.debounceMs ?? 200;
 
   let dropdownRef: HTMLDivElement | undefined;
+  let blurTimer: number | null = null;
 
+  onCleanup(() => {
+    if (blurTimer !== null) window.clearTimeout(blurTimer);
+  });
   // Mirror externally-controlled value into the internal state.
   createEffect(() => {
     if (props.value !== undefined && props.value !== inputValue()) {
@@ -150,6 +154,9 @@ export function Typeahead(props: TypeaheadProps) {
       <InputField
         value={inputValue()}
         placeholder={props.placeholder}
+        autocomplete="off"
+        inputmode="search"
+        enterkeyhint="search"
         onInput={(v) => {
           setInputValue(v);
           props.onInputValue?.(v);
@@ -176,7 +183,9 @@ export function Typeahead(props: TypeaheadProps) {
           }
         }}
         onBlur={() => {
-          window.setTimeout(() => {
+          if (blurTimer !== null) window.clearTimeout(blurTimer);
+          blurTimer = window.setTimeout(() => {
+            blurTimer = null;
             setIsFocused(false);
             setOpen(false);
             setSelectedIndex(-1);

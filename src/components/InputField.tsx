@@ -14,6 +14,9 @@ export interface InputFieldProps {
   placeholder?: string;
   class?: string;
   title?: string;
+  autocomplete?: string;
+  inputmode?: "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
+  enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
   onInput?: (value: string) => void;
   onEnter?: () => void;
   onEscape?: () => void;
@@ -25,7 +28,6 @@ export interface InputFieldProps {
   dropdown?: JSX.Element;
   children?: JSX.Element;
 }
-
 export function InputField(props: InputFieldProps) {
   const [value, setValue] = createSignal(props.value ?? "");
 
@@ -40,6 +42,9 @@ export function InputField(props: InputFieldProps) {
         class={`input-field has-clear${props.class ? ` ${props.class}` : ""}`}
         placeholder={props.placeholder}
         title={props.title}
+        autocomplete={props.autocomplete}
+        inputmode={props.inputmode}
+        enterkeyhint={props.enterkeyhint}
         value={value()}
         onFocus={props.onFocus}
         onBlur={props.onBlur}

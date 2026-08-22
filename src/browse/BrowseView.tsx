@@ -8,7 +8,7 @@
  *  - transient search directives consumed at this dispatch boundary
  */
 
-import { createEffect, createSignal, For, Show, untrack, type JSX } from "solid-js";
+import { createEffect, createSignal, onCleanup, For, Show, untrack, type JSX } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { navigate, route, setRoute, showBanner } from "../stores";
 import { parseDynastyUrl, suggest } from "../api";
@@ -54,8 +54,6 @@ export interface BrowseTabDef {
 
 export const BROWSE_TABS: readonly BrowseTabDef[] = [
   { id: "releases", label: "Recent Releases", shortLabel: "Releases" },
-  { id: "added", label: "Recently Added", shortLabel: "Added" },
-  { id: "downloaded", label: "Downloaded", shortLabel: "Downloaded" },
   { id: "series-dir", label: "Series Directory", shortLabel: "Series" },
   { id: "tags-dir", label: "Tags Directory", shortLabel: "Tags" },
   { id: "search", label: "Tag & Search", shortLabel: "Search" },
@@ -69,6 +67,13 @@ export function BrowseView() {
   const [urlValue, setUrlValue] = createSignal("");
   const [checkBtn, setCheckBtn] = createSignal<"idle" | "checking" | "updated" | "error">("idle");
   const [forceTick, setForceTick] = createSignal(0);
+  let checkTimer: number | null = null;
+  let pollTimer: number | null = null;
+
+  onCleanup(() => {
+    if (checkTimer !== null) window.clearTimeout(checkTimer);
+    if (pollTimer !== null) window.clearTimeout(pollTimer);
+  });
   const revision = useBlacklistRevision();
   const [isCompact, setIsCompact] = createSignal(
     typeof window !== "undefined" ? window.matchMedia("(max-width: 680px)").matches : false,
@@ -173,13 +178,17 @@ export function BrowseView() {
           resolve();
           return;
         }
-        window.setTimeout(tick, 50);
+        pollTimer = window.setTimeout(tick, 50);
       };
       tick();
     });
     const hasError = getPaneError(tabId);
     setCheckBtn(hasError ? "error" : "updated");
-    window.setTimeout(() => setCheckBtn("idle"), 1500);
+    if (checkTimer !== null) window.clearTimeout(checkTimer);
+    checkTimer = window.setTimeout(() => {
+      checkTimer = null;
+      setCheckBtn("idle");
+    }, 1500);
   };
 
   const topCfg = () => getTopPagerFor(activeTab());

@@ -4,7 +4,7 @@
  * identical classes, icons, titles, and behavior.
  */
 
-import { createSignal, Show } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { navigate, setBanner } from "../stores";
 import { addBookmark, removeBookmark } from "../db";
@@ -34,15 +34,20 @@ export interface ReaderActionsController {
 
 export interface ReaderActionsProps {
   ctrl: ReaderActionsController;
-  /** Seeds the bookmark toggle state. */
-  bookmarked: boolean;
+  /** Seeds the bookmark toggle state or reactive accessor. */
+  bookmarked: boolean | (() => boolean);
 }
 
 export function ReaderActions(props: ReaderActionsProps) {
-  const [bookmarked, setBookmarked] = createSignal(props.bookmarked);
+  const initBookmarked = typeof props.bookmarked === "function" ? props.bookmarked() : props.bookmarked;
+  const [bookmarked, setBookmarked] = createSignal(initBookmarked);
   const [pending, setPending] = createSignal(false);
   const [copied, setCopied] = createSignal(false);
 
+  createEffect(() => {
+    const val = typeof props.bookmarked === "function" ? props.bookmarked() : props.bookmarked;
+    setBookmarked(val);
+  });
   const unwrap = <T,>(val: T | (() => T)): T => (typeof val === "function" ? (val as () => T)() : val);
   const getSeriesPermalink = () => unwrap(props.ctrl.seriesPermalink);
   const getSeriesName = () => unwrap(props.ctrl.seriesName);
