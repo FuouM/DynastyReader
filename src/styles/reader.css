@@ -282,12 +282,6 @@
   text-overflow: ellipsis;
   max-width: 100%;
 }
-.ds-reader-progress-label .ds-prog-short {
-  display: none;
-}
-.ds-reader-progress-label .ds-prog-full {
-  display: inline;
-}
 
 @media (max-width: 768px) {
   .ds-reader-progress-label .ds-prog-cached-dot,
@@ -296,14 +290,6 @@
   }
 }
 
-@media (max-width: 580px) {
-  .ds-reader-progress-label .ds-prog-full {
-    display: none;
-  }
-  .ds-reader-progress-label .ds-prog-short {
-    display: inline;
-  }
-}
 .ds-reader-progress-track {
   width: 100%;
   height: 4px;

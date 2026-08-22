@@ -13,7 +13,7 @@ export { _banner as banner };
 
 let bannerTimer: ReturnType<typeof setTimeout> | null = null;
 
-export type ActionsContent = JSX.Element | (() => JSX.Element) | null;
+export type ActionsContent = JSX.Element | null;
 
 const [_actions, _setActions] = createSignal<ActionsContent>(null);
 export const actions = _actions;

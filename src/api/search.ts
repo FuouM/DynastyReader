@@ -150,42 +150,18 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
   }
 
   // ── CASE 2: Keyword Query or Standard Search ────────────────────────────────
-  const queryParts: string[] = [];
-
-  if (query) {
-    queryParts.push(`q=${encodeURIComponent(query)}`);
+  const searchParams = new URLSearchParams();
+  if (query) searchParams.set("q", query);
+  for (const c of params.classes ?? []) {
+    if (c) searchParams.append("classes[]", c);
   }
+  for (const t of withTags) searchParams.append("with[]", t);
+  for (const t of withoutTags) searchParams.append("without[]", t);
+  if (params.sort) searchParams.set("sort", params.sort);
+  if (page > 1) searchParams.set("page", String(page));
 
-  if (params.classes && params.classes.length > 0) {
-    for (const c of params.classes) {
-      if (c) {
-        queryParts.push(`classes%5B%5D=${encodeURIComponent(c)}`);
-      }
-    }
-  }
-
-  if (withTags.length > 0) {
-    for (const t of withTags) {
-      queryParts.push(`with%5B%5D=${encodeURIComponent(t)}`);
-    }
-  }
-
-  if (withoutTags.length > 0) {
-    for (const t of withoutTags) {
-      queryParts.push(`without%5B%5D=${encodeURIComponent(t)}`);
-    }
-  }
-
-  if (params.sort) {
-    queryParts.push(`sort=${encodeURIComponent(params.sort)}`);
-  }
-
-  if (page > 1) {
-    queryParts.push(`page=${page}`);
-  }
-
-  const qs = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
-  const url = `${SITE_ROOT}/search${qs}`;
+  const qs = searchParams.toString();
+  const url = `${SITE_ROOT}/search${qs ? `?${qs}` : ""}`;
   const cacheKey = `${SEARCH_CACHE_PREFIX}${url}`;
 
   // Check SQLite cache (TTL: 1 hour)

@@ -29,11 +29,11 @@ import {
 
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
+  const [isNarrow, setIsNarrow] = createSignal(false);
   const [historyMenu, setHistoryMenu] = createSignal<{
     direction: "back" | "forward";
     anchorEl: HTMLElement;
   } | null>(null);
-
   let holdTimer: number | null = null;
   let didHold = false;
 
@@ -70,6 +70,7 @@ export function Topbar() {
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
+        setIsNarrow(width < 680);
         if (width < 780) {
           topbarEl.classList.add("ds-narrow");
         } else {
@@ -98,8 +99,7 @@ export function Topbar() {
                 title="Browse &amp; Recent"
                 onClick={() => navigate({ view: "browse" })}
               >
-                <Icon name="compass" /> <span class="ds-tab-text-full">Browse &amp; Recent</span>
-                <span class="ds-tab-text-short">Browse</span>
+                <Icon name="compass" /> <span>{isNarrow() ? "Browse" : "Browse & Recent"}</span>
               </button>
               <button
                 type="button"
@@ -109,8 +109,7 @@ export function Topbar() {
                 title="Library"
                 onClick={() => navigate({ view: "library" })}
               >
-                <StorageIcon /> <span class="ds-tab-text-full">Library</span>
-                <span class="ds-tab-text-short">Library</span>
+                <StorageIcon /> <span>Library</span>
               </button>
             </div>
             <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
@@ -200,11 +199,7 @@ export function Topbar() {
           <Show when={banner() !== null}>
             <div id="ds-banner">{banner()}</div>
           </Show>
-          <div id="ds-actions">
-            <Show when={actions()}>
-              {(act) => (typeof act() === "function" ? (act() as () => JSX.Element)() : act())}
-            </Show>
-          </div>
+          <div id="ds-actions">{actions()}</div>
           <div id="ds-topbar-tools">
             <button
               type="button"

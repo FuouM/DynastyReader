@@ -135,8 +135,7 @@ body {
   line-height: normal;
   box-sizing: border-box;
 }
-.ds-segmented-btn .ds-tab-text-full,
-.ds-segmented-btn .ds-tab-text-short {
+.ds-segmented-btn span {
   line-height: normal;
   display: inline-flex;
   align-items: center;
@@ -162,39 +161,7 @@ body {
   padding: 0 7px;
   font-size: 12px;
 }
-.ds-segmented-btn .ds-tab-text-short {
-  display: none;
-}
-.ds-segmented-btn .ds-tab-text-full {
-  display: inline;
-}
-
-.ds-subtab .ds-subtab-short {
-  display: none;
-}
-.ds-subtab .ds-subtab-full {
-  display: inline;
-}
-
-@media (max-width: 680px) {
-  .ds-segmented-btn .ds-tab-text-full {
-    display: none;
-  }
-  .ds-segmented-btn .ds-tab-text-short {
-    display: inline;
-  }
-  .ds-subtab .ds-subtab-full {
-    display: none;
-  }
-  .ds-subtab .ds-subtab-short {
-    display: inline;
-  }
-}
-
 @media (max-width: 480px) {
-  .ds-segmented-btn .ds-tab-text-short {
-    display: none;
-  }
   .ds-segmented-btn {
     padding: 0 6px;
   }
@@ -413,8 +380,7 @@ body {
   justify-content: center;
   line-height: normal;
 }
-.ds-subtab .ds-subtab-full,
-.ds-subtab .ds-subtab-short {
+.ds-subtab span {
   line-height: normal;
   display: inline-flex;
   align-items: center;

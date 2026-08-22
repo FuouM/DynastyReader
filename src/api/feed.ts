@@ -3,6 +3,7 @@ import { getCached, setCached, touchCached } from "../db";
 import { httpGetText } from "./client";
 import { recordCacheHit } from "./traffic";
 import { tryParseJson } from "../utils/json";
+import { FeedSchema } from "./schemas";
 import type { Feed, FeedRevalidationResult, RevalidateOnlineResult } from "../types/api";
 
 export const FEED_TTL_MS = 60 * 60 * 1000;
@@ -27,8 +28,9 @@ export async function checkFeedOnline(
     return { status: 304, isNew: false, etag };
   }
   if (resp.status === 200 && resp.body) {
-    const freshData = tryParseJson<Feed>(resp.body);
-    if (freshData === null) throw new Error("Invalid JSON from feed endpoint");
+    const raw = tryParseJson<unknown>(resp.body);
+    if (raw === null) throw new Error("Invalid JSON from feed endpoint");
+    const freshData = FeedSchema.parse(raw);
     await setCached(key, "feed", resp.body, resp.etag);
 
     // Opportunistically index series and tags from new feed chapters into directory_entries
@@ -69,7 +71,8 @@ export async function fetchFeedWithRevalidation(
   if (cached) {
     let parsed: Feed | null = null;
     try {
-      parsed = JSON.parse(cached.json_payload) as Feed;
+      const raw = JSON.parse(cached.json_payload);
+      parsed = FeedSchema.parse(raw);
     } catch {}
 
     if (parsed) {
@@ -110,8 +113,9 @@ export async function fetchFeedWithRevalidation(
   // No cache present: fetch directly
   const resp = await httpGetText(url);
   if (resp.status !== 200) throw new Error(`HTTP ${resp.status} for ${url}`);
-  const freshData = tryParseJson<Feed>(resp.body);
-  if (freshData === null) throw new Error("Invalid JSON from feed endpoint");
+  const raw = tryParseJson<unknown>(resp.body);
+  if (raw === null) throw new Error("Invalid JSON from feed endpoint");
+  const freshData = FeedSchema.parse(raw);
   await setCached(key, "feed", resp.body, resp.etag);
   return {
     data: freshData,

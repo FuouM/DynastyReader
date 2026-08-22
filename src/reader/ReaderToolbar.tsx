@@ -17,6 +17,18 @@ interface NavRowProps {
 
 export function ReaderMainRow(props: NavRowProps) {
   const s = props.session;
+  const [isNarrow, setIsNarrow] = createSignal(
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 580px)").matches : false,
+  );
+
+  onMount(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 580px)");
+    const onChange = (e: MediaQueryListEvent) => setIsNarrow(e.matches);
+    mq.addEventListener("change", onChange);
+    onCleanup(() => mq.removeEventListener("change", onChange));
+  });
+
   return (
     <div class="ds-reader-nav-row nav-main">
       <button
@@ -52,8 +64,7 @@ export function ReaderMainRow(props: NavRowProps) {
       <div class="ds-reader-progress-wrap">
         <div class="ds-reader-progress-pill">
           <span class="ds-reader-progress-label" title={s.progress().title}>
-            <span class="ds-prog-full">{s.progress().full}</span>
-            <span class="ds-prog-short">{s.progress().short}</span>
+            <span class="ds-prog-text">{isNarrow() ? s.progress().short : s.progress().full}</span>
             <span class="ds-prog-pct">({s.progress().pct}%)</span>
             <Show when={s.progress().cachedNote !== ""}>
               <span class="ds-prog-cached-dot">·</span>

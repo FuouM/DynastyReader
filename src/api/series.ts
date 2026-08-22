@@ -4,7 +4,7 @@ import { httpGetText, httpDownloadFull, fileDelete, fileExists, fileResolve } fr
 import { fetchChapter } from "./chapter";
 import * as ipc from "../ipc";
 import type { Series } from "../types/api";
-
+import { SeriesSchema } from "./schemas";
 /** Extracts a file extension from a URL (falls back to jpg). */
 function coverExtension(url: string): string {
   const m = /\.([a-zA-Z0-9]+)(?:\?.*)?$/.exec(url);
@@ -91,7 +91,11 @@ export async function fetchSeries(
   const key = `series:${permalink}`;
   if (!force) {
     const cached = await getCached(key);
-    if (cached) return JSON.parse(cached.json_payload) as Series;
+    if (cached) {
+      try {
+        return SeriesSchema.parse(JSON.parse(cached.json_payload));
+      } catch {}
+    }
   }
 
   let lastErr: Error | null = null;
@@ -105,11 +109,11 @@ export async function fetchSeries(
     try {
       const { status, body, etag } = await httpGetText(url, { headers });
       if (status === 304 && cached) {
-        return JSON.parse(cached.json_payload) as Series;
+        return SeriesSchema.parse(JSON.parse(cached.json_payload));
       }
       if (status === 200 && body) {
         await setCached(key, "series", body, etag);
-        return JSON.parse(body) as Series;
+        return SeriesSchema.parse(JSON.parse(body));
       }
     } catch (e) {
       lastErr = e instanceof Error ? e : new Error(String(e));
@@ -117,7 +121,9 @@ export async function fetchSeries(
   }
 
   if (cached) {
-    return JSON.parse(cached.json_payload) as Series;
+    try {
+      return SeriesSchema.parse(JSON.parse(cached.json_payload));
+    } catch {}
   }
 
   throw lastErr ?? new Error(`Failed to load series for permalink "${permalink}"`);

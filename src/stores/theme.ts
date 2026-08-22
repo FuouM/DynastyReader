@@ -7,8 +7,8 @@
  * `THEME_CHANGE_EVENT` dispatch so non-Solid listeners keep working.
  * Independent of `src/theme.ts` so the flip can deprecate that module cleanly.
  */
-
 import { createSignal } from "solid-js";
+import { makePersisted } from "@solid-primitives/storage";
 
 export type AppTheme = "light" | "dark";
 
@@ -20,14 +20,9 @@ function isAppTheme(value: string | null): value is AppTheme {
   return value === "light" || value === "dark";
 }
 
-function getAppTheme(): AppTheme {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  return isAppTheme(saved) ? saved : "light";
-}
-
-function applyThemeToDom(theme: AppTheme): void {
+function applyThemeToDom(t: AppTheme): void {
   const root = document.documentElement;
-  if (theme === "dark") {
+  if (t === "dark") {
     root.setAttribute("data-theme", "dark");
     document.body?.classList.add("ds-dark");
     document.getElementById("ds-root")?.classList.add("ds-dark");
@@ -38,21 +33,27 @@ function applyThemeToDom(theme: AppTheme): void {
   }
 }
 
-const [_theme, _setTheme] = createSignal<AppTheme>(getAppTheme());
-export const theme = _theme;
+const [rawTheme, setRawTheme] = makePersisted(createSignal<AppTheme>("light"), {
+  name: STORAGE_KEY,
+  storage: typeof localStorage !== "undefined" ? localStorage : undefined,
+  deserialize: (val) => (isAppTheme(val) ? val : "light"),
+});
+
+export const theme = rawTheme;
 
 export function setTheme(t: AppTheme): void {
-  _setTheme(t);
-  localStorage.setItem(STORAGE_KEY, t);
+  setRawTheme(t);
   applyThemeToDom(t);
   window.dispatchEvent(new CustomEvent<{ theme: AppTheme }>(THEME_CHANGE_EVENT, { detail: { theme: t } }));
 }
-
+export function getAppTheme(): AppTheme {
+  return rawTheme();
+}
 export function toggleTheme(): void {
   setTheme(theme() === "light" ? "dark" : "light");
 }
 
-export { getAppTheme, toggleTheme as toggleAppTheme };
+export { toggleTheme as toggleAppTheme };
 
 export function onThemeChange(fn: (t: AppTheme) => void): () => void {
   const handler = (ev: Event) => {

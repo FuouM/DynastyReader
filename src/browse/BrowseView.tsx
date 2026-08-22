@@ -8,7 +8,7 @@
  *  - transient search directives consumed at this dispatch boundary
  */
 
-import { createEffect, createSignal, For, Show, untrack, type JSX } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, For, Show, untrack, type JSX } from "solid-js";
 import { navigate, route, setRoute, showBanner } from "../stores";
 import { parseDynastyUrl, suggest } from "../api";
 import { Pager } from "../components/Pager";
@@ -69,6 +69,17 @@ export function BrowseView() {
   const [checkBtn, setCheckBtn] = createSignal<"idle" | "checking" | "updated" | "error">("idle");
   const [forceTick, setForceTick] = createSignal(0);
   const revision = useBlacklistRevision();
+  const [isCompact, setIsCompact] = createSignal(
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 680px)").matches : false,
+  );
+
+  onMount(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 680px)");
+    const onChange = (e: MediaQueryListEvent) => setIsCompact(e.matches);
+    mq.addEventListener("change", onChange);
+    onCleanup(() => mq.removeEventListener("change", onChange));
+  });
 
   const [pendingSearch, setPendingSearch] = createSignal<{
     searchQuery?: string;
@@ -315,8 +326,7 @@ export function BrowseView() {
                 title={tab.label}
                 onClick={() => switchTab(tab.id)}
               >
-                <span class="ds-subtab-full">{tab.label}</span>
-                <span class="ds-subtab-short">{tab.shortLabel ?? tab.label}</span>
+                <span>{isCompact() ? (tab.shortLabel ?? tab.label) : tab.label}</span>
               </button>
             )}
           </For>

@@ -3,23 +3,30 @@
  * library (`plugins/lib/format.ts`) and is not re-implemented here.
  */
 
-/** Formats a unix-ms timestamp as a short date. */
+const shortDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const fullDateTimeFormatter = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+/** Formats a unix-ms timestamp as a short date (YYYY-MM-DD). */
 export function formatDate(ms: number): string {
   if (!ms) return "";
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")}`;
+  return shortDateFormatter.format(new Date(ms));
 }
 
-/** Formats a unix-ms timestamp as a full date and time. */
+/** Formats a unix-ms timestamp as a full date and time (YYYY-MM-DD HH:MM:SS). */
 export function formatDateTime(ms?: number | null): string {
   if (!ms) return "Never";
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(
-    2,
-    "0",
-  )}:${String(d.getSeconds()).padStart(2, "0")}`;
+  return fullDateTimeFormatter.format(new Date(ms)).replace(",", "");
 }
