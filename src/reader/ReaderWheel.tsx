@@ -5,7 +5,8 @@
  * registering the window wheel listener.
  */
 
-import { onCleanup, onMount } from "solid-js";
+import { onMount } from "solid-js";
+import { createEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { spreadIndexOf } from "./reader-spread";
 
@@ -25,12 +26,12 @@ export function ReaderWheel(props: { session: ReaderSession }) {
         if (c.viewportEl) c.viewportEl.appendChild(indicator);
       }
       indicator.className = `ds-snap-indicator ${type === "next" ? "bottom" : "top"} visible`;
-      indicator.innerHTML =
-        type === "next"
-          ? '<i class="bi bi-chevron-double-down"></i> Scroll again for Next Page'
-          : '<i class="bi bi-chevron-double-up"></i> Scroll again for Prev Page';
+      indicator.textContent = "";
+      const icon = document.createElement("i");
+      icon.className = `bi bi-chevron-double-${type === "next" ? "down" : "up"}`;
+      indicator.appendChild(icon);
+      indicator.appendChild(document.createTextNode(` Scroll again for ${type === "next" ? "Next" : "Prev"} Page`));
     };
-
     const hideIndicator = (): void => {
       if (indicator) {
         indicator.classList.remove("visible");
@@ -165,8 +166,7 @@ export function ReaderWheel(props: { session: ReaderSession }) {
       }
     };
 
-    window.addEventListener("wheel", onWheel, { passive: false });
-    onCleanup(() => window.removeEventListener("wheel", onWheel));
+    createEventListener(window, "wheel", onWheel, { passive: false });
   });
 
   return null;

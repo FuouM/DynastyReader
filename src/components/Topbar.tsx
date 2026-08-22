@@ -1,4 +1,5 @@
 import { createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createEventListener } from "@solid-primitives/event-listener";
 import {
   route,
   navigate,
@@ -30,6 +31,7 @@ import {
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [isNarrow, setIsNarrow] = createSignal(false);
+  const [isCompact, setIsCompact] = createSignal(false);
   const [historyMenu, setHistoryMenu] = createSignal<{
     direction: "back" | "forward";
     anchorEl: HTMLElement;
@@ -61,33 +63,23 @@ export function Topbar() {
     const handleOpenSettings = (): void => {
       setSettingsOpen(true);
     };
-    window.addEventListener("ds-open-settings", handleOpenSettings);
+    createEventListener(window, "ds-open-settings", handleOpenSettings);
 
-    if (!topbarEl || typeof ResizeObserver === "undefined") {
-      onCleanup(() => window.removeEventListener("ds-open-settings", handleOpenSettings));
-      return;
-    }
+    if (!topbarEl || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
         setIsNarrow(width < 680);
-        if (width < 780) {
-          topbarEl.classList.add("ds-narrow");
-        } else {
-          topbarEl.classList.remove("ds-narrow");
-        }
+        setIsCompact(width < 780);
       }
     });
     ro.observe(topbarEl);
-    onCleanup(() => {
-      window.removeEventListener("ds-open-settings", handleOpenSettings);
-      ro.disconnect();
-    });
+    onCleanup(() => ro.disconnect());
   });
 
   return (
     <>
-      <div id="ds-topbar" ref={topbarEl}>
+      <div id="ds-topbar" ref={topbarEl} classList={{ "ds-narrow": isCompact() }}>
         <div id="ds-topbar-main">
           <div class="ds-flex-row" id="ds-nav-tabs">
             <div class="ds-segmented-switch" id="ds-view-switch">
