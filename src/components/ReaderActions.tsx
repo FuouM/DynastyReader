@@ -42,26 +42,12 @@ export function ReaderActions(props: ReaderActionsProps) {
   const [pending, setPending] = createSignal(false);
   const [copied, setCopied] = createSignal(false);
 
-  const getSeriesPermalink = () =>
-    typeof props.ctrl.seriesPermalink === "function"
-      ? props.ctrl.seriesPermalink()
-      : props.ctrl.seriesPermalink;
-  const getSeriesName = () =>
-    typeof props.ctrl.seriesName === "function"
-      ? props.ctrl.seriesName()
-      : props.ctrl.seriesName;
-  const getChapterTitle = () =>
-    typeof props.ctrl.chapterTitle === "function"
-      ? props.ctrl.chapterTitle()
-      : props.ctrl.chapterTitle;
-  const getCurrentIndex = () =>
-    typeof props.ctrl.currentIndex === "function"
-      ? props.ctrl.currentIndex()
-      : props.ctrl.currentIndex;
-  const getPagesLength = () =>
-    typeof props.ctrl.pages === "function"
-      ? props.ctrl.pages().length
-      : props.ctrl.pages.length;
+  const unwrap = <T,>(val: T | (() => T)): T => (typeof val === "function" ? (val as () => T)() : val);
+  const getSeriesPermalink = () => unwrap(props.ctrl.seriesPermalink);
+  const getSeriesName = () => unwrap(props.ctrl.seriesName);
+  const getChapterTitle = () => unwrap(props.ctrl.chapterTitle);
+  const getCurrentIndex = () => unwrap(props.ctrl.currentIndex);
+  const getPagesLength = () => unwrap(props.ctrl.pages).length;
 
   const isCached = (i: number) => {
     if (props.ctrl.getCachedPath) return props.ctrl.getCachedPath(i) !== undefined;

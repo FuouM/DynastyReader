@@ -35,6 +35,7 @@ import {
   isItemBlacklisted,
   type BlacklistMode,
 } from "../db";
+import { tryParseJson } from "../utils/json";
 import { fetchItemStateSets } from "./useItemRowState";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import {
@@ -107,13 +108,8 @@ async function revalidateFeedHead(tabId: string): Promise<{
   }
 }
 
-function parseFeedTop(json: string): string | undefined {
-  try {
-    return (JSON.parse(json) as Feed).chapters?.[0]?.permalink;
-  } catch {
-    return undefined;
-  }
-}
+const parseFeedTop = (json: string): string | undefined =>
+  tryParseJson<Feed>(json)?.chapters?.[0]?.permalink;
 
 interface FeedRowData {
   ch: FeedChapter;

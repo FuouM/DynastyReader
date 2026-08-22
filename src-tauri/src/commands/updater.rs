@@ -58,14 +58,12 @@ pub async fn check_for_updates(app: AppHandle) -> Result<UpdateInfo, String> {
         return Err(format!("GitHub API returned HTTP {}", resp.status()));
     }
 
-    let text = resp
-        .text()
+    let bytes = resp
+        .bytes()
         .await
         .map_err(|e| format!("Failed to read response body: {e}"))?;
-
-    let json: serde_json::Value = serde_json::from_str(&text)
+    let json: serde_json::Value = serde_json::from_slice(&bytes)
         .map_err(|e| format!("Failed to parse GitHub release response: {e}"))?;
-
     let tag_name = json["tag_name"]
         .as_str()
         .unwrap_or("")
