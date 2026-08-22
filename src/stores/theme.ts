@@ -8,6 +8,7 @@
  */
 import { createSignal } from "solid-js";
 import { makePersisted } from "@solid-primitives/storage";
+import { makeEventListener } from "@solid-primitives/event-listener";
 
 export type AppTheme = "light" | "dark";
 
@@ -55,12 +56,10 @@ export function toggleTheme(): void {
 export { toggleTheme as toggleAppTheme };
 
 export function onThemeChange(fn: (t: AppTheme) => void): () => void {
-  const handler = (ev: Event) => {
+  return makeEventListener(window, THEME_CHANGE_EVENT, (ev) => {
     const custom = ev as CustomEvent<{ theme: AppTheme }>;
     fn(custom.detail?.theme ?? getAppTheme());
-  };
-  window.addEventListener(THEME_CHANGE_EVENT, handler);
-  return () => window.removeEventListener(THEME_CHANGE_EVENT, handler);
+  });
 }
 
 /** Applies the persisted theme on startup, migrating the legacy reader key. */

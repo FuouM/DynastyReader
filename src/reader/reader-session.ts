@@ -10,6 +10,7 @@
  */
 
 import { batch, createComponent, createMemo, createRoot, createSignal, getOwner, runWithOwner } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import type { JSX } from "solid-js";
 import { createStore } from "solid-js/store";
 import {
@@ -174,7 +175,7 @@ export class ReaderSession implements ReaderQueueHost {
 
   // Persistence / scroll bookkeeping ---------------------------------------
   private lastPersistedIndex = -1;
-  private persistTimer: number | undefined;
+  private readonly persistDebounced = debounce(() => void this.persistNow(), 400);
   private disposedFlag = false;
   isProgrammaticScroll = false;
   programmaticScrollTimer: number | null = null;
@@ -375,7 +376,7 @@ export class ReaderSession implements ReaderQueueHost {
 
   dispose(): void {
     this.disposedFlag = true;
-    window.clearTimeout(this.persistTimer);
+    this.persistDebounced.clear();
     if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
     if (this.scrollAnimRaf !== null) cancelAnimationFrame(this.scrollAnimRaf);
     for (const fn of this.cleanupFns) fn();
@@ -429,8 +430,7 @@ export class ReaderSession implements ReaderQueueHost {
 
   // Progress + persistence --------------------------------------------------
   schedulePersist(): void {
-    window.clearTimeout(this.persistTimer);
-    this.persistTimer = window.setTimeout(() => void this.persistNow(), 400);
+    this.persistDebounced();
   }
 
   async persistNow(): Promise<void> {

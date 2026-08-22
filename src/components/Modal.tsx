@@ -15,11 +15,11 @@
  * saved UI scale and its max-height/max-width are compensated so it stays
  */
 
-import { createEffect, onCleanup, Show, type JSX } from "solid-js";
+import { createEffect, Show, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import { CloseIcon } from "./Icon";
 import { uiScale } from "../stores";
-
 export interface ModalProps {
   /** Controls whether the modal is rendered. */
   open: boolean;
@@ -80,8 +80,7 @@ export function Modal(props: ModalProps) {
         }
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    onCleanup(() => window.removeEventListener("keydown", onKeyDown));
+    makeEventListener(window, "keydown", onKeyDown);
   });
 
   createEffect(() => {

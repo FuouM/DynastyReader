@@ -18,6 +18,7 @@
     "@tauri-apps/plugin-log": "^2",
     "@tauri-apps/plugin-window-state": "^2.4.1",
     "bootstrap-icons": "^1.11",
+    "html-entities": "^2.6.0",
     "solid-js": "^1.9.15",
     "zod": "^4.4.3"
   },

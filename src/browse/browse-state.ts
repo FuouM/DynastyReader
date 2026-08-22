@@ -10,7 +10,8 @@
  *    revision / force-reload, and never refetches hidden panes.
  */
 
-import { createEffect, createResource, createSignal, onCleanup } from "solid-js";
+import { createEffect, createResource, createSignal } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { createStore } from "solid-js/store";
 import type { Accessor } from "solid-js";
 import { getBlacklistRevision, onBlacklistChanged } from "../db";
@@ -158,11 +159,12 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
  */
 export function useDelayedSpinner(loading: Accessor<boolean>, delayMs = 140): Accessor<boolean> {
   const [show, setShow] = createSignal(false);
+  const triggerShow = debounce(() => setShow(true), delayMs);
   createEffect(() => {
     if (loading()) {
-      const t = window.setTimeout(() => setShow(true), delayMs);
-      onCleanup(() => window.clearTimeout(t));
+      triggerShow();
     } else {
+      triggerShow.clear();
       setShow(false);
     }
   });

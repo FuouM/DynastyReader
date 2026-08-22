@@ -3,7 +3,8 @@
  * pattern shared by the Library and Cache views. Port of `button.ts`.
  */
 
-import { createSignal, onCleanup, Show, type JSX } from "solid-js";
+import { createSignal, Show, type JSX } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { CheckIcon, Icon } from "./Icon";
 
 export interface DsButtonProps {
@@ -50,23 +51,16 @@ export interface ConfirmDeleteButtonProps {
 export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
   const [confirming, setConfirming] = createSignal(false);
   const [busy, setBusy] = createSignal(false);
-  let timer: number | null = null;
-
-  onCleanup(() => {
-    if (timer !== null) window.clearTimeout(timer);
-  });
+  const resetConfirming = debounce(() => setConfirming(false), 3000);
 
   const handleClick = async (): Promise<void> => {
     if (busy()) return;
     if (!confirming()) {
       setConfirming(true);
-      timer = window.setTimeout(() => setConfirming(false), 3000);
+      resetConfirming();
       return;
     }
-    if (timer !== null) {
-      window.clearTimeout(timer);
-      timer = null;
-    }
+    resetConfirming.clear();
     setConfirming(false);
     setBusy(true);
     try {

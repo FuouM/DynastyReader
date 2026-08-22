@@ -3,7 +3,8 @@
  * inline with randomized praying maiden flavor text. Port of `loading.ts`.
  */
 
-import { createEffect, createSignal, onCleanup, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, Show, type JSX } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { render } from "solid-js/web";
 
 export const PRAYING_MESSAGES = [
@@ -66,22 +67,17 @@ export interface DelayedLoadingProps {
 export function DelayedLoading(props: DelayedLoadingProps) {
   const [showSpinner, setShowSpinner] = createSignal(false);
   const delayMs = props.delayMs ?? 140;
+  const triggerSpinner = debounce(() => setShowSpinner(true), delayMs);
 
   createEffect(() => {
     const isLoading = props.loading ?? true;
     if (isLoading) {
-      const timer = window.setTimeout(() => {
-        setShowSpinner(true);
-      }, delayMs);
-      onCleanup(() => {
-        window.clearTimeout(timer);
-        setShowSpinner(false);
-      });
+      triggerSpinner();
     } else {
+      triggerSpinner.clear();
       setShowSpinner(false);
     }
   });
-
   return (
     <Show
       when={props.loading !== undefined ? props.loading : true}

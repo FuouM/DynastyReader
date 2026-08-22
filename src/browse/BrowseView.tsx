@@ -8,7 +8,8 @@
  *  - transient search directives consumed at this dispatch boundary
  */
 
-import { createEffect, createSignal, onCleanup, onMount, For, Show, untrack, type JSX } from "solid-js";
+import { createEffect, createSignal, For, Show, untrack, type JSX } from "solid-js";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import { navigate, route, setRoute, showBanner } from "../stores";
 import { parseDynastyUrl, suggest } from "../api";
 import { Pager } from "../components/Pager";
@@ -73,13 +74,10 @@ export function BrowseView() {
     typeof window !== "undefined" ? window.matchMedia("(max-width: 680px)").matches : false,
   );
 
-  onMount(() => {
-    if (typeof window === "undefined") return;
+  if (typeof window !== "undefined") {
     const mq = window.matchMedia("(max-width: 680px)");
-    const onChange = (e: MediaQueryListEvent) => setIsCompact(e.matches);
-    mq.addEventListener("change", onChange);
-    onCleanup(() => mq.removeEventListener("change", onChange));
-  });
+    makeEventListener(mq, "change", (e) => setIsCompact(e.matches));
+  }
 
   const [pendingSearch, setPendingSearch] = createSignal<{
     searchQuery?: string;

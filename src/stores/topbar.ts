@@ -7,11 +7,14 @@
  */
 
 import { createSignal, type JSX } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 
 const [_banner, _setBanner] = createSignal<string | null>(null);
 export { _banner as banner };
 
-let bannerTimer: ReturnType<typeof setTimeout> | null = null;
+const dismissBanner = debounce(() => {
+  _setBanner(null);
+}, 4000);
 
 export type ActionsContent = JSX.Element | null;
 
@@ -26,19 +29,11 @@ export function setActions(content: ActionsContent): void {
 
 /** Sets the banner message with auto-dismiss matching legacy behavior. */
 export function setBanner(message: string | null): void {
-  if (bannerTimer !== null) {
-    clearTimeout(bannerTimer);
-    bannerTimer = null;
-  }
-  if (!message) {
-    _setBanner(null);
-    return;
-  }
+  dismissBanner.clear();
   _setBanner(message);
-  bannerTimer = setTimeout(() => {
-    _setBanner(null);
-    bannerTimer = null;
-  }, 4000);
+  if (message) {
+    dismissBanner();
+  }
 }
 
 /** Shows a transient error/info banner in the top navigation bar (alias for setBanner). */

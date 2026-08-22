@@ -1,4 +1,5 @@
 import { createSignal, onCleanup, onMount, Show } from "solid-js";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import {
   route,
   navigate,
@@ -58,13 +59,9 @@ export function Topbar() {
 
   let topbarEl: HTMLDivElement | undefined;
 
-  onMount(() => {
-    const handleOpenSettings = (): void => {
-      setSettingsOpen(true);
-    };
-    window.addEventListener("ds-open-settings", handleOpenSettings);
-    onCleanup(() => window.removeEventListener("ds-open-settings", handleOpenSettings));
+  makeEventListener(window, "ds-open-settings", () => setSettingsOpen(true));
 
+  onMount(() => {
     if (!topbarEl || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {

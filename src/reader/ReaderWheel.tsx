@@ -5,19 +5,16 @@
  * registering the window wheel listener.
  */
 
-import { onCleanup, onMount } from "solid-js";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { spreadIndexOf } from "./reader-spread";
 
 export function ReaderWheel(props: { session: ReaderSession }) {
   const c = props.session;
-
-  onMount(() => {
-    let wheelDebounce = 0;
-    let momentumDir: "next" | "prev" | null = null;
-    let momentumTimer: number | null = null;
-    let indicator: HTMLElement | null = null;
-
+  let wheelDebounce = 0;
+  let momentumDir: "next" | "prev" | null = null;
+  let momentumTimer: number | null = null;
+  let indicator: HTMLElement | null = null;
     const showIndicator = (type: "next" | "prev"): void => {
       if (!indicator) {
         indicator = document.createElement("div");
@@ -165,9 +162,7 @@ export function ReaderWheel(props: { session: ReaderSession }) {
       }
     };
 
-    window.addEventListener("wheel", onWheel, { passive: false });
-    onCleanup(() => window.removeEventListener("wheel", onWheel));
-  });
+  makeEventListener(window, "wheel", onWheel, { passive: false });
 
   return null;
 }

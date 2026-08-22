@@ -3,7 +3,7 @@
  * Registered once at the root Application level.
  */
 
-import { onCleanup, onMount } from "solid-js";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import {
   canGoBack,
   canGoForward,
@@ -55,10 +55,7 @@ export function GlobalShortcuts() {
     }
   };
 
-  onMount(() => {
-    window.addEventListener("keydown", onKeyDown);
-    onCleanup(() => window.removeEventListener("keydown", onKeyDown));
-  });
+  makeEventListener(window, "keydown", onKeyDown);
 
   return null;
 }

@@ -4,7 +4,8 @@
  * identical classes, icons, titles, and behavior.
  */
 
-import { createSignal, onCleanup, Show } from "solid-js";
+import { createSignal, Show } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { navigate, setBanner } from "../stores";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
@@ -55,10 +56,7 @@ export function ReaderActions(props: ReaderActionsProps) {
     return false;
   };
 
-  let copyTimer: number | null = null;
-  onCleanup(() => {
-    if (copyTimer !== null) window.clearTimeout(copyTimer);
-  });
+  const resetCopied = debounce(() => setCopied(false), 2000);
 
   const chapterUrl = () => `https://dynasty-scans.com/chapters/${props.ctrl.permalink}`;
 
@@ -99,8 +97,8 @@ export function ReaderActions(props: ReaderActionsProps) {
       await navigator.clipboard.writeText(chapterUrl());
       setCopied(true);
       setBanner("Copied chapter link to clipboard");
-      if (copyTimer !== null) window.clearTimeout(copyTimer);
-      copyTimer = window.setTimeout(() => setCopied(false), 2000);
+      resetCopied.clear();
+      resetCopied();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setBanner(`Copy failed: ${msg}`);

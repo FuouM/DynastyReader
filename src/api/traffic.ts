@@ -4,6 +4,7 @@
  * the current app session and all-time (persisted).
  */
 
+import { throttle } from "@solid-primitives/scheduled";
 export interface TrafficMetrics {
   bytesDownloaded: number;
   networkRequests: number;
@@ -71,20 +72,15 @@ function notify(): void {
   }
 }
 
-let persistTimer: number | undefined;
-function schedulePersist(): void {
-  if (persistTimer !== undefined) return;
-  persistTimer = window.setTimeout(() => {
-    persistTimer = undefined;
-    try {
-      if (typeof localStorage !== "undefined") {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(lifetimeMetrics));
-      }
-    } catch (err) {
-      console.warn("[ds-traffic] failed to persist lifetime traffic:", err);
+const schedulePersist = throttle(() => {
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(lifetimeMetrics));
     }
-  }, 2000);
-}
+  } catch (err) {
+    console.warn("[ds-traffic] failed to persist lifetime traffic:", err);
+  }
+}, 2000);
 
 /** Records inbound network payload traffic. */
 export function recordNetworkTraffic(bytes: number): void {

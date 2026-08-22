@@ -1,15 +1,14 @@
 import { createSignal } from "solid-js";
+import { makePersisted } from "@solid-primitives/storage";
 import type { HotkeyActionId, CustomHotkeysMap } from "./types";
 import { HOTKEY_DEFINITIONS, getDefaultHotkeys, HOTKEY_DEFINITIONS_MAP } from "./registry";
 import { matchesEvent, normalizeKeyCombo } from "./key-combo";
-
 const STORAGE_KEY = "ds-custom-hotkeys";
 
-function loadPersistedHotkeys(): CustomHotkeysMap {
+function deserializeHotkeys(raw: string | null): CustomHotkeysMap {
   const defaults = getDefaultHotkeys();
+  if (!raw) return defaults;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaults;
     const parsed = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return defaults;
 
@@ -26,15 +25,15 @@ function loadPersistedHotkeys(): CustomHotkeysMap {
   }
 }
 
-function savePersistedHotkeys(map: CustomHotkeysMap): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch (err) {
-    console.error("Failed to save custom hotkeys to localStorage:", err);
+export const [hotkeysMap, setHotkeysMap] = (makePersisted as any)(
+  createSignal<CustomHotkeysMap>(getDefaultHotkeys()),
+  {
+    name: STORAGE_KEY,
+    storage: typeof localStorage !== "undefined" ? localStorage : undefined,
+    deserialize: deserializeHotkeys,
+    serialize: (val: CustomHotkeysMap) => JSON.stringify(val),
   }
-}
-
-export const [hotkeysMap, setHotkeysMap] = createSignal<CustomHotkeysMap>(loadPersistedHotkeys());
+);
 export const [isRecordingHotkeys, setIsRecordingHotkeys] = createSignal<boolean>(false);
 
 export function getHotkeys(id: HotkeyActionId): string[] {
@@ -43,11 +42,7 @@ export function getHotkeys(id: HotkeyActionId): string[] {
 
 export function setHotkeys(id: HotkeyActionId, keys: string[]): void {
   const cleanKeys = Array.from(new Set(keys.map(normalizeKeyCombo).filter(Boolean)));
-  setHotkeysMap((prev) => {
-    const updated = { ...prev, [id]: cleanKeys };
-    savePersistedHotkeys(updated);
-    return updated;
-  });
+  setHotkeysMap((prev: CustomHotkeysMap) => ({ ...prev, [id]: cleanKeys }));
 }
 
 export function addKeyToHotkey(id: HotkeyActionId, key: string): void {
@@ -72,7 +67,6 @@ export function resetHotkey(id: HotkeyActionId): void {
 export function resetAllHotkeys(): void {
   const defaults = getDefaultHotkeys();
   setHotkeysMap(defaults);
-  savePersistedHotkeys(defaults);
 }
 
 /**

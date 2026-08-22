@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
 
@@ -56,7 +57,10 @@ export class BrowseCovers {
   private hydrationHost: HTMLElement | null = null;
   private lazyObserver: IntersectionObserver | null = null;
   private isScrolling = false;
-  private scrollIdleTimer: number | null = null;
+  private readonly onScrollIdle = debounce(() => {
+    this.isScrolling = false;
+    this.pumpCoverHydration();
+  }, SCROLL_IDLE_MS);
   private scrollTrackingAttached = false;
   /** Reactively looks up a cached cover path. */
   getCover(coverKey: string): string | undefined {
@@ -247,10 +251,7 @@ export class BrowseCovers {
     // flip isScrolling to false, and let the pump run while covers are still
     // flying past — causing scroll jank.
     if (!this.coversEnabled) return;
-    if (this.scrollIdleTimer !== null) {
-      window.clearTimeout(this.scrollIdleTimer);
-      this.scrollIdleTimer = null;
-    }
+    this.onScrollIdle.clear();
     this.isScrolling = true;
     // Deliberately keep the observer connected: covers flying past the
     // viewport get queued (not pumped — isScrolling is true), so they hydrate
@@ -273,14 +274,8 @@ export class BrowseCovers {
     // events on a long smooth scroll can be more than SCROLL_IDLE_MS apart).
     this.isScrolling = true;
     this.reobserveUnloadedCovers(host);
-    if (this.scrollIdleTimer !== null) {
-      window.clearTimeout(this.scrollIdleTimer);
-    }
-    this.scrollIdleTimer = window.setTimeout(() => {
-      this.isScrolling = false;
-      this.scrollIdleTimer = null;
-      this.pumpCoverHydration();
-    }, SCROLL_IDLE_MS);
+    this.onScrollIdle.clear();
+    this.onScrollIdle();
   }
 
   /** Re-observes wraps that never got an image (e.g. after scroll-to-top). */
@@ -309,12 +304,7 @@ export class BrowseCovers {
     if (!this.isScrolling) {
       this.isScrolling = true;
     }
-    if (this.scrollIdleTimer !== null) window.clearTimeout(this.scrollIdleTimer);
-    this.scrollIdleTimer = window.setTimeout(() => {
-      this.isScrolling = false;
-      this.scrollIdleTimer = null;
-      this.pumpCoverHydration();
-    }, SCROLL_IDLE_MS);
+    this.onScrollIdle();
   };
   private getLazyObserver(): IntersectionObserver {
     if (!this.lazyObserver) {

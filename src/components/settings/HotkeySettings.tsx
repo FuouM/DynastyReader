@@ -1,4 +1,5 @@
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import { Icon, CloseIcon, AddIcon, RefreshIcon } from "../Icon";
 import {
   HOTKEY_DEFINITIONS,
@@ -92,8 +93,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
       stopRecording();
     };
 
-    window.addEventListener("keydown", onKeyDown, { capture: true });
-    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
+    makeEventListener(window, "keydown", onKeyDown, { capture: true });
   });
 
   const categories = createMemo(() => {

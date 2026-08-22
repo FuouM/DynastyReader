@@ -5,7 +5,8 @@
  * writes back through session control methods.
  */
 
-import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode } from "../types/reader";
 import { theme } from "../stores";
@@ -21,13 +22,10 @@ export function ReaderMainRow(props: NavRowProps) {
     typeof window !== "undefined" ? window.matchMedia("(max-width: 580px)").matches : false,
   );
 
-  onMount(() => {
-    if (typeof window === "undefined") return;
+  if (typeof window !== "undefined") {
     const mq = window.matchMedia("(max-width: 580px)");
-    const onChange = (e: MediaQueryListEvent) => setIsNarrow(e.matches);
-    mq.addEventListener("change", onChange);
-    onCleanup(() => mq.removeEventListener("change", onChange));
-  });
+    makeEventListener(mq, "change", (e) => setIsNarrow(e.matches));
+  }
 
   return (
     <div class="ds-reader-nav-row nav-main">
@@ -310,27 +308,20 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
     }
   });
 
-  onMount(() => {
-    const onNavPosChange = (ev: Event): void => {
-      const customEv = ev as CustomEvent<ReaderNavPosition>;
-      setNavPos(customEv.detail || getReaderNavPosition());
-    };
-    window.addEventListener("ds-reader-nav-pos-change", onNavPosChange);
+  const onNavPosChange = (ev: Event): void => {
+    const customEv = ev as CustomEvent<ReaderNavPosition>;
+    setNavPos(customEv.detail || getReaderNavPosition());
+  };
+  makeEventListener(window, "ds-reader-nav-pos-change", onNavPosChange);
 
-    const onFullscreenChange = (): void => {
-      if (!document.fullscreenElement && s.isFullscreen()) {
-        s.setFullscreen(false);
-      } else {
-        s.resetToCurrentPage(false);
-      }
-    };
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-
-    onCleanup(() => {
-      window.removeEventListener("ds-reader-nav-pos-change", onNavPosChange);
-      document.removeEventListener("fullscreenchange", onFullscreenChange);
-    });
-  });
+  const onFullscreenChange = (): void => {
+    if (!document.fullscreenElement && s.isFullscreen()) {
+      s.setFullscreen(false);
+    } else {
+      s.resetToCurrentPage(false);
+    }
+  };
+  makeEventListener(document, "fullscreenchange", onFullscreenChange);
 
   return (
     <>
@@ -351,14 +342,11 @@ export function ReaderBottomNav(props: { session: ReaderSession }) {
   const s = props.session;
   const [navPos, setNavPos] = createSignal<ReaderNavPosition>(getReaderNavPosition());
 
-  onMount(() => {
-    const onNavPosChange = (ev: Event): void => {
-      const customEv = ev as CustomEvent<ReaderNavPosition>;
-      setNavPos(customEv.detail || getReaderNavPosition());
-    };
-    window.addEventListener("ds-reader-nav-pos-change", onNavPosChange);
-    onCleanup(() => window.removeEventListener("ds-reader-nav-pos-change", onNavPosChange));
-  });
+  const onNavPosChange = (ev: Event): void => {
+    const customEv = ev as CustomEvent<ReaderNavPosition>;
+    setNavPos(customEv.detail || getReaderNavPosition());
+  };
+  makeEventListener(window, "ds-reader-nav-pos-change", onNavPosChange);
 
   return (
     <Show when={navPos() === "bottom"}>
