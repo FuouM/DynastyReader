@@ -340,12 +340,12 @@ function FeedStatusFooter(props: {
         </span>
         <span
           class="ds-status-item ds-status-traffic"
-          title="Online network bandwidth consumed in this session"
+          title={`Session Bandwidth: ${formatBytes(traffic().bytesDownloaded)} (${traffic().networkRequests} requests, ${traffic().cacheHits} cache hits, ${formatBytes(traffic().bytesSaved)} saved)\nLifetime Bandwidth: ${formatBytes(traffic().lifetime.bytesDownloaded)} (${traffic().lifetime.networkRequests} requests, ${traffic().lifetime.cacheHits} cache hits, ${formatBytes(traffic().lifetime.bytesSaved)} saved)`}
         >
           <TrafficIcon /> Traffic:{" "}
           <b class="ds-traffic-bytes">{formatBytes(traffic().bytesDownloaded, "", 1)}</b>{" "}
           <span class="ds-traffic-counts ds-muted" style="font-size:10px;">
-            ({traffic().networkRequests} reqs{traffic().cacheHits > 0 ? `, ${traffic().cacheHits} cached` : ""})
+            ({formatBytes(traffic().lifetime.bytesDownloaded, "", 1)} all-time, {traffic().networkRequests} reqs{traffic().cacheHits > 0 ? `, ${traffic().cacheHits} cached` : ""})
           </span>
         </span>
       </div>

@@ -29,10 +29,12 @@ export {
   recordNetworkTraffic,
   recordCacheHit,
   getSessionTraffic,
+  getLifetimeTraffic,
+  resetLifetimeTraffic,
   subscribeSessionTraffic,
   formatBytes,
 } from "./traffic";
-export type { SessionTraffic } from "./traffic";
+export type { SessionTraffic, TrafficMetrics } from "./traffic";
 export type {
   ChapterTag,
   ChapterPage,

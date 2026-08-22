@@ -11,10 +11,13 @@ import {
   createMemo,
   createResource,
   createSignal,
+  onCleanup,
+  onMount,
   For,
   Show,
 } from "solid-js";
 import { decodeEntities, formatBytes, formatDate, navigate, setActions, showBanner } from "../stores";
+import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api";
 import {
   clearAllCacheStorage,
   clearAllCachedPages,
@@ -44,6 +47,7 @@ import {
   StorageIcon,
   RefreshIcon,
   DatabaseIcon,
+  TrafficIcon,
 } from "../components/Icon";
 
 type CacheData = {
@@ -53,11 +57,16 @@ type CacheData = {
 };
 
 export function CacheView() {
+  const [traffic, setTraffic] = createSignal<SessionTraffic>(getSessionTraffic());
+  onMount(() => {
+    const unsub = subscribeSessionTraffic((t) => setTraffic(t));
+    onCleanup(unsub);
+  });
+
   const [data, { refetch }] = createResource<CacheData>(async () => {
     const [stats, groups, dbStats] = await Promise.all([getCacheOverviewStats(), getCachedSeriesGroups(), getDbStats()]);
     return { stats, groups, dbStats };
   });
-
 
   const [filterText, setFilterText] = createSignal("");
   const [sortMode, setSortMode] = createSignal("size-desc");
@@ -228,6 +237,7 @@ export function CacheView() {
           stats={data()!.stats}
           dbStats={data()!.dbStats}
           groups={data()!.groups}
+          traffic={traffic}
           filtered={filtered}
           filterText={filterText}
           setFilterText={setFilterText}
@@ -251,6 +261,7 @@ function CacheBody(props: {
   stats: CacheData["stats"];
   dbStats: DbStats;
   groups: CachedSeriesGroup[];
+  traffic: () => SessionTraffic;
   filtered: () => CachedSeriesGroup[];
   filterText: () => string;
   setFilterText: (v: string) => void;
@@ -265,7 +276,7 @@ function CacheBody(props: {
   restoreFromPicker: () => Promise<void>;
   deleteGroup: (item: CachedSeriesGroup) => Promise<void>;
 }) {
-  const { stats, groups, dbStats } = props;
+  const { stats, groups, dbStats, traffic } = props;
 
   return (
     <>
@@ -339,6 +350,40 @@ function CacheBody(props: {
             onConfirm={props.wipeDb}
           >
             <TrashIcon /> Wipe Database
+          </ConfirmDeleteButton>
+        </div>
+      </div>
+      <div class="group-box">
+        <div class="group-box-title">
+          <TrafficIcon /> Network Bandwidth &amp; Traffic
+        </div>
+        <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="ds-stat-card">
+            <span class="ds-stat-val">{formatBytes(traffic().bytesDownloaded)}</span>
+            <span class="ds-stat-lbl">Session Downloaded ({traffic().networkRequests} reqs)</span>
+          </div>
+          <div class="ds-stat-card">
+            <span class="ds-stat-val">{formatBytes(traffic().bytesSaved)}</span>
+            <span class="ds-stat-lbl">Session Saved ({traffic().cacheHits} hits)</span>
+          </div>
+          <div class="ds-stat-card">
+            <span class="ds-stat-val">{formatBytes(traffic().lifetime.bytesDownloaded)}</span>
+            <span class="ds-stat-lbl">Lifetime Downloaded ({traffic().lifetime.networkRequests} reqs)</span>
+          </div>
+          <div class="ds-stat-card">
+            <span class="ds-stat-val">{formatBytes(traffic().lifetime.bytesSaved)}</span>
+            <span class="ds-stat-lbl">Lifetime Saved ({traffic().lifetime.cacheHits} hits)</span>
+          </div>
+        </div>
+        <div class="ds-cache-actions" style="margin-top:10px;">
+          <ConfirmDeleteButton
+            title="Reset all-time network traffic and bandwidth statistics back to zero"
+            onConfirm={() => {
+              resetLifetimeTraffic();
+              showBanner("Lifetime traffic statistics reset to zero.");
+            }}
+          >
+            <TrashIcon /> Reset Lifetime Stats
           </ConfirmDeleteButton>
         </div>
       </div>
