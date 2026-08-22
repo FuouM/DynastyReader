@@ -161,14 +161,15 @@
 .ds-feed-status-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
   color: var(--sys-text-muted, #666);
+  font-size: 11px;
 }
 .ds-status-item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 .ds-status-item b {
   color: var(--sys-window-text, #333);
@@ -192,12 +193,12 @@
 .ds-etag-tag {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   font-family: monospace;
   font-size: 10px;
   background: var(--sys-window-bg, #fff);
   border: 1px solid var(--sys-border-light, #ccc);
-  padding: 2px 5px;
+  padding: 1px 4px;
   border-radius: 2px;
   color: var(--sys-text-muted, #777);
 }

@@ -53,7 +53,6 @@ import {
   CheckIcon,
   WarningIcon,
   DatabaseIcon,
-  NetworkIcon,
   HashIcon,
   TrafficIcon,
   ArrowUpIcon,
@@ -296,37 +295,28 @@ function FeedStatusFooter(props: {
       <div class="ds-feed-status-left">
         <span
           class="ds-status-item ds-status-db"
-          title="Timestamp when metadata was stored in local SQLite database"
+          title={`Stored in local SQLite database on ${formatDateTime(props.state.cachedAt)}`}
         >
-          <DatabaseIcon /> DB Cache: <b>{formatDateTime(props.state.cachedAt)}</b>
+          <DatabaseIcon /> <span>{formatDateTime(props.state.cachedAt)}</span>
         </span>
-        <span class="ds-status-item ds-status-state" title="Current cache state">
-          <NetworkIcon /> Status:{" "}
-          <span class={`ds-status-pill ${props.state.isStale ? "stale" : "fresh"}`}>
+        <Show when={props.state.status}>
+          <span
+            class={`ds-status-pill ${props.state.isStale ? "stale" : "fresh"}`}
+            title={`Cache status: ${props.state.status}`}
+          >
             {props.state.status}
           </span>
-        </span>
-        <span class="ds-status-item ds-status-etag-wrap" title="HTTP ETag conditional caching status">
-          <CheckIcon /> ETag:{" "}
-          <span class="ds-etag-status-label">{props.state.etagStatus || "Cached"}</span>
-          <Show when={props.state.etag}>
-            <span class="ds-etag-tag" title={`HTTP ETag: ${props.state.etag}`}>
-              <HashIcon />{" "}
-              <span class="ds-etag-hash">
-                {props.state.etag!.replace(/^"|"$/g, "").slice(0, 8)}
-              </span>
-            </span>
-          </Show>
-        </span>
+        </Show>
+        <Show when={props.state.etag}>
+          <span class="ds-etag-tag" title={`HTTP ETag: ${props.state.etag} (${props.state.etagStatus || "Cached"})`}>
+            <HashIcon /> <span class="ds-etag-hash">{props.state.etag!.replace(/^"|"$/g, "").slice(0, 8)}</span>
+          </span>
+        </Show>
         <span
           class="ds-status-item ds-status-traffic"
           title={`Session Bandwidth: ${formatBytes(traffic().bytesDownloaded)} (${traffic().networkRequests} requests, ${traffic().cacheHits} cache hits, ${formatBytes(traffic().bytesSaved)} saved)\nLifetime Bandwidth: ${formatBytes(traffic().lifetime.bytesDownloaded)} (${traffic().lifetime.networkRequests} requests, ${traffic().lifetime.cacheHits} cache hits, ${formatBytes(traffic().lifetime.bytesSaved)} saved)`}
         >
-          <TrafficIcon /> Traffic:{" "}
-          <b class="ds-traffic-bytes">{formatBytes(traffic().bytesDownloaded, "", 1)}</b>{" "}
-          <span class="ds-traffic-counts ds-muted" style="font-size:10px;">
-            ({formatBytes(traffic().lifetime.bytesDownloaded, "", 1)} all-time, {traffic().networkRequests} reqs{traffic().cacheHits > 0 ? `, ${traffic().cacheHits} cached` : ""})
-          </span>
+          <TrafficIcon /> <b class="ds-traffic-bytes">{formatBytes(traffic().bytesDownloaded, "", 1)}</b>
         </span>
       </div>
       <div class="ds-feed-status-right">
