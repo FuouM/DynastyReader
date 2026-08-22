@@ -186,7 +186,7 @@ body {
   display: none;
 }
 #ds-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   flex-wrap: nowrap;
   gap: 4px;
@@ -197,41 +197,33 @@ body {
   display: none !important;
 }
 #ds-topbar-tools {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
   margin-left: auto;
 }
-
 #ds-actions:not(:empty) + #ds-topbar-tools {
-  margin-left: 0;
+  margin-left: 4px;
 }
+
+/* Compact action buttons (hide text labels when window < 680px) */
+#ds-topbar.ds-compact #ds-actions .ds-btn-text {
+  display: none;
+}
+#ds-topbar.ds-compact #ds-actions .win-button {
+  padding: 0 4px;
+  height: 24px;
+  min-width: 24px;
+}
+
+/* Narrow view switch (collapse to icons only when window < 540px) */
 #ds-topbar.ds-narrow #ds-view-switch .ds-segmented-btn {
   padding: 0 6px;
 }
 #ds-topbar.ds-narrow #ds-view-switch .ds-segmented-btn span {
   display: none;
 }
-#ds-topbar.ds-narrow #ds-actions {
-  display: inline-flex;
-  align-items: center;
-  margin-left: auto;
-  gap: 3px;
-  width: auto;
-}
-#ds-topbar.ds-narrow #ds-actions .ds-btn-text {
-  display: none;
-}
-#ds-topbar.ds-narrow #ds-actions .win-button {
-  padding: 0 4px;
-  height: 24px;
-  min-width: 24px;
-}
-#ds-topbar.ds-narrow #ds-topbar-tools {
-  margin-left: 4px !important;
-}
-
 @media (max-width: 680px) {
   #ds-title {
     max-width: 140px;

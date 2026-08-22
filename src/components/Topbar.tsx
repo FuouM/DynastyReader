@@ -68,8 +68,8 @@ export function Topbar() {
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
-        setIsNarrow(width < 680);
-        setIsCompact(width < 860);
+        setIsNarrow(width < 540);
+        setIsCompact(width < 700);
       }
     });
     ro.observe(topbarEl);
@@ -78,7 +78,7 @@ export function Topbar() {
 
   return (
     <>
-      <div id="ds-topbar" ref={topbarEl} classList={{ "ds-narrow": isCompact() }}>
+      <div id="ds-topbar" ref={topbarEl} classList={{ "ds-narrow": isNarrow(), "ds-compact": isCompact() }}>
         <div id="ds-topbar-main">
           <div class="ds-flex-row" id="ds-nav-tabs">
             <div class="ds-segmented-switch" id="ds-view-switch">
