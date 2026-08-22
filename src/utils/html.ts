@@ -12,15 +12,18 @@ function getDomParser(): DOMParser | null {
   return null;
 }
 
+const ESC_MAP: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+  "`": "&#96;",
+};
+
 /** Escapes a string for safe use inside HTML text or attribute values. */
 export function esc(s: string): string {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-    .replace(/`/g, "&#96;");
+  return String(s).replace(/[&<>"'`]/g, (c) => ESC_MAP[c] ?? c);
 }
 
 /**

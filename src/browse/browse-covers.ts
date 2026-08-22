@@ -54,21 +54,10 @@ export class BrowseCovers {
   private readonly MAX_CONCURRENCY = 4;
   private activeWorkers = 0;
   private hydrationHost: HTMLElement | null = null;
-  private enabled: boolean;
   private lazyObserver: IntersectionObserver | null = null;
   private isScrolling = false;
   private scrollIdleTimer: number | null = null;
   private scrollTrackingAttached = false;
-
-  constructor() {
-    try {
-      const saved = localStorage.getItem("ds_covers_enabled");
-      this.enabled = saved !== null ? saved === "true" : true;
-    } catch {
-      this.enabled = true;
-    }
-  }
-
   /** Reactively looks up a cached cover path. */
   getCover(coverKey: string): string | undefined {
     return coverPathMap().get(coverKey) || this.memoryCache.get(coverKey) || undefined;
@@ -94,11 +83,10 @@ export class BrowseCovers {
   }
 
   get coversEnabled(): boolean {
-    return this.enabled;
+    return coversEnabledSignal();
   }
 
   setCoversEnabled(v: boolean): void {
-    this.enabled = v;
     setCoversEnabledSignal(v);
     try {
       localStorage.setItem("ds_covers_enabled", v ? "true" : "false");
@@ -202,7 +190,7 @@ export class BrowseCovers {
     }
 
     // Attach scroll tracking to #ds-view on first ever feed render.
-    if (!this.scrollTrackingAttached && this.enabled) {
+    if (!this.scrollTrackingAttached && this.coversEnabled) {
       this.scrollTrackingAttached = true;
       this.attachScrollTracking();
     }
@@ -210,7 +198,7 @@ export class BrowseCovers {
 
   /** Pre-loads locally cached covers from SQLite in a single batch query. */
   async preloadBatch(coverTargets: CoverTarget[]): Promise<void> {
-    if (!this.enabled) return;
+    if (!this.coversEnabled) return;
     const uniqueCoverKeys = new Map<string, CoverTarget>();
     const keysToQuery: string[] = [];
 
@@ -247,7 +235,7 @@ export class BrowseCovers {
 
   /** Observes a cover wrap; enqueues hydration when it nears the viewport. */
   observe(wrap: HTMLElement): void {
-    if (!this.enabled) return;
+    if (!this.coversEnabled) return;
     this.getLazyObserver().observe(wrap);
   }
 
@@ -258,7 +246,7 @@ export class BrowseCovers {
     // events for its full duration, so a 400ms idle timer would fire mid-flight,
     // flip isScrolling to false, and let the pump run while covers are still
     // flying past — causing scroll jank.
-    if (!this.enabled) return;
+    if (!this.coversEnabled) return;
     if (this.scrollIdleTimer !== null) {
       window.clearTimeout(this.scrollIdleTimer);
       this.scrollIdleTimer = null;
@@ -279,7 +267,7 @@ export class BrowseCovers {
    * genuinely stable again.
    */
   resumeAfterScrollToTop(host: HTMLElement): void {
-    if (!this.enabled) return;
+    if (!this.coversEnabled) return;
     // Force the paused state so re-observed covers only get queued, never
     // pumped immediately — even if the idle timer fired mid-animation (scroll
     // events on a long smooth scroll can be more than SCROLL_IDLE_MS apart).
@@ -297,7 +285,7 @@ export class BrowseCovers {
 
   /** Re-observes wraps that never got an image (e.g. after scroll-to-top). */
   reobserveUnloadedCovers(host: HTMLElement): void {
-    if (!this.enabled) return;
+    if (!this.coversEnabled) return;
     const observer = this.getLazyObserver();
     const unmountedWraps = host.querySelectorAll<HTMLElement>(
       ".ds-feed-cover-wrap:not(:has(img.ds-feed-cover))",
@@ -335,7 +323,7 @@ export class BrowseCovers {
           for (const entry of entries) {
             if (entry.isIntersecting) {
               const el = entry.target as HTMLElement;
-              if (!this.enabled) continue;
+              if (!this.coversEnabled) continue;
 
               const coverKey = el.dataset.feedCover;
               const chapterPermalink = el.dataset.chapterPermalink;
@@ -376,8 +364,7 @@ export class BrowseCovers {
     return this.lazyObserver;
   }
   private pumpCoverHydration(): void {
-    if (!this.enabled || this.isScrolling || !this.hydrationHost || this.queue.length === 0) return;
-
+    if (!this.coversEnabled || this.isScrolling || !this.hydrationHost || this.queue.length === 0) return;
     while (
       !this.isScrolling &&
       this.activeWorkers < this.MAX_CONCURRENCY &&

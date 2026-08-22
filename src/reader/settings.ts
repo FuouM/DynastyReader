@@ -5,15 +5,14 @@
  * reads these during render) does not need to import from the controller,
  * breaking the controller ↔ viewport import cycle.
  */
+const getBool = (key: string, def = true): boolean => {
+  const val = localStorage.getItem(key);
+  return val === null ? def : val === "1" || val === "true";
+};
+const setBool = (key: string, val: boolean): void => localStorage.setItem(key, val ? "1" : "0");
 
-export function isAutoCacheChapterEnabled(): boolean {
-  const val = localStorage.getItem("ds-auto-cache-chapter");
-  return val === null || val === "1" || val === "true";
-}
-
-export function setAutoCacheChapterEnabled(enabled: boolean): void {
-  localStorage.setItem("ds-auto-cache-chapter", enabled ? "1" : "0");
-}
+export const isAutoCacheChapterEnabled = (): boolean => getBool("ds-auto-cache-chapter", true);
+export const setAutoCacheChapterEnabled = (enabled: boolean): void => setBool("ds-auto-cache-chapter", enabled);
 
 export function getPrefetchBuffer(): number {
   const val = localStorage.getItem("ds-reader-prefetch");
@@ -23,8 +22,7 @@ export function getPrefetchBuffer(): number {
 }
 
 export function setPrefetchBuffer(count: number): void {
-  const clamped = Math.max(0, Math.min(10, count));
-  localStorage.setItem("ds-reader-prefetch", String(clamped));
+  localStorage.setItem("ds-reader-prefetch", String(Math.max(0, Math.min(10, count))));
 }
 
 export type ReaderNavPosition = "top" | "bottom";
@@ -49,23 +47,11 @@ export function setDefaultPagedLayout(layout: PagedLayoutSetting): void {
   localStorage.setItem("ds-reader-layout", layout);
 }
 
-export function isLongStripSpreadOverrideEnabled(): boolean {
-  const val = localStorage.getItem("ds-reader-long-strip-override");
-  return val === null || val === "1" || val === "true";
-}
+export const isLongStripSpreadOverrideEnabled = (): boolean => getBool("ds-reader-long-strip-override", true);
+export const setLongStripSpreadOverrideEnabled = (enabled: boolean): void => setBool("ds-reader-long-strip-override", enabled);
 
-export function setLongStripSpreadOverrideEnabled(enabled: boolean): void {
-  localStorage.setItem("ds-reader-long-strip-override", enabled ? "1" : "0");
-}
-
-export function isLongStripFitWidthEnabled(): boolean {
-  const val = localStorage.getItem("ds-reader-long-strip-fit-width");
-  return val === null || val === "1" || val === "true";
-}
-
-export function setLongStripFitWidthEnabled(enabled: boolean): void {
-  localStorage.setItem("ds-reader-long-strip-fit-width", enabled ? "1" : "0");
-}
+export const isLongStripFitWidthEnabled = (): boolean => getBool("ds-reader-long-strip-fit-width", true);
+export const setLongStripFitWidthEnabled = (enabled: boolean): void => setBool("ds-reader-long-strip-fit-width", enabled);
 
 export function getDefaultReadingDirection(): ReadingDirectionSetting {
   const val = localStorage.getItem("ds-reader-direction-mode") ?? localStorage.getItem("ds-reader-direction");
@@ -82,13 +68,8 @@ export function setDefaultReadingDirection(dir: ReadingDirectionSetting): void {
   }
 }
 
-export function isCoverOffsetDefaultEnabled(): boolean {
-  return localStorage.getItem("ds-reader-cover-offset") === "1";
-}
-
-export function setCoverOffsetDefaultEnabled(enabled: boolean): void {
-  localStorage.setItem("ds-reader-cover-offset", enabled ? "1" : "0");
-}
+export const isCoverOffsetDefaultEnabled = (): boolean => getBool("ds-reader-cover-offset", false);
+export const setCoverOffsetDefaultEnabled = (enabled: boolean): void => setBool("ds-reader-cover-offset", enabled);
 
 export function getDefaultFitMode(): FitModeSetting {
   const val = localStorage.getItem("ds-reader-fit");

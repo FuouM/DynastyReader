@@ -13,17 +13,16 @@
 use serde_json::json;
 use walkdir::WalkDir;
 
-fn file_size(path: &std::path::Path) -> u64 {
-    std::fs::metadata(path).map(|m| m.len()).unwrap_or(0)
+fn stat_file(target: &std::path::Path, min_size: u64) -> (bool, u64) {
+    let meta = target.metadata().ok();
+    let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+    (target.is_file() && size >= min_size, size)
 }
 
 #[tauri::command(rename = "fileExists")]
 pub fn file_exists(path: String, min_size: Option<u64>) -> Result<serde_json::Value, String> {
-    let min_size = min_size.unwrap_or(1);
     let target = crate::paths::resolve_in_root(&path)?;
-    let meta = target.metadata().ok();
-    let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
-    let exists = target.is_file() && size >= min_size;
+    let (exists, size) = stat_file(&target, min_size.unwrap_or(1));
     Ok(json!({
         "exists": exists,
         "size_bytes": size,
@@ -42,9 +41,7 @@ pub async fn file_exists_batch(
             .iter()
             .map(|p| match crate::paths::resolve_in_root(p) {
                 Ok(target) => {
-                    let meta = target.metadata().ok();
-                    let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
-                    let exists = target.is_file() && size >= min_size;
+                    let (exists, size) = stat_file(&target, min_size);
                     json!({
                         "path": p,
                         "exists": exists,
@@ -136,30 +133,22 @@ pub fn file_delete(path: String) -> Result<serde_json::Value, String> {
     Ok(json!({}))
 }
 
-fn dir_size_recursive(path: &std::path::Path, total_bytes: &mut u64, file_count: &mut u64) {
-    for entry in WalkDir::new(path).follow_links(false).into_iter() {
-        match entry {
-            Ok(entry) => {
-                if entry.file_type().is_file() {
-                    if let Ok(meta) = entry.metadata() {
-                        *total_bytes += meta.len();
-                        *file_count += 1;
-                    }
-                }
-            }
-            Err(e) => tracing::warn!("dir stat skipped unreadable entry: {e}"),
-        }
-    }
-}
-
 fn stat_one(target: &std::path::Path) -> (u64, u64) {
+    if target.is_file() {
+        return (target.metadata().map(|m| m.len()).unwrap_or(0), 1);
+    }
+    if !target.is_dir() {
+        return (0, 0);
+    }
     let mut total_bytes: u64 = 0;
     let mut file_count: u64 = 0;
-    if target.is_dir() {
-        dir_size_recursive(target, &mut total_bytes, &mut file_count);
-    } else if target.is_file() {
-        total_bytes = file_size(target);
-        file_count = 1;
+    for entry in WalkDir::new(target).follow_links(false).into_iter().filter_map(|e| e.ok()) {
+        if entry.file_type().is_file() {
+            if let Ok(meta) = entry.metadata() {
+                total_bytes += meta.len();
+                file_count += 1;
+            }
+        }
     }
     (total_bytes, file_count)
 }
