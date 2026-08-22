@@ -12,13 +12,19 @@
   "app": {
     "withGlobalTauri": true,
     "windows": [
-      { "label": "main", "title": "DynastyReader", "width": 1100, "height": 780 }
+      {
+        "label": "main",
+        "title": "DynastyReader",
+        "width": 1100,
+        "height": 780,
+        "devtools": true
+      }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'",
+      "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["**/.data/**", "$APPDATA/**", "$APPLOCALDATA/**", "$RESOURCE/**", "$TEMP/**"]
+        "scope": ["**"]
       }
     }
   },

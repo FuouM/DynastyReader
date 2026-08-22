@@ -15,7 +15,7 @@
  * to the `<LegacyView>` strangler adapter.
  */
 
-import { createEffect, lazy, Show, Suspense, type Component } from "solid-js";
+import { createEffect, Show, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import {
   route,
@@ -33,10 +33,10 @@ import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
 import type { ViewName, Route } from "./types/routes";
 
-const SeriesView = lazy(() => import("./series/SeriesView").then((m) => ({ default: m.SeriesView })));
-const ReaderView = lazy(() => import("./reader/ReaderView").then((m) => ({ default: m.ReaderView })));
-const CacheView = lazy(() => import("./cache/CacheView").then((m) => ({ default: m.CacheView })));
-const BlacklistView = lazy(() => import("./blacklist/BlacklistView").then((m) => ({ default: m.BlacklistView })));
+import { SeriesView } from "./series/SeriesView";
+import { ReaderView } from "./reader/ReaderView";
+import { CacheView } from "./cache/CacheView";
+import { BlacklistView } from "./blacklist/BlacklistView";
 export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
   browse: () => <BrowseView />,
   library: () => <LibraryView />,
@@ -77,10 +77,14 @@ export function App() {
         <Show when={!isPersistentView()} keyed>
           {(show) =>
             show ? (
-              <div id="ds-pane-dynamic">
-                <Suspense fallback={<div class="ds-pane-loading" style="padding:20px;text-align:center;"><span class="ds-muted" style="font-size:11px;">Loading...</span></div>}>
-                  <Dynamic component={viewComponents[route().view]} route={route()} />
-                </Suspense>
+              <div
+                id="ds-pane-dynamic"
+                style={{
+                  padding: route().view === "reader" ? "0" : "8px",
+                  overflow: route().view === "reader" ? "hidden" : "auto",
+                }}
+              >
+                <Dynamic component={viewComponents[route().view]} route={route()} />
               </div>
             ) : null
           }

@@ -57,6 +57,10 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   padding-bottom: 56px;
 }
 
+#ds-root[data-mobile] #ds-view:has(#ds-reader-container) {
+  padding-bottom: 0 !important;
+}
+
 #ds-root[data-mobile] #ds-pane-browse,
 #ds-root[data-mobile] #ds-pane-library,
 #ds-root[data-mobile] #ds-pane-dynamic,

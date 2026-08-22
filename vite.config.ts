@@ -15,12 +15,6 @@ export default defineConfig({
     target: "es2020",
     outDir: "dist",
     sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ["solid-js", "solid-js/web"],
-        },
-      },
-    },
+    rollupOptions: {},
   },
 });

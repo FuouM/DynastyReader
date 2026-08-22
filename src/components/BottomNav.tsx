@@ -4,7 +4,7 @@ import { Icon, StorageIcon } from "./Icon";
 
 export function BottomNav() {
   return (
-    <Show when={isMobile()}>
+    <Show when={isMobile() && route().view !== "reader"}>
       <nav id="ds-bottom-nav">
         <button
           type="button"
