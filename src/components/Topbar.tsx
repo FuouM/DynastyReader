@@ -175,7 +175,6 @@ export function Topbar() {
                   type="button"
                   class="win-button ds-nav-tab ds-session-tab"
                   classList={{ active: isInMangaView() }}
-                  style="display:inline-flex;align-items:center;gap:6px;max-width:220px;padding:2px 8px;font-size:11px;"
                   onClick={() => {
                     const tab = sessionTab();
                     if (tab) navigate(tab.route);

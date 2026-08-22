@@ -58,9 +58,16 @@ body {
 .ds-session-tab {
   font-weight: 500;
   border-radius: 2px !important;
-  max-width: 200px;
+  max-width: 220px;
   min-width: 0;
   overflow: hidden;
+  height: 24px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: normal;
 }
 .ds-session-tab .ds-truncate {
   overflow: hidden;
@@ -68,6 +75,8 @@ body {
   white-space: nowrap;
   min-width: 0;
   flex: 1;
+  line-height: normal;
+  padding-bottom: 1px;
 }
 .ds-session-tab.active {
   background: var(--sys-highlight-bg, #0078d7) !important;
@@ -77,14 +86,16 @@ body {
 }
 .ds-tab-close {
   cursor: pointer;
-  font-size: 13px;
+  font-size: 11px;
   opacity: 0.7;
-  padding: 1px 3px;
+  padding: 1px 2px;
   margin-left: 2px;
   border-radius: 2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
   transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 .ds-tab-close:hover {
@@ -98,12 +109,13 @@ body {
 }
 .ds-segmented-switch {
   display: inline-flex;
-  align-items: center;
+  align-items: stretch;
   border: 1px solid var(--sys-button-border, #707070);
   background: var(--sys-button-bg, #f0f0f0);
   border-radius: 2px;
   overflow: hidden;
   height: 24px;
+  box-sizing: border-box;
 }
 .ds-segmented-btn {
   border: none !important;
@@ -120,6 +132,14 @@ body {
   gap: 5px;
   user-select: none;
   border-radius: 0 !important;
+  line-height: normal;
+  box-sizing: border-box;
+}
+.ds-segmented-btn .ds-tab-text-full,
+.ds-segmented-btn .ds-tab-text-short {
+  line-height: normal;
+  display: inline-flex;
+  align-items: center;
 }
 .ds-segmented-btn:hover {
   background: var(--sys-button-hover, #e5f1fb);
@@ -364,8 +384,21 @@ body {
 }
 .ds-subtab {
   font-size: 11px;
-  padding: 2px 8px;
+  padding: 0 8px;
   font-weight: 500;
+  height: 24px;
+  min-height: 24px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: normal;
+}
+.ds-subtab .ds-subtab-full,
+.ds-subtab .ds-subtab-short {
+  line-height: normal;
+  display: inline-flex;
+  align-items: center;
 }
 .ds-subtab.active {
   background: var(--sys-highlight-bg, #0078d7) !important;
