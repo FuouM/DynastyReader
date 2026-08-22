@@ -210,109 +210,35 @@ export class ReaderSession implements ReaderQueueHost {
     this.route = route;
     this.permalink = route.chapterPermalink ?? "";
 
-    const [seriesPermalink, setSeriesPermalink] = createSignal<string | null>(null);
-    this.seriesPermalink = seriesPermalink;
-    this.setSeriesPermalink = setSeriesPermalink;
-
-    const [seriesName, setSeriesName] = createSignal("");
-    this.seriesName = seriesName;
-    this.setSeriesName = setSeriesName;
-
-    const [chapterTitle, setChapterTitle] = createSignal("");
-    this.chapterTitle = chapterTitle;
-    this.setChapterTitle = setChapterTitle;
-
-    const [chapterList, setChapterList] = createSignal<ChapterRef[]>([]);
-    this.chapterList = chapterList;
-    this.setChapterList = setChapterList;
-
-    const [pages, setPages] = createSignal<ChapterPage[]>([]);
-    this.pages = pages;
-    this.setPages = setPages;
-
-    const [currentIndex, setCurrentIndex] = createSignal(0);
-    this.currentIndex = currentIndex;
-    this.setCurrentIndex = setCurrentIndex;
-
-    const [atEnd, setAtEnd] = createSignal(false);
-    this.atEnd = atEnd;
-    this.setAtEnd = setAtEnd;
-
-    const [mode, setModeSignal] = createSignal<ReaderMode>("scroll");
-    this.mode = mode;
-    this.setModeSignal = setModeSignal;
-
-    const [pagedLayout, setPagedLayoutSignal] = createSignal<PagedLayout>("single");
-    this.pagedLayout = pagedLayout;
-    this.setPagedLayoutSignal = setPagedLayoutSignal;
-
-    const [layoutAutoDetected, setLayoutAutoDetected] = createSignal(false);
-    this.layoutAutoDetected = layoutAutoDetected;
-    this.setLayoutAutoDetected = setLayoutAutoDetected;
-
-    const [isLongStrip, setIsLongStrip] = createSignal(false);
-    this.isLongStrip = isLongStrip;
-    this.setIsLongStrip = setIsLongStrip;
-
-    const [direction, setDirectionSignal] = createSignal<ReadingDirection>("rtl");
-    this.direction = direction;
-    this.setDirectionSignal = setDirectionSignal;
-
-    const [directionAutoDetected, setDirectionAutoDetected] = createSignal(false);
-    this.directionAutoDetected = directionAutoDetected;
-    this.setDirectionAutoDetected = setDirectionAutoDetected;
-
-    const [coverOffset, setCoverOffsetSignal] = createSignal(false);
-    this.coverOffset = coverOffset;
-    this.setCoverOffsetSignal = setCoverOffsetSignal;
-
-    const [widePages, setWidePagesSignal] = createSignal<ReadonlySet<number>>(new Set());
-    this.widePages = widePages;
-    this.setWidePagesSignal = setWidePagesSignal;
-
-    const [fitMode, setFitModeSignal] = createSignal<FitMode>("width");
-    this.fitMode = fitMode;
-    this.setFitModeSignal = setFitModeSignal;
-
-    const [zoomScale, setZoomScaleSignal] = createSignal(1.0);
-    this.zoomScale = zoomScale;
-    this.setZoomScaleSignal = setZoomScaleSignal;
-
-    const [scrollLock, setScrollLockSignal] = createSignal(false);
-    this.scrollLock = scrollLock;
-    this.setScrollLockSignal = setScrollLockSignal;
-
-    const [isFullscreen, setIsFullscreenSignal] = createSignal(false);
-    this.isFullscreen = isFullscreen;
-    this.setIsFullscreenSignal = setIsFullscreenSignal;
-
-    const [loading, setLoading] = createSignal(true);
-    this.loading = loading;
-    this.setLoading = setLoading;
-
-    const [error, setError] = createSignal<string | null>(null);
-    this.error = error;
-    this.setError = setError;
-
-    const [empty, setEmpty] = createSignal(false);
-    this.empty = empty;
-    this.setEmpty = setEmpty;
-
-    const [bookmarked, setBookmarked] = createSignal(false);
-    this.bookmarked = bookmarked;
-    this.setBookmarked = setBookmarked;
-
-    const [restoring, setRestoring] = createSignal(false);
-    this.restoring = restoring;
-    this.setRestoring = setRestoring;
+    [this.seriesPermalink, this.setSeriesPermalink] = createSignal<string | null>(null);
+    [this.seriesName, this.setSeriesName] = createSignal("");
+    [this.chapterTitle, this.setChapterTitle] = createSignal("");
+    [this.chapterList, this.setChapterList] = createSignal<ChapterRef[]>([]);
+    [this.pages, this.setPages] = createSignal<ChapterPage[]>([]);
+    [this.currentIndex, this.setCurrentIndex] = createSignal(0);
+    [this.atEnd, this.setAtEnd] = createSignal(false);
+    [this.mode, this.setModeSignal] = createSignal<ReaderMode>("scroll");
+    [this.pagedLayout, this.setPagedLayoutSignal] = createSignal<PagedLayout>("single");
+    [this.layoutAutoDetected, this.setLayoutAutoDetected] = createSignal(false);
+    [this.isLongStrip, this.setIsLongStrip] = createSignal(false);
+    [this.direction, this.setDirectionSignal] = createSignal<ReadingDirection>("rtl");
+    [this.directionAutoDetected, this.setDirectionAutoDetected] = createSignal(false);
+    [this.coverOffset, this.setCoverOffsetSignal] = createSignal(false);
+    [this.widePages, this.setWidePagesSignal] = createSignal<ReadonlySet<number>>(new Set());
+    [this.fitMode, this.setFitModeSignal] = createSignal<FitMode>("width");
+    [this.zoomScale, this.setZoomScaleSignal] = createSignal(1.0);
+    [this.scrollLock, this.setScrollLockSignal] = createSignal(false);
+    [this.isFullscreen, this.setIsFullscreenSignal] = createSignal(false);
+    [this.loading, this.setLoading] = createSignal(true);
+    [this.error, this.setError] = createSignal<string | null>(null);
+    [this.empty, this.setEmpty] = createSignal(false);
+    [this.bookmarked, this.setBookmarked] = createSignal(false);
+    [this.restoring, this.setRestoring] = createSignal(false);
+    [this.cachedCount, this.setCachedCount] = createSignal(0);
 
     this.cachedPages = createStore<Record<number, string | undefined>>({});
     this.slotStates = createStore<Record<number, SlotStateRecord | undefined>>({});
     this.pageDimensions = createStore<Record<number, { width: number; height: number } | undefined>>({});
-
-    const [cachedCount, setCachedCount] = createSignal(0);
-    this.cachedCount = cachedCount;
-    this.setCachedCount = setCachedCount;
 
     this.queue = new ReaderQueue(this);
 

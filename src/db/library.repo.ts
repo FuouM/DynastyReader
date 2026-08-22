@@ -39,7 +39,7 @@ export async function getFollowedSeriesRow(permalink: string): Promise<FollowedS
      FROM followed_series WHERE permalink = ?`,
     [permalink],
   );
-  return rows.length > 0 ? rows[0] : null;
+  return rows[0] ?? null;
 }
 
 export async function followSeries(row: {
@@ -95,7 +95,7 @@ export async function getReadingProgress(
      FROM reading_progress WHERE chapter_permalink = ?`,
     [chapterPermalink],
   );
-  return rows.length > 0 ? rows[0] : null;
+  return rows[0] ?? null;
 }
 
 export async function setReadingProgress(p: {
@@ -231,7 +231,7 @@ export async function getBookmark(chapterPermalink: string): Promise<BookmarkRow
      FROM bookmarks WHERE chapter_permalink = ?`,
     [chapterPermalink],
   );
-  return rows.length > 0 ? rows[0] : null;
+  return rows[0] ?? null;
 }
 
 /** Returns a Set of chapter permalinks that have been bookmarked. */

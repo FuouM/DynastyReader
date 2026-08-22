@@ -204,121 +204,71 @@ fn encode_image(
     std::fs::write(output, &bytes).map_err(|e| format!("Failed to write output file: {e:?}"))
 }
 
+enum BufferRef<'a> {
+    Borrowed(&'a [u8]),
+    Owned(Vec<u8>),
+}
+
+impl<'a> std::ops::Deref for BufferRef<'a> {
+    type Target = [u8];
+    fn deref(&self) -> &[u8] {
+        match self {
+            BufferRef::Borrowed(b) => b,
+            BufferRef::Owned(v) => v.as_slice(),
+        }
+    }
+}
+
+fn as_rgba8_bytes(img: &DynamicImage) -> BufferRef<'_> {
+    match img.as_rgba8() {
+        Some(b) => BufferRef::Borrowed(b.as_raw()),
+        None => BufferRef::Owned(img.to_rgba8().into_raw()),
+    }
+}
+
+fn as_rgb8_bytes(img: &DynamicImage) -> BufferRef<'_> {
+    match img.as_rgb8() {
+        Some(b) => BufferRef::Borrowed(b.as_raw()),
+        None => BufferRef::Owned(img.to_rgb8().into_raw()),
+    }
+}
+
 fn encode_dynamic(img: &DynamicImage, ext: &str, quality: u8) -> Result<Vec<u8>, String> {
     let (w, h) = img.dimensions();
     let mut buf = Vec::new();
-    // Borrow the underlying buffer when the image is already in the target
-    // format to avoid an extra `Vec<u8>` alloc + copy per encode. The byte-
-    // budget loop may call this up to 32 times, so the saving is O(encodes).
     match ext {
-        "png" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgba8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgba8();
-                owned.as_raw()
-            };
-            PngEncoder::new(&mut buf)
-                .write_image(data, w, h, ExtendedColorType::Rgba8)
-                .map_err(|e| format!("PNG encode failed: {e:?}"))?;
-        }
-        "jpg" | "jpeg" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgb8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgb8();
-                owned.as_raw()
-            };
-            JpegEncoder::new_with_quality(&mut buf, quality)
-                .write_image(data, w, h, ExtendedColorType::Rgb8)
-                .map_err(|e| format!("JPEG encode failed: {e:?}"))?;
-        }
+        "png" => PngEncoder::new(&mut buf)
+            .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
+            .map_err(|e| format!("PNG encode failed: {e:?}"))?,
+        "jpg" | "jpeg" => JpegEncoder::new_with_quality(&mut buf, quality)
+            .write_image(&as_rgb8_bytes(img), w, h, ExtendedColorType::Rgb8)
+            .map_err(|e| format!("JPEG encode failed: {e:?}"))?,
         "webp" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgb8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgb8();
-                owned.as_raw()
-            };
-            let encoded = webp::Encoder::from_rgb(data, w, h).encode(quality as f32);
+            let data = as_rgb8_bytes(img);
+            let encoded = webp::Encoder::from_rgb(&data, w, h).encode(quality as f32);
             buf.extend_from_slice(encoded.as_ref());
         }
-        "gif" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgba8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgba8();
-                owned.as_raw()
-            };
-            GifEncoder::new(&mut buf)
-                .write_image(data, w, h, ExtendedColorType::Rgba8)
-                .map_err(|e| format!("GIF encode failed: {e:?}"))?;
-        }
-        "bmp" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgba8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgba8();
-                owned.as_raw()
-            };
-            BmpEncoder::new(&mut buf)
-                .write_image(data, w, h, ExtendedColorType::Rgba8)
-                .map_err(|e| format!("BMP encode failed: {e:?}"))?;
-        }
+        "gif" => GifEncoder::new(&mut buf)
+            .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
+            .map_err(|e| format!("GIF encode failed: {e:?}"))?,
+        "bmp" => BmpEncoder::new(&mut buf)
+            .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
+            .map_err(|e| format!("BMP encode failed: {e:?}"))?,
         "tiff" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgba8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgba8();
-                owned.as_raw()
-            };
             let mut cur = Cursor::new(&mut buf);
             TiffEncoder::new(&mut cur)
-                .write_image(data, w, h, ExtendedColorType::Rgba8)
+                .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
                 .map_err(|e| format!("TIFF encode failed: {e:?}"))?;
         }
-        "qoi" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgba8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgba8();
-                owned.as_raw()
-            };
-            QoiEncoder::new(&mut buf)
-                .write_image(data, w, h, ExtendedColorType::Rgba8)
-                .map_err(|e| format!("QOI encode failed: {e:?}"))?;
-        }
-        "tga" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgba8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgba8();
-                owned.as_raw()
-            };
-            TgaEncoder::new(&mut buf)
-                .write_image(data, w, h, ExtendedColorType::Rgba8)
-                .map_err(|e| format!("TGA encode failed: {e:?}"))?;
-        }
-        "pnm" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgb8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgb8();
-                owned.as_raw()
-            };
-            PnmEncoder::new(&mut buf)
-                .write_image(data, w, h, ExtendedColorType::Rgb8)
-                .map_err(|e| format!("PNM encode failed: {e:?}"))?;
-        }
+        "qoi" => QoiEncoder::new(&mut buf)
+            .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
+            .map_err(|e| format!("QOI encode failed: {e:?}"))?,
+        "tga" => TgaEncoder::new(&mut buf)
+            .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
+            .map_err(|e| format!("TGA encode failed: {e:?}"))?,
+        "pnm" => PnmEncoder::new(&mut buf)
+            .write_image(&as_rgb8_bytes(img), w, h, ExtendedColorType::Rgb8)
+            .map_err(|e| format!("PNM encode failed: {e:?}"))?,
         "hdr" => {
             let rgb32f = img.to_rgb32f();
             let bytes = f32_bytes(rgb32f.as_raw());
@@ -326,18 +276,9 @@ fn encode_dynamic(img: &DynamicImage, ext: &str, quality: u8) -> Result<Vec<u8>,
                 .write_image(&bytes, w, h, ExtendedColorType::Rgb32F)
                 .map_err(|e| format!("HDR encode failed: {e:?}"))?;
         }
-        "ico" => {
-            let owned;
-            let data: &[u8] = if let Some(b) = img.as_rgba8() {
-                b.as_raw()
-            } else {
-                owned = img.to_rgba8();
-                owned.as_raw()
-            };
-            IcoEncoder::new(&mut buf)
-                .write_image(data, w, h, ExtendedColorType::Rgba8)
-                .map_err(|e| format!("ICO encode failed: {e:?}"))?;
-        }
+        "ico" => IcoEncoder::new(&mut buf)
+            .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
+            .map_err(|e| format!("ICO encode failed: {e:?}"))?,
         _ => unreachable!("ext was pre-validated against ENCODE_FORMATS"),
     }
     Ok(buf)

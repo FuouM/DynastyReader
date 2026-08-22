@@ -182,16 +182,12 @@ export const HOTKEY_DEFINITIONS: HotkeyDefinition[] = [
   },
 ];
 
-export const HOTKEY_DEFINITIONS_MAP: Record<HotkeyActionId, HotkeyDefinition> =
-  HOTKEY_DEFINITIONS.reduce((acc, def) => {
-    acc[def.id] = def;
-    return acc;
-  }, {} as Record<HotkeyActionId, HotkeyDefinition>);
+export const HOTKEY_DEFINITIONS_MAP = Object.fromEntries(
+  HOTKEY_DEFINITIONS.map((def) => [def.id, def]),
+) as Record<HotkeyActionId, HotkeyDefinition>;
 
 export function getDefaultHotkeys(): CustomHotkeysMap {
-  const map: Partial<CustomHotkeysMap> = {};
-  for (const def of HOTKEY_DEFINITIONS) {
-    map[def.id] = [...def.defaultKeys];
-  }
-  return map as CustomHotkeysMap;
+  return Object.fromEntries(
+    HOTKEY_DEFINITIONS.map((def) => [def.id, [...def.defaultKeys]]),
+  ) as CustomHotkeysMap;
 }

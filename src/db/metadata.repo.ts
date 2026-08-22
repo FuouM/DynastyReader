@@ -1,4 +1,5 @@
 import { query, execute } from "./client";
+import { inClause } from "./paging";
 import type { CachedMetadata } from "../types/db";
 
 export async function getCached(key: string): Promise<CachedMetadata | null> {
@@ -6,7 +7,7 @@ export async function getCached(key: string): Promise<CachedMetadata | null> {
     `SELECT json_payload, cached_at, etag FROM cached_metadata WHERE cache_key = ?`,
     [key],
   );
-  return rows.length > 0 ? rows[0] : null;
+  return rows[0] ?? null;
 }
 
 /**
@@ -25,9 +26,8 @@ export async function getCachedByPrefix(prefix: string): Promise<CachedMetadata[
 export async function getBatchCached(keys: string[]): Promise<Map<string, string>> {
   const result = new Map<string, string>();
   if (keys.length === 0) return result;
-  const placeholders = keys.map(() => "?").join(",");
   const rows = await query<{ cache_key: string; json_payload: string }>(
-    `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${placeholders})`,
+    `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${inClause(keys.length)})`,
     keys,
   );
   for (const r of rows) {

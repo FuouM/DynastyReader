@@ -1,5 +1,4 @@
 import { createSignal, onCleanup, onMount, Show } from "solid-js";
-import { createEventListener } from "@solid-primitives/event-listener";
 import {
   route,
   navigate,
@@ -63,7 +62,8 @@ export function Topbar() {
     const handleOpenSettings = (): void => {
       setSettingsOpen(true);
     };
-    createEventListener(window, "ds-open-settings", handleOpenSettings);
+    window.addEventListener("ds-open-settings", handleOpenSettings);
+    onCleanup(() => window.removeEventListener("ds-open-settings", handleOpenSettings));
 
     if (!topbarEl || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
@@ -215,12 +215,15 @@ export function Topbar() {
         </div>
       </div>
       <SettingsModal open={settingsOpen()} onClose={() => setSettingsOpen(false)} />
-      <HistoryDropdown
-        open={historyMenu() !== null}
-        direction={historyMenu() ? historyMenu()!.direction : "back"}
-        anchorEl={historyMenu()?.anchorEl ?? null}
-        onClose={() => setHistoryMenu(null)}
-      />
+      <Show when={historyMenu()}>
+        {(menu) => (
+          <HistoryDropdown
+            direction={menu().direction}
+            anchorEl={menu().anchorEl}
+            onClose={() => setHistoryMenu(null)}
+          />
+        )}
+      </Show>
     </>
   );
 }

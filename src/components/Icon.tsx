@@ -28,24 +28,14 @@ export interface IconProps {
  * Standard typed icon component for Bootstrap Icons.
  */
 export function Icon(props: IconProps) {
-  const customStyle = (): JSX.CSSProperties => {
-    const s: Record<string, string | undefined> = {};
-    if (props.size !== undefined) {
-      s["font-size"] = typeof props.size === "number" ? `${props.size}px` : props.size;
-    }
-    if (props.color !== undefined) {
-      s["color"] = props.color;
-    }
-    if (typeof props.style === "object" && props.style !== null) {
-      Object.assign(s, props.style);
-    }
-    return s;
-  };
-
   return (
     <i
       class={`bi bi-${props.name}${props.spin ? " ds-spin" : ""}${props.class ? ` ${props.class}` : ""}`}
-      style={customStyle()}
+      style={{
+        ...(props.size !== undefined ? { "font-size": typeof props.size === "number" ? `${props.size}px` : props.size } : {}),
+        ...(props.color ? { color: props.color } : {}),
+        ...(typeof props.style === "object" && props.style !== null ? props.style : {}),
+      }}
       title={props.title}
       onClick={props.onClick}
     />

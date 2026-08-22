@@ -21,7 +21,7 @@ use tauri::State;
 
 pub struct DbPool(pub Mutex<HashMap<String, Arc<Mutex<Connection>>>>);
 
-fn open(db_name: &str) -> Result<Connection, String> {
+fn validate_db_name(db_name: &str) -> Result<String, String> {
     let normalized = db_name.trim().to_ascii_lowercase();
     if normalized.is_empty() {
         return Err("missing db name".to_string());
@@ -32,6 +32,11 @@ fn open(db_name: &str) -> Result<Connection, String> {
     if !safe || normalized.starts_with('.') || normalized.contains("..") {
         return Err("invalid database name".to_string());
     }
+    Ok(normalized)
+}
+
+fn open(db_name: &str) -> Result<Connection, String> {
+    let normalized = validate_db_name(db_name)?;
     let path = crate::paths::data_root().join(&normalized);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
@@ -61,10 +66,7 @@ fn get_conn(
     pool: &Mutex<HashMap<String, Arc<Mutex<Connection>>>>,
     db_name: &str,
 ) -> Result<Arc<Mutex<Connection>>, String> {
-    let key = db_name.trim().to_ascii_lowercase();
-    if key.is_empty() {
-        return Err("missing db name".to_string());
-    }
+    let key = validate_db_name(db_name)?;
     {
         let guard = pool.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(conn) = guard.get(&key) {
@@ -77,26 +79,6 @@ fn get_conn(
     Ok(entry.clone())
 }
 
-#[allow(dead_code)]
-fn bind_value(p: &Value) -> rusqlite::types::Value {
-    match p {
-        Value::Null => rusqlite::types::Value::Null,
-        Value::Bool(b) => rusqlite::types::Value::Integer(*b as i64),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                rusqlite::types::Value::Integer(i)
-            } else if let Some(u) = n.as_u64() {
-                rusqlite::types::Value::Integer(u as i64)
-            } else if let Some(f) = n.as_f64() {
-                rusqlite::types::Value::Real(f)
-            } else {
-                rusqlite::types::Value::Integer(0)
-            }
-        }
-        Value::String(s) => rusqlite::types::Value::Text(s.clone()),
-        other => rusqlite::types::Value::Text(other.to_string()),
-    }
-}
 
 fn bind_value_owned(v: Value) -> rusqlite::types::Value {
     match v {
@@ -230,16 +212,7 @@ pub async fn db_backup(
     state: State<'_, DbPool>,
     db_name: String,
 ) -> Result<serde_json::Value, String> {
-    let normalized = db_name.trim().to_ascii_lowercase();
-    if normalized.is_empty() {
-        return Err("missing db name".to_string());
-    }
-    let safe = normalized
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'));
-    if !safe || normalized.starts_with('.') || normalized.contains("..") {
-        return Err("invalid database name".to_string());
-    }
+    let normalized = validate_db_name(&db_name)?;
     let pool_arc = get_conn(&state.0, &db_name)?;
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -272,10 +245,7 @@ pub async fn db_backup(
 /// Lists `*.backup.*.db` files for `db_name` under the data root.
 #[tauri::command(rename = "dbListBackups")]
 pub async fn db_list_backups(db_name: String) -> Result<serde_json::Value, String> {
-    let normalized = db_name.trim().to_ascii_lowercase();
-    if normalized.is_empty() {
-        return Err("missing db name".to_string());
-    }
+    let normalized = validate_db_name(&db_name)?;
     let prefix = format!("{}.backup.", normalized);
     let root = crate::paths::data_root();
     let entries = tokio::task::spawn_blocking(move || -> Result<Vec<serde_json::Value>, String> {
@@ -325,16 +295,7 @@ pub async fn db_restore(
     db_name: String,
     backup_filename: String,
 ) -> Result<serde_json::Value, String> {
-    let normalized = db_name.trim().to_ascii_lowercase();
-    if normalized.is_empty() {
-        return Err("missing db name".to_string());
-    }
-    let safe = normalized
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'));
-    if !safe || normalized.starts_with('.') || normalized.contains("..") {
-        return Err("invalid database name".to_string());
-    }
+    let normalized = validate_db_name(&db_name)?;
     let bf = backup_filename.trim().to_string();
     if bf.is_empty() || bf.contains('/') || bf.contains('\\') || bf.contains("..") {
         return Err("invalid backup filename".to_string());
@@ -348,7 +309,7 @@ pub async fn db_restore(
     let target_path = root.join(&normalized);
     let wal_path = root.join(format!("{}-wal", normalized));
     let shm_path = root.join(format!("{}-shm", normalized));
-    // Validate backup exists and is a file
+
     tokio::task::spawn_blocking({
         let backup_path = backup_path.clone();
         move || -> Result<(), String> {
@@ -362,53 +323,8 @@ pub async fn db_restore(
     .await
     .map_err(|e| e.to_string())??;
 
-    // Drop pooled connection so no handle keeps the file locked.
-    {
-        let mut pool = state.0.lock().map_err(|_| "db pool poisoned".to_string())?;
-        pool.remove(&normalized);
-        // Also remove case-variant key if present (pool keys are lowercased on insert,
-        // but be defensive).
-        let lower = normalized.to_ascii_lowercase();
-        if lower != normalized {
-            pool.remove(&lower);
-        }
-    }
-    // Also remove original-case key as inserted via get_conn (uses raw db_name lowercasing internally)
-    // Ensure we also remove the key exactly as get_conn would have inserted: lowercased db_name.
-    // The above already handles it; do a broad sweep for any key that lowercases to normalized.
-    {
-        let mut pool = state.0.lock().map_err(|_| "db pool poisoned".to_string())?;
-        let keys: Vec<String> = pool.keys().cloned().collect();
-        for k in keys {
-            if k.to_ascii_lowercase() == normalized {
-                pool.remove(&k);
-            }
-        }
-    }
-
-    tokio::task::spawn_blocking(move || -> Result<(), String> {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        for attempt in 0..5 {
-            let _ = std::fs::remove_file(&wal_path);
-            let _ = std::fs::remove_file(&shm_path);
-            match std::fs::copy(&backup_path, &target_path) {
-                Ok(_) => return Ok(()),
-                Err(e) => {
-                    let is_lock = e.kind() == std::io::ErrorKind::PermissionDenied
-                        || e.raw_os_error() == Some(32)
-                        || e.to_string().contains("being used by another process");
-                    if is_lock && attempt < 4 {
-                        std::thread::sleep(std::time::Duration::from_millis(200 * (attempt + 1) as u64));
-                        continue;
-                    }
-                    return Err(e.to_string());
-                }
-            }
-        }
-        Err("failed to restore after retries".to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())??;
+    evict_pool_connection(&state.0, &normalized)?;
+    copy_db_file_with_retry(backup_path, target_path, wal_path, shm_path).await?;
 
     Ok(json!({
         "restored": true,
@@ -427,24 +343,10 @@ pub async fn db_restore_from_path(
     db_name: String,
     source_path: String,
 ) -> Result<serde_json::Value, String> {
-    let normalized = db_name.trim().to_ascii_lowercase();
-    if normalized.is_empty() {
-        return Err("missing db name".to_string());
-    }
-    let safe = normalized
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'));
-    if !safe || normalized.starts_with('.') || normalized.contains("..") {
-        return Err("invalid database name".to_string());
-    }
+    let normalized = validate_db_name(&db_name)?;
     let src = source_path.trim().to_string();
-    if src.is_empty() {
-        return Err("missing source path".to_string());
-    }
-    // Basic safety: reject path traversal tricks in the source, but allow
-    // absolute paths outside the data root.
-    if src.contains('\0') {
-        return Err("invalid source path".to_string());
+    if src.is_empty() || src.contains('\0') {
+        return Err("missing or invalid source path".to_string());
     }
     let src_path = std::path::PathBuf::from(&src);
     let root = crate::paths::data_root();
@@ -468,28 +370,37 @@ pub async fn db_restore_from_path(
     .await
     .map_err(|e| e.to_string())??;
 
-    {
-        let mut pool = state.0.lock().map_err(|_| "db pool poisoned".to_string())?;
-        pool.remove(&normalized);
-    }
-    {
-        let mut pool = state.0.lock().map_err(|_| "db pool poisoned".to_string())?;
-        let keys: Vec<String> = pool.keys().cloned().collect();
-        for k in keys {
-            if k.to_ascii_lowercase() == normalized {
-                pool.remove(&k);
-            }
-        }
-    }
-    let src_path_clone = src_path.clone();
+    evict_pool_connection(&state.0, &normalized)?;
+    copy_db_file_with_retry(src_path, target_path, wal_path, shm_path).await?;
+
+    Ok(json!({
+        "restored": true,
+        "source_path": src,
+        "target": normalized
+    }))
+}
+
+fn evict_pool_connection(
+    pool: &Mutex<HashMap<String, Arc<Mutex<Connection>>>>,
+    normalized: &str,
+) -> Result<(), String> {
+    let mut guard = pool.lock().map_err(|_| "db pool poisoned".to_string())?;
+    guard.retain(|k, _| k.to_ascii_lowercase() != normalized);
+    Ok(())
+}
+
+async fn copy_db_file_with_retry(
+    source: std::path::PathBuf,
+    target: std::path::PathBuf,
+    wal: std::path::PathBuf,
+    shm: std::path::PathBuf,
+) -> Result<(), String> {
     tokio::task::spawn_blocking(move || -> Result<(), String> {
-        // Brief pause to let the pooled SQLite connection fully close and
-        // release the Windows file lock after `pool.remove` above.
         std::thread::sleep(std::time::Duration::from_millis(150));
         for attempt in 0..5 {
-            let _ = std::fs::remove_file(&wal_path);
-            let _ = std::fs::remove_file(&shm_path);
-            match std::fs::copy(&src_path_clone, &target_path) {
+            let _ = std::fs::remove_file(&wal);
+            let _ = std::fs::remove_file(&shm);
+            match std::fs::copy(&source, &target) {
                 Ok(_) => return Ok(()),
                 Err(e) => {
                     let is_lock = e.kind() == std::io::ErrorKind::PermissionDenied
@@ -506,15 +417,8 @@ pub async fn db_restore_from_path(
         Err("failed to restore after retries".to_string())
     })
     .await
-    .map_err(|e| e.to_string())??;
-
-    Ok(json!({
-        "restored": true,
-        "source_path": src,
-        "target": normalized
-    }))
+    .map_err(|e| e.to_string())?
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -558,15 +462,15 @@ mod tests {
     #[test]
     fn bind_value_coercion() {
         use rusqlite::types::Value as Rv;
-        assert_eq!(bind_value(&Value::Null), Rv::Null);
-        assert_eq!(bind_value(&Value::Bool(true)), Rv::Integer(1));
-        assert_eq!(bind_value(&Value::Bool(false)), Rv::Integer(0));
-        assert_eq!(bind_value(&Value::Number(3.into())), Rv::Integer(3));
+        assert_eq!(bind_value_owned(Value::Null), Rv::Null);
+        assert_eq!(bind_value_owned(Value::Bool(true)), Rv::Integer(1));
+        assert_eq!(bind_value_owned(Value::Bool(false)), Rv::Integer(0));
+        assert_eq!(bind_value_owned(Value::Number(3.into())), Rv::Integer(3));
         assert_eq!(
-            bind_value(&Value::Number(serde_json::Number::from_f64(2.5).unwrap())),
+            bind_value_owned(Value::Number(serde_json::Number::from_f64(2.5).unwrap())),
             Rv::Real(2.5)
         );
-        assert_eq!(bind_value(&Value::String("x".into())), Rv::Text("x".into()));
-        assert_eq!(bind_value(&json!(["a"])), Rv::Text("[\"a\"]".to_string()));
+        assert_eq!(bind_value_owned(Value::String("x".into())), Rv::Text("x".into()));
+        assert_eq!(bind_value_owned(json!(["a"])), Rv::Text("[\"a\"]".to_string()));
     }
 }

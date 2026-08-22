@@ -49,14 +49,10 @@ export function computeItemFlags(
   sets: ItemStateSets,
   _blacklistMode?: BlacklistMode,
 ): ItemRowFlags {
-  const isRead = sets.readHistorySet.has(permalink);
-  const isBookmarked = sets.bookmarkSet.has(permalink);
-  const isFullyCached = sets.fullyCachedSet.has(permalink);
-  const isBlacklisted = isItemBlacklisted(tags, { name }).blacklisted;
   return {
-    isRead,
-    isBookmarked,
-    isFullyCached,
-    isBlacklisted,
+    isRead: sets.readHistorySet.has(permalink),
+    isBookmarked: sets.bookmarkSet.has(permalink),
+    isFullyCached: sets.fullyCachedSet.has(permalink),
+    isBlacklisted: isItemBlacklisted(tags, { name }).blacklisted,
   };
 }

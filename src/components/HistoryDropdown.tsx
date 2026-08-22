@@ -18,10 +18,9 @@ import { ArrowLeftIcon, ArrowRightIcon, Icon, type BootstrapIconName } from "./I
 export interface HistoryDropdownProps {
   direction: "back" | "forward";
   anchorEl: HTMLElement | null;
-  open: boolean;
+  open?: boolean;
   onClose: () => void;
 }
-
 export function HistoryDropdown(props: HistoryDropdownProps) {
   const [positionStyle, setPositionStyle] = createSignal("");
 
@@ -44,10 +43,9 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
   };
 
   createEffect(() => {
-    if (!props.open) return;
+    if (props.open === false) return;
     const scale = uiScale() || 1;
     const baseStyle = `position:fixed;width:240px;max-width:90vw;background:var(--sys-window-bg,#fff);border:1px solid var(--sys-border-dark,#999);border-radius:3px;box-shadow:0 4px 16px rgba(0,0,0,0.22);display:flex;flex-direction:column;overflow:hidden;font-size:12px;color:var(--sys-window-text,#222);z-index:10001;zoom:${scale};`;
-
     const anchor = props.anchorEl;
     if (!anchor) {
       setPositionStyle(`${baseStyle}top:36px;left:80px;`);
@@ -71,16 +69,17 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
   });
 
   const selectItem = (originalIdx: number): void => {
-    if (props.direction === "back") {
+    const dir = props.direction;
+    props.onClose();
+    if (dir === "back") {
       goBackTo(originalIdx);
     } else {
       goForwardTo(originalIdx);
     }
-    props.onClose();
   };
 
   return (
-    <Show when={props.open && items().length > 0}>
+    <Show when={(props.open !== false) && items().length > 0}>
       <Portal mount={document.body}>
         <div
           id="ds-history-dropdown-overlay"

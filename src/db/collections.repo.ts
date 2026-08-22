@@ -56,7 +56,7 @@ export async function getCollectionById(id: number): Promise<CollectionRow | nul
      GROUP BY c.id`,
     [id],
   );
-  return rows.length > 0 ? rows[0] : null;
+  return rows[0] ?? null;
 }
 
 /**
