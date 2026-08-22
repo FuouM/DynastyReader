@@ -22,20 +22,19 @@ export interface ReaderSlotProps {
  */
 export function ReaderSlot(props: ReaderSlotProps) {
   const s = props.session;
-  const idx = props.index;
-  const cachedPath = (): string | undefined => s.cachedPages[0][idx];
+  const cachedPath = (): string | undefined => s.cachedPages[0][props.index];
 
   return (
     <div
       class="ds-slot"
-      data-index={idx}
+      data-index={props.index}
       style={props.style}
       ref={(el) => {
-        s.slotEls[idx] = el;
+        s.slotEls[props.index] = el;
       }}
     >
-      <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={idx} />}>
-        <SlotImgContent session={s} index={idx} path={cachedPath()!} />
+      <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={props.index} />}>
+        <SlotImgContent session={s} index={props.index} path={cachedPath()!} />
       </Show>
     </div>
   );
@@ -44,32 +43,31 @@ export function ReaderSlot(props: ReaderSlotProps) {
 /** Cached page: page badge + `<img>` with re-download + wide-spread detection. */
 function SlotImgContent(props: { session: ReaderSession; index: number; path: string }) {
   const s = props.session;
-  const idx = props.index;
   return (
     <>
       <div class="ds-slot-page-badge">
-        {idx + 1} / {s.pages().length}
+        {props.index + 1} / {s.pages().length}
       </div>
       <img
         class="ds-page-img"
-        alt={`Page ${idx + 1}`}
+        alt={`Page ${props.index + 1}`}
         src={convertFileSrc(props.path)}
-        onError={() => s.onPageImgError(idx)}
+        onError={() => s.onPageImgError(props.index)}
         ref={(img) => {
           if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-            s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
+            s.setPageDimension(props.index, img.naturalWidth, img.naturalHeight);
           }
         }}
         onLoad={(ev) => {
           const img = ev.currentTarget as HTMLImageElement;
-          s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
+          s.setPageDimension(props.index, img.naturalWidth, img.naturalHeight);
           const isWide = img.naturalWidth > img.naturalHeight * WIDE_RATIO;
-          if (isWide !== s.widePages().has(idx)) {
+          if (isWide !== s.widePages().has(props.index)) {
             const next = new Set(s.widePages());
             if (isWide) {
-              next.add(idx);
+              next.add(props.index);
             } else {
-              next.delete(idx);
+              next.delete(props.index);
             }
             s.setWidePages(next);
             // Rebuild only once every slot exists so page order stays intact.
@@ -86,8 +84,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
 /** Non-image slot state (download spinner, offline, error, idle). */
 function SlotStateContent(props: { session: ReaderSession; index: number }) {
   const s = props.session;
-  const idx = props.index;
-  const state = (): { kind: SlotStateKind; message: string } | undefined => s.slotStates[0][idx];
+  const state = (): { kind: SlotStateKind; message: string } | undefined => s.slotStates[0][props.index];
   const kind = (): SlotStateKind => state()?.kind ?? "idle";
   const pct = (): number =>
     s.pages().length > 0 ? Math.round((s.cachedCount() / s.pages().length) * 100) : 0;
@@ -95,7 +92,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
   return (
     <>
       <div class="ds-slot-page-badge">
-        {idx + 1} / {s.pages().length}
+        {props.index + 1} / {s.pages().length}
       </div>
       <div class={`ds-slot-state${kind() === "error" ? " ds-slot-error" : ""}`}>
         <Show when={kind() === "spinner"}>
@@ -107,7 +104,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
             <div class="ds-slot-pulse-bar"></div>
           </div>
           <span>
-            Downloading page {idx + 1} of {s.pages().length} ({s.cachedCount()}/{s.pages().length} cached · {pct()}%)
+            Downloading page {props.index + 1} of {s.pages().length} ({s.cachedCount()}/{s.pages().length} cached · {pct()}%)
           </span>
         </Show>
         <Show when={kind() === "offline"}>
@@ -117,7 +114,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
         <Show when={kind() === "idle"}>
           <i class="bi bi-book" style="font-size:20px;color:var(--sys-text-muted,#888);"></i>
           <span>
-            Page {idx + 1} of {s.pages().length} · Waiting to read…
+            Page {props.index + 1} of {s.pages().length} · Waiting to read…
           </span>
         </Show>
         <Show when={kind() === "error"}>
@@ -127,7 +124,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
             type="button"
             class="win-button"
             style="font-size:10px;padding:1px 8px;"
-            onClick={() => s.retrySlot(idx)}
+            onClick={() => s.retrySlot(props.index)}
           >
             Retry
           </button>

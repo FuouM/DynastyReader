@@ -575,6 +575,7 @@ export class ReaderSession implements ReaderQueueHost {
     this.setModeSignal(mode);
     localStorage.setItem("ds-reader-mode", mode === "paged" ? "paged" : "scroll");
     this.applyLayoutMode();
+    this.resetToCurrentPage(true);
   }
 
   setPagedLayout(layout: PagedLayout): void {
@@ -583,13 +584,14 @@ export class ReaderSession implements ReaderQueueHost {
     this.setLayoutAutoDetected(false);
     localStorage.setItem("ds-reader-layout", layout);
     this.applyLayoutMode();
+    this.resetToCurrentPage(true);
   }
 
   setDirection(dir: ReadingDirection): void {
+    if (dir === this.direction()) return;
     this.setDirectionSignal(dir);
-    if (!this.directionAutoDetected()) {
-      localStorage.setItem("ds-reader-direction", dir);
-    }
+    this.setDirectionAutoDetected(false);
+    localStorage.setItem("ds-reader-direction", dir);
     if (this.isHorizontal()) {
       this.applyLayoutMode();
       this.resetToCurrentPage(true);

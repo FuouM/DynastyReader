@@ -65,7 +65,12 @@ export function ReaderStrip(props: ReaderStripProps) {
 
             return (
               <div
-                class={`ds-spread-slot ${s.direction()}${single ? " ds-spread-single" : ""}`}
+                class="ds-spread-slot"
+                classList={{
+                  rtl: s.direction() === "rtl",
+                  ltr: s.direction() === "ltr",
+                  "ds-spread-single": single,
+                }}
                 data-spread-index={group.spreadIndex}
                 style={spreadStyle()}
                 ref={(el) => {
@@ -73,7 +78,12 @@ export function ReaderStrip(props: ReaderStripProps) {
                 }}
               >
                 <div
-                  class={`ds-spread-canvas ${s.direction()}${single ? " ds-spread-single" : ""}`}
+                  class="ds-spread-canvas"
+                  classList={{
+                    rtl: s.direction() === "rtl",
+                    ltr: s.direction() === "ltr",
+                    "ds-spread-single": single,
+                  }}
                 >
                   <For each={group.pageIndices}>
                     {(pageIndex, i) => (
