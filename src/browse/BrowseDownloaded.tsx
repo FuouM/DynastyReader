@@ -6,7 +6,12 @@
 
 import { createEffect, createSignal, For, Show, type Accessor } from "solid-js";
 import { formatBytes, formatDate, route } from "../stores";
-import { getFullyCachedChapters, type FullyCachedChapterRow } from "../db";
+import {
+  getFullyCachedChapters,
+  getBookmarkPermalinks,
+  getHistoryPermalinks,
+  type FullyCachedChapterRow,
+} from "../db";
 import {
   scrollBrowseToTop,
   setPaneLoading,
@@ -24,8 +29,16 @@ import type { AddToCollectionItem } from "../components/AddToCollectionModal";
 
 const PAGE_SIZE = 25;
 
+interface DownloadedModel {
+  rows: FullyCachedChapterRow[];
+  bookmarkSet: Set<string>;
+  readHistorySet: Set<string>;
+}
+
 function DownloadedRow(props: {
   ch: FullyCachedChapterRow;
+  isBookmarked: boolean;
+  isRead: boolean;
   onAddToCol: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
 }) {
   const { ch } = props;
@@ -39,6 +52,8 @@ function DownloadedRow(props: {
       }}
       coverPath={ch.coverPath}
       isFullyCached={true}
+      isBookmarked={props.isBookmarked}
+      isRead={props.isRead}
       extraMeta={
         <>
           <span class="ds-muted">✓ {ch.pageCount} pages</span>
@@ -63,11 +78,19 @@ export interface BrowseDownloadedProps {
 }
 
 export function BrowseDownloaded(props: BrowseDownloadedProps) {
-  const pane = useTabPane<FullyCachedChapterRow[]>({
+  const pane = useTabPane<DownloadedModel>({
     active: props.active,
     revision: props.revision,
     forceTick: props.forceTick,
-    load: async (_page) => getFullyCachedChapters(),
+    load: async (_page) => {
+      const rows = await getFullyCachedChapters();
+      const permalinks = rows.map((r) => r.chapterPermalink);
+      const [bookmarkSet, readHistorySet] = await Promise.all([
+        getBookmarkPermalinks(permalinks).catch(() => new Set<string>()),
+        getHistoryPermalinks(permalinks).catch(() => new Set<string>()),
+      ]);
+      return { rows, bookmarkSet, readHistorySet };
+    },
   });
   const showSpinner = useDelayedSpinner(pane.loading);
 
@@ -93,7 +116,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
   });
 
   const filtered = (): FullyCachedChapterRow[] => {
-    const rows = pane.data();
+    const rows = pane.data()?.rows;
     if (!rows) return [];
     const q = query().trim().toLowerCase();
     if (!q) return rows;
@@ -128,9 +151,9 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
   });
 
   const totalBytes = (): number =>
-    (pane.data() ?? []).reduce((acc, c) => acc + c.totalSizeBytes, 0);
+    (pane.data()?.rows ?? []).reduce((acc, c) => acc + c.totalSizeBytes, 0);
 
-  const model = (): FullyCachedChapterRow[] | undefined => pane.data();
+  const model = (): DownloadedModel | undefined => pane.data();
 
   return (
     <div class="ds-tab-pane active" id="ds-tab-downloaded">
@@ -173,6 +196,8 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
               {(ch) => (
                 <DownloadedRow
                   ch={ch}
+                  isBookmarked={pane.data()?.bookmarkSet.has(ch.chapterPermalink) ?? false}
+                  isRead={pane.data()?.readHistorySet.has(ch.chapterPermalink) ?? false}
                   onAddToCol={addToCol.onAddToCol}
                 />
               )}
