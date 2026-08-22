@@ -86,6 +86,8 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
 
   const permalinks = aggs.map((a) => a.chapterPermalink);
   const placeholders = inClause(permalinks.length);
+  const chapterKeys = permalinks.map((cp) => `chapter:${cp}`);
+  const chapterKeyPlaceholders = inClause(chapterKeys.length);
 
   const [progRows, histRows, metaChapterRows, page0Rows] = await Promise.all([
     query<{
@@ -108,7 +110,8 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
       permalinks,
     ),
     query<{ cache_key: string; json_payload: string }>(
-      `SELECT cache_key, json_payload FROM cached_metadata WHERE data_type = 'chapter'`,
+      `SELECT cache_key, json_payload FROM cached_metadata WHERE data_type = 'chapter' AND cache_key IN (${chapterKeyPlaceholders})`,
+      chapterKeys,
     ),
     query<{ chapter_permalink: string; file_path: string }>(
       `SELECT chapter_permalink, file_path FROM cached_pages WHERE page_index = 0 AND chapter_permalink IN (${placeholders})`,

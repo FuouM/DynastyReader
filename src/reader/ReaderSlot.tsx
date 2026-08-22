@@ -29,6 +29,13 @@ export function ReaderSlot(props: ReaderSlotProps) {
     const ahead = isMobile() ? 4 : 8;
     return props.index >= cur - behind && props.index <= cur + ahead;
   };
+  const placeholderStyle = (): string => {
+    const dim = s.pageDimensions[0][props.index];
+    if (dim && dim.width > 0 && dim.height > 0) {
+      return `aspect-ratio:${dim.width}/${dim.height};min-height:200px;`;
+    }
+    return "min-height:200px;";
+  };
 
   return (
     <div
@@ -40,7 +47,7 @@ export function ReaderSlot(props: ReaderSlotProps) {
       }}
     >
       <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={props.index} />}>
-        <Show when={isVisible()} fallback={<div class="ds-slot-placeholder" style="min-height:200px;" />}>
+        <Show when={isVisible()} fallback={<div class="ds-slot-placeholder" style={placeholderStyle()} />}>
           <SlotImgContent session={s} index={props.index} path={cachedPath()!} />
         </Show>
       </Show>

@@ -326,7 +326,10 @@ export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]>
  * versus its expected total (progress `page_total`, or cached chapter metadata
  * page count) to produce the `Set<permalink>` the feed/search/library badge.
  */
-export async function getFullyCachedChapterPermalinks(): Promise<Set<string>> {
+export async function getFullyCachedChapterPermalinks(permalinks?: string[]): Promise<Set<string>> {
+  if (permalinks && permalinks.length === 0) return new Set();
+  const whereClause = permalinks ? ` WHERE cp.chapter_permalink IN (${inClause(permalinks.length)})` : "";
+  const params = permalinks ?? [];
   const rows = await query<{
     chapter_permalink: string;
     page_count: number;
@@ -337,10 +340,10 @@ export async function getFullyCachedChapterPermalinks(): Promise<Set<string>> {
             COUNT(cp.page_index) AS page_count,
             (SELECT rp.page_total FROM reading_progress rp WHERE rp.chapter_permalink = cp.chapter_permalink) AS progress_total,
             (SELECT cm.json_payload FROM cached_metadata cm WHERE cm.cache_key = 'chapter:' || cp.chapter_permalink) AS chapter_payload
-     FROM cached_pages cp
+     FROM cached_pages cp${whereClause}
      GROUP BY cp.chapter_permalink`,
+    params,
   );
-
   const fullyCached = new Set<string>();
   for (const r of rows) {
     let totalPages = Number(r.progress_total ?? 0);

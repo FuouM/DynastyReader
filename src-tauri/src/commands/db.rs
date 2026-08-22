@@ -94,8 +94,10 @@ fn open(db_name: &str) -> Result<Connection, String> {
         .map_err(|e| format!("failed enabling WAL: {e}"))?;
     conn.pragma_update(None, "synchronous", "NORMAL")
         .map_err(|e| format!("failed tuning synchronous mode: {e}"))?;
-    conn.pragma_update(None, "journal_size_limit", 64 * 1024 * 1024)
+    conn.pragma_update(None, "journal_size_limit", 4 * 1024 * 1024)
         .map_err(|e| format!("failed tuning journal size limit: {e}"))?;
+    conn.pragma_update(None, "cache_size", -2000)
+        .map_err(|e| format!("failed tuning cache size: {e}"))?;
     conn.pragma_update(None, "wal_autocheckpoint", 1000)
         .map_err(|e| format!("failed tuning wal autocheckpoint: {e}"))?;
     conn.pragma_update(None, "foreign_keys", "ON")

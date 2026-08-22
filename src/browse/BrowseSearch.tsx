@@ -258,7 +258,10 @@ export function BrowseSearch(props: BrowseSearchProps) {
         const pageData = await searchDynasty(params);
         let fullyCachedSet = new Set<string>();
         try {
-          fullyCachedSet = await getFullyCachedChapterPermalinks();
+          const chapterPermalinks = pageData.items
+            .filter((it) => it.kind === "chapter")
+            .map((it) => it.permalink);
+          fullyCachedSet = await getFullyCachedChapterPermalinks(chapterPermalinks);
         } catch {}
         return { pageData, fullyCachedSet, blMode: getBlacklistMode() };
       } catch (err) {

@@ -41,6 +41,8 @@ export interface ItemCoverInfo {
 }
 
 const SCROLL_IDLE_MS = 300;
+const MAX_MEMORY_CACHE = 500;
+const MAX_FAILED_ATTEMPTS = 200;
 
 /**
  * Feed cover-hydration engine. Reactive singleton that drives cover image paths
@@ -54,6 +56,37 @@ export class BrowseCovers {
   private readonly queue: CoverTarget[] = [];
   private readonly queuedKeys = new Set<string>();
   private readonly MAX_CONCURRENCY = 4;
+
+  private setMemoryCache(key: string, val: string): void {
+    if (this.memoryCache.size >= MAX_MEMORY_CACHE) {
+      const oldest = this.memoryCache.keys().next().value;
+      if (oldest !== undefined) this.memoryCache.delete(oldest);
+    }
+    this.memoryCache.set(key, val);
+  }
+
+  private setFailedAttempt(key: string, val: { count: number; lastTried: number }): void {
+    if (this.failedAttempts.size >= MAX_FAILED_ATTEMPTS) {
+      const oldest = this.failedAttempts.keys().next().value;
+      if (oldest !== undefined) this.failedAttempts.delete(oldest);
+    }
+    this.failedAttempts.set(key, val);
+  }
+
+  private updateCoverPath(key: string, path: string): void {
+    this.setMemoryCache(key, path);
+    this.failedAttempts.delete(key);
+    setCoverPathMap((prev) => {
+      if (prev.get(key) === path) return prev;
+      const next = new Map(prev);
+      if (next.size >= MAX_MEMORY_CACHE) {
+        const oldest = next.keys().next().value;
+        if (oldest !== undefined) next.delete(oldest);
+      }
+      next.set(key, path);
+      return next;
+    });
+  }
   private activeWorkers = 0;
   private hydrationHost: HTMLElement | null = null;
   private lazyObserver: IntersectionObserver | null = null;
@@ -240,7 +273,7 @@ export class BrowseCovers {
         for (const [fullKey, payload] of cachedMap) {
           const rawKey = fullKey.replace(/^cover:/, "");
           if (payload) {
-            this.memoryCache.set(rawKey, payload);
+            this.setMemoryCache(rawKey, payload);
             if (currentMap.get(rawKey) !== payload) {
               currentMap.set(rawKey, payload);
               changed = true;
@@ -248,6 +281,11 @@ export class BrowseCovers {
           }
         }
         if (changed) {
+          while (currentMap.size > MAX_MEMORY_CACHE) {
+            const oldest = currentMap.keys().next().value;
+            if (oldest !== undefined) currentMap.delete(oldest);
+            else break;
+          }
           setCoverPathMap(new Map(currentMap));
         }
       } catch {}
@@ -341,12 +379,7 @@ export class BrowseCovers {
                 const resolved = this.memoryCache.get(coverKey);
                 if (resolved) {
                   this.lazyObserver?.unobserve(el);
-                  setCoverPathMap((prev) => {
-                    if (prev.get(coverKey) === resolved) return prev;
-                    const next = new Map(prev);
-                    next.set(coverKey, resolved);
-                    return next;
-                  });
+                  this.updateCoverPath(coverKey, resolved);
                 } else if (chapterPermalink) {
                   const fail = this.failedAttempts.get(coverKey);
                   const cooldown = fail ? Math.min(30000, 3000 * fail.count) : 0;
@@ -399,26 +432,19 @@ export class BrowseCovers {
 
           const coverPath = await task;
           if (coverPath) {
-            this.memoryCache.set(target.coverKey, coverPath);
-            this.failedAttempts.delete(target.coverKey);
-            setCoverPathMap((prev) => {
-              if (prev.get(target.coverKey) === coverPath) return prev;
-              const next = new Map(prev);
-              next.set(target.coverKey, coverPath);
-              return next;
-            });
+            this.updateCoverPath(target.coverKey, coverPath);
           } else {
             this.memoryCache.delete(target.coverKey);
             const prevFail = this.failedAttempts.get(target.coverKey);
             const count = (prevFail?.count ?? 0) + 1;
-            this.failedAttempts.set(target.coverKey, { count, lastTried: Date.now() });
+            this.setFailedAttempt(target.coverKey, { count, lastTried: Date.now() });
           }
         } catch (err) {
           console.warn(`[ds-covers] worker error: ${target.coverKey}`, err);
           this.memoryCache.delete(target.coverKey);
           const prevFail = this.failedAttempts.get(target.coverKey);
           const count = (prevFail?.count ?? 0) + 1;
-          this.failedAttempts.set(target.coverKey, { count, lastTried: Date.now() });
+          this.setFailedAttempt(target.coverKey, { count, lastTried: Date.now() });
         } finally {
           this.queuedKeys.delete(target.coverKey);
           this.inflight.delete(target.coverKey);

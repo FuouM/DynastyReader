@@ -52,7 +52,16 @@ export async function searchAllDirectoryEntries(
 
 export { directoryGroups } from "../utils/directory";
 
+const MAX_SUGGEST_CACHE = 100;
 const suggestCache = new Map<string, SuggestResult[]>();
+
+function setSuggestCache(key: string, val: SuggestResult[]): void {
+  if (suggestCache.size >= MAX_SUGGEST_CACHE) {
+    const oldest = suggestCache.keys().next().value;
+    if (oldest !== undefined) suggestCache.delete(oldest);
+  }
+  suggestCache.set(key, val);
+}
 
 /** Search typeahead suggestions with instant local SQLite lookup + network fallback. */
 export async function suggest(query: string): Promise<SuggestResult[]> {
@@ -69,7 +78,7 @@ export async function suggest(query: string): Promise<SuggestResult[]> {
     const { suggestDirectoryEntries } = await import("../db");
     const local = await suggestDirectoryEntries(q, 8);
     if (local.length > 0) {
-      suggestCache.set(cacheKey, local);
+      setSuggestCache(cacheKey, local);
       return local;
     }
   } catch {}
@@ -82,7 +91,7 @@ export async function suggest(query: string): Promise<SuggestResult[]> {
   if (status !== 200) throw new Error(`HTTP ${status} for /tags/suggest`);
   const parsed = tryParseJson<SuggestResult[]>(body);
   if (parsed === null) throw new Error("Invalid JSON from /tags/suggest");
-  suggestCache.set(cacheKey, parsed);
+  setSuggestCache(cacheKey, parsed);
 
   // Persist newly discovered suggestions into SQLite directory_entries
   if (parsed.length > 0) {

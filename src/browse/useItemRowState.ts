@@ -31,7 +31,7 @@ export async function fetchItemStateSets(
   const [readHistorySet, bookmarkSet, fullyCachedSet] = await Promise.all([
     getHistoryPermalinks(permalinks).catch(() => new Set<string>()),
     getBookmarkPermalinks(permalinks).catch(() => new Set<string>()),
-    getFullyCachedChapterPermalinks().catch(() => new Set<string>()),
+    getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>()),
   ]);
 
   return {

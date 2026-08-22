@@ -229,10 +229,9 @@ export function BookmarksPane(props: LibraryPaneProps) {
   const [data, { refetch }] = createResource(
     () => ({ page: page(), rev: rev() }),
     async ({ page: p }) => {
-      const [res, fullyCachedSet] = await Promise.all([
-        getBookmarksPage(p, 15),
-        getFullyCachedChapterPermalinks(),
-      ]);
+      const res = await getBookmarksPage(p, 15);
+      const permalinks = res.rows.map((r) => r.chapter_permalink);
+      const fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
       return { res, fullyCachedSet };
     },
   );
@@ -313,10 +312,9 @@ export function HistoryPane(props: LibraryPaneProps) {
   const [data, { refetch }] = createResource(
     () => ({ page: page(), rev: rev() }),
     async ({ page: p }) => {
-      const [res, fullyCachedSet] = await Promise.all([
-        getHistoryPage(p, 15),
-        getFullyCachedChapterPermalinks(),
-      ]);
+      const res = await getHistoryPage(p, 15);
+      const permalinks = res.rows.map((r) => r.chapter_permalink);
+      const fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
       return { res, fullyCachedSet };
     },
   );

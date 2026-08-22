@@ -27,6 +27,8 @@ use image::{
 };
 use serde_json::json;
 use std::io::Cursor;
+use std::sync::Arc;
+use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 
 const ENCODE_FORMATS: &[&str] = &[
@@ -49,9 +51,13 @@ pub async fn ephemeral_convert_images(
 ) -> Result<serde_json::Value, String> {
     let quality = quality.unwrap_or(80).clamp(1, 100);
     let count = conversions.len();
+    // Bound image decode/encode concurrency to 2 parallel tasks to cap peak uncompressed RAM.
+    let semaphore = Arc::new(Semaphore::new(2));
     let mut set = JoinSet::new();
     for (i, (src, dst)) in conversions.into_iter().enumerate() {
+        let sem = semaphore.clone();
         set.spawn(async move {
+            let _permit = sem.acquire_owned().await;
             (
                 i,
                 convert_one(&src, &dst, quality, max_dimension, max_bytes).await,
@@ -235,7 +241,7 @@ fn as_rgb8_bytes(img: &DynamicImage) -> BufferRef<'_> {
 
 fn encode_dynamic(img: &DynamicImage, ext: &str, quality: u8) -> Result<Vec<u8>, String> {
     let (w, h) = img.dimensions();
-    let mut buf = Vec::new();
+    let mut buf = Vec::with_capacity(32 * 1024);
     match ext {
         "png" => PngEncoder::new(&mut buf)
             .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)

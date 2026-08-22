@@ -19,7 +19,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.31", features = ["bundled", "backup"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
-tokio = { version = "1", features = ["rt", "fs", "io-util"] }
+tokio = { version = "1", features = ["rt", "fs", "io-util", "sync"] }
+mimalloc = { version = "0.1", default-features = false }
 tokio-stream = "0.1"
 walkdir = "2"
 webp = "0.3"
