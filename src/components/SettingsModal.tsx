@@ -12,6 +12,7 @@
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Modal } from "./Modal";
 import { Icon } from "./Icon";
+import { IconButton } from "./Button";
 import { t } from "../i18n";
 import {
   SETTINGS_SECTIONS,
@@ -133,15 +134,14 @@ export function SettingsModal(props: SettingsModalProps) {
                   <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
                     {t("settings.hotkeys.bannerTitle")}
                   </div>
-                  <button
-                    type="button"
-                    class="win-button"
+                  <IconButton
+                    className=""
                     id="ds-settings-open-hotkeys"
-                    style="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;"
+                    cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;"
+                    icon={<Icon name="keyboard" />}
+                    text={t("settings.openHotkeysModal")}
                     onClick={() => setCurrentPage("hotkeys")}
-                  >
-                    <Icon name="keyboard" /> {t("settings.openHotkeysModal")}
-                  </button>
+                  />
                 </div>
               </div>
 
@@ -153,14 +153,13 @@ export function SettingsModal(props: SettingsModalProps) {
       >
         <div class="ds-settings-subpage">
           <div class="ds-settings-subpage-header">
-            <button
-              type="button"
-              class="win-button ds-btn-sm"
-              style="display:inline-flex;align-items:center;gap:5px;font-weight:600;"
+            <IconButton
+              className="ds-btn-sm"
+              cssText="display:inline-flex;align-items:center;gap:5px;font-weight:600;"
+              icon={<Icon name="arrow-left" />}
+              text={t("settings.backToSettings")}
               onClick={() => setCurrentPage("main")}
-            >
-              <Icon name="arrow-left" /> {t("settings.backToSettings")}
-            </button>
+            />
             <span style="font-size:11px;color:var(--sys-text-muted,#666);">
               {t("settings.hotkeys.autoSavedNotice")}
             </span>

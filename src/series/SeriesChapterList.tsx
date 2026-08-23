@@ -10,6 +10,7 @@ import type { Series } from "../types/api";
 import type { SeriesProgressRow } from "../db";
 import { OfflineBadge } from "../components/OfflineBadge";
 import { Icon } from "../components/Icon";
+import { IconButton } from "../components/Button";
 
 export interface ChapterMeta extends ChapterRef {
   volumeHeader?: string;
@@ -91,21 +92,19 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
             style="justify-content:space-between;align-items:center;padding:4px 2px;border-bottom:1px solid var(--sys-border-light, #ddd);"
           >
             <div style="font-size:12px;font-weight:600;">{t("series.chaptersCount", { count: props.chapters.length })}</div>
-            <button
-              type="button"
-              class="win-button ds-btn-compact"
+            <IconButton
+              className="ds-btn-compact"
               title={
                 props.sortOrder() === "asc"
                   ? t("series.sortOldestTooltip")
                   : t("series.sortNewestTooltip")
               }
+              icon={<Icon name={props.sortOrder() === "asc" ? "sort-numeric-down" : "sort-numeric-down-alt"} />}
+              text={props.sortOrder() === "asc" ? t("series.sortAscending") : t("series.sortDescending")}
               onClick={() =>
                 props.setSortOrder(props.sortOrder() === "asc" ? "desc" : "asc")
               }
-            >
-              <Icon name={props.sortOrder() === "asc" ? "sort-numeric-down" : "sort-numeric-down-alt"} />{" "}
-              {props.sortOrder() === "asc" ? t("series.sortAscending") : t("series.sortDescending")}
-            </button>
+            />
           </div>
           <div style="display:flex;flex-direction:column;">
             <For each={props.ordered()}>

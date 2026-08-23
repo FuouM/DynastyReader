@@ -25,6 +25,7 @@ import {
   TrashIcon,
 } from "../components/Icon";
 import { Loading } from "../components/Loading";
+import { IconButton } from "../components/Button";
 
 export function BlacklistView() {
   const [data, { refetch }] = createResource<BlacklistedSeries[]>(() =>
@@ -82,9 +83,7 @@ export function BlacklistView() {
             <Show when={data.error !== undefined && data() === undefined}>
               <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
                 <span class="ds-muted">{t("blacklist.loadError", { msg: errorMessage() })}</span>
-                <button type="button" class="win-button" onClick={() => void refetch()}>
-                  <RefreshIcon /> {t("common.retry")}
-                </button>
+                <IconButton icon={<RefreshIcon />} text={t("common.retry")} onClick={() => void refetch()} />
               </div>
             </Show>
           </>
@@ -200,18 +199,17 @@ export function BlacklistView() {
                     </div>
                     <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
                       <ExternalLinkButton
-                        class="ds-btn-icon-sm"
+                        className="ds-btn-icon-sm"
                         title={t("blacklist.openOnDynastyTooltip")}
                         url={`${SITE_ROOT}/series/${item.series_permalink}`}
                       />
-                      <button
-                        type="button"
-                        class="win-button ds-btn-sm"
+                      <IconButton
+                        icon={<TrashIcon />}
+                        text={t("common.remove")}
+                        className="ds-btn-sm"
                         title={t("blacklist.removeSeriesTooltip")}
                         onClick={() => void removeSeries(item)}
-                      >
-                        <TrashIcon /> {t("common.remove")}
-                      </button>
+                      />
                     </div>
                   </div>
                 )}

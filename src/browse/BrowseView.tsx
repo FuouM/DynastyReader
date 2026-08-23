@@ -20,6 +20,7 @@ import { useMediaQuery } from "../hooks/useImageRetry";
 import { Pager } from "../components/Pager";
 import { SubTabs } from "../components/SubTabs";
 import { Typeahead } from "../components/Typeahead";
+import { IconButton } from "../components/Button";
 import {
   SearchIcon,
   RefreshIcon,
@@ -192,33 +193,18 @@ export function BrowseView() {
 
   const topCfg = () => getTopPagerFor(activeTab());
 
-  const checkBtnContent = (): JSX.Element => {
-    if (checkBtn() === "checking") {
-      return (
-        <>
-          <RefreshIcon spin={true} /> {t("browse.feed.checkBtnChecking")}
-        </>
-      );
-    }
-    if (checkBtn() === "updated") {
-      return (
-        <>
-          <CheckIcon /> {t("browse.feed.checkBtnUpdated")}
-        </>
-      );
-    }
-    if (checkBtn() === "error") {
-      return (
-        <>
-          <WarningIcon /> {t("browse.feed.checkBtnError")}
-        </>
-      );
-    }
-    return (
-      <>
-        <RefreshIcon /> {t("browse.feed.checkBtnCheckUpdates")}
-      </>
-    );
+  const checkBtnIcon = (): JSX.Element => {
+    if (checkBtn() === "checking") return <RefreshIcon spin={true} />;
+    if (checkBtn() === "updated") return <CheckIcon />;
+    if (checkBtn() === "error") return <WarningIcon />;
+    return <RefreshIcon />;
+  };
+
+  const checkBtnText = (): string => {
+    if (checkBtn() === "checking") return t("browse.feed.checkBtnChecking");
+    if (checkBtn() === "updated") return t("browse.feed.checkBtnUpdated");
+    if (checkBtn() === "error") return t("browse.feed.checkBtnError");
+    return t("browse.feed.checkBtnCheckUpdates");
   };
 
   return (
@@ -256,16 +242,13 @@ export function BrowseView() {
                 debounceMs={250}
               />
             </div>
-            <button
-              type="button"
-              class="win-button"
+            <IconButton
               id="ds-search-btn"
-              style="width:86px;justify-content:center;flex-shrink:0;"
+              icon={<SearchIcon />}
+              text={t("browse.searchAndGo.searchButton")}
+              cssText="width:86px;justify-content:center;flex-shrink:0;"
               onClick={() => runSearch(searchBoxValue())}
-            >
-              <SearchIcon />
-              <span>{t("browse.searchAndGo.searchButton")}</span>
-            </button>
+            />
           </div>
           <div class="ds-row">
             <div class="input-wrapper" style="flex:1;">
@@ -291,26 +274,20 @@ export function BrowseView() {
                 <CloseIcon />
               </button>
             </div>
-            <button
-              type="button"
-              class="win-button"
+            <IconButton
               id="ds-url-paste-btn"
+              icon={<ClipboardIcon />}
+              text={t("browse.searchAndGo.pasteButton")}
               title={t("browse.searchAndGo.pasteTooltip")}
               onClick={() => void pasteUrl()}
-            >
-              <ClipboardIcon />
-              <span>{t("browse.searchAndGo.pasteButton")}</span>
-            </button>
-            <button
-              type="button"
-              class="win-button"
+            />
+            <IconButton
               id="ds-url-btn"
-              style="width:86px;justify-content:center;flex-shrink:0;"
+              icon={<ExternalLinkIcon />}
+              text={t("browse.searchAndGo.openButton")}
+              cssText="width:86px;justify-content:center;flex-shrink:0;"
               onClick={openByUrl}
-            >
-              <ExternalLinkIcon />
-              <span>{t("browse.searchAndGo.openButton")}</span>
-            </button>
+            />
           </div>
           <div class="ds-muted" style="margin-top:2px;">
             {t("browse.searchAndGo.acceptedNotice")}
@@ -326,16 +303,15 @@ export function BrowseView() {
         compact={isCompact()}
         right={
           <>
-            <button
-              type="button"
-              class="win-button ds-btn-sm"
+            <IconButton
               id="ds-browse-check-updates-btn"
+              className="ds-btn-sm"
               title={t("browse.feed.checkBtnTooltip")}
               disabled={checkBtn() === "checking"}
               onClick={() => void checkUpdates()}
-            >
-              {checkBtnContent()}
-            </button>
+              icon={checkBtnIcon()}
+              text={checkBtnText()}
+            />
             <div id="ds-browse-top-pager" style="display:flex;align-items:center;gap:8px;margin-left:auto;">
               <Show when={topCfg() && topCfg()!.totalPages > 1}>
                 <Pager
@@ -344,14 +320,13 @@ export function BrowseView() {
                   onPage={topCfg()!.onPage}
                   cssText="align-items:center;justify-content:flex-end;margin:0;"
                 />
-                <button
-                  type="button"
-                  class="win-button ds-scroll-top-btn"
+                <IconButton
+                  icon={<ArrowDownIcon />}
+                  text={t("common.bottom")}
+                  className="ds-scroll-top-btn"
                   title={t("browse.searchAndGo.scrollToBottomTooltip")}
                   onClick={scrollBrowseToBottom}
-                >
-                  <ArrowDownIcon /> {t("common.bottom")}
-                </button>
+                />
               </Show>
             </div>
           </>

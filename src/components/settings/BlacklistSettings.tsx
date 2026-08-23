@@ -11,6 +11,7 @@ import { suggest } from "../../api";
 import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { BlacklistIcon, AddIcon, CloseIcon } from "../Icon";
+import { IconButton } from "../Button";
 export function BlacklistSettings() {
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
@@ -98,15 +99,14 @@ export function BlacklistSettings() {
               debounceMs={200}
             />
           </div>
-          <button
-            type="button"
-            class="win-button"
+          <IconButton
+            className=""
             id="ds-settings-blacklist-add"
-            style="font-size:11px;padding:2px 10px;"
+            cssText="font-size:11px;padding:2px 10px;"
+            icon={<AddIcon />}
+            text={t("blacklist.addTagButton")}
             onClick={() => void addTag(blInput())}
-          >
-            <AddIcon /> {t("blacklist.addTagButton")}
-          </button>
+          />
         </div>
 
         {/* Blacklisted Tag Chips */}

@@ -46,6 +46,7 @@ import { WarningChip } from "../components/WarningChip";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { BlacklistNotice } from "../components/BlacklistNotice";
 import { EmptyState } from "../components/EmptyState";
+import { IconButton } from "../components/Button";
 import { FeedItemRow, type FeedItemData } from "../components/FeedItemRow";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
@@ -203,7 +204,7 @@ function SearchResultRow(props: {
       }
       actions={
         <ExternalLinkButton
-          class="ds-btn-icon-sm"
+          className="ds-btn-icon-sm"
           title={t("browse.search.openExternalTooltip", { kind: item.kind, title: decodeEntities(item.title) })}
           url={`${SITE_ROOT}/${seriesTypeToPath(item.kind)}/${item.permalink}`}
         />
@@ -420,24 +421,20 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 debounceMs={SEARCH_TYPEAHEAD_DEBOUNCE_MS}
               />
             </div>
-            <button
-              type="button"
-              class="win-button"
+            <IconButton
               id="ds-tab-search-submit"
-              style="font-weight:600;"
+              cssText="font-weight:600;"
+              icon={<SearchIcon />}
+              text={t("browse.search.searchButton")}
               onClick={() => runSearch(q())}
-            >
-              <SearchIcon /> {t("browse.search.searchButton")}
-            </button>
-            <button
-              type="button"
-              class="win-button"
+            />
+            <IconButton
               id="ds-tab-search-reset"
               title={t("browse.search.resetFiltersTooltip")}
+              icon={<ClearIcon />}
+              text={t("common.clear")}
               onClick={clearAll}
-            >
-              <ClearIcon /> {t("common.clear")}
-            </button>
+            />
           </div>
 
           <div style="display:flex;flex-direction:column;gap:4px;">
@@ -445,33 +442,25 @@ export function BrowseSearch(props: BrowseSearchProps) {
               {t("browse.search.categoryFilter")}
             </div>
             <div id="ds-search-classes-row" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
-              <button
-                type="button"
-                class={`win-button ds-btn-xs${classes().size === 0 ? " active" : ""}`}
+              <IconButton
+                className={`ds-btn-xs${classes().size === 0 ? " active" : ""}`}
                 onClick={() => {
                   setClasses(new Set<SearchClass>());
                   pane.goToPage(1);
                 }}
-              >
-                <Show when={classes().size === 0}>
-                  <CheckIcon size={11} />
-                </Show>
-                <span>{t("browse.search.classesAll")}</span>
-              </button>
+                icon={classes().size === 0 ? <CheckIcon size={11} /> : undefined}
+                text={t("browse.search.classesAll")}
+              />
               <For each={getAllClasses()}>
                 {(c) => {
                   const isActive = () => classes().has(c.id);
                   return (
-                    <button
-                      type="button"
-                      class={`win-button ds-btn-xs${isActive() ? " active" : ""}`}
+                    <IconButton
+                      className={`ds-btn-xs${isActive() ? " active" : ""}`}
                       onClick={() => toggleClass(c.id)}
-                    >
-                      <Show when={isActive()}>
-                        <CheckIcon size={11} />
-                      </Show>
-                      <span>{c.label}</span>
-                    </button>
+                      icon={isActive() ? <CheckIcon size={11} /> : undefined}
+                      text={c.label}
+                    />
                   );
                 }}
               </For>
@@ -647,9 +636,11 @@ export function BrowseSearch(props: BrowseSearchProps) {
         <Show when={pane.error() !== undefined}>
           <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
             <span class="ds-muted">{t("browse.search.searchError", { msg: paneErrorText() })}</span>
-            <button type="button" class="win-button" onClick={() => pane.reload()}>
-              <RefreshIcon /> {t("common.retry")}
-            </button>
+            <IconButton
+              icon={<RefreshIcon />}
+              text={t("common.retry")}
+              onClick={() => pane.reload()}
+            />
           </div>
         </Show>
       </div>

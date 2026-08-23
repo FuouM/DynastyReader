@@ -29,7 +29,7 @@ import {
   clearHistory,
   createCollection,
 } from "../db";
-import { ConfirmDeleteButton } from "../components/Button";
+import { ConfirmDeleteButton, IconButton } from "../components/Button";
 import { Modal } from "../components/Modal";
 import { SubTabs } from "../components/SubTabs";
 import {
@@ -195,16 +195,12 @@ function LibraryGrid() {
                 <span>
                   <FolderIcon /> {t("library.collections")}
                 </span>
-                <button
-                  type="button"
-                  class="win-button"
-                  style="font-size:10px;padding:0 5px;height:18px;line-height:18px;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
+                <IconButton
+                  icon={<AddIcon />}
+                  text={t("library.newCollectionButton")}
                   title={t("library.createCollectionTooltip")}
                   onClick={() => setCreating(true)}
-                >
-                  <AddIcon style={{ "font-size": "9px", "line-height": 1 }} />{" "}
-                  <span>{t("library.newCollectionButton")}</span>
-                </button>
+                />
               </div>
               <div class="ds-library-panel-body">
                 <CollectionsPane
@@ -239,13 +235,11 @@ function LibraryGrid() {
                   <Icon name="clock-history" /> {t("library.history")}
                 </span>
                 <ConfirmDeleteButton
-                  class="win-button"
+                  icon={<TrashIcon />}
+                  text={t("library.clearHistoryButton")}
                   title={t("library.clearHistoryTooltip")}
                   onConfirm={clearHistoryAll}
-                  cssText="font-size:10px;padding:0 5px;height:18px;line-height:18px;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
-                >
-                  <TrashIcon style={{ "font-size": "9px", "line-height": 1 }} /> {t("library.clearHistoryButton")}
-                </ConfirmDeleteButton>
+                />
               </div>
               <div class="ds-library-panel-body">
                 <HistoryPane register={register("history")} />
@@ -263,26 +257,22 @@ function LibraryGrid() {
           right={
             <>
               <Show when={activeTab() === "collections"}>
-                <button
-                  type="button"
-                  class="win-button ds-btn-sm"
-                  style="display:inline-flex;align-items:center;gap:4px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;padding:0 8px;font-size:11px;"
+                <IconButton
+                  icon={<AddIcon />}
+                  text={t("library.newCollectionButton")}
+                  className="ds-btn-sm"
                   title={t("library.createCollectionTooltip")}
                   onClick={() => setCreating(true)}
-                >
-                  <AddIcon style={{ "font-size": "9px", "line-height": 1 }} />{" "}
-                  <span>{t("library.newCollectionButton")}</span>
-                </button>
+                />
               </Show>
               <Show when={activeTab() === "history"}>
                 <ConfirmDeleteButton
-                  class="ds-btn-compact"
+                  icon={<TrashIcon />}
+                  text={t("library.clearHistoryButton")}
+                  className="ds-btn-compact"
                   title={t("library.clearHistoryTooltip")}
                   onConfirm={clearHistoryAll}
-                  cssText="font-size:11px;padding:0 8px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;"
-                >
-                  <TrashIcon style={{ "line-height": 1 }} /> {t("library.clearHistoryButton")}
-                </ConfirmDeleteButton>
+                />
               </Show>
             </>
           }
@@ -434,15 +424,13 @@ function CreateCollectionModal(props: {
           >
             {t("common.cancel")}
           </button>
-          <button
-            type="button"
-            class="win-button primary ds-modal-submit"
-            style="font-size:11px;padding:2px 10px;display:inline-flex;align-items:center;gap:4px;"
+          <IconButton
+            icon={<AddIcon />}
+            text={t("library.createCollectionConfirm")}
+            className="primary ds-modal-submit"
             disabled={creating()}
             onClick={() => void submit()}
-          >
-            <AddIcon /> {t("library.createCollectionConfirm")}
-          </button>
+          />
         </div>
       }
     />
@@ -456,48 +444,51 @@ function LibraryActions(props: {
 }) {
   return (
     <>
-      <button
-        type="button"
+      <IconButton
         id="ds-library-refresh-btn"
-        class="win-button ds-btn-sm"
+        icon={
+          <Show
+            when={props.refreshing()}
+            fallback={
+              <Show when={props.justUpdated()} fallback={<RefreshIcon />}>
+                <CheckIcon />
+              </Show>
+            }
+          >
+            <RefreshIcon spin={true} />
+          </Show>
+        }
+        text={
+          <Show
+            when={props.refreshing()}
+            fallback={
+              <Show when={props.justUpdated()} fallback={t("library.refreshLibraryButton")}>
+                {t("library.refreshUpdated")}
+              </Show>
+            }
+          >
+            {t("library.refreshRefreshing")}
+          </Show>
+        }
+        className="ds-btn-sm"
         title={t("library.refreshLibraryTooltip")}
         disabled={props.refreshing() || props.justUpdated()}
         onClick={props.onRefresh}
-      >
-        <Show
-          when={props.refreshing()}
-          fallback={
-            <Show
-              when={props.justUpdated()}
-              fallback={
-                <>
-                  <RefreshIcon /> <span class="ds-btn-text">{t("library.refreshLibraryButton")}</span>
-                </>
-              }
-            >
-              <CheckIcon /> <span class="ds-btn-text">{t("library.refreshUpdated")}</span>
-            </Show>
-          }
-        >
-          <RefreshIcon spin={true} /> <span class="ds-btn-text">{t("library.refreshRefreshing")}</span>
-        </Show>
-      </button>
-      <button
-        type="button"
-        class="win-button ds-btn-compact"
+      />
+      <IconButton
+        icon={<StorageIcon />}
+        text={t("library.cacheManagementButton")}
+        className="ds-btn-compact"
         title={t("library.cacheManagementTooltip")}
         onClick={() => navigate({ view: "cache" })}
-      >
-        <StorageIcon /> <span class="ds-btn-text">{t("library.cacheManagementButton")}</span>
-      </button>
-      <button
-        type="button"
-        class="win-button ds-btn-compact"
+      />
+      <IconButton
+        icon={<BlacklistIcon />}
+        text={t("library.seriesBlacklistButton")}
+        className="ds-btn-compact"
         title={t("library.seriesBlacklistTooltip")}
         onClick={() => navigate({ view: "blacklist" })}
-      >
-        <BlacklistIcon /> <span class="ds-btn-text">{t("library.seriesBlacklistButton")}</span>
-      </button>
+      />
     </>
   );
 }

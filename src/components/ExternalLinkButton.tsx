@@ -4,39 +4,31 @@
  * BlacklistView, SeriesView topbar, SettingsModal, reader-actions).
  */
 
-import type { JSX } from "solid-js";
 import { openExternal } from "../api";
-import { DsButton } from "./Button";
+import { IconButton } from "./Button";
 import { ExternalLinkIcon } from "./Icon";
+import type { IconButtonProps } from "./Button";
 
-export interface ExternalLinkButtonProps {
+export interface ExternalLinkButtonProps extends Omit<IconButtonProps, "onClick" | "icon"> {
   url: string;
-  title: string;
-  /** Optional DOM id (preserved for any legacy element hooks). */
-  id?: string;
-  /** Extra classes appended to `win-button` (defaults to `ds-btn-compact`). */
-  class?: string;
-  cssText?: string;
-  /** Optional trailing label after the icon. */
-  children?: JSX.Element;
 }
 
 export function ExternalLinkButton(props: ExternalLinkButtonProps) {
-  const defaultClass = () => (props.class ? props.class : props.children ? "ds-btn-compact" : "ds-btn-icon-sm");
-
   return (
-    <DsButton
+    <IconButton
       id={props.id}
-      className={defaultClass()}
+      className={props.className ?? "ds-btn-compact"}
       cssText={props.cssText}
       title={props.title}
+      icon={<ExternalLinkIcon />}
+      text={props.text}
+      textClass={props.textClass}
+      classList={props.classList}
+      disabled={props.disabled}
       onClick={(ev) => {
         ev.stopPropagation();
         void openExternal(props.url);
       }}
-    >
-      <ExternalLinkIcon />
-      {props.children}
-    </DsButton>
+    />
   );
 }

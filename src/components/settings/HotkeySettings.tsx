@@ -2,6 +2,7 @@ import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../../i18n";
 import { Icon, CloseIcon, AddIcon, RefreshIcon } from "../Icon";
+import { IconButton } from "../Button";
 import {
   HOTKEY_DEFINITIONS,
   HOTKEY_DEFINITIONS_MAP,
@@ -174,15 +175,13 @@ export function HotkeysSection(props: HotkeysSectionProps) {
           <Show
             when={resetConfirm()}
             fallback={
-              <button
-                type="button"
-                class="win-button"
-                style="font-size:11px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;"
+              <IconButton
+                cssText="font-size:11px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;"
                 title={t("settings.hotkeys.resetAllTooltip")}
+                icon={<RefreshIcon />}
+                text={t("settings.hotkeys.resetAllButton")}
                 onClick={() => setResetConfirm(true)}
-              >
-                <RefreshIcon /> {t("settings.hotkeys.resetAllButton")}
-              </button>
+              />
             }
           >
             <span style="font-size:11px;color:var(--sys-text-muted,#666);">{t("settings.hotkeys.resetConfirmPrompt")}</span>

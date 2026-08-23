@@ -52,6 +52,7 @@ import {
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
+import { IconButton } from "../components/Button";
 import {
   RefreshIcon,
   CheckIcon,
@@ -265,13 +266,14 @@ function FeedStatusFooter(props: {
     failed: { icon: <WarningIcon />, labelKey: "browse.feed.statusCheckFailed" as const },
   };
 
-  const checkBtnLabel = (): JSX.Element => {
+  const checkBtnIcon = (): JSX.Element => {
     const cfg = CHECK_STATE_CONFIG[checkState() as keyof typeof CHECK_STATE_CONFIG];
-    return (
-      <>
-        {cfg?.icon ?? <RefreshIcon />} {t(cfg?.labelKey ?? "browse.feed.statusCheckDefault")}
-      </>
-    );
+    return cfg?.icon ?? <RefreshIcon />;
+  };
+
+  const checkBtnText = (): string => {
+    const cfg = CHECK_STATE_CONFIG[checkState() as keyof typeof CHECK_STATE_CONFIG];
+    return t(cfg?.labelKey ?? "browse.feed.statusCheckDefault");
   };
 
   return (
@@ -313,26 +315,24 @@ function FeedStatusFooter(props: {
         </span>
       </div>
       <div class="ds-feed-status-right">
-        <button
-          type="button"
-          class="win-button ds-status-refresh-btn"
+        <IconButton
+          className="ds-status-refresh-btn"
           title={t("browse.feed.statusForceCheckTooltip")}
           disabled={checkState() === "checking"}
           onClick={() => void handleCheck()}
-        >
-          {checkBtnLabel()}
-        </button>
+          icon={checkBtnIcon()}
+          text={checkBtnText()}
+        />
         <div class="ds-feed-status-pager-wrap" style="margin-left:auto;">
           <Show when={props.pager}>{props.pager}</Show>
         </div>
-        <button
-          type="button"
-          class="win-button ds-scroll-top-btn"
+        <IconButton
+          icon={<ArrowUpIcon />}
+          text={t("common.top")}
+          className="ds-scroll-top-btn"
           title={t("browse.feed.statusScrollTopTooltip")}
           onClick={onScrollTop}
-        >
-          <ArrowUpIcon /> {t("common.top")}
-        </button>
+        />
       </div>
     </div>
   );
@@ -566,13 +566,12 @@ export function BrowseFeed(props: BrowseFeedProps) {
       <Show when={model() !== undefined && model()!.feed.chapters.length > 0}>
         <Show when={updateBanner()}>
           <div class="ds-feed-update-banner">
-            <button
-              type="button"
-              class="win-button ds-feed-update-btn"
+            <IconButton
+              icon={<RefreshIcon />}
+              text={t("browse.feed.newChaptersNotice")}
+              className="ds-feed-update-btn"
               onClick={() => pane.goToPage(1)}
-            >
-              <RefreshIcon /> {t("browse.feed.newChaptersNotice")}
-            </button>
+            />
           </div>
         </Show>
 

@@ -1,9 +1,10 @@
 /**
- * Solid button components: standard push buttons and the two-click confirm-delete
- * pattern shared by the Library and Cache views. Port of `button.ts`.
+ * Solid button components: standard push buttons, icon+text command buttons,
+ * and the two-click confirm-delete pattern shared by the Library and Cache
+ * views. Port of `button.ts`.
  */
 
-import { createSignal, Show, type JSX } from "solid-js";
+import { createSignal, type JSX } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { t } from "../i18n";
 import { CheckIcon, Icon } from "./Icon";
@@ -36,17 +37,52 @@ export function DsButton(props: DsButtonProps) {
   );
 }
 
-export interface ConfirmDeleteButtonProps {
-  onConfirm: () => Promise<void> | void;
-  title?: string;
-  class?: string;
+export interface IconButtonProps {
+  id?: string;
+  className?: string;
+  classList?: Record<string, boolean>;
   cssText?: string;
-  children?: JSX.Element;
+  title?: string;
+  disabled?: boolean;
+  icon: JSX.Element;
+  text?: string | JSX.Element;
+  textClass?: string;
+  onClick?: (ev: MouseEvent) => void;
 }
 
 /**
- * Two-stage confirmation button: first click shows a "Delete?" prompt with a
- * checkmark; clicking again within 3 seconds invokes `onConfirm()`.
+ * WinForms-style command button with a leading icon and optional text label.
+ * Renders the icon followed by `<span class={textClass}>{text}</span>`.
+ * Omit `text` for icon-only buttons.
+ */
+export function IconButton(props: IconButtonProps) {
+  return (
+    <button
+      type="button"
+      id={props.id}
+      class={`win-button ${props.className ?? "ds-btn-compact"}`.trim()}
+      classList={props.classList}
+      style={props.cssText}
+      title={props.title}
+      disabled={props.disabled}
+      onClick={props.onClick}
+    >
+      {props.icon ? <span style="border:1px solid red; display:inline-flex; align-items:center">{props.icon}</span> : null}
+      {props.text !== undefined && props.text !== "" ? (
+        <span style="border:1px solid blue" class={props.textClass ?? "ds-btn-text"}>{props.text}</span>
+      ) : null}
+    </button>
+  );
+}
+
+export interface ConfirmDeleteButtonProps extends Omit<IconButtonProps, "onClick"> {
+  onConfirm: () => Promise<void> | void;
+}
+
+/**
+ * Two-stage confirmation button built on IconButton: first click shows a
+ * "Delete?" prompt with a checkmark; clicking again within 3 seconds
+ * invokes `onConfirm()`.
  */
 export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
   const [confirming, setConfirming] = createSignal(false);
@@ -70,33 +106,39 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
     }
   };
 
-  const currentClass = () => {
+  const currentIcon = () => {
+    if (busy()) return <Icon name="hourglass-split" />;
+    if (confirming()) return <CheckIcon />;
+    return props.icon;
+  };
+
+  const currentText = () => {
+    if (busy()) return undefined;
+    if (confirming()) return t("common.delete") + "?";
+    return props.text;
+  };
+
+  const currentClassName = () => {
     if (confirming()) {
-      return (props.class ? `${props.class} ds-btn-danger` : "ds-btn-compact ds-btn-danger").replace("ds-btn-icon-sm", "ds-btn-compact");
+      return (props.className ? `${props.className} ds-btn-danger` : "ds-btn-compact ds-btn-danger").replace("ds-btn-icon-sm", "ds-btn-compact");
     }
-    if (props.class) return props.class;
-    return props.children ? "ds-btn-compact" : "ds-btn-icon-sm";
+    return props.className;
   };
 
   return (
-    <button
-      type="button"
-      class={`win-button ${currentClass()}`}
-      style={props.cssText}
-      title={
-        confirming()
-          ? t("common.confirm")
-          : props.title
-      }
+    <IconButton
+      id={props.id}
+      className={currentClassName()}
+      cssText={props.cssText}
+      title={confirming() ? t("common.confirm") : props.title}
       disabled={busy()}
+      icon={currentIcon()}
+      text={currentText()}
+      textClass={props.textClass}
       onClick={(ev) => {
         ev.stopPropagation();
         void handleClick();
       }}
-    >
-      <Show when={busy()} fallback={<Show when={confirming()} fallback={props.children}><CheckIcon /> {t("common.delete")}?</Show>}>
-        <Icon name="hourglass-split" />
-      </Show>
-    </button>
+    />
   );
 }

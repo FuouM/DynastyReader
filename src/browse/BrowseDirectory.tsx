@@ -80,7 +80,7 @@ function DirectoryRow(props: {
       }
       actions={
         <ExternalLinkButton
-          class="ds-btn-icon-sm"
+          className="ds-btn-icon-sm"
           title={props.kind === "series" ? t("browse.directory.openSeriesTooltip") : t("browse.directory.searchTagTooltip")}
           url={
             props.kind === "series"

@@ -14,7 +14,7 @@ import { ListItem } from "../components/ListItem";
 import { Cover } from "../components/Cover";
 import { OfflineBadge } from "../components/OfflineBadge";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
-import { ConfirmDeleteButton } from "../components/Button";
+import { ConfirmDeleteButton, IconButton } from "../components/Button";
 import { TrashIcon } from "../components/Icon";
 
 export interface LibraryItemRowProps {
@@ -92,19 +92,19 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
       actions={
         <>
           <Show when={props.actionLabel}>
-            <button
-              type="button"
-              class="win-button ds-btn-compact"
+            <IconButton
+              icon={
+                <Show when={props.actionIcon}>
+                  <i class={`bi ${props.actionIcon}`} />
+                </Show>
+              }
+              text={props.actionLabel}
+              className="ds-btn-compact"
               onClick={(ev) => {
                 ev.stopPropagation();
                 props.onOpen();
               }}
-            >
-              <Show when={props.actionIcon}>
-                <i class={`bi ${props.actionIcon}`}></i>{" "}
-              </Show>
-              {props.actionLabel}
-            </button>
+            />
           </Show>
 
           <Show when={props.externalUrl}>
@@ -115,14 +115,13 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
           </Show>
           <Show when={props.onDelete}>
             <ConfirmDeleteButton
-              class="ds-btn-icon-sm"
+              icon={<TrashIcon />}
+              className="ds-btn-icon-sm"
               title={props.deleteTitle || t("library.deleteItemTooltip")}
               onConfirm={async () => {
                 await props.onDelete!();
               }}
-            >
-              <TrashIcon />
-            </ConfirmDeleteButton>
+            />
           </Show>
         </>
       }

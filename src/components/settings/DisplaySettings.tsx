@@ -3,6 +3,7 @@ import { theme, setTheme, uiScale, applyUiScale } from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
+import { IconButton } from "../Button";
 import { SCALE_PRESETS } from "./types";
 
 export function DisplaySettings() {
@@ -101,24 +102,22 @@ export function DisplaySettings() {
             <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">{t("settings.display.theme")}:</div>
           </div>
           <div class="ds-segmented-switch" id="ds-settings-theme-switch" style="flex-shrink:0;">
-            <button
-              type="button"
-              class={`ds-segmented-btn${theme() === "light" ? " active" : ""}`}
+            <IconButton
+              className={`ds-segmented-btn${theme() === "light" ? " active" : ""}`}
               id="ds-settings-theme-light"
               title={t("settings.display.themeLight")}
+              icon={<SunIcon />}
+              text={t("settings.display.themeLight").split(" ")[0]}
               onClick={() => setTheme("light")}
-            >
-              <SunIcon /> {t("settings.display.themeLight").split(" ")[0]}
-            </button>
-            <button
-              type="button"
-              class={`ds-segmented-btn${theme() === "dark" ? " active" : ""}`}
+            />
+            <IconButton
+              className={`ds-segmented-btn${theme() === "dark" ? " active" : ""}`}
               id="ds-settings-theme-dark"
               title={t("settings.display.themeDark")}
+              icon={<MoonIcon />}
+              text={t("settings.display.themeDark").split(" ")[0]}
               onClick={() => setTheme("dark")}
-            >
-              <MoonIcon /> {t("settings.display.themeDark").split(" ")[0]}
-            </button>
+            />
           </div>
         </div>
 
@@ -132,17 +131,14 @@ export function DisplaySettings() {
               {t("settings.display.feedCoversDesc")}
             </div>
           </div>
-          <button
-            type="button"
-            class={`win-button${coversEnabled() ? " primary" : ""}`}
+          <IconButton
+            className={coversEnabled() ? "primary" : undefined}
             id="ds-settings-covers-toggle"
-            style="font-size:11px;padding:2px 10px;min-width:90px;flex-shrink:0;"
+            cssText="font-size:11px;padding:2px 10px;min-width:90px;flex-shrink:0;"
+            icon={<Show when={coversEnabled()} fallback={<Icon name="eye-slash" />}><ImageIcon /></Show>}
+            text={<Show when={coversEnabled()} fallback={t("settings.display.coversOff")}>{t("settings.display.coversOn")}</Show>}
             onClick={toggleCovers}
-          >
-            <Show when={coversEnabled()} fallback={<><Icon name="eye-slash" /> {t("settings.display.coversOff")}</>}>
-              <ImageIcon /> {t("settings.display.coversOn")}
-            </Show>
-          </button>
+          />
         </div>
 
         {/* Language Selector */}

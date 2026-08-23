@@ -39,7 +39,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
 import { HydratedCover } from "../components/HydratedCover";
-import { ConfirmDeleteButton } from "../components/Button";
+import { ConfirmDeleteButton, IconButton } from "../components/Button";
 import { Loading } from "../components/Loading";
 import {
   ChartIcon,
@@ -227,9 +227,7 @@ export function CacheView() {
           <span class="ds-muted">
             {t("cache.statsLoadError", { msg: errorMessage(data.error) })}
           </span>
-          <button type="button" class="win-button" onClick={() => void refetch()}>
-            <RefreshIcon /> {t("common.retry")}
-          </button>
+          <IconButton icon={<RefreshIcon />} text={t("common.retry")} onClick={() => void refetch()} />
         </div>
       </Show>
 
@@ -340,18 +338,14 @@ function CacheBody(props: {
           <span>{t("cache.seriesBlacklistCount")} <strong>{dbStats.counts.seriesBlacklist}</strong></span>
         </div>
         <div class="ds-cache-actions" style="margin-top:10px;">
-          <button type="button" class="win-button" title={t("cache.dbBackupTooltip")} onClick={() => void props.backupDb()}>
-            <DatabaseIcon /> {t("cache.dbBackup")}
-          </button>
-          <button type="button" class="win-button" title={t("cache.dbRestoreTooltip")} onClick={() => void props.restoreFromPicker()}>
-            <RefreshIcon /> {t("cache.dbRestore")}
-          </button>
+          <IconButton icon={<DatabaseIcon />} text={t("cache.dbBackup")} title={t("cache.dbBackupTooltip")} onClick={() => void props.backupDb()} />
+          <IconButton icon={<RefreshIcon />} text={t("cache.dbRestore")} title={t("cache.dbRestoreTooltip")} onClick={() => void props.restoreFromPicker()} />
           <ConfirmDeleteButton
+            icon={<TrashIcon />}
+            text={t("cache.dbWipe")}
             title={t("cache.dbWipeTooltip")}
             onConfirm={props.wipeDb}
-          >
-            <TrashIcon /> {t("cache.dbWipe")}
-          </ConfirmDeleteButton>
+          />
         </div>
       </div>
       <div class="group-box">
@@ -378,14 +372,14 @@ function CacheBody(props: {
         </div>
         <div class="ds-cache-actions" style="margin-top:10px;">
           <ConfirmDeleteButton
+            icon={<TrashIcon />}
+            text={t("cache.resetLifetimeStatsButton")}
             title={t("cache.resetLifetimeStatsTooltip")}
             onConfirm={() => {
               resetLifetimeTraffic();
               showBanner(t("cache.resetLifetimeStatsSuccess"));
             }}
-          >
-            <TrashIcon /> {t("cache.resetLifetimeStatsButton")}
-          </ConfirmDeleteButton>
+          />
         </div>
       </div>
       <div class="group-box">
@@ -394,23 +388,23 @@ function CacheBody(props: {
         </div>
         <div class="ds-cache-actions">
           <ConfirmDeleteButton
+            icon={<TrashIcon />}
+            text={t("cache.clearAll")}
             title={t("cache.clearAllTooltip")}
             onConfirm={props.purgeAll}
-          >
-            <TrashIcon /> {t("cache.clearAll")}
-          </ConfirmDeleteButton>
+          />
           <ConfirmDeleteButton
+            icon={<ImageIcon />}
+            text={t("cache.clearPagesOnly")}
             title={t("cache.clearPagesOnlyTooltip")}
             onConfirm={props.purgePages}
-          >
-            <ImageIcon /> {t("cache.clearPagesOnly")}
-          </ConfirmDeleteButton>
+          />
           <ConfirmDeleteButton
+            icon={<ImageIcon />}
+            text={t("cache.clearCoversOnly")}
             title={t("cache.clearCoversOnlyTooltip")}
             onConfirm={props.purgeCovers}
-          >
-            <ImageIcon /> {t("cache.clearCoversOnly")}
-          </ConfirmDeleteButton>
+          />
         </div>
       </div>
       <div class="group-box" style="display:flex;flex-direction:column;">
@@ -486,12 +480,11 @@ function CacheBody(props: {
                           </div>
                         </div>
                         <ConfirmDeleteButton
-                          class="ds-btn-icon-sm"
+                          icon={<TrashIcon />}
+                          className="ds-btn-icon-sm"
                           title={t("cache.deleteWorkTooltip", { name: item.seriesName })}
                           onConfirm={() => props.deleteGroup(item)}
-                        >
-                          <TrashIcon />
-                        </ConfirmDeleteButton>
+                        />
                       </div>
                     )}
                   </For>

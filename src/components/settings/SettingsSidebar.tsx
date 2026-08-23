@@ -1,6 +1,7 @@
 import { For } from "solid-js";
 import { t } from "../../i18n";
 import { Icon } from "../Icon";
+import { IconButton } from "../Button";
 import { getSettingsSections, type SettingsSectionId } from "./types";
 export interface SettingsSidebarProps {
   activeSection: string;
@@ -12,16 +13,14 @@ export function SettingsSidebar(props: SettingsSidebarProps) {
     <div class="ds-settings-sidebar">
       <For each={getSettingsSections()}>
         {(sec) => (
-          <button
-            type="button"
-            class="ds-settings-nav-item"
+          <IconButton
+            className="ds-settings-nav-item"
             classList={{ active: props.activeSection === sec.id }}
             title={t("settings.jumpToSectionTooltip", { section: sec.label })}
             onClick={() => props.onSelect(sec.id)}
-          >
-            <Icon name={sec.icon} />
-            <span>{sec.label}</span>
-          </button>
+            icon={<Icon name={sec.icon} />}
+            text={sec.label}
+          />
         )}
       </For>
     </div>

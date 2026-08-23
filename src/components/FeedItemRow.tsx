@@ -30,6 +30,7 @@ import {
 } from "../db";
 import { browseCovers } from "../browse/browse-covers";
 import { BookmarkIcon } from "./Icon";
+import { IconButton } from "./Button";
 import { ListItem } from "./ListItem";
 import { HydratedCover } from "./HydratedCover";
 import { OfflineBadge } from "./OfflineBadge";
@@ -279,18 +280,17 @@ export function FeedItemRow(props: FeedItemRowProps) {
           </div>
 
           <div class="ds-feed-actions" onClick={(ev) => ev.stopPropagation()}>
-            <button
-              type="button"
-              class={`win-button ds-btn-compact${bookmarked() ? " primary" : ""}`}
+            <IconButton
+              icon={<BookmarkIcon filled={bookmarked()} />}
+              text={bookmarked() ? t("browse.feed.saved") : t("browse.feed.readLater")}
+              textClass="ds-action-btn-text"
+              className={`ds-btn-compact${bookmarked() ? " primary" : ""}`}
               title={bookmarked() ? t("browse.feed.removeFromReadLater") : t("browse.feed.saveForReadLater")}
               onClick={(ev) => {
                 ev.stopPropagation();
                 void toggleBookmark();
               }}
-            >
-              <BookmarkIcon filled={bookmarked()} />
-              <span class="ds-action-btn-text">{bookmarked() ? ` ${t("browse.feed.saved")}` : ` ${t("browse.feed.readLater")}`}</span>
-            </button>
+            />
             <AddToCollectionButton
               cssText="flex-shrink:0;"
               title={

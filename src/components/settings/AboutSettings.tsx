@@ -15,6 +15,7 @@ import {
   updateStatusText,
 } from "../UpdateDialog";
 import { ExternalLinkButton } from "../ExternalLinkButton";
+import { IconButton } from "../Button";
 import { RefreshIcon, CloudDownloadIcon, Icon } from "../Icon";
 
 export function AboutSettings() {
@@ -48,34 +49,29 @@ export function AboutSettings() {
           </div>
         </div>
         <div class="ds-settings-about-actions">
-          <button
-            type="button"
-            class="win-button ds-btn-compact"
+          <IconButton
+            className="ds-btn-compact"
             id="ds-about-check-update"
             title={t("settings.about.checkUpdates")}
             disabled={updateChecking() || isUpdating()}
+            icon={<Show when={updateChecking()} fallback={<RefreshIcon />}><RefreshIcon spin={true} /></Show>}
+            text={<Show when={updateChecking()} fallback={t("settings.about.checkUpdates")}>{t("settings.about.checkingUpdates")}</Show>}
             onClick={() => void checkUpdates(true)}
-          >
-            <Show when={updateChecking()} fallback={<><RefreshIcon /> {t("settings.about.checkUpdates")}</>}>
-              <RefreshIcon spin={true} /> {t("settings.about.checkingUpdates")}
-            </Show>
-          </button>
-          <button
-            type="button"
-            class="win-button ds-btn-compact"
+          />
+          <IconButton
+            className="ds-btn-compact"
             id="ds-about-open-github"
             title={t("settings.about.githubTooltip")}
+            icon={<Icon name="github" />}
+            text="GitHub"
             onClick={() => void openExternal("https://github.com/FuouM/DynastyReader")}
-          >
-            <Icon name="github" /> GitHub
-          </button>
+          />
           <ExternalLinkButton
             id="ds-about-open-site"
             title={t("settings.about.websiteTooltip")}
             url={SITE_ROOT}
-          >
-            dynasty-scans.com
-          </ExternalLinkButton>
+            text="dynasty-scans.com"
+          />
         </div>
       </div>
 
@@ -156,21 +152,14 @@ export function AboutSettings() {
             </Show>
 
             <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:2px;">
-              <button
-                type="button"
-                class="win-button primary ds-btn-sm"
-                style="min-width:120px;"
+              <IconButton
+                className="primary ds-btn-sm"
+                cssText="min-width:120px;"
                 disabled={isUpdating()}
+                icon={<Show when={!isUpdating()} fallback={<Icon name="hourglass-split" spin />}><CloudDownloadIcon /></Show>}
+                text={<Show when={!isUpdating()} fallback={t("settings.about.updating")}>{updateError() ? t("settings.about.retryUpdate") : t("settings.about.downloadAndRestart")}</Show>}
                 onClick={() => void installUpdate()}
-              >
-                <Show
-                  when={!isUpdating()}
-                  fallback={<><Icon name="hourglass-split" spin /> {t("settings.about.updating")}</>}
-                >
-                  <CloudDownloadIcon />{" "}
-                  {updateError() ? t("settings.about.retryUpdate") : t("settings.about.downloadAndRestart")}
-                </Show>
-              </button>
+              />
             </div>
           </div>
         </Show>

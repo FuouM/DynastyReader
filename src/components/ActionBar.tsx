@@ -5,6 +5,7 @@
 import type { JSX } from "solid-js";
 import { t } from "../i18n";
 import { ArrowLeftIcon, RefreshIcon } from "./Icon";
+import { IconButton } from "./Button";
 
 export interface TopbarActionProps {
   html?: JSX.Element;
@@ -37,15 +38,18 @@ export interface BackRefreshActionsProps {
 export function BackRefreshActions(props: BackRefreshActionsProps) {
   return (
     <>
-      <TopbarAction
+      <IconButton
+        icon={<ArrowLeftIcon />}
+        text={props.backLabel}
         title={t("actionBar.back")}
         onClick={props.onBack}
-      >
-        <ArrowLeftIcon /> <span class="ds-btn-text">{props.backLabel}</span>
-      </TopbarAction>
-      <TopbarAction title={t("actionBar.refresh")} onClick={props.onRefresh}>
-        <RefreshIcon /> <span class="ds-btn-text">{t("actionBar.refresh")}</span>
-      </TopbarAction>
+      />
+      <IconButton
+        icon={<RefreshIcon />}
+        text={t("actionBar.refresh")}
+        title={t("actionBar.refresh")}
+        onClick={props.onRefresh}
+      />
     </>
   );
 }

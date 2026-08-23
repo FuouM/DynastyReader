@@ -1,4 +1,5 @@
 import { For, Show, type JSX } from "solid-js";
+import { DsButton } from "./Button";
 
 export interface SubTab {
   id: string;
@@ -27,17 +28,14 @@ export function SubTabs(props: SubTabsProps) {
       <div class="ds-subtabs-left">
         <For each={props.tabs}>
           {(tab) => (
-            <button
-              type="button"
-              class="win-button ds-subtab"
-              classList={{ active: props.activeTab === tab.id }}
-              data-tab-id={tab.id}
+            <DsButton
+              className={`ds-subtab${props.activeTab === tab.id ? " active" : ""}`}
               title={tab.label}
               onClick={() => props.onSwitch(tab.id)}
             >
-              {tab.icon && <i class={`bi ${tab.icon}`} style="margin-right: 4px;" />}
-              <span>{props.compact ? (tab.shortLabel ?? tab.label) : tab.label}</span>
-            </button>
+              {tab.icon ? <i class={`bi ${tab.icon}`} style="margin-right: 4px;" /> : undefined}
+              {props.compact ? (tab.shortLabel ?? tab.label) : tab.label}
+            </DsButton>
           )}
         </For>
       </div>

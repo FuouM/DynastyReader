@@ -10,13 +10,13 @@ import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
-import {
-  FolderIcon,
+import { FolderIcon,
   CloseIcon,
   StarIcon,
   AddIcon,
   Icon,
 } from "./Icon";
+import { IconButton } from "./Button";
 import {
   getCollections,
   createCollection,
@@ -276,15 +276,14 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                   <CloseIcon />
                 </button>
               </div>
-              <button
-                type="button"
-                class="win-button ds-btn-sm"
+              <IconButton
+                className="ds-btn-sm"
                 id="ds-add-to-col-create-btn"
                 disabled={creating()}
+                icon={<AddIcon style={{ "font-size": "10px" }} />}
+                text={t("common.create")}
                 onClick={() => void handleCreate()}
-              >
-                <AddIcon style={{ "font-size": "10px" }} /> <span>{t("common.create")}</span>
-              </button>
+              />
             </div>
           </div>
         </div>

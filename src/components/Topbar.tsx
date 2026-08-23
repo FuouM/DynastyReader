@@ -28,6 +28,7 @@ import {
   SettingsIcon,
   Icon,
 } from "./Icon";
+import { IconButton } from "./Button";
 
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
@@ -80,26 +81,24 @@ export function Topbar() {
       <div id="ds-topbar" ref={topbarEl} classList={{ "ds-narrow": isNarrow(), "ds-compact": isCompact() }}>
         <div id="ds-topbar-main">
           <div class="ds-segmented-switch" id="ds-view-switch">
-            <button
-              type="button"
-              class="ds-segmented-btn"
+            <IconButton
+              icon={<Icon name="compass" />}
+              text={isNarrow() ? t("topbar.browse") : t("topbar.browseRecent")}
               id="ds-tab-browse"
+              className="ds-segmented-btn"
               classList={{ active: route().view === "browse" }}
               title={t("topbar.browseRecent")}
               onClick={() => navigate({ view: "browse" })}
-            >
-              <Icon name="compass" /> <span>{isNarrow() ? t("topbar.browse") : t("topbar.browseRecent")}</span>
-            </button>
-            <button
-              type="button"
-              class="ds-segmented-btn"
+            />
+            <IconButton
+              icon={<StorageIcon />}
+              text={t("topbar.library")}
               id="ds-tab-library"
+              className="ds-segmented-btn"
               classList={{ active: route().view === "library" }}
               title={t("topbar.library")}
               onClick={() => navigate({ view: "library" })}
-            >
-              <StorageIcon /> <span>{t("topbar.library")}</span>
-            </button>
+            />
           </div>
           <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
             <button

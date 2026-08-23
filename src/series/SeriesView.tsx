@@ -44,6 +44,7 @@ import {
 import type { Series } from "../types/api";
 import { useDelayedSpinner } from "../browse/browse-state";
 import { Loading } from "../components/Loading";
+import { IconButton } from "../components/Button";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { AddToCollectionButton } from "../components/AddToCollectionButton";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
@@ -256,13 +257,11 @@ export function SeriesView() {
       <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
         <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
           <span class="ds-muted">{t("series.loadError", { msg: dataErrorText() })}</span>
-          <button
-            type="button"
-            class="win-button"
+          <IconButton
+            icon={<RefreshIcon />}
+            text={t("common.retry")}
             onClick={() => void refetch()}
-          >
-            <RefreshIcon /> {t("common.retry")}
-          </button>
+          />
         </div>
       </Show>
       <Show when={!data.loading && data() !== undefined}>
@@ -348,49 +347,34 @@ interface SeriesActionsProps {
 function SeriesActions(props: SeriesActionsProps) {
   return (
     <>
-      <button
-        type="button"
-        class="win-button"
+      <IconButton
+        icon={props.followed() ? <BookmarkIcon filled={true} /> : <BookmarkIcon />}
+        text={props.followed() ? t("series.following") : t("series.follow")}
         disabled={props.busyFollow()}
         onClick={props.onToggleFollow}
-      >
-        {props.followed() ? <BookmarkIcon filled={true} /> : <BookmarkIcon />}{" "}
-        <span class="ds-btn-text">{props.followed() ? t("series.following") : t("series.follow")}</span>
-      </button>
+      />
       <AddToCollectionButton
         class=""
         onOpen={props.onOpenAddToCol}
       >
         <span class="ds-btn-text">{t("series.addToButton")}</span>
       </AddToCollectionButton>
-      <button
-        type="button"
-        class={`win-button${props.blacklisted() ? " active" : ""}`}
-        title={
-          props.blacklisted()
-            ? t("series.unblacklistTooltip")
-            : t("series.blacklistTooltip")
-        }
+      <IconButton
+        icon={props.blacklisted() ? <BlacklistIcon filled={true} color="var(--ds-warn-text,#d97706)" /> : <BlacklistIcon />}
+        text={props.blacklisted() ? t("series.blacklistedBadge") : t("blacklist.title").split(" ")[0]}
+        className={props.blacklisted() ? "active" : undefined}
+        title={props.blacklisted() ? t("series.unblacklistTooltip") : t("series.blacklistTooltip")}
         disabled={props.busyBlacklist()}
         onClick={props.onToggleBlacklist}
-      >
-        {props.blacklisted() ? (
-          <BlacklistIcon filled={true} color="var(--ds-warn-text,#d97706)" />
-        ) : (
-          <BlacklistIcon />
-        )}{" "}
-        <span class="ds-btn-text">{props.blacklisted() ? t("series.blacklistedBadge") : t("blacklist.title").split(" ")[0]}</span>
-      </button>
-      <button
-        type="button"
-        class="win-button"
+      />
+      <IconButton
+        icon={<RefreshIcon />}
+        text={t("common.refresh")}
         title={t("series.reloadTooltip")}
         onClick={props.onRefresh}
-      >
-        <RefreshIcon /> <span class="ds-btn-text">{t("common.refresh")}</span>
-      </button>
+      />
       <ExternalLinkButton
-        class="ds-btn-icon"
+        className="ds-btn-icon"
         title={t("series.openInBrowserTooltip", { type: props.seriesType ? props.seriesType.toLowerCase() : "series" })}
         url={props.openUrl}
       />

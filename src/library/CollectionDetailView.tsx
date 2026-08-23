@@ -44,7 +44,7 @@ import {
   ArrowLeftIcon,
   RefreshIcon,
 } from "../components/Icon";
-import { TopbarAction } from "../components/ActionBar";
+import { IconButton } from "../components/Button";
 import { LibraryItemRow } from "./LibraryItemRow";
 
 export interface CollectionDetailViewProps {
@@ -74,15 +74,18 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
   createEffect(() => {
     setActions(
       <>
-        <TopbarAction
+        <IconButton
+          icon={<ArrowLeftIcon />}
+          text={t("library.backToLibrary")}
           title={t("library.backToLibrary")}
           onClick={() => navigate({ view: "library" })}
-        >
-          <ArrowLeftIcon /> {t("library.backToLibrary")}
-        </TopbarAction>
-        <TopbarAction title={t("common.refresh")} onClick={() => setTick((t) => t + 1)}>
-          <RefreshIcon /> {t("common.refresh")}
-        </TopbarAction>
+        />
+        <IconButton
+          icon={<RefreshIcon />}
+          text={t("common.refresh")}
+          title={t("common.refresh")}
+          onClick={() => setTick((t) => t + 1)}
+        />
       </>,
     );
   });
