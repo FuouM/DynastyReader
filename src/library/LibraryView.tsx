@@ -11,7 +11,6 @@ import {
   createEffect,
   createSignal,
   onCleanup,
-  For,
   Show,
   type Accessor,
 } from "solid-js";
@@ -32,6 +31,7 @@ import {
 } from "../db";
 import { ConfirmDeleteButton } from "../components/Button";
 import { Modal } from "../components/Modal";
+import { SubTabs } from "../components/SubTabs";
 import {
   RefreshIcon,
   CheckIcon,
@@ -256,51 +256,37 @@ function LibraryGrid() {
         }
       >
         {/* Narrow / Mobile 4-tab Layout */}
-        <div class="ds-subtabs">
-          <div class="ds-subtabs-left">
-            <For each={getLibraryTabs()}>
-              {(tab) => (
+        <SubTabs
+          tabs={getLibraryTabs()}
+          activeTab={activeTab()}
+          onSwitch={(id) => switchTab(id as LibraryTabId)}
+          right={
+            <>
+              <Show when={activeTab() === "collections"}>
                 <button
                   type="button"
-                  class="win-button ds-subtab"
-                  classList={{ active: activeTab() === tab.id }}
-                  data-tab-id={tab.id}
-                  title={tab.label}
-                  onClick={() => switchTab(tab.id)}
+                  class="win-button ds-btn-sm"
+                  style="display:inline-flex;align-items:center;gap:4px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;padding:0 8px;font-size:11px;"
+                  title={t("library.createCollectionTooltip")}
+                  onClick={() => setCreating(true)}
                 >
-                  <i class={`bi ${tab.icon}`} style="margin-right: 4px;"></i>
-                  <span>{tab.shortLabel ?? tab.label}</span>
+                  <AddIcon style={{ "font-size": "9px", "line-height": 1 }} />{" "}
+                  <span>{t("library.newCollectionButton")}</span>
                 </button>
-              )}
-            </For>
-          </div>
-          <Show when={activeTab() === "collections"}>
-            <div class="ds-subtabs-right">
-              <button
-                type="button"
-                class="win-button ds-btn-sm"
-                style="display:inline-flex;align-items:center;gap:4px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;padding:0 8px;font-size:11px;"
-                title={t("library.createCollectionTooltip")}
-                onClick={() => setCreating(true)}
-              >
-                <AddIcon style={{ "font-size": "9px", "line-height": 1 }} />{" "}
-                <span>{t("library.newCollectionButton")}</span>
-              </button>
-            </div>
-          </Show>
-          <Show when={activeTab() === "history"}>
-            <div class="ds-subtabs-right">
-              <ConfirmDeleteButton
-                class="ds-btn-compact"
-                title={t("library.clearHistoryTooltip")}
-                onConfirm={clearHistoryAll}
-                cssText="font-size:11px;padding:0 8px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;"
-              >
-                <TrashIcon style={{ "line-height": 1 }} /> {t("library.clearHistoryButton")}
-              </ConfirmDeleteButton>
-            </div>
-          </Show>
-        </div>
+              </Show>
+              <Show when={activeTab() === "history"}>
+                <ConfirmDeleteButton
+                  class="ds-btn-compact"
+                  title={t("library.clearHistoryTooltip")}
+                  onConfirm={clearHistoryAll}
+                  cssText="font-size:11px;padding:0 8px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;"
+                >
+                  <TrashIcon style={{ "line-height": 1 }} /> {t("library.clearHistoryButton")}
+                </ConfirmDeleteButton>
+              </Show>
+            </>
+          }
+        />
 
         <div class="ds-library-tab-content">
           <div

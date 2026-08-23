@@ -8,12 +8,13 @@
  *  - transient search directives consumed at this dispatch boundary
  */
 
-import { createEffect, createSignal, onCleanup, For, Show, untrack, type JSX } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show, untrack, type JSX } from "solid-js";
 import { navigate, route, setRoute, showBanner } from "../stores";
 import { t } from "../i18n";
 import { parseDynastyUrl, suggest } from "../api";
 import { useMediaQuery } from "../hooks/useImageRetry";
 import { Pager } from "../components/Pager";
+import { SubTabs } from "../components/SubTabs";
 import { Typeahead } from "../components/Typeahead";
 import {
   SearchIcon,
@@ -314,54 +315,44 @@ export function BrowseView() {
       </div>
 
       {/* ── Sub-tabs ────────────────────────────────────────────────────── */}
-      <div class="ds-subtabs">
-        <div class="ds-subtabs-left">
-          <For each={getBrowseTabs()}>
-            {(tab) => (
-              <button
-                type="button"
-                class="win-button ds-subtab"
-                classList={{ active: activeTab() === tab.id }}
-                data-tab-id={tab.id}
-                title={tab.label}
-                onClick={() => switchTab(tab.id)}
-              >
-                <span>{isCompact() ? (tab.shortLabel ?? tab.label) : tab.label}</span>
-              </button>
-            )}
-          </For>
-        </div>
-        <div class="ds-subtabs-right">
-          <button
-            type="button"
-            class="win-button ds-btn-sm"
-            id="ds-browse-check-updates-btn"
-            title={t("browse.feed.checkBtnTooltip")}
-            disabled={checkBtn() === "checking"}
-            onClick={() => void checkUpdates()}
-          >
-            {checkBtnContent()}
-          </button>
-          <div id="ds-browse-top-pager" style="display:flex;align-items:center;gap:8px;margin-left:auto;">
-            <Show when={topCfg() && topCfg()!.totalPages > 1}>
-              <Pager
-                totalPages={topCfg()!.totalPages}
-                currentPage={topCfg()!.currentPage}
-                onPage={topCfg()!.onPage}
-                cssText="align-items:center;justify-content:flex-end;margin:0;"
-              />
-              <button
-                type="button"
-                class="win-button ds-scroll-top-btn"
-                title={t("browse.searchAndGo.scrollToBottomTooltip")}
-                onClick={scrollBrowseToBottom}
-              >
-                <ArrowDownIcon /> {t("common.bottom")}
-              </button>
-            </Show>
-          </div>
-        </div>
-      </div>
+      <SubTabs
+        tabs={getBrowseTabs()}
+        activeTab={activeTab()}
+        onSwitch={(id) => switchTab(id as BrowseTabId)}
+        compact={isCompact()}
+        right={
+          <>
+            <button
+              type="button"
+              class="win-button ds-btn-sm"
+              id="ds-browse-check-updates-btn"
+              title={t("browse.feed.checkBtnTooltip")}
+              disabled={checkBtn() === "checking"}
+              onClick={() => void checkUpdates()}
+            >
+              {checkBtnContent()}
+            </button>
+            <div id="ds-browse-top-pager" style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+              <Show when={topCfg() && topCfg()!.totalPages > 1}>
+                <Pager
+                  totalPages={topCfg()!.totalPages}
+                  currentPage={topCfg()!.currentPage}
+                  onPage={topCfg()!.onPage}
+                  cssText="align-items:center;justify-content:flex-end;margin:0;"
+                />
+                <button
+                  type="button"
+                  class="win-button ds-scroll-top-btn"
+                  title={t("browse.searchAndGo.scrollToBottomTooltip")}
+                  onClick={scrollBrowseToBottom}
+                >
+                  <ArrowDownIcon /> {t("common.bottom")}
+                </button>
+              </Show>
+            </div>
+          </>
+        }
+      />
 
       {/* ── Persistent tab panes ────────────────────────────────────────── */}
       <div id="ds-browse-content" style="margin-top:8px;">
