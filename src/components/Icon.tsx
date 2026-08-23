@@ -44,7 +44,6 @@ export function Icon(props: IconProps) {
 
 
 import { ENTITY_TAXONOMY } from "../taxonomy";
-export const ENTITY_ICONS = ENTITY_TAXONOMY;
 
 export type BaseIconProps = Omit<IconProps, "name">;
 

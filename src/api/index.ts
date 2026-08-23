@@ -1,7 +1,8 @@
 export { httpGetText, httpDownload, httpDownloadFull, cachedJson } from "./http";
 export { fileResolve, fileExists, fileMove, fileDelete } from "./fs";
 export { checkFeedOnline, fetchFeedWithRevalidation } from "./feed";
-export { fetchDirectory, directoryGroups, searchAllDirectoryEntries, syncAllDirectoryPages, suggest } from "./directory";
+export { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages, suggest } from "./directory";
+export { directoryGroups } from "../utils/directory";
 export {
   fetchSeries,
   seriesEndpoints,
@@ -24,7 +25,6 @@ export {
   getLifetimeTraffic,
   resetLifetimeTraffic,
   subscribeSessionTraffic,
-  formatBytes,
 } from "./traffic";
 export type { SessionTraffic, TrafficMetrics } from "./traffic";
 export type {

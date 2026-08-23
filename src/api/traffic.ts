@@ -136,5 +136,3 @@ export function subscribeSessionTraffic(listener: TrafficListener): () => void {
     listeners.delete(listener);
   };
 }
-/** Formats byte counts into human-readable strings (canonical, from `lib/format`). */
-export { formatBytes } from "../lib/format";

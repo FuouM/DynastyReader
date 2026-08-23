@@ -3,7 +3,6 @@ import * as ipc from "../ipc";
 import type { ParsedDynastyUrl } from "../types/api";
 
 import { KIND_BY_PATH_SEGMENT } from "../taxonomy";
-export { KIND_BY_PATH_SEGMENT };
 
 /** Kinds that resolve to a series-style detail page when parsed from a pasted link. */
 function normalizeToSeriesKind(kind: string): ParsedDynastyUrl["kind"] {

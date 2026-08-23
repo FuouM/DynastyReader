@@ -50,7 +50,6 @@ export async function searchAllDirectoryEntries(
   return searchDirectoryEntries(kind, query);
 }
 
-export { directoryGroups } from "../utils/directory";
 
 const MAX_SUGGEST_CACHE = 100;
 const suggestCache = new Map<string, SuggestResult[]>();

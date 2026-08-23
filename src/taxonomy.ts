@@ -47,9 +47,6 @@ export const ENTITY_TAXONOMY: Record<EntityKind, EntityMeta> = {
   tag: { kind: "tag", path: "tags", label: "Tag", icon: "tag", color: "#69797e", isSeriesLike: true },
 };
 
-/** Re-exported icon & color mapping for icon components and search results. */
-export const ENTITY_ICONS = ENTITY_TAXONOMY;
-
 /** Mapping from URL path segments and aliases to canonical EntityKind. */
 export const KIND_BY_PATH_SEGMENT: Record<string, EntityKind> = {
   chapters: "chapter",

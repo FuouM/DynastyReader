@@ -85,6 +85,6 @@ export function absUrl(u: string): string {
   return SITE_ROOT + u;
 }
 
-export { formatBytes } from "../lib";
+export { formatBytes } from "../lib/format";
 export { decodeEntities, esc, safeHtml } from "../utils/html";
 export { formatDate, formatDateTime } from "../utils/formatting";
