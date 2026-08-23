@@ -60,16 +60,16 @@ import {
   Icon,
 } from "../components/Icon";
 
-const ALL_CLASSES: { id: SearchClass; label: string }[] = [
-  { id: "Series", label: "Series" },
-  { id: "Chapter", label: "Chapter" },
-  { id: "Anthology", label: "Anthology" },
-  { id: "Doujin", label: "Doujin" },
-  { id: "Issue", label: "Issue" },
-  { id: "Author", label: "Author" },
-  { id: "Scanlator", label: "Scanlator" },
-  { id: "General", label: "Tag" },
-  { id: "Pairing", label: "Pairing" },
+const getAllClasses = (): { id: SearchClass; label: string }[] => [
+  { id: "Series", label: t("browse.search.classes.series") },
+  { id: "Chapter", label: t("browse.search.classes.chapter") },
+  { id: "Anthology", label: t("browse.search.classes.anthology") },
+  { id: "Doujin", label: t("browse.search.classes.doujin") },
+  { id: "Issue", label: t("browse.search.classes.issue") },
+  { id: "Author", label: t("browse.search.classes.author") },
+  { id: "Scanlator", label: t("browse.search.classes.scanlator") },
+  { id: "General", label: t("browse.search.classes.general") },
+  { id: "Pairing", label: t("browse.search.classes.pairing") },
 ];
 
 interface SearchRow {
@@ -136,7 +136,7 @@ function SearchResultRow(props: {
         </span>
         <Show when={item.releasedOn}>
           <span class="ds-muted" style="font-size:11px;">
-            · released {item.releasedOn}
+            {t("browse.search.releasedOn", { date: item.releasedOn })}
           </span>
         </Show>
       </>
@@ -213,7 +213,7 @@ function SearchResultRow(props: {
         <ExternalLinkButton
           class="ds-btn-xs"
           cssText="flex-shrink:0;"
-          title={`Open ${item.kind} "${decodeEntities(item.title)}" on Dynasty Scans`}
+          title={t("browse.search.openExternalTooltip", { kind: item.kind, title: decodeEntities(item.title) })}
           url={`https://dynasty-scans.com/${pathForKind(item.kind)}/${item.permalink}`}
         />
       }
@@ -266,7 +266,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
         return { pageData, fullyCachedSet, blMode: getBlacklistMode() };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        setBanner(`Search failed: ${msg}`);
+        setBanner(t("browse.search.searchFailedBanner", { msg }));
         throw err;
       }
     },
@@ -411,7 +411,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
     <div ref={(el) => { hostEl = el; }}>
       <div class="group-box" style="margin-bottom:8px;padding:8px;">
         <div class="group-box-title">
-          <SearchIcon /> In-App Search &amp; Filter
+          <SearchIcon /> {t("browse.search.panelTitle")}
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <div class="ds-row" style="gap:6px;">
@@ -442,7 +442,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               type="button"
               class="win-button"
               id="ds-tab-search-reset"
-              title="Reset all search filters"
+              title={t("browse.search.resetFiltersTooltip")}
               onClick={clearAll}
             >
               <ClearIcon /> {t("common.clear")}
@@ -451,7 +451,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
           <div style="display:flex;flex-direction:column;gap:4px;">
             <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-              Category Filter:
+              {t("browse.search.categoryFilter")}
             </div>
             <div id="ds-search-classes-row" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
               <button
@@ -467,7 +467,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 </Show>
                 <span>{t("browse.search.classesAll")}</span>
               </button>
-              <For each={ALL_CLASSES}>
+              <For each={getAllClasses()}>
                 {(c) => {
                   const isActive = () => classes().has(c.id);
                   return (
@@ -492,7 +492,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
           >
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-                <Icon name="plus-circle" /> With Tags:
+                <Icon name="plus-circle" /> {t("browse.search.withTags")}
               </div>
               <div style="position:relative;">
                 <Typeahead
@@ -501,7 +501,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   fetcher={suggest}
                   onSelect={(item) => addWithTag(item.name)}
                   onEnter={(value) => addWithTag(value)}
-                  placeholder="Add included tag..."
+                  placeholder={t("browse.search.withTagsPlaceholder")}
                   maxItems={6}
                   debounceMs={200}
                 />
@@ -523,7 +523,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-                <Icon name="dash-circle" /> Without Tags (Exclude):
+                <Icon name="dash-circle" /> {t("browse.search.withoutTags")}
               </div>
               <div style="position:relative;">
                 <Typeahead
@@ -532,7 +532,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   fetcher={suggest}
                   onSelect={(item) => addWithoutTag(item.name)}
                   onEnter={(value) => addWithoutTag(value)}
-                  placeholder="Add excluded tag..."
+                  placeholder={t("browse.search.withoutTagsPlaceholder")}
                   maxItems={6}
                   debounceMs={200}
                 />
@@ -554,7 +554,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-                <Icon name="sort-down" /> Sort Order:
+                <Icon name="sort-down" /> {t("browse.search.sortOrder")}
               </div>
               <select
                 class="input-field"
@@ -587,11 +587,14 @@ export function BrowseSearch(props: BrowseSearchProps) {
             style="justify-content:space-between;align-items:center;padding:4px 2px;border-bottom:1px solid var(--sys-border-light,#ddd);margin-bottom:6px;"
           >
             <div style="font-size:12px;font-weight:600;">
-              <Icon name="list-stars" /> Search Results
-              {model()!.pageData.query ? ` for "${decodeEntities(model()!.pageData.query)}"` : ""}{" "}
+              <Icon name="list-stars" /> {t("browse.search.resultsTitle")}
+              {model()!.pageData.query ? ` ${t("browse.search.resultsFor", { query: decodeEntities(model()!.pageData.query) })}` : ""}{" "}
               <span class="ds-muted" style="font-weight:normal;font-size:11px;">
-                ({model()!.pageData.items.length} items on page {model()!.pageData.currentPage} of{" "}
-                {model()!.pageData.totalPages})
+                {t("browse.search.resultsSummary", {
+                  count: model()!.pageData.items.length,
+                  page: model()!.pageData.currentPage,
+                  totalPages: model()!.pageData.totalPages,
+                })}
               </span>
             </div>
           </div>
@@ -599,10 +602,10 @@ export function BrowseSearch(props: BrowseSearchProps) {
           <Show when={model()!.pageData.items.length === 0}>
             <EmptyState cssText="padding:24px;text-align:center;">
               <div style="font-size:14px;margin-bottom:4px;">
-                <SearchIcon /> No matching results found
+                <SearchIcon /> {t("browse.search.noResults")}
               </div>
               <div style="font-size:11px;">
-                Try adjusting keywords, clearing category filters, or removing excluded tags.
+                {t("browse.search.noResultsHint")}
               </div>
             </EmptyState>
           </Show>
@@ -627,7 +630,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               when={model()!.blMode === "hide" && normalRows().length === 0 && blacklistedRows().length > 0}
             >
               <div class="ds-muted" style="padding:12px 0;text-align:center;font-size:11px;">
-                All results on this page were hidden by your blacklist.
+                {t("browse.search.emptyBlacklist")}
               </div>
             </Show>
 
@@ -652,9 +655,9 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
         <Show when={pane.error() !== undefined}>
           <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
-            <span class="ds-muted">Search request failed: {errorMessage()}</span>
+            <span class="ds-muted">{t("browse.search.searchError", { msg: errorMessage() })}</span>
             <button type="button" class="win-button" onClick={() => pane.reload()}>
-              <RefreshIcon /> Retry
+              <RefreshIcon /> {t("common.retry")}
             </button>
           </div>
         </Show>

@@ -102,24 +102,24 @@ export function FollowedPane(props: LibraryPaneProps) {
                 title={row.name}
                 subtitle={
                   row.latest_chapter_title
-                    ? `Latest: ${decodeEntities(row.latest_chapter_title)} · Followed on ${formatDate(Number(row.created_at))}`
-                    : `Followed on ${formatDate(Number(row.created_at))}`
+                    ? `${t("library.latestChapterPrefix", { title: decodeEntities(row.latest_chapter_title) })}${t("library.followedOn", { date: formatDate(Number(row.created_at)) })}`
+                    : t("library.followedOn", { date: formatDate(Number(row.created_at)) })
                 }
                 cover={row.cover}
                 coverAlt={row.name}
                 onOpen={() => openSeries(row)}
-                actionLabel="Open"
+                actionLabel={t("common.open")}
                 actionIcon="bi-folder2-open"
                 externalUrl={`https://dynasty-scans.com/series/${row.permalink}`}
-                deleteTitle="Unfollow series"
+                deleteTitle={t("library.unfollowTooltip")}
                 onDelete={async () => {
                   try {
                     await unfollowSeries(row.permalink);
-                    showBanner(`Unfollowed "${row.name}".`);
+                    showBanner(t("library.unfollowedBanner", { name: row.name }));
                     refetch();
                   } catch (err) {
                     const msg = err instanceof Error ? err.message : String(err);
-                    showBanner(`Could not unfollow: ${msg}`);
+                    showBanner(t("library.unfollowErrorBanner", { msg }));
                     throw err;
                   }
                 }}
@@ -183,25 +183,25 @@ export function CollectionsPane(props: CollectionsPaneProps) {
           {(col) => (
             <LibraryItemRow
               title={col.name}
-              subtitle={`${col.itemCount ?? 0} items${
-                col.is_default ? " · Default Collection" : ""
+              subtitle={`${t("library.itemsCount", { count: col.itemCount ?? 0, noun: col.itemCount === 1 ? t("library.nounItem") : t("library.nounItems") })}${
+                col.is_default ? t("library.defaultCollectionBadge") : ""
               }`}
               icon={col.is_default ? "bi-star-fill" : "bi-folder2-open"}
               iconColor={col.is_default ? "#d97706" : "var(--sys-primary,#0078d4)"}
               onOpen={() => openDetail(col)}
-              actionLabel="Open"
+              actionLabel={t("common.open")}
               actionIcon="bi-folder2-open"
-              deleteTitle="Delete collection"
+              deleteTitle={t("library.deleteCollectionTooltip")}
               onDelete={
                 !col.is_default
                   ? async () => {
                       try {
                         await deleteCollection(col.id);
-                        showBanner(`Deleted collection "${col.name}".`);
+                        showBanner(t("library.deletedCollectionBanner", { name: col.name }));
                         refetch();
                       } catch (err) {
                         const msg = err instanceof Error ? err.message : String(err);
-                        showBanner(`Could not delete collection: ${msg}`);
+                        showBanner(t("library.deleteCollectionErrorBanner", { msg }));
                         throw err;
                       }
                     }
@@ -261,8 +261,8 @@ export function BookmarksPane(props: LibraryPaneProps) {
                 title={row.chapter_title}
                 subtitle={
                   row.series_name
-                    ? `${decodeEntities(row.series_name)} · Saved on ${formatDate(Number(row.created_at))}`
-                    : `Saved on ${formatDate(Number(row.created_at))}`
+                    ? `${decodeEntities(row.series_name)} · ${t("library.savedOn", { date: formatDate(Number(row.created_at)) })}`
+                    : t("library.savedOn", { date: formatDate(Number(row.created_at)) })
                 }
                 isFullyCached={data()!.fullyCachedSet.has(row.chapter_permalink)}
                 onOpen={() =>
@@ -276,7 +276,7 @@ export function BookmarksPane(props: LibraryPaneProps) {
                   })
                 }
                 externalUrl={`https://dynasty-scans.com/chapters/${row.chapter_permalink}`}
-                deleteTitle="Remove bookmark"
+                deleteTitle={t("library.removeBookmarkTooltip")}
                 onDelete={async () => {
                   await removeBookmark(row.chapter_permalink);
                   refetch();
@@ -338,7 +338,7 @@ export function HistoryPane(props: LibraryPaneProps) {
             {(row: HistoryRow) => (
               <LibraryItemRow
                 title={row.chapter_title}
-                subtitle={`${decodeEntities(row.series_name)} · ${formatDate(Number(row.read_at))}`}
+                subtitle={`${decodeEntities(row.series_name)} · ${t("library.readOn", { date: formatDate(Number(row.read_at)) })}`}
                 isFullyCached={data()!.fullyCachedSet.has(row.chapter_permalink)}
                 onOpen={() =>
                   navigate({
@@ -350,7 +350,7 @@ export function HistoryPane(props: LibraryPaneProps) {
                   })
                 }
                 externalUrl={`https://dynasty-scans.com/chapters/${row.chapter_permalink}`}
-                deleteTitle="Remove from history"
+                deleteTitle={t("library.removeFromHistoryTooltip")}
                 onDelete={async () => {
                   await removeHistory(row.id);
                   refetch();

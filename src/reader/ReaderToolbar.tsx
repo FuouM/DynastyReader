@@ -44,7 +44,7 @@ export function ReaderMainRow(props: NavRowProps) {
           if (curIdx > 0) s.gotoChapter(list[curIdx - 1]);
         }}
       >
-        <i class="bi bi-chevron-double-left"></i><span class="ds-ch-btn-text"> Ch</span>
+        <i class="bi bi-chevron-double-left"></i><span class="ds-ch-btn-text"> {t("reader.toolbar.chapterShort")}</span>
       </button>
       <button
         type="button"
@@ -68,7 +68,7 @@ export function ReaderMainRow(props: NavRowProps) {
           <span class="ds-reader-progress-label" title={s.progress().title}>
             <span class="ds-prog-page-slot">
               <Show when={!isNarrow()}>
-                <span class="ds-prog-prefix">Page </span>
+                <span class="ds-prog-prefix">{t("reader.toolbar.pagePrefix")}</span>
               </Show>
               <span
                 class="ds-prog-current"
@@ -129,7 +129,7 @@ export function ReaderMainRow(props: NavRowProps) {
           }
         }}
       >
-        <span class="ds-ch-btn-text">Ch </span><i class="bi bi-chevron-double-right"></i>
+        <span class="ds-ch-btn-text">{t("reader.toolbar.chapterShort")} </span><i class="bi bi-chevron-double-right"></i>
       </button>
       <Show when={isMobile()}>
         <button
@@ -137,7 +137,7 @@ export function ReaderMainRow(props: NavRowProps) {
           class="win-button ds-nav-btn-page"
           classList={{ active: props.controlsOpen?.() }}
           style={{ "margin-left": "auto" }}
-          title="Toggle Reader Controls (Zoom, Fit, Layout)"
+          title={t("reader.toolbar.toggleControlsTooltip")}
           onClick={props.onToggleControls}
         >
           <ToolIcon />
@@ -158,29 +158,28 @@ export function ReaderControlsRow(props: NavRowProps) {
         title={
           s.isHorizontal()
             ? s.scrollLock()
-              ? "Scroll Animation: Instant slide (click for smooth)"
-              : "Scroll Animation: Smooth slide (click for instant)"
-            : "Scroll Lock: mouse wheel flips exactly one page at a time"
+              ? t("reader.toolbar.scrollLockInstantTooltip")
+              : t("reader.toolbar.scrollLockSmoothTooltip")
+            : t("reader.toolbar.scrollLockWheelTooltip")
         }
-        onClick={() => s.setScrollLock()}
       >
         <Show
           when={s.isHorizontal()}
           fallback={
             <>
               <i class={s.scrollLock() ? "bi bi-lock-fill" : "bi bi-unlock"}></i>
-              <span class="ds-ctrl-text"> Scroll Lock</span>
+              <span class="ds-ctrl-text"> {t("reader.toolbar.scrollLock")}</span>
             </>
           }
         >
           <i class="bi bi-arrow-left-right"></i>
-          <span class="ds-ctrl-text"> Scroll Smooth</span>
+          <span class="ds-ctrl-text"> {t("reader.toolbar.scrollSmooth")}</span>
         </Show>
       </button>
       <button
         type="button"
         class="win-button ds-ctrl-btn"
-        title="Toggle Horizontal / Vertical reading mode"
+        title={t("reader.toolbar.toggleModeTooltip")}
         onClick={() => s.setMode(s.mode() === "paged" ? "scroll" : "paged")}
       >
         <Show
@@ -189,8 +188,8 @@ export function ReaderControlsRow(props: NavRowProps) {
         >
           <i class="bi bi-distribute-vertical"></i>
         </Show>
-        <Show when={s.isHorizontal()} fallback={<span class="ds-ctrl-text"> Paged</span>}>
-          <span class="ds-ctrl-text"> Scroll</span>
+        <Show when={s.isHorizontal()} fallback={<span class="ds-ctrl-text"> {t("reader.toolbar.paged")}</span>}>
+          <span class="ds-ctrl-text"> {t("reader.toolbar.scroll")}</span>
         </Show>
       </button>
       <Show when={s.mode() === "paged"}>
@@ -200,13 +199,13 @@ export function ReaderControlsRow(props: NavRowProps) {
           classList={{ primary: s.pagedLayout() === "spread" }}
           title={
             s.isLongStrip() && s.layoutAutoDetected()
-              ? "Spread mode soft-disabled for Long Strip / Webtoon (click to force spread; M cycles)"
-              : `Dual-page spread: ${s.pagedLayout() === "spread" ? "ON" : "OFF"} (M cycles)`
+              ? t("reader.toolbar.spreadAutoDisabledTooltip")
+              : t("reader.toolbar.spreadTooltip", { state: s.pagedLayout() === "spread" ? "ON" : "OFF" })
           }
           onClick={() => s.setPagedLayout(s.pagedLayout() === "spread" ? "single" : "spread")}
         >
           <i class="bi bi-columns-gap"></i>
-          <span class="ds-ctrl-text"> Spread: {s.pagedLayout() === "spread" ? "ON" : "OFF"}</span>
+          <span class="ds-ctrl-text"> {t("reader.toolbar.spreadLabel", { state: s.pagedLayout() === "spread" ? "ON" : "OFF" })}</span>
         </button>
         <button
           type="button"
@@ -214,8 +213,8 @@ export function ReaderControlsRow(props: NavRowProps) {
           classList={{ primary: !s.directionAutoDetected() }}
           title={
             s.directionAutoDetected()
-              ? `Reading direction ${s.direction().toUpperCase()} (auto-detected from tags; D overrides)`
-              : `Reading direction ${s.direction().toUpperCase()} (manual; D toggles)`
+              ? t("reader.toolbar.directionAutoTooltip", { dir: s.direction().toUpperCase() })
+              : t("reader.toolbar.directionManualTooltip", { dir: s.direction().toUpperCase() })
           }
           onClick={() => s.setDirection(s.direction() === "rtl" ? "ltr" : "rtl")}
         >
@@ -226,12 +225,12 @@ export function ReaderControlsRow(props: NavRowProps) {
           type="button"
           class="win-button ds-ctrl-btn"
           classList={{ primary: s.coverOffset() }}
-          title="Show the cover alone before pairing pages (C)"
+          title={t("reader.toolbar.coverOffsetTooltip")}
           style={s.isSpread() ? undefined : "display:none;"}
           onClick={() => s.toggleCoverOffset()}
         >
           <i class="bi bi-book-half"></i>
-          <span class="ds-ctrl-text"> Cover 1st: {s.coverOffset() ? "ON" : "OFF"}</span>
+          <span class="ds-ctrl-text"> {t("reader.toolbar.coverOffsetLabel", { state: s.coverOffset() ? "ON" : "OFF" })}</span>
         </button>
       </Show>
       <select
@@ -266,8 +265,8 @@ export function ReaderControlsRow(props: NavRowProps) {
         >
           <i class="bi bi-fullscreen-exit"></i>
         </Show>
-        <Show when={s.isFullscreen()} fallback={<span class="ds-ctrl-text"> Fullscreen</span>}>
-          <span class="ds-ctrl-text"> Exit</span>
+        <Show when={s.isFullscreen()} fallback={<span class="ds-ctrl-text"> {t("reader.toolbar.fullscreenLabel")}</span>}>
+          <span class="ds-ctrl-text"> {t("reader.toolbar.exitFullscreenLabel")}</span>
         </Show>
       </button>
       <div class="ds-ctrl-zoom-group" classList={{ "ds-zoom-disabled": s.fitMode() !== "original" }}>
@@ -276,8 +275,8 @@ export function ReaderControlsRow(props: NavRowProps) {
           class="win-button"
           title={
             s.fitMode() !== "original"
-              ? "Zoom disabled when Fit mode is active (set to Original Size to zoom)"
-              : "Zoom Out (Ctrl - / -)"
+              ? t("reader.toolbar.zoomDisabledTooltip")
+              : t("reader.toolbar.zoomOutTooltip")
           }
           disabled={s.fitMode() !== "original" || s.zoomScale() <= 0.25}
           onClick={() => s.zoomOut()}
@@ -288,7 +287,7 @@ export function ReaderControlsRow(props: NavRowProps) {
           type="button"
           class="win-button"
           style="min-width:38px;padding:2px 4px;"
-          title={s.fitMode() !== "original" ? "Zoom disabled when Fit mode is active" : "Reset Zoom (Ctrl 0)"}
+          title={s.fitMode() !== "original" ? t("reader.toolbar.zoomDisabledTooltip") : t("reader.toolbar.zoomResetTooltip")}
           disabled={s.fitMode() !== "original"}
           onClick={() => s.resetZoom()}
         >
@@ -299,8 +298,8 @@ export function ReaderControlsRow(props: NavRowProps) {
           class="win-button"
           title={
             s.fitMode() !== "original"
-              ? "Zoom disabled when Fit mode is active (set to Original Size to zoom)"
-              : "Zoom In (Ctrl + / +)"
+              ? t("reader.toolbar.zoomDisabledTooltip")
+              : t("reader.toolbar.zoomInTooltip")
           }
           disabled={s.fitMode() !== "original" || s.zoomScale() >= 3.0}
           onClick={() => s.zoomIn()}

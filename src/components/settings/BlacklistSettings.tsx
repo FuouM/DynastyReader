@@ -49,7 +49,7 @@ export function BlacklistSettings() {
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-          Hide or show trigger warnings for releases and chapters matching these tags.
+          {t("blacklist.settingsDescription")}
         </div>
 
         {/* Mode Selector */}
@@ -124,7 +124,7 @@ export function BlacklistSettings() {
                     when={blacklist() && blacklist()!.length > 0}
                     fallback={
                       <span class="ds-muted" style="font-size:10px;padding:2px 0;">
-                        No tags blacklisted.
+                        {t("blacklist.noTags")}
                       </span>
                     }
                   >
@@ -137,7 +137,7 @@ export function BlacklistSettings() {
                           <span>{item.tag_name}</span>
                           <CloseIcon
                             style={{ cursor: "pointer", "font-size": "13px" }}
-                            title="Remove from blacklist"
+                            title={t("blacklist.removeTagTooltip")}
                             onClick={() => void removeTag(item.tag_name)}
                           />
                         </span>
@@ -146,7 +146,7 @@ export function BlacklistSettings() {
                   </Show>
                 }
               >
-                <span class="ds-muted" style="font-size:10px;">Loading blacklist…</span>
+                <span class="ds-muted" style="font-size:10px;">{t("blacklist.loadingTags")}</span>
               </Show>
             }
           >
@@ -154,7 +154,7 @@ export function BlacklistSettings() {
               class="ds-muted"
               style="font-size:10px;color:var(--ds-danger-text);padding:2px 0;"
             >
-              Could not load blacklist. Check the application log.
+              {t("blacklist.loadTagsError")}
             </span>
           </Show>
         </div>

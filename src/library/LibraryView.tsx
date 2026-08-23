@@ -91,7 +91,7 @@ function LibraryGrid() {
       }, 1200);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      showBanner(`Library refresh failed: ${msg}`);
+      showBanner(t("library.refreshErrorBanner", { msg }));
     } finally {
       setRefreshing(false);
     }
@@ -116,7 +116,7 @@ function LibraryGrid() {
 
   const clearHistoryAll = async (): Promise<void> => {
     await clearHistory();
-    showBanner("All reading history cleared.");
+    showBanner(t("library.historyClearedBanner"));
     paneApis.history?.reset();
     await paneApis.history?.refetch();
   };
@@ -150,11 +150,11 @@ function LibraryGrid() {
               type="button"
               class="win-button"
               style="font-size:10px;padding:0 5px;height:18px;line-height:18px;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
-              title="Create a new custom collection"
+              title={t("library.createCollectionTooltip")}
               onClick={() => setCreating(true)}
             >
               <AddIcon style={{ "font-size": "9px", "line-height": 1 }} />{" "}
-              <span>New</span>
+              <span>{t("library.newCollectionButton")}</span>
             </button>
           </div>
           <div class="ds-library-panel-body">
@@ -190,11 +190,11 @@ function LibraryGrid() {
               <Icon name="clock-history" /> {t("library.history")}
             </span>
             <ConfirmDeleteButton
-              title="Clear all reading history"
+              title={t("library.clearHistoryTooltip")}
               onConfirm={clearHistoryAll}
               cssText="font-size:10px;padding:0 6px;height:18px;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
             >
-              <TrashIcon style={{ "line-height": 1 }} /> Clear
+              <TrashIcon style={{ "line-height": 1 }} /> {t("library.clearHistoryButton")}
             </ConfirmDeleteButton>
           </div>
           <div class="ds-library-panel-body">
@@ -253,12 +253,12 @@ function CreateCollectionModal(props: {
     setCreating(true);
     try {
       await createCollection(n);
-      showBanner(`Created collection "${n}".`);
+      showBanner(t("library.createdCollectionBanner", { name: n }));
       props.onClose();
       props.onCreated();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      showBanner(`Failed to create collection: ${msg}`);
+      showBanner(t("library.createCollectionError", { msg }));
       setCreating(false);
     }
   };
@@ -278,14 +278,14 @@ function CreateCollectionModal(props: {
       body={
         <div style="padding:10px 12px 8px;display:flex;flex-direction:column;gap:6px;">
           <label style="font-size:11px;font-weight:600;color:var(--sys-window-text,#111);">
-            Collection Name:
+            {t("library.createCollectionNameLabel")}
           </label>
           <div class="input-wrapper" style="width:100%;">
             <input
               ref={inputEl}
               type="text"
               class="input-field has-clear"
-              placeholder="e.g. Yuri Gems, Read Later..."
+              placeholder={t("library.createCollectionNamePlaceholder")}
               style="width:100%;box-sizing:border-box;font-size:11px;height:24px;"
               value={name()}
               onInput={(ev) => setName((ev.target as HTMLInputElement).value)}
@@ -297,7 +297,7 @@ function CreateCollectionModal(props: {
               type="button"
               class="input-clear-btn"
               tabIndex={-1}
-              title="Clear"
+              title={t("common.clear")}
               onClick={() => setName("")}
             >
               <CloseIcon />
@@ -341,7 +341,7 @@ function LibraryActions(props: {
         type="button"
         id="ds-library-refresh-btn"
         class="win-button ds-btn-sm"
-        title="Refresh library from local database"
+        title={t("library.refreshLibraryTooltip")}
         disabled={props.refreshing() || props.justUpdated()}
         onClick={props.onRefresh}
       >
@@ -352,32 +352,32 @@ function LibraryActions(props: {
               when={props.justUpdated()}
               fallback={
                 <>
-                  <RefreshIcon /> <span class="ds-btn-text">Refresh Library</span>
+                  <RefreshIcon /> <span class="ds-btn-text">{t("library.refreshLibraryButton")}</span>
                 </>
               }
             >
-              <CheckIcon /> <span class="ds-btn-text">Updated</span>
+              <CheckIcon /> <span class="ds-btn-text">{t("library.refreshUpdated")}</span>
             </Show>
           }
         >
-          <RefreshIcon spin={true} /> <span class="ds-btn-text">Refreshing...</span>
+          <RefreshIcon spin={true} /> <span class="ds-btn-text">{t("library.refreshRefreshing")}</span>
         </Show>
       </button>
       <button
         type="button"
         class="win-button ds-btn-compact"
-        title="View cache storage statistics and manage cached series/pages"
+        title={t("library.cacheManagementTooltip")}
         onClick={() => navigate({ view: "cache" })}
       >
-        <StorageIcon /> <span class="ds-btn-text">Cache Management</span>
+        <StorageIcon /> <span class="ds-btn-text">{t("library.cacheManagementButton")}</span>
       </button>
       <button
         type="button"
         class="win-button ds-btn-compact"
-        title="Manage blacklisted series and view hidden works"
+        title={t("library.seriesBlacklistTooltip")}
         onClick={() => navigate({ view: "blacklist" })}
       >
-        <BlacklistIcon /> <span class="ds-btn-text">Series Blacklist</span>
+        <BlacklistIcon /> <span class="ds-btn-text">{t("library.seriesBlacklistButton")}</span>
       </button>
     </>
   );

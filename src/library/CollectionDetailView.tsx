@@ -94,7 +94,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
   // Collection missing -> back to the main library grid.
   createEffect(() => {
     if (data() && data()!.collection === null) {
-      showBanner("Collection not found.");
+      showBanner(t("library.collectionNotFoundBanner"));
       navigate({ view: "library" });
     }
   });
@@ -134,15 +134,13 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
               <StarIcon filled={true} style={{ color: "#d97706", "font-size": "13px" }} />
             </Show>
             <span>
-              <b>{decodeEntities(collection()?.name ?? "")}</b> — <b>{totalItems()}</b> item
-              {totalItems() === 1 ? "" : "s"}
+              <b>{decodeEntities(collection()?.name ?? "")}</b> — <b>{totalItems()}</b> {totalItems() === 1 ? t("library.nounItem") : t("library.nounItems")}
             </span>
           </div>
           <div class="input-wrapper" style="width:220px;max-width:100%;">
             <input
               type="text"
-              class="input-field has-clear"
-              placeholder="Filter items in collection..."
+              placeholder={t("library.filterCollectionPlaceholder")}
               style="width:100%;box-sizing:border-box;font-size:11px;height:22px;"
               value={filter()}
               onInput={(ev) => setFilter((ev.target as HTMLInputElement).value)}
@@ -151,7 +149,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
               type="button"
               class="input-clear-btn"
               tabIndex={-1}
-              title="Clear"
+              title={t("common.clear")}
               onClick={() => setFilter("")}
             >
               <CloseIcon />
@@ -162,16 +160,12 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
         <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow-y:auto;">
           <Show when={totalItems() === 0}>
             <div class="ds-muted" style="padding:16px 8px;font-size:11px;">
-              No items in this collection yet. Click{" "}
-              <b>
-                <FolderIcon /> Add to...
-              </b>{" "}
-              on any series or chapter in Browse / Search / Series pages to add items here.
+              {t("library.emptyCollectionNotice")}
             </div>
           </Show>
           <Show when={totalItems() > 0 && filteredItems().length === 0}>
             <div class="ds-muted" style="padding:16px 8px;text-align:center;font-size:11px;">
-              {`No items matched "${filter()}".`}
+              {t("library.noMatchingCollectionItems", { query: filter() })}
             </div>
           </Show>
           <Show when={filteredItems().length > 0}>
@@ -246,14 +240,14 @@ function CollectionItemCard(props: {
 
   const kindLabel =
     props.it.item_kind === "oneshot"
-      ? "One-shot"
+      ? t("library.kinds.oneshot")
       : props.it.item_kind === "chapter"
-        ? "Chapter"
+        ? t("library.kinds.chapter")
         : props.it.item_kind === "doujin"
-          ? "Doujin"
+          ? t("library.kinds.doujin")
           : props.it.item_kind === "anthology"
-            ? "Anthology"
-            : "Series";
+            ? t("library.kinds.anthology")
+            : t("library.kinds.series");
 
   const endpoint =
     isChapterLike
@@ -269,20 +263,20 @@ function CollectionItemCard(props: {
       title={props.it.item_title}
       subtitle={
         props.it.parent_series_name
-          ? `${decodeEntities(props.it.parent_series_name)} · Added on ${formatDate(Number(props.it.created_at))}`
-          : `Added on ${formatDate(Number(props.it.created_at))}`
+          ? `${decodeEntities(props.it.parent_series_name)} · ${t("library.addedOn", { date: formatDate(Number(props.it.created_at)) })}`
+          : t("library.addedOn", { date: formatDate(Number(props.it.created_at)) })
       }
       badge={kindLabel}
       cover={cover()}
       coverAlt={props.it.item_title}
       onOpen={onOpen}
-      actionLabel={isChapterLike ? "Read" : "Open"}
+      actionLabel={isChapterLike ? t("common.read") : t("common.open")}
       actionIcon={isChapterLike ? "bi-book" : "bi-folder2-open"}
       externalUrl={`https://dynasty-scans.com/${endpoint}/${props.it.item_permalink}`}
-      deleteTitle="Remove from collection"
+      deleteTitle={t("library.removeFromCollectionTooltip")}
       onDelete={async () => {
         await removeItemFromCollection(props.collectionId, props.it.item_permalink);
-        showBanner(`Removed "${props.it.item_title}" from collection.`);
+        showBanner(t("library.removedFromCollectionBanner", { title: props.it.item_title }));
         props.onChanged();
       }}
     />

@@ -44,7 +44,7 @@ export function DisplaySettings() {
               type="button"
               class="win-button ds-btn-sm"
               id="ds-settings-scale-dec"
-              title="Decrease Scale (-10%)"
+              title={t("settings.display.scaleDecTooltip")}
               onClick={() => syncScale(Math.max(0.5, Math.round((scale() - 0.1) * 10) / 10))}
             >
               <Icon name="dash-lg" />
@@ -62,13 +62,15 @@ export function DisplaySettings() {
               <For each={SCALE_PRESETS}>
                 {(s) => (
                   <option value={s}>
-                    {Math.round(s * 100)}%{s === 1.0 ? " (Default)" : ""}
+                    {s === 1.0
+                      ? t("settings.display.scaleDefaultPreset", { pct: Math.round(s * 100) })
+                      : `${Math.round(s * 100)}%`}
                   </option>
                 )}
               </For>
               <Show when={!hasScalePreset()}>
                 <option value={scale()} selected>
-                  {Math.round(scale() * 100)}% (Custom)
+                  {t("settings.display.scaleCustomPreset", { pct: Math.round(scale() * 100) })}
                 </option>
               </Show>
             </select>
@@ -76,7 +78,7 @@ export function DisplaySettings() {
               type="button"
               class="win-button ds-btn-sm"
               id="ds-settings-scale-inc"
-              title="Increase Scale (+10%)"
+              title={t("settings.display.scaleIncTooltip")}
               onClick={() => syncScale(Math.min(2.0, Math.round((scale() + 0.1) * 10) / 10))}
             >
               <AddIcon />
@@ -85,7 +87,7 @@ export function DisplaySettings() {
               type="button"
               class="win-button ds-btn-sm"
               id="ds-settings-scale-reset"
-              title="Reset to 100%"
+              title={t("settings.display.scaleResetTooltip")}
               onClick={() => syncScale(1.0)}
             >
               100%
@@ -137,8 +139,8 @@ export function DisplaySettings() {
             style="font-size:11px;padding:2px 10px;min-width:90px;flex-shrink:0;"
             onClick={toggleCovers}
           >
-            <Show when={coversEnabled()} fallback={<><Icon name="eye-slash" /> Covers: OFF</>}>
-              <ImageIcon /> Covers: ON
+            <Show when={coversEnabled()} fallback={<><Icon name="eye-slash" /> {t("settings.display.coversOff")}</>}>
+              <ImageIcon /> {t("settings.display.coversOn")}
             </Show>
           </button>
         </div>

@@ -199,7 +199,7 @@ export function SeriesHeader(props: SeriesHeaderProps) {
                 void openExternal(props.series.link!);
               }}
             >
-              Official / Source Link — {props.series.link}
+              {t("series.officialSourceLink", { url: props.series.link })}
             </a>
           </div>
         </Show>

@@ -53,11 +53,9 @@ function DownloadedRow(props: {
       }}
       coverPath={ch.coverPath}
       isFullyCached={true}
-      isBookmarked={props.isBookmarked}
-      isRead={props.isRead}
       extraMeta={
         <>
-          <span class="ds-muted">✓ {ch.pageCount} pages</span>
+          <span class="ds-muted">{t("browse.downloaded.pagesCount", { count: ch.pageCount })}</span>
           <Show when={ch.totalSizeBytes > 0}>
             <span class="ds-muted">· {formatBytes(ch.totalSizeBytes)}</span>
           </Show>
@@ -160,7 +158,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     <div class="ds-tab-pane active" id="ds-tab-downloaded">
       <div id="ds-downloaded-header">
         <span class="ds-downloaded-count">
-          {t("browse.downloaded.chaptersCount", { count: filtered().length })}
+          {t("browse.downloaded.chaptersCount", { count: filtered().length, noun: filtered().length === 1 ? t("browse.downloaded.nounChapter") : t("browse.downloaded.nounChapters") })}
           <Show when={totalBytes() > 0}>
             <span class="ds-downloaded-size"> · {formatBytes(totalBytes())}</span>
           </Show>

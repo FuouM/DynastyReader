@@ -7,6 +7,7 @@ import { createSignal, type JSX } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import type { UpdateInfo, DownloadProgress } from "../types/api";
 import * as ipc from "../ipc";
+import { t } from "../i18n";
 
 export const [updateInfo, setUpdateInfo] = createSignal<UpdateInfo | null>(null);
 export const [upToDateVersion, setUpToDateVersion] = createSignal<string | null>(null);
@@ -54,14 +55,14 @@ export async function installUpdate(): Promise<void> {
 
   setIsUpdating(true);
   setUpdateError(null);
-  setUpdateStatusText("Starting download...");
+  setUpdateStatusText(t("settings.about.downloadStarting"));
 
   if (!progressUnlisten) {
     try {
       progressUnlisten = await listen<DownloadProgress>("update-progress", (event) => {
         setUpdateProgress(event.payload);
         if (event.payload.percentage >= 100) {
-          setUpdateStatusText("Installing update & restarting...");
+          setUpdateStatusText(t("settings.about.installingRestarting"));
         }
       });
     } catch (err) {
@@ -74,8 +75,8 @@ export async function installUpdate(): Promise<void> {
   } catch (err) {
     setIsUpdating(false);
     const msg = err instanceof Error ? err.message : String(err);
-    setUpdateError(`Update installation failed: ${msg}`);
-    setUpdateStatusText("Update failed. Please retry.");
+    setUpdateError(t("settings.about.installError", { msg }));
+    setUpdateStatusText(t("settings.about.updateFailedNotice"));
     console.error("Failed to install update:", err);
   }
 }

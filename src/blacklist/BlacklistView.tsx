@@ -37,13 +37,15 @@ export function BlacklistView() {
     setMode(next);
     setBlacklistMode(next);
     showBanner(
-      `Blacklist mode set to: ${next === "hide" ? "Hide releases" : "Trigger warning on click"}`,
+      t("blacklist.modeChangedBanner", {
+        mode: next === "hide" ? t("blacklist.modeChangedHide") : t("blacklist.modeChangedWarn"),
+      }),
     );
   };
 
   const removeSeries = async (item: BlacklistedSeries): Promise<void> => {
     await removeBlacklistedSeries(item.series_permalink);
-    showBanner(`Removed "${item.series_name}" from blacklist.`);
+    showBanner(t("blacklist.removedSeriesBanner", { name: item.series_name }));
     void refetch();
   };
 
@@ -79,7 +81,7 @@ export function BlacklistView() {
             </Show>
             <Show when={data.error !== undefined && data() === undefined}>
               <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
-                <span class="ds-muted">Failed to load series blacklist: {errorMessage()}</span>
+                <span class="ds-muted">{t("blacklist.loadError", { msg: errorMessage() })}</span>
                 <button type="button" class="win-button" onClick={() => void refetch()}>
                   <RefreshIcon /> {t("common.retry")}
                 </button>
@@ -94,10 +96,7 @@ export function BlacklistView() {
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);line-height:1.4;">
-              Blacklisted series will have all their releases and chapters completely hidden from
-              browse feeds and search results (or trigger a content warning dialog before opening if
-              Trigger warning mode is active). To blacklist a series, visit the series' page and
-              click the <b>Blacklist</b> button in the top action bar.
+              {t("blacklist.description")}
             </div>
             <div
               style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:var(--sys-control-bg,#f8f8f8);border:1px solid var(--sys-border-light,#e0e0e0);border-radius:3px;flex-wrap:wrap;"
@@ -134,7 +133,7 @@ export function BlacklistView() {
         <div class="group-box">
           <div class="group-box-title" style="display:flex;justify-content:space-between;align-items:center;">
             <div style="display:flex;align-items:center;gap:6px;">
-              <ListCheckIcon /> Blacklisted Series ({data()!.length})
+              <ListCheckIcon /> {t("blacklist.seriesTitle", { count: data()!.length })}
             </div>
           </div>
 
@@ -151,13 +150,12 @@ export function BlacklistView() {
                     color: "var(--sys-primary,#0078d4)",
                   }}
                 />
-                No series currently blacklisted.
+                {t("blacklist.emptySeriesTitle")}
                 <br />
                 <span
                   style="color:var(--sys-text-muted,#666);display:inline-block;margin-top:4px;"
                 >
-                  To blacklist a series, visit its page from Browse or Search and click the{" "}
-                  <b>Blacklist</b> button.
+                  {t("blacklist.emptySeriesHint")}
                 </span>
               </div>
             }
@@ -196,23 +194,23 @@ export function BlacklistView() {
                           <span class="ds-etag-tag" style="font-size:9px;padding:0 4px;">
                             {safeHtml(item.series_permalink)}
                           </span>
-                          <span>Blacklisted on {formatDate(item.created_at)}</span>
+                          <span>{t("blacklist.blacklistedOn", { date: formatDate(item.created_at) })}</span>
                         </div>
                       </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
                       <ExternalLinkButton
                         class="ds-btn-xs"
-                        title="Open on dynasty-scans.com"
+                        title={t("blacklist.openOnDynastyTooltip")}
                         url={`https://dynasty-scans.com/series/${item.series_permalink}`}
                       />
                       <button
                         type="button"
                         class="win-button ds-btn-xs"
-                        title="Remove series from blacklist"
+                        title={t("blacklist.removeSeriesTooltip")}
                         onClick={() => void removeSeries(item)}
                       >
-                        <TrashIcon /> Remove
+                        <TrashIcon /> {t("common.remove")}
                       </button>
                     </div>
                   </div>

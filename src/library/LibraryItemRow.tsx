@@ -9,6 +9,7 @@
 
 import { Show } from "solid-js";
 import { decodeEntities } from "../stores";
+import { t } from "../i18n";
 import { ListItem } from "../components/ListItem";
 import { Cover } from "../components/Cover";
 import { OfflineBadge } from "../components/OfflineBadge";
@@ -111,14 +112,14 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
             <ExternalLinkButton
               class=""
               cssText="font-size:10px;padding:2px 6px;flex-shrink:0;"
-              title="Open on Dynasty Scans in browser"
+              title={t("library.openOnDynastyTooltip")}
               url={props.externalUrl!}
             />
           </Show>
 
           <Show when={props.onDelete}>
             <ConfirmDeleteButton
-              title={props.deleteTitle || "Delete item"}
+              title={props.deleteTitle || t("library.deleteItemTooltip")}
               onConfirm={async () => {
                 await props.onDelete!();
               }}

@@ -10,6 +10,7 @@
 import { createSignal } from "solid-js";
 import { clearActions } from "./topbar";
 import { decodeEntities } from "../utils/html";
+import { t } from "../i18n";
 import type { Route, SessionMangaTab } from "../types/routes";
 export type { Route, ViewName, ChapterRef, SessionMangaTab } from "../types/routes";
 
@@ -65,7 +66,7 @@ export function isSameRoute(a: Route, b: Route): boolean {
 /** Navigates to a new route and updates the ephemeral session manga tab if entering a manga/chapter. */
 export function navigate(r: Route): void {
   if (r.view === "reader" || r.view === "series") {
-    const title = r.seriesName || r.chapterTitle || (r.view === "series" ? "Series" : "Reader");
+    const title = r.seriesName || r.chapterTitle || (r.view === "series" ? t("routes.series") : t("routes.reader"));
     setSessionTab({
       title,
       route: { ...r },
@@ -153,50 +154,50 @@ export function routeLabel(r: Route): RouteLabel {
     case "browse": {
       const tab = r.browseTab || "releases";
       const tabNames: Record<string, string> = {
-        releases: "Recent Releases",
-        added: "Recently Added",
-        downloaded: "Downloaded",
-        "series-dir": "Series Directory",
-        "tags-dir": "Tags Directory",
-        search: "Tag & Search",
+        releases: t("browse.tabs.releases"),
+        added: t("browse.tabs.added"),
+        downloaded: t("browse.tabs.downloaded"),
+        "series-dir": t("browse.tabs.seriesDir"),
+        "tags-dir": t("browse.tabs.tagsDir"),
+        search: t("browse.tabs.search"),
       };
       return {
-        title: tabNames[tab] || "Browse",
-        subtitle: "Browse",
+        title: tabNames[tab] || t("routes.browse"),
+        subtitle: t("routes.browse"),
         icon: "bi-compass",
       };
     }
     case "library":
       return {
-        title: r.collectionId !== undefined ? "Collection Detail" : "Library",
-        subtitle: "Library",
+        title: r.collectionId !== undefined ? t("routes.collectionDetail") : t("routes.library"),
+        subtitle: t("routes.library"),
         icon: "bi-collection",
       };
     case "series":
       return {
-        title: decodeEntities(r.seriesName || r.seriesPermalink || "Series"),
-        subtitle: "Series",
+        title: decodeEntities(r.seriesName || r.seriesPermalink || t("routes.series")),
+        subtitle: t("routes.series"),
         icon: "bi-collection-play",
       };
     case "reader":
       return {
-        title: decodeEntities(r.chapterTitle || r.chapterPermalink || "Reader"),
-        subtitle: r.seriesName ? decodeEntities(r.seriesName) : "Chapter",
+        title: decodeEntities(r.chapterTitle || r.chapterPermalink || t("routes.reader")),
+        subtitle: r.seriesName ? decodeEntities(r.seriesName) : t("routes.chapter"),
         icon: "bi-book",
       };
     case "cache":
       return {
-        title: "Cache Management",
+        title: t("routes.cacheManagement"),
         icon: "bi-hdd-stack",
       };
     case "blacklist":
       return {
-        title: "Series Blacklist",
+        title: t("routes.seriesBlacklist"),
         icon: "bi-shield-slash",
       };
     default:
       return {
-        title: "Unknown",
+        title: t("routes.unknown"),
         icon: "bi-link-45deg",
       };
   }
@@ -204,6 +205,6 @@ export function routeLabel(r: Route): RouteLabel {
 
 /** Site title shown in the plugin top bar. */
 export function routeTitle(r: Route): string {
-  if (r.view === "browse") return "Browse";
+  if (r.view === "browse") return t("routes.browse");
   return routeLabel(r).title;
 }

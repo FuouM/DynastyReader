@@ -62,7 +62,7 @@ export function Pager(props: PagerProps) {
 
       <div class="ds-row" style="align-items:center;gap:3px;margin:0 2px;">
         <span class="ds-progress-text" style="font-size:11px;color:var(--sys-text-muted, #666);">
-          Page
+          {t("dialogs.pager.pageLabel")}
         </span>
         <input
           type="number"
@@ -81,7 +81,7 @@ export function Pager(props: PagerProps) {
           }}
         />
         <span class="ds-progress-text" style="font-size:11px;color:var(--sys-text-muted, #666);">
-          of {props.totalPages}
+          {t("dialogs.pager.ofTotal", { total: props.totalPages })}
         </span>
         <button type="button" class="win-button ds-btn-xs" title={t("dialogs.pager.jumpButton")} onClick={doJump}>
           {t("dialogs.pager.jumpButton")}

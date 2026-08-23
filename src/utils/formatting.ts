@@ -3,6 +3,8 @@
  * library (`plugins/lib/format.ts`) and is not re-implemented here.
  */
 
+import { t } from "../i18n";
+
 const shortDateFormatter = new Intl.DateTimeFormat("en-CA", {
   year: "numeric",
   month: "2-digit",
@@ -27,6 +29,6 @@ export function formatDate(ms: number): string {
 
 /** Formats a unix-ms timestamp as a full date and time (YYYY-MM-DD HH:MM:SS). */
 export function formatDateTime(ms?: number | null): string {
-  if (!ms) return "Never";
+  if (!ms) return t("common.never");
   return fullDateTimeFormatter.format(new Date(ms)).replace(",", "");
 }

@@ -258,34 +258,34 @@ function FeedStatusFooter(props: {
     if (checkState() === "checking") {
       return (
         <>
-          <RefreshIcon spin={true} /> Checking...
+          <RefreshIcon spin={true} /> {t("browse.feed.statusCheckChecking")}
         </>
       );
     }
     if (checkState() === "ready") {
       return (
         <>
-          <ArrowUpIcon /> Update Ready
+          <ArrowUpIcon /> {t("browse.feed.statusCheckReady")}
         </>
       );
     }
     if (checkState() === "synced") {
       return (
         <>
-          <CheckIcon /> Up to Date
+          <CheckIcon /> {t("browse.feed.statusCheckSynced")}
         </>
       );
     }
     if (checkState() === "failed") {
       return (
         <>
-          <WarningIcon /> Failed
+          <WarningIcon /> {t("browse.feed.statusCheckFailed")}
         </>
       );
     }
     return (
       <>
-        <RefreshIcon /> Check Updates
+        <RefreshIcon /> {t("browse.feed.statusCheckDefault")}
       </>
     );
   };
@@ -295,26 +295,35 @@ function FeedStatusFooter(props: {
       <div class="ds-feed-status-left">
         <span
           class="ds-status-item ds-status-db"
-          title={`Stored in local SQLite database on ${formatDateTime(props.state.cachedAt)}`}
+          title={t("browse.feed.statusDbTitle", { date: formatDateTime(props.state.cachedAt) })}
         >
           <DatabaseIcon /> <span>{formatDateTime(props.state.cachedAt)}</span>
         </span>
         <Show when={props.state.status}>
           <span
             class={`ds-status-pill ${props.state.isStale ? "stale" : "fresh"}`}
-            title={`Cache status: ${props.state.status}`}
+            title={t("browse.feed.statusCacheTitle", { status: props.state.status })}
           >
             {props.state.status}
           </span>
         </Show>
         <Show when={props.state.etag}>
-          <span class="ds-etag-tag" title={`HTTP ETag: ${props.state.etag} (${props.state.etagStatus || "Cached"})`}>
+          <span class="ds-etag-tag" title={t("browse.feed.statusEtagTitle", { etag: props.state.etag, status: props.state.etagStatus || "Cached" })}>
             <HashIcon /> <span class="ds-etag-hash">{props.state.etag!.replace(/^"|"$/g, "").slice(0, 8)}</span>
           </span>
         </Show>
         <span
           class="ds-status-item ds-status-traffic"
-          title={`Session Bandwidth: ${formatBytes(traffic().bytesDownloaded)} (${traffic().networkRequests} requests, ${traffic().cacheHits} cache hits, ${formatBytes(traffic().bytesSaved)} saved)\nLifetime Bandwidth: ${formatBytes(traffic().lifetime.bytesDownloaded)} (${traffic().lifetime.networkRequests} requests, ${traffic().lifetime.cacheHits} cache hits, ${formatBytes(traffic().lifetime.bytesSaved)} saved)`}
+          title={t("browse.feed.statusTrafficTooltip", {
+            sessionBytes: formatBytes(traffic().bytesDownloaded),
+            sessionReqs: traffic().networkRequests,
+            sessionHits: traffic().cacheHits,
+            sessionSaved: formatBytes(traffic().bytesSaved),
+            lifetimeBytes: formatBytes(traffic().lifetime.bytesDownloaded),
+            lifetimeReqs: traffic().lifetime.networkRequests,
+            lifetimeHits: traffic().lifetime.cacheHits,
+            lifetimeSaved: formatBytes(traffic().lifetime.bytesSaved),
+          })}
         >
           <TrafficIcon /> <b class="ds-traffic-bytes">{formatBytes(traffic().bytesDownloaded, "", 1)}</b>
         </span>
@@ -323,7 +332,7 @@ function FeedStatusFooter(props: {
         <button
           type="button"
           class="win-button ds-status-refresh-btn"
-          title="Force check for updates online without reloading page"
+          title={t("browse.feed.statusForceCheckTooltip")}
           disabled={checkState() === "checking"}
           onClick={() => void handleCheck()}
         >
@@ -335,10 +344,10 @@ function FeedStatusFooter(props: {
         <button
           type="button"
           class="win-button ds-scroll-top-btn"
-          title="Scroll to top of list"
+          title={t("browse.feed.statusScrollTopTooltip")}
           onClick={onScrollTop}
         >
-          <ArrowUpIcon /> Top
+          <ArrowUpIcon /> {t("common.top")}
         </button>
       </div>
     </div>
@@ -399,10 +408,10 @@ export function BrowseFeed(props: BrowseFeedProps) {
       status:
         model.feedResult.source === "sqlite"
           ? model.feedResult.isStale
-            ? "Stale (Revalidating...)"
-            : "SQLite (Cached)"
-          : "Fresh (Dynasty Scans)",
-      etagStatus: model.feedResult.etag ? "Cached" : "None",
+            ? t("browse.feed.statusStale")
+            : t("browse.feed.statusCached")
+          : t("browse.feed.statusFresh"),
+      etagStatus: model.feedResult.etag ? t("browse.feed.statusCached") : "None",
       isStale: model.feedResult.isStale,
     });
     setUpdateBanner(false);
@@ -453,16 +462,16 @@ export function BrowseFeed(props: BrowseFeedProps) {
           setFooterState({
             cachedAt: Date.now(),
             etag: reval.etag || preserveEtag(),
-            status: "Updated (200 OK)",
-            etagStatus: "Updated (200 OK)",
+            status: t("browse.feed.statusUpdated"),
+            etagStatus: t("browse.feed.statusUpdated"),
             isStale: false,
           });
         } else {
           setFooterState({
             cachedAt: model.feedResult.cachedAt,
             etag: preserveEtag(),
-            status: "Synced (304 Not Modified)",
-            etagStatus: "Matches Server (304)",
+            status: t("browse.feed.statusSynced"),
+            etagStatus: t("browse.feed.statusMatchesServer"),
             isStale: false,
           });
         }
@@ -474,16 +483,16 @@ export function BrowseFeed(props: BrowseFeedProps) {
           setFooterState({
             cachedAt: Date.now(),
             etag: reval.etag || preserveEtag(),
-            status: "Updated (200 OK)",
-            etagStatus: "Updated (200 OK)",
+            status: t("browse.feed.statusUpdated"),
+            etagStatus: t("browse.feed.statusUpdated"),
             isStale: false,
           });
         } else {
           setFooterState({
             cachedAt: model.feedResult.cachedAt,
             etag: preserveEtag(),
-            status: "Synced (304 Not Modified)",
-            etagStatus: "Matches Server (304)",
+            status: t("browse.feed.statusSynced"),
+            etagStatus: t("browse.feed.statusMatchesServer"),
             isStale: false,
           });
         }
@@ -523,8 +532,8 @@ export function BrowseFeed(props: BrowseFeedProps) {
         setFooterState({
           cachedAt: Date.now(),
           etag: head.etag || footerState().etag,
-          status: "New releases available",
-          etagStatus: "Updated (200 OK)",
+          status: t("browse.feed.statusNewReleases"),
+          etagStatus: t("browse.feed.statusUpdated"),
           isStale: false,
         });
         setUpdateBanner(true);
@@ -533,8 +542,8 @@ export function BrowseFeed(props: BrowseFeedProps) {
         setFooterState({
           cachedAt: Date.now(),
           etag: footerState().etag,
-          status: "Synced (304 Not Modified)",
-          etagStatus: "Matches Server (304)",
+          status: t("browse.feed.statusSynced"),
+          etagStatus: t("browse.feed.statusMatchesServer"),
           isStale: false,
         });
         return "unchanged";
@@ -601,7 +610,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
           when={model()!.blMode === "hide" && normalRows().length === 0 && model()!.blacklistedRows.length > 0}
         >
           <div class="ds-muted" style="padding:12px 0;text-align:center;font-size:11px;">
-            All chapters on this page were hidden by your blacklist.
+            {t("browse.feed.emptyBlacklist")}
           </div>
         </Show>
 
@@ -625,11 +634,11 @@ export function BrowseFeed(props: BrowseFeedProps) {
       </Show>
 
       <Show when={model() !== undefined && model()!.feed.chapters.length === 0}>
-        <div class="ds-muted">No chapters on this page.</div>
+        <div class="ds-muted">{t("browse.feed.emptyPage")}</div>
       </Show>
 
       <Show when={showSpinner() && model() === undefined}>
-        <Loading message="Loading chapters..." />
+        <Loading message={t("browse.feed.loadingChapters")} />
       </Show>
 
       {triggerWarning.host}

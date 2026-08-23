@@ -150,7 +150,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
       if (bookmarked()) {
         await removeBookmark(ch.permalink);
         setBookmarked(false);
-        setBanner(`Removed "${ch.title}" from bookmarks.`);
+        setBanner(t("browse.feed.bookmarkRemovedBanner", { title: ch.title }));
       } else {
         await addBookmark({
           chapterPermalink: ch.permalink,
@@ -160,11 +160,11 @@ export function FeedItemRow(props: FeedItemRowProps) {
           pageIndex: 0,
         });
         setBookmarked(true);
-        setBanner(`Saved "${ch.title}" to Read Later!`);
+        setBanner(t("browse.feed.bookmarkSavedBanner", { title: ch.title }));
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      setBanner(`Bookmark failed: ${msg}`);
+      setBanner(t("browse.feed.bookmarkErrorBanner", { msg }));
     }
   };
 
@@ -229,8 +229,8 @@ export function FeedItemRow(props: FeedItemRowProps) {
   );
 
   const coverTitle = coverInfo.isStandalone
-    ? `Read "${decodeEntities(ch.title)}"`
-    : `View series: ${decodeEntities(coverInfo.seriesName || coverInfo.seriesPermalink)}`;
+    ? t("browse.feed.readChapterTooltip", { title: decodeEntities(ch.title) })
+    : t("browse.feed.viewSeriesTooltip", { series: decodeEntities(coverInfo.seriesName || coverInfo.seriesPermalink) });
 
   return (
     <ListItem
@@ -277,7 +277,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
             </span>
 
             <Show when={ch.series && ch.series !== ch.title}>
-              <span class="ds-muted" style="font-size:11px;">in</span>
+              <span class="ds-muted" style="font-size:11px;">{t("common.in")}</span>
               <span
                 class="ds-series-link"
                 title={t("browse.feed.goToSeriesTooltip", { series: decodeEntities(ch.series!) })}
@@ -333,9 +333,9 @@ export function FeedItemRow(props: FeedItemRowProps) {
       }
       body={
         <>
-          <TagRow label="Artist:" tags={artistTags} />
-          <TagRow label="Scanlation:" tags={groupTags} />
-          <TagRow label="Tags:" tags={otherTags} />
+          <TagRow label={`${t("series.authorsLabel")}:`} tags={artistTags} />
+          <TagRow label={`${t("series.scanlatorsLabel")}:`} tags={groupTags} />
+          <TagRow label={`${t("series.tagsLabel")}:`} tags={otherTags} />
         </>
       }
     />

@@ -178,14 +178,14 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                 type="button"
                 class="win-button"
                 style="font-size:11px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;"
-                title="Reset all shortcuts to defaults"
+                title={t("settings.hotkeys.resetAllTooltip")}
                 onClick={() => setResetConfirm(true)}
               >
                 <RefreshIcon /> {t("settings.hotkeys.resetAllButton")}
               </button>
             }
           >
-            <span style="font-size:11px;color:var(--sys-text-muted,#666);">Reset all?</span>
+            <span style="font-size:11px;color:var(--sys-text-muted,#666);">{t("settings.hotkeys.resetConfirmPrompt")}</span>
             <button
               type="button"
               class="win-button primary"
@@ -195,7 +195,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                 setResetConfirm(false);
               }}
             >
-              Yes
+              {t("common.yes")}
             </button>
             <button
               type="button"
@@ -203,7 +203,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               style="font-size:10px;padding:1px 6px;height:20px;"
               onClick={() => setResetConfirm(false)}
             >
-              No
+              {t("common.no")}
             </button>
           </Show>
         </div>
@@ -219,11 +219,13 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               style="display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:var(--ds-status-stale-bg,#fffbeb);border:1px solid var(--ds-status-stale-border,#fde68a);border-radius:3px;font-size:11px;color:var(--ds-status-stale-text,#92400e);"
             >
               <div style="display:flex;align-items:center;gap:6px;font-weight:600;">
-                <Icon name="exclamation-triangle" /> Shortcut Conflict Detected
+                <Icon name="exclamation-triangle" /> {t("settings.hotkeys.conflictDetected")}
               </div>
               <div>
-                The key combo <kbd class="ds-key-badge">{formatKeyCombo(pending().combo)}</kbd> is
-                already bound to <strong>{existingDef()?.label ?? pending().conflict.actionId}</strong>.
+                {t("settings.hotkeys.conflictMessage", {
+                  combo: formatKeyCombo(pending().combo),
+                  action: existingDef()?.label ?? pending().conflict.actionId,
+                })}
               </div>
               <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:2px;">
                 <button
@@ -240,7 +242,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                   style="font-size:10px;padding:2px 8px;"
                   onClick={() => resolveConflict(true)}
                 >
-                  Reassign to {targetDef()?.label ?? "New Action"}
+                  {t("settings.hotkeys.reassignButton", { action: targetDef()?.label ?? "New Action" })}
                 </button>
               </div>
             </div>
@@ -279,14 +281,14 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                               when={!isRecordingThis()}
                               fallback={
                                 <div class="ds-key-recording">
-                                  <span>Press keys...</span>
+                                  <span>{t("settings.hotkeys.pressKeys")}</span>
                                   <button
                                     type="button"
                                     class="win-button ds-btn-sm"
                                     style="font-size:9px;padding:0 4px;height:16px;line-height:1;"
                                     onClick={() => stopRecording()}
                                   >
-                                    Cancel (Esc)
+                                    {t("settings.hotkeys.cancelEsc")}
                                   </button>
                                 </div>
                               }
@@ -350,7 +352,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
           class="ds-muted"
           style="text-align:center;padding:24px;font-size:12px;color:var(--sys-text-muted,#666);"
         >
-          No shortcuts matched "{search()}".
+          {t("settings.hotkeys.noMatches", { query: search() })}
         </div>
       </Show>
     </div>

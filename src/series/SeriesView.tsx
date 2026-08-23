@@ -86,7 +86,7 @@ export function SeriesView() {
   const [data, { refetch }] = createResource(
     () => ({ permalink: route().seriesPermalink, forceTick: forceTick() }),
     async ({ permalink, forceTick: tick }) => {
-      if (!permalink) throw new Error("Missing series permalink.");
+      if (!permalink) throw new Error(t("series.missingPermalinkError"));
 
       let series: Series;
       try {
@@ -136,7 +136,7 @@ export function SeriesView() {
         readHistorySet = h;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        showBanner(`Progress data failed to load: ${msg}`);
+        showBanner(t("series.progressLoadError", { msg }));
       }
 
       return { series, coverPath, followed, blacklisted, chapters, progress, cacheCounts, readHistorySet };
@@ -184,7 +184,7 @@ export function SeriesView() {
       try {
         if (followed) {
           await unfollowSeries(seriesPermalink);
-          showBanner(`Unfollowed "${seriesName}".`);
+          showBanner(t("series.unfollowedBanner", { name: seriesName }));
         } else {
           await followSeries({
             permalink: seriesPermalink,
@@ -193,12 +193,12 @@ export function SeriesView() {
             latestChapterPermalink: latest?.permalink ?? null,
             latestChapterTitle: latest?.title ?? null,
           });
-          showBanner(`Following "${seriesName}".`);
+          showBanner(t("series.followingBanner", { name: seriesName }));
         }
         await refetch();
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        showBanner(`Follow toggle failed: ${msg}`);
+        showBanner(t("series.followErrorBanner", { msg }));
         setBusyFollow(false);
       }
     };
@@ -208,15 +208,15 @@ export function SeriesView() {
       try {
         if (blacklisted) {
           await removeBlacklistedSeries(seriesPermalink);
-          showBanner(`Removed "${seriesName}" from blacklist.`);
+          showBanner(t("series.unblacklistedBanner", { name: seriesName }));
         } else {
           await addBlacklistedSeries(seriesPermalink, seriesName);
-          showBanner(`Blacklisted series "${seriesName}".`);
+          showBanner(t("series.blacklistedBanner", { name: seriesName }));
         }
         await refetch();
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        showBanner(`Blacklist toggle failed: ${msg}`);
+        showBanner(t("series.blacklistErrorBanner", { msg }));
         setBusyBlacklist(false);
       }
     };
@@ -267,13 +267,13 @@ export function SeriesView() {
       </Show>
       <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
         <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
-          <span class="ds-muted">Failed to load series: {errorMessage()}</span>
+          <span class="ds-muted">{t("series.loadError", { msg: errorMessage() })}</span>
           <button
             type="button"
             class="win-button"
             onClick={() => void refetch()}
           >
-            <RefreshIcon /> Retry
+            <RefreshIcon /> {t("common.retry")}
           </button>
         </div>
       </Show>
@@ -321,8 +321,7 @@ function SeriesBody(props: {
             }}
           />
           <span>
-            This series is on your <b>blacklist</b>. Its releases are hidden from browse feeds and
-            search results.
+            {t("series.blacklistNotice")}
           </span>
         </div>
       </Show>
@@ -374,7 +373,7 @@ function SeriesActions(props: SeriesActionsProps) {
         class=""
         onOpen={props.onOpenAddToCol}
       >
-        <span class="ds-btn-text">Add to...</span>
+        <span class="ds-btn-text">{t("series.addToButton")}</span>
       </AddToCollectionButton>
       <button
         type="button"
@@ -404,7 +403,7 @@ function SeriesActions(props: SeriesActionsProps) {
       </button>
       <ExternalLinkButton
         class=""
-        title={`Open this ${props.seriesType ? props.seriesType.toLowerCase() : "series"} in your browser`}
+        title={t("series.openInBrowserTooltip", { type: props.seriesType ? props.seriesType.toLowerCase() : "series" })}
         url={props.openUrl}
       />
     </>

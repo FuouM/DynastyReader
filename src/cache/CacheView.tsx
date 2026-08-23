@@ -91,37 +91,37 @@ export function CacheView() {
   const purgeAll = async (): Promise<void> => {
     await clearAllCacheStorage();
     browseCovers.clearMemoryCache();
-    showBanner("All cache storage successfully purged.");
+    showBanner(t("cache.clearAllSuccess"));
     void refetch();
   };
 
   const purgePages = async (): Promise<void> => {
     await clearAllCachedPages();
-    showBanner("All cached reader page scans cleared.");
+    showBanner(t("cache.clearPagesOnlySuccess"));
     void refetch();
   };
 
   const purgeCovers = async (): Promise<void> => {
     await clearAllCachedCovers();
     browseCovers.clearMemoryCache();
-    showBanner("All cached covers cleared.");
+    showBanner(t("cache.clearCoversOnlySuccess"));
     void refetch();
   };
 
   const wipeDb = async (): Promise<void> => {
     await wipeDatabase();
     browseCovers.clearMemoryCache();
-    showBanner("Database wiped — all local records cleared.");
+    showBanner(t("cache.dbWipeSuccess"));
     void refetch();
   };
 
   const backupDb = async (): Promise<void> => {
     try {
       const res = await backupDatabase();
-      showBanner(`Database backup created: ${res.backup_path} (${formatBytes(res.size_bytes)})`);
+      showBanner(t("cache.dbBackupSuccess", { path: res.backup_path, size: formatBytes(res.size_bytes) }));
       void refetch();
     } catch (err) {
-      showBanner(`Backup failed: ${err instanceof Error ? err.message : String(err)}`);
+      showBanner(t("cache.dbBackupError", { msg: err instanceof Error ? err.message : String(err) }));
     }
   };
 
@@ -132,11 +132,11 @@ export function CacheView() {
         picked = await openDialog({
           multiple: false,
           filters: [{ name: "Database", extensions: ["db"] }],
-          title: "Choose backup database file",
+          title: t("cache.dbRestorePickerTitle"),
         });
       } catch (dlgErr) {
         console.error("dynasty-reader: openDialog failed:", dlgErr);
-        showBanner(`Restore failed: file picker not available (rebuild app) — ${dlgErr instanceof Error ? dlgErr.message : String(dlgErr)}`);
+        showBanner(t("cache.dbRestorePickerError", { msg: dlgErr instanceof Error ? dlgErr.message : String(dlgErr) }));
         return;
       }
       if (!picked || Array.isArray(picked)) return;
@@ -151,20 +151,20 @@ export function CacheView() {
       } catch (e) {
         console.warn("dynasty-reader: clearMemoryCache failed (non-fatal):", e);
       }
-      showBanner(`Database restored from ${picked} — reloading...`);
+      showBanner(t("cache.dbRestoreSuccess", { path: picked as string }));
       void refetch();
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("dynasty-reader: restoreFromPicker failed:", err);
-      showBanner(`Restore failed: ${msg}`);
+      showBanner(t("cache.dbRestoreError", { msg }));
     }
   };
 
 
   const deleteGroup = async (item: CachedSeriesGroup): Promise<void> => {
     await clearCachedGroupPages(item.chapterPermalinks);
-    showBanner(`Cleared cache for "${item.seriesName}".`);
+    showBanner(t("cache.deletedWorkSuccess", { name: item.seriesName }));
     void refetch();
   };
 
@@ -224,8 +224,7 @@ export function CacheView() {
       <Show when={data.error !== undefined}>
         <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
           <span class="ds-muted">
-            Failed to load cache statistics:{" "}
-            {data.error instanceof Error ? data.error.message : String(data.error)}
+            {t("cache.statsLoadError", { msg: data.error instanceof Error ? data.error.message : String(data.error) })}
           </span>
           <button type="button" class="win-button" onClick={() => void refetch()}>
             <RefreshIcon /> {t("common.retry")}
@@ -312,42 +311,42 @@ function CacheBody(props: {
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
           <div class="ds-stat-card">
             <span class="ds-stat-val">{formatBytes(dbStats.file.totalSizeBytes)}</span>
-            <span class="ds-stat-lbl">DB Size (total)</span>
+            <span class="ds-stat-lbl">{t("cache.dbSizeTotal")}</span>
           </div>
           <div class="ds-stat-card">
             <span class="ds-stat-val">{formatBytes(dbStats.file.dbSizeBytes)}</span>
-            <span class="ds-stat-lbl">DB File</span>
+            <span class="ds-stat-lbl">{t("cache.dbFile")}</span>
           </div>
           <div class="ds-stat-card">
             <span class="ds-stat-val">{dbStats.totalRows}</span>
-            <span class="ds-stat-lbl">Total Records</span>
+            <span class="ds-stat-lbl">{t("cache.totalRecords")}</span>
           </div>
           <div class="ds-stat-card">
             <span class="ds-stat-val">{formatBytes(dbStats.file.walSizeBytes)}</span>
-            <span class="ds-stat-lbl">WAL Size</span>
+            <span class="ds-stat-lbl">{t("cache.walSize")}</span>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:2px 16px;margin-top:10px;padding:8px;background:var(--sys-bg-active,#f8f9fa);border:1px solid var(--sys-border-light,#e2e2e2);border-radius:3px;font-size:11px;">
-          <span>Followed series: <strong>{dbStats.counts.followedSeries}</strong></span>
-          <span>Reading progress: <strong>{dbStats.counts.readingProgress}</strong></span>
-          <span>History: <strong>{dbStats.counts.readingHistory}</strong></span>
-          <span>Bookmarks: <strong>{dbStats.counts.bookmarks}</strong></span>
-          <span>Collections: <strong>{dbStats.counts.collections}</strong> ({dbStats.counts.collectionItems} items)</span>
-          <span>Cached pages: <strong>{dbStats.counts.cachedPages}</strong></span>
-          <span>Cached metadata: <strong>{dbStats.counts.cachedMetadata}</strong></span>
-          <span>Directory entries: <strong>{dbStats.counts.directoryEntries}</strong></span>
-          <span>Tag blacklist: <strong>{dbStats.counts.tagBlacklist}</strong></span>
-          <span>Series blacklist: <strong>{dbStats.counts.seriesBlacklist}</strong></span>
+          <span>{t("cache.followedSeriesCount")} <strong>{dbStats.counts.followedSeries}</strong></span>
+          <span>{t("cache.readingProgressCount")} <strong>{dbStats.counts.readingProgress}</strong></span>
+          <span>{t("cache.historyCount")} <strong>{dbStats.counts.readingHistory}</strong></span>
+          <span>{t("cache.bookmarksCount")} <strong>{dbStats.counts.bookmarks}</strong></span>
+          <span>{t("cache.collectionsCount")} <strong>{dbStats.counts.collections}</strong> {t("cache.collectionItemsSuffix", { count: dbStats.counts.collectionItems })}</span>
+          <span>{t("cache.cachedPagesCount")} <strong>{dbStats.counts.cachedPages}</strong></span>
+          <span>{t("cache.cachedMetadataCount")} <strong>{dbStats.counts.cachedMetadata}</strong></span>
+          <span>{t("cache.directoryEntriesCount")} <strong>{dbStats.counts.directoryEntries}</strong></span>
+          <span>{t("cache.tagBlacklistCount")} <strong>{dbStats.counts.tagBlacklist}</strong></span>
+          <span>{t("cache.seriesBlacklistCount")} <strong>{dbStats.counts.seriesBlacklist}</strong></span>
         </div>
         <div class="ds-cache-actions" style="margin-top:10px;">
-          <button type="button" class="win-button" title="Create a timestamped backup via VACUUM INTO" onClick={() => void props.backupDb()}>
+          <button type="button" class="win-button" title={t("cache.dbBackupTooltip")} onClick={() => void props.backupDb()}>
             <DatabaseIcon /> {t("cache.dbBackup")}
           </button>
-          <button type="button" class="win-button" title="Choose a .db backup file to restore — replaces current DB, deletes WAL/SHM, then reloads" onClick={() => void props.restoreFromPicker()}>
+          <button type="button" class="win-button" title={t("cache.dbRestoreTooltip")} onClick={() => void props.restoreFromPicker()}>
             <RefreshIcon /> {t("cache.dbRestore")}
           </button>
           <ConfirmDeleteButton
-            title="Delete all rows from every table (keeps schema) — cannot be undone"
+            title={t("cache.dbWipeTooltip")}
             onConfirm={props.wipeDb}
           >
             <TrashIcon /> {t("cache.dbWipe")}
@@ -361,30 +360,30 @@ function CacheBody(props: {
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
           <div class="ds-stat-card">
             <span class="ds-stat-val">{formatBytes(traffic().bytesDownloaded)}</span>
-            <span class="ds-stat-lbl">Session Downloaded ({traffic().networkRequests} reqs)</span>
+            <span class="ds-stat-lbl">{t("cache.sessionDownloaded", { count: traffic().networkRequests })}</span>
           </div>
           <div class="ds-stat-card">
             <span class="ds-stat-val">{formatBytes(traffic().bytesSaved)}</span>
-            <span class="ds-stat-lbl">Session Saved ({traffic().cacheHits} hits)</span>
+            <span class="ds-stat-lbl">{t("cache.sessionSaved", { count: traffic().cacheHits })}</span>
           </div>
           <div class="ds-stat-card">
             <span class="ds-stat-val">{formatBytes(traffic().lifetime.bytesDownloaded)}</span>
-            <span class="ds-stat-lbl">Lifetime Downloaded ({traffic().lifetime.networkRequests} reqs)</span>
+            <span class="ds-stat-lbl">{t("cache.lifetimeDownloaded", { count: traffic().lifetime.networkRequests })}</span>
           </div>
           <div class="ds-stat-card">
             <span class="ds-stat-val">{formatBytes(traffic().lifetime.bytesSaved)}</span>
-            <span class="ds-stat-lbl">Lifetime Saved ({traffic().lifetime.cacheHits} hits)</span>
+            <span class="ds-stat-lbl">{t("cache.lifetimeSaved", { count: traffic().lifetime.cacheHits })}</span>
           </div>
         </div>
         <div class="ds-cache-actions" style="margin-top:10px;">
           <ConfirmDeleteButton
-            title="Reset all-time network traffic and bandwidth statistics back to zero"
+            title={t("cache.resetLifetimeStatsTooltip")}
             onConfirm={() => {
               resetLifetimeTraffic();
-              showBanner("Lifetime traffic statistics reset to zero.");
+              showBanner(t("cache.resetLifetimeStatsSuccess"));
             }}
           >
-            <TrashIcon /> Reset Lifetime Stats
+            <TrashIcon /> {t("cache.resetLifetimeStatsButton")}
           </ConfirmDeleteButton>
         </div>
       </div>
@@ -394,19 +393,19 @@ function CacheBody(props: {
         </div>
         <div class="ds-cache-actions">
           <ConfirmDeleteButton
-            title="Purge all cached pages, covers, and metadata"
+            title={t("cache.clearAllTooltip")}
             onConfirm={props.purgeAll}
           >
             <TrashIcon /> {t("cache.clearAll")}
           </ConfirmDeleteButton>
           <ConfirmDeleteButton
-            title="Purge only high-res reader page scans on disk"
+            title={t("cache.clearPagesOnlyTooltip")}
             onConfirm={props.purgePages}
           >
             <ImageIcon /> {t("cache.clearPagesOnly")}
           </ConfirmDeleteButton>
           <ConfirmDeleteButton
-            title="Purge only cached cover thumbnails on disk"
+            title={t("cache.clearCoversOnlyTooltip")}
             onConfirm={props.purgeCovers}
           >
             <ImageIcon /> {t("cache.clearCoversOnly")}
@@ -415,7 +414,7 @@ function CacheBody(props: {
       </div>
       <div class="group-box" style="display:flex;flex-direction:column;">
         <div class="group-box-title">
-          <StorageIcon /> Cached Works &amp; Series ({groups.length})
+          <StorageIcon /> {t("cache.cachedWorksTitle", { count: groups.length })}
         </div>
 
         <Show
@@ -426,14 +425,14 @@ function CacheBody(props: {
                 <input
                   type="text"
                   class="win-textbox"
-                  placeholder="Filter cached works by name or permalink..."
+                  placeholder={t("cache.filterPlaceholder")}
                   style="flex:1;min-width:200px;"
                   value={props.filterText()}
                   onInput={(ev) => props.setFilterText(ev.currentTarget.value)}
                 />
                 <div class="ds-flex-row">
                   <span class="ds-item-meta" style="font-size:11px;white-space:nowrap;">
-                    Sort by:
+                    {t("cache.sortBy")}
                   </span>
                   <select
                     class="win-textbox"
@@ -441,12 +440,12 @@ function CacheBody(props: {
                     value={props.sortMode()}
                     onChange={(ev) => props.setSortMode(ev.currentTarget.value)}
                   >
-                    <option value="size-desc">Disk Size (Largest first)</option>
-                    <option value="size-asc">Disk Size (Smallest first)</option>
-                    <option value="date-desc">Date Cached (Newest first)</option>
-                    <option value="date-asc">Date Cached (Oldest first)</option>
-                    <option value="pages-desc">Page Count (Most pages)</option>
-                    <option value="name-asc">Title (A → Z)</option>
+                    <option value="size-desc">{t("cache.sorts.sizeDesc")}</option>
+                    <option value="size-asc">{t("cache.sorts.sizeAsc")}</option>
+                    <option value="date-desc">{t("cache.sorts.dateDesc")}</option>
+                    <option value="date-asc">{t("cache.sorts.dateAsc")}</option>
+                    <option value="pages-desc">{t("cache.sorts.pagesDesc")}</option>
+                    <option value="name-asc">{t("cache.sorts.nameAsc")}</option>
                   </select>
                 </div>
               </div>
@@ -456,7 +455,7 @@ function CacheBody(props: {
                   when={props.filtered().length > 0}
                   fallback={
                     <EmptyState cssText="padding:12px;">
-                      <span class="ds-muted">No matching cached works found.</span>
+                      <span class="ds-muted">{t("cache.noMatchingWorks")}</span>
                     </EmptyState>
                   }
                 >
@@ -478,13 +477,15 @@ function CacheBody(props: {
                           </div>
                           <div class="ds-item-meta">
                             <strong>{formatBytes(item.totalSizeBytes)}</strong> ·{" "}
-                            {item.chapterCount} chapter{item.chapterCount > 1 ? "s" : ""} ·{" "}
-                            {item.pageCount} page{item.pageCount > 1 ? "s" : ""} cached · Cached{" "}
-                            {formatDate(item.lastCachedAt)}
+                            {t("cache.cachedWorkMeta", {
+                              chapters: item.chapterCount > 1 ? t("cache.chaptersCount", { count: item.chapterCount }) : t("cache.chapterCount", { count: item.chapterCount }),
+                              pages: item.pageCount > 1 ? t("cache.pagesCount", { count: item.pageCount }) : t("cache.pageCount", { count: item.pageCount }),
+                              date: formatDate(item.lastCachedAt),
+                            })}
                           </div>
                         </div>
                         <ConfirmDeleteButton
-                          title={`Delete all cached files for "${item.seriesName}"`}
+                          title={t("cache.deleteWorkTooltip", { name: item.seriesName })}
                           onConfirm={() => props.deleteGroup(item)}
                         >
                           <TrashIcon />
@@ -498,7 +499,7 @@ function CacheBody(props: {
           }
         >
           <EmptyState cssText="padding:24px;text-align:center;">
-            <span class="ds-muted">No cached chapters or series found on disk.</span>
+            <span class="ds-muted">{t("cache.noCachedWorks")}</span>
           </EmptyState>
         </Show>
       </div>

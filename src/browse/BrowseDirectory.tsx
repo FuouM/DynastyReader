@@ -73,7 +73,7 @@ function DirectoryRow(props: {
               class="ds-muted"
               style="font-size:10px;margin-left:6px;color:var(--ds-warn-text,#d97706);font-weight:600;"
             >
-              <BlacklistIcon filled={true} /> Blacklisted
+              <BlacklistIcon filled={true} /> {t("series.blacklistedBadge")}
             </span>
           </Show>
         </span>
@@ -82,7 +82,7 @@ function DirectoryRow(props: {
         <ExternalLinkButton
           class="ds-btn-xs"
           cssText="flex-shrink:0;"
-          title={props.kind === "series" ? "Open series in browser" : "Search tag in browser"}
+          title={props.kind === "series" ? t("browse.directory.openSeriesTooltip") : t("browse.directory.searchTagTooltip")}
           url={
             props.kind === "series"
               ? `https://dynasty-scans.com/series/${props.entry.permalink}`
@@ -190,10 +190,12 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
       <Show when={model() !== undefined && displayGroups().length > 0}>
         <Show when={query().trim().length > 0}>
           <div class="ds-muted" style="font-size:11px;margin-bottom:6px;padding:0 2px;">
-            Showing {totalFilteredEntries()} matching {props.kind === "series" ? "series" : "tags"} across all cached pages
+            {t("browse.directory.matchingCount", {
+              count: totalFilteredEntries(),
+              noun: props.kind === "series" ? t("browse.directory.nounSeries") : t("browse.directory.nounTags"),
+            })}
           </div>
         </Show>
-
         <For each={displayGroups()}>
           {(group) => (
             <>
@@ -238,11 +240,11 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
       </Show>
 
       <Show when={model() !== undefined && model()!.groups.length === 0}>
-        <div class="ds-muted">No entries on this page.</div>
+        <div class="ds-muted">{t("browse.directory.emptyPage")}</div>
       </Show>
 
       <Show when={showSpinner() && model() === undefined}>
-        <Loading message="Loading directory..." />
+        <Loading message={t("browse.directory.loading")} />
       </Show>
 
       {triggerWarning.host}

@@ -32,8 +32,8 @@ export function BlacklistNotice(props: BlacklistNoticeProps) {
       <DsButton className="ds-btn-sm" onClick={props.onToggle}>
         <Icon name={props.showHidden ? "eye-slash" : "eye"} />{" "}
         {props.showHidden
-          ? "Hide Blacklisted"
-          : `Show Blacklisted (${props.count})`}
+          ? t("dialogs.blacklistNotice.hideButton")
+          : t("dialogs.blacklistNotice.showButton", { count: props.count })}
       </DsButton>
     </div>
   );

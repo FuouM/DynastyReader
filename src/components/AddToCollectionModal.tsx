@@ -160,7 +160,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
       await loadRows();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      showBanner(`Collection update failed: ${msg}`);
+      showBanner(t("dialogs.addToCollection.updateError", { msg }));
     }
   };
 
@@ -179,11 +179,11 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
         parent_series_name: props.item.parentSeriesName,
       });
       setNewName("");
-      showBanner(`Created collection "${created.name}" and added item.`);
+      showBanner(t("dialogs.addToCollection.createdAndAddedBanner", { name: created.name }));
       await loadRows();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      showBanner(`Could not create collection: ${msg}`);
+      showBanner(t("dialogs.addToCollection.createError", { msg }));
     } finally {
       setCreating(false);
     }

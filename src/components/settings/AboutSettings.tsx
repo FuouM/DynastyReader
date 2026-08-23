@@ -64,14 +64,14 @@ export function AboutSettings() {
             type="button"
             class="win-button ds-btn-compact"
             id="ds-about-open-github"
-            title="Open DynastyReader GitHub repository"
+            title={t("settings.about.githubTooltip")}
             onClick={() => void openExternal("https://github.com/FuouM/DynastyReader")}
           >
             <Icon name="github" /> GitHub
           </button>
           <ExternalLinkButton
             id="ds-about-open-site"
-            title="Open Dynasty Scans website in browser"
+            title={t("settings.about.websiteTooltip")}
             url="https://dynasty-scans.com"
           >
             dynasty-scans.com
@@ -107,7 +107,7 @@ export function AboutSettings() {
                 <div class="ds-muted" style="font-size:10px;">
                   Current: v{updateInfo()!.current_version}
                   {updateInfo()!.asset_size
-                    ? ` · Size: ${formatBytes(updateInfo()!.asset_size)}`
+                    ? t("settings.about.sizeLabel", { size: formatBytes(updateInfo()!.asset_size) })
                     : ""}
                 </div>
               </div>
@@ -133,8 +133,8 @@ export function AboutSettings() {
                   <span>
                     {updateStatusText() ||
                       (updateProgress()
-                        ? `Downloading (${formatBytes(updateProgress()!.downloaded_bytes)} / ${formatBytes(updateProgress()!.total_bytes)})...`
-                        : "Downloading update...")}
+                        ? t("settings.about.downloadingProgress", { downloaded: formatBytes(updateProgress()!.downloaded_bytes), total: formatBytes(updateProgress()!.total_bytes) })
+                        : t("settings.about.downloadingUpdate"))}
                   </span>
                   <span style="font-weight:600;">
                     {updateProgress() ? Math.round(updateProgress()!.percentage) : 0}%
@@ -165,10 +165,10 @@ export function AboutSettings() {
               >
                 <Show
                   when={!isUpdating()}
-                  fallback={<><Icon name="hourglass-split" spin /> Updating...</>}
+                  fallback={<><Icon name="hourglass-split" spin /> {t("settings.about.updating")}</>}
                 >
                   <CloudDownloadIcon />{" "}
-                  {updateError() ? "Retry Update" : "Download & Restart"}
+                  {updateError() ? t("settings.about.retryUpdate") : t("settings.about.downloadAndRestart")}
                 </Show>
               </button>
             </div>
@@ -191,7 +191,7 @@ export function AboutSettings() {
               class="win-button ds-btn-sm"
               onClick={() => void checkUpdates(true)}
             >
-              Retry
+              {t("common.retry")}
             </button>
           </div>
         </Show>

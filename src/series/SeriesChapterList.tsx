@@ -90,21 +90,21 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
             class="ds-row"
             style="justify-content:space-between;align-items:center;padding:4px 2px;border-bottom:1px solid var(--sys-border-light, #ddd);"
           >
-            <div style="font-size:12px;font-weight:600;">Chapters ({props.chapters.length})</div>
+            <div style="font-size:12px;font-weight:600;">{t("series.chaptersCount", { count: props.chapters.length })}</div>
             <button
               type="button"
               class="win-button ds-btn-compact"
               title={
                 props.sortOrder() === "asc"
-                  ? "Oldest first (click to sort newest first)"
-                  : "Newest first (click to sort oldest first)"
+                  ? t("series.sortOldestTooltip")
+                  : t("series.sortNewestTooltip")
               }
               onClick={() =>
                 props.setSortOrder(props.sortOrder() === "asc" ? "desc" : "asc")
               }
             >
               <Icon name={props.sortOrder() === "asc" ? "sort-numeric-down" : "sort-numeric-down-alt"} />{" "}
-              Sort: {props.sortOrder() === "asc" ? "Ascending" : "Descending"}
+              {props.sortOrder() === "asc" ? t("series.sortAscending") : t("series.sortDescending")}
             </button>
           </div>
           <div style="display:flex;flex-direction:column;">
@@ -137,7 +137,7 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
     >
       <Show when={!(props.series.taggables && props.series.taggables!.length > 0)}>
         <div class="ds-muted" style="margin-top:12px;">
-          This entry has no chapters or series listed here.
+          {t("series.emptyChapters")}
         </div>
       </Show>
     </Show>

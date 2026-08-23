@@ -9,6 +9,7 @@ import type { ReaderSession } from "./reader-session";
 import type { SlotStateKind } from "./reader-queue-solid";
 import { convertFileSrc } from "../ipc";
 import { isMobile } from "../stores";
+import { t } from "../i18n";
 import { WIDE_RATIO } from "./reader-spread";
 export interface ReaderSlotProps {
   session: ReaderSession;
@@ -65,7 +66,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
       </div>
       <img
         class="ds-page-img"
-        alt={`Page ${props.index + 1}`}
+        alt={t("reader.session.slot.pageAlt", { page: props.index + 1 })}
         src={convertFileSrc(props.path)}
         decoding="async"
         onError={() => s.onPageImgError(props.index)}
@@ -118,7 +119,12 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
             <div class="ds-slot-pulse-bar"></div>
           </div>
           <span>
-            Downloading page {props.index + 1} of {s.pages().length} ({s.cachedCount()}/{s.pages().length} cached · {pct()}%)
+            {t("reader.session.slot.downloadingProgress", {
+              current: props.index + 1,
+              total: s.pages().length,
+              cached: s.cachedCount(),
+              pct: pct(),
+            })}
           </span>
         </Show>
         <Show when={kind() === "offline"}>
@@ -128,7 +134,10 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
         <Show when={kind() === "idle"}>
           <i class="bi bi-book" style="font-size:20px;color:var(--sys-text-muted,#888);"></i>
           <span>
-            Page {props.index + 1} of {s.pages().length} · Waiting to read…
+            {t("reader.session.slot.waitingToRead", {
+              current: props.index + 1,
+              total: s.pages().length,
+            })}
           </span>
         </Show>
         <Show when={kind() === "error"}>
@@ -140,7 +149,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
             style="font-size:10px;padding:1px 8px;"
             onClick={() => s.retrySlot(props.index)}
           >
-            Retry
+            {t("common.retry")}
           </button>
         </Show>
       </div>

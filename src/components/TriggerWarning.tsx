@@ -65,7 +65,7 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
           </For>
         </div>
         <div class="ds-muted" style="font-size:11px;color:#777;margin-top:2px;">
-          Do you still want to proceed and open it?
+          {t("dialogs.triggerWarning.proceedPrompt")}
         </div>
       </div>
     </Modal>

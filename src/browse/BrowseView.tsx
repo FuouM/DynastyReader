@@ -128,14 +128,12 @@ export function BrowseView() {
   const openByUrl = (): void => {
     const raw = urlValue().trim();
     if (!raw) {
-      showBanner("Paste a dynasty-scans.com series or chapter URL first.");
+      showBanner(t("browse.searchAndGo.emptyUrlWarning"));
       return;
     }
     const parsed = parseDynastyUrl(raw);
     if (!parsed) {
-      showBanner(
-        "Unrecognized URL. Use https://dynasty-scans.com/series/<permalink> or /chapters/<permalink>.",
-      );
+      showBanner(t("browse.searchAndGo.unrecognizedUrlWarning"));
       return;
     }
     if (parsed.kind === "chapter") {
@@ -235,11 +233,11 @@ export function BrowseView() {
         classList={{ collapsed: searchGoCollapsed() }}
       >
         <div class="group-box-title" onClick={toggleSearchGo}>
-          <SearchIcon /> Search &amp; Go
+          <SearchIcon /> {t("browse.searchAndGo.title")}
           <button
             type="button"
             class="group-box-collapse-btn"
-            title="Toggle collapse"
+            title={t("browse.searchAndGo.toggleCollapse")}
             onClick={(ev) => {
               ev.stopPropagation();
               toggleSearchGo();
@@ -256,7 +254,7 @@ export function BrowseView() {
                 onSelect={(item) => runSearch(item.name)}
                 onEnter={(value) => runSearch(value)}
                 onInputValue={(value) => setSearchBoxValue(value)}
-                placeholder="Search dynasty-scans in-app (series, chapters, authors, tags)..."
+                placeholder={t("browse.searchAndGo.inputPlaceholder")}
                 maxItems={8}
                 debounceMs={250}
               />
@@ -269,7 +267,7 @@ export function BrowseView() {
               onClick={() => runSearch(searchBoxValue())}
             >
               <SearchIcon />
-              <span>Search</span>
+              <span>{t("browse.searchAndGo.searchButton")}</span>
             </button>
           </div>
           <div class="ds-row">
@@ -278,7 +276,7 @@ export function BrowseView() {
                 type="text"
                 id="ds-url-input"
                 class="input-field has-clear"
-                placeholder="Paste a dynasty-scans.com series or chapter URL..."
+                placeholder={t("browse.searchAndGo.urlPlaceholder")}
                 style="width:100%;"
                 value={urlValue()}
                 onInput={(ev) => setUrlValue((ev.target as HTMLInputElement).value)}
@@ -290,7 +288,7 @@ export function BrowseView() {
                 type="button"
                 class="input-clear-btn"
                 tabIndex={-1}
-                title="Clear"
+                title={t("common.clear")}
                 onClick={() => setUrlValue("")}
               >
                 <CloseIcon />
@@ -300,11 +298,11 @@ export function BrowseView() {
               type="button"
               class="win-button"
               id="ds-url-paste-btn"
-              title="Paste URL from clipboard"
+              title={t("browse.searchAndGo.pasteTooltip")}
               onClick={() => void pasteUrl()}
             >
               <ClipboardIcon />
-              <span>Paste</span>
+              <span>{t("browse.searchAndGo.pasteButton")}</span>
             </button>
             <button
               type="button"
@@ -314,12 +312,11 @@ export function BrowseView() {
               onClick={openByUrl}
             >
               <ExternalLinkIcon />
-              <span>Open</span>
+              <span>{t("browse.searchAndGo.openButton")}</span>
             </button>
           </div>
           <div class="ds-muted" style="margin-top:2px;">
-            Accepted: https://dynasty-scans.com/series/&lt;permalink&gt; or /chapters/&lt;permalink&gt;
-            (or the .json form).
+            {t("browse.searchAndGo.acceptedNotice")}
           </div>
         </div>
       </div>
@@ -364,10 +361,10 @@ export function BrowseView() {
               <button
                 type="button"
                 class="win-button ds-scroll-top-btn"
-                title="Scroll to bottom of list"
+                title={t("browse.searchAndGo.scrollToBottomTooltip")}
                 onClick={scrollBrowseToBottom}
               >
-                <ArrowDownIcon /> Bottom
+                <ArrowDownIcon /> {t("common.bottom")}
               </button>
             </Show>
           </div>

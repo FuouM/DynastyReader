@@ -85,7 +85,7 @@ export function ReaderActions(props: ReaderActionsProps) {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      setBanner(`Bookmark failed: ${msg}`);
+      setBanner(t("reader.toolbar.bookmarkErrorBanner", { msg }));
     }
     setPending(false);
   };
@@ -95,19 +95,19 @@ export function ReaderActions(props: ReaderActionsProps) {
     for (let i = 0; i < total; i++) {
       if (!isCached(i) && !props.ctrl.isPageFailed(i)) props.ctrl.enqueue(i);
     }
-    setBanner("Caching chapter…");
+    setBanner(t("reader.toolbar.cachingChapterBanner"));
   };
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(chapterUrl());
       setCopied(true);
-      setBanner("Copied chapter link to clipboard");
+      setBanner(t("reader.toolbar.copiedLinkBanner"));
       resetCopied.clear();
       resetCopied();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      setBanner(`Copy failed: ${msg}`);
+      setBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
     }
   };
 
@@ -125,7 +125,7 @@ export function ReaderActions(props: ReaderActionsProps) {
             })
           }
         >
-          <StorageIcon /> <span class="ds-btn-text">Series</span>
+          <StorageIcon /> <span class="ds-btn-text">{t("reader.toolbar.seriesButton")}</span>
         </DsButton>
       </Show>
       <DsButton

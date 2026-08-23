@@ -52,7 +52,7 @@ export function ReaderSettings() {
               {t("settings.reader.readingDirection")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Auto checks <code>read_left_to_right</code> tags; defaults to Japanese Manga (Right-to-Left).
+              {t("settings.reader.readingDirectionDesc")}
             </div>
           </div>
           <div class="ds-segmented-switch" id="ds-settings-direction-switch" style="flex-shrink:0;">
@@ -60,37 +60,37 @@ export function ReaderSettings() {
               type="button"
               class={`ds-segmented-btn${directionPref() === "auto" ? " active" : ""}`}
               id="ds-settings-dir-auto"
-              title="Auto-detect from chapter & series tags (default)"
+              title={t("settings.reader.dirAutoTooltip")}
               onClick={() => {
                 setDefaultReadingDirection("auto");
                 setDirectionPref("auto");
               }}
             >
-              <Icon name="magic" /> Auto (Tags)
+              <Icon name="magic" /> {t("settings.reader.dirAutoLabel")}
             </button>
             <button
               type="button"
               class={`ds-segmented-btn${directionPref() === "rtl" ? " active" : ""}`}
               id="ds-settings-dir-rtl"
-              title="Force Right-to-Left (Japanese Manga standard)"
+              title={t("settings.reader.dirRtlTooltip")}
               onClick={() => {
                 setDefaultReadingDirection("rtl");
                 setDirectionPref("rtl");
               }}
             >
-              <Icon name="arrow-left" /> RTL
+              <Icon name="arrow-left" /> {t("settings.reader.dirRtlLabel")}
             </button>
             <button
               type="button"
               class={`ds-segmented-btn${directionPref() === "ltr" ? " active" : ""}`}
               id="ds-settings-dir-ltr"
-              title="Force Left-to-Right (Western / Manhwa standard)"
+              title={t("settings.reader.dirLtrTooltip")}
               onClick={() => {
                 setDefaultReadingDirection("ltr");
                 setDirectionPref("ltr");
               }}
             >
-              <Icon name="arrow-right" /> LTR
+              <Icon name="arrow-right" /> {t("settings.reader.dirLtrLabel")}
             </button>
           </div>
         </div>
@@ -110,25 +110,25 @@ export function ReaderSettings() {
               type="button"
               class={`ds-segmented-btn${readerModePref() === "scroll" ? " active" : ""}`}
               id="ds-settings-mode-scroll"
-              title="Continuous vertical scroll (default)"
+              title={t("settings.reader.modeScrollTooltip")}
               onClick={() => {
                 setDefaultReaderMode("scroll");
                 setReaderModePref("scroll");
               }}
             >
-              <Icon name="view-stacked" /> Scroll
+              <Icon name="view-stacked" /> {t("settings.reader.modeScrollLabel")}
             </button>
             <button
               type="button"
               class={`ds-segmented-btn${readerModePref() === "paged" ? " active" : ""}`}
               id="ds-settings-mode-paged"
-              title="Paged slides"
+              title={t("settings.reader.modePagedTooltip")}
               onClick={() => {
                 setDefaultReaderMode("paged");
                 setReaderModePref("paged");
               }}
             >
-              <Icon name="book" /> Paged
+              <Icon name="book" /> {t("settings.reader.modePagedLabel")}
             </button>
           </div>
         </div>
@@ -148,25 +148,25 @@ export function ReaderSettings() {
               type="button"
               class={`ds-segmented-btn${pagedLayoutPref() === "single" ? " active" : ""}`}
               id="ds-settings-layout-single"
-              title="Single page per slide"
+              title={t("settings.reader.layoutSingleTooltip")}
               onClick={() => {
                 setDefaultPagedLayout("single");
                 setPagedLayoutPref("single");
               }}
             >
-              <Icon name="file-earmark" /> Single
+              <Icon name="file-earmark" /> {t("settings.reader.layoutSingleLabel")}
             </button>
             <button
               type="button"
               class={`ds-segmented-btn${pagedLayoutPref() === "spread" ? " active" : ""}`}
               id="ds-settings-layout-spread"
-              title="Dual-page spread per slide"
+              title={t("settings.reader.layoutSpreadTooltip")}
               onClick={() => {
                 setDefaultPagedLayout("spread");
                 setPagedLayoutPref("spread");
               }}
             >
-              <Icon name="columns-gap" /> Dual Spread
+              <Icon name="columns-gap" /> {t("settings.reader.layoutSpreadLabel")}
             </button>
           </div>
         </div>
@@ -178,7 +178,7 @@ export function ReaderSettings() {
               {t("settings.reader.longStripOverride")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Soft-disable Spread mode on <code>Long Strip</code> / <code>Webtoon</code> tags to display continuous vertical art.
+              {t("settings.reader.longStripOverrideDesc")}
             </div>
           </div>
           <button
@@ -186,15 +186,15 @@ export function ReaderSettings() {
             class={`win-button${longStripOverride() ? " primary" : ""}`}
             id="ds-settings-longstrip-toggle"
             style="font-size:11px;padding:2px 10px;min-width:105px;flex-shrink:0;"
-            title="When ON, automatically soft-disables spread mode for Long Strip / Webtoon chapters"
+            title={t("settings.reader.longStripOverrideTooltip")}
             onClick={() => {
               const next = !longStripOverride();
               setLongStripSpreadOverrideEnabled(next);
               setLongStripOverride(next);
             }}
           >
-            <Show when={longStripOverride()} fallback={<><Icon name="slash-circle" /> Disabled</>}>
-              <Icon name="check-circle" /> Auto-Disable: ON
+            <Show when={longStripOverride()} fallback={<><Icon name="slash-circle" /> {t("settings.reader.longStripOverrideDisabled")}</>}>
+              <Icon name="check-circle" /> {t("settings.reader.longStripOverrideEnabled")}
             </Show>
           </button>
         </div>
@@ -206,7 +206,7 @@ export function ReaderSettings() {
               {t("settings.reader.longStripFitWidth")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Automatically default to Fit Width when opening <code>Long Strip</code> / <code>Webtoon</code> chapters.
+              {t("settings.reader.longStripFitWidthDesc")}
             </div>
           </div>
           <button
@@ -214,15 +214,15 @@ export function ReaderSettings() {
             class={`win-button${longStripFitWidth() ? " primary" : ""}`}
             id="ds-settings-longstrip-fit-toggle"
             style="font-size:11px;padding:2px 10px;min-width:105px;flex-shrink:0;"
-            title="When ON, automatically sets Fit Width for Long Strip / Webtoon chapters"
+            title={t("settings.reader.longStripFitWidthTooltip")}
             onClick={() => {
               const next = !longStripFitWidth();
               setLongStripFitWidthEnabled(next);
               setLongStripFitWidth(next);
             }}
           >
-            <Show when={longStripFitWidth()} fallback={<><Icon name="slash-circle" /> Disabled</>}>
-              <Icon name="check-circle" /> Fit Width: ON
+            <Show when={longStripFitWidth()} fallback={<><Icon name="slash-circle" /> {t("settings.reader.longStripFitWidthDisabled")}</>}>
+              <Icon name="check-circle" /> {t("settings.reader.longStripFitWidthEnabled")}
             </Show>
           </button>
         </div>
@@ -242,15 +242,15 @@ export function ReaderSettings() {
             class={`win-button${coverOffsetPref() ? " primary" : ""}`}
             id="ds-settings-cover-offset-toggle"
             style="font-size:11px;padding:2px 10px;min-width:95px;flex-shrink:0;"
-            title="When ON, first page in dual spread is rendered alone"
+            title={t("settings.reader.coverOffsetTooltip")}
             onClick={() => {
               const next = !coverOffsetPref();
               setCoverOffsetDefaultEnabled(next);
               setCoverOffsetPref(next);
             }}
           >
-            <Show when={coverOffsetPref()} fallback={<><Icon name="dash-circle" /> Cover 1st: OFF</>}>
-              <Icon name="book-half" /> Cover 1st: ON
+            <Show when={coverOffsetPref()} fallback={<><Icon name="dash-circle" /> {t("settings.reader.coverOffsetOff")}</>}>
+              <Icon name="book-half" /> {t("settings.reader.coverOffsetOn")}
             </Show>
           </button>
         </div>
@@ -276,9 +276,9 @@ export function ReaderSettings() {
               setFitModePref(val);
             }}
           >
-            <option value="width">Fit Width (Default)</option>
-            <option value="height">Fit Height</option>
-            <option value="original">Original Size</option>
+            <option value="width">{t("settings.reader.fitModes.width")}</option>
+            <option value="height">{t("settings.reader.fitModes.height")}</option>
+            <option value="original">{t("settings.reader.fitModes.original")}</option>
           </select>
         </div>
 
@@ -299,8 +299,8 @@ export function ReaderSettings() {
             style="font-size:11px;padding:2px 10px;min-width:70px;flex-shrink:0;"
             title={
               autoCacheEnabled()
-                ? "Pre-downloads full chapters in background (click to cache only as you read)"
-                : "Only caches pages as you read (click to auto-download full chapters)"
+                ? t("settings.reader.autoCacheTooltipOn")
+                : t("settings.reader.autoCacheTooltipOff")
             }
             onClick={() => {
               const next = !autoCacheEnabled();
@@ -308,8 +308,8 @@ export function ReaderSettings() {
               setAutoCacheEnabled(next);
             }}
           >
-            <Show when={autoCacheEnabled()} fallback={<><Icon name="cloud-slash" /> OFF</>}>
-              <CloudDownloadIcon /> ON
+            <Show when={autoCacheEnabled()} fallback={<><Icon name="cloud-slash" /> {t("settings.reader.autoCacheOff")}</>}>
+              <CloudDownloadIcon /> {t("settings.reader.autoCacheOn")}
             </Show>
           </button>
         </div>
@@ -341,7 +341,7 @@ export function ReaderSettings() {
               id="ds-settings-prefetch-val"
               style="font-size:11px;font-weight:600;min-width:54px;text-align:center;"
             >
-              {prefetchBuffer() === 0 ? "0 (off)" : `${prefetchBuffer()} page${prefetchBuffer() === 1 ? "" : "s"}`}
+              {prefetchBuffer() === 0 ? t("settings.reader.prefetchBufferOff") : prefetchBuffer() === 1 ? t("settings.reader.prefetchBufferPage", { count: prefetchBuffer() }) : t("settings.reader.prefetchBufferPages", { count: prefetchBuffer() })}
             </span>
             <button
               type="button"
@@ -373,25 +373,25 @@ export function ReaderSettings() {
               type="button"
               class={`ds-segmented-btn${navPosition() === "top" ? " active" : ""}`}
               id="ds-settings-nav-pos-top"
-              title="Top (default)"
+              title={t("settings.reader.navPosTopTooltip")}
               onClick={() => {
                 setReaderNavPosition("top");
                 setNavPosition("top");
               }}
             >
-              <Icon name="align-top" /> Top
+              <Icon name="align-top" /> {t("settings.reader.navPosTopLabel")}
             </button>
             <button
               type="button"
               class={`ds-segmented-btn${navPosition() === "bottom" ? " active" : ""}`}
               id="ds-settings-nav-pos-bottom"
-              title="Bottom (mobile / thumb friendly)"
+              title={t("settings.reader.navPosBottomTooltip")}
               onClick={() => {
                 setReaderNavPosition("bottom");
                 setNavPosition("bottom");
               }}
             >
-              <Icon name="align-bottom" /> Bottom
+              <Icon name="align-bottom" /> {t("settings.reader.navPosBottomLabel")}
             </button>
           </div>
         </div>

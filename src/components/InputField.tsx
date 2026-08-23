@@ -7,6 +7,7 @@
  */
 
 import { createEffect, createSignal, type JSX } from "solid-js";
+import { t } from "../i18n";
 import { CloseIcon } from "./Icon";
 
 export interface InputFieldProps {
@@ -68,7 +69,7 @@ export function InputField(props: InputFieldProps) {
         type="button"
         class="input-clear-btn"
         tabIndex={-1}
-        title="Clear"
+        title={t("common.clear")}
         onClick={() => {
           setValue("");
           props.onInput?.("");

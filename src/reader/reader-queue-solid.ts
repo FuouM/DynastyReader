@@ -2,6 +2,7 @@ import { absUrl } from "../stores";
 import { fileResolve, httpDownloadFull, pageOutputPath } from "../api";
 import { setCachedPage } from "../db";
 import type { ChapterPage } from "../types/api";
+import { t } from "../i18n";
 
 export type SlotStateKind = "spinner" | "offline" | "error" | "idle";
 
@@ -119,11 +120,11 @@ export class ReaderQueue {
       if (c.isDisposed()) return;
       this.failed.add(index);
       const msg = err instanceof Error ? err.message : String(err);
-      c.setSlotState(index, "error", `Download failed: ${msg}`);
+      c.setSlotState(index, "error", t("reader.session.slotState.downloadFailed", { msg }));
       if (!this.firstErrorShown) {
         this.firstErrorShown = true;
         c.showErrorBanner(
-          `Page download failed (page ${index + 1} of ${pages.length}). Use the slot's Retry.`,
+          t("reader.session.slotState.downloadFailed", { msg }),
         );
       }
     }

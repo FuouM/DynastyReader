@@ -21,6 +21,7 @@ import {
   clearActions,
   isOnline,
 } from "../stores";
+import { t } from "../i18n";
 import { toggleAppTheme } from "../stores/theme";
 import { fetchChapter, fetchSeries } from "../api";
 import {
@@ -260,7 +261,7 @@ export class ReaderSession implements ReaderQueueHost {
       const total = this.pages().length;
       const idx = this.currentIndex();
       const count = this.cachedCount();
-      const cachedNote = count > 0 ? `${count}/${total} cached` : "";
+      const cachedNote = count > 0 ? t("reader.session.cachedBadge", { count, total }) : "";
       const isSpreadActive = this.isSpread() && this.spreads().length > 0;
       let pct = total > 0 ? Math.round(((idx + 1) / total) * 100) : 0;
       if (isSpreadActive) {
@@ -410,7 +411,7 @@ export class ReaderSession implements ReaderQueueHost {
         !this.queue.isFailed(index) &&
         slotState?.kind === "idle"
       ) {
-        this.setSlotState(index, "spinner", "Downloading…");
+        this.setSlotState(index, "spinner", t("reader.session.slotState.downloading"));
       }
     }
     this.queue.enqueue(index, priority);
@@ -421,7 +422,7 @@ export class ReaderSession implements ReaderQueueHost {
     this.cachedPages[1](index, undefined);
     if (this.retrying.has(index)) return;
     this.retrying.add(index);
-    this.setSlotState(index, "spinner", "Re-downloading…");
+    this.setSlotState(index, "spinner", t("reader.session.slotState.redownloading"));
     this.queue.enqueue(index, true);
   }
 
@@ -429,7 +430,7 @@ export class ReaderSession implements ReaderQueueHost {
   retrySlot(index: number): void {
     this.retrying.delete(index);
     this.queue.clearFailed(index);
-    this.setSlotState(index, "spinner", "Downloading…");
+    this.setSlotState(index, "spinner", t("reader.session.slotState.downloading"));
     this.queue.enqueue(index);
   }
 
@@ -468,9 +469,9 @@ export class ReaderSession implements ReaderQueueHost {
         const curIdx = list.findIndex((c) => c.permalink === this.permalink);
         const nextCh = curIdx >= 0 && curIdx < list.length - 1 ? list[curIdx + 1] : null;
         if (nextCh) {
-          showBanner(`End of chapter — Next: "${nextCh.title}" (']' or toolbar)`);
+          showBanner(t("reader.session.endOfChapterNext", { title: nextCh.title }));
         } else {
-          showBanner("End of chapter");
+          showBanner(t("reader.session.endOfChapter"));
         }
       }
     });
@@ -508,9 +509,9 @@ export class ReaderSession implements ReaderQueueHost {
         const curIdx = list.findIndex((c) => c.permalink === this.permalink);
         const nextCh = curIdx >= 0 && curIdx < list.length - 1 ? list[curIdx + 1] : null;
         if (nextCh) {
-          showBanner(`End of chapter — Next: "${nextCh.title}" (']' or toolbar)`);
+          showBanner(t("reader.session.endOfChapterNext", { title: nextCh.title }));
         } else {
-          showBanner("End of chapter");
+          showBanner(t("reader.session.endOfChapter"));
         }
       }
     });
@@ -859,7 +860,7 @@ export class ReaderSession implements ReaderQueueHost {
     } catch (err) {
       if (this.disposedFlag) return;
       const msg = err instanceof Error ? err.message : String(err);
-      setBanner(`Failed to load chapter: ${msg}`);
+      setBanner(t("reader.session.loadChapterError", { msg }));
       this.setError(msg);
       this.setLoading(false);
       return;
@@ -974,7 +975,7 @@ export class ReaderSession implements ReaderQueueHost {
     } catch (err) {
       cachedRows = [];
       setBanner(
-        `Page cache lookup failed: ${err instanceof Error ? err.message : String(err)}`,
+        t("reader.session.cacheLookupError", { msg: err instanceof Error ? err.message : String(err) }),
       );
     }
     for (const row of cachedRows) {
@@ -989,12 +990,12 @@ export class ReaderSession implements ReaderQueueHost {
     for (let i = 0; i < pageCount; i++) {
       if (this.getCachedPath(i) !== undefined) continue;
       if (!isOnline()) {
-        this.setSlotState(i, "offline", "Offline — not downloaded");
+        this.setSlotState(i, "offline", t("reader.session.slotState.offline"));
       } else if (autoCacheAll) {
-        this.setSlotState(i, "spinner", "Queued for download…");
+        this.setSlotState(i, "spinner", t("reader.session.slotState.queued"));
         this.enqueue(i);
       } else {
-        this.setSlotState(i, "idle", "Waiting to read…");
+        this.setSlotState(i, "idle", t("reader.session.slotState.waiting"));
       }
     }
 

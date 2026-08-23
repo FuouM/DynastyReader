@@ -2,6 +2,7 @@ import { render } from "solid-js/web";
 import { restoreStateCurrent, saveWindowState, StateFlags } from "@tauri-apps/plugin-window-state";
 import { attachConsole } from "@tauri-apps/plugin-log";
 import { initAppTheme, showBanner } from "./stores";
+import { t } from "./i18n";
 import { initDb } from "./db";
 import { App } from "./App";
 
@@ -41,7 +42,7 @@ async function bootstrap() {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("dynasty-scans: db init failed:", msg);
-    showBanner(`Database init failed: ${msg}`);
+    showBanner(t("main.dbInitFailedBanner", { msg }));
   }
 
   const appEl = document.getElementById("app");
