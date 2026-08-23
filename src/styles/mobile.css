@@ -85,12 +85,6 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   gap: 8px;
 }
 
-#ds-root[data-mobile] #ds-nav-tabs {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
 #ds-root[data-mobile] #ds-nav-history {
   display: inline-flex;
   align-items: stretch;
@@ -109,20 +103,21 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   box-sizing: border-box;
 }
 
-#ds-root[data-mobile] #ds-session-tab-wrap {
-  display: inline-flex;
-  align-items: center;
-}
 
 #ds-root[data-mobile] .ds-session-tab {
   height: 24px;
   min-height: 24px;
   max-height: 24px;
+  width: 44px;
+  min-width: 44px !important;
+  max-width: 44px !important;
   padding: 0 4px;
   gap: 3px;
   font-size: 11px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   box-sizing: border-box;
 }
 
@@ -134,10 +129,13 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
   font-size: 10px;
   cursor: pointer;
+  box-sizing: border-box;
 }
 #ds-root[data-mobile] #ds-title {
   font-size: 13px;

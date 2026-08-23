@@ -37,22 +37,11 @@ body {
   box-sizing: border-box;
   min-width: 0;
 }
-#ds-nav-tabs {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  flex-shrink: 0;
-}
 #ds-view-switch {
   flex-shrink: 0;
 }
 #ds-nav-history {
   flex-shrink: 0;
-}
-#ds-session-tab-wrap {
-  min-width: 0;
-  flex-shrink: 1;
 }
 .ds-nav-tab.active {
   background: var(--sys-hover-bg, #e5e5e5);
@@ -61,23 +50,29 @@ body {
 .ds-session-tab {
   font-weight: 500;
   border-radius: 2px !important;
-  max-width: 220px;
-  min-width: 0;
-  overflow: hidden;
+  max-width: 180px;
+  min-width: 44px;
+  flex: 0 1 auto;
   height: 24px;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  padding: 0 4px 0 6px;
   font-size: 11px;
   line-height: normal;
+  overflow: hidden;
+}
+.ds-session-tab > i.bi {
+  flex-shrink: 0;
+  font-size: 12px;
 }
 .ds-session-tab .ds-truncate {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
   line-height: normal;
   padding-bottom: 1px;
 }
@@ -89,9 +84,12 @@ body {
 }
 .ds-tab-close {
   cursor: pointer;
-  font-size: 11px;
-  opacity: 0.7;
-  padding: 1px 2px;
+  font-size: 10px;
+  opacity: 0.75;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
   margin-left: 2px;
   border-radius: 2px;
   display: inline-flex;
@@ -99,12 +97,16 @@ body {
   justify-content: center;
   line-height: 1;
   flex-shrink: 0;
+  box-sizing: border-box;
   transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 .ds-tab-close:hover {
   opacity: 1;
   background: rgba(0, 0, 0, 0.15);
   color: #d9383a;
+}
+.ds-session-tab.active .ds-tab-close {
+  opacity: 0.85;
 }
 .ds-session-tab.active .ds-tab-close:hover {
   background: rgba(255, 255, 255, 0.25);
@@ -176,11 +178,11 @@ body {
   font-size: 13px;
   font-weight: 600;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 1 1 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex-shrink: 1;
+  margin: 0 4px;
 }
 #ds-title:empty {
   display: none;
@@ -207,7 +209,7 @@ body {
   margin-left: 4px;
 }
 
-/* Compact action buttons (hide text labels when window < 680px) */
+/* Compact action buttons (hide text labels when window < 760px) */
 #ds-topbar.ds-compact #ds-actions .ds-btn-text {
   display: none;
 }
@@ -223,29 +225,46 @@ body {
   justify-content: center;
   box-sizing: border-box;
 }
+#ds-topbar.ds-compact .ds-session-tab {
+  max-width: 120px;
+}
 
-/* Narrow view switch (collapse to icons only when window < 540px) */
+/* Narrow view switch (collapse to icons only when window < 620px) */
 #ds-topbar.ds-narrow #ds-view-switch .ds-segmented-btn {
   padding: 0 6px;
 }
 #ds-topbar.ds-narrow #ds-view-switch .ds-segmented-btn span {
   display: none;
 }
-@media (max-width: 680px) {
-  #ds-title {
-    max-width: 140px;
-    font-size: 12px;
+#ds-topbar.ds-narrow .ds-session-tab {
+  width: 44px;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  padding: 0 4px !important;
+  gap: 3px !important;
+  justify-content: center;
+}
+#ds-topbar.ds-narrow .ds-session-tab .ds-truncate {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  #ds-actions .ds-btn-text {
+    display: none;
   }
 }
 
-@media (max-width: 600px) {
-  #ds-title {
-    max-width: 85px;
-    font-size: 11px;
+@media (max-width: 620px) {
+  #ds-view-switch .ds-segmented-btn span {
+    display: none;
   }
   .ds-session-tab {
+    width: 44px;
+    min-width: 44px !important;
+    max-width: 44px !important;
     padding: 0 4px !important;
     gap: 3px !important;
+    justify-content: center;
   }
   .ds-session-tab .ds-truncate {
     display: none !important;

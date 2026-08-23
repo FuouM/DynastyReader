@@ -14,7 +14,6 @@ import {
   banner,
   actions,
   decodeEntities,
-  isMobile,
 } from "../stores";
 import { t } from "../i18n";
 import { SettingsModal } from "./SettingsModal";
@@ -68,8 +67,8 @@ export function Topbar() {
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
-        setIsNarrow(width < 540);
-        setIsCompact(width < 700);
+        setIsNarrow(width < 620);
+        setIsCompact(width < 760);
       }
     });
     ro.observe(topbarEl);
@@ -80,113 +79,109 @@ export function Topbar() {
     <>
       <div id="ds-topbar" ref={topbarEl} classList={{ "ds-narrow": isNarrow(), "ds-compact": isCompact() }}>
         <div id="ds-topbar-main">
-          <div class="ds-flex-row" id="ds-nav-tabs">
-            <div class="ds-segmented-switch" id="ds-view-switch">
-              <button
-                type="button"
-                class="ds-segmented-btn"
-                id="ds-tab-browse"
-                classList={{ active: route().view === "browse" }}
-                title={t("topbar.browseRecent")}
-                onClick={() => navigate({ view: "browse" })}
-              >
-                <Icon name="compass" /> <span>{isNarrow() ? t("topbar.browse") : t("topbar.browseRecent")}</span>
-              </button>
-              <button
-                type="button"
-                class="ds-segmented-btn"
-                id="ds-tab-library"
-                classList={{ active: route().view === "library" }}
-                title={t("topbar.library")}
-                onClick={() => navigate({ view: "library" })}
-              >
-                <StorageIcon /> <span>{t("topbar.library")}</span>
-              </button>
-            </div>
-            <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
-              <button
-                type="button"
-                class="ds-segmented-btn ds-nav-history-btn"
-                id="ds-nav-back"
-                title={t("topbar.navBackTooltip")}
-                disabled={!canGoBack()}
-                onMouseDown={(ev) => {
-                  if (ev.button === 0 && canGoBack()) {
-                    startHold("back", ev.currentTarget);
-                  }
-                }}
-                onMouseUp={() => cancelHold()}
-                onMouseLeave={() => cancelHold()}
-                onContextMenu={(ev) => {
-                  ev.preventDefault();
-                  if (canGoBack()) {
-                    setHistoryMenu({ direction: "back", anchorEl: ev.currentTarget });
-                  }
-                }}
-                onClick={() => {
-                  if (!didHold && canGoBack()) {
-                    goBack();
-                  }
-                }}
-              >
-                <ArrowLeftIcon />
-              </button>
-              <button
-                type="button"
-                class="ds-segmented-btn ds-nav-history-btn"
-                id="ds-nav-forward"
-                title={t("topbar.navForwardTooltip")}
-                disabled={!canGoForward()}
-                onMouseDown={(ev) => {
-                  if (ev.button === 0 && canGoForward()) {
-                    startHold("forward", ev.currentTarget);
-                  }
-                }}
-                onMouseUp={() => cancelHold()}
-                onMouseLeave={() => cancelHold()}
-                onContextMenu={(ev) => {
-                  ev.preventDefault();
-                  if (canGoForward()) {
-                    setHistoryMenu({ direction: "forward", anchorEl: ev.currentTarget });
-                  }
-                }}
-                onClick={() => {
-                  if (!didHold && canGoForward()) {
-                    goForward();
-                  }
-                }}
-              >
-                <ArrowRightIcon />
-              </button>
-            </div>
-            <Show when={sessionTab() !== null}>
-              <div id="ds-session-tab-wrap" style="display:inline-flex;margin-left:2px;">
-                <button
-                  type="button"
-                  class="win-button ds-nav-tab ds-session-tab"
-                  classList={{ active: isInMangaView() }}
-                  title={isMobile() ? t("topbar.closeTabMobileTooltip", { title: sessionTab()!.title }) : sessionTab()!.title}
-                  onClick={() => {
-                    const tab = sessionTab();
-                    if (tab) navigate(tab.route);
-                  }}
-                >
-                  <DoublePageIcon />
-                  <span class="ds-truncate" style={{ "max-width": isMobile() ? "90px" : "160px" }}>
-                    {decodeEntities(sessionTab()!.title)}
-                  </span>
-                  <CloseIcon
-                    class="ds-tab-close"
-                    title={t("topbar.closeTabTooltip")}
-                    onClick={(ev: MouseEvent) => {
-                      ev.stopPropagation();
-                      closeSessionMangaTab();
-                    }}
-                  />
-                </button>
-              </div>
-            </Show>
+          <div class="ds-segmented-switch" id="ds-view-switch">
+            <button
+              type="button"
+              class="ds-segmented-btn"
+              id="ds-tab-browse"
+              classList={{ active: route().view === "browse" }}
+              title={t("topbar.browseRecent")}
+              onClick={() => navigate({ view: "browse" })}
+            >
+              <Icon name="compass" /> <span>{isNarrow() ? t("topbar.browse") : t("topbar.browseRecent")}</span>
+            </button>
+            <button
+              type="button"
+              class="ds-segmented-btn"
+              id="ds-tab-library"
+              classList={{ active: route().view === "library" }}
+              title={t("topbar.library")}
+              onClick={() => navigate({ view: "library" })}
+            >
+              <StorageIcon /> <span>{t("topbar.library")}</span>
+            </button>
           </div>
+          <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
+            <button
+              type="button"
+              class="ds-segmented-btn ds-nav-history-btn"
+              id="ds-nav-back"
+              title={t("topbar.navBackTooltip")}
+              disabled={!canGoBack()}
+              onMouseDown={(ev) => {
+                if (ev.button === 0 && canGoBack()) {
+                  startHold("back", ev.currentTarget);
+                }
+              }}
+              onMouseUp={() => cancelHold()}
+              onMouseLeave={() => cancelHold()}
+              onContextMenu={(ev) => {
+                ev.preventDefault();
+                if (canGoBack()) {
+                  setHistoryMenu({ direction: "back", anchorEl: ev.currentTarget });
+                }
+              }}
+              onClick={() => {
+                if (!didHold && canGoBack()) {
+                  goBack();
+                }
+              }}
+            >
+              <ArrowLeftIcon />
+            </button>
+            <button
+              type="button"
+              class="ds-segmented-btn ds-nav-history-btn"
+              id="ds-nav-forward"
+              title={t("topbar.navForwardTooltip")}
+              disabled={!canGoForward()}
+              onMouseDown={(ev) => {
+                if (ev.button === 0 && canGoForward()) {
+                  startHold("forward", ev.currentTarget);
+                }
+              }}
+              onMouseUp={() => cancelHold()}
+              onMouseLeave={() => cancelHold()}
+              onContextMenu={(ev) => {
+                ev.preventDefault();
+                if (canGoForward()) {
+                  setHistoryMenu({ direction: "forward", anchorEl: ev.currentTarget });
+                }
+              }}
+              onClick={() => {
+                if (!didHold && canGoForward()) {
+                  goForward();
+                }
+              }}
+            >
+              <ArrowRightIcon />
+            </button>
+          </div>
+          <Show when={sessionTab() !== null}>
+            <button
+              type="button"
+              class="win-button ds-nav-tab ds-session-tab"
+              classList={{ active: isInMangaView() }}
+              title={sessionTab()!.title}
+              onClick={() => {
+                const tab = sessionTab();
+                if (tab) navigate(tab.route);
+              }}
+            >
+              <DoublePageIcon />
+              <span class="ds-truncate">
+                {decodeEntities(sessionTab()!.title)}
+              </span>
+              <CloseIcon
+                class="ds-tab-close"
+                title={t("topbar.closeTabTooltip")}
+                onClick={(ev: MouseEvent) => {
+                  ev.stopPropagation();
+                  closeSessionMangaTab();
+                }}
+              />
+            </button>
+          </Show>
           <span id="ds-title" style="margin-left:8px;">
             {title()}
           </span>
