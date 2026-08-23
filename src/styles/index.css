@@ -212,9 +212,16 @@ body {
   display: none;
 }
 #ds-topbar.ds-compact #ds-actions .win-button {
-  padding: 0 4px;
+  padding: 0;
+  width: 24px;
   height: 24px;
   min-width: 24px;
+  max-width: 24px;
+  aspect-ratio: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 /* Narrow view switch (collapse to icons only when window < 540px) */
@@ -615,10 +622,11 @@ body.ds-dark .tag-pill:hover {
 }
 .ds-modal-close {
   font-size: 10px;
-  padding: 2px 6px;
-  min-width: 22px;
+  padding: 0;
+  width: 20px;
+  min-width: 20px;
   height: 20px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }

@@ -138,7 +138,10 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   width: 24px;
   height: 24px;
   min-height: 24px;
+  max-height: 24px;
   min-width: 24px;
+  max-width: 24px;
+  aspect-ratio: 1 / 1;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -159,7 +162,10 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   width: 24px;
   height: 24px;
   min-height: 24px;
+  max-height: 24px;
   min-width: 24px;
+  max-width: 24px;
+  aspect-ratio: 1 / 1;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -300,7 +306,9 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  height: 24px;
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
   padding: 0 6px;
   font-size: 11px;
   flex-shrink: 0;
@@ -308,7 +316,9 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 
 #ds-root[data-mobile] #ds-browse-check-updates-btn {
   padding: 0 8px;
-  height: 24px;
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
   font-size: 11px;
   white-space: nowrap;
   flex-shrink: 0;

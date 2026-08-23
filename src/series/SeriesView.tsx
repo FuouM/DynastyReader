@@ -402,7 +402,7 @@ function SeriesActions(props: SeriesActionsProps) {
         <RefreshIcon /> <span class="ds-btn-text">{t("common.refresh")}</span>
       </button>
       <ExternalLinkButton
-        class=""
+        class="ds-btn-icon"
         title={t("series.openInBrowserTooltip", { type: props.seriesType ? props.seriesType.toLowerCase() : "series" })}
         url={props.openUrl}
       />

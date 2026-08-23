@@ -327,7 +327,7 @@ export function ReaderSettings() {
           <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
             <button
               type="button"
-              class="win-button ds-btn-sm"
+              class="win-button ds-btn-icon-sm"
               id="ds-settings-prefetch-dec"
               onClick={() => {
                 const next = Math.max(0, prefetchBuffer() - 1);
@@ -345,7 +345,7 @@ export function ReaderSettings() {
             </span>
             <button
               type="button"
-              class="win-button ds-btn-sm"
+              class="win-button ds-btn-icon-sm"
               id="ds-settings-prefetch-inc"
               onClick={() => {
                 const next = Math.min(10, prefetchBuffer() + 1);

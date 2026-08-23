@@ -22,10 +22,12 @@ export interface ExternalLinkButtonProps {
 }
 
 export function ExternalLinkButton(props: ExternalLinkButtonProps) {
+  const defaultClass = () => (props.class ? props.class : props.children ? "ds-btn-compact" : "ds-btn-icon-sm");
+
   return (
     <DsButton
       id={props.id}
-      className={props.class}
+      className={defaultClass()}
       cssText={props.cssText}
       title={props.title}
       onClick={(ev) => {

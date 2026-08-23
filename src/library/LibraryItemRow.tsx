@@ -94,8 +94,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
           <Show when={props.actionLabel}>
             <button
               type="button"
-              class="win-button ds-btn-sm"
-              style="font-size:10px;padding:2px 8px;flex-shrink:0;"
+              class="win-button ds-btn-compact"
               onClick={(ev) => {
                 ev.stopPropagation();
                 props.onOpen();
@@ -110,15 +109,13 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
 
           <Show when={props.externalUrl}>
             <ExternalLinkButton
-              class=""
-              cssText="font-size:10px;padding:2px 6px;flex-shrink:0;"
               title={t("library.openOnDynastyTooltip")}
               url={props.externalUrl!}
             />
           </Show>
-
           <Show when={props.onDelete}>
             <ConfirmDeleteButton
+              class="ds-btn-icon-sm"
               title={props.deleteTitle || t("library.deleteItemTooltip")}
               onConfirm={async () => {
                 await props.onDelete!();

@@ -21,9 +21,11 @@ export interface AddToCollectionButtonProps {
 }
 
 export function AddToCollectionButton(props: AddToCollectionButtonProps) {
+  const defaultClass = () => (props.class ? props.class : props.children ? "ds-btn-compact" : "ds-btn-icon-sm");
+
   return (
     <DsButton
-      className={props.class}
+      className={defaultClass()}
       cssText={props.cssText}
       title={props.title ?? t("browse.feed.addToFavoritesOrCustom")}
       onClick={(ev) => {

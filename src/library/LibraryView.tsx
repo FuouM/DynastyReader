@@ -245,11 +245,12 @@ function LibraryGrid() {
                   <Icon name="clock-history" /> {t("library.history")}
                 </span>
                 <ConfirmDeleteButton
+                  class="win-button"
                   title={t("library.clearHistoryTooltip")}
                   onConfirm={clearHistoryAll}
-                  cssText="font-size:10px;padding:0 6px;height:18px;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
+                  cssText="font-size:10px;padding:0 5px;height:18px;line-height:18px;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
                 >
-                  <TrashIcon style={{ "line-height": 1 }} /> {t("library.clearHistoryButton")}
+                  <TrashIcon style={{ "font-size": "9px", "line-height": 1 }} /> {t("library.clearHistoryButton")}
                 </ConfirmDeleteButton>
               </div>
               <div class="ds-library-panel-body">
@@ -284,7 +285,7 @@ function LibraryGrid() {
               <button
                 type="button"
                 class="win-button ds-btn-sm"
-                style="display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 8px;font-size:11px;"
+                style="display:inline-flex;align-items:center;gap:4px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;padding:0 8px;font-size:11px;"
                 title={t("library.createCollectionTooltip")}
                 onClick={() => setCreating(true)}
               >
@@ -296,9 +297,10 @@ function LibraryGrid() {
           <Show when={activeTab() === "history"}>
             <div class="ds-subtabs-right">
               <ConfirmDeleteButton
+                class="ds-btn-compact"
                 title={t("library.clearHistoryTooltip")}
                 onConfirm={clearHistoryAll}
-                cssText="font-size:11px;padding:0 8px;height:26px;display:inline-flex;align-items:center;justify-content:center;gap:4px;"
+                cssText="font-size:11px;padding:0 8px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;"
               >
                 <TrashIcon style={{ "line-height": 1 }} /> {t("library.clearHistoryButton")}
               </ConfirmDeleteButton>

@@ -312,8 +312,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
 
                               <button
                                 type="button"
-                                class="win-button ds-btn-sm"
-                                style="font-size:10px;padding:1px 5px;height:20px;"
+                                class="win-button ds-btn-icon-sm"
                                 title={t("settings.hotkeys.addKeyTooltip")}
                                 onClick={() => {
                                   stopRecording();
@@ -326,8 +325,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                               <Show when={!isDefault(def)}>
                                 <button
                                   type="button"
-                                  class="win-button ds-btn-sm"
-                                  style="font-size:10px;padding:1px 4px;height:20px;"
+                                  class="win-button ds-btn-icon-sm"
                                   title={t("settings.hotkeys.resetActionTooltip")}
                                   onClick={() => resetHotkey(def.id)}
                                 >

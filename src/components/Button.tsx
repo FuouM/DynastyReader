@@ -70,10 +70,18 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
     }
   };
 
+  const currentClass = () => {
+    if (confirming()) {
+      return (props.class ? `${props.class} ds-btn-danger` : "ds-btn-compact ds-btn-danger").replace("ds-btn-icon-sm", "ds-btn-compact");
+    }
+    if (props.class) return props.class;
+    return props.children ? "ds-btn-compact" : "ds-btn-icon-sm";
+  };
+
   return (
     <button
       type="button"
-      class={`win-button ${props.class ?? "ds-btn-compact"}${confirming() ? " ds-btn-danger" : ""}`}
+      class={`win-button ${currentClass()}`}
       style={props.cssText}
       title={
         confirming()

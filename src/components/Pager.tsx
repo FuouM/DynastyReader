@@ -43,7 +43,7 @@ export function Pager(props: PagerProps) {
     >
       <button
         type="button"
-        class="win-button ds-btn-xs"
+        class="win-button ds-btn-icon-sm"
         title={t("dialogs.pager.firstPage")}
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(1)}
@@ -52,7 +52,7 @@ export function Pager(props: PagerProps) {
       </button>
       <button
         type="button"
-        class="win-button ds-btn-xs"
+        class="win-button ds-btn-icon-sm"
         title={t("dialogs.pager.prevPage")}
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(props.currentPage - 1)}
@@ -70,7 +70,7 @@ export function Pager(props: PagerProps) {
           max={String(Math.max(1, props.totalPages))}
           value={jumpValue()}
           class="input-field"
-          style="width:42px;height:20px;text-align:center;font-size:11px;padding:1px 2px;"
+          style="width:44px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;text-align:center;font-size:11px;padding:1px 2px;line-height:20px;"
           title={t("dialogs.pager.jumpPrompt")}
           onInput={(ev) => setJumpValue((ev.target as HTMLInputElement).value)}
           onKeyDown={(ev) => {
@@ -83,14 +83,20 @@ export function Pager(props: PagerProps) {
         <span class="ds-progress-text" style="font-size:11px;color:var(--sys-text-muted, #666);">
           {t("dialogs.pager.ofTotal", { total: props.totalPages })}
         </span>
-        <button type="button" class="win-button ds-btn-xs" title={t("dialogs.pager.jumpButton")} onClick={doJump}>
+        <button
+          type="button"
+          class="win-button ds-btn-sm"
+          style="height:22px;min-height:22px;max-height:22px;box-sizing:border-box;padding:0 6px;font-size:11px;line-height:normal;"
+          title={t("dialogs.pager.jumpButton")}
+          onClick={doJump}
+        >
           {t("dialogs.pager.jumpButton")}
         </button>
       </div>
 
       <button
         type="button"
-        class="win-button ds-btn-xs"
+        class="win-button ds-btn-icon-sm"
         title={t("dialogs.pager.nextPage")}
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.currentPage + 1)}
@@ -99,7 +105,7 @@ export function Pager(props: PagerProps) {
       </button>
       <button
         type="button"
-        class="win-button ds-btn-xs"
+        class="win-button ds-btn-icon-sm"
         title={t("dialogs.pager.lastPage", { total: props.totalPages })}
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.totalPages)}

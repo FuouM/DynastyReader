@@ -211,8 +211,7 @@ function SearchResultRow(props: {
       }
       actions={
         <ExternalLinkButton
-          class="ds-btn-xs"
-          cssText="flex-shrink:0;"
+          class="ds-btn-icon-sm"
           title={t("browse.search.openExternalTooltip", { kind: item.kind, title: decodeEntities(item.title) })}
           url={`https://dynasty-scans.com/${pathForKind(item.kind)}/${item.permalink}`}
         />

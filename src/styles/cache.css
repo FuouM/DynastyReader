@@ -55,3 +55,12 @@
   background: var(--sys-hover-bg, #f3f3f3);
   border-color: var(--sys-border-medium, #ccc);
 }
+.ds-cache-item .ds-btn-icon-sm {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  max-width: 22px !important;
+  aspect-ratio: 1 / 1;
+  padding: 0 !important;
+  box-sizing: border-box;
+}

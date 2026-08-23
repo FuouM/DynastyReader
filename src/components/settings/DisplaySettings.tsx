@@ -42,7 +42,7 @@ export function DisplaySettings() {
           <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
             <button
               type="button"
-              class="win-button ds-btn-sm"
+              class="win-button ds-btn-icon"
               id="ds-settings-scale-dec"
               title={t("settings.display.scaleDecTooltip")}
               onClick={() => syncScale(Math.max(0.5, Math.round((scale() - 0.1) * 10) / 10))}
@@ -76,7 +76,7 @@ export function DisplaySettings() {
             </select>
             <button
               type="button"
-              class="win-button ds-btn-sm"
+              class="win-button ds-btn-icon"
               id="ds-settings-scale-inc"
               title={t("settings.display.scaleIncTooltip")}
               onClick={() => syncScale(Math.min(2.0, Math.round((scale() + 0.1) * 10) / 10))}

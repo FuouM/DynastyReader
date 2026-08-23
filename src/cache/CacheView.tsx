@@ -485,6 +485,7 @@ function CacheBody(props: {
                           </div>
                         </div>
                         <ConfirmDeleteButton
+                          class="ds-btn-icon-sm"
                           title={t("cache.deleteWorkTooltip", { name: item.seriesName })}
                           onConfirm={() => props.deleteGroup(item)}
                         >

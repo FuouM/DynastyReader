@@ -267,9 +267,21 @@
     display: none;
   }
 }
-.ds-nav-btn-ch,
+.ds-nav-btn-ch {
+  flex-shrink: 0;
+}
 .ds-nav-btn-jump,
 .ds-nav-btn-page {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  max-width: 24px;
+  aspect-ratio: 1 / 1;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   flex-shrink: 0;
 }
 

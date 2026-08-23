@@ -200,13 +200,13 @@ export function BlacklistView() {
                     </div>
                     <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
                       <ExternalLinkButton
-                        class="ds-btn-xs"
+                        class="ds-btn-icon-sm"
                         title={t("blacklist.openOnDynastyTooltip")}
                         url={`https://dynasty-scans.com/series/${item.series_permalink}`}
                       />
                       <button
                         type="button"
-                        class="win-button ds-btn-xs"
+                        class="win-button ds-btn-sm"
                         title={t("blacklist.removeSeriesTooltip")}
                         onClick={() => void removeSeries(item)}
                       >

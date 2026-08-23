@@ -48,7 +48,7 @@ export function ReaderMainRow(props: NavRowProps) {
       </button>
       <button
         type="button"
-        class="win-button ds-nav-btn-jump"
+        class="win-button ds-nav-btn-jump ds-btn-icon"
         title={t("reader.toolbar.firstPage")}
         onClick={() => s.setPage(0, true)}
       >
@@ -56,7 +56,7 @@ export function ReaderMainRow(props: NavRowProps) {
       </button>
       <button
         type="button"
-        class="win-button ds-nav-btn-page"
+        class="win-button ds-nav-btn-page ds-btn-icon"
         title={t("reader.toolbar.prevPage")}
         disabled={s.progress().prevDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
@@ -101,7 +101,7 @@ export function ReaderMainRow(props: NavRowProps) {
       </div>
       <button
         type="button"
-        class="win-button ds-nav-btn-page"
+        class="win-button ds-nav-btn-page ds-btn-icon"
         title={t("reader.toolbar.nextPage")}
         disabled={s.progress().nextDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(1) : s.setPage(s.currentIndex() + 1))}
@@ -110,7 +110,7 @@ export function ReaderMainRow(props: NavRowProps) {
       </button>
       <button
         type="button"
-        class="win-button ds-nav-btn-jump"
+        class="win-button ds-nav-btn-jump ds-btn-icon"
         title={t("reader.toolbar.lastPage", { total: s.pages().length })}
         onClick={() => s.setPage(s.pages().length - 1, true)}
       >
@@ -134,7 +134,7 @@ export function ReaderMainRow(props: NavRowProps) {
       <Show when={isMobile()}>
         <button
           type="button"
-          class="win-button ds-nav-btn-page"
+          class="win-button ds-nav-btn-page ds-btn-icon"
           classList={{ active: props.controlsOpen?.() }}
           style={{ "margin-left": "auto" }}
           title={t("reader.toolbar.toggleControlsTooltip")}
@@ -244,7 +244,7 @@ export function ReaderControlsRow(props: NavRowProps) {
       </select>
       <button
         type="button"
-        class="win-button ds-ctrl-btn"
+        class="win-button ds-ctrl-btn ds-btn-icon"
         title={t("reader.toolbar.themeToggle")}
         onClick={() => s.toggleTheme()}
       >
@@ -272,7 +272,7 @@ export function ReaderControlsRow(props: NavRowProps) {
       <div class="ds-ctrl-zoom-group" classList={{ "ds-zoom-disabled": s.fitMode() !== "original" }}>
         <button
           type="button"
-          class="win-button"
+          class="win-button ds-btn-icon"
           title={
             s.fitMode() !== "original"
               ? t("reader.toolbar.zoomDisabledTooltip")
@@ -295,7 +295,7 @@ export function ReaderControlsRow(props: NavRowProps) {
         </button>
         <button
           type="button"
-          class="win-button"
+          class="win-button ds-btn-icon"
           title={
             s.fitMode() !== "original"
               ? t("reader.toolbar.zoomDisabledTooltip")

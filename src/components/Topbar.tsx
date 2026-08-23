@@ -197,7 +197,7 @@ export function Topbar() {
           <div id="ds-topbar-tools">
             <button
               type="button"
-              class="win-button ds-btn-sm"
+              class="win-button ds-btn-icon"
               id="ds-page-refresh-btn"
               title={t("topbar.refreshPageTooltip")}
               onClick={() => window.location.reload()}
@@ -206,7 +206,7 @@ export function Topbar() {
             </button>
             <button
               type="button"
-              class="win-button ds-btn-sm"
+              class="win-button ds-btn-icon"
               id="ds-settings-btn"
               title={t("topbar.settingsTooltip")}
               onClick={() => setSettingsOpen(true)}

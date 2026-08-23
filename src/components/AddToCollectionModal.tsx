@@ -204,8 +204,8 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
               <span style="display:flex;align-items:center;gap:5px;">
                 <FolderIcon color="var(--sys-primary,#0078d4)" /> {t("dialogs.addToCollection.title")}
               </span>
-              <button type="button" class="win-button ds-dropdown-close" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;font-size:9px;line-height:1;min-width:18px;box-sizing:border-box;" title={t("common.close")} onClick={props.onClose}>
-                <CloseIcon style={{ display: "inline-flex", "align-items": "center", "justify-content": "center", "line-height": 1 }} />
+              <button type="button" class="win-button ds-btn-icon-sm" title={t("common.close")} onClick={props.onClose}>
+                <CloseIcon />
               </button>
             </div>
             <div style="padding:4px 8px;border-bottom:1px solid var(--sys-border-light,#eee);background:var(--sys-window-bg,#fafafa);">
@@ -277,13 +277,12 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
               </div>
               <button
                 type="button"
-                class="win-button"
+                class="win-button ds-btn-sm"
                 id="ds-add-to-col-create-btn"
-                style="display:inline-flex;align-items:center;justify-content:center;gap:3px;font-size:10px;padding:0 6px;height:20px;box-sizing:border-box;flex-shrink:0;"
                 disabled={creating()}
                 onClick={() => void handleCreate()}
               >
-                <AddIcon style={{ display: "inline-flex", "align-items": "center", "justify-content": "center", "line-height": 1, "font-size": "10px" }} /> <span>{t("common.create")}</span>
+                <AddIcon style={{ "font-size": "10px" }} /> <span>{t("common.create")}</span>
               </button>
             </div>
           </div>
