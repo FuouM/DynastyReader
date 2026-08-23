@@ -9,10 +9,10 @@
  */
 
 import { createEffect, createSignal, onCleanup, For, Show, untrack, type JSX } from "solid-js";
-import { makeEventListener } from "@solid-primitives/event-listener";
 import { navigate, route, setRoute, showBanner } from "../stores";
 import { t } from "../i18n";
 import { parseDynastyUrl, suggest } from "../api";
+import { useMediaQuery } from "../hooks/useImageRetry";
 import { Pager } from "../components/Pager";
 import { Typeahead } from "../components/Typeahead";
 import {
@@ -78,14 +78,7 @@ export function BrowseView() {
     if (pollTimer !== null) window.clearTimeout(pollTimer);
   });
   const revision = useBlacklistRevision();
-  const [isCompact, setIsCompact] = createSignal(
-    typeof window !== "undefined" ? window.matchMedia("(max-width: 680px)").matches : false,
-  );
-
-  if (typeof window !== "undefined") {
-    const mq = window.matchMedia("(max-width: 680px)");
-    makeEventListener(mq, "change", (e) => setIsCompact(e.matches));
-  }
+  const isCompact = useMediaQuery("(max-width: 680px)");
 
   const [pendingSearch, setPendingSearch] = createSignal<{
     searchQuery?: string;

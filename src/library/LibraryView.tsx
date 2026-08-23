@@ -15,7 +15,6 @@ import {
   Show,
   type Accessor,
 } from "solid-js";
-import { makeEventListener } from "@solid-primitives/event-listener";
 import {
   navigate,
   route,
@@ -26,6 +25,7 @@ import {
 } from "../stores";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
+import { useMediaQuery } from "../hooks/useImageRetry";
 import {
   clearHistory,
   createCollection,
@@ -107,14 +107,7 @@ function LibraryGrid() {
   const [refreshing, setRefreshing] = createSignal(false);
   const [justUpdated, setJustUpdated] = createSignal(false);
   const [creating, setCreating] = createSignal(false);
-  const [isNarrow, setIsNarrow] = createSignal(
-    typeof window !== "undefined" ? window.matchMedia("(max-width: 680px)").matches : false,
-  );
-
-  if (typeof window !== "undefined") {
-    const mq = window.matchMedia("(max-width: 680px)");
-    makeEventListener(mq, "change", (e) => setIsNarrow(e.matches));
-  }
+  const isNarrow = useMediaQuery("(max-width: 680px)");
 
   const isNarrowOrMobile = () => isNarrow() || isMobile();
 

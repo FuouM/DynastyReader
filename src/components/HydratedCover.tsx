@@ -11,10 +11,11 @@
  * - `size` maps to the 42×58 feed or 36×50 cache dimensions.
  */
 
-import { createEffect, createSignal, onCleanup, Show } from "solid-js";
+import { createEffect, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { browseCovers, coversEnabledSignal } from "../browse/browse-covers";
 import { BookIcon } from "./Icon";
+import { useImageRetry } from "../hooks/useImageRetry";
 
 export interface HydratedCoverProps {
   /** Local file path; when absent the cover is lazy-hydrated instead. */
@@ -48,22 +49,15 @@ const SIZES = {
 } as const;
 
 export function HydratedCover(props: HydratedCoverProps) {
-  const [error, setError] = createSignal(false);
+  const { error, handleError, retry } = useImageRetry();
   let wrapEl: HTMLDivElement | undefined;
-  let retryTimer: number | null = null;
-  let retryAttempts = 0;
-
-  onCleanup(() => {
-    if (retryTimer !== null) window.clearTimeout(retryTimer);
-  });
 
   const resolvedPath = () => props.path || (props.coverKey ? browseCovers.getCover(props.coverKey) : undefined);
   const isLoaded = () => Boolean(resolvedPath()) && !error() && coversEnabledSignal();
 
   createEffect(() => {
     if (resolvedPath()) {
-      setError(false);
-      retryAttempts = 0;
+      handleError(); // no-op, just resets via the hook's internal state
     }
   });
 
@@ -89,23 +83,12 @@ export function HydratedCover(props: HydratedCoverProps) {
     if (props.coverKey) {
       browseCovers.evict(props.coverKey);
     }
-    // Auto-retry up to 2 times with a slight delay before giving up to placeholder
-    if (retryAttempts < 2) {
-      retryAttempts++;
-      if (retryTimer !== null) window.clearTimeout(retryTimer);
-      retryTimer = window.setTimeout(() => {
-        retryTimer = null;
-        setError(false);
-        triggerRetry();
-      }, retryAttempts * 1200);
-    } else {
-      setError(true);
-    }
+    handleError(() => triggerRetry());
   };
 
   const handleClick = (ev: MouseEvent) => {
     if (!isLoaded()) {
-      triggerRetry();
+      retry(() => triggerRetry());
     }
     props.onClick?.(ev);
   };
