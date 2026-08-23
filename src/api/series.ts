@@ -7,6 +7,15 @@ import { fetchChapter } from "./chapter";
 import * as ipc from "../ipc";
 import type { Series } from "../types/api";
 import { SeriesSchema } from "./schemas";
+
+const COVER_DOWNLOAD_TIMEOUT_MS = 30_000;
+const COVER_SKIP_TRANSCODE_THRESHOLD_BYTES = 100_000;
+const COVER_WEBP_QUALITY = 75;
+const COVER_MAX_DIMENSION_PX = 256;
+const COVER_WEBP_MAX_BYTES = 100_000;
+const SERIES_PRIMARY_TIMEOUT_MS = 15_000;
+const SERIES_FALLBACK_TIMEOUT_MS = 5_000;
+
 /** Extracts a file extension from a URL (falls back to jpg). */
 function coverExtension(url: string): string {
   const m = /\.([a-zA-Z0-9]+)(?:\?.*)?$/.exec(url);
@@ -19,19 +28,19 @@ function coverExtension(url: string): string {
  * If the download is already <= 100KB, it keeps the raw image without conversion.
  */
 async function transcodeCover(url: string, rawOutPath: string, webpOutPath: string): Promise<string> {
-  const { absolutePath: absRawPath, sizeBytes } = await httpDownloadFull(url, rawOutPath, 30000);
+  const { absolutePath: absRawPath, sizeBytes } = await httpDownloadFull(url, rawOutPath, COVER_DOWNLOAD_TIMEOUT_MS);
 
   // If the cover is already small (<= 100KB), keep the original download and do not convert.
-  if (sizeBytes > 0 && sizeBytes <= 100_000) {
+  if (sizeBytes > 0 && sizeBytes <= COVER_SKIP_TRANSCODE_THRESHOLD_BYTES) {
     return absRawPath;
   }
 
   let finalPath = absRawPath;
   try {
     const convResp = await ipc.ephemeralConvertImages({
-      quality: 75,
-      maxDimension: 256,
-      maxBytes: 100_000,
+      quality: COVER_WEBP_QUALITY,
+      maxDimension: COVER_MAX_DIMENSION_PX,
+      maxBytes: COVER_WEBP_MAX_BYTES,
       conversions: [[rawOutPath, webpOutPath]],
     });
     const results = convResp.converted;
@@ -95,7 +104,7 @@ export async function fetchSeries(
   const endpoints = seriesEndpoints(permalink, preferredType);
   for (let i = 0; i < endpoints.length; i++) {
     const url = endpoints[i];
-    const timeoutMs = i === 0 ? 15000 : 5000;
+    const timeoutMs = i === 0 ? SERIES_PRIMARY_TIMEOUT_MS : SERIES_FALLBACK_TIMEOUT_MS;
     try {
       const { status, body, etag } = await httpGetText(url, { headers, timeoutMs });
       if (status === 304 && cached) {

@@ -9,6 +9,10 @@
  *    banner, manual Check Updates, and the scroll-to-top cover pause/resume
  */
 
+const CHECK_STATE_RESET_MS = 2000;
+const SCROLL_TOP_POLL_MS = 200;
+const STALE_REVALIDATION_THRESHOLD_MS = 90_000;
+
 import {
   createEffect,
   createSignal,
@@ -198,13 +202,13 @@ function FeedStatusFooter(props: {
         setCheckState("ready");
       } else if (outcome === "unchanged") {
         setCheckState("synced");
-        window.setTimeout(() => setCheckState("idle"), 2000);
+        window.setTimeout(() => setCheckState("idle"), CHECK_STATE_RESET_MS);
       } else {
         setCheckState("idle");
       }
     } catch {
       setCheckState("failed");
-      window.setTimeout(() => setCheckState("idle"), 2000);
+      window.setTimeout(() => setCheckState("idle"), CHECK_STATE_RESET_MS);
     }
   };
 
@@ -251,7 +255,7 @@ function FeedStatusFooter(props: {
     dsView.addEventListener("scroll", checkArrival, { passive: true });
     topTimer = window.setInterval(() => {
       if (dsView.scrollTop <= 0) settle();
-    }, 200);
+    }, SCROLL_TOP_POLL_MS);
   };
 
   const CHECK_STATE_CONFIG = {
@@ -495,7 +499,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
     const act = props.active();
     if (act && !prevActive && pane.data() !== undefined) {
       const last = loadedAt();
-      if (last > 0 && Date.now() - last > 90_000) {
+      if (last > 0 && Date.now() - last > STALE_REVALIDATION_THRESHOLD_MS) {
         setLoadedAt(Date.now());
         void revalidateFeedHead(props.tabId).then((head) => {
           if (props.active() && head.hasNew) setUpdateBanner(true);

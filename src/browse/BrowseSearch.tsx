@@ -7,6 +7,9 @@
  *  - typeahead suggestions via `suggest` for the query and tag inputs
  */
 
+const SEARCH_TYPEAHEAD_DEBOUNCE_MS = 250;
+const TAG_TYPEAHEAD_DEBOUNCE_MS = 200;
+
 import {
   createEffect,
   createMemo,
@@ -414,7 +417,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 }}
                 onEnter={(value) => runSearch(value)}
                 placeholder={t("browse.search.inputPlaceholder")}
-                debounceMs={250}
+                debounceMs={SEARCH_TYPEAHEAD_DEBOUNCE_MS}
               />
             </div>
             <button
@@ -491,7 +494,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   onEnter={(value) => addWithTag(value)}
                   placeholder={t("browse.search.withTagsPlaceholder")}
                   maxItems={6}
-                  debounceMs={200}
+                  debounceMs={TAG_TYPEAHEAD_DEBOUNCE_MS}
                 />
               </div>
               <div id="ds-search-with-chips" style="display:flex;flex-wrap:wrap;gap:3px;min-height:18px;">
@@ -522,7 +525,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   onEnter={(value) => addWithoutTag(value)}
                   placeholder={t("browse.search.withoutTagsPlaceholder")}
                   maxItems={6}
-                  debounceMs={200}
+                  debounceMs={TAG_TYPEAHEAD_DEBOUNCE_MS}
                 />
               </div>
               <div id="ds-search-without-chips" style="display:flex;flex-wrap:wrap;gap:3px;min-height:18px;">

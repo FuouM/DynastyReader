@@ -8,6 +8,10 @@
  *  - transient search directives consumed at this dispatch boundary
  */
 
+const CHECK_UPDATES_POLL_DEADLINE_MS = 15_000;
+const CHECK_UPDATES_POLL_INTERVAL_MS = 50;
+const CHECK_BTN_AUTO_DISMISS_MS = 1500;
+
 import { createEffect, createSignal, onCleanup, Show, untrack, type JSX } from "solid-js";
 import { navigate, route, setRoute, showBanner } from "../stores";
 import { t } from "../i18n";
@@ -160,7 +164,7 @@ export function BrowseView() {
     setForceTick((t) => t + 1);
     const tabId = activeTab();
     await new Promise<void>((resolve) => {
-      const deadline = Date.now() + 15000;
+      const deadline = Date.now() + CHECK_UPDATES_POLL_DEADLINE_MS;
       let sawLoading = false;
       const tick = (): void => {
         const loading = getPaneLoading(tabId);
@@ -173,7 +177,7 @@ export function BrowseView() {
           resolve();
           return;
         }
-        pollTimer = window.setTimeout(tick, 50);
+        pollTimer = window.setTimeout(tick, CHECK_UPDATES_POLL_INTERVAL_MS);
       };
       tick();
     });
@@ -183,7 +187,7 @@ export function BrowseView() {
     checkTimer = window.setTimeout(() => {
       checkTimer = null;
       setCheckBtn("idle");
-    }, 1500);
+    }, CHECK_BTN_AUTO_DISMISS_MS);
   };
 
   const topCfg = () => getTopPagerFor(activeTab());

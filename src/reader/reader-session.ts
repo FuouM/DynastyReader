@@ -64,6 +64,12 @@ import {
 import { standardizeCachePaths } from "./path-migration";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
 
+const SCROLL_ANIMATION_DURATION_MS = 280;
+const PROGRAMMATIC_SCROLL_LOCK_MS = 350;
+const RESTORE_REVEAL_DEADLINE_MS = 1200;
+const FULLSCREEN_RELAYOUT_FIRST_MS = 60;
+const FULLSCREEN_RELAYOUT_SECOND_MS = 180;
+
 export {
   isAutoCacheChapterEnabled,
   setAutoCacheChapterEnabled,
@@ -644,8 +650,8 @@ export class ReaderSession implements ReaderQueueHost {
       } catch {}
     }
     this.resetToCurrentPage(false);
-    setTimeout(() => this.resetToCurrentPage(false), 60);
-    setTimeout(() => this.resetToCurrentPage(false), 180);
+    setTimeout(() => this.resetToCurrentPage(false), FULLSCREEN_RELAYOUT_FIRST_MS);
+    setTimeout(() => this.resetToCurrentPage(false), FULLSCREEN_RELAYOUT_SECOND_MS);
   }
 
   // Chapter navigation ------------------------------------------------------
@@ -732,7 +738,7 @@ export class ReaderSession implements ReaderQueueHost {
           const targetScrollTop = startScrollTop + (targetRect.top - vpRect.top);
           const distance = targetScrollTop - startScrollTop;
           const startTime = performance.now();
-          const duration = 280; // responsive 280ms duration matching paged 0.35s bezier
+          const duration = SCROLL_ANIMATION_DURATION_MS;
 
           const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
 
@@ -778,7 +784,7 @@ export class ReaderSession implements ReaderQueueHost {
       if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
       this.programmaticScrollTimer = window.setTimeout(() => {
         this.isProgrammaticScroll = false;
-      }, 350);
+      }, PROGRAMMATIC_SCROLL_LOCK_MS);
 
       const target = this.slotEls[this.currentIndex()];
       if (target && this.viewportEl) {
@@ -1071,7 +1077,7 @@ export class ReaderSession implements ReaderQueueHost {
   }
 
   private revealAfterRestore(): void {
-    const deadline = window.performance.now() + 1200;
+    const deadline = window.performance.now() + RESTORE_REVEAL_DEADLINE_MS;
     const poll = (): void => {
       if (this.disposedFlag) return;
       let ready = true;

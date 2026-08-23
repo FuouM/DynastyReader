@@ -5,6 +5,11 @@
  * registering the window wheel listener.
  */
 
+const MOMENTUM_INDICATOR_TIMEOUT_MS = 1200;
+const MOMENTUM_PAGE_FLIP_COOLDOWN_MS = 300;
+const WHEEL_DELTA_THRESHOLD = 10;
+const PAGE_FLIP_COOLDOWN_MS = 250;
+
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { spreadIndexOf } from "./reader-spread";
@@ -110,14 +115,14 @@ export function ReaderWheel(props: { session: ReaderSession }) {
           momentumDir = targetDir;
           showIndicator(targetDir);
           clearTimeout(momentumTimer!);
-          momentumTimer = window.setTimeout(hideIndicator, 1200);
+          momentumTimer = window.setTimeout(hideIndicator, MOMENTUM_INDICATOR_TIMEOUT_MS);
           return;
         }
 
         // Second deliberate scroll in the same direction: flip page
         hideIndicator();
         clearTimeout(momentumTimer!);
-        wheelCooldown = Date.now() + 300;
+        wheelCooldown = Date.now() + MOMENTUM_PAGE_FLIP_COOLDOWN_MS;
         if (c.isSpread()) {
           c.stepSpread(targetDir === "next" ? 1 : -1);
         } else if (targetDir === "next") {
@@ -138,8 +143,8 @@ export function ReaderWheel(props: { session: ReaderSession }) {
       // Standard paged mode without vertical overflow: flip page directly
       hideIndicator();
       ev.preventDefault();
-      if (Math.abs(ev.deltaY) < 10 && Math.abs(ev.deltaX) < 10) return;
-      wheelCooldown = Date.now() + 250;
+      if (Math.abs(ev.deltaY) < WHEEL_DELTA_THRESHOLD && Math.abs(ev.deltaX) < WHEEL_DELTA_THRESHOLD) return;
+      wheelCooldown = Date.now() + PAGE_FLIP_COOLDOWN_MS;
       const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
       if (c.isSpread()) {
         c.stepSpread(delta > 0 ? 1 : -1);
@@ -156,8 +161,8 @@ export function ReaderWheel(props: { session: ReaderSession }) {
     // In Continuous Scroll mode, wheel scrolling turns pages when Scroll Lock is active
     if (!c.scrollLock()) return;
     ev.preventDefault();
-    if (Math.abs(ev.deltaY) < 10 && Math.abs(ev.deltaX) < 10) return;
-    wheelCooldown = Date.now() + 250;
+    if (Math.abs(ev.deltaY) < WHEEL_DELTA_THRESHOLD && Math.abs(ev.deltaX) < WHEEL_DELTA_THRESHOLD) return;
+    wheelCooldown = Date.now() + PAGE_FLIP_COOLDOWN_MS;
     const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
 
     if (delta > 0) {
