@@ -13,7 +13,7 @@ export function StorageSettings(props: StorageSettingsProps) {
         <StorageIcon /> {t("settings.storage.title")}
       </div>
       <div class="ds-settings-storage-grid">
-        <span style="font-size:12px;color:var(--sys-window-text,#333);">
+        <span style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
           {t("settings.storage.manageDisk")}
         </span>
         <button
@@ -29,7 +29,7 @@ export function StorageSettings(props: StorageSettingsProps) {
           <ExternalLinkIcon /> {t("settings.storage.openCacheButton")}
         </button>
 
-        <span style="font-size:12px;color:var(--sys-window-text,#333);">
+        <span style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
           {t("settings.storage.seriesBlacklist")}
         </span>
         <button
@@ -46,7 +46,7 @@ export function StorageSettings(props: StorageSettingsProps) {
           <BlacklistIcon /> {t("settings.storage.openBlacklistButton")}
         </button>
 
-        <span style="font-size:12px;color:var(--sys-window-text,#333);">
+        <span style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
           {t("settings.storage.troubleshooting")}
         </span>
         <button

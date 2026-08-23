@@ -130,13 +130,8 @@ export function SettingsModal(props: SettingsModalProps) {
                   <Icon name="keyboard" /> {t("settings.sections.hotkeys")}
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0;">
-                  <div>
-                    <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-                      Custom Hotkeys &amp; Keybindings
-                    </div>
-                    <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-                      Configure custom hotkeys for reading controls, page navigation, and app actions.
-                    </div>
+                  <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
+                    {t("settings.hotkeys.bannerTitle")}
                   </div>
                   <button
                     type="button"
@@ -167,7 +162,7 @@ export function SettingsModal(props: SettingsModalProps) {
               <Icon name="arrow-left" /> {t("settings.backToSettings")}
             </button>
             <span style="font-size:11px;color:var(--sys-text-muted,#666);">
-              All changes are saved automatically.
+              {t("settings.hotkeys.autoSavedNotice")}
             </span>
           </div>
           <div class="ds-settings-subpage-content">

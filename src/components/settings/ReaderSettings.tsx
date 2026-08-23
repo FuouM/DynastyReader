@@ -52,7 +52,7 @@ export function ReaderSettings() {
               {t("settings.reader.readingDirection")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Auto checks 'read_left_to_right' tags; defaults to Japanese Manga (Right-to-Left).
+              Auto checks <code>read_left_to_right</code> tags; defaults to Japanese Manga (Right-to-Left).
             </div>
           </div>
           <div class="ds-segmented-switch" id="ds-settings-direction-switch" style="flex-shrink:0;">
@@ -102,7 +102,7 @@ export function ReaderSettings() {
               {t("settings.reader.defaultMode")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Continuous vertical scroll or single/dual page slides.
+              {t("settings.reader.defaultModeDesc")}
             </div>
           </div>
           <div class="ds-segmented-switch" id="ds-settings-mode-switch" style="flex-shrink:0;">
@@ -140,7 +140,7 @@ export function ReaderSettings() {
               {t("settings.reader.pagedLayout")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Single page view or dual-page spread in Paged mode.
+              {t("settings.reader.pagedLayoutDesc")}
             </div>
           </div>
           <div class="ds-segmented-switch" id="ds-settings-layout-switch" style="flex-shrink:0;">
@@ -175,10 +175,10 @@ export function ReaderSettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Long Strip Spread Override:
+              {t("settings.reader.longStripOverride")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Soft-disable Spread mode on Long Strip / Webtoon tags to display continuous vertical art.
+              Soft-disable Spread mode on <code>Long Strip</code> / <code>Webtoon</code> tags to display continuous vertical art.
             </div>
           </div>
           <button
@@ -203,10 +203,10 @@ export function ReaderSettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:180px;">
             <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
-              Long Strip Fit Width:
+              {t("settings.reader.longStripFitWidth")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Automatically default to Fit Width when opening Long Strip / Webtoon chapters.
+              Automatically default to Fit Width when opening <code>Long Strip</code> / <code>Webtoon</code> chapters.
             </div>
           </div>
           <button
@@ -234,7 +234,7 @@ export function ReaderSettings() {
               {t("settings.reader.coverOffset")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Display the first page (cover) alone before pairing double-page spreads.
+              {t("settings.reader.coverOffsetDesc")}
             </div>
           </div>
           <button
@@ -262,7 +262,7 @@ export function ReaderSettings() {
               {t("settings.reader.fitMode")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Image scaling behavior when opening chapters.
+              {t("settings.reader.fitModeDesc")}
             </div>
           </div>
           <select
@@ -289,7 +289,7 @@ export function ReaderSettings() {
               {t("settings.reader.autoCache")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              When ON, pre-downloads all pages in a chapter. When OFF, only caches pages as you read them.
+              {t("settings.reader.autoCacheDesc")}
             </div>
           </div>
           <button
@@ -321,7 +321,7 @@ export function ReaderSettings() {
               {t("settings.reader.prefetchBuffer")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Number of upcoming pages to preload ahead when auto-cache is off (default: 0).
+              {t("settings.reader.prefetchBufferDesc")}
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
@@ -365,7 +365,7 @@ export function ReaderSettings() {
               {t("settings.reader.navPosition")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              Dock page navigation &amp; progress at top or bottom (recommended for mobile/narrow screens).
+              {t("settings.reader.navPositionDesc")}
             </div>
           </div>
           <div class="ds-segmented-switch" id="ds-settings-nav-pos-switch" style="flex-shrink:0;">

@@ -147,7 +147,7 @@ export function DisplaySettings() {
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
-              {t("settings.display.language")}
+              {t("settings.display.language")}:
             </div>
           </div>
           <select
