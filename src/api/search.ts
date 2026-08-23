@@ -1,5 +1,5 @@
 import { SITE_ROOT } from "../stores";
-import { httpGetText } from "./client";
+import { httpGetText } from "./http";
 import { parseSearchHtml } from "./search-parser";
 import { fetchSeries } from "./series";
 import { getCached, setCached } from "../db";

@@ -5,7 +5,6 @@
 
 import { createEffect, createSignal, Show, type JSX } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
-import { render } from "solid-js/web";
 
 export const PRAYING_MESSAGES = [
   "Girls are now praying",
@@ -41,15 +40,6 @@ export function Loading(props: LoadingProps) {
   );
 }
 
-/**
- * Imperative anchor for mounting the Solid `<Loading>` markup into a container.
- * Used by the imperative reader island (port of `loading-dom`'s `renderLoading`).
- * The container must be cleared before calling; the reader wipes `innerHTML` on
- * its next render pass.
- */
-export function mountLoading(container: HTMLElement, message?: string): void {
-  render(() => <Loading message={message} />, container);
-}
 
 export interface DelayedLoadingProps {
   delayMs?: number;

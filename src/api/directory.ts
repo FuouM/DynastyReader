@@ -1,5 +1,5 @@
 import { absUrl } from "../stores";
-import { cachedJson, httpGetText } from "./client";
+import { cachedJson, httpGetText } from "./http";
 import { FEED_TTL_MS } from "./feed";
 import { tryParseJson } from "../utils/json";
 import { directoryGroups } from "../utils/directory";

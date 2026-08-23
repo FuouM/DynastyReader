@@ -11,8 +11,7 @@
  *               └─ #ds-pane-dynamic  (reader / series / cache / blacklist)
  *
  * Persistent panes keep their DOM alive across tab switches; the dynamic pane
- * remounts per route. Until a view is ported, `viewComponents` maps every view
- * to the `<LegacyView>` strangler adapter.
+ * remounts per route.
  */
 
 import { createEffect, Show, type Component } from "solid-js";
@@ -27,7 +26,6 @@ import {
 } from "./stores";
 import { Topbar } from "./components/Topbar";
 import { BottomNav } from "./components/BottomNav";
-import { UpdateDialog } from "./components/UpdateDialog";
 import { GlobalShortcuts } from "./hotkeys";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
@@ -60,7 +58,6 @@ export function App() {
     >
       <GlobalShortcuts />
       <Topbar />
-      <UpdateDialog />
       <div id="ds-view">
         <div
           id="ds-pane-browse"

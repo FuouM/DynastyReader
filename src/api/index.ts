@@ -1,13 +1,5 @@
-export {
-  httpGetText,
-  httpDownload,
-  httpDownloadFull,
-  fileResolve,
-  fileExists,
-  fileMove,
-  fileDelete,
-  cachedJson,
-} from "./client";
+export { httpGetText, httpDownload, httpDownloadFull, cachedJson } from "./http";
+export { fileResolve, fileExists, fileMove, fileDelete } from "./fs";
 export { checkFeedOnline, fetchFeedWithRevalidation } from "./feed";
 export { fetchDirectory, directoryGroups, searchAllDirectoryEntries, syncAllDirectoryPages, suggest } from "./directory";
 export {

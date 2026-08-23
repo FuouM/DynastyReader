@@ -1,6 +1,7 @@
 import { absUrl, COVERS_PREFIX, SITE_ROOT } from "../stores";
 import { getCached, setCached, deleteCached, updateFollowedSeriesCover } from "../db";
-import { httpGetText, httpDownloadFull, fileDelete, fileExists, fileResolve } from "./client";
+import { httpGetText, httpDownloadFull } from "./http";
+import { fileDelete, fileExists, fileResolve } from "./fs";
 import { fetchChapter } from "./chapter";
 import * as ipc from "../ipc";
 import type { Series } from "../types/api";

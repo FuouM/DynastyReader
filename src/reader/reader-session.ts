@@ -47,7 +47,7 @@ import {
   detectReadingDirection,
   spreadIndexOf,
 } from "./reader-spread";
-import { ReaderQueue, type ReaderQueueHost, type SlotStateKind } from "./reader-queue-solid";
+import { ReaderQueue, type ReaderQueueHost, type SlotStateKind } from "./reader-queue";
 import {
   getDefaultFitMode,
   getDefaultPagedLayout,

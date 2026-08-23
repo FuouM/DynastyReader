@@ -1,11 +1,6 @@
 /**
- * Reactive store barrel for the dynasty-scans plugin (Solid port).
- *
- * Replaces the old `src/state.ts` import surface for the Solid world: views and
- * components import their stores/constants/helpers from `./stores` while the
- * legacy modules keep importing `./state` (which still resolves to the old
- * `src/state.ts` until the flip). Helpers that were re-exported by the old
- * barrel are re-exported here so the public surface stays identical.
+ * Reactive store barrel for the dynasty-scans plugin.
+ * Exports views, router, theme, topbar, and utility state stores.
  */
 
 export const TAB_ID = "dynasty-scans" as const;

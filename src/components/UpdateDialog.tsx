@@ -3,7 +3,7 @@
  * Provides shared reactive state for update checking, download progress, and installation.
  */
 
-import { createSignal, type JSX } from "solid-js";
+import { createSignal } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import type { UpdateInfo, DownloadProgress } from "../types/api";
 import * as ipc from "../ipc";
@@ -79,9 +79,4 @@ export async function installUpdate(): Promise<void> {
     setUpdateStatusText(t("settings.about.updateFailedNotice"));
     console.error("Failed to install update:", err);
   }
-}
-
-/** Legacy component kept for App.tsx compatibility (renders nothing now that updates are inline). */
-export function UpdateDialog(): JSX.Element {
-  return null;
 }

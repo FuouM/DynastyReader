@@ -1,5 +1,5 @@
 import { SITE_ROOT } from "../stores";
-import { cachedJson } from "./client";
+import { cachedJson } from "./http";
 import { ChapterSchema, type ValidatedChapter } from "./schemas";
 
 /** Chapter detail (pages + tags). Cached forever; refreshed manually if needed. */

@@ -1,6 +1,6 @@
 import { absUrl } from "../stores";
 import { getCached, setCached, touchCached } from "../db";
-import { httpGetText } from "./client";
+import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";
 import { tryParseJson } from "../utils/json";
 import { FeedSchema } from "./schemas";

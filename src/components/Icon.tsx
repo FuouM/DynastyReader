@@ -42,19 +42,6 @@ export function Icon(props: IconProps) {
   );
 }
 
-/**
- * Returns a typed Bootstrap Icon HTML string for imperative DOM construction.
- */
-export function iconHtml(
-  name: BootstrapIconName,
-  options?: { spin?: boolean; class?: string; style?: string; title?: string },
-): string {
-  const spinClass = options?.spin ? " ds-spin" : "";
-  const extraClass = options?.class ? ` ${options.class}` : "";
-  const styleAttr = options?.style ? ` style="${options.style}"` : "";
-  const titleAttr = options?.title ? ` title="${options.title}"` : "";
-  return `<i class="bi bi-${name}${spinClass}${extraClass}"${styleAttr}${titleAttr}></i>`;
-}
 
 /** Canonical icon mappings for Dynasty domain entity kinds. */
 export const ENTITY_ICONS: Record<

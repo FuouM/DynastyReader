@@ -6,7 +6,7 @@
 
 import { Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
-import type { SlotStateKind } from "./reader-queue-solid";
+import type { SlotStateKind } from "./reader-queue";
 import { convertFileSrc } from "../ipc";
 import { isMobile } from "../stores";
 import { t } from "../i18n";
