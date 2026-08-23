@@ -247,6 +247,18 @@ export const en = {
     collections: "Collections",
     bookmarks: "Bookmarks",
     history: "Reading History",
+    tabs: {
+      followed: "Followed Series",
+      collections: "Collections",
+      bookmarks: "Bookmarks",
+      history: "Reading History",
+    },
+    tabsShort: {
+      followed: "Followed",
+      collections: "Collections",
+      bookmarks: "Bookmarks",
+      history: "History",
+    },
     createCollectionModalTitle: "New Collection",
     createCollectionNameLabel: "Collection Name:",
     createCollectionNamePlaceholder: "e.g. Yuri Gems, Read Later...",

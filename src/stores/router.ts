@@ -58,7 +58,10 @@ export function isSameRoute(a: Route, b: Route): boolean {
     );
   }
   if (a.view === "library") {
-    return a.collectionId === b.collectionId;
+    return (
+      a.collectionId === b.collectionId &&
+      (a.libraryTab ?? "followed") === (b.libraryTab ?? "followed")
+    );
   }
   return true;
 }

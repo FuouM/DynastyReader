@@ -402,10 +402,17 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 }
 
 /* Library & Cache Grids */
-#ds-root[data-mobile] .ds-library-grid {
-  grid-template-columns: 1fr !important;
+#ds-root[data-mobile] #ds-library-container {
+  padding-top: 0;
 }
 
+#ds-root[data-mobile] #ds-library-container .ds-subtabs-right {
+  justify-content: flex-end;
+}
+
+#ds-root[data-mobile] .ds-library-tab-pane {
+  padding: 0 2px;
+}
 #ds-root[data-mobile] .ds-stats-grid {
   grid-template-columns: repeat(2, 1fr) !important;
   gap: 6px !important;

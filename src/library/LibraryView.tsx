@@ -11,14 +11,18 @@ import {
   createEffect,
   createSignal,
   onCleanup,
+  For,
   Show,
   type Accessor,
 } from "solid-js";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import {
   navigate,
   route,
   setActions,
+  setRoute,
   showBanner,
+  isMobile,
 } from "../stores";
 import { t } from "../i18n";
 import {
@@ -59,19 +63,67 @@ export function LibraryView() {
 }
 
 // ---------------------------------------------------------------------------
-// Main grid
+// Main grid & Tabbed view
 // ---------------------------------------------------------------------------
+
+export type LibraryTabId = "followed" | "collections" | "bookmarks" | "history";
+
+export interface LibraryTabDef {
+  id: LibraryTabId;
+  label: string;
+  shortLabel?: string;
+  icon: string;
+}
+
+export const getLibraryTabs = (): readonly LibraryTabDef[] => [
+  {
+    id: "followed",
+    get label() { return t("library.tabs.followed"); },
+    get shortLabel() { return t("library.tabsShort.followed"); },
+    icon: "bi-bookmark-heart",
+  },
+  {
+    id: "collections",
+    get label() { return t("library.tabs.collections"); },
+    get shortLabel() { return t("library.tabsShort.collections"); },
+    icon: "bi-folder2-open",
+  },
+  {
+    id: "bookmarks",
+    get label() { return t("library.tabs.bookmarks"); },
+    get shortLabel() { return t("library.tabsShort.bookmarks"); },
+    icon: "bi-bookmark",
+  },
+  {
+    id: "history",
+    get label() { return t("library.tabs.history"); },
+    get shortLabel() { return t("library.tabsShort.history"); },
+    icon: "bi-clock-history",
+  },
+];
 
 function LibraryGrid() {
   const [refreshing, setRefreshing] = createSignal(false);
   const [justUpdated, setJustUpdated] = createSignal(false);
   const [creating, setCreating] = createSignal(false);
+  const [isNarrow, setIsNarrow] = createSignal(
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 680px)").matches : false,
+  );
+
+  if (typeof window !== "undefined") {
+    const mq = window.matchMedia("(max-width: 680px)");
+    makeEventListener(mq, "change", (e) => setIsNarrow(e.matches));
+  }
+
+  const isNarrowOrMobile = () => isNarrow() || isMobile();
+
+  const activeTab = (): LibraryTabId => (route().libraryTab ?? "followed") as LibraryTabId;
+
+  const switchTab = (tabId: LibraryTabId): void => {
+    setRoute((r) => ({ ...r, libraryTab: tabId }));
+  };
+
   let updateTimer: number | null = null;
-
-  onCleanup(() => {
-    if (updateTimer !== null) window.clearTimeout(updateTimer);
-  });
-
   const paneApis: Record<string, LibraryPaneApi> = {};
   const register = (key: string) => (api: LibraryPaneApi) => {
     paneApis[key] = api;
@@ -123,87 +175,172 @@ function LibraryGrid() {
 
   return (
     <div id="ds-library-container">
-      <div class="ds-library-grid">
-        {/* 1. Followed Series */}
-        <div class="group-box ds-library-panel">
-          <div class="group-box-title">
-            <span>
-              <Icon name="bookmark-heart" /> {t("library.followed")}
-            </span>
+      <Show
+        when={isNarrowOrMobile()}
+        fallback={
+          <div class="ds-library-grid">
+            {/* 1. Followed Series */}
+            <div class="group-box ds-library-panel">
+              <div class="group-box-title">
+                <span>
+                  <Icon name="bookmark-heart" /> {t("library.followed")}
+                </span>
+              </div>
+              <div class="ds-library-panel-body">
+                <FollowedPane register={register("followed")} />
+              </div>
+              <div class="ds-library-panel-footer ds-hidden"></div>
+            </div>
+
+            {/* 2. Collections & Favorites */}
+            <div class="group-box ds-library-panel">
+              <div
+                class="group-box-title"
+                style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
+              >
+                <span>
+                  <FolderIcon /> {t("library.collections")}
+                </span>
+                <button
+                  type="button"
+                  class="win-button"
+                  style="font-size:10px;padding:0 5px;height:18px;line-height:18px;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
+                  title={t("library.createCollectionTooltip")}
+                  onClick={() => setCreating(true)}
+                >
+                  <AddIcon style={{ "font-size": "9px", "line-height": 1 }} />{" "}
+                  <span>{t("library.newCollectionButton")}</span>
+                </button>
+              </div>
+              <div class="ds-library-panel-body">
+                <CollectionsPane
+                  register={register("collections")}
+                  onOpenDetail={openDetail}
+                  onCreateNew={() => setCreating(true)}
+                />
+              </div>
+              <div class="ds-library-panel-footer ds-hidden"></div>
+            </div>
+
+            {/* 3. Bookmarks */}
+            <div class="group-box ds-library-panel">
+              <div class="group-box-title">
+                <span>
+                  <BookmarkIcon /> {t("library.bookmarks")}
+                </span>
+              </div>
+              <div class="ds-library-panel-body">
+                <BookmarksPane register={register("bookmarks")} />
+              </div>
+              <div class="ds-library-panel-footer ds-hidden"></div>
+            </div>
+
+            {/* 4. Reading History */}
+            <div class="group-box ds-library-panel">
+              <div
+                class="group-box-title"
+                style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
+              >
+                <span>
+                  <Icon name="clock-history" /> {t("library.history")}
+                </span>
+                <ConfirmDeleteButton
+                  title={t("library.clearHistoryTooltip")}
+                  onConfirm={clearHistoryAll}
+                  cssText="font-size:10px;padding:0 6px;height:18px;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
+                >
+                  <TrashIcon style={{ "line-height": 1 }} /> {t("library.clearHistoryButton")}
+                </ConfirmDeleteButton>
+              </div>
+              <div class="ds-library-panel-body">
+                <HistoryPane register={register("history")} />
+              </div>
+              <div class="ds-library-panel-footer ds-hidden"></div>
+            </div>
           </div>
-          <div class="ds-library-panel-body">
-            <FollowedPane register={register("followed")} />
+        }
+      >
+        {/* Narrow / Mobile 4-tab Layout */}
+        <div class="ds-subtabs">
+          <div class="ds-subtabs-left">
+            <For each={getLibraryTabs()}>
+              {(tab) => (
+                <button
+                  type="button"
+                  class="win-button ds-subtab"
+                  classList={{ active: activeTab() === tab.id }}
+                  data-tab-id={tab.id}
+                  title={tab.label}
+                  onClick={() => switchTab(tab.id)}
+                >
+                  <i class={`bi ${tab.icon}`} style="margin-right: 4px;"></i>
+                  <span>{tab.shortLabel ?? tab.label}</span>
+                </button>
+              )}
+            </For>
           </div>
-          <div class="ds-library-panel-footer ds-hidden"></div>
+          <Show when={activeTab() === "collections"}>
+            <div class="ds-subtabs-right">
+              <button
+                type="button"
+                class="win-button ds-btn-sm"
+                style="display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 8px;font-size:11px;"
+                title={t("library.createCollectionTooltip")}
+                onClick={() => setCreating(true)}
+              >
+                <AddIcon style={{ "font-size": "9px", "line-height": 1 }} />{" "}
+                <span>{t("library.newCollectionButton")}</span>
+              </button>
+            </div>
+          </Show>
+          <Show when={activeTab() === "history"}>
+            <div class="ds-subtabs-right">
+              <ConfirmDeleteButton
+                title={t("library.clearHistoryTooltip")}
+                onConfirm={clearHistoryAll}
+                cssText="font-size:11px;padding:0 8px;height:26px;display:inline-flex;align-items:center;justify-content:center;gap:4px;"
+              >
+                <TrashIcon style={{ "line-height": 1 }} /> {t("library.clearHistoryButton")}
+              </ConfirmDeleteButton>
+            </div>
+          </Show>
         </div>
 
-        {/* 2. Collections & Favorites */}
-        <div class="group-box ds-library-panel">
+        <div class="ds-library-tab-content">
           <div
-            class="group-box-title"
-            style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
+            id="ds-library-tab-followed"
+            class="ds-library-tab-pane"
+            classList={{ "ds-hidden": activeTab() !== "followed" }}
           >
-            <span>
-              <FolderIcon /> {t("library.collections")}
-            </span>
-            <button
-              type="button"
-              class="win-button"
-              style="font-size:10px;padding:0 5px;height:18px;line-height:18px;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
-              title={t("library.createCollectionTooltip")}
-              onClick={() => setCreating(true)}
-            >
-              <AddIcon style={{ "font-size": "9px", "line-height": 1 }} />{" "}
-              <span>{t("library.newCollectionButton")}</span>
-            </button>
+            <FollowedPane register={register("followed")} />
           </div>
-          <div class="ds-library-panel-body">
+          <div
+            id="ds-library-tab-collections"
+            class="ds-library-tab-pane"
+            classList={{ "ds-hidden": activeTab() !== "collections" }}
+          >
             <CollectionsPane
               register={register("collections")}
               onOpenDetail={openDetail}
               onCreateNew={() => setCreating(true)}
             />
           </div>
-          <div class="ds-library-panel-footer ds-hidden"></div>
-        </div>
-
-        {/* 3. Bookmarks */}
-        <div class="group-box ds-library-panel">
-          <div class="group-box-title">
-            <span>
-              <BookmarkIcon /> {t("library.bookmarks")}
-            </span>
-          </div>
-          <div class="ds-library-panel-body">
+          <div
+            id="ds-library-tab-bookmarks"
+            class="ds-library-tab-pane"
+            classList={{ "ds-hidden": activeTab() !== "bookmarks" }}
+          >
             <BookmarksPane register={register("bookmarks")} />
           </div>
-          <div class="ds-library-panel-footer ds-hidden"></div>
-        </div>
-
-        {/* 4. Reading History */}
-        <div class="group-box ds-library-panel">
           <div
-            class="group-box-title"
-            style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
+            id="ds-library-tab-history"
+            class="ds-library-tab-pane"
+            classList={{ "ds-hidden": activeTab() !== "history" }}
           >
-            <span>
-              <Icon name="clock-history" /> {t("library.history")}
-            </span>
-            <ConfirmDeleteButton
-              title={t("library.clearHistoryTooltip")}
-              onConfirm={clearHistoryAll}
-              cssText="font-size:10px;padding:0 6px;height:18px;display:inline-flex;align-items:center;justify-content:center;gap:3px;"
-            >
-              <TrashIcon style={{ "line-height": 1 }} /> {t("library.clearHistoryButton")}
-            </ConfirmDeleteButton>
-          </div>
-          <div class="ds-library-panel-body">
             <HistoryPane register={register("history")} />
           </div>
-          <div class="ds-library-panel-footer ds-hidden"></div>
         </div>
-      </div>
-
+      </Show>
       <CreateCollectionModal
         open={creating}
         onClose={() => setCreating(false)}
