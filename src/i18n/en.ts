@@ -328,7 +328,7 @@ export const en = {
       prevPage: "Previous Page (Left Arrow)",
       nextPage: "Next Page (Right Arrow / Space)",
       chapterShort: "Ch",
-      pagePrefix: "Page ",
+      pagePrefix: "Page",
       toggleControlsTooltip: "Toggle Reader Controls (Zoom, Fit, Layout)",
       scrollLockInstantTooltip: "Scroll Animation: Instant slide (click for smooth)",
       scrollLockSmoothTooltip: "Scroll Animation: Smooth slide (click for instant)",

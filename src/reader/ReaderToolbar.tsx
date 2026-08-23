@@ -22,14 +22,6 @@ interface NavRowProps {
 
 export function ReaderMainRow(props: NavRowProps) {
   const s = props.session;
-  const [isNarrow, setIsNarrow] = createSignal(
-    typeof window !== "undefined" ? window.matchMedia("(max-width: 580px)").matches : false,
-  );
-
-  if (typeof window !== "undefined") {
-    const mq = window.matchMedia("(max-width: 580px)");
-    makeEventListener(mq, "change", (e) => setIsNarrow(e.matches));
-  }
 
   return (
     <div class="ds-reader-nav-row nav-main">
@@ -67,26 +59,10 @@ export function ReaderMainRow(props: NavRowProps) {
         <div class="ds-reader-progress-pill">
           <span class="ds-reader-progress-label" title={s.progress().title}>
             <span class="ds-prog-page-slot">
-              <Show when={!isNarrow()}>
-                <span class="ds-prog-prefix">{t("reader.toolbar.pagePrefix")}</span>
-              </Show>
-              <span
-                class="ds-prog-current"
-                style={{
-                  "min-width": `${s.progress().maxCurrentChars}ch`,
-                }}
-              >
-                {s.progress().currentNumStr}
-              </span>
-              <span class="ds-prog-sep"> / </span>
-              <span
-                class="ds-prog-total"
-                style={{
-                  "min-width": `${s.progress().totalNumStr.length}ch`,
-                }}
-              >
-                {s.progress().totalNumStr}
-              </span>
+              <span class="ds-prog-prefix">{t("reader.toolbar.pagePrefix")}</span>
+              <span class="ds-prog-current">{s.progress().currentNumStr}</span>
+              <span class="ds-prog-sep">/</span>
+              <span class="ds-prog-total">{s.progress().totalNumStr}</span>
             </span>
             <span class="ds-prog-pct">({s.progress().pct}%)</span>
             <Show when={s.progress().cachedNote !== ""}>

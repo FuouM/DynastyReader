@@ -210,25 +210,28 @@
     width: 82px;
     max-width: 82px;
   }
-  .ds-nav-btn-ch .ds-ch-btn-text {
-    display: none;
-  }
   .ds-reader-nav .win-button {
     padding: 2px 5px;
   }
-  .ds-reader-progress-label .ds-prog-cached-dot,
-  .ds-reader-progress-label .ds-prog-cached {
-    display: none;
-  }
 }
 
-@media (max-width: 540px) {
+@media (max-width: 500px) {
+  .ds-nav-btn-ch .ds-ch-btn-text {
+    display: none;
+  }
   .ds-reader-nav {
     padding: 2px 4px;
     gap: 2px;
   }
   .ds-reader-nav-row {
     gap: 2px;
+  }
+}
+
+@media (max-width: 460px) {
+  .ds-reader-progress-label .ds-prog-cached-dot,
+  .ds-reader-progress-label .ds-prog-cached {
+    display: none !important;
   }
   .ds-nav-btn-jump {
     display: none;
@@ -249,22 +252,21 @@
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 360px) {
+  .ds-prog-prefix {
+    display: none !important;
+  }
   .ds-ctrl-zoom-group {
     display: none;
   }
   .ds-reader-progress-wrap {
     padding: 0 1px;
   }
-  .ds-reader-nav-row.nav-main {
-    gap: 2px;
-  }
-  .ds-reader-nav-row.nav-controls {
-    gap: 2px;
-    justify-content: space-between;
-  }
+}
+
+@media (max-width: 300px) {
   .ds-reader-progress-label .ds-prog-pct {
-    display: none;
+    display: none !important;
   }
 }
 .ds-nav-btn-ch {
@@ -302,8 +304,9 @@
   align-self: center;
   align-items: center;
   justify-content: center;
-  min-width: clamp(70px, 16vw, 190px);
-  padding: 1px 8px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0 8px;
   background: var(--sys-control-bg, #ececec);
   border: 1px solid var(--sys-border-light, #bbb);
   border-radius: 3px;
@@ -314,59 +317,65 @@
   white-space: nowrap;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   max-width: 100%;
+  box-sizing: border-box;
 }
 .ds-reader-progress-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 100%;
   font-variant-numeric: tabular-nums;
+  line-height: normal;
 }
 .ds-prog-page-slot {
   display: inline-flex;
   align-items: center;
+  gap: 2px;
   font-variant-numeric: tabular-nums;
+  line-height: normal;
 }
 .ds-prog-prefix {
-  white-space: pre;
+  margin-right: 2px;
+  color: var(--sys-window-text, #333);
+  font-weight: normal;
+  line-height: normal;
 }
 .ds-prog-current {
   font-variant-numeric: tabular-nums;
-  display: inline-block;
-  text-align: right;
+  font-weight: 600;
+  line-height: normal;
 }
 .ds-prog-sep {
-  white-space: pre;
-  color: var(--sys-text-muted, #777);
+  color: var(--sys-text-muted, #888);
+  margin: 0 1px;
+  font-weight: normal;
+  line-height: normal;
 }
 .ds-prog-total {
   font-variant-numeric: tabular-nums;
-  display: inline-block;
-  text-align: left;
+  font-weight: 600;
+  line-height: normal;
 }
 .ds-prog-pct {
   font-variant-numeric: tabular-nums;
-  display: inline-block;
-  min-width: 44px;
-  text-align: right;
   color: var(--sys-text-muted, #666);
+  font-weight: normal;
+  margin-left: 2px;
+  line-height: normal;
+}
+.ds-prog-cached-dot {
+  color: var(--sys-text-muted, #999);
+  margin: 0 1px;
+  line-height: normal;
 }
 .ds-prog-cached {
   font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 768px) {
-  .ds-reader-progress-pill {
-    min-width: 130px;
-  }
-  .ds-reader-progress-label .ds-prog-cached-dot,
-  .ds-reader-progress-label .ds-prog-cached {
-    display: none;
-  }
+  color: var(--sys-text-muted, #666);
+  font-size: 10.5px;
+  font-weight: normal;
+  line-height: normal;
 }
 
 .ds-reader-progress-track {
