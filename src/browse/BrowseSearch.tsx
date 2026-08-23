@@ -19,6 +19,7 @@ import {
 import { decodeEntities, navigate, setBanner, seriesTypeToPath, SITE_ROOT } from "../stores";
 import { isContentKind } from "../taxonomy";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import { searchDynasty, suggest } from "../api";
 import {
   getBlacklistMode,
@@ -252,7 +253,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
         } catch {}
         return { pageData, fullyCachedSet, blMode: getBlacklistMode() };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = errorMessage(err);
         setBanner(t("browse.search.searchFailedBanner", { msg }));
         throw err;
       }
@@ -378,7 +379,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
   const normalRows = createMemo<SearchRow[]>(() => resultRows().filter((r) => !r.isBlacklisted));
   const blacklistedRows = createMemo<SearchRow[]>(() => resultRows().filter((r) => r.isBlacklisted));
 
-  const errorMessage = (): string => {
+  const paneErrorText = (): string => {
     const e = pane.error();
     if (e instanceof Error) return e.message;
     return String(e);
@@ -642,7 +643,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
         <Show when={pane.error() !== undefined}>
           <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
-            <span class="ds-muted">{t("browse.search.searchError", { msg: errorMessage() })}</span>
+            <span class="ds-muted">{t("browse.search.searchError", { msg: paneErrorText() })}</span>
             <button type="button" class="win-button" onClick={() => pane.reload()}>
               <RefreshIcon /> {t("common.retry")}
             </button>

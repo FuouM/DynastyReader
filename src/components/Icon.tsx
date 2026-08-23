@@ -61,7 +61,6 @@ export const FolderIcon = (props: BaseIconProps) => <Icon name="folder-plus" {..
 export const SettingsIcon = (props: BaseIconProps) => <Icon name="gear-fill" {...props} />;
 export const CloudDownloadIcon = (props: BaseIconProps) => <Icon name="cloud-arrow-down" {...props} />;
 export const DatabaseIcon = (props: BaseIconProps) => <Icon name="database" {...props} />;
-export const NetworkIcon = (props: BaseIconProps) => <Icon name="hdd-network" {...props} />;
 export const HashIcon = (props: BaseIconProps) => <Icon name="hash" {...props} />;
 export const TrafficIcon = (props: BaseIconProps) => <Icon name="arrow-down-up" {...props} />;
 export const ArrowUpIcon = (props: BaseIconProps) => <Icon name="arrow-up" {...props} />;
@@ -94,12 +93,7 @@ export const StarIcon = (props: { filled?: boolean } & BaseIconProps) => (
   <Icon name={props.filled ? "star-fill" : "star"} {...props} />
 );
 export const BookIcon = (props: BaseIconProps) => <Icon name="book" {...props} />;
-export const SinglePageIcon = (props: BaseIconProps) => <Icon name="book" {...props} />;
 export const DoublePageIcon = (props: BaseIconProps) => <Icon name="book-half" {...props} />;
-export const ContinuousIcon = (props: BaseIconProps) => <Icon name="distribute-vertical" {...props} />;
-export const FullscreenIcon = (props: { exit?: boolean } & BaseIconProps) => (
-  <Icon name={props.exit ? "fullscreen-exit" : "arrows-fullscreen"} {...props} />
-);
 export const SunIcon = (props: BaseIconProps) => <Icon name="sun" {...props} />;
 export const MoonIcon = (props: BaseIconProps) => <Icon name="moon-fill" {...props} />;
 export const ToolIcon = (props: BaseIconProps) => <Icon name="tools" {...props} />;

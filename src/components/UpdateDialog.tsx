@@ -8,6 +8,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { UpdateInfo, DownloadProgress } from "../types/api";
 import * as ipc from "../ipc";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 
 export const [updateInfo, setUpdateInfo] = createSignal<UpdateInfo | null>(null);
 export const [upToDateVersion, setUpToDateVersion] = createSignal<string | null>(null);
@@ -42,7 +43,7 @@ export async function checkUpdates(manual = false): Promise<UpdateInfo | null> {
     return info;
   } catch (err) {
     console.error("dynasty-scans-reader: update check failed:", err);
-    setUpdateError(err instanceof Error ? err.message : String(err));
+    setUpdateError(errorMessage(err));
     return null;
   } finally {
     setUpdateChecking(false);
@@ -74,7 +75,7 @@ export async function installUpdate(): Promise<void> {
     await ipc.installUpdate(info.download_url);
   } catch (err) {
     setIsUpdating(false);
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = errorMessage(err);
     setUpdateError(t("settings.about.installError", { msg }));
     setUpdateStatusText(t("settings.about.updateFailedNotice"));
     console.error("Failed to install update:", err);

@@ -3,9 +3,6 @@
  * inline with randomized praying maiden flavor text. Port of `loading.ts`.
  */
 
-import { createEffect, createSignal, Show, type JSX } from "solid-js";
-import { debounce } from "@solid-primitives/scheduled";
-
 export const PRAYING_MESSAGES = [
   "Girls are now praying",
   "The maidens are praying",
@@ -37,45 +34,5 @@ export function Loading(props: LoadingProps) {
       </svg>
       <span class="ds-loading-text">{message}…</span>
     </div>
-  );
-}
-
-
-export interface DelayedLoadingProps {
-  delayMs?: number;
-  message?: string;
-  loading?: boolean;
-  fallback?: JSX.Element;
-  children?: JSX.Element;
-}
-
-/**
- * Mounts a loading indicator only if an asynchronous task takes longer than
- * `delayMs` (default 140ms). This eliminates visual flicker when navigating
- * to cached tabs or clicking quickly. Port of `attachDelayedLoading`.
- */
-export function DelayedLoading(props: DelayedLoadingProps) {
-  const [showSpinner, setShowSpinner] = createSignal(false);
-  const delayMs = props.delayMs ?? 140;
-  const triggerSpinner = debounce(() => setShowSpinner(true), delayMs);
-
-  createEffect(() => {
-    const isLoading = props.loading ?? true;
-    if (isLoading) {
-      triggerSpinner();
-    } else {
-      triggerSpinner.clear();
-      setShowSpinner(false);
-    }
-  });
-  return (
-    <Show
-      when={props.loading !== undefined ? props.loading : true}
-      fallback={props.children}
-    >
-      <Show when={showSpinner()} fallback={props.fallback}>
-        <Loading message={props.message} />
-      </Show>
-    </Show>
   );
 }

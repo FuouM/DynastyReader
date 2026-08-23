@@ -18,6 +18,7 @@ import {
 } from "solid-js";
 import { decodeEntities, formatBytes, formatDate, navigate, setActions, showBanner } from "../stores";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api";
 import {
   clearAllCacheStorage,
@@ -121,7 +122,7 @@ export function CacheView() {
       showBanner(t("cache.dbBackupSuccess", { path: res.backup_path, size: formatBytes(res.size_bytes) }));
       void refetch();
     } catch (err) {
-      showBanner(t("cache.dbBackupError", { msg: err instanceof Error ? err.message : String(err) }));
+      showBanner(t("cache.dbBackupError", { msg: errorMessage(err) }));
     }
   };
 
@@ -136,7 +137,7 @@ export function CacheView() {
         });
       } catch (dlgErr) {
         console.error("dynasty-reader: openDialog failed:", dlgErr);
-        showBanner(t("cache.dbRestorePickerError", { msg: dlgErr instanceof Error ? dlgErr.message : String(dlgErr) }));
+        showBanner(t("cache.dbRestorePickerError", { msg: errorMessage(dlgErr) }));
         return;
       }
       if (!picked || Array.isArray(picked)) return;
@@ -155,7 +156,7 @@ export function CacheView() {
       void refetch();
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       console.error("dynasty-reader: restoreFromPicker failed:", err);
       showBanner(t("cache.dbRestoreError", { msg }));
     }
@@ -224,7 +225,7 @@ export function CacheView() {
       <Show when={data.error !== undefined}>
         <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
           <span class="ds-muted">
-            {t("cache.statsLoadError", { msg: data.error instanceof Error ? data.error.message : String(data.error) })}
+            {t("cache.statsLoadError", { msg: errorMessage(data.error) })}
           </span>
           <button type="button" class="win-button" onClick={() => void refetch()}>
             <RefreshIcon /> {t("common.retry")}

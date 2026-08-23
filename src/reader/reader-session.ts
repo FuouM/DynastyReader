@@ -23,6 +23,7 @@ import {
   isSeriesKind,
 } from "../stores";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import { toggleAppTheme } from "../stores/theme";
 import { fetchChapter, fetchSeries } from "../api";
 import {
@@ -860,7 +861,7 @@ export class ReaderSession implements ReaderQueueHost {
       chapter = await fetchChapter(permalink);
     } catch (err) {
       if (this.disposedFlag) return;
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       setBanner(t("reader.session.loadChapterError", { msg }));
       this.setError(msg);
       this.setLoading(false);
@@ -976,7 +977,7 @@ export class ReaderSession implements ReaderQueueHost {
     } catch (err) {
       cachedRows = [];
       setBanner(
-        t("reader.session.cacheLookupError", { msg: err instanceof Error ? err.message : String(err) }),
+        t("reader.session.cacheLookupError", { msg: errorMessage(err) }),
       );
     }
     for (const row of cachedRows) {

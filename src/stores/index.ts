@@ -3,7 +3,6 @@
  * Exports views, router, theme, topbar, and utility state stores.
  */
 
-export const TAB_ID = "dynasty-scans" as const;
 export const SITE_ROOT = "https://dynasty-scans.com";
 export const DB_NAME = "dynasty_reader.db";
 

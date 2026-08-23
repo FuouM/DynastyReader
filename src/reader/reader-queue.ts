@@ -3,6 +3,7 @@ import { fileResolve, httpDownloadFull, pageOutputPath } from "../api";
 import { setCachedPage } from "../db";
 import type { ChapterPage } from "../types/api";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 
 export type SlotStateKind = "spinner" | "offline" | "error" | "idle";
 
@@ -119,7 +120,7 @@ export class ReaderQueue {
     } catch (err) {
       if (c.isDisposed()) return;
       this.failed.add(index);
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       c.setSlotState(index, "error", t("reader.session.slotState.downloadFailed", { msg }));
       if (!this.firstErrorShown) {
         this.firstErrorShown = true;

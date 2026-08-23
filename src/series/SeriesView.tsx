@@ -27,6 +27,7 @@ import {
   SITE_ROOT,
 } from "../stores";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import { fetchChapter, fetchSeries, getSeriesCover } from "../api";
 import {
   addBlacklistedSeries,
@@ -137,7 +138,7 @@ export function SeriesView() {
         cacheCounts = new Map(c.map((r) => [r.chapter_permalink, r.n]));
         readHistorySet = h;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = errorMessage(err);
         showBanner(t("series.progressLoadError", { msg }));
       }
 
@@ -184,7 +185,7 @@ export function SeriesView() {
         }
         await refetch();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = errorMessage(err);
         showBanner(t("series.followErrorBanner", { msg }));
         setBusyFollow(false);
       }
@@ -202,7 +203,7 @@ export function SeriesView() {
         }
         await refetch();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = errorMessage(err);
         showBanner(t("series.blacklistErrorBanner", { msg }));
         setBusyBlacklist(false);
       }
@@ -236,7 +237,7 @@ export function SeriesView() {
 
   const isRedirected = (): boolean =>
     data.error !== undefined && data.error instanceof SeriesRedirected;
-  const errorMessage = (): string => {
+  const dataErrorText = (): string => {
     const e = data.error;
     if (e instanceof Error) return e.message;
     return String(e);
@@ -254,7 +255,7 @@ export function SeriesView() {
       </Show>
       <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
         <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
-          <span class="ds-muted">{t("series.loadError", { msg: errorMessage() })}</span>
+          <span class="ds-muted">{t("series.loadError", { msg: dataErrorText() })}</span>
           <button
             type="button"
             class="win-button"

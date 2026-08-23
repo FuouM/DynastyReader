@@ -5,14 +5,9 @@ export { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages, sugge
 export { directoryGroups } from "../utils/directory";
 export {
   fetchSeries,
-  seriesEndpoints,
   getSeriesCover,
-  getLocalCover,
-  getLocalSeriesCover,
-  getChapterCover,
   getOrHydrateSeriesCover,
   getOrHydrateItemCover,
-  refreshFollowedSeriesCover,
 } from "./series";
 export { fetchChapter } from "./chapter";
 export { openExternal, parseDynastyUrl, pageOutputPath } from "./navigation";
@@ -22,7 +17,6 @@ export {
   recordNetworkTraffic,
   recordCacheHit,
   getSessionTraffic,
-  getLifetimeTraffic,
   resetLifetimeTraffic,
   subscribeSessionTraffic,
 } from "./traffic";

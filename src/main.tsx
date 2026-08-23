@@ -4,6 +4,7 @@ import { attachConsole } from "@tauri-apps/plugin-log";
 import { initAppTheme, showBanner } from "./stores";
 import { t } from "./i18n";
 import { initDb } from "./db";
+import { errorMessage } from "./utils/errors";
 import { App } from "./App";
 
 // Apply the persisted theme before the plugin renders so the first paint is
@@ -40,7 +41,7 @@ async function bootstrap() {
   try {
     await initDb();
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = errorMessage(err);
     console.error("dynasty-scans: db init failed:", msg);
     showBanner(t("main.dbInitFailedBanner", { msg }));
   }

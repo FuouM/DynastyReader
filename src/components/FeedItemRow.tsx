@@ -20,6 +20,7 @@ import {
 } from "../stores";
 import { categorizeChapterTags, isSeriesKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import {
   addBookmark,
   getBlacklistMode,
@@ -160,7 +161,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
         setBanner(t("browse.feed.bookmarkSavedBanner", { title: ch.title }));
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       setBanner(t("browse.feed.bookmarkErrorBanner", { msg }));
     }
   };

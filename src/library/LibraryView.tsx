@@ -25,6 +25,7 @@ import {
   isMobile,
 } from "../stores";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import {
   clearHistory,
   createCollection,
@@ -142,7 +143,7 @@ function LibraryGrid() {
         setJustUpdated(false);
       }, 1200);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       showBanner(t("library.refreshErrorBanner", { msg }));
     } finally {
       setRefreshing(false);
@@ -396,7 +397,7 @@ function CreateCollectionModal(props: {
       props.onClose();
       props.onCreated();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       showBanner(t("library.createCollectionError", { msg }));
       setCreating(false);
     }

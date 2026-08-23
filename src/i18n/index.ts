@@ -50,10 +50,6 @@ export function setLocale(loc: Locale): void {
   }
 }
 
-export function getLocale(): Locale {
-  return localeSignal();
-}
-
 /** Interpolates `{{key}}` and `{key}` place markers in a template string. */
 export function interpolate(template: string, params?: TranslationParams): string {
   if (!params) return template;

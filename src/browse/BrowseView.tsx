@@ -61,7 +61,6 @@ export const getBrowseTabs = (): readonly BrowseTabDef[] => [
   { id: "tags-dir", label: t("browse.tabs.tagsDir"), shortLabel: t("browse.tabsShort.tagsDir") },
   { id: "search", label: t("browse.tabs.search"), shortLabel: t("browse.tabsShort.search") },
 ];
-export const BROWSE_TABS = getBrowseTabs();
 
 export function BrowseView() {
   const [searchGoCollapsed, setSearchGoCollapsed] = createSignal(

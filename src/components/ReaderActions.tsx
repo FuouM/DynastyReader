@@ -8,6 +8,7 @@ import { createEffect, createSignal, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { navigate, setBanner, closeSessionMangaTab, SITE_ROOT } from "../stores";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
 import { DsButton } from "./Button";
@@ -85,7 +86,7 @@ export function ReaderActions(props: ReaderActionsProps) {
         setBookmarked(true);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       setBanner(t("reader.toolbar.bookmarkErrorBanner", { msg }));
     }
     setPending(false);
@@ -107,7 +108,7 @@ export function ReaderActions(props: ReaderActionsProps) {
       resetCopied.clear();
       resetCopied();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       setBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
     }
   };

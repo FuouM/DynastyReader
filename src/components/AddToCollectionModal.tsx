@@ -9,6 +9,7 @@ import { createEffect, createSignal, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import {
   FolderIcon,
   CloseIcon,
@@ -159,7 +160,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
       showBanner(added ? t("dialogs.addToCollection.addedToBanner", { collection: col.name }) : t("dialogs.addToCollection.removedFromBanner", { collection: col.name }));
       await loadRows();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       showBanner(t("dialogs.addToCollection.updateError", { msg }));
     }
   };
@@ -182,7 +183,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
       showBanner(t("dialogs.addToCollection.createdAndAddedBanner", { name: created.name }));
       await loadRows();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       showBanner(t("dialogs.addToCollection.createError", { msg }));
     } finally {
       setCreating(false);

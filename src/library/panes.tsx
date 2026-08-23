@@ -18,6 +18,7 @@ import {
 } from "solid-js";
 import { decodeEntities, formatDate, navigate, showBanner, SITE_ROOT } from "../stores";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import {
   getFollowedSeriesPage,
   getFollowedRevision,
@@ -118,7 +119,7 @@ export function FollowedPane(props: LibraryPaneProps) {
                     showBanner(t("library.unfollowedBanner", { name: row.name }));
                     refetch();
                   } catch (err) {
-                    const msg = err instanceof Error ? err.message : String(err);
+                    const msg = errorMessage(err);
                     showBanner(t("library.unfollowErrorBanner", { msg }));
                     throw err;
                   }
@@ -200,7 +201,7 @@ export function CollectionsPane(props: CollectionsPaneProps) {
                         showBanner(t("library.deletedCollectionBanner", { name: col.name }));
                         refetch();
                       } catch (err) {
-                        const msg = err instanceof Error ? err.message : String(err);
+                        const msg = errorMessage(err);
                         showBanner(t("library.deleteCollectionErrorBanner", { msg }));
                         throw err;
                       }
