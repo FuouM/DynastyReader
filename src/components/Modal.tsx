@@ -20,7 +20,6 @@ import { Portal } from "solid-js/web";
 import { t } from "../i18n";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { CloseIcon } from "./Icon";
-import { isMobile, uiScale } from "../stores";
 export interface ModalProps {
   /** Controls whether the modal is rendered. */
   open: boolean;
@@ -86,23 +85,12 @@ export function Modal(props: ModalProps) {
 
   createEffect(() => {
     if (!props.open || !windowEl) return;
-    const mobile = isMobile();
-    if (!mobile) {
-      const scale = uiScale();
-      windowEl.style.setProperty("zoom", String(scale));
-      windowEl.style.maxHeight = `calc((100vh - 40px) / ${scale})`;
-      windowEl.style.maxWidth = `calc((100vw - 40px) / ${scale})`;
-    } else {
-      windowEl.style.removeProperty("zoom");
-      windowEl.style.removeProperty("max-height");
-      windowEl.style.removeProperty("max-width");
-    }
     windowEl.focus();
   });
 
   return (
     <Show when={props.open}>
-      <Portal mount={isMobile() ? (document.getElementById("ds-root") ?? document.body) : document.body}>
+      <Portal mount={document.getElementById("ds-root") ?? document.body}>
         <div
           ref={backdropEl}
           class="ds-modal-backdrop"
