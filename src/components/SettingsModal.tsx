@@ -164,7 +164,7 @@ export function SettingsModal(props: SettingsModalProps) {
               style="display:inline-flex;align-items:center;gap:5px;font-weight:600;"
               onClick={() => setCurrentPage("main")}
             >
-              <Icon name="arrow-left" /> {t("library.backToLibrary")}
+              <Icon name="arrow-left" /> {t("settings.backToSettings")}
             </button>
             <span style="font-size:11px;color:var(--sys-text-muted,#666);">
               All changes are saved automatically.

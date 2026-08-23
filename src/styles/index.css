@@ -839,50 +839,214 @@ body.ds-dark .tag-pill:hover {
 }
 
 @media (max-width: 600px) {
-  .ds-settings-layout,
-  .ds-settings-subpage {
-    flex-direction: column;
+  /* Full-page presentation for Settings on narrow/mobile viewports */
+  #ds-settings-modal-backdrop.ds-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
     height: 100%;
-    max-height: calc(100vh - 140px);
-    min-height: 0;
-    gap: 0;
-    flex: 1 1 auto;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 0;
+    margin: 0;
+    background: var(--sys-control-bg, #ececec);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    border-radius: 0;
+    border: none;
+    z-index: var(--z-modal, 99999);
   }
+  #ds-settings-modal-backdrop .ds-modal-window {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100% !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: var(--sys-control-bg, #ececec) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 100% !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #ds-settings-modal-backdrop .ds-modal-header {
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    padding: 0 10px 0 12px !important;
+    margin: 0 !important;
+    background: var(--sys-control-bg, #ececec) !important;
+    border-bottom: 1px solid var(--sys-border-dark, #b0b0b0) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  #ds-settings-modal-backdrop .ds-modal-title {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--sys-window-text, #000) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  #ds-settings-modal-backdrop .ds-modal-close {
+    min-width: 26px !important;
+    height: 26px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #ds-settings-modal-backdrop .ds-modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: var(--sys-control-bg, #ececec) !important;
+  }
+
+  #ds-settings-modal-backdrop .ds-modal-footer {
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)) 12px !important;
+    background: var(--sys-control-bg, #ececec) !important;
+    border-top: 1px solid var(--sys-border-dark, #b0b0b0) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+  }
+
+  #ds-settings-modal-backdrop #ds-settings-done-btn {
+    min-width: 80px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .ds-settings-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
   .ds-settings-sidebar {
-    display: none;
+    display: none !important;
   }
+
   .ds-settings-content {
-    padding: 6px 6px 6px 2px;
-    gap: 12px;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    padding: 10px 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    box-sizing: border-box !important;
   }
+
   .ds-settings-content .group-box {
-    margin-top: 8px;
+    margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    background: var(--sys-window-bg, #ffffff) !important;
+    border: 1px solid var(--sys-border-dark, #b0b0b0) !important;
+    border-radius: 3px !important;
+    padding: 8px 10px 10px 10px !important;
   }
-  .ds-settings-content .group-box:first-child {
-    margin-top: 4px;
+
+  .ds-settings-subpage {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
   }
+
+  .ds-settings-subpage-header {
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    padding: 0 10px !important;
+    margin: 0 !important;
+    background: var(--sys-control-bg, #ececec) !important;
+    border-bottom: 1px solid var(--sys-border-dark, #b0b0b0) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .ds-settings-subpage-content {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    padding: 10px 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px !important;
+    box-sizing: border-box !important;
+  }
+
   .ds-settings-about-header {
     flex-wrap: wrap;
   }
+
   .ds-settings-about-actions {
     width: 100%;
     flex-direction: row;
     flex-wrap: wrap;
   }
+
   .ds-settings-about-actions button,
   .ds-settings-about-actions a {
     flex: 1 1 auto;
     text-align: center;
     justify-content: center;
   }
+
   .ds-hotkeys-row {
     flex-wrap: wrap;
     gap: 6px;
     padding: 6px 4px;
   }
+
   .ds-hotkeys-keys {
     width: 100%;
     justify-content: flex-start;

@@ -193,6 +193,7 @@ export const en = {
   settings: {
     title: "Application Settings",
     done: "Done",
+    backToSettings: "Back to Settings",
     openHotkeysModal: "Configure Shortcuts...",
     sections: {
       display: "Display & Scaling",
