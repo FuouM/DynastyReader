@@ -41,15 +41,13 @@ export function DisplaySettings() {
             {t("settings.display.uiScale")}:
           </label>
           <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-            <button
-              type="button"
-              class="win-button ds-btn-icon"
+            <IconButton
+              className="ds-btn-icon"
               id="ds-settings-scale-dec"
+              icon={<Icon name="dash-lg" />}
               title={t("settings.display.scaleDecTooltip")}
               onClick={() => syncScale(Math.max(0.5, Math.round((scale() - 0.1) * 10) / 10))}
-            >
-              <Icon name="dash-lg" />
-            </button>
+            />
             <select
               id="ds-settings-scale-select"
               class="input-field"
@@ -75,15 +73,13 @@ export function DisplaySettings() {
                 </option>
               </Show>
             </select>
-            <button
-              type="button"
-              class="win-button ds-btn-icon"
+            <IconButton
+              className="ds-btn-icon"
               id="ds-settings-scale-inc"
+              icon={<AddIcon />}
               title={t("settings.display.scaleIncTooltip")}
               onClick={() => syncScale(Math.min(2.0, Math.round((scale() + 0.1) * 10) / 10))}
-            >
-              <AddIcon />
-            </button>
+            />
             <button
               type="button"
               class="win-button ds-btn-sm"

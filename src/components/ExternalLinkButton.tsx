@@ -17,7 +17,7 @@ export function ExternalLinkButton(props: ExternalLinkButtonProps) {
   return (
     <IconButton
       id={props.id}
-      className={props.className ?? "ds-btn-compact"}
+      className={props.className ?? (props.text ? "ds-btn-compact" : "ds-btn-icon-sm")}
       cssText={props.cssText}
       title={props.title}
       icon={<ExternalLinkIcon />}

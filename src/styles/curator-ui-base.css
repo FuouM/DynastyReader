@@ -761,13 +761,17 @@ body.ds-dark .tag-pill.tag-identity:hover {
   box-sizing: border-box;
   flex-shrink: 0;
 }
+.win-button.ds-btn-icon > i,
+.win-button.ds-btn-icon-sm > i {
+  border: 1px solid green;
+}
 .ds-btn-icon-sm {
-  width: 22px !important;
-  height: 22px !important;
-  min-width: 22px !important;
-  max-width: 22px !important;
-  min-height: 22px !important;
-  max-height: 22px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
   aspect-ratio: 1 / 1;
   padding: 0 !important;
   display: inline-flex !important;

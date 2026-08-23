@@ -5,36 +5,30 @@
  * `useAddToCollection().open`.
  */
 
-import type { JSX } from "solid-js";
 import { t } from "../i18n";
-import { DsButton } from "./Button";
+import { IconButton } from "./Button";
 import { FolderIcon } from "./Icon";
+import type { IconButtonProps } from "./Button";
 
-export interface AddToCollectionButtonProps {
+export interface AddToCollectionButtonProps extends Omit<IconButtonProps, "onClick" | "icon"> {
   onOpen: (anchorEl: HTMLElement) => void;
-  title?: string;
-  /** Extra classes appended to `win-button` (defaults to `ds-btn-compact`). */
-  class?: string;
-  cssText?: string;
-  /** Optional trailing label after the icon (e.g. "Add to..."). */
-  children?: JSX.Element;
 }
 
 export function AddToCollectionButton(props: AddToCollectionButtonProps) {
-  const defaultClass = () => (props.class ? props.class : props.children ? "ds-btn-compact" : "ds-btn-icon-sm");
-
   return (
-    <DsButton
-      className={defaultClass()}
+    <IconButton
+      className={props.className ?? "ds-btn-icon-sm"}
       cssText={props.cssText}
       title={props.title ?? t("browse.feed.addToFavoritesOrCustom")}
+      icon={<FolderIcon />}
+      text={props.text}
+      textClass={props.textClass}
+      classList={props.classList}
+      disabled={props.disabled}
       onClick={(ev) => {
         ev.stopPropagation();
         props.onOpen(ev.currentTarget as HTMLElement);
       }}
-    >
-      <FolderIcon />
-      {props.children}
-    </DsButton>
+    />
   );
 }

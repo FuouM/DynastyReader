@@ -309,27 +309,23 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                                 )}
                               </For>
 
-                              <button
-                                type="button"
-                                class="win-button ds-btn-icon-sm"
+                              <IconButton
+                                className="ds-btn-icon-sm"
+                                icon={<AddIcon />}
                                 title={t("settings.hotkeys.addKeyTooltip")}
                                 onClick={() => {
                                   stopRecording();
                                   setRecordingActionId(def.id);
                                 }}
-                              >
-                                <AddIcon />
-                              </button>
+                              />
 
                               <Show when={!isDefault(def)}>
-                                <button
-                                  type="button"
-                                  class="win-button ds-btn-icon-sm"
+                                <IconButton
+                                  className="ds-btn-icon-sm"
+                                  icon={<RefreshIcon />}
                                   title={t("settings.hotkeys.resetActionTooltip")}
                                   onClick={() => resetHotkey(def.id)}
-                                >
-                                  <RefreshIcon />
-                                </button>
+                                />
                               </Show>
                             </Show>
                           </div>

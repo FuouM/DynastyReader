@@ -354,11 +354,9 @@ function SeriesActions(props: SeriesActionsProps) {
         onClick={props.onToggleFollow}
       />
       <AddToCollectionButton
-        class=""
+        text={t("series.addToButton")}
         onOpen={props.onOpenAddToCol}
-      >
-        <span class="ds-btn-text">{t("series.addToButton")}</span>
-      </AddToCollectionButton>
+      />
       <IconButton
         icon={props.blacklisted() ? <BlacklistIcon filled={true} color="var(--ds-warn-text,#d97706)" /> : <BlacklistIcon />}
         text={props.blacklisted() ? t("series.blacklistedBadge") : t("blacklist.title").split(" ")[0]}

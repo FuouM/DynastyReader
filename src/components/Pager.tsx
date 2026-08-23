@@ -11,6 +11,7 @@ import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
 } from "./Icon";
+import { DsButton, IconButton } from "./Button";
 
 export interface PagerProps {
   totalPages: number;
@@ -41,24 +42,20 @@ export function Pager(props: PagerProps) {
       class="ds-row ds-pager-widget"
       style={props.cssText ?? "align-items:center;justify-content:flex-end;gap:4px;margin-top:8px;flex-wrap:wrap;"}
     >
-      <button
-        type="button"
-        class="win-button ds-btn-icon-sm"
+      <IconButton
+        className="ds-btn-icon-sm"
         title={t("dialogs.pager.firstPage")}
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(1)}
-      >
-        <ChevronDoubleLeftIcon />
-      </button>
-      <button
-        type="button"
-        class="win-button ds-btn-icon-sm"
+        icon={<ChevronDoubleLeftIcon />}
+      />
+      <IconButton
+        className="ds-btn-icon-sm"
         title={t("dialogs.pager.prevPage")}
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(props.currentPage - 1)}
-      >
-        <ChevronLeftIcon />
-      </button>
+        icon={<ChevronLeftIcon />}
+      />
 
       <div class="ds-row" style="align-items:center;gap:3px;margin:0 2px;">
         <span class="ds-progress-text" style="font-size:11px;color:var(--sys-text-muted, #666);">
@@ -83,35 +80,29 @@ export function Pager(props: PagerProps) {
         <span class="ds-progress-text" style="font-size:11px;color:var(--sys-text-muted, #666);">
           {t("dialogs.pager.ofTotal", { total: props.totalPages })}
         </span>
-        <button
-          type="button"
-          class="win-button ds-btn-sm"
-          style="height:22px;min-height:22px;max-height:22px;box-sizing:border-box;padding:0 6px;font-size:11px;line-height:normal;"
+        <DsButton
+          className="ds-btn-sm"
           title={t("dialogs.pager.jumpButton")}
           onClick={doJump}
         >
           {t("dialogs.pager.jumpButton")}
-        </button>
+        </DsButton>
       </div>
 
-      <button
-        type="button"
-        class="win-button ds-btn-icon-sm"
+      <IconButton
+        className="ds-btn-icon-sm"
         title={t("dialogs.pager.nextPage")}
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.currentPage + 1)}
-      >
-        <ChevronRightIcon />
-      </button>
-      <button
-        type="button"
-        class="win-button ds-btn-icon-sm"
+        icon={<ChevronRightIcon />}
+      />
+      <IconButton
+        className="ds-btn-icon-sm"
         title={t("dialogs.pager.lastPage", { total: props.totalPages })}
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.totalPages)}
-      >
-        <ChevronDoubleRightIcon />
-      </button>
+        icon={<ChevronDoubleRightIcon />}
+      />
     </div>
   );
 }

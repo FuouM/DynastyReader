@@ -205,9 +205,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
               <span style="display:flex;align-items:center;gap:5px;">
                 <FolderIcon color="var(--sys-primary,#0078d4)" /> {t("dialogs.addToCollection.title")}
               </span>
-              <button type="button" class="win-button ds-btn-icon-sm" title={t("common.close")} onClick={props.onClose}>
-                <CloseIcon />
-              </button>
+              <IconButton className="ds-btn-icon-sm" icon={<CloseIcon />} title={t("common.close")} onClick={props.onClose} />
             </div>
             <div style="padding:4px 8px;border-bottom:1px solid var(--sys-border-light,#eee);background:var(--sys-window-bg,#fafafa);">
               <div class="ds-truncate" style="font-weight:600;font-size:11px;color:var(--sys-window-text,#111);" title={props.item.title}>
