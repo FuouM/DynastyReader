@@ -16,8 +16,8 @@ import {
   decodeEntities,
   navigate,
   setBanner,
-  sortTagsByCategory,
 } from "../stores";
+import { categorizeChapterTags, isSeriesKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import {
   addBookmark,
@@ -101,15 +101,11 @@ export function FeedItemRow(props: FeedItemRowProps) {
 
   const externalUrl = (): string => {
     if (ch.url) return ch.url;
-    if (ch.kind === "series") return `https://dynasty-scans.com/series/${ch.permalink}`;
-    if (ch.kind === "anthology") return `https://dynasty-scans.com/anthologies/${ch.permalink}`;
-    if (ch.kind === "doujin") return `https://dynasty-scans.com/doujins/${ch.permalink}`;
-    if (ch.kind === "issue") return `https://dynasty-scans.com/issues/${ch.permalink}`;
-    return `https://dynasty-scans.com/chapters/${ch.permalink}`;
+    const path = isSeriesKind(ch.kind) ? seriesTypeToPath(ch.kind) : "chapters";
+    return `https://dynasty-scans.com/${path}/${ch.permalink}`;
   };
 
-  const isDirectSeries =
-    ch.kind === "series" || ch.kind === "anthology" || ch.kind === "doujin" || ch.kind === "issue";
+  const isDirectSeries = isSeriesKind(ch.kind);
 
   const openMainTarget = (): void => {
     if (isDirectSeries) {
@@ -205,28 +201,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
     }
   };
 
-  const artistTags = rawTags.filter((t) => {
-    const type = (t.type ?? "").toLowerCase();
-    return type === "author" || type === "artist";
-  });
-
-  const groupTags = rawTags.filter((t) => {
-    const type = (t.type ?? "").toLowerCase();
-    return type === "scanlator" || type === "group";
-  });
-
-  const otherTags = sortTagsByCategory(
-    rawTags.filter((t) => {
-      const type = (t.type ?? "").toLowerCase();
-      return (
-        type !== "author" &&
-        type !== "artist" &&
-        type !== "scanlator" &&
-        type !== "group" &&
-        type !== "series"
-      );
-    }),
-  );
+  const { artistTags, groupTags, otherTags } = categorizeChapterTags(rawTags);
 
   const coverTitle = coverInfo.isStandalone
     ? t("browse.feed.readChapterTooltip", { title: decodeEntities(ch.title) })

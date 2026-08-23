@@ -1,5 +1,5 @@
 import { decodeEntities } from "../stores";
-import { KIND_BY_PATH_SEGMENT } from "./navigation";
+import { KIND_BY_PATH_SEGMENT, tagKindToType } from "../taxonomy";
 import type { ChapterTag, SearchResultItem, SearchResultPage } from "../types/api";
 
 /** Extracts kind and permalink from a relative Dynasty Scans href. */
@@ -18,30 +18,6 @@ export function parseDynastyHref(href: string): {
   return { kind: kind as SearchResultItem["kind"], permalink };
 }
 
-/**
- * Maps parsed href kind to standard Tag category type string for styling.
- */
-function tagKindToType(kind: SearchResultItem["kind"]): string {
-  switch (kind) {
-    case "author":
-      return "Author";
-    case "scanlator":
-      return "Scanlator";
-    case "pairing":
-      return "Pairing";
-    case "doujin":
-      return "Doujin";
-    case "series":
-      return "Series";
-    case "anthology":
-      return "Anthology";
-    case "issue":
-      return "Issue";
-    case "tag":
-    default:
-      return "General";
-  }
-}
 
 /**
  * Parses raw Dynasty Scans search HTML into a typed SearchResultPage.

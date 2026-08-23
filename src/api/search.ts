@@ -1,4 +1,5 @@
 import { SITE_ROOT } from "../stores";
+import { isArtistTag, isDoujinTag } from "../taxonomy";
 import { httpGetText } from "./http";
 import { parseSearchHtml } from "./search-parser";
 import { fetchSeries } from "./series";
@@ -75,13 +76,13 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
         }));
 
         let author: { name: string; permalink: string } | undefined;
-        const authorTag = itemTags.find((t) => t.type.toLowerCase() === "author" || t.type.toLowerCase() === "artist");
+        const authorTag = itemTags.find((t) => isArtistTag(t.type));
         if (authorTag) {
           author = { name: authorTag.name, permalink: authorTag.permalink };
         }
 
         let doujin: { name: string; permalink: string } | undefined;
-        const doujinTag = itemTags.find((t) => t.type.toLowerCase() === "doujin" || t.type.toLowerCase() === "doujinshi");
+        const doujinTag = itemTags.find((t) => isDoujinTag(t.type));
         if (doujinTag) {
           doujin = { name: doujinTag.name, permalink: doujinTag.permalink };
         }

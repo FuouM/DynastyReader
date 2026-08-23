@@ -57,7 +57,22 @@ export { uiScale, setUiScale, applyUiScale } from "./ui-scale";
 
 export { isMobile } from "./platform";
 
-export { tagClass, sortTagsByCategory } from "../tags";
+export {
+  tagClass,
+  sortTagsByCategory,
+  groupSeriesTags,
+  categorizeChapterTags,
+  isSeriesKind,
+  isArtistTag,
+  isScanlatorTag,
+  isDoujinTag,
+  isPairingTag,
+  isCharacterTag,
+  isStatusTag,
+  seriesTypeToPath,
+  ENTITY_TAXONOMY,
+  KIND_BY_PATH_SEGMENT,
+} from "../taxonomy";
 
 /** Returns true when the webview believes it has a network connection. */
 export function isOnline(): boolean {

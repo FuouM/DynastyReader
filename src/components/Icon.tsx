@@ -43,21 +43,8 @@ export function Icon(props: IconProps) {
 }
 
 
-/** Canonical icon mappings for Dynasty domain entity kinds. */
-export const ENTITY_ICONS: Record<
-  SearchResultItem["kind"],
-  { name: BootstrapIconName; color: string; path: string; label: string }
-> = {
-  chapter: { name: "file-earmark-text", color: "#0078d4", path: "chapters", label: "Chapter" },
-  series: { name: "collection-play", color: "#d83b01", path: "series", label: "Series" },
-  anthology: { name: "journal-album", color: "#107c41", path: "anthologies", label: "Anthology" },
-  doujin: { name: "book", color: "#8764b8", path: "doujins", label: "Doujin" },
-  issue: { name: "newspaper", color: "#b146c2", path: "issues", label: "Issue" },
-  author: { name: "person", color: "#008272", path: "authors", label: "Author" },
-  scanlator: { name: "people", color: "#5c2d91", path: "scanlators", label: "Scanlator" },
-  pairing: { name: "heart", color: "#e3008c", path: "pairings", label: "Pairing" },
-  tag: { name: "tag", color: "#69797e", path: "tags", label: "Tag" },
-};
+import { ENTITY_TAXONOMY } from "../taxonomy";
+export const ENTITY_ICONS = ENTITY_TAXONOMY;
 
 export type BaseIconProps = Omit<IconProps, "name">;
 
@@ -91,13 +78,13 @@ export const BlacklistIcon = (props: { filled?: boolean } & BaseIconProps) => (
   <Icon name={props.filled ? "shield-slash-fill" : "shield-slash"} {...props} />
 );
 export const EntityIcon = (props: { kind: SearchResultItem["kind"] } & BaseIconProps) => {
-  const meta = ENTITY_ICONS[props.kind] ?? {
-    name: "tag" as const,
+  const meta = ENTITY_TAXONOMY[props.kind] ?? {
+    icon: "tag" as const,
     color: "#69797e",
     path: "tags",
     label: props.kind,
   };
-  return <Icon name={meta.name} color={props.color ?? meta.color} {...props} />;
+  return <Icon name={meta.icon} color={props.color ?? meta.color} {...props} />;
 };
 
 export const ChevronDoubleLeftIcon = (props: BaseIconProps) => <Icon name="chevron-double-left" {...props} />;

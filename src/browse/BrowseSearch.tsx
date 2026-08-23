@@ -16,7 +16,7 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import { decodeEntities, navigate, setBanner } from "../stores";
+import { decodeEntities, navigate, setBanner, seriesTypeToPath } from "../stores";
 import { t } from "../i18n";
 import { searchDynasty, suggest } from "../api";
 import {
@@ -172,12 +172,6 @@ function SearchResultRow(props: {
     }
   };
 
-  const pathForKind = (kind: string): string => {
-    if (kind === "author") return "authors";
-    if (kind === "scanlator") return "scanlators";
-    if (kind === "pairing") return "pairings";
-    return "tags";
-  };
 
   return (
     <ListItem
@@ -213,7 +207,7 @@ function SearchResultRow(props: {
         <ExternalLinkButton
           class="ds-btn-icon-sm"
           title={t("browse.search.openExternalTooltip", { kind: item.kind, title: decodeEntities(item.title) })}
-          url={`https://dynasty-scans.com/${pathForKind(item.kind)}/${item.permalink}`}
+          url={`https://dynasty-scans.com/${seriesTypeToPath(item.kind)}/${item.permalink}`}
         />
       }
     />

@@ -2,18 +2,8 @@ import { PAGES_PREFIX } from "../stores";
 import * as ipc from "../ipc";
 import type { ParsedDynastyUrl } from "../types/api";
 
-/** Canonical content kind for each first path segment of a Dynasty Scans URL. */
-export const KIND_BY_PATH_SEGMENT: Record<string, string> = {
-  series: "series",
-  chapters: "chapter",
-  anthologies: "anthology",
-  doujins: "doujin",
-  issues: "issue",
-  authors: "author",
-  scanlators: "scanlator",
-  pairings: "pairing",
-  tags: "tag",
-};
+import { KIND_BY_PATH_SEGMENT } from "../taxonomy";
+export { KIND_BY_PATH_SEGMENT };
 
 /** Kinds that resolve to a series-style detail page when parsed from a pasted link. */
 function normalizeToSeriesKind(kind: string): ParsedDynastyUrl["kind"] {

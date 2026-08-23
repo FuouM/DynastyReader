@@ -1,4 +1,5 @@
 import { absUrl, COVERS_PREFIX, SITE_ROOT } from "../stores";
+import { seriesTypeToPath } from "../taxonomy";
 import { getCached, setCached, deleteCached, updateFollowedSeriesCover } from "../db";
 import { httpGetText, httpDownloadFull } from "./http";
 import { fileDelete, fileExists, fileResolve } from "./fs";
@@ -51,21 +52,6 @@ async function transcodeCover(url: string, rawOutPath: string, webpOutPath: stri
 /** Ordered candidate JSON endpoints for a series-style permalink. */
 export function seriesEndpoints(permalink: string, preferredType?: string): string[] {
   const enc = encodeURIComponent(permalink);
-  const typeMap: Record<string, string> = {
-    series: `${SITE_ROOT}/series/${enc}.json`,
-    anthology: `${SITE_ROOT}/anthologies/${enc}.json`,
-    doujin: `${SITE_ROOT}/doujins/${enc}.json`,
-    doujinshi: `${SITE_ROOT}/doujins/${enc}.json`,
-    issue: `${SITE_ROOT}/issues/${enc}.json`,
-    author: `${SITE_ROOT}/authors/${enc}.json`,
-    artist: `${SITE_ROOT}/authors/${enc}.json`,
-    scanlator: `${SITE_ROOT}/scanlators/${enc}.json`,
-    group: `${SITE_ROOT}/scanlators/${enc}.json`,
-    pairing: `${SITE_ROOT}/pairings/${enc}.json`,
-    tag: `${SITE_ROOT}/tags/${enc}.json`,
-    general: `${SITE_ROOT}/tags/${enc}.json`,
-  };
-
   const defaultEndpoints = [
     `${SITE_ROOT}/series/${enc}.json`,
     `${SITE_ROOT}/anthologies/${enc}.json`,
@@ -77,10 +63,10 @@ export function seriesEndpoints(permalink: string, preferredType?: string): stri
     `${SITE_ROOT}/scanlators/${enc}.json`,
   ];
 
-  const preferredUrl = preferredType ? typeMap[preferredType.toLowerCase()] : undefined;
-  return preferredUrl
-    ? [preferredUrl, ...defaultEndpoints.filter((u) => u !== preferredUrl)]
-    : defaultEndpoints;
+  if (!preferredType) return defaultEndpoints;
+  const path = seriesTypeToPath(preferredType);
+  const preferredUrl = `${SITE_ROOT}/${path}/${enc}.json`;
+  return [preferredUrl, ...defaultEndpoints.filter((u) => u !== preferredUrl)];
 }
 
 /** Series / anthology / doujin / author / tag detail. `force` skips the cache (used by the Refresh button). */

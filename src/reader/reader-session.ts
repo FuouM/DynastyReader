@@ -20,6 +20,7 @@ import {
   setActions,
   clearActions,
   isOnline,
+  isSeriesKind,
 } from "../stores";
 import { t } from "../i18n";
 import { toggleAppTheme } from "../stores/theme";
@@ -867,7 +868,7 @@ export class ReaderSession implements ReaderQueueHost {
     }
     if (this.disposedFlag) return;
 
-    const seriesTag = (chapter.tags ?? []).find((t) => t.type === "Series");
+    const seriesTag = (chapter.tags ?? []).find((t) => isSeriesKind(t.type));
     this.setSeriesPermalink(seriesTag?.permalink ?? route.seriesPermalink ?? null);
     this.setSeriesName(seriesTag?.name ?? route.seriesName ?? chapter.title);
     this.setChapterTitle(chapter.title || route.chapterTitle || "Chapter");

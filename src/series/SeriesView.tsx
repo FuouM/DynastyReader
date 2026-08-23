@@ -23,6 +23,7 @@ import {
   setSessionTab,
   setTitle,
   showBanner,
+  seriesTypeToPath,
 } from "../stores";
 import { t } from "../i18n";
 import { fetchChapter, fetchSeries, getSeriesCover } from "../api";
@@ -152,22 +153,7 @@ export function SeriesView() {
     const seriesPermalink = series.permalink;
     const seriesName = series.name;
     const latest = chapters[chapters.length - 1];
-    const rawType = (series.type ?? "series").toLowerCase();
-    const segmentMap: Record<string, string> = {
-      series: "series",
-      anthology: "anthologies",
-      doujin: "doujins",
-      doujinshi: "doujins",
-      issue: "issues",
-      author: "authors",
-      artist: "authors",
-      scanlator: "scanlators",
-      group: "scanlators",
-      pairing: "pairings",
-      tag: "tags",
-      general: "tags",
-    };
-    const openUrl = `https://dynasty-scans.com/${segmentMap[rawType] || "series"}/${encodeURIComponent(seriesPermalink)}`;
+    const openUrl = `https://dynasty-scans.com/${seriesTypeToPath(series.type)}/${encodeURIComponent(seriesPermalink)}`;
 
     setTitle(decodeEntities(seriesName));
     setSessionTab((current) => {

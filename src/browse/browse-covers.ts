@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
+import { isSeriesKind, isDoujinTag } from "../taxonomy";
 
 /**
  * Module-level reactive signal that mirrors `BrowseCovers.enabled`. Any Solid
@@ -166,9 +167,7 @@ export class BrowseCovers {
     series?: string | null;
     tags?: { type?: string; name?: string; permalink?: string }[];
   }): ItemCoverInfo {
-    const isDirectSeriesKind =
-      ch.kind === "series" || ch.kind === "anthology" || ch.kind === "doujin" || ch.kind === "issue";
-
+    const isDirectSeriesKind = isSeriesKind(ch.kind);
     if (isDirectSeriesKind) {
       return {
         coverKey: `series:${ch.permalink}`,
@@ -183,15 +182,8 @@ export class BrowseCovers {
     // A chapter is part of an official series if ch.series is a non-empty string
     const isOfficialSeries = Boolean(ch.series && ch.series.trim().length > 0);
 
-    const seriesTag = (ch.tags ?? []).find((t) => {
-      const type = (t.type ?? "").toLowerCase();
-      return type === "series" || type === "anthology" || type === "issue";
-    });
-
-    const doujinTag = (ch.tags ?? []).find((t) => {
-      const type = (t.type ?? "").toLowerCase();
-      return type === "doujin" || type === "doujinshi";
-    });
+    const seriesTag = (ch.tags ?? []).find((t) => isSeriesKind(t.type));
+    const doujinTag = (ch.tags ?? []).find((t) => isDoujinTag(t.type));
 
     // 1. Official serialized series (e.g. Citrus +, Bloom Into You, The Blue Star on That Day)
     if (isOfficialSeries) {

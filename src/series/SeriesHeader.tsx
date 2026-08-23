@@ -6,76 +6,13 @@ import { createMemo, For, Show, type JSX } from "solid-js";
 import { decodeEntities } from "../stores";
 import { t } from "../i18n";
 import { openExternal } from "../api";
+import { groupSeriesTags, type GroupedSeriesTags } from "../taxonomy";
 import type { Series, SeriesTag } from "../types/api";
 import { TagPill } from "../components/TagPill";
 import { Cover } from "../components/Cover";
 
-export function groupTags(series: Series): {
-  authorTags: SeriesTag[];
-  groupTags: SeriesTag[];
-  doujinTags: SeriesTag[];
-  pairingTags: SeriesTag[];
-  characterTags: SeriesTag[];
-  statusTags: SeriesTag[];
-  otherTags: SeriesTag[];
-} {
-  const authorTags: SeriesTag[] = [];
-  const groupMap = new Map<string, SeriesTag>();
-  const doujinTags: SeriesTag[] = [];
-  const pairingTags: SeriesTag[] = [];
-  const characterTags: SeriesTag[] = [];
-  const statusTags: SeriesTag[] = [];
-  const otherTags: SeriesTag[] = [];
-
-  for (const t of series.tags ?? []) {
-    const type = (t.type ?? "").toLowerCase();
-    const nameLower = (t.name ?? "").toLowerCase();
-    if (type === "author" || type === "artist") {
-      authorTags.push(t);
-    } else if (type === "scanlator" || type === "group") {
-      groupMap.set(t.permalink || t.name, t);
-    } else if (
-      type === "doujin" ||
-      type === "doujinshi" ||
-      type === "copyright" ||
-      type === "parody"
-    ) {
-      doujinTags.push(t);
-    } else if (type === "pairing") {
-      pairingTags.push(t);
-    } else if (type === "character") {
-      characterTags.push(t);
-    } else if (
-      type === "status" ||
-      type === "format" ||
-      nameLower === "oneshot" ||
-      nameLower === "one-shot" ||
-      nameLower === "anthology" ||
-      nameLower === "completed" ||
-      nameLower === "ongoing" ||
-      nameLower === "discontinued" ||
-      nameLower === "hiatus"
-    ) {
-      statusTags.push(t);
-    } else {
-      otherTags.push(t);
-    }
-  }
-
-  // Also collect any scanlation groups from chapter taggings if not in series.tags
-  for (const tagging of series.taggings ?? []) {
-    for (const t of tagging.tags ?? []) {
-      const type = (t.type ?? "").toLowerCase();
-      if (type === "scanlator" || type === "group") {
-        if (!groupMap.has(t.permalink || t.name)) {
-          groupMap.set(t.permalink || t.name, t);
-        }
-      }
-    }
-  }
-  const groupTags = Array.from(groupMap.values());
-
-  return { authorTags, groupTags, doujinTags, pairingTags, characterTags, statusTags, otherTags };
+export function groupTags(series: Series): GroupedSeriesTags {
+  return groupSeriesTags(series.tags, series.taggings);
 }
 
 /** Recursively renders a sanitized (tag-whitelist) description tree. */

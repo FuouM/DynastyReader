@@ -20,6 +20,7 @@ import {
   setActions,
   setTitle,
   showBanner,
+  seriesTypeToPath,
 } from "../stores";
 import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api";
@@ -249,14 +250,7 @@ function CollectionItemCard(props: {
             ? t("library.kinds.anthology")
             : t("library.kinds.series");
 
-  const endpoint =
-    isChapterLike
-      ? "chapters"
-      : props.it.item_kind === "doujin"
-        ? "doujins"
-        : props.it.item_kind === "anthology"
-          ? "anthologies"
-          : "series";
+  const endpoint = isChapterLike ? "chapters" : seriesTypeToPath(props.it.item_kind);
 
   return (
     <LibraryItemRow
