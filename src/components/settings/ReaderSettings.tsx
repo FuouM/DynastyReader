@@ -20,24 +20,22 @@ import {
   setCoverOffsetDefaultEnabled,
   getDefaultFitMode,
   setDefaultFitMode,
-  type ReaderModeSetting,
-  type PagedLayoutSetting,
   type ReadingDirectionSetting,
-  type FitModeSetting,
 } from "../../reader/settings";
+import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, CloudDownloadIcon, Icon } from "../Icon";
 export function ReaderSettings() {
   const [autoCacheEnabled, setAutoCacheEnabled] = createSignal(isAutoCacheChapterEnabled());
   const [prefetchBuffer, setPrefetchBufferLocal] = createSignal(getPrefetchBuffer());
   const [navPosition, setNavPosition] = createSignal(getReaderNavPosition());
-  const [readerModePref, setReaderModePref] = createSignal<ReaderModeSetting>(getDefaultReaderMode());
-  const [pagedLayoutPref, setPagedLayoutPref] = createSignal<PagedLayoutSetting>(getDefaultPagedLayout());
+  const [readerModePref, setReaderModePref] = createSignal<ReaderMode>(getDefaultReaderMode());
+  const [pagedLayoutPref, setPagedLayoutPref] = createSignal<PagedLayout>(getDefaultPagedLayout());
   const [longStripOverride, setLongStripOverride] = createSignal<boolean>(isLongStripSpreadOverrideEnabled());
   const [longStripFitWidth, setLongStripFitWidth] = createSignal<boolean>(isLongStripFitWidthEnabled());
   const [directionPref, setDirectionPref] = createSignal<ReadingDirectionSetting>(getDefaultReadingDirection());
   const [coverOffsetPref, setCoverOffsetPref] = createSignal<boolean>(isCoverOffsetDefaultEnabled());
-  const [fitModePref, setFitModePref] = createSignal<FitModeSetting>(getDefaultFitMode());
+  const [fitModePref, setFitModePref] = createSignal<FitMode>(getDefaultFitMode());
 
   return (
     <div class="group-box" id="ds-settings-sec-reading">
@@ -271,7 +269,7 @@ export function ReaderSettings() {
             style="width:130px;height:24px;font-size:11px;flex-shrink:0;"
             value={fitModePref()}
             onChange={(ev) => {
-              const val = (ev.target as HTMLSelectElement).value as FitModeSetting;
+              const val = (ev.target as HTMLSelectElement).value as FitMode;
               setDefaultFitMode(val);
               setFitModePref(val);
             }}

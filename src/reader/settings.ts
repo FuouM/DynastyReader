@@ -6,6 +6,7 @@
  * breaking the controller ↔ viewport import cycle.
  */
 import { isMobile } from "../stores";
+import type { FitMode, ReaderMode, PagedLayout } from "../types/reader";
 
 const getBool = (key: string, def = true): boolean => {
   const val = localStorage.getItem(key);
@@ -32,24 +33,21 @@ export function setPrefetchBuffer(count: number): void {
 }
 
 export type ReaderNavPosition = "top" | "bottom";
-export type ReaderModeSetting = "scroll" | "paged";
-export type PagedLayoutSetting = "single" | "spread";
 export type ReadingDirectionSetting = "auto" | "rtl" | "ltr";
-export type FitModeSetting = "width" | "height" | "original";
 
-export function getDefaultReaderMode(): ReaderModeSetting {
+export function getDefaultReaderMode(): ReaderMode {
   return localStorage.getItem("ds-reader-mode") === "paged" ? "paged" : "scroll";
 }
 
-export function setDefaultReaderMode(mode: ReaderModeSetting): void {
+export function setDefaultReaderMode(mode: ReaderMode): void {
   localStorage.setItem("ds-reader-mode", mode);
 }
 
-export function getDefaultPagedLayout(): PagedLayoutSetting {
+export function getDefaultPagedLayout(): PagedLayout {
   return localStorage.getItem("ds-reader-layout") === "spread" ? "spread" : "single";
 }
 
-export function setDefaultPagedLayout(layout: PagedLayoutSetting): void {
+export function setDefaultPagedLayout(layout: PagedLayout): void {
   localStorage.setItem("ds-reader-layout", layout);
 }
 
@@ -77,13 +75,13 @@ export function setDefaultReadingDirection(dir: ReadingDirectionSetting): void {
 export const isCoverOffsetDefaultEnabled = (): boolean => getBool("ds-reader-cover-offset", false);
 export const setCoverOffsetDefaultEnabled = (enabled: boolean): void => setBool("ds-reader-cover-offset", enabled);
 
-export function getDefaultFitMode(): FitModeSetting {
+export function getDefaultFitMode(): FitMode {
   const val = localStorage.getItem("ds-reader-fit");
   if (val === "height" || val === "original") return val;
   return "width";
 }
 
-export function setDefaultFitMode(fit: FitModeSetting): void {
+export function setDefaultFitMode(fit: FitMode): void {
   localStorage.setItem("ds-reader-fit", fit);
 }
 

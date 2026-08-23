@@ -16,7 +16,7 @@ import {
   Show,
 
 } from "solid-js";
-import { decodeEntities, formatDate, navigate, showBanner } from "../stores";
+import { decodeEntities, formatDate, navigate, showBanner, SITE_ROOT } from "../stores";
 import { t } from "../i18n";
 import {
   getFollowedSeriesPage,
@@ -110,7 +110,7 @@ export function FollowedPane(props: LibraryPaneProps) {
                 onOpen={() => openSeries(row)}
                 actionLabel={t("common.open")}
                 actionIcon="bi-folder2-open"
-                externalUrl={`https://dynasty-scans.com/series/${row.permalink}`}
+                externalUrl={`${SITE_ROOT}/series/${row.permalink}`}
                 deleteTitle={t("library.unfollowTooltip")}
                 onDelete={async () => {
                   try {
@@ -275,7 +275,7 @@ export function BookmarksPane(props: LibraryPaneProps) {
                     startPage: row.page_index,
                   })
                 }
-                externalUrl={`https://dynasty-scans.com/chapters/${row.chapter_permalink}`}
+                externalUrl={`${SITE_ROOT}/chapters/${row.chapter_permalink}`}
                 deleteTitle={t("library.removeBookmarkTooltip")}
                 onDelete={async () => {
                   await removeBookmark(row.chapter_permalink);
@@ -349,7 +349,7 @@ export function HistoryPane(props: LibraryPaneProps) {
                     seriesName: row.series_name,
                   })
                 }
-                externalUrl={`https://dynasty-scans.com/chapters/${row.chapter_permalink}`}
+                externalUrl={`${SITE_ROOT}/chapters/${row.chapter_permalink}`}
                 deleteTitle={t("library.removeFromHistoryTooltip")}
                 onDelete={async () => {
                   await removeHistory(row.id);

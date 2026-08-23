@@ -16,7 +16,8 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import { decodeEntities, navigate, setBanner, seriesTypeToPath } from "../stores";
+import { decodeEntities, navigate, setBanner, seriesTypeToPath, SITE_ROOT } from "../stores";
+import { isContentKind } from "../taxonomy";
 import { t } from "../i18n";
 import { searchDynasty, suggest } from "../api";
 import {
@@ -93,15 +94,8 @@ function SearchResultRow(props: {
 }) {
   const { item, isBlacklisted, matchedTags } = props.row;
 
-  const isContentKind =
-    item.kind === "chapter" ||
-    item.kind === "series" ||
-    item.kind === "anthology" ||
-    item.kind === "doujin" ||
-    item.kind === "issue";
-
   // ── 1. Content items (Series, Chapters, Doujins, Anthologies, Issues) ────────
-  if (isContentKind) {
+  if (isContentKind(item.kind)) {
     const itemTags = (item.tags ?? []).map((t) => ({
       type: t.type || "General",
       name: t.name || "",
@@ -207,7 +201,7 @@ function SearchResultRow(props: {
         <ExternalLinkButton
           class="ds-btn-icon-sm"
           title={t("browse.search.openExternalTooltip", { kind: item.kind, title: decodeEntities(item.title) })}
-          url={`https://dynasty-scans.com/${seriesTypeToPath(item.kind)}/${item.permalink}`}
+          url={`${SITE_ROOT}/${seriesTypeToPath(item.kind)}/${item.permalink}`}
         />
       }
     />

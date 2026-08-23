@@ -6,7 +6,7 @@
 
 import { createEffect, createSignal, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
-import { navigate, setBanner, closeSessionMangaTab } from "../stores";
+import { navigate, setBanner, closeSessionMangaTab, SITE_ROOT } from "../stores";
 import { t } from "../i18n";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
@@ -65,7 +65,7 @@ export function ReaderActions(props: ReaderActionsProps) {
 
   const resetCopied = debounce(() => setCopied(false), 2000);
 
-  const chapterUrl = () => `https://dynasty-scans.com/chapters/${props.ctrl.permalink}`;
+  const chapterUrl = () => `${SITE_ROOT}/chapters/${props.ctrl.permalink}`;
 
   const toggleBookmark = async () => {
     if (pending()) return;

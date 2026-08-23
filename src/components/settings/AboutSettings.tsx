@@ -1,5 +1,5 @@
 import { Show } from "solid-js";
-import { APP_VERSION } from "../../stores";
+import { APP_VERSION, SITE_ROOT } from "../../stores";
 import { t } from "../../i18n";
 import { formatBytes } from "../../lib/format";
 import { openExternal } from "../../api";
@@ -72,7 +72,7 @@ export function AboutSettings() {
           <ExternalLinkButton
             id="ds-about-open-site"
             title={t("settings.about.websiteTooltip")}
-            url="https://dynasty-scans.com"
+            url={SITE_ROOT}
           >
             dynasty-scans.com
           </ExternalLinkButton>

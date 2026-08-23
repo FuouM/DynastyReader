@@ -21,6 +21,7 @@ import {
   setTitle,
   showBanner,
   seriesTypeToPath,
+  SITE_ROOT,
 } from "../stores";
 import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api";
@@ -266,7 +267,7 @@ function CollectionItemCard(props: {
       onOpen={onOpen}
       actionLabel={isChapterLike ? t("common.read") : t("common.open")}
       actionIcon={isChapterLike ? "bi-book" : "bi-folder2-open"}
-      externalUrl={`https://dynasty-scans.com/${endpoint}/${props.it.item_permalink}`}
+      externalUrl={`${SITE_ROOT}/${endpoint}/${props.it.item_permalink}`}
       deleteTitle={t("library.removeFromCollectionTooltip")}
       onDelete={async () => {
         await removeItemFromCollection(props.collectionId, props.it.item_permalink);

@@ -254,38 +254,18 @@ function FeedStatusFooter(props: {
     }, 200);
   };
 
+  const CHECK_STATE_CONFIG = {
+    checking: { icon: <RefreshIcon spin={true} />, labelKey: "browse.feed.statusCheckChecking" as const },
+    ready: { icon: <ArrowUpIcon />, labelKey: "browse.feed.statusCheckReady" as const },
+    synced: { icon: <CheckIcon />, labelKey: "browse.feed.statusCheckSynced" as const },
+    failed: { icon: <WarningIcon />, labelKey: "browse.feed.statusCheckFailed" as const },
+  };
+
   const checkBtnLabel = (): JSX.Element => {
-    if (checkState() === "checking") {
-      return (
-        <>
-          <RefreshIcon spin={true} /> {t("browse.feed.statusCheckChecking")}
-        </>
-      );
-    }
-    if (checkState() === "ready") {
-      return (
-        <>
-          <ArrowUpIcon /> {t("browse.feed.statusCheckReady")}
-        </>
-      );
-    }
-    if (checkState() === "synced") {
-      return (
-        <>
-          <CheckIcon /> {t("browse.feed.statusCheckSynced")}
-        </>
-      );
-    }
-    if (checkState() === "failed") {
-      return (
-        <>
-          <WarningIcon /> {t("browse.feed.statusCheckFailed")}
-        </>
-      );
-    }
+    const cfg = CHECK_STATE_CONFIG[checkState() as keyof typeof CHECK_STATE_CONFIG];
     return (
       <>
-        <RefreshIcon /> {t("browse.feed.statusCheckDefault")}
+        {cfg?.icon ?? <RefreshIcon />} {t(cfg?.labelKey ?? "browse.feed.statusCheckDefault")}
       </>
     );
   };

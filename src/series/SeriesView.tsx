@@ -24,6 +24,7 @@ import {
   setTitle,
   showBanner,
   seriesTypeToPath,
+  SITE_ROOT,
 } from "../stores";
 import { t } from "../i18n";
 import { fetchChapter, fetchSeries, getSeriesCover } from "../api";
@@ -153,7 +154,7 @@ export function SeriesView() {
     const seriesPermalink = series.permalink;
     const seriesName = series.name;
     const latest = chapters[chapters.length - 1];
-    const openUrl = `https://dynasty-scans.com/${seriesTypeToPath(series.type)}/${encodeURIComponent(seriesPermalink)}`;
+    const openUrl = `${SITE_ROOT}/${seriesTypeToPath(series.type)}/${encodeURIComponent(seriesPermalink)}`;
 
     setTitle(decodeEntities(seriesName));
     setSessionTab((current) => {

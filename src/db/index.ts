@@ -67,7 +67,7 @@ export {
   getBlacklistMode,
   setBlacklistMode,
 } from "./blacklist.repo";
-export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode } from "./blacklist.repo";
+export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode } from "../types/blacklist";
 export {
   getCollections,
   getCollectionsRevision,

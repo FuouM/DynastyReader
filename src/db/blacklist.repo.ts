@@ -1,23 +1,7 @@
 import { execute, query } from "./client";
+import type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode } from "../types/blacklist";
 
-export interface BlacklistedTag {
-  tag_name: string;
-  tag_permalink?: string;
-  created_at: number;
-}
-
-export interface BlacklistedSeries {
-  series_permalink: string;
-  series_name: string;
-  created_at: number;
-}
-
-export interface BlacklistCheckResult {
-  blacklisted: boolean;
-  matchedTags: string[];
-}
-
-export type BlacklistMode = "hide" | "warn";
+export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode };
 
 let blacklistRevision = 0;
 type BlacklistListener = () => void;

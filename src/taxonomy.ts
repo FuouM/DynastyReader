@@ -11,6 +11,8 @@
 
 import type { BootstrapIconName } from "./components/Icon";
 import type { ChapterTag, SeriesTag, SeriesTaggings } from "./types/api";
+export type { GroupedSeriesTags } from "./types/taxonomy";
+import type { GroupedSeriesTags } from "./types/taxonomy";
 
 // ── 1. Canonical Domain Entity Types ──────────────────────────────────────────
 
@@ -32,19 +34,20 @@ export interface EntityMeta {
   icon: BootstrapIconName;
   color: string;
   isSeriesLike: boolean;
+  isContent: boolean;
 }
 
 /** Canonical taxonomy metadata for all Dynasty domain entity kinds. */
 export const ENTITY_TAXONOMY: Record<EntityKind, EntityMeta> = {
-  chapter: { kind: "chapter", path: "chapters", label: "Chapter", icon: "file-earmark-text", color: "#0078d4", isSeriesLike: false },
-  series: { kind: "series", path: "series", label: "Series", icon: "collection-play", color: "#d83b01", isSeriesLike: true },
-  anthology: { kind: "anthology", path: "anthologies", label: "Anthology", icon: "journal-album", color: "#107c41", isSeriesLike: true },
-  doujin: { kind: "doujin", path: "doujins", label: "Doujin", icon: "book", color: "#8764b8", isSeriesLike: true },
-  issue: { kind: "issue", path: "issues", label: "Issue", icon: "newspaper", color: "#b146c2", isSeriesLike: true },
-  author: { kind: "author", path: "authors", label: "Author", icon: "person", color: "#008272", isSeriesLike: true },
-  scanlator: { kind: "scanlator", path: "scanlators", label: "Scanlator", icon: "people", color: "#5c2d91", isSeriesLike: true },
-  pairing: { kind: "pairing", path: "pairings", label: "Pairing", icon: "heart", color: "#e3008c", isSeriesLike: true },
-  tag: { kind: "tag", path: "tags", label: "Tag", icon: "tag", color: "#69797e", isSeriesLike: true },
+  chapter: { kind: "chapter", path: "chapters", label: "Chapter", icon: "file-earmark-text", color: "#0078d4", isSeriesLike: false, isContent: true },
+  series: { kind: "series", path: "series", label: "Series", icon: "collection-play", color: "#d83b01", isSeriesLike: true, isContent: true },
+  anthology: { kind: "anthology", path: "anthologies", label: "Anthology", icon: "journal-album", color: "#107c41", isSeriesLike: true, isContent: true },
+  doujin: { kind: "doujin", path: "doujins", label: "Doujin", icon: "book", color: "#8764b8", isSeriesLike: true, isContent: true },
+  issue: { kind: "issue", path: "issues", label: "Issue", icon: "newspaper", color: "#b146c2", isSeriesLike: true, isContent: true },
+  author: { kind: "author", path: "authors", label: "Author", icon: "person", color: "#008272", isSeriesLike: true, isContent: false },
+  scanlator: { kind: "scanlator", path: "scanlators", label: "Scanlator", icon: "people", color: "#5c2d91", isSeriesLike: true, isContent: false },
+  pairing: { kind: "pairing", path: "pairings", label: "Pairing", icon: "heart", color: "#e3008c", isSeriesLike: true, isContent: false },
+  tag: { kind: "tag", path: "tags", label: "Tag", icon: "tag", color: "#69797e", isSeriesLike: true, isContent: false },
 };
 
 /** Mapping from URL path segments and aliases to canonical EntityKind. */
@@ -80,6 +83,12 @@ export function isSeriesKind(kind?: string | null): boolean {
   if (!kind) return false;
   const k = kind.toLowerCase() as EntityKind;
   return ENTITY_TAXONOMY[k]?.isSeriesLike ?? false;
+}
+
+export function isContentKind(kind?: string | null): boolean {
+  if (!kind) return false;
+  const k = kind.toLowerCase() as EntityKind;
+  return ENTITY_TAXONOMY[k]?.isContent ?? false;
 }
 
 // ── 2. Tag Classification & Categories ────────────────────────────────────────
@@ -207,16 +216,6 @@ export function sortTagsByCategory<T extends { type: string }>(tags: T[]): T[] {
 }
 
 // ── 3. Tag Grouping & Partitioning ────────────────────────────────────────────
-
-export interface GroupedSeriesTags {
-  authorTags: SeriesTag[];
-  groupTags: SeriesTag[];
-  doujinTags: SeriesTag[];
-  pairingTags: SeriesTag[];
-  characterTags: SeriesTag[];
-  statusTags: SeriesTag[];
-  otherTags: SeriesTag[];
-}
 
 /**
  * Partitions a series' tags and chapter taggings into categorized buckets

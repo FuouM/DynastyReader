@@ -5,7 +5,7 @@
  */
 
 import { createEffect, createResource, createSignal, For, Show } from "solid-js";
-import { decodeEntities, formatDate, navigate, safeHtml, setActions, showBanner } from "../stores";
+import { decodeEntities, formatDate, navigate, safeHtml, setActions, showBanner, SITE_ROOT } from "../stores";
 import { t } from "../i18n";
 import {
   getBlacklistMode,
@@ -202,7 +202,7 @@ export function BlacklistView() {
                       <ExternalLinkButton
                         class="ds-btn-icon-sm"
                         title={t("blacklist.openOnDynastyTooltip")}
-                        url={`https://dynasty-scans.com/series/${item.series_permalink}`}
+                        url={`${SITE_ROOT}/series/${item.series_permalink}`}
                       />
                       <button
                         type="button"

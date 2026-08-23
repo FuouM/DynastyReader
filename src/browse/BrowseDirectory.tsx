@@ -5,7 +5,7 @@
  */
 
 import { createEffect, createMemo, createResource, createSignal, For, Show, type Accessor } from "solid-js";
-import { decodeEntities, navigate } from "../stores";
+import { decodeEntities, navigate, SITE_ROOT } from "../stores";
 import { t } from "../i18n";
 import { directoryGroups, fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages } from "../api";
 import { getBlacklistMode, isSeriesBlacklisted, type BlacklistMode } from "../db";
@@ -84,8 +84,8 @@ function DirectoryRow(props: {
           title={props.kind === "series" ? t("browse.directory.openSeriesTooltip") : t("browse.directory.searchTagTooltip")}
           url={
             props.kind === "series"
-              ? `https://dynasty-scans.com/series/${props.entry.permalink}`
-              : `https://dynasty-scans.com/search?q=${encodeURIComponent(props.entry.name)}`
+              ? `${SITE_ROOT}/series/${props.entry.permalink}`
+              : `${SITE_ROOT}/search?q=${encodeURIComponent(props.entry.name)}`
           }
         />
       }

@@ -16,6 +16,7 @@ import {
   decodeEntities,
   navigate,
   setBanner,
+  SITE_ROOT,
 } from "../stores";
 import { categorizeChapterTags, isSeriesKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
@@ -102,7 +103,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
   const externalUrl = (): string => {
     if (ch.url) return ch.url;
     const path = isSeriesKind(ch.kind) ? seriesTypeToPath(ch.kind) : "chapters";
-    return `https://dynasty-scans.com/${path}/${ch.permalink}`;
+    return `${SITE_ROOT}/${path}/${ch.permalink}`;
   };
 
   const isDirectSeries = isSeriesKind(ch.kind);
