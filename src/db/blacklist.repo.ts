@@ -31,7 +31,8 @@ function notifyBlacklistChanged(): void {
 }
 
 export function getBlacklistMode(): BlacklistMode {
-  return (localStorage.getItem("ds-blacklist-mode") as BlacklistMode) || "hide";
+  const raw = localStorage.getItem("ds-blacklist-mode");
+  return raw === "hide" || raw === "warn" ? raw : "hide";
 }
 
 export function setBlacklistMode(mode: BlacklistMode): void {

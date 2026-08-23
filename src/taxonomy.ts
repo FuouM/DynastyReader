@@ -27,6 +27,11 @@ export type EntityKind =
   | "pairing"
   | "tag";
 
+/** Runtime type guard for EntityKind. */
+export function isEntityKind(s: string): s is EntityKind {
+  return s in ENTITY_TAXONOMY;
+}
+
 export interface EntityMeta {
   kind: EntityKind;
   path: string;
@@ -81,14 +86,14 @@ export function seriesTypeToPath(type?: string | null): string {
 /** Checks whether an entity kind is a collection/series container (not a bare chapter). */
 export function isSeriesKind(kind?: string | null): boolean {
   if (!kind) return false;
-  const k = kind.toLowerCase() as EntityKind;
-  return ENTITY_TAXONOMY[k]?.isSeriesLike ?? false;
+  const k = kind.toLowerCase();
+  return isEntityKind(k) && (ENTITY_TAXONOMY[k]?.isSeriesLike ?? false);
 }
 
 export function isContentKind(kind?: string | null): boolean {
   if (!kind) return false;
-  const k = kind.toLowerCase() as EntityKind;
-  return ENTITY_TAXONOMY[k]?.isContent ?? false;
+  const k = kind.toLowerCase();
+  return isEntityKind(k) && (ENTITY_TAXONOMY[k]?.isContent ?? false);
 }
 
 // ── 2. Tag Classification & Categories ────────────────────────────────────────

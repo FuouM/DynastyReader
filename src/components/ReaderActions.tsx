@@ -11,6 +11,7 @@ import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
+import type { ChapterPage } from "../types/api";
 import { DsButton } from "./Button";
 import {
   StorageIcon,
@@ -28,7 +29,7 @@ export interface ReaderActionsController {
   seriesName: string | (() => string);
   chapterTitle: string | (() => string);
   currentIndex: number | (() => number);
-  pages: any[] | (() => any[]);
+  pages: ChapterPage[] | (() => ChapterPage[]);
   cachedMap?: Map<number, string>;
   getCachedPath?: (index: number) => string | undefined;
   isPageFailed: (index: number) => boolean;

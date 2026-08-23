@@ -13,9 +13,6 @@ if (typeof window !== "undefined") {
   };
   if (typeof mq.addEventListener === "function") {
     mq.addEventListener("change", update);
-  } else {
-    // Legacy MediaQueryList compatibility
-    (mq as any).addListener(update);
   }
 }
 

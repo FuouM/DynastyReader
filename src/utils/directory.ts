@@ -1,7 +1,7 @@
-import type { Directory, DirectoryGroup } from "../types/api";
+import type { DirectoryGroup } from "../types/api";
 
 /** Normalized, ordered letter → entries groups from a directory payload. */
-export function directoryGroups(d: Directory | unknown): DirectoryGroup[] {
+export function directoryGroups(d: unknown): DirectoryGroup[] {
   if (!d || typeof d !== "object") return [];
   const obj = d as { tags?: unknown };
   const rawList = obj.tags ?? (Array.isArray(d) ? d : []);

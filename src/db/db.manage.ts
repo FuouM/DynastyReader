@@ -47,8 +47,7 @@ export async function getDbFileStats(): Promise<DbFileStats> {
     const getSize = (idx: number): number => {
       const entry = items[idx];
       if (!entry || typeof entry !== "object" || !("size_bytes" in entry)) return 0;
-      const entryRec = entry as Record<string, unknown>;
-      const v = entryRec.size_bytes;
+      const v = (entry as Record<string, unknown>).size_bytes;
       return typeof v === "number" ? v : 0;
     };
     return {
@@ -73,8 +72,7 @@ export async function getDbFileStats(): Promise<DbFileStats> {
     }
     const single = await ipc.dirStat(DB_NAME).catch(() => null);
     if (single && typeof single === "object" && "size_bytes" in single) {
-      const singleRec = single as Record<string, unknown>;
-      const v = singleRec.size_bytes;
+      const v = (single as Record<string, unknown>).size_bytes;
       const s = typeof v === "number" ? v : 0;
       return { dbSizeBytes: s, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: s };
     }
@@ -83,8 +81,7 @@ export async function getDbFileStats(): Promise<DbFileStats> {
     try {
       const r = await ipc.dirStat(DB_NAME);
       if (r && typeof r === "object" && "size_bytes" in r) {
-        const rRec = r as Record<string, unknown>;
-        const v = rRec.size_bytes;
+        const v = (r as Record<string, unknown>).size_bytes;
         const s = typeof v === "number" ? v : 0;
         return { dbSizeBytes: s, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: s };
       }
