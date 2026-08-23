@@ -1,7 +1,7 @@
 import { Show } from "solid-js";
-import { isMobile, navigate, route } from "../stores";
+import { isMobile, navigate, route, sessionTab, isInMangaView } from "../stores";
 import { t } from "../i18n";
-import { Icon, StorageIcon } from "./Icon";
+import { Icon, StorageIcon, DoublePageIcon } from "./Icon";
 
 export function BottomNav() {
   return (
@@ -25,6 +25,20 @@ export function BottomNav() {
           <StorageIcon />
           <span>{t("bottomNav.library")}</span>
         </button>
+        <Show when={sessionTab() !== null}>
+          <button
+            type="button"
+            class="ds-bn-tab ds-bn-manga-tab"
+            classList={{ active: isInMangaView() }}
+            onClick={() => {
+              const tab = sessionTab();
+              if (tab) navigate(tab.route);
+            }}
+          >
+            <DoublePageIcon />
+            <span>{t("bottomNav.reading")}</span>
+          </button>
+        </Show>
       </nav>
     </Show>
   );

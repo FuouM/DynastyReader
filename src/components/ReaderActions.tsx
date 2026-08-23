@@ -6,7 +6,7 @@
 
 import { createEffect, createSignal, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
-import { navigate, setBanner } from "../stores";
+import { navigate, setBanner, closeSessionMangaTab } from "../stores";
 import { t } from "../i18n";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
@@ -17,6 +17,7 @@ import {
   CloudDownloadIcon,
   CheckIcon,
   ExternalLinkIcon,
+  CloseIcon,
   Icon,
 } from "./Icon";
 
@@ -156,6 +157,13 @@ export function ReaderActions(props: ReaderActionsProps) {
         onClick={() => void openExternal(chapterUrl())}
       >
         <ExternalLinkIcon />
+      </DsButton>
+      <DsButton
+        className=""
+        title={t("topbar.closeTabTooltip")}
+        onClick={() => closeSessionMangaTab()}
+      >
+        <CloseIcon />
       </DsButton>
     </>
   );

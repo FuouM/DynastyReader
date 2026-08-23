@@ -159,7 +159,7 @@ export function Topbar() {
                 <ArrowRightIcon />
               </button>
             </div>
-            <Show when={sessionTab() !== null && (!isMobile() || !isInMangaView())}>
+            <Show when={sessionTab() !== null}>
               <div id="ds-session-tab-wrap" style="display:inline-flex;margin-left:2px;">
                 <button
                   type="button"

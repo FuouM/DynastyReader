@@ -43,6 +43,7 @@ export const en = {
   bottomNav: {
     browse: "Browse",
     library: "Library",
+    reading: "Reading",
   },
   actionBar: {
     back: "Back",

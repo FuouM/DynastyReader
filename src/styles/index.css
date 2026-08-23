@@ -239,23 +239,16 @@ body {
 }
 
 @media (max-width: 600px) {
-  .ds-session-tab {
-    max-width: 130px;
-  }
-}
-
-@media (max-width: 480px) {
   #ds-title {
     max-width: 85px;
     font-size: 11px;
   }
   .ds-session-tab {
-    max-width: 70px;
-    padding: 2px 4px !important;
+    padding: 0 4px !important;
     gap: 3px !important;
   }
   .ds-session-tab .ds-truncate {
-    display: none;
+    display: none !important;
   }
 }
 @keyframes ds-toast-in {
