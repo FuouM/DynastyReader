@@ -75,15 +75,15 @@ export async function getCacheOverviewStats(): Promise<CacheOverviewStats> {
 }
 
 export async function getCachedSeriesGroups(): Promise<CachedSeriesGroup[]> {
-  const { aggs, chapterInfo, coverMap, page0Map } = await loadCachedChapterContext();
+  const { aggs, coverMap, page0Map, chapterMeta } = await loadCachedChapterContext();
   if (aggs.length === 0) return [];
 
   const groupMap = new Map<string, CachedSeriesGroup>();
   for (const row of aggs) {
     const cp = row.chapterPermalink;
-    const info = chapterInfo.get(cp);
-    const seriesPermalink = info?.seriesPermalink || "";
-    const seriesName = info?.seriesName || "";
+    const meta = chapterMeta.get(cp);
+    const seriesPermalink = meta?.seriesPermalink || "";
+    const seriesName = seriesPermalink ? (meta?.seriesName || "") : "";
 
     const groupKey = seriesPermalink ? `series:${seriesPermalink}` : `chapter:${cp}`;
     let g = groupMap.get(groupKey);
@@ -98,7 +98,7 @@ export async function getCachedSeriesGroups(): Promise<CachedSeriesGroup[]> {
 
       g = {
         seriesPermalink: seriesPermalink || cp,
-        seriesName: seriesName || info?.chapterTitle || cp,
+        seriesName: seriesName || meta?.title || cp,
         isStandalone: !seriesPermalink,
         coverPath,
         chapterCount: 0,
