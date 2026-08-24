@@ -40,11 +40,11 @@ import { Loading } from "../components/Loading";
 import {
   FolderIcon,
   StarIcon,
-  CloseIcon,
   ArrowLeftIcon,
   RefreshIcon,
 } from "../components/Icon";
 import { IconButton } from "../components/Button";
+import { InputField } from "../components/InputField";
 import { LibraryItemRow } from "./LibraryItemRow";
 
 export interface CollectionDetailViewProps {
@@ -142,24 +142,12 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
               <b>{decodeEntities(collection()?.name ?? "")}</b> — <b>{totalItems()}</b> {totalItems() === 1 ? t("library.nounItem") : t("library.nounItems")}
             </span>
           </div>
-          <div class="input-wrapper" style="width:220px;max-width:100%;">
-            <input
-              type="text"
-              placeholder={t("library.filterCollectionPlaceholder")}
-              style="width:100%;box-sizing:border-box;font-size:11px;height:22px;"
-              value={filter()}
-              onInput={(ev) => setFilter((ev.target as HTMLInputElement).value)}
-            />
-            <button
-              type="button"
-              class="input-clear-btn"
-              tabIndex={-1}
-              title={t("common.clear")}
-              onClick={() => setFilter("")}
-            >
-              <CloseIcon />
-            </button>
-          </div>
+          <InputField
+            placeholder={t("library.filterCollectionPlaceholder")}
+            style="width:220px;max-width:100%;"
+            value={filter()}
+            onInput={(val) => setFilter(val)}
+          />
         </div>
 
         <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow-y:auto;">

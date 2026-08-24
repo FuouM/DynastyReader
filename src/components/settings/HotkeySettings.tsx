@@ -1,7 +1,8 @@
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../../i18n";
-import { Icon, CloseIcon, AddIcon, RefreshIcon } from "../Icon";
+import { Icon, AddIcon, RefreshIcon } from "../Icon";
+import { InputField } from "../InputField";
 import { IconText, Button } from "../Button";
 import {
   HOTKEY_DEFINITIONS,
@@ -138,38 +139,18 @@ export function HotkeysSection(props: HotkeysSectionProps) {
   };
 
   return (
-    <div style="display:flex;flex-direction:column;gap:10px;">
+    <div style="display:flex;flex-direction:column;gap:0;height:100%;">
       {/* Sticky Filter & Reset Header */}
       <div
-        style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;background:var(--sys-control-bg);z-index:10;padding:2px 0 6px 0;"
+        style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--sys-control-bg);z-index:10;padding:2px 0 6px 0;flex-shrink:0;"
       >
-        <div class="input-wrapper" style="flex:1;max-width:280px;">
-          <input
-            type="text"
-            class="input-field has-clear"
-            placeholder={t("settings.hotkeys.searchPlaceholder")}
-            style="width:100%;box-sizing:border-box;font-size:11px;height:24px;"
-            value={search()}
-            onInput={(ev) => setSearch((ev.target as HTMLInputElement).value)}
-            onKeyDown={(ev) => {
-              if (ev.key === "Escape" && search()) {
-                ev.stopPropagation();
-                setSearch("");
-              }
-            }}
-          />
-          <Show when={search()}>
-            <button
-              type="button"
-              class="input-clear-btn"
-              tabIndex={-1}
-              title={t("common.clear")}
-              onClick={() => setSearch("")}
-            >
-              <CloseIcon />
-            </button>
-          </Show>
-        </div>
+        <InputField
+          wrapperStyle="flex:1;"
+          placeholder={t("settings.hotkeys.searchPlaceholder")}
+          value={search()}
+          onInput={(val) => setSearch(val)}
+          onEscape={() => { if (search()) { setSearch(""); } }}
+        />
 
         <div style="display:flex;align-items:center;gap:6px;">
           <Show
@@ -184,7 +165,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               />
             }
           >
-            <span style="font-size:11px;color:var(--sys-text-muted,#666);">{t("settings.hotkeys.resetConfirmPrompt")}</span>
+            <span class="ds-muted">{t("settings.hotkeys.resetConfirmPrompt")}</span>
             <button
               type="button"
               class="win-button primary"
@@ -250,6 +231,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
       </Show>
 
       {/* Categorized Hotkeys Table */}
+      <div style="flex:1;overflow-y:auto;min-height:0;">
       <For each={categories()}>
         {(category) => {
           const items = () =>
@@ -348,6 +330,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
           {t("settings.hotkeys.noMatches", { query: search() })}
         </div>
       </Show>
+      </div>
     </div>
   );
 }

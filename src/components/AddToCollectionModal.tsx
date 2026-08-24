@@ -17,6 +17,7 @@ import { FolderIcon,
   Icon,
 } from "./Icon";
 import { Button, IconText } from "./Button";
+import { InputField } from "./InputField";
 import {
   getCollections,
   createCollection,
@@ -257,23 +258,14 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
               </For>
             </div>
             <div style="padding:5px 6px;border-top:1px solid var(--sys-border-light,#ddd);background:var(--sys-control-bg,#f9f9f9);display:flex;gap:3px;">
-              <div class="input-wrapper" classList={{ "has-value": Boolean(newName().trim()) }} style="flex:1;">
-                <input
-                  type="text"
-                  id="ds-add-to-col-new-input"
-                  class="input-field has-clear"
-                  placeholder={t("dialogs.addToCollection.createPrompt")}
-                  style="width:100%;box-sizing:border-box;font-size:10px;height:20px;"
-                  value={newName()}
-                  onInput={(ev) => setNewName((ev.target as HTMLInputElement).value)}
-                  onKeyDown={(ev) => {
-                    if (ev.key === "Enter") void handleCreate();
-                  }}
-                />
-                <button type="button" class="input-clear-btn" tabIndex={-1} title={t("common.clear")} onClick={() => setNewName("")}>
-                  <CloseIcon />
-                </button>
-              </div>
+              <InputField
+                id="ds-add-to-col-new-input"
+                placeholder={t("dialogs.addToCollection.createPrompt")}
+                style="flex:1;"
+                value={newName()}
+                onInput={(val) => setNewName(val)}
+                onEnter={() => void handleCreate()}
+              />
               <Button
                 className="ds-btn-sm"
                 id="ds-add-to-col-create-btn"

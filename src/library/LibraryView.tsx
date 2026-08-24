@@ -30,6 +30,7 @@ import {
   createCollection,
 } from "../db";
 import { ConfirmDeleteButton, IconText, IconButton } from "../components/Button";
+import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import { SubTabs } from "../components/SubTabs";
 import {
@@ -41,7 +42,6 @@ import {
   FolderIcon,
   AddIcon,
   TrashIcon,
-  CloseIcon,
   Icon,
 } from "../components/Icon";
 import {
@@ -389,29 +389,14 @@ function CreateCollectionModal(props: {
           <label style="font-size:11px;font-weight:600;color:var(--sys-window-text,#111);">
             {t("library.createCollectionNameLabel")}
           </label>
-          <div class="input-wrapper" style="width:100%;">
-            <input
-              ref={inputEl}
-              type="text"
-              class="input-field has-clear"
-              placeholder={t("library.createCollectionNamePlaceholder")}
-              style="width:100%;box-sizing:border-box;font-size:11px;height:24px;"
-              value={name()}
-              onInput={(ev) => setName((ev.target as HTMLInputElement).value)}
-              onKeyDown={(ev) => {
-                if (ev.key === "Enter") void submit();
-              }}
-            />
-            <button
-              type="button"
-              class="input-clear-btn"
-              tabIndex={-1}
-              title={t("common.clear")}
-              onClick={() => setName("")}
-            >
-              <CloseIcon />
-            </button>
-          </div>
+          <InputField
+            ref={(el) => { inputEl = el; }}
+            placeholder={t("library.createCollectionNamePlaceholder")}
+            style="width:100%;"
+            value={name()}
+            onInput={(val) => setName(val)}
+            onEnter={() => void submit()}
+          />
         </div>
       }
       footer={

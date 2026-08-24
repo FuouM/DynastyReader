@@ -40,6 +40,7 @@ import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
 import { HydratedCover } from "../components/HydratedCover";
 import { ConfirmDeleteButton, DsSelect, IconText, IconButton, StatCard } from "../components/Button";
+import { InputField } from "../components/InputField";
 import { Loading } from "../components/Loading";
 import {
   ChartIcon,
@@ -381,13 +382,11 @@ function CacheBody(props: {
           fallback={
             <>
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
-                <input
-                  type="text"
-                  class="win-textbox"
+                <InputField
                   placeholder={t("cache.filterPlaceholder")}
                   style="flex:1;min-width:200px;"
                   value={props.filterText()}
-                  onInput={(ev) => props.setFilterText(ev.currentTarget.value)}
+                  onInput={(val) => props.setFilterText(val)}
                 />
                 <div class="ds-flex-row">
                   <span class="ds-item-meta" style="font-size:11px;white-space:nowrap;">

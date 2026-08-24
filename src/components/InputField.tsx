@@ -11,9 +11,14 @@ import { t } from "../i18n";
 import { CloseIcon } from "./Icon";
 
 export interface InputFieldProps {
+  id?: string;
+  ref?: (el: HTMLInputElement) => void;
   value?: string;
   placeholder?: string;
   class?: string;
+  style?: string;
+  wrapperClass?: string;
+  wrapperStyle?: string;
   title?: string;
   autocomplete?: string;
   inputmode?: "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
@@ -37,10 +42,13 @@ export function InputField(props: InputFieldProps) {
   });
 
   return (
-    <div class="input-wrapper" classList={{ "has-value": value().length > 0 }}>
+    <div class={`input-wrapper${props.wrapperClass ? ` ${props.wrapperClass}` : ""}`} classList={{ "has-value": value().length > 0 }} style={props.wrapperStyle}>
       <input
+        ref={props.ref}
+        id={props.id}
         type="text"
         class={`input-field has-clear${props.class ? ` ${props.class}` : ""}`}
+        style={props.style}
         placeholder={props.placeholder}
         title={props.title}
         autocomplete={props.autocomplete}

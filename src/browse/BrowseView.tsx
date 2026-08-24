@@ -20,6 +20,7 @@ import { useMediaQuery } from "../hooks/useImageRetry";
 import { Pager } from "../components/Pager";
 import { SubTabs } from "../components/SubTabs";
 import { Typeahead } from "../components/Typeahead";
+import { InputField } from "../components/InputField";
 import { IconText, IconButton } from "../components/Button";
 import {
   SearchIcon,
@@ -27,7 +28,6 @@ import {
   CheckIcon,
   WarningIcon,
   ChevronDownIcon,
-  CloseIcon,
   ClipboardIcon,
   ArrowDownIcon,
   ExternalLinkIcon,
@@ -251,29 +251,14 @@ export function BrowseView() {
             />
           </div>
           <div class="ds-row">
-            <div class="input-wrapper" style="flex:1;">
-              <input
-                type="text"
-                id="ds-url-input"
-                class="input-field has-clear"
-                placeholder={t("browse.searchAndGo.urlPlaceholder")}
-                style="width:100%;"
-                value={urlValue()}
-                onInput={(ev) => setUrlValue((ev.target as HTMLInputElement).value)}
-                onKeyDown={(ev) => {
-                  if (ev.key === "Enter") openByUrl();
-                }}
-              />
-              <button
-                type="button"
-                class="input-clear-btn"
-                tabIndex={-1}
-                title={t("common.clear")}
-                onClick={() => setUrlValue("")}
-              >
-                <CloseIcon />
-              </button>
-            </div>
+            <InputField
+              id="ds-url-input"
+              placeholder={t("browse.searchAndGo.urlPlaceholder")}
+              style="flex:1;"
+              value={urlValue()}
+              onInput={(val) => setUrlValue(val)}
+              onEnter={() => openByUrl()}
+            />
             <IconButton
               id="ds-url-paste-btn"
               icon={<ClipboardIcon />}
