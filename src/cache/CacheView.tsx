@@ -39,7 +39,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
 import { HydratedCover } from "../components/HydratedCover";
-import { ConfirmDeleteButton, DsSelect, IconText, IconButton } from "../components/Button";
+import { ConfirmDeleteButton, DsSelect, IconText, IconButton, StatCard } from "../components/Button";
 import { Loading } from "../components/Loading";
 import {
   ChartIcon,
@@ -284,22 +284,10 @@ function CacheBody(props: {
           <IconText icon={<ChartIcon />}>{t("cache.overviewTitle")}</IconText>
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{formatBytes(stats.totalSizeBytes)}</span>
-            <span class="ds-stat-lbl">{t("cache.diskFootprint")}</span>
-          </div>
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{stats.totalCachedPages}</span>
-            <span class="ds-stat-lbl">{t("cache.pagesCached")}</span>
-          </div>
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{stats.totalCachedChapters}</span>
-            <span class="ds-stat-lbl">{t("cache.chaptersCached")}</span>
-          </div>
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{groups.length}</span>
-            <span class="ds-stat-lbl">{t("cache.seriesCached")}</span>
-          </div>
+          <StatCard value={formatBytes(stats.totalSizeBytes)} label={t("cache.diskFootprint")} />
+          <StatCard value={stats.totalCachedPages} label={t("cache.pagesCached")} />
+          <StatCard value={stats.totalCachedChapters} label={t("cache.chaptersCached")} />
+          <StatCard value={groups.length} label={t("cache.seriesCached")} />
         </div>
       </div>
 
@@ -308,22 +296,10 @@ function CacheBody(props: {
           <IconText icon={<DatabaseIcon />}>{t("cache.dbStatsTitle")}</IconText>
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{formatBytes(dbStats.file.totalSizeBytes)}</span>
-            <span class="ds-stat-lbl">{t("cache.dbSizeTotal")}</span>
-          </div>
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{formatBytes(dbStats.file.dbSizeBytes)}</span>
-            <span class="ds-stat-lbl">{t("cache.dbFile")}</span>
-          </div>
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{dbStats.totalRows}</span>
-            <span class="ds-stat-lbl">{t("cache.totalRecords")}</span>
-          </div>
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{formatBytes(dbStats.file.walSizeBytes)}</span>
-            <span class="ds-stat-lbl">{t("cache.walSize")}</span>
-          </div>
+          <StatCard value={formatBytes(dbStats.file.totalSizeBytes)} label={t("cache.dbSizeTotal")} />
+          <StatCard value={formatBytes(dbStats.file.dbSizeBytes)} label={t("cache.dbFile")} />
+          <StatCard value={dbStats.totalRows} label={t("cache.totalRecords")} />
+          <StatCard value={formatBytes(dbStats.file.walSizeBytes)} label={t("cache.walSize")} />
         </div>
         <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:2px 16px;margin-top:10px;padding:8px;background:var(--sys-bg-active,#f8f9fa);border:1px solid var(--sys-border-light,#e2e2e2);border-radius:3px;font-size:11px;">
           <span>{t("cache.followedSeriesCount")} <strong>{dbStats.counts.followedSeries}</strong></span>
@@ -353,22 +329,10 @@ function CacheBody(props: {
           <IconText icon={<TrafficIcon />}>{t("cache.trafficTitle")}</IconText>
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{formatBytes(traffic().bytesDownloaded)}</span>
-            <span class="ds-stat-lbl">{t("cache.sessionDownloaded", { count: traffic().networkRequests })}</span>
-          </div>
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{formatBytes(traffic().bytesSaved)}</span>
-            <span class="ds-stat-lbl">{t("cache.sessionSaved", { count: traffic().cacheHits })}</span>
-          </div>
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{formatBytes(traffic().lifetime.bytesDownloaded)}</span>
-            <span class="ds-stat-lbl">{t("cache.lifetimeDownloaded", { count: traffic().lifetime.networkRequests })}</span>
-          </div>
-          <div class="ds-stat-card">
-            <span class="ds-stat-val">{formatBytes(traffic().lifetime.bytesSaved)}</span>
-            <span class="ds-stat-lbl">{t("cache.lifetimeSaved", { count: traffic().lifetime.cacheHits })}</span>
-          </div>
+          <StatCard value={formatBytes(traffic().bytesDownloaded)} label={t("cache.sessionDownloaded", { count: traffic().networkRequests })} />
+          <StatCard value={formatBytes(traffic().bytesSaved)} label={t("cache.sessionSaved", { count: traffic().cacheHits })} />
+          <StatCard value={formatBytes(traffic().lifetime.bytesDownloaded)} label={t("cache.lifetimeDownloaded", { count: traffic().lifetime.networkRequests })} />
+          <StatCard value={formatBytes(traffic().lifetime.bytesSaved)} label={t("cache.lifetimeSaved", { count: traffic().lifetime.cacheHits })} />
         </div>
         <div class="ds-cache-actions" style="margin-top:10px;">
           <ConfirmDeleteButton

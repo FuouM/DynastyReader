@@ -229,3 +229,17 @@ export function SegmentedSwitch(props: SegmentedSwitchProps) {
     </div>
   );
 }
+
+export interface StatCardProps {
+  value: string | number;
+  label: string;
+}
+
+export function StatCard(props: StatCardProps) {
+  return (
+    <div class="ds-stat-card">
+      <span class="ds-stat-val">{props.value}</span>
+      <span class="ds-stat-lbl">{props.label}</span>
+    </div>
+  );
+}
