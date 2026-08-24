@@ -22,6 +22,7 @@ import { ListItem } from "../components/ListItem";
 import { EmptyState } from "../components/EmptyState";
 import { BlacklistIcon } from "../components/Icon";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
+import { IconText } from "../components/Button";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import type { Directory, DirectoryGroup } from "../types/api";
 
@@ -73,14 +74,14 @@ function DirectoryRow(props: {
               class="ds-muted"
               style="font-size:10px;margin-left:6px;color:var(--ds-warn-text,#d97706);font-weight:600;"
             >
-              <BlacklistIcon filled={true} /> {t("series.blacklistedBadge")}
+              <IconText icon={<BlacklistIcon filled={true} />}>{t("series.blacklistedBadge")}</IconText>
             </span>
           </Show>
         </span>
       }
       actions={
         <ExternalLinkButton
-          className="ds-btn-icon-sm"
+          className="ds-btn-icon"
           title={props.kind === "series" ? t("browse.directory.openSeriesTooltip") : t("browse.directory.searchTagTooltip")}
           url={
             props.kind === "series"

@@ -204,7 +204,7 @@ function SearchResultRow(props: {
       }
       actions={
         <ExternalLinkButton
-          className="ds-btn-icon-sm"
+          className="ds-btn-icon"
           title={t("browse.search.openExternalTooltip", { kind: item.kind, title: decodeEntities(item.title) })}
           url={`${SITE_ROOT}/${seriesTypeToPath(item.kind)}/${item.permalink}`}
         />

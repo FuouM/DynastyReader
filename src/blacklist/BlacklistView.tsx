@@ -25,7 +25,7 @@ import {
   TrashIcon,
 } from "../components/Icon";
 import { Loading } from "../components/Loading";
-import { IconButton } from "../components/Button";
+import { Button, IconText } from "../components/Button";
 
 export function BlacklistView() {
   const [data, { refetch }] = createResource<BlacklistedSeries[]>(() =>
@@ -83,7 +83,7 @@ export function BlacklistView() {
             <Show when={data.error !== undefined && data() === undefined}>
               <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
                 <span class="ds-muted">{t("blacklist.loadError", { msg: errorMessage() })}</span>
-                <IconButton icon={<RefreshIcon />} text={t("common.retry")} onClick={() => void refetch()} />
+                <Button icon={<RefreshIcon />} text={t("common.retry")} onClick={() => void refetch()} />
               </div>
             </Show>
           </>
@@ -91,7 +91,7 @@ export function BlacklistView() {
       >
         <div class="group-box">
           <div class="group-box-title">
-            <BlacklistIcon filled={false} /> {t("blacklist.title")}
+            <IconText icon={<BlacklistIcon filled={false} />}>{t("blacklist.title")}</IconText>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);line-height:1.4;">
@@ -131,9 +131,7 @@ export function BlacklistView() {
 
         <div class="group-box">
           <div class="group-box-title" style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <ListCheckIcon /> {t("blacklist.seriesTitle", { count: data()!.length })}
-            </div>
+            <IconText icon={<ListCheckIcon />}>{t("blacklist.seriesTitle", { count: data()!.length })}</IconText>
           </div>
 
           <Show
@@ -199,11 +197,11 @@ export function BlacklistView() {
                     </div>
                     <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
                       <ExternalLinkButton
-                        className="ds-btn-icon-sm"
+                        className="ds-btn-icon"
                         title={t("blacklist.openOnDynastyTooltip")}
                         url={`${SITE_ROOT}/series/${item.series_permalink}`}
                       />
-                      <IconButton
+                      <Button
                         icon={<TrashIcon />}
                         text={t("common.remove")}
                         className="ds-btn-sm"

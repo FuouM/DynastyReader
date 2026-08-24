@@ -116,7 +116,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
           <Show when={props.onDelete}>
             <ConfirmDeleteButton
               icon={<TrashIcon />}
-              className="ds-btn-icon-sm"
+              className="ds-btn-icon"
               title={props.deleteTitle || t("library.deleteItemTooltip")}
               onConfirm={async () => {
                 await props.onDelete!();

@@ -11,7 +11,7 @@ import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
 } from "./Icon";
-import { DsButton, IconButton } from "./Button";
+import { Button } from "./Button";
 
 export interface PagerProps {
   totalPages: number;
@@ -42,15 +42,15 @@ export function Pager(props: PagerProps) {
       class="ds-row ds-pager-widget"
       style={props.cssText ?? "align-items:center;justify-content:flex-end;gap:4px;margin-top:8px;flex-wrap:wrap;"}
     >
-      <IconButton
-        className="ds-btn-icon-sm"
+      <Button
+        className="ds-btn-icon"
         title={t("dialogs.pager.firstPage")}
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(1)}
         icon={<ChevronDoubleLeftIcon />}
       />
-      <IconButton
-        className="ds-btn-icon-sm"
+      <Button
+        className="ds-btn-icon"
         title={t("dialogs.pager.prevPage")}
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(props.currentPage - 1)}
@@ -80,24 +80,24 @@ export function Pager(props: PagerProps) {
         <span class="ds-progress-text" style="font-size:11px;color:var(--sys-text-muted, #666);">
           {t("dialogs.pager.ofTotal", { total: props.totalPages })}
         </span>
-        <DsButton
+        <Button
           className="ds-btn-sm"
           title={t("dialogs.pager.jumpButton")}
           onClick={doJump}
         >
           {t("dialogs.pager.jumpButton")}
-        </DsButton>
+        </Button>
       </div>
 
-      <IconButton
-        className="ds-btn-icon-sm"
+      <Button
+        className="ds-btn-icon"
         title={t("dialogs.pager.nextPage")}
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.currentPage + 1)}
         icon={<ChevronRightIcon />}
       />
-      <IconButton
-        className="ds-btn-icon-sm"
+      <Button
+        className="ds-btn-icon"
         title={t("dialogs.pager.lastPage", { total: props.totalPages })}
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.totalPages)}

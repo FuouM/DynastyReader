@@ -57,6 +57,7 @@
   box-sizing: border-box;
   line-height: normal;
 }
+.ds-item-actions .ds-btn-icon,
 .ds-item-actions .ds-btn-icon-sm {
   width: 24px !important;
   height: 24px !important;
@@ -109,6 +110,7 @@
 
   .ds-feed-actions .win-button,
   .ds-feed-actions .ds-btn-compact,
+  .ds-feed-actions .ds-btn-icon,
   .ds-feed-actions .ds-btn-icon-sm {
     width: 24px;
     height: 24px;

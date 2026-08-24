@@ -6,18 +6,18 @@
  */
 
 import { t } from "../i18n";
-import { IconButton } from "./Button";
+import { Button } from "./Button";
 import { FolderIcon } from "./Icon";
-import type { IconButtonProps } from "./Button";
+import type { ButtonProps } from "./Button";
 
-export interface AddToCollectionButtonProps extends Omit<IconButtonProps, "onClick" | "icon"> {
+export interface AddToCollectionButtonProps extends Omit<ButtonProps, "onClick" | "icon"> {
   onOpen: (anchorEl: HTMLElement) => void;
 }
 
 export function AddToCollectionButton(props: AddToCollectionButtonProps) {
   return (
-    <IconButton
-      className={props.className ?? "ds-btn-icon-sm"}
+    <Button
+      className={props.className}
       cssText={props.cssText}
       title={props.title ?? t("browse.feed.addToFavoritesOrCustom")}
       icon={<FolderIcon />}

@@ -5,19 +5,19 @@
  */
 
 import { openExternal } from "../api";
-import { IconButton } from "./Button";
+import { Button } from "./Button";
 import { ExternalLinkIcon } from "./Icon";
-import type { IconButtonProps } from "./Button";
+import type { ButtonProps } from "./Button";
 
-export interface ExternalLinkButtonProps extends Omit<IconButtonProps, "onClick" | "icon"> {
+export interface ExternalLinkButtonProps extends Omit<ButtonProps, "onClick" | "icon"> {
   url: string;
 }
 
 export function ExternalLinkButton(props: ExternalLinkButtonProps) {
   return (
-    <IconButton
+    <Button
       id={props.id}
-      className={props.className ?? (props.text ? "ds-btn-compact" : "ds-btn-icon-sm")}
+      className={props.className ?? (props.text ? "ds-btn-compact" : "ds-btn-icon")}
       cssText={props.cssText}
       title={props.title}
       icon={<ExternalLinkIcon />}

@@ -44,7 +44,7 @@ import {
 import type { Series } from "../types/api";
 import { useDelayedSpinner } from "../browse/browse-state";
 import { Loading } from "../components/Loading";
-import { IconButton } from "../components/Button";
+import { Button } from "../components/Button";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { AddToCollectionButton } from "../components/AddToCollectionButton";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
@@ -257,7 +257,7 @@ export function SeriesView() {
       <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
         <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
           <span class="ds-muted">{t("series.loadError", { msg: dataErrorText() })}</span>
-          <IconButton
+          <Button
             icon={<RefreshIcon />}
             text={t("common.retry")}
             onClick={() => void refetch()}
@@ -347,7 +347,7 @@ interface SeriesActionsProps {
 function SeriesActions(props: SeriesActionsProps) {
   return (
     <>
-      <IconButton
+      <Button
         icon={props.followed() ? <BookmarkIcon filled={true} /> : <BookmarkIcon />}
         text={props.followed() ? t("series.following") : t("series.follow")}
         disabled={props.busyFollow()}
@@ -357,15 +357,15 @@ function SeriesActions(props: SeriesActionsProps) {
         text={t("series.addToButton")}
         onOpen={props.onOpenAddToCol}
       />
-      <IconButton
+      <Button
         icon={props.blacklisted() ? <BlacklistIcon filled={true} color="var(--ds-warn-text,#d97706)" /> : <BlacklistIcon />}
         text={props.blacklisted() ? t("series.blacklistedBadge") : t("blacklist.title").split(" ")[0]}
-        className={props.blacklisted() ? "active" : undefined}
+        classList={{ active: props.blacklisted() }}
         title={props.blacklisted() ? t("series.unblacklistTooltip") : t("series.blacklistTooltip")}
         disabled={props.busyBlacklist()}
         onClick={props.onToggleBlacklist}
       />
-      <IconButton
+      <Button
         icon={<RefreshIcon />}
         text={t("common.refresh")}
         title={t("series.reloadTooltip")}

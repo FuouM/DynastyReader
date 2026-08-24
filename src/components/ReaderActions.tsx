@@ -12,7 +12,7 @@ import { errorMessage } from "../utils/errors";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
 import type { ChapterPage } from "../types/api";
-import { IconButton } from "./Button";
+import { Button } from "./Button";
 import {
   StorageIcon,
   BookmarkIcon,
@@ -117,7 +117,7 @@ export function ReaderActions(props: ReaderActionsProps) {
   return (
     <>
       <Show when={getSeriesPermalink()}>
-        <IconButton
+        <Button
           icon={<StorageIcon />}
           text={t("reader.toolbar.seriesButton")}
           title={t("reader.toolbar.viewSeries")}
@@ -130,33 +130,33 @@ export function ReaderActions(props: ReaderActionsProps) {
           }
         />
       </Show>
-      <IconButton
-        className="ds-btn-icon-sm"
+      <Button
+        className="ds-btn-icon"
         icon={<BookmarkIcon filled={bookmarked()} />}
         title={bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
         disabled={pending()}
         onClick={() => void toggleBookmark()}
       />
-      <IconButton
+      <Button
         icon={<CloudDownloadIcon />}
         text={t("reader.toolbar.cacheChapter")}
         title={t("reader.toolbar.cacheChapterTooltip")}
         onClick={cacheChapter}
       />
-      <IconButton
-        className="ds-btn-icon-sm"
+      <Button
+        className="ds-btn-icon"
         icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
         title={t("reader.toolbar.copyLink")}
         onClick={() => void copyLink()}
       />
-      <IconButton
-        className="ds-btn-icon-sm"
+      <Button
+        className="ds-btn-icon"
         icon={<ExternalLinkIcon />}
         title={t("reader.toolbar.openInBrowser")}
         onClick={() => void openExternal(chapterUrl())}
       />
-      <IconButton
-        className="ds-btn-icon-sm"
+      <Button
+        className="ds-btn-icon"
         icon={<CloseIcon />}
         title={t("topbar.closeTabTooltip")}
         onClick={() => closeSessionMangaTab()}

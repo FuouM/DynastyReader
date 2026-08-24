@@ -16,7 +16,7 @@ import { FolderIcon,
   AddIcon,
   Icon,
 } from "./Icon";
-import { IconButton } from "./Button";
+import { Button, IconText } from "./Button";
 import {
   getCollections,
   createCollection,
@@ -202,10 +202,10 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
         >
           <div class="ds-add-to-collection-dropdown" style={positionStyle()}>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--sys-control-bg,#f0f0f0);border-bottom:1px solid var(--sys-border-light,#ddd);font-weight:600;font-size:11px;">
-              <span style="display:flex;align-items:center;gap:5px;">
-                <FolderIcon color="var(--sys-primary,#0078d4)" /> {t("dialogs.addToCollection.title")}
-              </span>
-              <IconButton className="ds-btn-icon-sm" icon={<CloseIcon />} title={t("common.close")} onClick={props.onClose} />
+              <IconText icon={<FolderIcon color="var(--sys-primary,#0078d4)" />}>
+                {t("dialogs.addToCollection.title")}
+              </IconText>
+              <Button className="ds-btn-icon" icon={<CloseIcon />} title={t("common.close")} onClick={props.onClose} />
             </div>
             <div style="padding:4px 8px;border-bottom:1px solid var(--sys-border-light,#eee);background:var(--sys-window-bg,#fafafa);">
               <div class="ds-truncate" style="font-weight:600;font-size:11px;color:var(--sys-window-text,#111);" title={props.item.title}>
@@ -274,7 +274,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                   <CloseIcon />
                 </button>
               </div>
-              <IconButton
+              <Button
                 className="ds-btn-sm"
                 id="ds-add-to-col-create-btn"
                 disabled={creating()}

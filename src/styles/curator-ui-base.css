@@ -753,27 +753,8 @@ body.ds-dark .tag-pill.tag-identity:hover {
   font-size: 11px;
   padding: 2px 8px;
 }
-/* 3-tier icon-only square button system */
-.ds-btn-icon {
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
-  min-height: 24px !important;
-  max-height: 24px !important;
-  aspect-ratio: 1 / 1;
-  padding: 0 !important;
-  display: inline-flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  font-size: 13px;
-  box-sizing: border-box;
-  flex-shrink: 0;
-}
-.win-button.ds-btn-icon > i,
-.win-button.ds-btn-icon-sm > i {
-  border: 1px solid green;
-}
+/* 2-tier icon-only square button system */
+.ds-btn-icon,
 .ds-btn-icon-sm {
   width: 24px !important;
   height: 24px !important;
@@ -786,9 +767,13 @@ body.ds-dark .tag-pill.tag-identity:hover {
   display: inline-flex !important;
   justify-content: center !important;
   align-items: center !important;
-  font-size: 11.5px;
+  font-size: 12px;
   box-sizing: border-box;
   flex-shrink: 0;
+}
+.win-button.ds-btn-icon > i,
+.win-button.ds-btn-icon-sm > i {
+  border: 1px solid green;
 }
 .ds-btn-icon-xs {
   width: 18px !important;

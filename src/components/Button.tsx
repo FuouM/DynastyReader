@@ -8,36 +8,7 @@ import { createSignal, type JSX } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { t } from "../i18n";
 import { CheckIcon, Icon } from "./Icon";
-export interface DsButtonProps {
-  id?: string;
-  className?: string;
-  cssText?: string;
-  title?: string;
-  disabled?: boolean;
-  onClick?: (ev: MouseEvent) => void;
-  children?: JSX.Element;
-}
-
-/**
- * Standard WinForms desktop-style command button (`.win-button`).
- */
-export function DsButton(props: DsButtonProps) {
-  return (
-    <button
-      type="button"
-      id={props.id}
-      class={`win-button ${props.className ?? "ds-btn-compact"}`.trim()}
-      style={props.cssText}
-      title={props.title}
-      disabled={props.disabled}
-      onClick={props.onClick}
-    >
-      {props.children}
-    </button>
-  );
-}
-
-export interface IconButtonProps {
+export interface ButtonProps {
   id?: string;
   className?: string;
   classList?: Record<string, boolean>;
@@ -45,38 +16,60 @@ export interface IconButtonProps {
   style?: string | JSX.CSSProperties;
   title?: string;
   disabled?: boolean;
-  icon: JSX.Element;
+  icon?: JSX.Element;
   text?: string | JSX.Element;
   textClass?: string;
   reverse?: boolean;
   onClick?: (ev: MouseEvent) => void;
+  children?: JSX.Element;
 }
 
+export type DsButtonProps = ButtonProps;
+export type IconButtonProps = ButtonProps;
+
 /**
- * WinForms-style command button with a leading icon and optional text label.
- * Renders the icon followed by `<span class={textClass}>{text}</span>`.
- * Omit `text` for icon-only buttons.
+ * Unified WinForms-style desktop command button (`.win-button`).
+ * Automatically defaults className:
+ * - Icon-only button (`icon` without `text` or `children`): "ds-btn-icon"
+ * - Button with text / children: "ds-btn-compact"
  */
-export function IconButton(props: IconButtonProps) {
+export function Button(props: ButtonProps) {
+  const defaultClass = props.icon && !props.text && !props.children
+    ? "ds-btn-icon"
+    : "ds-btn-compact";
+
+  const resolvedClass = () => {
+    if (!props.className) return defaultClass;
+    const hasExplicitSize = /(?:^|\s)(ds-btn-(?:compact|sm|xs|icon|icon-xs|icon-sm)|ds-segmented-btn|ds-subtab|ds-bn-tab|ds-nav-btn|ds-modal-close)(?:$|\s)/.test(props.className);
+    return hasExplicitSize ? props.className : `${defaultClass} ${props.className}`;
+  };
+
   const iconSpan = props.icon ? <span style="border:1px solid red; display:inline-flex; align-items:center">{props.icon}</span> : null;
-  const textSpan = props.text !== undefined && props.text !== "" ? (
+  const content = props.text !== undefined && props.text !== "" ? (
     <span style="border:1px solid blue" class={props.textClass ?? "ds-btn-text"}>{props.text}</span>
+  ) : props.children !== undefined ? (
+    <span style="border:1px solid blue">{props.children}</span>
   ) : null;
+
   return (
     <button
       type="button"
       id={props.id}
-      class={`win-button ${props.className ?? "ds-btn-compact"}`.trim()}
+      class={`win-button ${resolvedClass()}`.trim()}
       classList={props.classList}
       style={props.style ?? props.cssText}
       title={props.title}
       disabled={props.disabled}
       onClick={props.onClick}
     >
-      {props.reverse ? <>{textSpan}{iconSpan}</> : <>{iconSpan}{textSpan}</>}
+      {props.reverse ? <>{content}{iconSpan}</> : <>{iconSpan}{content}</>}
     </button>
   );
 }
+
+/** Backward-compatible aliases */
+export const DsButton = Button;
+export const IconButton = Button;
 
 export interface ConfirmDeleteButtonProps extends Omit<IconButtonProps, "onClick"> {
   onConfirm: () => Promise<void> | void;
@@ -123,16 +116,18 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
 
   const currentClassName = () => {
     if (confirming()) {
-      return (props.className ? `${props.className} ds-btn-danger` : "ds-btn-compact ds-btn-danger").replace("ds-btn-icon-sm", "ds-btn-compact");
+      return (props.className ? `${props.className} ds-btn-danger` : "ds-btn-compact ds-btn-danger")
+        .replace("ds-btn-icon-sm", "ds-btn-compact")
+        .replace("ds-btn-icon", "ds-btn-compact");
     }
     return props.className;
   };
 
   return (
-    <IconButton
+    <Button
       id={props.id}
       className={currentClassName()}
-      cssText={props.cssText}
+      style={props.style ?? props.cssText}
       title={confirming() ? t("common.confirm") : props.title}
       disabled={busy()}
       icon={currentIcon()}
