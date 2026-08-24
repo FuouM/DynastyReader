@@ -39,7 +39,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
 import { HydratedCover } from "../components/HydratedCover";
-import { ConfirmDeleteButton, IconText, IconButton } from "../components/Button";
+import { ConfirmDeleteButton, DsSelect, IconText, IconButton } from "../components/Button";
 import { Loading } from "../components/Loading";
 import {
   ChartIcon,
@@ -429,19 +429,18 @@ function CacheBody(props: {
                   <span class="ds-item-meta" style="font-size:11px;white-space:nowrap;">
                     {t("cache.sortBy")}
                   </span>
-                  <select
-                    class="win-textbox"
-                    style="cursor:pointer;"
+                  <DsSelect
                     value={props.sortMode()}
-                    onChange={(ev) => props.setSortMode(ev.currentTarget.value)}
-                  >
-                    <option value="size-desc">{t("cache.sorts.sizeDesc")}</option>
-                    <option value="size-asc">{t("cache.sorts.sizeAsc")}</option>
-                    <option value="date-desc">{t("cache.sorts.dateDesc")}</option>
-                    <option value="date-asc">{t("cache.sorts.dateAsc")}</option>
-                    <option value="pages-desc">{t("cache.sorts.pagesDesc")}</option>
-                    <option value="name-asc">{t("cache.sorts.nameAsc")}</option>
-                  </select>
+                    onChange={(val) => props.setSortMode(val)}
+                    options={[
+                      { value: "size-desc", label: t("cache.sorts.sizeDesc") },
+                      { value: "size-asc", label: t("cache.sorts.sizeAsc") },
+                      { value: "date-desc", label: t("cache.sorts.dateDesc") },
+                      { value: "date-asc", label: t("cache.sorts.dateAsc") },
+                      { value: "pages-desc", label: t("cache.sorts.pagesDesc") },
+                      { value: "name-asc", label: t("cache.sorts.nameAsc") },
+                    ]}
+                  />
                 </div>
               </div>
 

@@ -25,7 +25,7 @@ import {
 import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, CloudDownloadIcon, Icon } from "../Icon";
-import { IconText, IconButton } from "../Button";
+import { DsSelect, IconText, IconButton } from "../Button";
 import { SettingsRow } from "../SettingsRow";
 
 export function ReaderSettings() {
@@ -161,11 +161,20 @@ export function ReaderSettings() {
 
         {/* Default Fit Mode */}
         <SettingsRow divider label={<>{t("settings.reader.fitMode")}:</>} desc={t("settings.reader.fitModeDesc")}>
-          <select id="ds-settings-fit-select" class="input-field" style="width:130px;height:24px;font-size:11px;" value={fitModePref()} onChange={(ev) => { const val = (ev.target as HTMLSelectElement).value as FitMode; setDefaultFitMode(val); setFitModePref(val); }}>
-            <option value="width">{t("settings.reader.fitModes.width")}</option>
-            <option value="height">{t("settings.reader.fitModes.height")}</option>
-            <option value="original">{t("settings.reader.fitModes.original")}</option>
-          </select>
+          <DsSelect
+            id="ds-settings-fit-select"
+            style="width:130px;"
+            value={fitModePref()}
+            onChange={(val) => {
+              setDefaultFitMode(val as FitMode);
+              setFitModePref(val as FitMode);
+            }}
+            options={[
+              { value: "width", label: t("settings.reader.fitModes.width") },
+              { value: "height", label: t("settings.reader.fitModes.height") },
+              { value: "original", label: t("settings.reader.fitModes.original") },
+            ]}
+          />
         </SettingsRow>
 
         {/* Auto Cache Entire Chapter */}

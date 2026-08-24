@@ -3,7 +3,7 @@ import { theme, setTheme, uiScale, applyUiScale } from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
-import { IconText, IconButton } from "../Button";
+import { DsSelect, IconText, IconButton } from "../Button";
 import { SCALE_PRESETS } from "./types";
 
 export function DisplaySettings() {
@@ -48,14 +48,13 @@ export function DisplaySettings() {
               title={t("settings.display.scaleDecTooltip")}
               onClick={() => syncScale(Math.max(0.5, Math.round((scale() - 0.1) * 10) / 10))}
             />
-            <select
+            <DsSelect
               id="ds-settings-scale-select"
-              class="input-field"
-              style="width:115px;height:24px;font-size:11px;"
-              value={scale()}
-              onChange={(ev) => {
-                const val = parseFloat((ev.target as HTMLSelectElement).value);
-                if (!isNaN(val)) syncScale(val);
+              style="width:115px;"
+              value={String(scale())}
+              onChange={(val) => {
+                const num = parseFloat(val);
+                if (!isNaN(num)) syncScale(num);
               }}
             >
               <For each={SCALE_PRESETS}>
@@ -72,7 +71,7 @@ export function DisplaySettings() {
                   {t("settings.display.scaleCustomPreset", { pct: Math.round(scale() * 100) })}
                 </option>
               </Show>
-            </select>
+            </DsSelect>
             <IconButton
               className="ds-btn-icon"
               id="ds-settings-scale-inc"
@@ -144,12 +143,11 @@ export function DisplaySettings() {
               {t("settings.display.language")}:
             </div>
           </div>
-          <select
+          <DsSelect
             id="ds-settings-language-select"
-            class="input-field"
-            style="width:115px;height:24px;font-size:11px;flex-shrink:0;"
+            style="width:115px;flex-shrink:0;"
             value={locale()}
-            onChange={(ev) => setLocale((ev.target as HTMLSelectElement).value as Locale)}
+            onChange={(val) => setLocale(val as Locale)}
           >
             <For each={SUPPORTED_LOCALES}>
               {(loc) => (
@@ -158,7 +156,7 @@ export function DisplaySettings() {
                 </option>
               )}
             </For>
-          </select>
+          </DsSelect>
         </div>
       </div>
     </div>

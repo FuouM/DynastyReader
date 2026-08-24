@@ -46,7 +46,7 @@ import { WarningChip } from "../components/WarningChip";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { BlacklistNotice } from "../components/BlacklistNotice";
 import { EmptyState } from "../components/EmptyState";
-import { IconText, IconButton } from "../components/Button";
+import { DsSelect, IconText, IconButton } from "../components/Button";
 import { FeedItemRow, type FeedItemData } from "../components/FeedItemRow";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
@@ -536,21 +536,21 @@ export function BrowseSearch(props: BrowseSearchProps) {
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
                 <IconText icon={<Icon name="sort-down" />}>{t("browse.search.sortOrder")}</IconText>
               </div>
-              <select
-                class="input-field"
+              <DsSelect
                 id="ds-search-sort"
-                style="font-size:11px;padding:3px 6px;"
+                style="padding:3px 6px;"
                 value={sort()}
-                onChange={(ev) => {
-                  setSort((ev.target as HTMLSelectElement).value as SearchSort);
+                onChange={(val) => {
+                  setSort(val as SearchSort);
                   pane.goToPage(1);
                 }}
-              >
-                <option value="">{t("browse.search.sorts.bestMatch")}</option>
-                <option value="name">{t("browse.search.sorts.alphabetical")}</option>
-                <option value="created_at">{t("browse.search.sorts.dateAdded")}</option>
-                <option value="released_on">{t("browse.search.sorts.releaseDate")}</option>
-              </select>
+                options={[
+                  { value: "", label: t("browse.search.sorts.bestMatch") },
+                  { value: "name", label: t("browse.search.sorts.alphabetical") },
+                  { value: "created_at", label: t("browse.search.sorts.dateAdded") },
+                  { value: "released_on", label: t("browse.search.sorts.releaseDate") },
+                ]}
+              />
             </div>
           </div>
         </div>

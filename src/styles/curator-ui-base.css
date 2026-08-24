@@ -874,6 +874,11 @@ body.ds-dark .tag-pill.tag-identity:hover {
 .win-textbox:focus {
   border-color: var(--sys-border-focus);
 }
+.ds-select {
+  height: 24px;
+  font-size: 11px;
+  cursor: pointer;
+}
 .ds-hidden {
   display: none !important;
 }

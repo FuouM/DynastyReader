@@ -24,9 +24,6 @@ export interface ButtonProps {
   children?: JSX.Element;
 }
 
-export type DsButtonProps = ButtonProps;
-export type IconButtonProps = ButtonProps;
-
 /**
  * Unified WinForms-style desktop command button (`.win-button`).
  * Automatically defaults className:
@@ -71,7 +68,7 @@ export function Button(props: ButtonProps) {
 export const DsButton = Button;
 export const IconButton = Button;
 
-export interface ConfirmDeleteButtonProps extends Omit<IconButtonProps, "onClick"> {
+export interface ConfirmDeleteButtonProps extends Omit<ButtonProps, "onClick"> {
   onConfirm: () => Promise<void> | void;
 }
 
@@ -147,6 +144,39 @@ export interface IconTextProps {
   children: JSX.Element;
   class?: string;
   style?: string | JSX.CSSProperties;
+}
+
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+export interface DsSelectProps {
+  id?: string;
+  className?: string;
+  style?: string;
+  value: string;
+  disabled?: boolean;
+  options?: SelectOption[];
+  onChange?: (value: string) => void;
+  children?: JSX.Element;
+}
+
+export function DsSelect(props: DsSelectProps) {
+  return (
+    <select
+      id={props.id}
+      class={`input-field ds-select ${props.className ?? ""}`.trim()}
+      style={props.style}
+      value={props.value}
+      disabled={props.disabled}
+      onChange={(ev) => props.onChange?.(ev.currentTarget.value)}
+    >
+      {props.options
+        ? props.options.map((o) => <option value={o.value}>{o.label}</option>)
+        : props.children}
+    </select>
+  );
 }
 
 /**

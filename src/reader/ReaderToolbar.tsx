@@ -12,7 +12,7 @@ import type { FitMode } from "../types/reader";
 import { theme, isMobile } from "../stores";
 import { t } from "../i18n";
 import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
-import { DsButton, IconButton } from "../components/Button";
+import { DsButton, DsSelect, IconButton } from "../components/Button";
 import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
@@ -193,15 +193,16 @@ export function ReaderControlsRow(props: NavRowProps) {
           onClick={() => s.toggleCoverOffset()}
         />
       </Show>
-      <select
-        class="win-input ds-ctrl-fit-select"
+      <DsSelect
+        className="ds-ctrl-fit-select"
         value={s.fitMode()}
-        onChange={(ev) => s.setFitMode(ev.currentTarget.value as FitMode)}
-      >
-        <option value="width">{t("reader.toolbar.fitModes.width")}</option>
-        <option value="height">{t("reader.toolbar.fitModes.height")}</option>
-        <option value="original">{t("reader.toolbar.fitModes.original")}</option>
-      </select>
+        onChange={(val) => s.setFitMode(val as FitMode)}
+        options={[
+          { value: "width", label: t("reader.toolbar.fitModes.width") },
+          { value: "height", label: t("reader.toolbar.fitModes.height") },
+          { value: "original", label: t("reader.toolbar.fitModes.original") },
+        ]}
+      />
       <IconButton
         className="ds-ctrl-btn ds-btn-icon"
         icon={theme() === "dark" ? <MoonIcon /> : <SunIcon />}
