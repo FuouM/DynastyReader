@@ -29,7 +29,7 @@ import {
   clearHistory,
   createCollection,
 } from "../db";
-import { ConfirmDeleteButton, IconButton } from "../components/Button";
+import { ConfirmDeleteButton, IconText, IconButton } from "../components/Button";
 import { Modal } from "../components/Modal";
 import { SubTabs } from "../components/SubTabs";
 import {
@@ -177,7 +177,7 @@ function LibraryGrid() {
             <div class="group-box ds-library-panel">
               <div class="group-box-title">
                 <span>
-                  <Icon name="bookmark-heart" /> {t("library.followed")}
+                  <IconText icon={<Icon name="bookmark-heart" />}>{t("library.followed")}</IconText>
                 </span>
               </div>
               <div class="ds-library-panel-body">
@@ -193,7 +193,7 @@ function LibraryGrid() {
                 style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
               >
                 <span>
-                  <FolderIcon /> {t("library.collections")}
+                  <IconText icon={<FolderIcon />}>{t("library.collections")}</IconText>
                 </span>
                 <IconButton
                   icon={<AddIcon />}
@@ -216,7 +216,7 @@ function LibraryGrid() {
             <div class="group-box ds-library-panel">
               <div class="group-box-title">
                 <span>
-                  <BookmarkIcon /> {t("library.bookmarks")}
+                  <IconText icon={<BookmarkIcon />}>{t("library.bookmarks")}</IconText>
                 </span>
               </div>
               <div class="ds-library-panel-body">
@@ -232,7 +232,7 @@ function LibraryGrid() {
                 style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
               >
                 <span>
-                  <Icon name="clock-history" /> {t("library.history")}
+                  <IconText icon={<Icon name="clock-history" />}>{t("library.history")}</IconText>
                 </span>
                 <ConfirmDeleteButton
                   icon={<TrashIcon />}

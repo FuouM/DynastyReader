@@ -12,7 +12,7 @@
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Modal } from "./Modal";
 import { Icon } from "./Icon";
-import { IconButton } from "./Button";
+import { IconText, IconButton } from "./Button";
 import { t } from "../i18n";
 import {
   SETTINGS_SECTIONS,
@@ -92,7 +92,7 @@ export function SettingsModal(props: SettingsModalProps) {
       backdropId="ds-settings-modal-backdrop"
       title={
         <>
-          <Icon name="gear-fill" /> {t("settings.title")}
+          <IconText icon={<Icon name="gear-fill" />}>{t("settings.title")}</IconText>
         </>
       }
       width={680}
@@ -128,7 +128,7 @@ export function SettingsModal(props: SettingsModalProps) {
               {/* Hotkeys Section trigger banner */}
               <div class="group-box" id="ds-settings-sec-hotkeys">
                 <div class="group-box-title">
-                  <Icon name="keyboard" /> {t("settings.sections.hotkeys")}
+                  <IconText icon={<Icon name="keyboard" />}>{t("settings.sections.hotkeys")}</IconText>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0;">
                   <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">

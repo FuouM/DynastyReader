@@ -3,7 +3,7 @@ import { theme, setTheme, uiScale, applyUiScale } from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
-import { IconButton } from "../Button";
+import { IconText, IconButton } from "../Button";
 import { SCALE_PRESETS } from "./types";
 
 export function DisplaySettings() {
@@ -29,7 +29,7 @@ export function DisplaySettings() {
   return (
     <div class="group-box" id="ds-settings-sec-display">
       <div class="group-box-title">
-        <Icon name="aspect-ratio" /> {t("settings.display.title")}
+        <IconText icon={<Icon name="aspect-ratio" />}>{t("settings.display.title")}</IconText>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         {/* Scale Factor */}

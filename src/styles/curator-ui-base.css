@@ -433,6 +433,15 @@ body.ds-dark .input-clear-btn:active {
   align-items: center;
   gap: 6px;
 }
+
+/* ── Icon + Text inline pattern ─────────────────────────────────────── */
+.ds-icon-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid green;
+}
+
 .group-box-collapse-btn {
   background: none;
   border: 1px solid transparent;

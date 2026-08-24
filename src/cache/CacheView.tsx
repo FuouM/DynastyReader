@@ -39,7 +39,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
 import { HydratedCover } from "../components/HydratedCover";
-import { ConfirmDeleteButton, IconButton } from "../components/Button";
+import { ConfirmDeleteButton, IconText, IconButton } from "../components/Button";
 import { Loading } from "../components/Loading";
 import {
   ChartIcon,
@@ -281,7 +281,7 @@ function CacheBody(props: {
     <>
       <div class="group-box">
         <div class="group-box-title">
-          <ChartIcon /> {t("cache.overviewTitle")}
+          <IconText icon={<ChartIcon />}>{t("cache.overviewTitle")}</IconText>
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
           <div class="ds-stat-card">
@@ -305,7 +305,7 @@ function CacheBody(props: {
 
       <div class="group-box">
         <div class="group-box-title">
-          <DatabaseIcon /> {t("cache.dbStatsTitle")}
+          <IconText icon={<DatabaseIcon />}>{t("cache.dbStatsTitle")}</IconText>
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
           <div class="ds-stat-card">
@@ -350,7 +350,7 @@ function CacheBody(props: {
       </div>
       <div class="group-box">
         <div class="group-box-title">
-          <TrafficIcon /> {t("cache.trafficTitle")}
+          <IconText icon={<TrafficIcon />}>{t("cache.trafficTitle")}</IconText>
         </div>
         <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
           <div class="ds-stat-card">
@@ -384,7 +384,7 @@ function CacheBody(props: {
       </div>
       <div class="group-box">
         <div class="group-box-title">
-          <ToolIcon /> {t("cache.maintenanceTitle")}
+          <IconText icon={<ToolIcon />}>{t("cache.maintenanceTitle")}</IconText>
         </div>
         <div class="ds-cache-actions">
           <ConfirmDeleteButton
@@ -409,7 +409,7 @@ function CacheBody(props: {
       </div>
       <div class="group-box" style="display:flex;flex-direction:column;">
         <div class="group-box-title">
-          <StorageIcon /> {t("cache.cachedWorksTitle", { count: groups.length })}
+          <IconText icon={<StorageIcon />}>{t("cache.cachedWorksTitle", { count: groups.length })}</IconText>
         </div>
 
         <Show

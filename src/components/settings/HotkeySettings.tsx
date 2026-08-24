@@ -2,7 +2,7 @@ import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../../i18n";
 import { Icon, CloseIcon, AddIcon, RefreshIcon } from "../Icon";
-import { IconButton } from "../Button";
+import { IconText, IconButton } from "../Button";
 import {
   HOTKEY_DEFINITIONS,
   HOTKEY_DEFINITIONS_MAP,
@@ -218,7 +218,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               style="display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:var(--ds-status-stale-bg,#fffbeb);border:1px solid var(--ds-status-stale-border,#fde68a);border-radius:3px;font-size:11px;color:var(--ds-status-stale-text,#92400e);"
             >
               <div style="display:flex;align-items:center;gap:6px;font-weight:600;">
-                <Icon name="exclamation-triangle" /> {t("settings.hotkeys.conflictDetected")}
+                <IconText icon={<Icon name="exclamation-triangle" />}>{t("settings.hotkeys.conflictDetected")}</IconText>
               </div>
               <div>
                 {t("settings.hotkeys.conflictMessage", {

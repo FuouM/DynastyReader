@@ -15,14 +15,14 @@ import {
   updateStatusText,
 } from "../UpdateDialog";
 import { ExternalLinkButton } from "../ExternalLinkButton";
-import { IconButton } from "../Button";
+import { IconText, IconButton } from "../Button";
 import { RefreshIcon, CloudDownloadIcon, Icon } from "../Icon";
 
 export function AboutSettings() {
   return (
     <div class="group-box" id="ds-settings-sec-about">
       <div class="group-box-title">
-        <Icon name="info-circle" /> {t("settings.about.title")}
+        <IconText icon={<Icon name="info-circle" />}>{t("settings.about.title")}</IconText>
       </div>
       <div class="ds-settings-about-header">
         <img

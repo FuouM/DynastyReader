@@ -52,7 +52,7 @@ import {
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
-import { IconButton } from "../components/Button";
+import { IconText, IconButton } from "../components/Button";
 import {
   RefreshIcon,
   CheckIcon,
@@ -283,7 +283,7 @@ function FeedStatusFooter(props: {
           class="ds-status-item ds-status-db"
           title={t("browse.feed.statusDbTitle", { date: formatDateTime(props.state.cachedAt) })}
         >
-          <DatabaseIcon /> <span>{formatDateTime(props.state.cachedAt)}</span>
+          <IconText icon={<DatabaseIcon />}>{formatDateTime(props.state.cachedAt)}</IconText>
         </span>
         <Show when={props.state.status}>
           <span
@@ -311,7 +311,7 @@ function FeedStatusFooter(props: {
             lifetimeSaved: formatBytes(traffic().lifetime.bytesSaved),
           })}
         >
-          <TrafficIcon /> <b class="ds-traffic-bytes">{formatBytes(traffic().bytesDownloaded, "", 1)}</b>
+          <IconText icon={<TrafficIcon />}>{formatBytes(traffic().bytesDownloaded, "", 1)}</IconText>
         </span>
       </div>
       <div class="ds-feed-status-right">

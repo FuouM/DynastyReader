@@ -20,7 +20,7 @@ import { useMediaQuery } from "../hooks/useImageRetry";
 import { Pager } from "../components/Pager";
 import { SubTabs } from "../components/SubTabs";
 import { Typeahead } from "../components/Typeahead";
-import { IconButton } from "../components/Button";
+import { IconText, IconButton } from "../components/Button";
 import {
   SearchIcon,
   RefreshIcon,
@@ -216,7 +216,7 @@ export function BrowseView() {
         classList={{ collapsed: searchGoCollapsed() }}
       >
         <div class="group-box-title" onClick={toggleSearchGo}>
-          <SearchIcon /> {t("browse.searchAndGo.title")}
+          <IconText icon={<SearchIcon />}>{t("browse.searchAndGo.title")}</IconText>
           <button
             type="button"
             class="group-box-collapse-btn"

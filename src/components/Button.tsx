@@ -142,3 +142,27 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
     />
   );
 }
+
+// ── Icon + Text inline pattern ──────────────────────────────────────────
+export interface IconTextProps {
+  icon: JSX.Element;
+  children: JSX.Element;
+  class?: string;
+  style?: string | JSX.CSSProperties;
+}
+
+/**
+ * Unified [Icon][Text] inline pattern. Replaces scattered `<Icon /> {text}`
+ * throughout group-box-titles, section headers, and inline labels.
+ */
+export function IconText(props: IconTextProps) {
+  return (
+    <span
+      class={`ds-icon-text${props.class ? ` ${props.class}` : ""}`}
+      style={props.style}
+    >
+      <span style="border:1px solid red;display:inline-flex;align-items:center;">{props.icon}</span>
+      <span style="border:1px solid blue;">{props.children}</span>
+    </span>
+  );
+}

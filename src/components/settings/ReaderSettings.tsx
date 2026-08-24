@@ -25,7 +25,7 @@ import {
 import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, CloudDownloadIcon, Icon } from "../Icon";
-import { IconButton } from "../Button";
+import { IconText, IconButton } from "../Button";
 import { SettingsRow } from "../SettingsRow";
 
 export function ReaderSettings() {
@@ -43,7 +43,7 @@ export function ReaderSettings() {
   return (
     <div class="group-box" id="ds-settings-sec-reading">
       <div class="group-box-title">
-        <DoublePageIcon /> {t("settings.reader.title")}
+        <IconText icon={<DoublePageIcon />}>{t("settings.reader.title")}</IconText>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         {/* Reading Direction */}
@@ -184,15 +184,23 @@ export function ReaderSettings() {
         {/* Page Prefetch Buffer */}
         <SettingsRow divider label={<>{t("settings.reader.prefetchBuffer")}:</>} desc={t("settings.reader.prefetchBufferDesc")}>
           <div style="display:flex;align-items:center;gap:4px;">
-            <button type="button" class="win-button ds-btn-icon-sm" id="ds-settings-prefetch-dec" onClick={() => { const next = Math.max(0, prefetchBuffer() - 1); setPrefetchBuffer(next); setPrefetchBufferLocal(next); }}>
-              −
-            </button>
+            <IconButton
+              className="ds-btn-icon"
+              id="ds-settings-prefetch-dec"
+              icon={<Icon name="dash-lg" />}
+              title="−"
+              onClick={() => { const next = Math.max(0, prefetchBuffer() - 1); setPrefetchBuffer(next); setPrefetchBufferLocal(next); }}
+            />
             <span id="ds-settings-prefetch-val" style="font-size:11px;font-weight:600;min-width:54px;text-align:center;">
               {prefetchBuffer() === 0 ? t("settings.reader.prefetchBufferOff") : prefetchBuffer() === 1 ? t("settings.reader.prefetchBufferPage", { count: prefetchBuffer() }) : t("settings.reader.prefetchBufferPages", { count: prefetchBuffer() })}
             </span>
-            <button type="button" class="win-button ds-btn-icon-sm" id="ds-settings-prefetch-inc" onClick={() => { const next = Math.min(10, prefetchBuffer() + 1); setPrefetchBuffer(next); setPrefetchBufferLocal(next); }}>
-              +
-            </button>
+            <IconButton
+              className="ds-btn-icon"
+              id="ds-settings-prefetch-inc"
+              icon={<Icon name="plus-lg" />}
+              title="+"
+              onClick={() => { const next = Math.min(10, prefetchBuffer() + 1); setPrefetchBuffer(next); setPrefetchBufferLocal(next); }}
+            />
           </div>
         </SettingsRow>
 

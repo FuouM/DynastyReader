@@ -20,6 +20,7 @@ import { Portal } from "solid-js/web";
 import { t } from "../i18n";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { CloseIcon } from "./Icon";
+import { IconButton } from "./Button";
 export interface ModalProps {
   /** Controls whether the modal is rendered. */
   open: boolean;
@@ -111,9 +112,12 @@ export function Modal(props: ModalProps) {
             <Show when={props.title !== undefined}>
               <div class="ds-modal-header">
                 <span class="ds-modal-title" id="ds-modal-title">{props.title}</span>
-                <button type="button" class="win-button ds-modal-close" title={`${t("common.close")} (Esc)`} onClick={close}>
-                  <CloseIcon />
-                </button>
+                <IconButton
+                  className="ds-modal-close"
+                  title={`${t("common.close")} (Esc)`}
+                  onClick={close}
+                  icon={<CloseIcon />}
+                />
               </div>
             </Show>
             <Show when={props.body !== undefined || props.children !== undefined}>

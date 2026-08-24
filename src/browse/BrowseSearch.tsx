@@ -46,7 +46,7 @@ import { WarningChip } from "../components/WarningChip";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { BlacklistNotice } from "../components/BlacklistNotice";
 import { EmptyState } from "../components/EmptyState";
-import { IconButton } from "../components/Button";
+import { IconText, IconButton } from "../components/Button";
 import { FeedItemRow, type FeedItemData } from "../components/FeedItemRow";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
@@ -403,7 +403,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
     <div ref={(el) => { hostEl = el; }}>
       <div class="group-box" style="margin-bottom:8px;padding:8px;">
         <div class="group-box-title">
-          <SearchIcon /> {t("browse.search.panelTitle")}
+          <IconText icon={<SearchIcon />}>{t("browse.search.panelTitle")}</IconText>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <div class="ds-row" style="gap:6px;">
@@ -472,7 +472,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
           >
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-                <Icon name="plus-circle" /> {t("browse.search.withTags")}
+                <IconText icon={<Icon name="plus-circle" />}>{t("browse.search.withTags")}</IconText>
               </div>
               <div style="position:relative;">
                 <Typeahead
@@ -503,7 +503,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-                <Icon name="dash-circle" /> {t("browse.search.withoutTags")}
+                <IconText icon={<Icon name="dash-circle" />}>{t("browse.search.withoutTags")}</IconText>
               </div>
               <div style="position:relative;">
                 <Typeahead
@@ -534,7 +534,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
-                <Icon name="sort-down" /> {t("browse.search.sortOrder")}
+                <IconText icon={<Icon name="sort-down" />}>{t("browse.search.sortOrder")}</IconText>
               </div>
               <select
                 class="input-field"
@@ -567,7 +567,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
             style="justify-content:space-between;align-items:center;padding:4px 2px;border-bottom:1px solid var(--sys-border-light,#ddd);margin-bottom:6px;"
           >
             <div style="font-size:12px;font-weight:600;">
-              <Icon name="list-stars" /> {t("browse.search.resultsTitle")}
+              <IconText icon={<Icon name="list-stars" />}>{t("browse.search.resultsTitle")}</IconText>
               {model()!.pageData.query ? ` ${t("browse.search.resultsFor", { query: decodeEntities(model()!.pageData.query) })}` : ""}{" "}
               <span class="ds-muted" style="font-weight:normal;font-size:11px;">
                 {t("browse.search.resultsSummary", {
@@ -582,7 +582,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
           <Show when={model()!.pageData.items.length === 0}>
             <EmptyState cssText="padding:24px;text-align:center;">
               <div style="font-size:14px;margin-bottom:4px;">
-                <SearchIcon /> {t("browse.search.noResults")}
+                <IconText icon={<SearchIcon />}>{t("browse.search.noResults")}</IconText>
               </div>
               <div style="font-size:11px;">
                 {t("browse.search.noResultsHint")}

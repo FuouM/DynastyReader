@@ -11,7 +11,7 @@ import { suggest } from "../../api";
 import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { BlacklistIcon, AddIcon, CloseIcon } from "../Icon";
-import { IconButton } from "../Button";
+import { IconText, IconButton } from "../Button";
 export function BlacklistSettings() {
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
@@ -46,7 +46,7 @@ export function BlacklistSettings() {
   return (
     <div class="group-box" id="ds-settings-sec-blacklist">
       <div class="group-box-title">
-        <BlacklistIcon /> {t("blacklist.settingsTitle")}
+        <IconText icon={<BlacklistIcon />}>{t("blacklist.settingsTitle")}</IconText>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
