@@ -88,10 +88,10 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
       fallback={
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
           <div
-            class="ds-row"
-            style="justify-content:space-between;align-items:center;padding:4px 2px;border-bottom:1px solid var(--sys-border-light, #ddd);"
+            class="ds-row-between"
+            style="padding:4px 2px;border-bottom:1px solid var(--sys-border-light, #ddd);"
           >
-            <div style="font-size:12px;font-weight:600;">{t("series.chaptersCount", { count: props.chapters.length })}</div>
+            <div class="ds-label">{t("series.chaptersCount", { count: props.chapters.length })}</div>
             <IconButton
               className="ds-btn-compact"
               title={

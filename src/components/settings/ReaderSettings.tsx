@@ -45,7 +45,7 @@ export function ReaderSettings() {
       <div class="group-box-title">
         <IconText icon={<DoublePageIcon />}>{t("settings.reader.title")}</IconText>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="ds-col">
         {/* Reading Direction */}
         <SettingsRow label={<>{t("settings.reader.readingDirection")}:</>} desc={t("settings.reader.readingDirectionDesc")}>
           <SegmentedSwitch

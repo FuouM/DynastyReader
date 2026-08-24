@@ -405,7 +405,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
         <div class="group-box-title">
           <IconText icon={<SearchIcon />}>{t("browse.search.panelTitle")}</IconText>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="ds-col">
           <div class="ds-row" style="gap:6px;">
             <div class="ds-search-wrap" style="flex:1;position:relative;">
               <Typeahead
@@ -437,11 +437,11 @@ export function BrowseSearch(props: BrowseSearchProps) {
             />
           </div>
 
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
+          <div class="ds-col-4">
+            <div class="ds-label-sm">
               {t("browse.search.categoryFilter")}
             </div>
-            <div id="ds-search-classes-row" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+            <div id="ds-search-classes-row" class="ds-row-wrap">
               <IconButton
                 className={`ds-btn-xs${classes().size === 0 ? " active" : ""}`}
                 onClick={() => {
@@ -470,8 +470,8 @@ export function BrowseSearch(props: BrowseSearchProps) {
           <div
             style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:8px;align-items:start;"
           >
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
+            <div class="ds-col-4">
+              <div class="ds-label-sm">
                 <IconText icon={<Icon name="plus-circle" />}>{t("browse.search.withTags")}</IconText>
               </div>
               <div style="position:relative;">
@@ -486,12 +486,11 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   debounceMs={TAG_TYPEAHEAD_DEBOUNCE_MS}
                 />
               </div>
-              <div id="ds-search-with-chips" style="display:flex;flex-wrap:wrap;gap:3px;min-height:18px;">
+              <div id="ds-search-with-chips" class="ds-chip-container">
                 <For each={withTags()}>
                   {(t) => (
                     <span
-                      class="ds-row"
-                      style="background:var(--sys-bg-active,#e8f0fe);color:var(--sys-primary,#0078d4);border:1px solid var(--sys-primary,#0078d4);border-radius:3px;padding:1px 5px;font-size:10px;align-items:center;gap:4px;"
+                      class="ds-row ds-chip ds-chip-primary"
                     >
                       <span>+ {decodeEntities(t)}</span>
                       <Icon name="x" style={{ cursor: "pointer", "font-size": "12px" }} onClick={() => removeWithTag(t)} />
@@ -501,8 +500,8 @@ export function BrowseSearch(props: BrowseSearchProps) {
               </div>
             </div>
 
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
+            <div class="ds-col-4">
+              <div class="ds-label-sm">
                 <IconText icon={<Icon name="dash-circle" />}>{t("browse.search.withoutTags")}</IconText>
               </div>
               <div style="position:relative;">
@@ -517,12 +516,11 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   debounceMs={TAG_TYPEAHEAD_DEBOUNCE_MS}
                 />
               </div>
-              <div id="ds-search-without-chips" style="display:flex;flex-wrap:wrap;gap:3px;min-height:18px;">
+              <div id="ds-search-without-chips" class="ds-chip-container">
                 <For each={withoutTags()}>
                   {(t) => (
                     <span
-                      class="ds-row"
-                      style="background:var(--ds-danger-bg);color:var(--ds-danger-text);border:1px solid var(--ds-danger-border);border-radius:3px;padding:1px 5px;font-size:10px;align-items:center;gap:4px;"
+                      class="ds-row ds-chip ds-chip-danger"
                     >
                       <span>- {decodeEntities(t)}</span>
                       <Icon name="x" style={{ cursor: "pointer", "font-size": "12px" }} onClick={() => removeWithoutTag(t)} />
@@ -532,8 +530,8 @@ export function BrowseSearch(props: BrowseSearchProps) {
               </div>
             </div>
 
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <div style="font-size:11px;font-weight:600;color:var(--sys-text-secondary,#555);">
+            <div class="ds-col-4">
+              <div class="ds-label-sm">
                 <IconText icon={<Icon name="sort-down" />}>{t("browse.search.sortOrder")}</IconText>
               </div>
               <DsSelect

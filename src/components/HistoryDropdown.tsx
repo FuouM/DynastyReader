@@ -84,7 +84,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
       <Portal mount={document.body}>
         <div
           id="ds-history-dropdown-overlay"
-          style="position:fixed;inset:0;background:transparent;z-index:10000;pointer-events:auto;"
+          class="ds-overlay"
           onClick={(ev) => {
             if (ev.target === ev.currentTarget) props.onClose();
           }}

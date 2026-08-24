@@ -162,7 +162,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
             </div>
           </Show>
           <Show when={filteredItems().length > 0}>
-            <div class="ds-feed-list" style="display:flex;flex-direction:column;gap:4px;">
+            <div class="ds-feed-list ds-col-4">
               <For each={filteredItems()}>
                 {(it) => (
                   <CollectionItemCard

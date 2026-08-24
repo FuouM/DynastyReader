@@ -34,7 +34,8 @@ export function AboutSettings() {
         />
         <div class="ds-fill">
           <div
-            style="font-size:12px;font-weight:600;color:var(--sys-window-text,#222);display:flex;align-items:center;gap:6px;"
+            class="ds-label"
+            style="display:flex;align-items:center;gap:6px;"
           >
             DynastyReader{" "}
             <span
@@ -95,7 +96,7 @@ export function AboutSettings() {
           <div
             style="display:flex;flex-direction:column;gap:8px;background:var(--sys-bg-active,#f8f9fa);border:1px solid var(--sys-border-medium,#ccc);border-radius:3px;padding:8px 10px;margin-top:8px;"
           >
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div class="ds-row-between">
               <div>
                 <div style="font-size:12px;font-weight:bold;color:var(--sys-window-text,#222);">
                   DynastyReader v{updateInfo()!.latest_version}

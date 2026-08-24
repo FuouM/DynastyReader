@@ -231,7 +231,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
             <Show when={items().length > 0}>
               <div style="margin-top:4px;">
                 <div
-                  style="font-size:11px;font-weight:600;color:var(--sys-text-muted,#666);text-transform:uppercase;letter-spacing:0.5px;padding-bottom:4px;border-bottom:1px solid var(--sys-border-medium,#ccc);"
+                  class="ds-section-title"
                 >
                   {category}
                 </div>

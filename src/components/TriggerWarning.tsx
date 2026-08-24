@@ -52,8 +52,8 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
         </div>
       }
     >
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="font-size:12px;font-weight:600;color:var(--sys-window-text,#111);word-break:break-word;">
+      <div class="ds-col">
+        <div class="ds-label" style="word-break:break-word;">
           {props.title}
         </div>
         <div style="font-size:11px;color:var(--sys-text-muted,#555);line-height:1.4;">

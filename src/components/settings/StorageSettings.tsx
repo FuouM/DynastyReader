@@ -14,7 +14,7 @@ export function StorageSettings(props: StorageSettingsProps) {
         <IconText icon={<StorageIcon />}>{t("settings.storage.title")}</IconText>
       </div>
       <div class="ds-settings-storage-grid">
-        <span style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
+        <span class="ds-label">
           {t("settings.storage.manageDisk")}
         </span>
           <IconButton
@@ -28,7 +28,7 @@ export function StorageSettings(props: StorageSettingsProps) {
             }}
           />
 
-        <span style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
+        <span class="ds-label">
           {t("settings.storage.seriesBlacklist")}
         </span>
           <IconButton
@@ -43,7 +43,7 @@ export function StorageSettings(props: StorageSettingsProps) {
             }}
           />
 
-        <span style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
+        <span class="ds-label">
           {t("settings.storage.troubleshooting")}
         </span>
           <IconButton

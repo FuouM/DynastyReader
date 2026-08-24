@@ -25,12 +25,12 @@ export function DisplaySettings() {
       <div class="group-box-title">
         <IconText icon={<Icon name="aspect-ratio" />}>{t("settings.display.title")}</IconText>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="ds-col">
         {/* Scale Factor */}
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div class="ds-row-between">
           <label
             for="ds-settings-scale-select"
-            style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;"
+            class="ds-label"
           >
             {t("settings.display.uiScale")}:
           </label>
@@ -86,9 +86,9 @@ export function DisplaySettings() {
         </div>
 
         {/* Theme Switcher */}
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div class="ds-row-between">
           <div style="flex:1;min-width:0;">
-            <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">{t("settings.display.theme")}:</div>
+            <div class="ds-label">{t("settings.display.theme")}:</div>
           </div>
           <SegmentedSwitch
             id="ds-settings-theme-switch"
@@ -105,7 +105,7 @@ export function DisplaySettings() {
         {/* Feed Covers Toggle */}
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">
           <div style="flex:1;min-width:0;">
-            <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
+            <div class="ds-label">
               {t("settings.display.feedCovers")}:
             </div>
             <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
@@ -127,7 +127,7 @@ export function DisplaySettings() {
         {/* Language Selector */}
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">
           <div style="flex:1;min-width:0;">
-            <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">
+            <div class="ds-label">
               {t("settings.display.language")}:
             </div>
           </div>

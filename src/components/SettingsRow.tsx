@@ -30,7 +30,7 @@ export function SettingsRow(props: SettingsRowProps) {
       }}
     >
       <div style={{ flex: "1", "min-width": "180px" }}>
-        <div style={{ "font-size": "12px", color: "var(--sys-window-text,#222)", "font-weight": "600" }}>
+        <div class="ds-label">
           {props.label}
         </div>
         {props.desc && (

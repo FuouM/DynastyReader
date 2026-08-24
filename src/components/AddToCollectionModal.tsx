@@ -196,13 +196,13 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
       <Portal mount={document.body}>
         <div
           id="ds-add-to-collection-overlay"
-          style="position:fixed;inset:0;background:transparent;z-index:10000;pointer-events:auto;"
+          class="ds-overlay"
           onClick={(ev) => {
             if (ev.target === ev.currentTarget) props.onClose();
           }}
         >
           <div class="ds-add-to-collection-dropdown" style={positionStyle()}>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--sys-control-bg,#f0f0f0);border-bottom:1px solid var(--sys-border-light,#ddd);font-weight:600;font-size:11px;">
+            <div class="ds-dropdown-header">
               <IconText icon={<FolderIcon color="var(--sys-primary,#0078d4)" />}>
                 {t("dialogs.addToCollection.title")}
               </IconText>

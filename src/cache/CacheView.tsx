@@ -224,7 +224,7 @@ export function CacheView() {
       </Show>
 
       <Show when={data.error !== undefined}>
-        <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
+        <div class="ds-row" style="padding:12px;">
           <span class="ds-muted">
             {t("cache.statsLoadError", { msg: errorMessage(data.error) })}
           </span>
@@ -302,7 +302,7 @@ function CacheBody(props: {
           <StatCard value={dbStats.totalRows} label={t("cache.totalRecords")} />
           <StatCard value={formatBytes(dbStats.file.walSizeBytes)} label={t("cache.walSize")} />
         </div>
-        <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:2px 16px;margin-top:10px;padding:8px;background:var(--sys-bg-active,#f8f9fa);border:1px solid var(--sys-border-light,#e2e2e2);border-radius:3px;font-size:11px;">
+        <div class="ds-db-details">
           <span>{t("cache.followedSeriesCount")} <strong>{dbStats.counts.followedSeries}</strong></span>
           <span>{t("cache.readingProgressCount")} <strong>{dbStats.counts.readingProgress}</strong></span>
           <span>{t("cache.historyCount")} <strong>{dbStats.counts.readingHistory}</strong></span>

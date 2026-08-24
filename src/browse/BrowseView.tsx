@@ -297,7 +297,7 @@ export function BrowseView() {
               icon={checkBtnIcon()}
               text={checkBtnText()}
             />
-            <div id="ds-browse-top-pager" style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+            <div id="ds-browse-top-pager" class="ds-row" style="margin-left:auto;">
               <Show when={topCfg() && topCfg()!.totalPages > 1}>
                 <Pager
                   totalPages={topCfg()!.totalPages}

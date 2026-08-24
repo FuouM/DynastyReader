@@ -255,7 +255,7 @@ export function SeriesView() {
         <Loading />
       </Show>
       <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
-        <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
+        <div class="ds-error-row">
           <span class="ds-muted">{t("series.loadError", { msg: dataErrorText() })}</span>
           <Button
             icon={<RefreshIcon />}
@@ -297,7 +297,7 @@ function SeriesBody(props: {
       <Show when={props.data.blacklisted}>
         <div
           class="ds-row ds-blacklist-notice"
-          style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:6px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:11px;"
+          style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:6px 12px;margin-bottom:10px;font-size:11px;"
         >
           <BlacklistIcon
             filled={true}

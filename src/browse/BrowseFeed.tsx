@@ -583,7 +583,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
             onToggle={() => setShowHidden(!showHidden())}
           />
           <Show when={showHidden()}>
-            <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px;">
+            <div class="ds-col-4" style="margin-bottom:8px;">
               <For each={model()!.blacklistedRows}>{renderRow}</For>
             </div>
           </Show>

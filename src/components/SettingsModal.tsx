@@ -130,8 +130,8 @@ export function SettingsModal(props: SettingsModalProps) {
                 <div class="group-box-title">
                   <IconText icon={<Icon name="keyboard" />}>{t("settings.sections.hotkeys")}</IconText>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 0;">
-                  <div style="font-size:12px;color:var(--sys-window-text,#222);font-weight:600;">
+                <div class="ds-row-between" style="padding:2px 0;">
+                  <div class="ds-label">
                     {t("settings.hotkeys.bannerTitle")}
                   </div>
                   <IconButton
