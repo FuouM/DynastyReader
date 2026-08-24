@@ -105,23 +105,25 @@
   }
 
   .ds-action-btn-text {
-    display: none;
+    display: none !important;
   }
 
+  .ds-item-actions .win-button,
+  .ds-item-actions .ds-btn-compact,
   .ds-feed-actions .win-button,
   .ds-feed-actions .ds-btn-compact,
   .ds-feed-actions .ds-btn-icon,
   .ds-feed-actions .ds-btn-icon-sm {
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
-    max-width: 24px;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
     aspect-ratio: 1 / 1;
     padding: 0 !important;
     font-size: 11.5px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     box-sizing: border-box;
   }
 

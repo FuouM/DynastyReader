@@ -54,7 +54,7 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 }
 
 #ds-root[data-mobile] #ds-view {
-  padding-bottom: 56px;
+  padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
 }
 
 #ds-root[data-mobile] #ds-view:has(#ds-reader-container) {
@@ -203,27 +203,10 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   font-size: 12px;
 }
 
-/* Compact icon-only segmented view switch on mobile */
+/* Hide desktop topbar segmented view switch on mobile (bottom nav handles switching) */
 #ds-root[data-mobile] #ds-view-switch {
-  display: inline-flex;
-  align-items: stretch;
-  height: 26px;
-}
-#ds-root[data-mobile] #ds-view-switch .ds-segmented-btn {
-  width: 26px;
-  height: 24px;
-  min-height: 24px;
-  min-width: 26px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-#ds-root[data-mobile] #ds-view-switch .ds-segmented-btn span {
   display: none !important;
 }
-
 /* Hide desktop refresh button on mobile */
 #ds-root[data-mobile] #ds-page-refresh-btn {
   display: none !important;
@@ -237,7 +220,7 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 46px;
+  height: calc(48px + env(safe-area-inset-bottom, 0px));
   background: var(--sys-button-bg, #f0f0f0);
   border-top: 1px solid var(--sys-border-dark, #b0b0b0);
   z-index: 1000;
@@ -246,6 +229,9 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 
 .ds-bn-tab {
   flex: 1;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -255,10 +241,14 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   font-weight: 500;
   background: transparent;
   border: none;
+  border-radius: 0;
   cursor: pointer;
   color: var(--sys-control-text, #000);
+  padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px)) 0;
+  box-sizing: border-box;
   transition: background-color 0.1s ease, color 0.1s ease;
   user-select: none;
+  line-height: 1.2;
 }
 
 .ds-bn-tab + .ds-bn-tab {
@@ -271,18 +261,44 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 
 .ds-bn-tab .bi {
   font-size: 16px;
+  line-height: 1;
 }
 
 .ds-bn-tab.active {
-  background: var(--sys-highlight-bg, #0078d7) !important;
+  background: var(--sys-highlight-bg, #0078d4) !important;
   color: var(--sys-highlight-text, #ffffff) !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
+  border-radius: 0;
 }
 
 .ds-bn-tab.active .bi {
   color: var(--sys-highlight-text, #ffffff) !important;
 }
 
+/* Action button text collapse & compact item row actions on mobile */
+#ds-root[data-mobile] .ds-action-btn-text {
+  display: none !important;
+}
+
+#ds-root[data-mobile] .ds-item-actions .win-button,
+#ds-root[data-mobile] .ds-item-actions .ds-btn-compact {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  aspect-ratio: 1 / 1;
+  padding: 0 !important;
+  font-size: 11.5px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box;
+}
+
+#ds-root[data-mobile] .ds-subtab i {
+  margin-right: 3px !important;
+  font-size: 11px;
+}
 /* Browse sub-tabs & pager stacked layout on mobile */
 #ds-root[data-mobile] .ds-subtabs {
   display: flex;

@@ -233,7 +233,7 @@ body {
 #ds-topbar.ds-narrow #ds-view-switch .ds-segmented-btn {
   padding: 0 6px;
 }
-#ds-topbar.ds-narrow #ds-view-switch .ds-segmented-btn span {
+#ds-topbar.ds-narrow #ds-view-switch .ds-segmented-btn .ds-btn-text {
   display: none;
 }
 #ds-topbar.ds-narrow .ds-session-tab {
@@ -255,7 +255,7 @@ body {
 }
 
 @media (max-width: 620px) {
-  #ds-view-switch .ds-segmented-btn span {
+  #ds-view-switch .ds-segmented-btn .ds-btn-text {
     display: none;
   }
   .ds-session-tab {

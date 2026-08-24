@@ -99,6 +99,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
                 </Show>
               }
               text={props.actionLabel}
+              textClass="ds-action-btn-text"
               className="ds-btn-compact"
               onClick={(ev) => {
                 ev.stopPropagation();
