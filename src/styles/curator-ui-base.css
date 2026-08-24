@@ -439,7 +439,6 @@ body.ds-dark .input-clear-btn:active {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid green;
 }
 
 .group-box-collapse-btn {
@@ -773,7 +772,6 @@ body.ds-dark .tag-pill.tag-identity:hover {
 }
 .win-button.ds-btn-icon > i,
 .win-button.ds-btn-icon-sm > i {
-  border: 1px solid green;
 }
 .ds-btn-icon-xs {
   width: 18px !important;

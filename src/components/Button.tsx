@@ -41,11 +41,11 @@ export function Button(props: ButtonProps) {
     return hasExplicitSize ? props.className : `${defaultClass} ${props.className}`;
   };
 
-  const iconSpan = props.icon ? <span style="border:1px solid red; display:inline-flex; align-items:center">{props.icon}</span> : null;
+  const iconSpan = props.icon ? <span style="display:inline-flex; align-items:center">{props.icon}</span> : null;
   const content = props.text !== undefined && props.text !== "" ? (
-    <span style="border:1px solid blue" class={props.textClass ?? "ds-btn-text"}>{props.text}</span>
+    <span class={props.textClass ?? "ds-btn-text"}>{props.text}</span>
   ) : props.children !== undefined ? (
-    <span style="border:1px solid blue">{props.children}</span>
+    <span>{props.children}</span>
   ) : null;
 
   return (
@@ -189,8 +189,8 @@ export function IconText(props: IconTextProps) {
       class={`ds-icon-text${props.class ? ` ${props.class}` : ""}`}
       style={props.style}
     >
-      <span style="border:1px solid red;display:inline-flex;align-items:center;">{props.icon}</span>
-      <span style="border:1px solid blue;">{props.children}</span>
+      <span style="display:inline-flex;align-items:center;">{props.icon}</span>
+      <span>{props.children}</span>
     </span>
   );
 }
