@@ -25,7 +25,7 @@ import {
 import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, CloudDownloadIcon, Icon } from "../Icon";
-import { DsSelect, IconText, IconButton } from "../Button";
+import { DsSelect, IconText, IconButton, SegmentedSwitch } from "../Button";
 import { SettingsRow } from "../SettingsRow";
 
 export function ReaderSettings() {
@@ -48,76 +48,42 @@ export function ReaderSettings() {
       <div style="display:flex;flex-direction:column;gap:8px;">
         {/* Reading Direction */}
         <SettingsRow label={<>{t("settings.reader.readingDirection")}:</>} desc={t("settings.reader.readingDirectionDesc")}>
-          <div class="ds-segmented-switch" id="ds-settings-direction-switch">
-            <IconButton
-              id="ds-settings-dir-auto"
-              className={`ds-segmented-btn${directionPref() === "auto" ? " active" : ""}`}
-              title={t("settings.reader.dirAutoTooltip")}
-              icon={<Icon name="magic" />}
-              text={t("settings.reader.dirAutoLabel")}
-              onClick={() => { setDefaultReadingDirection("auto"); setDirectionPref("auto"); }}
-            />
-            <IconButton
-              id="ds-settings-dir-rtl"
-              className={`ds-segmented-btn${directionPref() === "rtl" ? " active" : ""}`}
-              title={t("settings.reader.dirRtlTooltip")}
-              icon={<Icon name="arrow-left" />}
-              text={t("settings.reader.dirRtlLabel")}
-              onClick={() => { setDefaultReadingDirection("rtl"); setDirectionPref("rtl"); }}
-            />
-            <IconButton
-              id="ds-settings-dir-ltr"
-              className={`ds-segmented-btn${directionPref() === "ltr" ? " active" : ""}`}
-              title={t("settings.reader.dirLtrTooltip")}
-              icon={<Icon name="arrow-right" />}
-              text={t("settings.reader.dirLtrLabel")}
-              onClick={() => { setDefaultReadingDirection("ltr"); setDirectionPref("ltr"); }}
-            />
-          </div>
+          <SegmentedSwitch
+            id="ds-settings-direction-switch"
+            value={directionPref()}
+            onChange={(val) => { setDefaultReadingDirection(val as ReadingDirectionSetting); setDirectionPref(val as ReadingDirectionSetting); }}
+            options={[
+              { id: "ds-settings-dir-auto", value: "auto", icon: <Icon name="magic" />, text: t("settings.reader.dirAutoLabel"), title: t("settings.reader.dirAutoTooltip") },
+              { id: "ds-settings-dir-rtl", value: "rtl", icon: <Icon name="arrow-left" />, text: t("settings.reader.dirRtlLabel"), title: t("settings.reader.dirRtlTooltip") },
+              { id: "ds-settings-dir-ltr", value: "ltr", icon: <Icon name="arrow-right" />, text: t("settings.reader.dirLtrLabel"), title: t("settings.reader.dirLtrTooltip") },
+            ]}
+          />
         </SettingsRow>
 
         {/* Default Reading Mode */}
         <SettingsRow divider label={<>{t("settings.reader.defaultMode")}:</>} desc={t("settings.reader.defaultModeDesc")}>
-          <div class="ds-segmented-switch" id="ds-settings-mode-switch">
-            <IconButton
-              id="ds-settings-mode-scroll"
-              className={`ds-segmented-btn${readerModePref() === "scroll" ? " active" : ""}`}
-              title={t("settings.reader.modeScrollTooltip")}
-              icon={<Icon name="view-stacked" />}
-              text={t("settings.reader.modeScrollLabel")}
-              onClick={() => { setDefaultReaderMode("scroll"); setReaderModePref("scroll"); }}
-            />
-            <IconButton
-              id="ds-settings-mode-paged"
-              className={`ds-segmented-btn${readerModePref() === "paged" ? " active" : ""}`}
-              title={t("settings.reader.modePagedTooltip")}
-              icon={<Icon name="book" />}
-              text={t("settings.reader.modePagedLabel")}
-              onClick={() => { setDefaultReaderMode("paged"); setReaderModePref("paged"); }}
-            />
-          </div>
+          <SegmentedSwitch
+            id="ds-settings-mode-switch"
+            value={readerModePref()}
+            onChange={(val) => { setDefaultReaderMode(val as ReaderMode); setReaderModePref(val as ReaderMode); }}
+            options={[
+              { id: "ds-settings-mode-scroll", value: "scroll", icon: <Icon name="view-stacked" />, text: t("settings.reader.modeScrollLabel"), title: t("settings.reader.modeScrollTooltip") },
+              { id: "ds-settings-mode-paged", value: "paged", icon: <Icon name="book" />, text: t("settings.reader.modePagedLabel"), title: t("settings.reader.modePagedTooltip") },
+            ]}
+          />
         </SettingsRow>
 
         {/* Default Paged Layout */}
         <SettingsRow divider label={<>{t("settings.reader.pagedLayout")}:</>} desc={t("settings.reader.pagedLayoutDesc")}>
-          <div class="ds-segmented-switch" id="ds-settings-layout-switch">
-            <IconButton
-              id="ds-settings-layout-single"
-              className={`ds-segmented-btn${pagedLayoutPref() === "single" ? " active" : ""}`}
-              title={t("settings.reader.layoutSingleTooltip")}
-              icon={<Icon name="file-earmark" />}
-              text={t("settings.reader.layoutSingleLabel")}
-              onClick={() => { setDefaultPagedLayout("single"); setPagedLayoutPref("single"); }}
-            />
-            <IconButton
-              id="ds-settings-layout-spread"
-              className={`ds-segmented-btn${pagedLayoutPref() === "spread" ? " active" : ""}`}
-              title={t("settings.reader.layoutSpreadTooltip")}
-              icon={<Icon name="columns-gap" />}
-              text={t("settings.reader.layoutSpreadLabel")}
-              onClick={() => { setDefaultPagedLayout("spread"); setPagedLayoutPref("spread"); }}
-            />
-          </div>
+          <SegmentedSwitch
+            id="ds-settings-layout-switch"
+            value={pagedLayoutPref()}
+            onChange={(val) => { setDefaultPagedLayout(val as PagedLayout); setPagedLayoutPref(val as PagedLayout); }}
+            options={[
+              { id: "ds-settings-layout-single", value: "single", icon: <Icon name="file-earmark" />, text: t("settings.reader.layoutSingleLabel"), title: t("settings.reader.layoutSingleTooltip") },
+              { id: "ds-settings-layout-spread", value: "spread", icon: <Icon name="columns-gap" />, text: t("settings.reader.layoutSpreadLabel"), title: t("settings.reader.layoutSpreadTooltip") },
+            ]}
+          />
         </SettingsRow>
 
         {/* Long Strip Spread Override */}
@@ -215,24 +181,15 @@ export function ReaderSettings() {
 
         {/* Navigation Bar Position */}
         <SettingsRow divider label={<>{t("settings.reader.navPosition")}:</>} desc={t("settings.reader.navPositionDesc")}>
-          <div class="ds-segmented-switch" id="ds-settings-nav-pos-switch">
-            <IconButton
-              id="ds-settings-nav-pos-top"
-              className={`ds-segmented-btn${navPosition() === "top" ? " active" : ""}`}
-              title={t("settings.reader.navPosTopTooltip")}
-              icon={<Icon name="align-top" />}
-              text={t("settings.reader.navPosTopLabel")}
-              onClick={() => { setReaderNavPosition("top"); setNavPosition("top"); }}
-            />
-            <IconButton
-              id="ds-settings-nav-pos-bottom"
-              className={`ds-segmented-btn${navPosition() === "bottom" ? " active" : ""}`}
-              title={t("settings.reader.navPosBottomTooltip")}
-              icon={<Icon name="align-bottom" />}
-              text={t("settings.reader.navPosBottomLabel")}
-              onClick={() => { setReaderNavPosition("bottom"); setNavPosition("bottom"); }}
-            />
-          </div>
+          <SegmentedSwitch
+            id="ds-settings-nav-pos-switch"
+            value={navPosition()}
+            onChange={(val) => { setReaderNavPosition(val as "top" | "bottom"); setNavPosition(val as "top" | "bottom"); }}
+            options={[
+              { id: "ds-settings-nav-pos-top", value: "top", icon: <Icon name="align-top" />, text: t("settings.reader.navPosTopLabel"), title: t("settings.reader.navPosTopTooltip") },
+              { id: "ds-settings-nav-pos-bottom", value: "bottom", icon: <Icon name="align-bottom" />, text: t("settings.reader.navPosBottomLabel"), title: t("settings.reader.navPosBottomTooltip") },
+            ]}
+          />
         </SettingsRow>
       </div>
     </div>

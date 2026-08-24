@@ -4,7 +4,7 @@
  * views. Port of `button.ts`.
  */
 
-import { createSignal, type JSX } from "solid-js";
+import { For, createSignal, type JSX } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { t } from "../i18n";
 import { CheckIcon, Icon } from "./Icon";
@@ -192,5 +192,40 @@ export function IconText(props: IconTextProps) {
       <span style="border:1px solid red;display:inline-flex;align-items:center;">{props.icon}</span>
       <span style="border:1px solid blue;">{props.children}</span>
     </span>
+  );
+}
+
+export interface SegmentedOption {
+  value: string;
+  id?: string;
+  icon?: JSX.Element;
+  text?: string | JSX.Element;
+  title?: string;
+}
+
+export interface SegmentedSwitchProps {
+  id?: string;
+  style?: string;
+  value: string;
+  options: SegmentedOption[];
+  onChange?: (value: string) => void;
+}
+
+export function SegmentedSwitch(props: SegmentedSwitchProps) {
+  return (
+    <div class="ds-segmented-switch" id={props.id} style={props.style}>
+      <For each={props.options}>
+        {(opt) => (
+          <Button
+            id={opt.id}
+            className={`ds-segmented-btn${props.value === opt.value ? " active" : ""}`}
+            icon={opt.icon}
+            text={opt.text}
+            title={opt.title}
+            onClick={() => props.onChange?.(opt.value)}
+          />
+        )}
+      </For>
+    </div>
   );
 }

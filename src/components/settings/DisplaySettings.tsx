@@ -3,7 +3,7 @@ import { theme, setTheme, uiScale, applyUiScale } from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
-import { DsSelect, IconText, IconButton } from "../Button";
+import { DsSelect, IconText, IconButton, SegmentedSwitch } from "../Button";
 import { SCALE_PRESETS } from "./types";
 
 export function DisplaySettings() {
@@ -96,24 +96,16 @@ export function DisplaySettings() {
           <div style="flex:1;min-width:0;">
             <div style="font-size:12px;color:var(--sys-window-text,#333);font-weight:600;">{t("settings.display.theme")}:</div>
           </div>
-          <div class="ds-segmented-switch" id="ds-settings-theme-switch" style="flex-shrink:0;">
-            <IconButton
-              className={`ds-segmented-btn${theme() === "light" ? " active" : ""}`}
-              id="ds-settings-theme-light"
-              title={t("settings.display.themeLight")}
-              icon={<SunIcon />}
-              text={t("settings.display.themeLight").split(" ")[0]}
-              onClick={() => setTheme("light")}
-            />
-            <IconButton
-              className={`ds-segmented-btn${theme() === "dark" ? " active" : ""}`}
-              id="ds-settings-theme-dark"
-              title={t("settings.display.themeDark")}
-              icon={<MoonIcon />}
-              text={t("settings.display.themeDark").split(" ")[0]}
-              onClick={() => setTheme("dark")}
-            />
-          </div>
+          <SegmentedSwitch
+            id="ds-settings-theme-switch"
+            style="flex-shrink:0;"
+            value={theme()}
+            onChange={(val) => setTheme(val as "light" | "dark")}
+            options={[
+              { id: "ds-settings-theme-light", value: "light", icon: <SunIcon />, text: t("settings.display.themeLight").split(" ")[0], title: t("settings.display.themeLight") },
+              { id: "ds-settings-theme-dark", value: "dark", icon: <MoonIcon />, text: t("settings.display.themeDark").split(" ")[0], title: t("settings.display.themeDark") },
+            ]}
+          />
         </div>
 
         {/* Feed Covers Toggle */}
