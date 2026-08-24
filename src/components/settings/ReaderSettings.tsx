@@ -25,7 +25,7 @@ import {
 import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, CloudDownloadIcon, Icon } from "../Icon";
-import { DsSelect, IconText, IconButton, SegmentedSwitch } from "../Button";
+import { DsSelect, IconText, IconButton, SegmentedSwitch, ToggleButton } from "../Button";
 import { SettingsRow } from "../SettingsRow";
 
 export function ReaderSettings() {
@@ -88,40 +88,46 @@ export function ReaderSettings() {
 
         {/* Long Strip Spread Override */}
         <SettingsRow divider label={<>{t("settings.reader.longStripOverride")}:</>} desc={t("settings.reader.longStripOverrideDesc")}>
-          <IconButton
+          <ToggleButton
             id="ds-settings-longstrip-toggle"
-            cssText="font-size:11px;padding:2px 10px;min-width:105px;"
-            className={longStripOverride() ? "primary" : ""}
+            style="font-size:11px;padding:2px 10px;min-width:105px;"
+            value={longStripOverride()}
+            icon={<Icon name="slash-circle" />}
+            activeIcon={<Icon name="check-circle" />}
+            text={t("settings.reader.longStripOverrideDisabled")}
+            activeText={t("settings.reader.longStripOverrideEnabled")}
             title={t("settings.reader.longStripOverrideTooltip")}
-            icon={longStripOverride() ? <Icon name="check-circle" /> : <Icon name="slash-circle" />}
-            text={longStripOverride() ? t("settings.reader.longStripOverrideEnabled") : t("settings.reader.longStripOverrideDisabled")}
-            onClick={() => { const next = !longStripOverride(); setLongStripSpreadOverrideEnabled(next); setLongStripOverride(next); }}
+            onToggle={(next) => { setLongStripSpreadOverrideEnabled(next); setLongStripOverride(next); }}
           />
         </SettingsRow>
 
         {/* Long Strip Auto Fit Width */}
         <SettingsRow divider label={<>{t("settings.reader.longStripFitWidth")}:</>} desc={t("settings.reader.longStripFitWidthDesc")}>
-          <IconButton
+          <ToggleButton
             id="ds-settings-longstrip-fit-toggle"
-            cssText="font-size:11px;padding:2px 10px;min-width:105px;"
-            className={longStripFitWidth() ? "primary" : ""}
+            style="font-size:11px;padding:2px 10px;min-width:105px;"
+            value={longStripFitWidth()}
+            icon={<Icon name="slash-circle" />}
+            activeIcon={<Icon name="check-circle" />}
+            text={t("settings.reader.longStripFitWidthDisabled")}
+            activeText={t("settings.reader.longStripFitWidthEnabled")}
             title={t("settings.reader.longStripFitWidthTooltip")}
-            icon={longStripFitWidth() ? <Icon name="check-circle" /> : <Icon name="slash-circle" />}
-            text={longStripFitWidth() ? t("settings.reader.longStripFitWidthEnabled") : t("settings.reader.longStripFitWidthDisabled")}
-            onClick={() => { const next = !longStripFitWidth(); setLongStripFitWidthEnabled(next); setLongStripFitWidth(next); }}
+            onToggle={(next) => { setLongStripFitWidthEnabled(next); setLongStripFitWidth(next); }}
           />
         </SettingsRow>
 
         {/* Spread Standalone Cover */}
         <SettingsRow divider label={<>{t("settings.reader.coverOffset")}:</>} desc={t("settings.reader.coverOffsetDesc")}>
-          <IconButton
+          <ToggleButton
             id="ds-settings-cover-offset-toggle"
-            cssText="font-size:11px;padding:2px 10px;min-width:95px;"
-            className={coverOffsetPref() ? "primary" : ""}
+            style="font-size:11px;padding:2px 10px;min-width:95px;"
+            value={coverOffsetPref()}
+            icon={<Icon name="dash-circle" />}
+            activeIcon={<Icon name="book-half" />}
+            text={t("settings.reader.coverOffsetOff")}
+            activeText={t("settings.reader.coverOffsetOn")}
             title={t("settings.reader.coverOffsetTooltip")}
-            icon={coverOffsetPref() ? <Icon name="book-half" /> : <Icon name="dash-circle" />}
-            text={coverOffsetPref() ? t("settings.reader.coverOffsetOn") : t("settings.reader.coverOffsetOff")}
-            onClick={() => { const next = !coverOffsetPref(); setCoverOffsetDefaultEnabled(next); setCoverOffsetPref(next); }}
+            onToggle={(next) => { setCoverOffsetDefaultEnabled(next); setCoverOffsetPref(next); }}
           />
         </SettingsRow>
 
@@ -145,14 +151,16 @@ export function ReaderSettings() {
 
         {/* Auto Cache Entire Chapter */}
         <SettingsRow divider label={<>{t("settings.reader.autoCache")}:</>} desc={t("settings.reader.autoCacheDesc")}>
-          <IconButton
+          <ToggleButton
             id="ds-settings-autocache-toggle"
-            cssText="font-size:11px;padding:2px 10px;min-width:70px;"
-            className={autoCacheEnabled() ? "primary" : ""}
+            style="font-size:11px;padding:2px 10px;min-width:70px;"
+            value={autoCacheEnabled()}
+            icon={<Icon name="cloud-slash" />}
+            activeIcon={<CloudDownloadIcon />}
+            text={t("settings.reader.autoCacheOff")}
+            activeText={t("settings.reader.autoCacheOn")}
             title={autoCacheEnabled() ? t("settings.reader.autoCacheTooltipOn") : t("settings.reader.autoCacheTooltipOff")}
-            icon={autoCacheEnabled() ? <CloudDownloadIcon /> : <Icon name="cloud-slash" />}
-            text={autoCacheEnabled() ? t("settings.reader.autoCacheOn") : t("settings.reader.autoCacheOff")}
-            onClick={() => { const next = !autoCacheEnabled(); setAutoCacheChapterEnabled(next); setAutoCacheEnabled(next); }}
+            onToggle={(next) => { setAutoCacheChapterEnabled(next); setAutoCacheEnabled(next); }}
           />
         </SettingsRow>
 

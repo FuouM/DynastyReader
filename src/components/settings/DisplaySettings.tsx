@@ -3,7 +3,7 @@ import { theme, setTheme, uiScale, applyUiScale } from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
-import { DsSelect, IconText, IconButton, SegmentedSwitch } from "../Button";
+import { DsSelect, IconText, IconButton, SegmentedSwitch, ToggleButton } from "../Button";
 import { SCALE_PRESETS } from "./types";
 
 export function DisplaySettings() {
@@ -14,12 +14,6 @@ export function DisplaySettings() {
     const clamped = Math.min(2.0, Math.max(0.5, val));
     setScale(clamped);
     applyUiScale(clamped);
-  };
-
-  const toggleCovers = (): void => {
-    const next = !coversEnabled();
-    browseCovers.setCoversEnabled(next);
-    setCoversEnabledLocal(next);
   };
 
   const hasScalePreset = createMemo(() =>
@@ -118,13 +112,15 @@ export function DisplaySettings() {
               {t("settings.display.feedCoversDesc")}
             </div>
           </div>
-          <IconButton
-            className={coversEnabled() ? "primary" : undefined}
+          <ToggleButton
             id="ds-settings-covers-toggle"
-            cssText="font-size:11px;padding:2px 10px;min-width:90px;flex-shrink:0;"
-            icon={<Show when={coversEnabled()} fallback={<Icon name="eye-slash" />}><ImageIcon /></Show>}
-            text={<Show when={coversEnabled()} fallback={t("settings.display.coversOff")}>{t("settings.display.coversOn")}</Show>}
-            onClick={toggleCovers}
+            style="font-size:11px;padding:2px 10px;min-width:90px;flex-shrink:0;"
+            value={coversEnabled()}
+            icon={<Icon name="eye-slash" />}
+            activeIcon={<ImageIcon />}
+            text={t("settings.display.coversOff")}
+            activeText={t("settings.display.coversOn")}
+            onToggle={(next) => { browseCovers.setCoversEnabled(next); setCoversEnabledLocal(next); }}
           />
         </div>
 

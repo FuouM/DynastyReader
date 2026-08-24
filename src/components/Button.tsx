@@ -243,3 +243,32 @@ export function StatCard(props: StatCardProps) {
     </div>
   );
 }
+
+export interface ToggleButtonProps {
+  id?: string;
+  style?: string;
+  disabled?: boolean;
+  value: boolean;
+  icon: JSX.Element;
+  activeIcon: JSX.Element;
+  text: string;
+  activeText: string;
+  title?: string;
+  activeTitle?: string;
+  onToggle?: (next: boolean) => void;
+}
+
+export function ToggleButton(props: ToggleButtonProps) {
+  return (
+    <Button
+      id={props.id}
+      className={props.value ? "primary" : undefined}
+      cssText={props.style}
+      title={props.value ? props.activeTitle ?? props.title : props.title}
+      disabled={props.disabled}
+      icon={props.value ? props.activeIcon : props.icon}
+      text={props.value ? props.activeText : props.text}
+      onClick={() => props.onToggle?.(!props.value)}
+    />
+  );
+}
