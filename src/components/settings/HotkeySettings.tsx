@@ -141,7 +141,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
     <div style="display:flex;flex-direction:column;gap:10px;">
       {/* Sticky Filter & Reset Header */}
       <div
-        style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;background:var(--sys-window-bg,#ececec);z-index:10;padding:2px 0 6px 0;"
+        style="display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;background:var(--sys-control-bg);z-index:10;padding:2px 0 6px 0;"
       >
         <div class="input-wrapper" style="flex:1;max-width:280px;">
           <input
