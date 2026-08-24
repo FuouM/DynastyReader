@@ -50,7 +50,6 @@ export function BlacklistView() {
     void refetch();
   };
 
-  // Publish the Back + Refresh top-bar actions once data is ready.
   createEffect(() => {
     if (data() === undefined) return;
     setActions(
@@ -71,7 +70,7 @@ export function BlacklistView() {
   return (
     <div
       id="ds-blacklist-view-container"
-      style="display:flex;flex-direction:column;gap:12px;padding:8px 4px;width:100%;box-sizing:border-box;"
+      class="ds-bl-view"
     >
       <Show
         when={data() !== undefined}
@@ -81,7 +80,7 @@ export function BlacklistView() {
               <Loading />
             </Show>
             <Show when={data.error !== undefined && data() === undefined}>
-              <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
+              <div class="ds-row ds-bl-error-row">
                 <span class="ds-muted">{t("blacklist.loadError", { msg: errorMessage() })}</span>
                 <Button icon={<RefreshIcon />} text={t("common.retry")} onClick={() => void refetch()} />
               </div>
@@ -94,17 +93,15 @@ export function BlacklistView() {
             <IconText icon={<BlacklistIcon filled={false} />}>{t("blacklist.title")}</IconText>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);line-height:1.4;">
+            <div class="ds-muted">
               {t("blacklist.description")}
             </div>
-            <div
-              style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:var(--sys-control-bg,#f8f8f8);border:1px solid var(--sys-border-light,#e0e0e0);border-radius:3px;flex-wrap:wrap;"
-            >
-              <div style="font-size:11px;font-weight:600;color:var(--sys-window-text,#333);">
+            <div class="ds-bl-mode-bar">
+              <div class="ds-bl-mode-label">
                 {t("blacklist.modeHeader")}:
               </div>
-              <div class="ds-radio-group" style="display:flex;gap:12px;">
-                <label style="font-size:11px;cursor:pointer;">
+              <div class="ds-radio-group ds-bl-mode-options">
+                <label class="ds-bl-mode-option">
                   <input
                     type="radio"
                     name="ds-bl-mode"
@@ -114,7 +111,7 @@ export function BlacklistView() {
                   />{" "}
                   {t("blacklist.modeHide")}
                 </label>
-                <label style="font-size:11px;cursor:pointer;">
+                <label class="ds-bl-mode-option">
                   <input
                     type="radio"
                     name="ds-bl-mode"
@@ -130,53 +127,38 @@ export function BlacklistView() {
         </div>
 
         <div class="group-box">
-          <div class="group-box-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="group-box-title" style="justify-content:space-between;">
             <IconText icon={<ListCheckIcon />}>{t("blacklist.seriesTitle", { count: data()!.length })}</IconText>
           </div>
 
           <Show
             when={data()!.length > 0}
             fallback={
-              <div class="ds-muted" style="padding:20px 8px;text-align:center;font-size:11px;">
+              <div class="ds-bl-empty">
                 <BlacklistIcon
                   filled={false}
-                  style={{
-                    "font-size": "26px",
-                    display: "block",
-                    "margin-bottom": "8px",
-                    color: "var(--sys-primary,#0078d4)",
-                  }}
+                  class="ds-bl-empty-icon"
                 />
                 {t("blacklist.emptySeriesTitle")}
                 <br />
-                <span
-                  style="color:var(--sys-text-muted,#666);display:inline-block;margin-top:4px;"
-                >
+                <span class="ds-muted">
                   {t("blacklist.emptySeriesHint")}
                 </span>
               </div>
             }
           >
-            <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
+            <div class="ds-bl-series-list">
               <For each={data()!}>
                 {(item) => (
-                  <div
-                    class="ds-item"
-                    style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;gap:8px;border-radius:2px;"
-                  >
-                    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                  <div class="ds-bl-series-item">
+                    <div class="ds-bl-series-info">
                       <BlacklistIcon
                         filled={true}
-                        style={{
-                          color: "var(--ds-warn-text,#d97706)",
-                          "font-size": "13px",
-                          "flex-shrink": "0",
-                        }}
+                        class="ds-bl-series-icon"
                       />
-                      <div style="display:flex;flex-direction:column;min-width:0;flex:1;">
+                      <div class="ds-bl-series-details">
                         <div
                           class="ds-item-title ds-clickable ds-truncate"
-                          style="font-weight:600;font-size:12px;"
                           onClick={() =>
                             navigate({
                               view: "series",
@@ -187,15 +169,13 @@ export function BlacklistView() {
                         >
                           {decodeEntities(item.series_name)}
                         </div>
-                        <div class="ds-muted" style="font-size:10px;display:flex;align-items:center;gap:6px;margin-top:1px;">
-                          <span class="ds-etag-tag" style="font-size:9px;padding:0 4px;">
-                            {safeHtml(item.series_permalink)}
-                          </span>
+                        <div class="ds-muted ds-bl-series-meta">
+                          <span class="ds-etag-tag">{safeHtml(item.series_permalink)}</span>
                           <span>{t("blacklist.blacklistedOn", { date: formatDate(item.created_at) })}</span>
                         </div>
                       </div>
                     </div>
-                    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                    <div class="ds-bl-series-actions">
                       <ExternalLinkButton
                         className="ds-btn-icon"
                         title={t("blacklist.openOnDynastyTooltip")}
@@ -203,7 +183,6 @@ export function BlacklistView() {
                       />
                       <Button
                         icon={<TrashIcon />}
-                        text={t("common.remove")}
                         className="ds-btn-sm"
                         title={t("blacklist.removeSeriesTooltip")}
                         onClick={() => void removeSeries(item)}

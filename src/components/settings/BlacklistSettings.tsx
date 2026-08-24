@@ -11,7 +11,7 @@ import { suggest } from "../../api";
 import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { BlacklistIcon, AddIcon, CloseIcon } from "../Icon";
-import { IconText, IconButton } from "../Button";
+import { IconText, Button } from "../Button";
 export function BlacklistSettings() {
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
@@ -49,16 +49,16 @@ export function BlacklistSettings() {
         <IconText icon={<BlacklistIcon />}>{t("blacklist.settingsTitle")}</IconText>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
-        <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
+        <div class="ds-muted">
           {t("blacklist.settingsDescription")}
         </div>
 
         {/* Mode Selector */}
-        <div style="display:flex;align-items:center;gap:12px;background:var(--sys-bg-active,#f8f9fa);border:1px solid var(--sys-border-light,#e2e2e2);border-radius:3px;padding:4px 8px;">
-          <span style="font-size:11px;font-weight:600;color:var(--sys-window-text,#333);">
+        <div class="ds-bl-mode-bar">
+          <span class="ds-bl-mode-label">
             {t("blacklist.modeHeader")}:
           </span>
-          <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;">
+          <label class="ds-bl-mode-option">
             <input
               type="radio"
               name="ds-bl-mode"
@@ -69,7 +69,7 @@ export function BlacklistSettings() {
             />
             <span>{t("blacklist.modeHide")}</span>
           </label>
-          <label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;">
+          <label class="ds-bl-mode-option">
             <input
               type="radio"
               name="ds-bl-mode"
@@ -99,8 +99,7 @@ export function BlacklistSettings() {
               debounceMs={200}
             />
           </div>
-          <IconButton
-            className=""
+          <Button
             id="ds-settings-blacklist-add"
             cssText="font-size:11px;padding:2px 10px;"
             icon={<AddIcon />}
@@ -112,50 +111,32 @@ export function BlacklistSettings() {
         {/* Blacklisted Tag Chips */}
         <div
           id="ds-settings-blacklist-chips"
-          style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;max-height:120px;overflow-y:auto;padding:2px 0;"
+          class="ds-bl-chips"
         >
-          <Show
-            when={blacklist.error}
-            fallback={
-              <Show
-                when={blacklist.loading}
-                fallback={
-                  <Show
-                    when={blacklist() && blacklist()!.length > 0}
-                    fallback={
-                      <span class="ds-muted" style="font-size:10px;padding:2px 0;">
-                        {t("blacklist.noTags")}
-                      </span>
-                    }
-                  >
-                    <For each={blacklist()!}>
-                      {(item: BlacklistedTag) => (
-                        <span
-                          class="ds-row"
-                          style="background:var(--ds-danger-bg);color:var(--ds-danger-text);border:1px solid var(--ds-danger-border);border-radius:3px;padding:1px 6px;font-size:10px;align-items:center;gap:4px;"
-                        >
-                          <span>{item.tag_name}</span>
-                          <CloseIcon
-                            style={{ cursor: "pointer", "font-size": "13px" }}
-                            title={t("blacklist.removeTagTooltip")}
-                            onClick={() => void removeTag(item.tag_name)}
-                          />
-                        </span>
-                      )}
-                    </For>
-                  </Show>
-                }
-              >
-                <span class="ds-muted" style="font-size:10px;">{t("blacklist.loadingTags")}</span>
-              </Show>
-            }
-          >
-            <span
-              class="ds-muted"
-              style="font-size:10px;color:var(--ds-danger-text);padding:2px 0;"
-            >
+          <Show when={blacklist.error}>
+            <span class="ds-muted ds-bl-chips-error">
               {t("blacklist.loadTagsError")}
             </span>
+          </Show>
+          <Show when={!blacklist.error && blacklist.loading}>
+            <span class="ds-muted">{t("blacklist.loadingTags")}</span>
+          </Show>
+          <Show when={!blacklist.error && !blacklist.loading && blacklist() && blacklist()!.length === 0}>
+            <span class="ds-muted">{t("blacklist.noTags")}</span>
+          </Show>
+          <Show when={!blacklist.error && !blacklist.loading && blacklist() && blacklist()!.length > 0}>
+            <For each={blacklist()!}>
+              {(item: BlacklistedTag) => (
+                <span class="ds-bl-chip">
+                  <span>{item.tag_name}</span>
+                  <CloseIcon
+                    style={{ cursor: "pointer", "font-size": "13px" }}
+                    title={t("blacklist.removeTagTooltip")}
+                    onClick={() => void removeTag(item.tag_name)}
+                  />
+                </span>
+              )}
+            </For>
           </Show>
         </div>
       </div>
