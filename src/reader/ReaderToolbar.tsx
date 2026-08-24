@@ -150,6 +150,7 @@ export function ReaderControlsRow(props: NavRowProps) {
               : t("reader.toolbar.scrollLockSmoothTooltip")
             : t("reader.toolbar.scrollLockWheelTooltip")
         }
+        onClick={() => s.setScrollLock()}
       />
       <IconButton
         className="ds-ctrl-btn"
