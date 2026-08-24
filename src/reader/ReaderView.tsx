@@ -11,6 +11,8 @@ import { ReaderStrip } from "./ReaderStrip";
 import { ReaderShortcuts } from "./ReaderShortcuts";
 import { ReaderWheel } from "./ReaderWheel";
 import { Loading } from "../components/Loading";
+import { IconButton } from "../components/Button";
+import { RefreshIcon } from "../components/Icon";
 import { theme } from "../stores";
 import { t } from "../i18n";
 
@@ -40,9 +42,11 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
         {(msg) => (
           <div style="padding:24px;text-align:center;">
             <div style="color:var(--sys-error,#d13438);margin-bottom:12px;">{msg()}</div>
-            <button type="button" class="win-button" onClick={() => session.retry()}>
-              <i class="bi bi-arrow-clockwise"></i> {t("reader.session.retry")}
-            </button>
+            <IconButton
+              icon={<RefreshIcon />}
+              text={t("reader.session.retry")}
+              onClick={() => session.retry()}
+            />
           </div>
         )}
       </Show>

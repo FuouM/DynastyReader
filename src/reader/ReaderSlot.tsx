@@ -8,6 +8,8 @@ import { Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import type { SlotStateKind } from "./reader-queue";
 import { convertFileSrc } from "../ipc";
+import { DsButton } from "../components/Button";
+import { Icon } from "../components/Icon";
 import { isMobile } from "../stores";
 import { t } from "../i18n";
 import { WIDE_RATIO } from "./reader-spread";
@@ -111,10 +113,11 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
       </div>
       <div class={`ds-slot-state${kind() === "error" ? " ds-slot-error" : ""}`}>
         <Show when={kind() === "spinner"}>
-          <i
-            class="bi bi-cloud-arrow-down"
-            style="font-size:20px;color:var(--sys-primary,#0078d4);"
-          ></i>
+          <Icon
+            name="cloud-arrow-down"
+            size="20px"
+            color="var(--sys-primary,#0078d4)"
+          />
           <div class="ds-slot-pulse-wrap">
             <div class="ds-slot-pulse-bar"></div>
           </div>
@@ -128,11 +131,11 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
           </span>
         </Show>
         <Show when={kind() === "offline"}>
-          <i class="bi bi-wifi-off" style="font-size:20px;"></i>
+          <Icon name="wifi-off" size="20px" />
           <span>{state()?.message}</span>
         </Show>
         <Show when={kind() === "idle"}>
-          <i class="bi bi-book" style="font-size:20px;color:var(--sys-text-muted,#888);"></i>
+          <Icon name="book" size="20px" color="var(--sys-text-muted,#888)" />
           <span>
             {t("reader.session.slot.waitingToRead", {
               current: props.index + 1,
@@ -141,16 +144,14 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
           </span>
         </Show>
         <Show when={kind() === "error"}>
-          <i class="bi bi-exclamation-triangle" style="font-size:20px;"></i>
+          <Icon name="exclamation-triangle" size="20px" />
           <span>{state()?.message}</span>
-          <button
-            type="button"
-            class="win-button"
-            style="font-size:10px;padding:1px 8px;"
+          <DsButton
+            cssText="font-size:10px;padding:1px 8px;"
             onClick={() => s.retrySlot(props.index)}
           >
             {t("common.retry")}
-          </button>
+          </DsButton>
         </Show>
       </div>
     </>

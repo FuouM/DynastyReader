@@ -42,11 +42,13 @@ export interface IconButtonProps {
   className?: string;
   classList?: Record<string, boolean>;
   cssText?: string;
+  style?: string | JSX.CSSProperties;
   title?: string;
   disabled?: boolean;
   icon: JSX.Element;
   text?: string | JSX.Element;
   textClass?: string;
+  reverse?: boolean;
   onClick?: (ev: MouseEvent) => void;
 }
 
@@ -56,21 +58,22 @@ export interface IconButtonProps {
  * Omit `text` for icon-only buttons.
  */
 export function IconButton(props: IconButtonProps) {
+  const iconSpan = props.icon ? <span style="border:1px solid red; display:inline-flex; align-items:center">{props.icon}</span> : null;
+  const textSpan = props.text !== undefined && props.text !== "" ? (
+    <span style="border:1px solid blue" class={props.textClass ?? "ds-btn-text"}>{props.text}</span>
+  ) : null;
   return (
     <button
       type="button"
       id={props.id}
       class={`win-button ${props.className ?? "ds-btn-compact"}`.trim()}
       classList={props.classList}
-      style={props.cssText}
+      style={props.style ?? props.cssText}
       title={props.title}
       disabled={props.disabled}
       onClick={props.onClick}
     >
-      {props.icon ? <span style="border:1px solid red; display:inline-flex; align-items:center">{props.icon}</span> : null}
-      {props.text !== undefined && props.text !== "" ? (
-        <span style="border:1px solid blue" class={props.textClass ?? "ds-btn-text"}>{props.text}</span>
-      ) : null}
+      {props.reverse ? <>{textSpan}{iconSpan}</> : <>{iconSpan}{textSpan}</>}
     </button>
   );
 }

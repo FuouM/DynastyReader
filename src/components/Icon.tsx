@@ -87,8 +87,20 @@ export const EntityIcon = (props: { kind: SearchResultItem["kind"] } & BaseIconP
 
 export const ChevronDoubleLeftIcon = (props: BaseIconProps) => <Icon name="chevron-double-left" {...props} />;
 export const ChevronDoubleRightIcon = (props: BaseIconProps) => <Icon name="chevron-double-right" {...props} />;
+export const ChevronBarLeftIcon = (props: BaseIconProps) => <Icon name="chevron-bar-left" {...props} />;
+export const ChevronBarRightIcon = (props: BaseIconProps) => <Icon name="chevron-bar-right" {...props} />;
 export const ArrowLeftIcon = (props: BaseIconProps) => <Icon name="arrow-left" {...props} />;
 export const ArrowRightIcon = (props: BaseIconProps) => <Icon name="arrow-right" {...props} />;
+export const ArrowLeftRightIcon = (props: BaseIconProps) => <Icon name="arrow-left-right" {...props} />;
+export const LockIcon = (props: BaseIconProps) => <Icon name="lock-fill" {...props} />;
+export const UnlockIcon = (props: BaseIconProps) => <Icon name="unlock" {...props} />;
+export const DistributeVerticalIcon = (props: BaseIconProps) => <Icon name="distribute-vertical" {...props} />;
+export const ColumnsGapIcon = (props: BaseIconProps) => <Icon name="columns-gap" {...props} />;
+export const BookHalfIcon = (props: BaseIconProps) => <Icon name="book-half" {...props} />;
+export const ArrowsFullscreenIcon = (props: BaseIconProps) => <Icon name="arrows-fullscreen" {...props} />;
+export const FullscreenExitIcon = (props: BaseIconProps) => <Icon name="fullscreen-exit" {...props} />;
+export const DashIcon = (props: BaseIconProps) => <Icon name="dash-lg" {...props} />;
+export const PlusIcon = (props: BaseIconProps) => <Icon name="plus-lg" {...props} />;
 export const StarIcon = (props: { filled?: boolean } & BaseIconProps) => (
   <Icon name={props.filled ? "star-fill" : "star"} {...props} />
 );

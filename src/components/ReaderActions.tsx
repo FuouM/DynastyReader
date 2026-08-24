@@ -12,7 +12,7 @@ import { errorMessage } from "../utils/errors";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
 import type { ChapterPage } from "../types/api";
-import { DsButton } from "./Button";
+import { IconButton } from "./Button";
 import {
   StorageIcon,
   BookmarkIcon,
@@ -117,8 +117,9 @@ export function ReaderActions(props: ReaderActionsProps) {
   return (
     <>
       <Show when={getSeriesPermalink()}>
-        <DsButton
-          className=""
+        <IconButton
+          icon={<StorageIcon />}
+          text={t("reader.toolbar.seriesButton")}
           title={t("reader.toolbar.viewSeries")}
           onClick={() =>
             navigate({
@@ -127,46 +128,39 @@ export function ReaderActions(props: ReaderActionsProps) {
               seriesName: getSeriesName() ?? getChapterTitle(),
             })
           }
-        >
-          <StorageIcon /> <span class="ds-btn-text">{t("reader.toolbar.seriesButton")}</span>
-        </DsButton>
+        />
       </Show>
-      <DsButton
-        className=""
+      <IconButton
+        className="ds-btn-icon-sm"
+        icon={<BookmarkIcon filled={bookmarked()} />}
         title={bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
         disabled={pending()}
         onClick={() => void toggleBookmark()}
-      >
-        <BookmarkIcon filled={bookmarked()} />
-      </DsButton>
-      <DsButton
-        className=""
+      />
+      <IconButton
+        icon={<CloudDownloadIcon />}
+        text={t("reader.toolbar.cacheChapter")}
         title={t("reader.toolbar.cacheChapterTooltip")}
         onClick={cacheChapter}
-      >
-        <CloudDownloadIcon /> <span class="ds-btn-text">{t("reader.toolbar.cacheChapter")}</span>
-      </DsButton>
-      <DsButton
-        className=""
+      />
+      <IconButton
+        className="ds-btn-icon-sm"
+        icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
         title={t("reader.toolbar.copyLink")}
         onClick={() => void copyLink()}
-      >
-        {copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
-      </DsButton>
-      <DsButton
-        className=""
+      />
+      <IconButton
+        className="ds-btn-icon-sm"
+        icon={<ExternalLinkIcon />}
         title={t("reader.toolbar.openInBrowser")}
         onClick={() => void openExternal(chapterUrl())}
-      >
-        <ExternalLinkIcon />
-      </DsButton>
-      <DsButton
-        className=""
+      />
+      <IconButton
+        className="ds-btn-icon-sm"
+        icon={<CloseIcon />}
         title={t("topbar.closeTabTooltip")}
         onClick={() => closeSessionMangaTab()}
-      >
-        <CloseIcon />
-      </DsButton>
+      />
     </>
   );
 }
