@@ -160,7 +160,7 @@ export function SettingsModal(props: SettingsModalProps) {
               text={t("settings.backToSettings")}
               onClick={() => setCurrentPage("main")}
             />
-            <span style="font-size:11px;color:var(--sys-text-muted,#666);">
+            <span class="ds-muted">
               {t("settings.hotkeys.autoSavedNotice")}
             </span>
           </div>

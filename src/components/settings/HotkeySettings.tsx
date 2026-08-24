@@ -166,25 +166,20 @@ export function HotkeysSection(props: HotkeysSectionProps) {
             }
           >
             <span class="ds-muted">{t("settings.hotkeys.resetConfirmPrompt")}</span>
-            <button
-              type="button"
-              class="win-button primary"
-              style="font-size:10px;padding:1px 6px;height:20px;"
+            <Button
+              className="primary"
+              cssText="font-size:10px;padding:1px 6px;"
+              text={t("common.yes")}
               onClick={() => {
                 resetAllHotkeys();
                 setResetConfirm(false);
               }}
-            >
-              {t("common.yes")}
-            </button>
-            <button
-              type="button"
-              class="win-button"
-              style="font-size:10px;padding:1px 6px;height:20px;"
+            />
+            <Button
+              cssText="font-size:10px;padding:1px 6px;"
+              text={t("common.no")}
               onClick={() => setResetConfirm(false)}
-            >
-              {t("common.no")}
-            </button>
+            />
           </Show>
         </div>
       </div>
@@ -208,22 +203,17 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                 })}
               </div>
               <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:2px;">
-                <button
-                  type="button"
-                  class="win-button"
-                  style="font-size:10px;padding:2px 8px;"
+                <Button
+                  cssText="font-size:10px;padding:2px 8px;"
+                  text={t("common.cancel")}
                   onClick={() => resolveConflict(false)}
-                >
-                  {t("common.cancel")}
-                </button>
-                <button
-                  type="button"
-                  class="win-button primary"
-                  style="font-size:10px;padding:2px 8px;"
+                />
+                <Button
+                  className="primary"
+                  cssText="font-size:10px;padding:2px 8px;"
+                  text={t("settings.hotkeys.reassignButton", { action: targetDef()?.label ?? "New Action" })}
                   onClick={() => resolveConflict(true)}
-                >
-                  {t("settings.hotkeys.reassignButton", { action: targetDef()?.label ?? "New Action" })}
-                </button>
+                />
               </div>
             </div>
           );
@@ -263,14 +253,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                               fallback={
                                 <div class="ds-key-recording">
                                   <span>{t("settings.hotkeys.pressKeys")}</span>
-                                  <button
-                                    type="button"
-                                    class="win-button ds-btn-sm"
-                                    style="font-size:9px;padding:0 4px;height:16px;line-height:1;"
-                                    onClick={() => stopRecording()}
-                                  >
-                                    {t("settings.hotkeys.cancelEsc")}
-                                  </button>
+                                  <span class="ds-muted" style="color:inherit;opacity:0.7;">({t("settings.hotkeys.cancelEsc")})</span>
                                 </div>
                               }
                             >
