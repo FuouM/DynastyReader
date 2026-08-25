@@ -241,19 +241,27 @@ body.ds-dark .skeleton-pulse::after {
   background-color: var(--sys-button-bg);
   color: var(--sys-control-text);
   border: 1px solid var(--sys-button-border);
-  padding: 2px 10px;
+  padding: 0 10px;
   height: 24px;
   cursor: pointer;
   font-size: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
   user-select: none;
-  line-height: normal;
+  line-height: 1;
   box-sizing: border-box;
 }
-.win-button i {
+.win-button i,
+.win-button .bi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 13px;
+}
+.ds-btn-icon-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -787,14 +795,15 @@ body.ds-dark .tag-pill.tag-identity:hover {
   align-items: center !important;
   font-size: 10px;
   box-sizing: border-box;
-  flex-shrink: 0;
 }
 .ds-btn-text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   white-space: nowrap;
 }
 .ds-external-link {
   color: var(--sys-primary, #0078d4);
-  text-decoration: underline;
   cursor: pointer;
   word-break: break-all;
 }

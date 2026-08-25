@@ -41,13 +41,16 @@ export function Button(props: ButtonProps) {
     return hasExplicitSize ? props.className : `${defaultClass} ${props.className}`;
   };
 
-  const iconSpan = props.icon ? <span style="display:inline-flex; align-items:center">{props.icon}</span> : null;
+  const iconSpan = props.icon ? (
+    <span class="ds-btn-icon-wrap" style="display:inline-flex; align-items:center; line-height:1;">
+      {props.icon}
+    </span>
+  ) : null;
   const content = props.text !== undefined && props.text !== "" ? (
     <span class={props.textClass ?? "ds-btn-text"}>{props.text}</span>
   ) : props.children !== undefined ? (
-    <span>{props.children}</span>
+    <span class="ds-btn-text">{props.children}</span>
   ) : null;
-
   return (
     <button
       type="button"
@@ -246,6 +249,7 @@ export function StatCard(props: StatCardProps) {
 
 export interface ToggleButtonProps {
   id?: string;
+  className?: string;
   style?: string;
   disabled?: boolean;
   value: boolean;
@@ -262,7 +266,7 @@ export function ToggleButton(props: ToggleButtonProps) {
   return (
     <Button
       id={props.id}
-      className={props.value ? "primary" : undefined}
+      className={[props.className, props.value ? "primary" : undefined].filter(Boolean).join(" ")}
       cssText={props.style}
       title={props.value ? props.activeTitle ?? props.title : props.title}
       disabled={props.disabled}

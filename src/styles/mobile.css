@@ -57,10 +57,17 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
 }
 
-#ds-root[data-mobile] #ds-view:has(#ds-reader-container) {
+#ds-root[data-mobile] #ds-view:has(#ds-reader-container),
+#ds-root[data-mobile]:has(#ds-reader-container) #ds-view {
   padding-bottom: 0 !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
 }
 
+/* When in reader view on mobile, hide the desktop topbar so the reader's dedicated HUD takes full screen */
+#ds-root[data-mobile]:has(#ds-reader-container) #ds-topbar {
+  display: none !important;
+}
 #ds-root[data-mobile] #ds-pane-browse,
 #ds-root[data-mobile] #ds-pane-library,
 #ds-root[data-mobile] #ds-pane-dynamic,
@@ -71,9 +78,9 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 #ds-root[data-mobile] #ds-topbar {
   flex-direction: row;
   align-items: center;
-  padding: 0 8px;
-  height: 38px;
-  min-height: 38px;
+  padding: env(safe-area-inset-top, 0px) 10px 0 10px;
+  height: calc(44px + env(safe-area-inset-top, 0px));
+  min-height: calc(44px + env(safe-area-inset-top, 0px));
   box-sizing: border-box;
 }
 
@@ -83,6 +90,7 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   flex-wrap: nowrap;
   width: 100%;
   gap: 8px;
+  height: 44px;
 }
 
 #ds-root[data-mobile] #ds-nav-history {
@@ -93,52 +101,23 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 
 #ds-root[data-mobile] #ds-nav-history .ds-segmented-btn {
   width: 26px;
-  height: 24px;
-  min-height: 24px;
+  height: 26px;
+  min-height: 26px;
   min-width: 26px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  font-size: 12px;
 }
-
-
+/* Session manga tab is represented by the bottom nav Reading tab on mobile; hide topbar duplicate */
 #ds-root[data-mobile] .ds-session-tab {
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
-  width: 44px;
-  min-width: 44px !important;
-  max-width: 44px !important;
-  padding: 0 4px;
-  gap: 3px;
-  font-size: 11px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-#ds-root[data-mobile] .ds-session-tab .ds-truncate {
   display: none !important;
 }
 
-#ds-root[data-mobile] .ds-session-tab .ds-tab-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  min-height: 16px;
-  font-size: 10px;
-  cursor: pointer;
-  box-sizing: border-box;
-}
 #ds-root[data-mobile] #ds-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   flex: 1 1 auto;
   text-align: left;
@@ -153,7 +132,7 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 #ds-root[data-mobile] #ds-actions {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   margin-left: auto;
   flex-shrink: 0;
   width: auto !important;
@@ -164,12 +143,12 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   display: none !important;
 }
 #ds-root[data-mobile] #ds-actions .win-button {
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
-  min-width: 24px;
-  max-width: 24px;
+  width: 26px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  min-width: 26px;
+  max-width: 26px;
   aspect-ratio: 1 / 1;
   padding: 0;
   display: inline-flex;
@@ -178,7 +157,6 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   box-sizing: border-box;
   font-size: 12px;
 }
-
 #ds-root[data-mobile] #ds-topbar-tools {
   display: inline-flex;
   align-items: center;
@@ -188,19 +166,19 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 }
 
 #ds-root[data-mobile] #ds-topbar-tools .win-button {
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
-  min-width: 24px;
-  max-width: 24px;
+  width: 26px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  min-width: 26px;
+  max-width: 26px;
   aspect-ratio: 1 / 1;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* Hide desktop topbar segmented view switch on mobile (bottom nav handles switching) */
@@ -220,7 +198,8 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(48px + env(safe-area-inset-bottom, 0px));
+  height: calc(50px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--sys-button-bg, #f0f0f0);
   border-top: 1px solid var(--sys-border-dark, #b0b0b0);
   z-index: 1000;
@@ -229,8 +208,8 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 
 .ds-bn-tab {
   flex: 1;
-  height: 100% !important;
-  min-height: 100% !important;
+  height: 50px !important;
+  min-height: 50px !important;
   max-height: none !important;
   display: flex;
   flex-direction: column;
@@ -244,19 +223,26 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   border-radius: 0;
   cursor: pointer;
   color: var(--sys-control-text, #000);
-  padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px)) 0;
+  padding: 4px 0;
   box-sizing: border-box;
-  transition: background-color 0.1s ease, color 0.1s ease;
+  transition: none !important;
   user-select: none;
-  line-height: 1.2;
+  line-height: 1.1;
+}
+
+.ds-bn-tab .bi,
+.ds-bn-tab i {
+  font-size: 18px !important;
 }
 
 .ds-bn-tab + .ds-bn-tab {
   border-left: 1px solid var(--sys-border-dark, #b0b0b0);
 }
 
-.ds-bn-tab:hover {
-  background: var(--sys-button-hover, #e5f1fb);
+@media (hover: hover) {
+  .ds-bn-tab:hover {
+    background: var(--sys-button-hover, #e5f1fb);
+  }
 }
 
 .ds-bn-tab .bi {
@@ -281,14 +267,18 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 }
 
 #ds-root[data-mobile] .ds-item-actions .win-button,
-#ds-root[data-mobile] .ds-item-actions .ds-btn-compact {
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
+#ds-root[data-mobile] .ds-item-actions .ds-btn-compact,
+#ds-root[data-mobile] .ds-feed-actions .win-button,
+#ds-root[data-mobile] .ds-feed-actions .ds-btn-compact {
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  max-width: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
   aspect-ratio: 1 / 1;
   padding: 0 !important;
-  font-size: 11.5px;
+  font-size: 12px;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -299,14 +289,15 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   margin-right: 3px !important;
   font-size: 11px;
 }
-/* Browse sub-tabs & pager stacked layout on mobile */
+/* Browse sub-tabs & pager layout on mobile */
 #ds-root[data-mobile] .ds-subtabs {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   align-items: stretch;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
+
 #ds-root[data-mobile] .ds-subtabs-left {
   display: flex;
   width: 100%;
@@ -323,19 +314,20 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 #ds-root[data-mobile] .ds-subtabs-left::-webkit-scrollbar {
   display: none;
 }
+
 #ds-root[data-mobile] .ds-subtab {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
   white-space: nowrap;
   height: 26px;
   min-height: 26px;
-  font-size: 11px;
-  padding: 0 4px;
+  font-size: 11.5px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   box-sizing: border-box;
+  border-radius: 2px;
 }
 
 #ds-root[data-mobile] .ds-subtabs-right {
@@ -351,30 +343,35 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
-  padding: 0 6px;
-  font-size: 11px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  padding: 0 8px;
+  font-size: 11.5px;
   flex-shrink: 0;
 }
 
 #ds-root[data-mobile] #ds-browse-check-updates-btn {
   padding: 0 8px;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
-  font-size: 11px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  font-size: 11.5px;
   white-space: nowrap;
   flex-shrink: 0;
 }
-
 #ds-root[data-mobile] #ds-browse-top-pager {
   display: flex;
   align-items: center;
   justify-content: flex-end !important;
   margin-left: auto;
   gap: 4px !important;
+}
+
+#ds-root[data-mobile] #ds-browse-top-pager .ds-pager-btn-jump,
+#ds-root[data-mobile] #ds-browse-top-pager .ds-pager-go-btn,
+#ds-root[data-mobile] #ds-browse-top-pager .ds-pager-input {
+  display: none !important;
 }
 
 #ds-root[data-mobile] .ds-pager-widget {
@@ -386,35 +383,94 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 /* Search & Go inputs on mobile */
 #ds-root[data-mobile] #ds-search-btn,
 #ds-root[data-mobile] #ds-url-btn {
-  width: 64px !important;
-  padding: 0 6px !important;
+  width: auto !important;
+  min-width: 44px !important;
+  padding: 0 8px !important;
 }
+
 #ds-root[data-mobile] #ds-url-paste-btn {
-  padding: 0 6px !important;
+  padding: 0 8px !important;
 }
 
 /* Feed items layout on mobile */
+#ds-root[data-mobile] .ds-feed-item {
+  gap: 8px;
+  padding: 8px 6px;
+  align-items: flex-start;
+}
+
 #ds-root[data-mobile] .ds-feed-cover-wrap {
-  width: 48px;
-  height: 68px;
+  width: 52px;
+  height: 74px;
+  min-width: 52px;
+  flex-shrink: 0;
 }
 
 #ds-root[data-mobile] .ds-feed-cover {
-  width: 48px;
-  height: 68px;
+  width: 52px;
+  height: 74px;
+  border-radius: 3px;
+}
+
+#ds-root[data-mobile] .ds-item-title {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+#ds-root[data-mobile] .ds-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+#ds-root[data-mobile] .ds-tag-row-label {
+  display: none !important;
+}
+
+#ds-root[data-mobile] .ds-tag-row-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+#ds-root[data-mobile] .ds-feed-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+#ds-root[data-mobile] .ds-feed-actions .win-button,
+#ds-root[data-mobile] .ds-feed-actions .ds-btn-compact {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  aspect-ratio: 1 / 1;
+  padding: 0 !important;
+  font-size: 12.5px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box;
+  border-radius: 3px;
 }
 
 #ds-root[data-mobile] .tag-pill {
   font-size: 10.5px;
-  padding: 1px 6px;
+  padding: 1.5px 6px;
   min-height: 18px;
   height: auto;
   line-height: 1.3;
+  border-radius: 3px;
 }
 
 #ds-root[data-mobile] .ds-chapter-row {
-  min-height: 36px;
-  padding: 6px 8px;
+  min-height: 40px;
+  padding: 8px 10px;
+  gap: 8px;
 }
 
 #ds-root[data-mobile] .ds-feed-status-bar {
@@ -435,7 +491,6 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   align-items: center;
   width: 100%;
 }
-
 #ds-root[data-mobile] .ds-feed-status-pager-wrap {
   display: flex;
   align-items: center;
@@ -445,17 +500,78 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 
 /* Series View Mobile Layout */
 #ds-root[data-mobile] .ds-series-head {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+#ds-root[data-mobile] .ds-series-head .ds-cover,
+#ds-root[data-mobile] .ds-series-head .ds-cover-placeholder {
+  width: 96px;
+  height: 136px;
+  min-width: 96px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+#ds-root[data-mobile] .ds-series-head .ds-fill {
+  flex: 1;
+  min-width: 0;
+}
+
+#ds-root[data-mobile] .ds-series-desc {
+  margin: 6px 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#ds-root[data-mobile] .ds-meta-rows {
+  display: flex;
   flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+#ds-root[data-mobile] .ds-meta-row {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  text-align: center;
+  gap: 4px;
 }
 
-#ds-root[data-mobile] .ds-cover {
-  width: 120px;
-  height: 168px;
-  margin-bottom: 8px;
+#ds-root[data-mobile] .ds-meta-label {
+  display: none !important;
 }
 
+#ds-root[data-mobile] .ds-meta-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ds-series-mobile-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.ds-series-mobile-actions .win-button {
+  height: 34px;
+  min-height: 34px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 3px;
+}
 /* Library & Cache Grids */
 #ds-root[data-mobile] #ds-library-container {
   padding-top: 0;
@@ -473,7 +589,256 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   gap: 6px !important;
 }
 
-/* Floating banner toast position when mobile (clears bottom nav) */
 #ds-root[data-mobile] #ds-banner {
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+}
+/* Reader HUD & Overlay on mobile */
+#ds-root[data-mobile] .ds-reader-nav {
+  transition: opacity 0.25s ease, transform 0.25s ease !important;
+}
+
+#ds-root[data-mobile] .ds-reader-nav-top {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1100 !important;
+  padding: env(safe-area-inset-top, 0px) 8px 6px 8px !important;
+  background: rgba(248, 248, 248, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: var(--sys-window-text, #000000);
+}
+
+#ds-root[data-mobile] .ds-reader-nav-bottom {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1100 !important;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)) 8px !important;
+  background: rgba(248, 248, 248, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+  color: var(--sys-window-text, #000000);
+}
+
+/* Dark Theme Mobile Reader HUD */
+#ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-nav-top {
+  background: rgba(22, 22, 22, 0.96) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  color: #ffffff !important;
+}
+
+#ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-nav-bottom {
+  background: rgba(22, 22, 22, 0.96) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.5) !important;
+  color: #ffffff !important;
+}
+
+#ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-nav .win-button {
+  background: #2a2a2a !important;
+  border: 1px solid #444444 !important;
+  color: #ffffff !important;
+}
+
+#ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-nav .win-button:hover {
+  background: #383838 !important;
+  border-color: #555555 !important;
+}
+
+#ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-nav .win-button.primary {
+  background: var(--sys-highlight-bg, #0078d4) !important;
+  border-color: #005a9e !important;
+  color: #ffffff !important;
+}
+
+#ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-nav .ds-truncate {
+  color: #ffffff !important;
+}
+
+#ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-nav .ds-muted {
+  color: #aaaaaa !important;
+}
+
+#ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-progress-pill {
+  background: #262626 !important;
+  border: 1px solid #444444 !important;
+  color: #e0e0e0 !important;
+}
+
+#ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-progress-track {
+  background: #363636 !important;
+}
+#ds-root[data-mobile] .ds-reader-nav.ds-toolbar-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#ds-root[data-mobile] .ds-reader-nav-top.ds-toolbar-hidden {
+  transform: translateY(-100%) !important;
+}
+
+#ds-root[data-mobile] .ds-reader-nav-bottom.ds-toolbar-hidden {
+  transform: translateY(100%) !important;
+}
+
+#ds-root[data-mobile] .ds-slot-page-badge {
+  position: absolute !important;
+  top: 6px !important;
+  left: 6px !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 8px !important;
+  border-radius: 3px !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
+  letter-spacing: 0.3px !important;
+  line-height: 1 !important;
+}
+/* Mobile Reader Slide-up Menu (WinForms Aesthetic) */
+.ds-reader-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  animation: ds-modal-fade 0.15s ease forwards;
+}
+
+.ds-reader-sheet-backdrop.ds-sheet-closing {
+  animation: ds-modal-fade-out 0.18s ease forwards;
+  pointer-events: none;
+}
+
+.ds-reader-sheet-window {
+  background: var(--sys-control-bg, #ececec);
+  border-top: 1px solid var(--sys-border-dark, #707070);
+  border-radius: 4px 4px 0 0;
+  padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+  animation: ds-sheet-slide-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  color: var(--sys-window-text, #000);
+  box-sizing: border-box;
+}
+
+.ds-reader-sheet-window.ds-sheet-closing {
+  animation: ds-sheet-slide-down 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.ds-reader-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--sys-border-dark, #b0b0b0);
+  padding-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.ds-reader-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.ds-reader-sheet-window .ds-segmented-switch {
+  width: 100%;
+  display: flex;
+  height: 30px !important;
+  min-height: 30px !important;
+  box-sizing: border-box;
+}
+
+.ds-reader-sheet-window .ds-segmented-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100% !important;
+  min-height: 100% !important;
+  font-size: 11.5px !important;
+  padding: 0 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  box-sizing: border-box;
+}
+
+.ds-reader-sheet-window .ds-segmented-btn span,
+.ds-reader-sheet-window .ds-segmented-btn .ds-btn-text {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.ds-reader-sheet-window .ds-segmented-btn span.ds-btn-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  font-size: 13px;
+}
+
+.ds-reader-sheet-footer {
+  border-top: 1px solid var(--sys-border-dark, #b0b0b0);
+  padding-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+@keyframes ds-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ds-modal-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes ds-sheet-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes ds-sheet-slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+#ds-root[data-mobile] .win-button,
+#ds-root[data-mobile] .ds-segmented-btn,
+#ds-root[data-mobile] .ds-subtab,
+#ds-root[data-mobile] .ds-chapter-row,
+#ds-root[data-mobile] .ds-feed-item,
+#ds-root[data-mobile] .ds-bn-tab,
+#ds-root[data-mobile] .tag-pill {
+  touch-action: manipulation;
+}
+
+#ds-root[data-mobile] #ds-reader-viewport.horizontal #ds-reader-strip {
+  will-change: auto;
+}
+
+#ds-root[data-mobile] .ds-reader-progress-fill {
+  width: 100% !important;
+  transform-origin: left center;
+  transition: transform 0.25s ease !important;
 }

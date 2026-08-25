@@ -44,7 +44,7 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
       }),
     );
 
-    const validTagResults = tagResults.filter((t): t is NonNullable<typeof t> => t !== null);
+    const validTagResults = tagResults.filter((t: (typeof tagResults)[number]): t is NonNullable<typeof t> => t !== null);
     if (validTagResults.length === 0) {
       return { items: [], totalPages: 1, currentPage: 1, query: "" };
     }
@@ -69,7 +69,7 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
     if (firstTag.taggings && firstTag.taggings.length > 0) {
       for (const tg of firstTag.taggings) {
         if (!tg.title || !tg.permalink) continue;
-        const itemTags: ChapterTag[] = (tg.tags ?? []).map((t) => ({
+        const itemTags: ChapterTag[] = (tg.tags ?? []).map((t: ChapterTag) => ({
           type: t.type || "General",
           name: t.name || "",
           permalink: t.permalink || "",

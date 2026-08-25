@@ -422,13 +422,27 @@
   justify-content: center;
   overflow: hidden !important;
   padding: 0 !important;
+  touch-action: none;
 }
 #ds-reader-strip {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
   gap: 14px;
   width: 100%;
+}
+
+/* Scroll Mode: First page starts centered in viewport; last page stops centered */
+#ds-reader-viewport:not(.horizontal) #ds-reader-strip {
+  padding-top: max(24px, calc(50dvh - min(300px, 35dvh)));
+  padding-bottom: max(24px, calc(50dvh - min(300px, 35dvh)));
+  box-sizing: border-box;
+}
+
+#ds-root[data-mobile] #ds-reader-viewport:not(.horizontal) #ds-reader-strip {
+  padding-top: max(20px, calc(50dvh - min(260px, 35dvh)));
+  padding-bottom: max(20px, calc(50dvh - min(260px, 35dvh)));
 }
 /* While restoring a saved position the strip is kept off-screen until the
    instant jump lands and its images have decoded, so the first page never
@@ -444,18 +458,44 @@
   position: relative;
   margin: 0 auto;
 }
+
+#ds-reader-viewport:not(.horizontal) .ds-slot {
+  width: 100%;
+  min-height: max(320px, 60dvh);
+}
+.ds-page-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+  line-height: 0;
+}
+
+#ds-reader-viewport.horizontal #ds-reader-strip > .ds-slot .ds-page-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 100%;
+  max-width: 100%;
+}
 .ds-slot-page-badge {
   position: absolute;
   top: 6px;
   left: 6px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  font-size: 10px;
-  font-weight: bold;
-  padding: 2px 6px;
-  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 3px;
   pointer-events: none;
-  z-index: 5;
+  z-index: 10;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.3px;
+  line-height: 1;
 }
 .ds-page-img {
   display: block;
@@ -821,6 +861,14 @@
   cursor: grabbing !important;
 }
 
+.ds-slot-placeholder {
+  width: 100%;
+  max-width: 800px;
+  min-height: max(320px, 60dvh);
+  background: transparent;
+  display: block;
+}
+
 .ds-slot-state {
   display: flex;
   flex-direction: column;
@@ -875,4 +923,56 @@
   font-size: 11px;
   font-weight: 500;
   color: #333;
+}
+
+/* Chapter Drag-and-Hold Overscroll Prompt Badge */
+.ds-chapter-overscroll-badge {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--sys-control-bg, #ececec);
+  color: var(--sys-window-text, #000);
+  border: 1px solid var(--sys-border-dark, #707070);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1300;
+  pointer-events: none;
+  user-select: none;
+  animation: ds-modal-fade 0.12s ease;
+  white-space: nowrap;
+  max-width: 90vw;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.ds-chapter-overscroll-badge i {
+  font-size: 16px;
+  color: var(--sys-highlight-bg, #0078d4);
+}
+
+.ds-chapter-overscroll-badge.ds-ready {
+  background: var(--sys-highlight-bg, #0078d4) !important;
+  color: var(--sys-highlight-text, #ffffff) !important;
+  border-color: #005a9e !important;
+}
+
+.ds-chapter-overscroll-badge.ds-ready i {
+  color: var(--sys-highlight-text, #ffffff) !important;
+}
+
+#ds-reader-container.ds-dark .ds-chapter-overscroll-badge:not(.ds-ready) {
+  background: #242424;
+  color: #f0f0f0;
+  border-color: #484848;
+}
+
+#ds-reader-container.ds-dark .ds-chapter-overscroll-badge:not(.ds-ready) i {
+  color: #60a5fa;
 }

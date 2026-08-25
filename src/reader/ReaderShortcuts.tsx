@@ -14,6 +14,7 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
       if (isTextInputTarget(ev.target)) return;
 
       if (matchesHotkey(ev, "reader.nextPage")) {
+        if (!c.isHorizontal() && ev.key === " ") return;
         ev.preventDefault();
         if (c.isSpread()) {
           c.stepSpread(1);
@@ -34,19 +35,11 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
         ev.preventDefault();
         c.setPage(c.pages().length - 1, true);
       } else if (matchesHotkey(ev, "reader.nextChapter")) {
-        const list = c.chapterList();
-        const curIdx = list.findIndex((x) => x.permalink === c.permalink);
-        if (curIdx >= 0 && curIdx < list.length - 1) {
-          ev.preventDefault();
-          c.gotoChapter(list[curIdx + 1]);
-        }
+        ev.preventDefault();
+        c.gotoNextChapter();
       } else if (matchesHotkey(ev, "reader.prevChapter")) {
-        const list = c.chapterList();
-        const curIdx = list.findIndex((x) => x.permalink === c.permalink);
-        if (curIdx > 0) {
-          ev.preventDefault();
-          c.gotoChapter(list[curIdx - 1]);
-        }
+        ev.preventDefault();
+        c.gotoPrevChapter();
       } else if (matchesHotkey(ev, "reader.toggleMode")) {
         ev.preventDefault();
         if (c.mode() === "scroll") {

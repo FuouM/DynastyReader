@@ -12,11 +12,14 @@ import {
   createMemo,
   createResource,
   createSignal,
+  onCleanup,
   Show,
   type Accessor,
+  type JSX,
 } from "solid-js";
 import {
   decodeEntities,
+  isMobile,
   navigate,
   route,
   setActions,
@@ -149,6 +152,8 @@ export function SeriesView() {
   const showSpinner = useDelayedSpinner(() => data.loading);
 
   // Publish the series top-bar actions and update title whenever the data is ready.
+  // On mobile the topbar is too narrow for these buttons — render them in-body
+  // instead and clear the topbar slot (Phase 5.2).
   createEffect(() => {
     const d = data();
     if (!d) return;
@@ -210,6 +215,10 @@ export function SeriesView() {
       }
     };
 
+    if (isMobile()) {
+      setActions(null);
+      return;
+    }
     setActions(
       <SeriesActions
         followed={() => followed}
@@ -235,6 +244,75 @@ export function SeriesView() {
       />,
     );
   });
+
+  onCleanup(() => setActions(null));
+
+  const handleToggleFollow = async (): Promise<void> => {
+    const d = data();
+    if (!d) return;
+    const { series, coverPath, followed, chapters } = d;
+    const seriesPermalink = series.permalink;
+    const seriesName = series.name;
+    const latest = chapters[chapters.length - 1];
+    setBusyFollow(true);
+    try {
+      if (followed) {
+        await unfollowSeries(seriesPermalink);
+        showBanner(t("series.unfollowedBanner", { name: seriesName }));
+      } else {
+        await followSeries({
+          permalink: seriesPermalink,
+          name: seriesName,
+          cover: coverPath,
+          latestChapterPermalink: latest?.permalink ?? null,
+          latestChapterTitle: latest?.title ?? null,
+        });
+        showBanner(t("series.followingBanner", { name: seriesName }));
+      }
+      await refetch();
+    } catch (err) {
+      const msg = errorMessage(err);
+      showBanner(t("series.followErrorBanner", { msg }));
+      setBusyFollow(false);
+    }
+  };
+
+  const handleToggleBlacklist = async (): Promise<void> => {
+    const d = data();
+    if (!d) return;
+    const { series, blacklisted } = d;
+    const seriesPermalink = series.permalink;
+    const seriesName = series.name;
+    setBusyBlacklist(true);
+    try {
+      if (blacklisted) {
+        await removeBlacklistedSeries(seriesPermalink);
+        showBanner(t("series.unblacklistedBanner", { name: seriesName }));
+      } else {
+        await addBlacklistedSeries(seriesPermalink, seriesName);
+        showBanner(t("series.blacklistedBanner", { name: seriesName }));
+      }
+      await refetch();
+    } catch (err) {
+      const msg = errorMessage(err);
+      showBanner(t("series.blacklistErrorBanner", { msg }));
+      setBusyBlacklist(false);
+    }
+  };
+
+  const handleOpenAddToCol = (anchorEl: HTMLElement): void => {
+    const d = data();
+    if (!d) return;
+    addToCol.open(
+      {
+        permalink: d.series.permalink,
+        title: d.series.name,
+        kind: "series",
+        cover: d.coverPath,
+      },
+      anchorEl,
+    );
+  };
 
   const isRedirected = (): boolean =>
     data.error !== undefined && data.error instanceof SeriesRedirected;
@@ -270,6 +348,20 @@ export function SeriesView() {
           ordered={ordered}
           sortOrder={sortOrder}
           setSortOrder={setSortOrder}
+          mobileActions={
+            <SeriesActions
+              followed={() => data()!.followed}
+              busyFollow={busyFollow}
+              onToggleFollow={() => void handleToggleFollow()}
+              blacklisted={() => data()!.blacklisted}
+              busyBlacklist={busyBlacklist}
+              onToggleBlacklist={() => void handleToggleBlacklist()}
+              onRefresh={() => setForceTick((t) => t + 1)}
+              onOpenAddToCol={handleOpenAddToCol}
+              openUrl={`${SITE_ROOT}/${seriesTypeToPath(data()!.series.type)}/${encodeURIComponent(data()!.series.permalink)}`}
+              seriesType={data()!.series.type}
+            />
+          }
         />
       </Show>
 
@@ -282,6 +374,7 @@ function SeriesBody(props: {
   data: {
     series: Series;
     coverPath: string | null;
+    followed: boolean;
     blacklisted: boolean;
     chapters: ChapterMeta[];
     progress: Map<string, SeriesProgressRow>;
@@ -291,6 +384,7 @@ function SeriesBody(props: {
   ordered: Accessor<ChapterMeta[]>;
   sortOrder: Accessor<"asc" | "desc">;
   setSortOrder: (v: "asc" | "desc") => void;
+  mobileActions?: JSX.Element;
 }) {
   return (
     <>
@@ -314,6 +408,12 @@ function SeriesBody(props: {
       </Show>
 
       <SeriesHeader series={props.data.series} coverPath={props.data.coverPath} />
+
+      <Show when={isMobile() && props.mobileActions}>
+        <div class="ds-series-mobile-actions">
+          {props.mobileActions}
+        </div>
+      </Show>
 
       <SeriesTaggables series={props.data.series} />
 

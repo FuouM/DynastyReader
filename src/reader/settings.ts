@@ -94,3 +94,14 @@ export function setReaderNavPosition(pos: ReaderNavPosition): void {
   localStorage.setItem("ds-reader-nav-position", pos);
   window.dispatchEvent(new CustomEvent("ds-reader-nav-pos-change", { detail: pos }));
 }
+
+export type PrevChapterStartPage = "first" | "last";
+
+export function getPrevChapterStartPage(): PrevChapterStartPage {
+  const val = localStorage.getItem("ds-reader-prev-chapter-page");
+  return val === "last" ? "last" : "first";
+}
+
+export function setPrevChapterStartPage(page: PrevChapterStartPage): void {
+  localStorage.setItem("ds-reader-prev-chapter-page", page);
+}

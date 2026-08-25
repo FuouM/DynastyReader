@@ -5,14 +5,20 @@
  * writes back through session control methods.
  */
 
-import { createEffect, createSignal, Show, type Accessor } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show, type Accessor } from "solid-js";
+import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
+import { debounce } from "@solid-primitives/scheduled";
 import type { ReaderSession } from "./reader-session";
-import type { FitMode } from "../types/reader";
-import { theme, isMobile } from "../stores";
+import type { FitMode, ReaderMode, PagedLayout, ReadingDirection } from "../types/reader";
+import { theme, setTheme, isMobile, goBack, closeSessionMangaTab, decodeEntities, showBanner, SITE_ROOT } from "../stores";
+import { addBookmark, removeBookmark } from "../db";
+import { openExternal } from "../api";
+import { errorMessage } from "../utils/errors";
 import { t } from "../i18n";
-import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
-import { DsButton, DsSelect, IconButton } from "../components/Button";
+import { getReaderNavPosition, getPrevChapterStartPage, setPrevChapterStartPage, type ReaderNavPosition, type PrevChapterStartPage } from "./settings";
+import { DsButton, DsSelect, IconButton, Button, IconText, SegmentedSwitch } from "../components/Button";
+import { SettingsRow } from "../components/SettingsRow";
 import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
@@ -35,8 +41,16 @@ import {
   FullscreenExitIcon,
   DashIcon,
   PlusIcon,
+  BookmarkIcon,
+  CloseIcon,
+  DoublePageIcon,
+  StorageIcon,
+  CloudDownloadIcon,
+  CheckIcon,
+  ExternalLinkIcon,
+  SettingsIcon,
+  Icon,
 } from "../components/Icon";
-
 interface NavRowProps {
   session: ReaderSession;
   controlsOpen?: Accessor<boolean>;
@@ -54,11 +68,7 @@ export function ReaderMainRow(props: NavRowProps) {
         text={t("reader.toolbar.chapterShort")}
         title={t("reader.toolbar.prevChapter")}
         disabled={s.chapterNav().prevDisabled}
-        onClick={() => {
-          const list = s.chapterList();
-          const curIdx = list.findIndex((x) => x.permalink === s.permalink);
-          if (curIdx > 0) s.gotoChapter(list[curIdx - 1]);
-        }}
+        onClick={() => s.gotoPrevChapter()}
       />
       <IconButton
         className="ds-nav-btn-jump ds-btn-icon"
@@ -90,7 +100,14 @@ export function ReaderMainRow(props: NavRowProps) {
           </span>
         </div>
         <div class="ds-reader-progress-track">
-          <div class="ds-reader-progress-fill" style={{ width: `${s.progress().width}%` }}></div>
+          <div
+            class="ds-reader-progress-fill"
+            style={
+              isMobile()
+                ? { width: "100%", transform: `scaleX(${s.progress().width / 100})` }
+                : { width: `${s.progress().width}%` }
+            }
+          ></div>
         </div>
       </div>
       <IconButton
@@ -113,13 +130,7 @@ export function ReaderMainRow(props: NavRowProps) {
         reverse
         title={t("reader.toolbar.nextChapter")}
         disabled={s.chapterNav().nextDisabled}
-        onClick={() => {
-          const list = s.chapterList();
-          const curIdx = list.findIndex((x) => x.permalink === s.permalink);
-          if (curIdx >= 0 && curIdx < list.length - 1) {
-            s.gotoChapter(list[curIdx + 1]);
-          }
-        }}
+        onClick={() => s.gotoNextChapter()}
       />
       <Show when={isMobile()}>
         <IconButton
@@ -210,14 +221,16 @@ export function ReaderControlsRow(props: NavRowProps) {
         title={t("reader.toolbar.themeToggle")}
         onClick={() => s.toggleTheme()}
       />
-      <IconButton
-        className="ds-ctrl-btn"
-        classList={{ primary: s.isFullscreen() }}
-        icon={s.isFullscreen() ? <FullscreenExitIcon /> : <ArrowsFullscreenIcon />}
-        text={s.isFullscreen() ? t("reader.toolbar.exitFullscreenLabel") : t("reader.toolbar.fullscreenLabel")}
-        title={t("reader.toolbar.fullscreen")}
-        onClick={() => s.setFullscreen(!s.isFullscreen())}
-      />
+      <Show when={!isMobile()}>
+        <IconButton
+          className="ds-ctrl-btn"
+          classList={{ primary: s.isFullscreen() }}
+          icon={s.isFullscreen() ? <FullscreenExitIcon /> : <ArrowsFullscreenIcon />}
+          text={s.isFullscreen() ? t("reader.toolbar.exitFullscreenLabel") : t("reader.toolbar.fullscreenLabel")}
+          title={t("reader.toolbar.fullscreen")}
+          onClick={() => s.setFullscreen(!s.isFullscreen())}
+        />
+      </Show>
       <div class="ds-ctrl-zoom-group" classList={{ "ds-zoom-disabled": s.fitMode() !== "original" }}>
         <IconButton
           className="ds-btn-icon"
@@ -255,10 +268,208 @@ export function ReaderControlsRow(props: NavRowProps) {
   );
 }
 
+export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
+  const s = props.session;
+  const [mounted, setMounted] = createSignal(false);
+  const [closing, setClosing] = createSignal(false);
+  const [prevChapterPage, setPrevChapterPage] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
+  const [copied, setCopied] = createSignal(false);
+  const resetCopied = debounce(() => setCopied(false), 2000);
+  let closeTimer: number | null = null;
+
+  createEffect(() => {
+    const open = s.controlsOpen();
+    if (open) {
+      if (closeTimer !== null) {
+        clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+      setMounted(true);
+      setClosing(false);
+    } else if (mounted() && !closing()) {
+      setClosing(true);
+      closeTimer = window.setTimeout(() => {
+        setMounted(false);
+        setClosing(false);
+        closeTimer = null;
+      }, 180);
+    }
+  });
+
+  onCleanup(() => {
+    if (closeTimer !== null) clearTimeout(closeTimer);
+  });
+
+  const requestClose = () => {
+    s.setControlsOpen(false);
+  };
+
+  return (
+    <Show when={mounted()}>
+      <Portal mount={document.getElementById("ds-root") ?? document.body}>
+        <div
+          class="ds-reader-sheet-backdrop"
+          classList={{ "ds-sheet-closing": closing() }}
+          onClick={(ev) => {
+            if (ev.target === ev.currentTarget) requestClose();
+          }}
+        >
+          <div
+            class="ds-reader-sheet-window"
+            classList={{ "ds-sheet-closing": closing() }}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div class="ds-reader-sheet-header">
+              <div class="ds-modal-title">
+                <IconText icon={<ToolIcon />}>{t("settings.reader.title")}</IconText>
+              </div>
+              <IconButton
+                className="ds-modal-close"
+                icon={<CloseIcon />}
+                title={t("common.close")}
+                onClick={requestClose}
+              />
+            </div>
+
+            <div class="ds-reader-sheet-body">
+              {/* Reading Mode */}
+              <SettingsRow label={t("settings.reader.defaultMode")}>
+                <SegmentedSwitch
+                  value={s.mode()}
+                  onChange={(val) => s.setMode(val as ReaderMode)}
+                  options={[
+                    { id: "ds-ctrl-mode-scroll", value: "scroll", icon: <DistributeVerticalIcon />, text: t("reader.toolbar.scroll") },
+                    { id: "ds-ctrl-mode-paged", value: "paged", icon: <ArrowLeftRightIcon />, text: t("reader.toolbar.paged") },
+                  ]}
+                />
+              </SettingsRow>
+
+              {/* Reading Direction (when paged) */}
+              <Show when={s.mode() === "paged"}>
+                <SettingsRow label={t("settings.reader.readingDirection")} divider>
+                  <SegmentedSwitch
+                    value={s.direction()}
+                    onChange={(val) => s.setDirection(val as ReadingDirection)}
+                    options={[
+                      { id: "ds-ctrl-dir-rtl", value: "rtl", icon: <ArrowLeftIcon />, text: "RTL" },
+                      { id: "ds-ctrl-dir-ltr", value: "ltr", icon: <ArrowRightIcon />, text: "LTR" },
+                    ]}
+                  />
+                </SettingsRow>
+
+                {/* Paged Layout */}
+                <SettingsRow label={t("settings.reader.pagedLayout")} divider>
+                  <SegmentedSwitch
+                    value={s.pagedLayout()}
+                    onChange={(val) => s.setPagedLayout(val as PagedLayout)}
+                    options={[
+                      { id: "ds-ctrl-layout-single", value: "single", icon: <DoublePageIcon />, text: t("settings.reader.layoutSingleLabel") },
+                      { id: "ds-ctrl-layout-spread", value: "spread", icon: <ColumnsGapIcon />, text: t("settings.reader.layoutSpreadLabel") },
+                    ]}
+                  />
+                </SettingsRow>
+              </Show>
+
+              {/* Fit Mode */}
+              <SettingsRow label={t("settings.reader.fitMode")} divider>
+                <SegmentedSwitch
+                  value={s.fitMode()}
+                  onChange={(val) => s.setFitMode(val as FitMode)}
+                  options={[
+                    { id: "ds-ctrl-fit-width", value: "width", text: t("reader.toolbar.fitModes.width") },
+                    { id: "ds-ctrl-fit-height", value: "height", text: t("reader.toolbar.fitModes.height") },
+                    { id: "ds-ctrl-fit-orig", value: "original", text: t("reader.toolbar.fitModes.original") },
+                  ]}
+                />
+              </SettingsRow>
+
+              {/* Previous Chapter Landing Page */}
+              <SettingsRow label={t("settings.reader.prevChapterPage")} divider>
+                <SegmentedSwitch
+                  value={prevChapterPage()}
+                  onChange={(val) => {
+                    setPrevChapterStartPage(val as PrevChapterStartPage);
+                    setPrevChapterPage(val as PrevChapterStartPage);
+                  }}
+                  options={[
+                    { id: "ds-ctrl-prev-first", value: "first", text: t("settings.reader.prevChapterPageFirst") },
+                    { id: "ds-ctrl-prev-last", value: "last", text: t("settings.reader.prevChapterPageLast") },
+                  ]}
+                />
+              </SettingsRow>
+              {/* Theme */}
+              <SettingsRow label={t("settings.display.theme")} divider>
+                <SegmentedSwitch
+                  value={theme()}
+                  onChange={(val) => setTheme(val as "light" | "dark")}
+                  options={[
+                    { id: "ds-ctrl-theme-light", value: "light", icon: <SunIcon />, text: t("settings.display.themeLight").split(" ")[0] },
+                    { id: "ds-ctrl-theme-dark", value: "dark", icon: <MoonIcon />, text: t("settings.display.themeDark").split(" ")[0] },
+                  ]}
+                />
+              </SettingsRow>
+
+              {/* Chapter Actions */}
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+                <Show when={s.seriesPermalink()}>
+                  <Button
+                    icon={<StorageIcon />}
+                    text={t("reader.toolbar.seriesButton")}
+                    style="height:32px;font-size:11.5px;justify-content:center;"
+                    onClick={() => {
+                      requestClose();
+                      s.gotoSeries();
+                    }}
+                  />
+                </Show>
+                <Button
+                  icon={s.isFullyCached() ? <CheckIcon /> : <CloudDownloadIcon />}
+                  text={s.isFullyCached() ? t("reader.toolbar.cachedShort") : t("reader.toolbar.cacheShort")}
+                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  onClick={() => s.cacheFullChapter()}
+                />
+                <Button
+                  icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
+                  text={copied() ? t("common.copied") : t("reader.toolbar.copyLinkShort")}
+                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  onClick={async () => {
+                    try {
+                      if (typeof navigator !== "undefined" && navigator.clipboard) {
+                        await navigator.clipboard.writeText(`${SITE_ROOT}/chapters/${s.permalink}`);
+                        setCopied(true);
+                        resetCopied();
+                      }
+                    } catch {}
+                  }}
+                />
+                <Button
+                  icon={<ExternalLinkIcon />}
+                  text={t("reader.toolbar.openInBrowserShort")}
+                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  onClick={() => void openExternal(`${SITE_ROOT}/chapters/${s.permalink}`)}
+                />
+              </div>
+            </div>
+
+            <div class="ds-reader-sheet-footer">
+              <Button
+                className="primary"
+                style="min-width:70px;"
+                onClick={requestClose}
+                text={t("settings.done")}
+              />
+            </div>
+          </div>
+        </div>
+      </Portal>
+    </Show>
+  );
+}
+
 export function ReaderToolbar(props: { session: ReaderSession }) {
   const s = props.session;
   const [navPos, setNavPos] = createSignal<ReaderNavPosition>(getReaderNavPosition());
-  const [controlsOpen, setControlsOpen] = createSignal(false);
   createEffect(() => {
     const z = s.zoomScale();
     if (s.containerEl) {
@@ -281,25 +492,129 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
   };
   makeEventListener(document, "fullscreenchange", onFullscreenChange);
 
+  const handleBack = () => {
+    goBack();
+  };
+
+  const handleOpenSeries = () => {
+    s.gotoSeries();
+  };
+  const handleToggleBookmark = async () => {
+    try {
+      if (s.bookmarked()) {
+        await removeBookmark(s.permalink);
+        s.setBookmarked(false);
+        showBanner(t("browse.feed.bookmarkRemovedBanner", { title: s.chapterTitle() }));
+      } else {
+        await addBookmark({
+          chapterPermalink: s.permalink,
+          seriesPermalink: s.seriesPermalink() ?? "",
+          seriesName: s.seriesName() ?? "",
+          chapterTitle: s.chapterTitle(),
+          pageIndex: s.currentIndex(),
+        });
+        s.setBookmarked(true);
+        showBanner(t("browse.feed.bookmarkSavedBanner", { title: s.chapterTitle() }));
+      }
+    } catch (err) {
+      const msg = errorMessage(err);
+      showBanner(t("browse.feed.bookmarkErrorBanner", { msg }));
+    }
+  };
+
   return (
     <>
-      <nav class="ds-reader-nav ds-reader-nav-top">
-        <Show when={navPos() === "top"}>
+      <nav
+        class="ds-reader-nav ds-reader-nav-top"
+        classList={{ "ds-toolbar-hidden": isMobile() && !s.toolbarVisible() }}
+      >
+        <Show when={isMobile()}>
+          <div class="ds-reader-nav-row nav-main" style="width:100%;justify-content:space-between;">
+            <IconButton
+              className="ds-btn-icon"
+              icon={<ArrowLeftIcon />}
+              title={t("topbar.navBackTooltip")}
+              onClick={handleBack}
+            />
+            <div
+              style="display:flex;flex-direction:column;justify-content:center;flex:1;min-width:0;margin:0 6px;cursor:pointer;"
+              onClick={handleOpenSeries}
+              title={s.seriesPermalink() ? t("reader.toolbar.viewSeries") : undefined}
+            >
+              <span class="ds-truncate" style="font-size:13px;font-weight:600;">
+                {decodeEntities(s.chapterTitle() || s.permalink)}
+              </span>
+              <Show when={s.seriesName() && s.seriesName() !== s.chapterTitle()}>
+                <span class="ds-truncate ds-muted" style="font-size:11px;display:inline-flex;align-items:center;gap:3px;">
+                  <StorageIcon />
+                  {decodeEntities(s.seriesName())}
+                </span>
+              </Show>
+            </div>
+            <div class="ds-row" style="gap:2px;flex-shrink:0;">
+              <Show when={s.seriesPermalink()}>
+                <IconButton
+                  className="ds-btn-icon"
+                  icon={<StorageIcon />}
+                  title={t("reader.toolbar.viewSeries")}
+                  onClick={handleOpenSeries}
+                />
+              </Show>
+              <IconButton
+                className="ds-btn-icon"
+                classList={{ primary: s.bookmarked() }}
+                icon={<BookmarkIcon filled={s.bookmarked()} />}
+                title={s.bookmarked() ? t("browse.feed.removeFromReadLater") : t("browse.feed.saveForReadLater")}
+                onClick={() => void handleToggleBookmark()}
+              />
+              <IconButton
+                className="ds-btn-icon"
+                icon={s.isFullyCached() ? <CheckIcon /> : <CloudDownloadIcon />}
+                title={t("reader.toolbar.cacheChapter")}
+                onClick={() => s.cacheFullChapter()}
+              />
+              <IconButton
+                className="ds-btn-icon"
+                classList={{ primary: s.controlsOpen() }}
+                icon={<ToolIcon />}
+                title={t("reader.toolbar.toggleControlsTooltip")}
+                onClick={() => s.setControlsOpen(!s.controlsOpen())}
+              />
+              <IconButton
+                className="ds-btn-icon"
+                icon={<SettingsIcon />}
+                title={t("topbar.settingsTooltip")}
+                onClick={() => window.dispatchEvent(new CustomEvent("ds-open-settings"))}
+              />
+              <IconButton
+                className="ds-btn-icon"
+                icon={<CloseIcon />}
+                title={t("topbar.closeTabTooltip")}
+                onClick={() => closeSessionMangaTab()}
+              />
+            </div>
+          </div>
+        </Show>
+        <Show when={!isMobile() && navPos() === "top"}>
           <ReaderMainRow
             session={s}
-            controlsOpen={controlsOpen}
-            onToggleControls={() => setControlsOpen((o) => !o)}
+            controlsOpen={() => s.controlsOpen()}
+            onToggleControls={() => s.setControlsOpen(!s.controlsOpen())}
           />
-          <Show when={!isMobile() || controlsOpen()}>
+          <Show when={s.controlsOpen()}>
             <ReaderControlsRow session={s} />
           </Show>
         </Show>
-        <Show when={navPos() === "bottom"}>
-          <Show when={!isMobile() || controlsOpen()}>
+        <Show when={!isMobile() && navPos() === "bottom"}>
+          <Show when={s.controlsOpen()}>
             <ReaderControlsRow session={s} />
           </Show>
         </Show>
       </nav>
+
+      <Show when={isMobile()}>
+        <ReaderMobileControlsSheet session={s} />
+      </Show>
     </>
   );
 }
@@ -307,24 +622,87 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
 export function ReaderBottomNav(props: { session: ReaderSession }) {
   const s = props.session;
   const [navPos, setNavPos] = createSignal<ReaderNavPosition>(getReaderNavPosition());
-  const [controlsOpen, setControlsOpen] = createSignal(false);
 
   const onNavPosChange = (ev: Event): void => {
     const customEv = ev as CustomEvent<ReaderNavPosition>;
     setNavPos(customEv.detail || getReaderNavPosition());
   };
   makeEventListener(window, "ds-reader-nav-pos-change", onNavPosChange);
-
   return (
-    <Show when={navPos() === "bottom"}>
-      <nav class="ds-reader-nav ds-reader-nav-bottom">
-        <ReaderMainRow
-          session={s}
-          controlsOpen={controlsOpen}
-          onToggleControls={() => setControlsOpen((o) => !o)}
-        />
-        <Show when={controlsOpen()}>
-          <ReaderControlsRow session={s} />
+    <Show when={isMobile() || navPos() === "bottom"}>
+      <nav
+        class="ds-reader-nav ds-reader-nav-bottom"
+        classList={{ "ds-toolbar-hidden": isMobile() && !s.toolbarVisible() }}
+      >
+        <Show when={isMobile()}>
+          <div class="ds-reader-nav-row nav-main" style="width:100%;justify-content:space-between;">
+            <IconButton
+              className="ds-nav-btn-ch"
+              icon={<ChevronDoubleLeftIcon />}
+              title={t("reader.toolbar.prevChapter")}
+              disabled={s.chapterNav().prevDisabled}
+              onClick={() => s.gotoPrevChapter()}
+            />
+            <IconButton
+              className="ds-nav-btn-jump ds-btn-icon"
+              icon={<ChevronBarLeftIcon />}
+              title={t("reader.toolbar.firstPage")}
+              onClick={() => s.setPage(0, true)}
+            />
+            <IconButton
+              className="ds-nav-btn-page ds-btn-icon"
+              icon={<ChevronLeftIcon />}
+              title={t("reader.toolbar.prevPage")}
+              disabled={s.progress().prevDisabled}
+              onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
+            />
+            <div class="ds-reader-progress-wrap">
+              <div class="ds-reader-progress-pill">
+                <span class="ds-reader-progress-label">
+                  <span class="ds-prog-current">{s.progress().currentNumStr}</span>
+                  <span class="ds-prog-sep">/</span>
+                  <span class="ds-prog-total">{s.progress().totalNumStr}</span>
+                  <span class="ds-prog-pct">({s.progress().pct}%)</span>
+                </span>
+              </div>
+              <div class="ds-reader-progress-track">
+                <div
+                  class="ds-reader-progress-fill"
+                  style={{ width: "100%", transform: `scaleX(${s.progress().width / 100})` }}
+                ></div>
+              </div>
+            </div>
+            <IconButton
+              className="ds-nav-btn-page ds-btn-icon"
+              icon={<ChevronRightIcon />}
+              title={t("reader.toolbar.nextPage")}
+              disabled={s.progress().nextDisabled}
+              onClick={() => (s.isSpread() ? s.stepSpread(1) : s.setPage(s.currentIndex() + 1))}
+            />
+            <IconButton
+              className="ds-nav-btn-jump ds-btn-icon"
+              icon={<ChevronBarRightIcon />}
+              title={t("reader.toolbar.lastPage", { total: s.pages().length })}
+              onClick={() => s.setPage(s.pages().length - 1, true)}
+            />
+            <IconButton
+              className="ds-nav-btn-ch"
+              icon={<ChevronDoubleRightIcon />}
+              title={t("reader.toolbar.nextChapter")}
+              disabled={s.chapterNav().nextDisabled}
+              onClick={() => s.gotoNextChapter()}
+            />
+          </div>
+        </Show>
+        <Show when={!isMobile() && navPos() === "bottom"}>
+          <ReaderMainRow
+            session={s}
+            controlsOpen={() => s.controlsOpen()}
+            onToggleControls={() => s.setControlsOpen(!s.controlsOpen())}
+          />
+          <Show when={s.controlsOpen()}>
+            <ReaderControlsRow session={s} />
+          </Show>
         </Show>
       </nav>
     </Show>

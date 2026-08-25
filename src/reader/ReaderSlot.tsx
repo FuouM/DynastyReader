@@ -4,7 +4,7 @@
  * Port of `reader-slots.ts`' render helpers into a reactive JSX component.
  */
 
-import { Show, type JSX } from "solid-js";
+import { createSignal, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import type { SlotStateKind } from "./reader-queue";
 import { convertFileSrc } from "../ipc";
@@ -27,19 +27,19 @@ export function ReaderSlot(props: ReaderSlotProps) {
   const s = props.session;
   const cachedPath = (): string | undefined => s.cachedPages[0][props.index];
   const isVisible = () => {
+    if (cachedPath() !== undefined) return true;
     const cur = s.currentIndex();
-    const behind = isMobile() ? 2 : 5;
-    const ahead = isMobile() ? 4 : 8;
+    const behind = isMobile() ? 1 : 2;
+    const ahead = isMobile() ? 2 : 4;
     return props.index >= cur - behind && props.index <= cur + ahead;
   };
   const placeholderStyle = (): string => {
     const dim = s.pageDimensions[0][props.index];
     if (dim && dim.width > 0 && dim.height > 0) {
-      return `aspect-ratio:${dim.width}/${dim.height};min-height:200px;`;
+      return `aspect-ratio:${dim.width}/${dim.height};min-height:max(320px, 60dvh);`;
     }
-    return "min-height:200px;";
+    return "min-height:max(320px, 60dvh);";
   };
-
   return (
     <div
       class="ds-slot"
@@ -49,8 +49,8 @@ export function ReaderSlot(props: ReaderSlotProps) {
         s.slotEls[props.index] = el;
       }}
     >
-      <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={props.index} />}>
-        <Show when={isVisible()} fallback={<div class="ds-slot-placeholder" style={placeholderStyle()} />}>
+      <Show when={isVisible()} fallback={<div class="ds-slot-placeholder" style={placeholderStyle()} />}>
+        <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={props.index} />}>
           <SlotImgContent session={s} index={props.index} path={cachedPath()!} />
         </Show>
       </Show>
@@ -61,11 +61,15 @@ export function ReaderSlot(props: ReaderSlotProps) {
 /** Cached page: page badge + `<img>` with re-download + wide-spread detection. */
 function SlotImgContent(props: { session: ReaderSession; index: number; path: string }) {
   const s = props.session;
+  const [loaded, setLoaded] = createSignal(false);
+
   return (
-    <>
-      <div class="ds-slot-page-badge">
-        {props.index + 1} / {s.pages().length}
-      </div>
+    <div class="ds-page-wrap">
+      <Show when={loaded()}>
+        <div class="ds-slot-page-badge">
+          {props.index + 1} / {s.pages().length}
+        </div>
+      </Show>
       <img
         class="ds-page-img"
         alt={t("reader.session.slot.pageAlt", { page: props.index + 1 })}
@@ -74,10 +78,12 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
         onError={() => s.onPageImgError(props.index)}
         ref={(img) => {
           if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+            setLoaded(true);
             s.setPageDimension(props.index, img.naturalWidth, img.naturalHeight);
           }
         }}
         onLoad={(ev) => {
+          setLoaded(true);
           const img = ev.currentTarget as HTMLImageElement;
           s.setPageDimension(props.index, img.naturalWidth, img.naturalHeight);
           const isWide = img.naturalWidth > img.naturalHeight * WIDE_RATIO;
@@ -94,7 +100,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
           }
         }}
       />
-    </>
+    </div>
   );
 }
 
@@ -105,13 +111,8 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
   const kind = (): SlotStateKind => state()?.kind ?? "idle";
   const pct = (): number =>
     s.pages().length > 0 ? Math.round((s.cachedCount() / s.pages().length) * 100) : 0;
-
   return (
-    <>
-      <div class="ds-slot-page-badge">
-        {props.index + 1} / {s.pages().length}
-      </div>
-      <div class={`ds-slot-state${kind() === "error" ? " ds-slot-error" : ""}`}>
+    <div class={`ds-slot-state${kind() === "error" ? " ds-slot-error" : ""}`}>
         <Show when={kind() === "spinner"}>
           <Icon
             name="cloud-arrow-down"
@@ -153,7 +154,6 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
             {t("common.retry")}
           </DsButton>
         </Show>
-      </div>
-    </>
+    </div>
   );
 }

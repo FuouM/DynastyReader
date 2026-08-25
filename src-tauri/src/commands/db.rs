@@ -241,7 +241,7 @@ pub async fn db_execute_batch(
                 .as_ref()
                 .and_then(|v| v.get(idx).cloned().flatten())
                 .unwrap_or_default();
-            let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
+            let mut stmt = conn.prepare_cached(sql).map_err(|e| e.to_string())?;
             let n = stmt
                 .execute(params_from_iter(p.into_iter().map(bind_value_owned)))
                 .map_err(|e| e.to_string())?;

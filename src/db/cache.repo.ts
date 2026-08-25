@@ -258,9 +258,8 @@ export async function clearAllCacheStorage(): Promise<void> {
     );
     batchParams.push(deletedPaths);
   }
-  statements.push(`DELETE FROM cached_metadata WHERE data_type IN ('cover', 'chapter')`);
+  statements.push(`DELETE FROM cached_metadata WHERE data_type = 'chapter'`);
   batchParams.push([]);
-
   await ipc.dbExecuteBatch(DB_NAME, statements, batchParams);
 }
 

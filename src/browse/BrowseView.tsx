@@ -13,7 +13,7 @@ const CHECK_UPDATES_POLL_INTERVAL_MS = 50;
 const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
 import { createEffect, createSignal, onCleanup, Show, untrack, type JSX } from "solid-js";
-import { navigate, route, setRoute, showBanner } from "../stores";
+import { isMobile, navigate, route, setRoute, showBanner } from "../stores";
 import { t } from "../i18n";
 import { parseDynastyUrl, suggest } from "../api";
 import { useMediaQuery } from "../hooks/useImageRetry";
@@ -70,7 +70,9 @@ export const getBrowseTabs = (): readonly BrowseTabDef[] => [
 
 export function BrowseView() {
   const [searchGoCollapsed, setSearchGoCollapsed] = createSignal(
-    localStorage.getItem("ds-search-go-collapsed") === "true",
+    localStorage.getItem("ds-search-go-collapsed") !== null
+      ? localStorage.getItem("ds-search-go-collapsed") === "true"
+      : isMobile(),
   );
   const [searchBoxValue, setSearchBoxValue] = createSignal("");
   const [urlValue, setUrlValue] = createSignal("");

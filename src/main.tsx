@@ -16,15 +16,12 @@ initAppTheme();
 // alongside backend tracing output.
 attachConsole();
 
-// Restore on open, save on close — handled by the official window-state plugin
-// which correctly accounts for DWM extended-frame coordinates on Windows.
-restoreStateCurrent(StateFlags.ALL).catch((err) => {
-  console.error("dynasty-scans-reader: window state restore error:", err);
+// Restore on open, save on close — handled by the official window-state plugin on desktop
+restoreStateCurrent(StateFlags.ALL).catch((_err) => {
+  // Expected to fail silently on mobile (window-state plugin is desktop-only)
 });
 window.addEventListener("unload", () => {
-  saveWindowState(StateFlags.ALL).catch((err) => {
-    console.error("dynasty-scans-reader: window state save error:", err);
-  });
+  saveWindowState(StateFlags.ALL).catch((_err) => {});
 });
 
 import "./styles/curator-ui-base.css";

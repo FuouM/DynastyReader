@@ -14,7 +14,7 @@
  * remounts per route.
  */
 
-import { createEffect, Show, type Component } from "solid-js";
+import { createEffect, lazy, onCleanup, onMount, Show, Suspense, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import {
   route,
@@ -23,18 +23,21 @@ import {
   uiScale,
   isPersistentView,
   isMobile,
+  canGoBack,
+  goBack,
 } from "./stores";
 import { Topbar } from "./components/Topbar";
 import { BottomNav } from "./components/BottomNav";
 import { GlobalShortcuts } from "./hotkeys";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
+import { Loading } from "./components/Loading";
 import type { ViewName, Route } from "./types/routes";
 
-import { SeriesView } from "./series/SeriesView";
-import { ReaderView } from "./reader/ReaderView";
-import { CacheView } from "./cache/CacheView";
-import { BlacklistView } from "./blacklist/BlacklistView";
+const SeriesView = lazy(() => import("./series/SeriesView").then((m) => ({ default: m.SeriesView })));
+const ReaderView = lazy(() => import("./reader/ReaderView").then((m) => ({ default: m.ReaderView })));
+const CacheView = lazy(() => import("./cache/CacheView").then((m) => ({ default: m.CacheView })));
+const BlacklistView = lazy(() => import("./blacklist/BlacklistView").then((m) => ({ default: m.BlacklistView })));
 export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
   browse: () => <BrowseView />,
   library: () => <LibraryView />,
@@ -48,6 +51,33 @@ export function App() {
   createEffect(() => {
     const r = route();
     setTitle(routeTitle(r));
+  });
+
+  onMount(() => {
+    // Handle Android hardware/system back button and popstate events
+    const handlePopState = (ev: PopStateEvent) => {
+      ev.preventDefault();
+      if (canGoBack()) {
+        goBack();
+      }
+    };
+
+    const handleBackButton = (ev: Event) => {
+      ev.preventDefault();
+      if (canGoBack()) {
+        goBack();
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("t-back-button", handleBackButton);
+    document.addEventListener("backbutton", handleBackButton);
+
+    onCleanup(() => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("t-back-button", handleBackButton);
+      document.removeEventListener("backbutton", handleBackButton);
+    });
   });
 
   return (
@@ -81,7 +111,9 @@ export function App() {
                   overflow: route().view === "reader" ? "hidden" : "auto",
                 }}
               >
-                <Dynamic component={viewComponents[route().view]} route={route()} />
+                <Suspense fallback={<Loading />}>
+                  <Dynamic component={viewComponents[route().view]} route={route()} />
+                </Suspense>
               </div>
             ) : null
           }

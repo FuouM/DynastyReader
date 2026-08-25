@@ -19,27 +19,19 @@ export interface SettingsRowProps {
 export function SettingsRow(props: SettingsRowProps) {
   return (
     <div
-      style={{
-        display: "flex",
-        "align-items": "center",
-        "justify-content": "space-between",
-        "padding-top": props.divider ? "6px" : undefined,
-        "border-top": props.divider ? "1px solid var(--sys-border-light,#eaeaea)" : undefined,
-        gap: "8px",
-        "flex-wrap": "wrap",
-      }}
+      class={`ds-settings-row${props.divider ? " has-divider" : ""}`}
     >
-      <div style={{ flex: "1", "min-width": "180px" }}>
+      <div class="ds-settings-row-label">
         <div class="ds-label">
           {props.label}
         </div>
         {props.desc && (
-          <div class="ds-muted" style={{ "font-size": "11px", color: "var(--sys-text-muted,#666)" }}>
+          <div class="ds-muted ds-settings-row-desc">
             {props.desc}
           </div>
         )}
       </div>
-      <div style={{ "flex-shrink": "0" }}>
+      <div class="ds-settings-row-control">
         {props.children}
       </div>
     </div>

@@ -7,7 +7,7 @@
  * session manga tab) are ported verbatim from `router.ts`.
  */
 
-import { createSignal } from "solid-js";
+import { batch, createSignal } from "solid-js";
 import { clearActions } from "./topbar";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
@@ -68,30 +68,37 @@ export function isSameRoute(a: Route, b: Route): boolean {
 
 /** Navigates to a new route and updates the ephemeral session manga tab if entering a manga/chapter. */
 export function navigate(r: Route): void {
-  if (r.view === "reader" || r.view === "series") {
-    const title = r.seriesName || r.chapterTitle || (r.view === "series" ? t("routes.series") : t("routes.reader"));
-    setSessionTab({
-      title,
-      route: { ...r },
-    });
-  }
+  batch(() => {
+    if (r.view === "reader" || r.view === "series") {
+      const title = r.seriesName || r.chapterTitle || (r.view === "series" ? t("routes.series") : t("routes.reader"));
+      setSessionTab({
+        title,
+        route: { ...r },
+      });
+    }
 
-  // If already at the exact same route/chapter and not navigating history, do not rebuild
-  if (!isNavigatingHistory && isSameRoute(route(), r)) {
-    return;
-  }
+    // If already at the exact same route/chapter and not navigating history, do not rebuild
+    if (!isNavigatingHistory && isSameRoute(route(), r)) {
+      return;
+    }
 
-  // Clear actions before switching routes
-  clearActions();
+    // Clear actions before switching routes
+    clearActions();
+    // Track in history stack if this is a fresh user navigation
+    if (!isNavigatingHistory) {
+      setHistoryBackStack((s) => [...s, { ...route() }]);
+      // Clear forward history on new branch
+      setHistoryForwardStack([]);
 
-  // Track in history stack if this is a fresh user navigation
-  if (!isNavigatingHistory) {
-    setHistoryBackStack((s) => [...s, { ...route() }]);
-    // Clear forward history on new branch
-    setHistoryForwardStack([]);
-  }
-
-  setRoute(r);
+      // Push state into browser history so Android's WebView / Hardware Back gesture triggers popstate
+      try {
+        window.history.pushState({ view: r.view }, "");
+      } catch {
+        // Ignored if history API is restricted
+      }
+    }
+    setRoute(r);
+  });
 }
 
 /** Navigates back one step in history stack. */
@@ -108,11 +115,13 @@ export function goBackTo(index: number): void {
   const targetRoute = back[index];
   const popped = back.slice(index + 1);
   const remaining = back.slice(0, index);
-  setHistoryBackStack(remaining);
-  setHistoryForwardStack((s) => [...s, { ...route() }, ...popped.reverse()]);
-  isNavigatingHistory = true;
-  navigate(targetRoute);
-  isNavigatingHistory = false;
+  batch(() => {
+    setHistoryBackStack(remaining);
+    setHistoryForwardStack((s) => [...s, { ...route() }, ...popped.reverse()]);
+    isNavigatingHistory = true;
+    navigate(targetRoute);
+    isNavigatingHistory = false;
+  });
 }
 
 /** Navigates forward one step in history stack. */
@@ -129,20 +138,24 @@ export function goForwardTo(index: number): void {
   const targetRoute = forward[index];
   const remaining = forward.slice(0, index);
   const popped = forward.slice(index + 1);
-  setHistoryForwardStack(remaining);
-  setHistoryBackStack((s) => [...s, { ...route() }, ...popped.reverse()]);
-  isNavigatingHistory = true;
-  navigate(targetRoute);
-  isNavigatingHistory = false;
+  batch(() => {
+    setHistoryForwardStack(remaining);
+    setHistoryBackStack((s) => [...s, { ...route() }, ...popped.reverse()]);
+    isNavigatingHistory = true;
+    navigate(targetRoute);
+    isNavigatingHistory = false;
+  });
 }
 
 /** Closes the ephemeral session manga tab. */
 export function closeSessionMangaTab(): void {
-  setSessionTab(null);
-  const v = route().view;
-  if (v === "reader" || v === "series") {
-    navigate({ view: "browse" });
-  }
+  batch(() => {
+    setSessionTab(null);
+    const v = route().view;
+    if (v === "reader" || v === "series") {
+      navigate({ view: "browse" });
+    }
+  });
 }
 
 export interface RouteLabel {

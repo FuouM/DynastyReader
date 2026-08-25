@@ -20,6 +20,9 @@ import {
   setCoverOffsetDefaultEnabled,
   getDefaultFitMode,
   setDefaultFitMode,
+  getPrevChapterStartPage,
+  setPrevChapterStartPage,
+  type PrevChapterStartPage,
   type ReadingDirectionSetting,
 } from "../../reader/settings";
 import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
@@ -39,7 +42,7 @@ export function ReaderSettings() {
   const [directionPref, setDirectionPref] = createSignal<ReadingDirectionSetting>(getDefaultReadingDirection());
   const [coverOffsetPref, setCoverOffsetPref] = createSignal<boolean>(isCoverOffsetDefaultEnabled());
   const [fitModePref, setFitModePref] = createSignal<FitMode>(getDefaultFitMode());
-
+  const [prevChapterPagePref, setPrevChapterPagePref] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
   return (
     <div class="group-box" id="ds-settings-sec-reading">
       <div class="group-box-title">
@@ -128,6 +131,21 @@ export function ReaderSettings() {
             activeText={t("settings.reader.coverOffsetOn")}
             title={t("settings.reader.coverOffsetTooltip")}
             onToggle={(next) => { setCoverOffsetDefaultEnabled(next); setCoverOffsetPref(next); }}
+          />
+        </SettingsRow>
+        {/* Previous Chapter Landing Page */}
+        <SettingsRow divider label={<>{t("settings.reader.prevChapterPage")}:</>} desc={t("settings.reader.prevChapterPageDesc")}>
+          <SegmentedSwitch
+            id="ds-settings-prev-page-switch"
+            value={prevChapterPagePref()}
+            onChange={(val) => {
+              setPrevChapterStartPage(val as PrevChapterStartPage);
+              setPrevChapterPagePref(val as PrevChapterStartPage);
+            }}
+            options={[
+              { id: "ds-settings-prev-first", value: "first", icon: <Icon name="file-earmark-arrow-up" />, text: t("settings.reader.prevChapterPageFirst"), title: t("settings.reader.prevChapterPageFirstTooltip") },
+              { id: "ds-settings-prev-last", value: "last", icon: <Icon name="file-earmark-arrow-down" />, text: t("settings.reader.prevChapterPageLast"), title: t("settings.reader.prevChapterPageLastTooltip") },
+            ]}
           />
         </SettingsRow>
 

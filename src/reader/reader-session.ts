@@ -21,6 +21,7 @@ import {
   clearActions,
   isOnline,
   isSeriesKind,
+  isMobile,
 } from "../stores";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
@@ -35,6 +36,7 @@ import {
 } from "../db";
 import type { Chapter, ChapterPage } from "../types/api";
 import type { ChapterRef, Route } from "../types/routes";
+import { getPrevChapterStartPage } from "./settings";
 import type {
   FitMode,
   PagedLayout,
@@ -164,6 +166,11 @@ export class ReaderSession implements ReaderQueueHost {
   readonly restoring: () => boolean;
   readonly setRestoring: (val: boolean) => void;
 
+  readonly toolbarVisible: () => boolean;
+  readonly setToolbarVisible: (val: boolean) => void;
+  readonly controlsOpen: () => boolean;
+  readonly setControlsOpen: (val: boolean) => void;
+  private toolbarHideTimer: number | null = null;
   // Reactive cache / slot state (index -> path / {kind, message}) -----------
   readonly cachedPages: ReturnType<typeof createStore<Record<number, string | undefined>>>;
   readonly slotStates: ReturnType<typeof createStore<Record<number, SlotStateRecord | undefined>>>;
@@ -171,7 +178,6 @@ export class ReaderSession implements ReaderQueueHost {
 
   readonly cachedCount: () => number;
   readonly setCachedCount: (val: number) => void;
-
   // DOM refs ----------------------------------------------------------------
   containerEl: HTMLDivElement | null = null;
   viewportEl: HTMLElement | null = null;
@@ -184,7 +190,7 @@ export class ReaderSession implements ReaderQueueHost {
 
   // Persistence / scroll bookkeeping ---------------------------------------
   private lastPersistedIndex = -1;
-  private readonly persistDebounced = debounce(() => void this.persistNow(), 400);
+  private readonly persistDebounced = debounce(() => void this.persistNow(), isMobile() ? 1500 : 400);
   private disposedFlag = false;
   isProgrammaticScroll = false;
   programmaticScrollTimer: number | null = null;
@@ -245,7 +251,8 @@ export class ReaderSession implements ReaderQueueHost {
     [this.bookmarked, this.setBookmarked] = createSignal(false);
     [this.restoring, this.setRestoring] = createSignal(false);
     [this.cachedCount, this.setCachedCount] = createSignal(0);
-
+    [this.toolbarVisible, this.setToolbarVisible] = createSignal(true);
+    [this.controlsOpen, this.setControlsOpen] = createSignal(false);
     this.cachedPages = createStore<Record<number, string | undefined>>({});
     this.slotStates = createStore<Record<number, SlotStateRecord | undefined>>({});
     this.pageDimensions = createStore<Record<number, { width: number; height: number } | undefined>>({});
@@ -391,8 +398,8 @@ export class ReaderSession implements ReaderQueueHost {
   dispose(): void {
     this.disposedFlag = true;
     this.persistDebounced.clear();
+    this.clearToolbarTimer();
     if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
-    if (this.scrollAnimRaf !== null) cancelAnimationFrame(this.scrollAnimRaf);
     for (const fn of this.cleanupFns) fn();
     this.cleanupFns.length = 0;
     if (this.actionsDispose) {
@@ -442,6 +449,22 @@ export class ReaderSession implements ReaderQueueHost {
     this.queue.enqueue(index);
   }
 
+  /** Pre-caches all pages in the current chapter. */
+  cacheFullChapter(): void {
+    const total = this.pages().length;
+    for (let i = 0; i < total; i++) {
+      if (this.getCachedPath(i) === undefined) {
+        this.setSlotState(i, "spinner", t("reader.session.slotState.queued"));
+        this.enqueue(i);
+      }
+    }
+  }
+
+  /** Returns true when every page in the chapter is stored locally in cache. */
+  isFullyCached(): boolean {
+    const total = this.pages().length;
+    return total > 0 && this.cachedCount() >= total;
+  }
   // Progress + persistence --------------------------------------------------
   schedulePersist(): void {
     this.persistDebounced();
@@ -502,7 +525,6 @@ export class ReaderSession implements ReaderQueueHost {
         }
       }
     }
-
     this.slideTo(index, instant, scrollToBottom);
   }
 
@@ -655,7 +677,7 @@ export class ReaderSession implements ReaderQueueHost {
   }
 
   // Chapter navigation ------------------------------------------------------
-  gotoChapter(c: ChapterRef): void {
+  gotoChapter(c: ChapterRef, targetPage?: number | "last"): void {
     navigate({
       view: "reader",
       seriesPermalink: this.seriesPermalink() ?? undefined,
@@ -663,7 +685,39 @@ export class ReaderSession implements ReaderQueueHost {
       chapterPermalink: c.permalink,
       chapterTitle: c.title,
       chapterList: this.chapterList(),
+      startPage: targetPage === "last" ? -1 : targetPage,
     });
+  }
+
+  gotoPrevChapter(): void {
+    const list = this.chapterList();
+    const curIdx = list.findIndex(
+      (x) =>
+        x.permalink === this.permalink ||
+        x.permalink.toLowerCase().trim() === this.permalink.toLowerCase().trim() ||
+        x.permalink.endsWith(`/${this.permalink}`) ||
+        this.permalink.endsWith(`/${x.permalink}`),
+    );
+    if (curIdx > 0) {
+      const prevCh = list[curIdx - 1];
+      const target = getPrevChapterStartPage() === "last" ? "last" : 0;
+      this.gotoChapter(prevCh, target);
+    }
+  }
+
+  gotoNextChapter(): void {
+    const list = this.chapterList();
+    const curIdx = list.findIndex(
+      (x) =>
+        x.permalink === this.permalink ||
+        x.permalink.toLowerCase().trim() === this.permalink.toLowerCase().trim() ||
+        x.permalink.endsWith(`/${this.permalink}`) ||
+        this.permalink.endsWith(`/${x.permalink}`),
+    );
+    if (curIdx >= 0 && curIdx < list.length - 1) {
+      const nextCh = list[curIdx + 1];
+      this.gotoChapter(nextCh, 0);
+    }
   }
 
   gotoSeries(): void {
@@ -712,7 +766,18 @@ export class ReaderSession implements ReaderQueueHost {
           void this.stripEl.offsetWidth;
           this.stripEl.style.transform = transformValue;
         } else {
-          // Ensure transition is active then slide
+          // Scope will-change to the animation window — saves ~10 MB VRAM between page turns
+          if (isMobile()) {
+            this.stripEl.style.willChange = "transform";
+            const el = this.stripEl;
+            el.addEventListener(
+              "transitionend",
+              () => {
+                el.style.willChange = "auto";
+              },
+              { once: true },
+            );
+          }
           this.stripEl.style.transition = "";
           this.stripEl.style.transform = transformValue;
         }
@@ -727,15 +792,17 @@ export class ReaderSession implements ReaderQueueHost {
 
       const target = this.slotEls[index];
       if (target && this.viewportEl) {
+        const vp = this.viewportEl;
+        const vpRect = vp.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const startScrollTop = vp.scrollTop;
+        const verticalOffset = (targetRect.top - vpRect.top) - Math.max(0, (vpRect.height - targetRect.height) / 2);
+        const targetScrollTop = Math.max(0, startScrollTop + verticalOffset);
+
         if (instant || !this.scrollLock()) {
-          target.scrollIntoView({ behavior: "auto", block: "start" });
+          target.scrollIntoView({ behavior: "auto", block: "center" });
           this.isProgrammaticScroll = false;
         } else {
-          const vp = this.viewportEl;
-          const vpRect = vp.getBoundingClientRect();
-          const targetRect = target.getBoundingClientRect();
-          const startScrollTop = vp.scrollTop;
-          const targetScrollTop = startScrollTop + (targetRect.top - vpRect.top);
           const distance = targetScrollTop - startScrollTop;
           const startTime = performance.now();
           const duration = SCROLL_ANIMATION_DURATION_MS;
@@ -788,18 +855,21 @@ export class ReaderSession implements ReaderQueueHost {
 
       const target = this.slotEls[this.currentIndex()];
       if (target && this.viewportEl) {
+        const vpRect = this.viewportEl.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const verticalOffset = (targetRect.top - vpRect.top) - Math.max(0, (vpRect.height - targetRect.height) / 2);
+        const targetTop = Math.max(0, this.viewportEl.scrollTop + verticalOffset);
+
         if (!smooth) {
-          target.scrollIntoView({ behavior: "auto", block: "start" });
+          target.scrollIntoView({ behavior: "auto", block: "center" });
         } else {
-          const vpRect = this.viewportEl.getBoundingClientRect();
-          const targetRect = target.getBoundingClientRect();
-          const targetTop = this.viewportEl.scrollTop + (targetRect.top - vpRect.top);
           this.viewportEl.scrollTo({ top: targetTop, behavior: "smooth" });
         }
+      } else if (this.viewportEl && this.currentIndex() === 0) {
+        this.viewportEl.scrollTop = 0;
       }
     }
   }
-
   applyLayoutMode(): void {
     if (!this.viewportEl || !this.stripEl) return;
     if (this.isHorizontal()) {
@@ -820,10 +890,30 @@ export class ReaderSession implements ReaderQueueHost {
       this.viewportEl.classList.remove("horizontal", "rtl", "ltr");
       this.stripEl.classList.remove("rtl", "ltr");
       this.stripEl.style.transform = "";
-      this.stripEl.style.transition = "";
       const target = this.slotEls[this.currentIndex()];
-      if (target) target.scrollIntoView({ block: "start" });
+      if (target) {
+        target.scrollIntoView({ behavior: "auto", block: "center" });
+      } else if (this.viewportEl && this.currentIndex() === 0) {
+        this.viewportEl.scrollTop = 0;
+      }
     }
+  }
+
+  // Toolbar visibility (toggled on tap outside) -----------------------------
+  scheduleToolbarAutoHide(): void {
+    this.clearToolbarTimer();
+  }
+
+  clearToolbarTimer(): void {
+    if (this.toolbarHideTimer !== null) {
+      window.clearTimeout(this.toolbarHideTimer);
+      this.toolbarHideTimer = null;
+    }
+  }
+
+  toggleToolbarVisible(): void {
+    this.setToolbarVisible(!this.toolbarVisible());
+    this.clearToolbarTimer();
   }
 
   // Publish topbar actions — must run inside a Solid root so
@@ -882,8 +972,17 @@ export class ReaderSession implements ReaderQueueHost {
     this.setChapterList(route.chapterList ?? []);
     this.setPages(chapter.pages ?? []);
 
+    const pageCount = this.pages().length;
+    if (pageCount === 0) {
+      this.setEmpty(true);
+      this.setLoading(false);
+      return;
+    }
+
     let startPage = route.startPage ?? 0;
-    if (startPage <= 0) {
+    if (startPage === -1) {
+      startPage = Math.max(0, pageCount - 1);
+    } else if (startPage <= 0) {
       try {
         const prog = await getReadingProgress(permalink);
         if (prog && prog.completed !== 1 && prog.page_index > 0) {
@@ -893,18 +992,12 @@ export class ReaderSession implements ReaderQueueHost {
         console.error("dynasty-scans: failed to load reading progress:", err);
       }
     }
-
-    const pageCount = this.pages().length;
-    if (pageCount === 0) {
-      this.setEmpty(true);
-      this.setLoading(false);
-      return;
-    }
     this.setCurrentIndex(Math.min(startPage, Math.max(0, pageCount - 1)));
 
-    // Lazy series fetch if chapterList was empty
-    if (this.chapterList().length === 0 && this.seriesPermalink()) {
-      void fetchSeries(this.seriesPermalink()!).then((s) => {
+    // Fetch latest series chapterList and auto-detect layout
+    if (this.seriesPermalink()) {
+      const preferredType = seriesTag?.type;
+      void fetchSeries(this.seriesPermalink()!, false, preferredType).then((s) => {
         if (this.disposedFlag) return;
         const cl: ChapterRef[] = [];
         for (const t of s.taggings ?? []) {
@@ -1052,13 +1145,13 @@ export class ReaderSession implements ReaderQueueHost {
 
     this.publishActions();
 
-    if (startPage > 0) {
-      requestAnimationFrame(() => {
-        if (this.disposedFlag) return;
-        this.setPage(startPage, true);
+    requestAnimationFrame(() => {
+      if (this.disposedFlag) return;
+      this.setPage(startPage, true);
+      if (startPage > 0) {
         this.revealAfterRestore();
-      });
-    }
+      }
+    });
   }
 
   retry(): void {

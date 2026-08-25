@@ -1,13 +1,13 @@
-import { absUrl, COVERS_PREFIX, SITE_ROOT } from "../stores";
+import { absUrl, COVERS_PREFIX, SITE_ROOT, isMobile } from "../stores";
 import { seriesTypeToPath } from "../taxonomy";
-import { getCached, setCached, deleteCached, updateFollowedSeriesCover } from "../db";
+import { getCached, setCached, deleteCached, updateFollowedSeriesCover, touchCached } from "../db";
 import { httpGetText, httpDownloadFull } from "./http";
+import { recordCacheHit } from "./traffic";
 import { fileDelete, fileExists, fileResolve } from "./fs";
 import { fetchChapter } from "./chapter";
 import * as ipc from "../ipc";
 import type { Series } from "../types/api";
 import { SeriesSchema } from "./schemas";
-
 const COVER_DOWNLOAD_TIMEOUT_MS = 30_000;
 const COVER_SKIP_TRANSCODE_THRESHOLD_BYTES = 100_000;
 const COVER_WEBP_QUALITY = 75;
@@ -15,6 +15,7 @@ const COVER_MAX_DIMENSION_PX = 256;
 const COVER_WEBP_MAX_BYTES = 100_000;
 const SERIES_PRIMARY_TIMEOUT_MS = 15_000;
 const SERIES_FALLBACK_TIMEOUT_MS = 5_000;
+const SERIES_TTL_MS = 10 * 60 * 1000; // 10 minutes cache freshness
 
 /** Extracts a file extension from a URL (falls back to jpg). */
 function coverExtension(url: string): string {
@@ -39,7 +40,7 @@ async function transcodeCover(url: string, rawOutPath: string, webpOutPath: stri
   try {
     const convResp = await ipc.ephemeralConvertImages({
       quality: COVER_WEBP_QUALITY,
-      maxDimension: COVER_MAX_DIMENSION_PX,
+      maxDimension: isMobile() ? 128 : COVER_MAX_DIMENSION_PX,
       maxBytes: COVER_WEBP_MAX_BYTES,
       conversions: [[rawOutPath, webpOutPath]],
     });
@@ -78,26 +79,64 @@ export function seriesEndpoints(permalink: string, preferredType?: string): stri
   return [preferredUrl, ...defaultEndpoints.filter((u) => u !== preferredUrl)];
 }
 
-/** Series / anthology / doujin / author / tag detail. `force` skips the cache (used by the Refresh button). */
+/** Series / anthology / doujin / author / tag detail with Stale-While-Revalidate caching. `force` skips the cache. */
 export async function fetchSeries(
   permalink: string,
   force = false,
   preferredType?: string,
 ): Promise<Series> {
   const key = `series:${permalink}`;
-  if (!force) {
-    const cached = await getCached(key);
-    if (cached) {
-      try {
-        return SeriesSchema.parse(JSON.parse(cached.json_payload));
-      } catch {}
+  const cached = await getCached(key);
+  const isStale = !cached || Date.now() - cached.cached_at >= SERIES_TTL_MS;
+
+  // Fast path: fresh cache
+  if (!force && cached && !isStale) {
+    try {
+      const parsed = SeriesSchema.parse(JSON.parse(cached.json_payload));
+      recordCacheHit(cached.json_payload.length);
+      return parsed;
+    } catch {}
+  }
+
+  // Stale cache: return cached immediately for 0ms latency, but revalidate in background
+  if (!force && cached) {
+    let parsed: Series | null = null;
+    try {
+      parsed = SeriesSchema.parse(JSON.parse(cached.json_payload));
+    } catch {}
+
+    if (parsed) {
+      recordCacheHit(cached.json_payload.length);
+      void (async () => {
+        try {
+          const headers: Record<string, string> = {};
+          if (cached.etag) headers["If-None-Match"] = cached.etag;
+          const endpoints = seriesEndpoints(permalink, preferredType);
+          for (let i = 0; i < endpoints.length; i++) {
+            const url = endpoints[i];
+            const timeoutMs = i === 0 ? SERIES_PRIMARY_TIMEOUT_MS : SERIES_FALLBACK_TIMEOUT_MS;
+            const { status, body, etag } = await httpGetText(url, { headers, timeoutMs });
+            if (status === 304) {
+              await touchCached(key);
+              break;
+            }
+            if (status === 200 && body) {
+              await setCached(key, "series", body, etag);
+              break;
+            }
+          }
+        } catch (err) {
+          console.warn("dynasty-scans: background series revalidation failed:", err);
+        }
+      })();
+      return parsed;
     }
   }
 
+  // Network fetch (forced or cache miss)
   let lastErr: Error | null = null;
-  const cached = await getCached(key);
   const headers: Record<string, string> = {};
-  if (cached?.etag) {
+  if (cached?.etag && !force) {
     headers["If-None-Match"] = cached.etag;
   }
 
@@ -108,6 +147,7 @@ export async function fetchSeries(
     try {
       const { status, body, etag } = await httpGetText(url, { headers, timeoutMs });
       if (status === 304 && cached) {
+        await touchCached(key);
         return SeriesSchema.parse(JSON.parse(cached.json_payload));
       }
       if (status === 200 && body) {

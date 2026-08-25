@@ -2,37 +2,42 @@ import { Show } from "solid-js";
 import { isMobile, navigate, route, sessionTab, isInMangaView } from "../stores";
 import { t } from "../i18n";
 import { Icon, StorageIcon, DoublePageIcon } from "./Icon";
-import { IconButton } from "./Button";
 
 export function BottomNav() {
   return (
     <Show when={isMobile() && route().view !== "reader"}>
       <nav id="ds-bottom-nav">
-        <IconButton
-          icon={<Icon name="compass" />}
-          text={t("bottomNav.browse")}
-          className="ds-bn-tab"
+        <button
+          type="button"
+          class="win-button ds-bn-tab"
           classList={{ active: route().view === "browse" }}
           onClick={() => navigate({ view: "browse" })}
-        />
-        <IconButton
-          icon={<StorageIcon />}
-          text={t("bottomNav.library")}
-          className="ds-bn-tab"
+        >
+          <span class="ds-btn-icon-wrap"><Icon name="compass" /></span>
+          <span class="ds-btn-text">{t("bottomNav.browse")}</span>
+        </button>
+        <button
+          type="button"
+          class="win-button ds-bn-tab"
           classList={{ active: route().view === "library" }}
           onClick={() => navigate({ view: "library" })}
-        />
+        >
+          <span class="ds-btn-icon-wrap"><StorageIcon /></span>
+          <span class="ds-btn-text">{t("bottomNav.library")}</span>
+        </button>
         <Show when={sessionTab() !== null}>
-          <IconButton
-            icon={<DoublePageIcon />}
-            text={t("bottomNav.reading")}
-            className="ds-bn-tab ds-bn-manga-tab"
+          <button
+            type="button"
+            class="win-button ds-bn-tab ds-bn-manga-tab"
             classList={{ active: isInMangaView() }}
             onClick={() => {
               const tab = sessionTab();
               if (tab) navigate(tab.route);
             }}
-          />
+          >
+            <span class="ds-btn-icon-wrap"><DoublePageIcon /></span>
+            <span class="ds-btn-text">{t("bottomNav.reading")}</span>
+          </button>
         </Show>
       </nav>
     </Show>

@@ -4,8 +4,8 @@ import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
 import { DsSelect, IconText, IconButton, SegmentedSwitch, ToggleButton } from "../Button";
+import { SettingsRow } from "../SettingsRow";
 import { SCALE_PRESETS } from "./types";
-
 export function DisplaySettings() {
   const [scale, setScale] = createSignal(uiScale());
   const [coversEnabled, setCoversEnabledLocal] = createSignal(browseCovers.coversEnabled);
@@ -27,14 +27,10 @@ export function DisplaySettings() {
       </div>
       <div class="ds-col">
         {/* Scale Factor */}
-        <div class="ds-row-between">
-          <label
-            for="ds-settings-scale-select"
-            class="ds-label"
-          >
-            {t("settings.display.uiScale")}:
-          </label>
-          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+        <SettingsRow
+          label={t("settings.display.uiScale")}
+        >
+          <div class="ds-settings-scale-controls">
             <IconButton
               className="ds-btn-icon"
               id="ds-settings-scale-dec"
@@ -44,7 +40,7 @@ export function DisplaySettings() {
             />
             <DsSelect
               id="ds-settings-scale-select"
-              style="width:115px;"
+              style="min-width:115px;"
               value={String(scale())}
               onChange={(val) => {
                 const num = parseFloat(val);
@@ -83,16 +79,15 @@ export function DisplaySettings() {
               100%
             </button>
           </div>
-        </div>
+        </SettingsRow>
 
         {/* Theme Switcher */}
-        <div class="ds-row-between">
-          <div style="flex:1;min-width:0;">
-            <div class="ds-label">{t("settings.display.theme")}:</div>
-          </div>
+        <SettingsRow
+          label={t("settings.display.theme")}
+          divider
+        >
           <SegmentedSwitch
             id="ds-settings-theme-switch"
-            style="flex-shrink:0;"
             value={theme()}
             onChange={(val) => setTheme(val as "light" | "dark")}
             options={[
@@ -100,21 +95,18 @@ export function DisplaySettings() {
               { id: "ds-settings-theme-dark", value: "dark", icon: <MoonIcon />, text: t("settings.display.themeDark").split(" ")[0], title: t("settings.display.themeDark") },
             ]}
           />
-        </div>
+        </SettingsRow>
 
         {/* Feed Covers Toggle */}
-        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">
-          <div style="flex:1;min-width:0;">
-            <div class="ds-label">
-              {t("settings.display.feedCovers")}:
-            </div>
-            <div class="ds-muted" style="font-size:11px;color:var(--sys-text-muted,#666);">
-              {t("settings.display.feedCoversDesc")}
-            </div>
-          </div>
+        <SettingsRow
+          label={t("settings.display.feedCovers")}
+          desc={t("settings.display.feedCoversDesc")}
+          divider
+        >
           <ToggleButton
             id="ds-settings-covers-toggle"
-            style="font-size:11px;padding:2px 10px;min-width:90px;flex-shrink:0;"
+            className="ds-toggle-btn"
+            style="font-size:11px;padding:2px 10px;min-width:90px;"
             value={coversEnabled()}
             icon={<Icon name="eye-slash" />}
             activeIcon={<ImageIcon />}
@@ -122,18 +114,16 @@ export function DisplaySettings() {
             activeText={t("settings.display.coversOn")}
             onToggle={(next) => { browseCovers.setCoversEnabled(next); setCoversEnabledLocal(next); }}
           />
-        </div>
+        </SettingsRow>
 
         {/* Language Selector */}
-        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--sys-border-light,#eaeaea);gap:8px;">
-          <div style="flex:1;min-width:0;">
-            <div class="ds-label">
-              {t("settings.display.language")}:
-            </div>
-          </div>
+        <SettingsRow
+          label={t("settings.display.language")}
+          divider
+        >
           <DsSelect
             id="ds-settings-language-select"
-            style="width:115px;flex-shrink:0;"
+            style="min-width:115px;"
             value={locale()}
             onChange={(val) => setLocale(val as Locale)}
           >
@@ -145,7 +135,7 @@ export function DisplaySettings() {
               )}
             </For>
           </DsSelect>
-        </div>
+        </SettingsRow>
       </div>
     </div>
   );
