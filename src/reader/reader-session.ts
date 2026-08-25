@@ -12,7 +12,6 @@
 import { batch, createComponent, createRoot, getOwner, runWithOwner } from "solid-js";
 import type { JSX } from "solid-js";
 import { createStore } from "solid-js/store";
-import { debounce } from "@solid-primitives/scheduled";
 import {
   navigate,
   setBanner,
@@ -32,7 +31,6 @@ import {
   getBookmark,
   getCachedPages,
   getReadingProgress,
-  setReadingProgress,
 } from "../db";
 import type { Chapter, ChapterPage } from "../types/api";
 import type { ChapterRef, Route } from "../types/routes";
@@ -71,6 +69,7 @@ import {
 } from "./settings";
 import { standardizeCachePaths } from "./path-migration";
 import { createReaderState, type ReaderState } from "./reader-state";
+import { createReaderPersistence, type ReaderPersistence } from "./reader-persistence";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
 
 const SCROLL_ANIMATION_DURATION_MS = 280;
@@ -195,9 +194,7 @@ export class ReaderSession implements ReaderQueueHost {
   queue: ReaderQueue;
   readonly retrying = new Set<number>();
 
-  // Persistence / scroll bookkeeping ---------------------------------------
-  private lastPersistedIndex = -1;
-  private readonly persistDebounced = debounce(() => void this.persistNow(), isMobile() ? 1500 : 400);
+  private persistence!: ReaderPersistence;
   private disposedFlag = false;
   isProgrammaticScroll = false;
   programmaticScrollTimer: number | null = null;
@@ -298,9 +295,8 @@ export class ReaderSession implements ReaderQueueHost {
     this.chapterNav = this.state.chapterNav;
 
     this.queue = new ReaderQueue(this);
+    this.persistence = createReaderPersistence(this.state, this.permalink);
   }
-
-  // ReaderQueueHost compatibility -------------------------------------------
   getPages(): ChapterPage[] {
     return this.pages();
   }
@@ -354,7 +350,7 @@ export class ReaderSession implements ReaderQueueHost {
 
   dispose(): void {
     this.disposedFlag = true;
-    this.persistDebounced.clear();
+    this.persistence.dispose();
     this.clearToolbarTimer();
     if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
     for (const fn of this.cleanupFns) fn();
@@ -424,25 +420,11 @@ export class ReaderSession implements ReaderQueueHost {
   }
   // Progress + persistence --------------------------------------------------
   schedulePersist(): void {
-    this.persistDebounced();
+    this.persistence.schedulePersist();
   }
 
   async persistNow(): Promise<void> {
-    if (this.lastPersistedIndex === this.currentIndex() && !this.atEnd()) return;
-    this.lastPersistedIndex = this.currentIndex();
-    try {
-      await setReadingProgress({
-        chapterPermalink: this.permalink,
-        seriesPermalink: this.seriesPermalink() ?? "",
-        seriesName: this.seriesName() ?? "",
-        chapterTitle: this.chapterTitle(),
-        pageIndex: this.currentIndex(),
-        pageTotal: this.pages().length,
-        completed: this.atEnd(),
-      });
-    } catch (err) {
-      console.error("dynasty-scans: failed to persist reading progress:", err);
-    }
+    return this.persistence.persistNow();
   }
 
   setPage(index: number, instant = false, scrollToBottom = false): void {
