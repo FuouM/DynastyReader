@@ -20,6 +20,7 @@ import { t } from "../i18n";
 import { parseDynastyUrl, suggest } from "../api";
 import { Pager } from "../components/Pager";
 import { SubTabs } from "../components/SubTabs";
+import { GroupBox } from "../components/GroupBox";
 import { Typeahead } from "../components/Typeahead";
 import { InputField } from "../components/InputField";
 import { IconText, IconButton } from "../components/Button";
@@ -28,7 +29,6 @@ import {
   RefreshIcon,
   CheckIcon,
   WarningIcon,
-  ChevronDownIcon,
   ClipboardIcon,
   ArrowDownIcon,
   ExternalLinkIcon,
@@ -212,26 +212,13 @@ export function BrowseView() {
 
   return (
     <>
-      {/* ── Search + Open-by-URL ─────────────────────────────────────────── */}
-      <div
-        class="group-box ds-mb-8"
-        classList={{ collapsed: searchGoCollapsed() }}
+      <GroupBox
+        class="ds-mb-8"
+        collapsible
+        collapsed={searchGoCollapsed()}
+        onToggle={toggleSearchGo}
+        title={<IconText icon={<SearchIcon />}>{t("browse.searchAndGo.title")}</IconText>}
       >
-        <div class="group-box-title" onClick={toggleSearchGo}>
-          <IconText icon={<SearchIcon />}>{t("browse.searchAndGo.title")}</IconText>
-          <button
-            type="button"
-            class="group-box-collapse-btn"
-            title={t("browse.searchAndGo.toggleCollapse")}
-            onClick={(ev) => {
-              ev.stopPropagation();
-              toggleSearchGo();
-            }}
-          >
-            <ChevronDownIcon />
-          </button>
-        </div>
-        <div class="group-box-body">
           <div class="ds-row">
             <div class="ds-search-wrap ds-flex-1">
               <Typeahead
@@ -279,8 +266,7 @@ export function BrowseView() {
           <div class="ds-muted ds-mt-2">
             {t("browse.searchAndGo.acceptedNotice")}
           </div>
-        </div>
-      </div>
+      </GroupBox>
 
       {/* ── Sub-tabs ────────────────────────────────────────────────────── */}
       <SubTabs

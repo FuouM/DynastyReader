@@ -38,6 +38,7 @@ import { browseCovers } from "../browse/browse-covers";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
+import { GroupBox } from "../components/GroupBox";
 import { HydratedCover } from "../components/HydratedCover";
 import { ConfirmDeleteButton, DsSelect, IconText, IconButton, StatCard } from "../components/Button";
 import { InputField } from "../components/InputField";
@@ -280,22 +281,16 @@ function CacheBody(props: {
 
   return (
     <>
-      <div class="group-box">
-        <div class="group-box-title">
-          <IconText icon={<ChartIcon />}>{t("cache.overviewTitle")}</IconText>
-        </div>
+      <GroupBox title={<IconText icon={<ChartIcon />}>{t("cache.overviewTitle")}</IconText>}>
         <div class="ds-stats-grid ds-stats-grid--4">
           <StatCard value={formatBytes(stats.totalSizeBytes)} label={t("cache.diskFootprint")} />
           <StatCard value={stats.totalCachedPages} label={t("cache.pagesCached")} />
           <StatCard value={stats.totalCachedChapters} label={t("cache.chaptersCached")} />
           <StatCard value={groups.length} label={t("cache.seriesCached")} />
         </div>
-      </div>
+      </GroupBox>
 
-      <div class="group-box">
-        <div class="group-box-title">
-          <IconText icon={<DatabaseIcon />}>{t("cache.dbStatsTitle")}</IconText>
-        </div>
+      <GroupBox title={<IconText icon={<DatabaseIcon />}>{t("cache.dbStatsTitle")}</IconText>}>
         <div class="ds-stats-grid ds-stats-grid--4">
           <StatCard value={formatBytes(dbStats.file.totalSizeBytes)} label={t("cache.dbSizeTotal")} />
           <StatCard value={formatBytes(dbStats.file.dbSizeBytes)} label={t("cache.dbFile")} />
@@ -324,11 +319,8 @@ function CacheBody(props: {
             onConfirm={props.wipeDb}
           />
         </div>
-      </div>
-      <div class="group-box">
-        <div class="group-box-title">
-          <IconText icon={<TrafficIcon />}>{t("cache.trafficTitle")}</IconText>
-        </div>
+      </GroupBox>
+      <GroupBox title={<IconText icon={<TrafficIcon />}>{t("cache.trafficTitle")}</IconText>}>
         <div class="ds-stats-grid ds-stats-grid--4">
           <StatCard value={formatBytes(traffic().bytesDownloaded)} label={t("cache.sessionDownloaded", { count: traffic().networkRequests })} />
           <StatCard value={formatBytes(traffic().bytesSaved)} label={t("cache.sessionSaved", { count: traffic().cacheHits })} />
@@ -346,11 +338,8 @@ function CacheBody(props: {
             }}
           />
         </div>
-      </div>
-      <div class="group-box">
-        <div class="group-box-title">
-          <IconText icon={<ToolIcon />}>{t("cache.maintenanceTitle")}</IconText>
-        </div>
+      </GroupBox>
+      <GroupBox title={<IconText icon={<ToolIcon />}>{t("cache.maintenanceTitle")}</IconText>}>
         <div class="ds-cache-actions">
           <ConfirmDeleteButton
             icon={<TrashIcon />}
@@ -371,11 +360,11 @@ function CacheBody(props: {
             onConfirm={props.purgeCovers}
           />
         </div>
-      </div>
-      <div class="group-box ds-flex-col">
-        <div class="group-box-title">
-          <IconText icon={<StorageIcon />}>{t("cache.cachedWorksTitle", { count: groups.length })}</IconText>
-        </div>
+      </GroupBox>
+      <GroupBox
+        class="ds-flex-col"
+        title={<IconText icon={<StorageIcon />}>{t("cache.cachedWorksTitle", { count: groups.length })}</IconText>}
+      >
 
         <Show
           when={groups.length === 0}
@@ -459,7 +448,7 @@ function CacheBody(props: {
             <span class="ds-muted">{t("cache.noCachedWorks")}</span>
           </EmptyState>
         </Show>
-      </div>
+      </GroupBox>
     </>
   );
 }
