@@ -1,18 +1,22 @@
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
 
+const host = process.env.TAURI_DEV_HOST;
+
 export default defineConfig({
   clearScreen: false,
   plugins: [solid()],
   server: {
-    host: process.env.TAURI_DEV_HOST || "0.0.0.0",
+    host: host || "0.0.0.0",
     port: 1420,
     strictPort: true,
-    hmr: {
-      protocol: "ws",
-      host: process.env.TAURI_DEV_HOST || "10.0.2.2",
-      port: 1420,
-    },
+    hmr: host
+      ? {
+          protocol: "ws",
+          host,
+          port: 1420,
+        }
+      : undefined,
     watch: {
       ignored: ["**/src-tauri/**", "**/.data/**", "**/.rust/**", "**/target/**"],
     },
