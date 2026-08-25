@@ -1,5 +1,6 @@
-import { createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createSignal, onCleanup, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
+import { createElementSize } from "@solid-primitives/resize-observer";
 import {
   route,
   navigate,
@@ -32,8 +33,6 @@ import { IconButton, SegmentedSwitch } from "./Button";
 
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
-  const [isNarrow, setIsNarrow] = createSignal(false);
-  const [isCompact, setIsCompact] = createSignal(false);
   const [historyMenu, setHistoryMenu] = createSignal<{
     direction: "back" | "forward";
     anchorEl: HTMLElement;
@@ -60,21 +59,11 @@ export function Topbar() {
   onCleanup(() => cancelHold());
 
   let topbarEl: HTMLDivElement | undefined;
+  const size = createElementSize(() => topbarEl);
+  const isNarrow = () => (size.width ?? 0) < 620;
+  const isCompact = () => (size.width ?? 0) < 760;
 
   makeEventListener(window, "ds-open-settings", () => setSettingsOpen(true));
-
-  onMount(() => {
-    if (!topbarEl || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const width = entry.contentRect.width;
-        setIsNarrow(width < 620);
-        setIsCompact(width < 760);
-      }
-    });
-    ro.observe(topbarEl);
-    onCleanup(() => ro.disconnect());
-  });
 
   return (
     <>

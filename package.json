@@ -10,7 +10,11 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@solid-primitives/connectivity": "^0.4.6",
     "@solid-primitives/event-listener": "^2.4.6",
+    "@solid-primitives/intersection-observer": "^2.2.5",
+    "@solid-primitives/media": "^2.3.6",
+    "@solid-primitives/resize-observer": "^2.2.0",
     "@solid-primitives/scheduled": "^1.5.3",
     "@solid-primitives/storage": "^4.4.0",
     "@tauri-apps/api": "^2",

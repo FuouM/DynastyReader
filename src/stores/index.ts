@@ -3,6 +3,8 @@
  * Exports views, router, theme, topbar, and utility state stores.
  */
 
+import { createConnectivitySignal } from "@solid-primitives/connectivity";
+
 export const SITE_ROOT = "https://dynasty-scans.com";
 export const DB_NAME = "dynasty_reader.db";
 
@@ -74,10 +76,8 @@ export {
   KIND_BY_PATH_SEGMENT,
 } from "../taxonomy";
 
-/** Returns true when the webview believes it has a network connection. */
-export function isOnline(): boolean {
-  return typeof navigator !== "undefined" ? navigator.onLine : true;
-}
+/** Reactive signal for whether the webview has a network connection. */
+export const isOnline = createConnectivitySignal();
 
 /** Absolute URL from a possibly-relative site path (e.g. `/system/.../01.webp`). */
 export function absUrl(u: string): string {

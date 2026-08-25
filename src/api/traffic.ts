@@ -4,7 +4,9 @@
  * the current app session and all-time (persisted).
  */
 
+import { persistedSignal } from "../lib/persisted-signal";
 import { throttle } from "@solid-primitives/scheduled";
+
 export interface TrafficMetrics {
   bytesDownloaded: number;
   networkRequests: number;
@@ -17,32 +19,26 @@ export interface SessionTraffic extends TrafficMetrics {
   lifetime: TrafficMetrics;
 }
 
-const STORAGE_KEY = "ds_lifetime_traffic";
+const DEFAULT_METRICS: TrafficMetrics = { bytesDownloaded: 0, networkRequests: 0, cacheHits: 0, bytesSaved: 0 };
 
-function loadLifetime(): TrafficMetrics {
-  try {
-    if (typeof localStorage !== "undefined") {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return {
-          bytesDownloaded: Math.max(0, Number(parsed.bytesDownloaded) || 0),
-          networkRequests: Math.max(0, Number(parsed.networkRequests) || 0),
-          cacheHits: Math.max(0, Number(parsed.cacheHits) || 0),
-          bytesSaved: Math.max(0, Number(parsed.bytesSaved) || 0),
-        };
-      }
+const [lifetimeMetrics, setLifetimeMetrics] = persistedSignal<TrafficMetrics>({ ...DEFAULT_METRICS }, {
+  name: "ds_lifetime_traffic",
+  serialize: JSON.stringify,
+  deserialize: (raw) => {
+    try {
+      const p = JSON.parse(raw);
+      return {
+        bytesDownloaded: Math.max(0, Number(p.bytesDownloaded) || 0),
+        networkRequests: Math.max(0, Number(p.networkRequests) || 0),
+        cacheHits: Math.max(0, Number(p.cacheHits) || 0),
+        bytesSaved: Math.max(0, Number(p.bytesSaved) || 0),
+      };
+    } catch {
+      return { ...DEFAULT_METRICS };
     }
-  } catch {}
-  return {
-    bytesDownloaded: 0,
-    networkRequests: 0,
-    cacheHits: 0,
-    bytesSaved: 0,
-  };
-}
+  },
+});
 
-const lifetimeMetrics: TrafficMetrics = loadLifetime();
 const sessionMetrics: TrafficMetrics = {
   bytesDownloaded: 0,
   networkRequests: 0,
@@ -51,10 +47,11 @@ const sessionMetrics: TrafficMetrics = {
 };
 
 function snapshot(): SessionTraffic {
+  const lt = lifetimeMetrics();
   return {
     ...sessionMetrics,
     session: { ...sessionMetrics },
-    lifetime: { ...lifetimeMetrics },
+    lifetime: { ...lt },
   };
 }
 
@@ -73,13 +70,8 @@ function notify(): void {
 }
 
 const schedulePersist = throttle(() => {
-  try {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(lifetimeMetrics));
-    }
-  } catch (err) {
-    console.warn("[ds-traffic] failed to persist lifetime traffic:", err);
-  }
+  const lt = lifetimeMetrics();
+  setLifetimeMetrics({ ...lt });
 }, 2000);
 
 /** Records inbound network payload traffic. */
@@ -87,8 +79,12 @@ export function recordNetworkTraffic(bytes: number): void {
   const b = Math.max(0, bytes);
   sessionMetrics.bytesDownloaded += b;
   sessionMetrics.networkRequests += 1;
-  lifetimeMetrics.bytesDownloaded += b;
-  lifetimeMetrics.networkRequests += 1;
+  setLifetimeMetrics((prev) => ({
+    bytesDownloaded: prev.bytesDownloaded + b,
+    networkRequests: prev.networkRequests + 1,
+    cacheHits: prev.cacheHits,
+    bytesSaved: prev.bytesSaved,
+  }));
   schedulePersist();
   notify();
 }
@@ -98,8 +94,12 @@ export function recordCacheHit(savedBytes = 0): void {
   const b = Math.max(0, savedBytes);
   sessionMetrics.cacheHits += 1;
   sessionMetrics.bytesSaved += b;
-  lifetimeMetrics.cacheHits += 1;
-  lifetimeMetrics.bytesSaved += b;
+  setLifetimeMetrics((prev) => ({
+    bytesDownloaded: prev.bytesDownloaded,
+    networkRequests: prev.networkRequests,
+    cacheHits: prev.cacheHits + 1,
+    bytesSaved: prev.bytesSaved + b,
+  }));
   schedulePersist();
   notify();
 }
@@ -111,20 +111,16 @@ export function getSessionTraffic(): SessionTraffic {
 
 /** Returns lifetime metrics. */
 export function getLifetimeTraffic(): TrafficMetrics {
-  return { ...lifetimeMetrics };
+  return { ...lifetimeMetrics() };
 }
 
 /** Resets lifetime traffic statistics. */
 export function resetLifetimeTraffic(): void {
-  lifetimeMetrics.bytesDownloaded = 0;
-  lifetimeMetrics.networkRequests = 0;
-  lifetimeMetrics.cacheHits = 0;
-  lifetimeMetrics.bytesSaved = 0;
-  try {
-    if (typeof localStorage !== "undefined") {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  } catch {}
+  sessionMetrics.bytesDownloaded = 0;
+  sessionMetrics.networkRequests = 0;
+  sessionMetrics.cacheHits = 0;
+  sessionMetrics.bytesSaved = 0;
+  setLifetimeMetrics({ ...DEFAULT_METRICS });
   notify();
 }
 

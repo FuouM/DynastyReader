@@ -13,10 +13,11 @@ const CHECK_UPDATES_POLL_INTERVAL_MS = 50;
 const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
 import { createEffect, createSignal, onCleanup, Show, untrack, type JSX } from "solid-js";
+import { createMediaQuery } from "@solid-primitives/media";
+import { persistedSignal } from "../lib/persisted-signal";
 import { isMobile, navigate, route, setRoute, showBanner } from "../stores";
 import { t } from "../i18n";
 import { parseDynastyUrl, suggest } from "../api";
-import { useMediaQuery } from "../hooks/useImageRetry";
 import { Pager } from "../components/Pager";
 import { SubTabs } from "../components/SubTabs";
 import { Typeahead } from "../components/Typeahead";
@@ -69,11 +70,11 @@ export const getBrowseTabs = (): readonly BrowseTabDef[] => [
 ];
 
 export function BrowseView() {
-  const [searchGoCollapsed, setSearchGoCollapsed] = createSignal(
-    localStorage.getItem("ds-search-go-collapsed") !== null
-      ? localStorage.getItem("ds-search-go-collapsed") === "true"
-      : isMobile(),
-  );
+  const [searchGoCollapsed, setSearchGoCollapsed] = persistedSignal(isMobile(), {
+    name: "ds-search-go-collapsed",
+    serialize: String,
+    deserialize: (v) => v === "true",
+  });
   const [searchBoxValue, setSearchBoxValue] = createSignal("");
   const [urlValue, setUrlValue] = createSignal("");
   const [checkBtn, setCheckBtn] = createSignal<"idle" | "checking" | "updated" | "error">("idle");
@@ -86,7 +87,7 @@ export function BrowseView() {
     if (pollTimer !== null) window.clearTimeout(pollTimer);
   });
   const revision = useBlacklistRevision();
-  const isCompact = useMediaQuery("(max-width: 680px)");
+  const isCompact = createMediaQuery("(max-width: 680px)");
 
   const [pendingSearch, setPendingSearch] = createSignal<{
     searchQuery?: string;

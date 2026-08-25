@@ -1,4 +1,5 @@
 import { execute, query } from "./client";
+import { persistedSignal } from "../lib/persisted-signal";
 import type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode } from "../types/blacklist";
 
 export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode };
@@ -30,13 +31,15 @@ function notifyBlacklistChanged(): void {
   }
 }
 
-export function getBlacklistMode(): BlacklistMode {
-  const raw = localStorage.getItem("ds-blacklist-mode");
-  return raw === "hide" || raw === "warn" ? raw : "hide";
-}
+const [blacklistModeSignal, setBlacklistModeRaw] = persistedSignal<BlacklistMode>("hide", {
+  name: "ds-blacklist-mode",
+  deserialize: (v) => (v === "hide" || v === "warn") ? v : "hide",
+});
+
+export const getBlacklistMode = blacklistModeSignal;
 
 export function setBlacklistMode(mode: BlacklistMode): void {
-  localStorage.setItem("ds-blacklist-mode", mode);
+  setBlacklistModeRaw(mode);
   notifyBlacklistChanged();
 }
 

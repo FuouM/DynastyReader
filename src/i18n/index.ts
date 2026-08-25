@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { persistedSignal } from "../lib/persisted-signal";
 import { en, type Dict } from "./en";
 import {
   type Locale,
@@ -12,26 +12,14 @@ export type { Locale, LocaleInfo, TranslationParams };
 export type TranslationKey = NestedKeyOf<Dict>;
 export { SUPPORTED_LOCALES };
 
-const STORAGE_KEY = "ds-locale";
-
 const dictionaries: Record<Locale, Dict> = {
   en,
 };
 
-function readPersistedLocale(): Locale {
-  if (typeof localStorage === "undefined") return "en";
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw && raw in dictionaries) {
-      return raw as Locale;
-    }
-  } catch (err) {
-    console.error("[i18n] Failed to read persisted locale:", err);
-  }
-  return "en";
-}
-
-const [localeSignal, setLocaleSignal] = createSignal<Locale>(readPersistedLocale());
+const [localeSignal, setLocaleRaw] = persistedSignal<Locale>("en", {
+  name: "ds-locale",
+  deserialize: (v) => (v in dictionaries) ? v as Locale : "en",
+});
 
 export const locale = localeSignal;
 
@@ -40,14 +28,7 @@ export function setLocale(loc: Locale): void {
     console.warn(`[i18n] Unsupported locale "${loc}", falling back to "en".`);
     loc = "en";
   }
-  setLocaleSignal(loc);
-  try {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, loc);
-    }
-  } catch (err) {
-    console.error("[i18n] Failed to persist locale:", err);
-  }
+  setLocaleRaw(loc);
 }
 
 /** Interpolates `{{key}}` and `{key}` place markers in a template string. */

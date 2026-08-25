@@ -62,6 +62,13 @@ import {
   isCoverOffsetDefaultEnabled,
   isLongStripFitWidthEnabled,
   isLongStripSpreadOverrideEnabled,
+  setCoverOffsetDefaultEnabled,
+  setDefaultFitMode,
+  setDefaultPagedLayout,
+  setDefaultReaderMode,
+  setDefaultReadingDirection,
+  getScrollLock,
+  setScrollLock as setScrollLockPersisted,
 } from "./settings";
 import { standardizeCachePaths } from "./path-migration";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
@@ -573,7 +580,7 @@ export class ReaderSession implements ReaderQueueHost {
   setMode(mode: ReaderMode): void {
     if (mode === this.mode()) return;
     this.setModeSignal(mode);
-    localStorage.setItem("ds-reader-mode", mode === "paged" ? "paged" : "scroll");
+    setDefaultReaderMode(mode);
     this.applyLayoutMode();
     this.resetToCurrentPage(true);
   }
@@ -582,7 +589,7 @@ export class ReaderSession implements ReaderQueueHost {
     if (layout === this.pagedLayout()) return;
     this.setPagedLayoutSignal(layout);
     this.setLayoutAutoDetected(false);
-    localStorage.setItem("ds-reader-layout", layout);
+    setDefaultPagedLayout(layout);
     this.applyLayoutMode();
     this.resetToCurrentPage(true);
   }
@@ -591,7 +598,7 @@ export class ReaderSession implements ReaderQueueHost {
     if (dir === this.direction()) return;
     this.setDirectionSignal(dir);
     this.setDirectionAutoDetected(false);
-    localStorage.setItem("ds-reader-direction", dir);
+    setDefaultReadingDirection(dir);
     if (this.isHorizontal()) {
       this.applyLayoutMode();
       this.resetToCurrentPage(true);
@@ -600,7 +607,7 @@ export class ReaderSession implements ReaderQueueHost {
 
   toggleCoverOffset(): void {
     this.setCoverOffsetSignal(!this.coverOffset());
-    localStorage.setItem("ds-reader-cover-offset", this.coverOffset() ? "1" : "0");
+    setCoverOffsetDefaultEnabled(this.coverOffset());
     if (this.isSpread()) {
       this.resetToCurrentPage(true);
     }
@@ -608,7 +615,7 @@ export class ReaderSession implements ReaderQueueHost {
 
   setFitMode(fit: FitMode): void {
     this.setFitModeSignal(fit);
-    localStorage.setItem("ds-reader-fit", fit);
+    setDefaultFitMode(fit);
     if (this.containerEl) {
       this.containerEl.classList.remove("fit-width", "fit-height", "fit-original");
       this.containerEl.classList.add(`fit-${fit}`);
@@ -621,7 +628,7 @@ export class ReaderSession implements ReaderQueueHost {
   setScrollLock(): void {
     this.setScrollLockSignal((prev) => {
       const next = !prev;
-      localStorage.setItem("ds-reader-scroll-lock", next ? "1" : "0");
+      setScrollLockPersisted(next);
       return next;
     });
   }
@@ -1067,7 +1074,7 @@ export class ReaderSession implements ReaderQueueHost {
     } else {
       this.setFitModeSignal(getDefaultFitMode());
     }
-    this.setScrollLockSignal(localStorage.getItem("ds-reader-scroll-lock") === "1");
+    this.setScrollLockSignal(getScrollLock());
 
     // Restore cached page paths from SQLite
     let cachedRows: Awaited<ReturnType<typeof getCachedPages>> = [];

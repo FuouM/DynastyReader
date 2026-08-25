@@ -24,7 +24,7 @@ import {
 } from "../stores";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
-import { useMediaQuery } from "../hooks/useImageRetry";
+import { createMediaQuery } from "@solid-primitives/media";
 import {
   clearHistory,
   createCollection,
@@ -107,7 +107,7 @@ function LibraryGrid() {
   const [refreshing, setRefreshing] = createSignal(false);
   const [justUpdated, setJustUpdated] = createSignal(false);
   const [creating, setCreating] = createSignal(false);
-  const isNarrow = useMediaQuery("(max-width: 680px)");
+  const isNarrow = createMediaQuery("(max-width: 680px)");
 
   const isNarrowOrMobile = () => isNarrow() || isMobile();
 

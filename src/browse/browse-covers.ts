@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { persistedSignal } from "../lib/persisted-signal";
 import { debounce } from "@solid-primitives/scheduled";
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
@@ -10,16 +11,10 @@ import { isSeriesKind, isDoujinTag } from "../taxonomy";
  * effect when the user toggles the "Show covers" setting — replacing the old
  * imperative `renderCurrent()` call that was used in the vanilla-JS version.
  */
-const [coversEnabledSignal, setCoversEnabledSignal] = createSignal(
-  (() => {
-    try {
-      const saved = localStorage.getItem("ds_covers_enabled");
-      return saved !== null ? saved === "true" : true;
-    } catch {
-      return true;
-    }
-  })()
-);
+const [coversEnabledSignal, setCoversEnabledSignal] = persistedSignal(true, {
+  name: "ds_covers_enabled",
+  deserialize: (v) => v !== null ? v === "true" : true,
+});
 
 const [coverPathMap, setCoverPathMap] = createSignal<Map<string, string>>(new Map(), { equals: false });
 
@@ -108,6 +103,7 @@ export class BrowseCovers {
     this.queuedKeys.clear();
     this.queue.length = 0;
     setCoverPathMap(new Map());
+    this.detachScrollTracking();
   }
 
   /** Evicts a broken/missing cover path from memory cache and SQLite. */
@@ -143,12 +139,10 @@ export class BrowseCovers {
 
   setCoversEnabled(v: boolean): void {
     setCoversEnabledSignal(v);
-    try {
-      localStorage.setItem("ds_covers_enabled", v ? "true" : "false");
-    } catch {}
     if (!v) {
       this.queue.length = 0;
       this.queuedKeys.clear();
+      this.detachScrollTracking();
       if (this.lazyObserver) {
         this.lazyObserver.disconnect();
         this.lazyObserver = null;
@@ -335,16 +329,26 @@ export class BrowseCovers {
     unmountedWraps.forEach((wrap) => observer.observe(wrap));
   }
 
+  private scrollCleanups: (() => void)[] = [];
+
   private attachScrollTracking(): void {
     // Primary: attach directly to the scrollable container so the event is guaranteed.
     const dsView = document.getElementById("ds-view");
     if (dsView) {
       dsView.addEventListener("scroll", this.onScrollActive, { passive: true });
+      this.scrollCleanups.push(() => dsView.removeEventListener("scroll", this.onScrollActive));
     } else {
       console.warn("[ds-covers] #ds-view not found — scroll tracking may miss events");
     }
     // Fallback: document capture for any other scroll sources.
     document.addEventListener("scroll", this.onScrollActive, { capture: true, passive: true });
+    this.scrollCleanups.push(() => document.removeEventListener("scroll", this.onScrollActive, { capture: true }));
+  }
+
+  private detachScrollTracking(): void {
+    for (const fn of this.scrollCleanups) fn();
+    this.scrollCleanups.length = 0;
+    this.scrollTrackingAttached = false;
   }
 
   private readonly onScrollActive = (): void => {

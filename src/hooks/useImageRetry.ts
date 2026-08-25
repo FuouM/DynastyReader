@@ -59,23 +59,3 @@ export function useImageRetry(opts?: { maxAttempts?: number; delayMs?: number })
     showImage: (isValidSource: boolean) => isValidSource && !error(),
   };
 }
-
-/**
- * Reactive media query hook. Returns a boolean signal that tracks
- * whether the given CSS media query matches.
- */
-export function useMediaQuery(query: string): () => boolean {
-  const [matches, setMatches] = createSignal<boolean>(
-    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
-  );
-
-  if (typeof window !== "undefined") {
-    const mq = window.matchMedia(query);
-    const update = (e: MediaQueryListEvent | MediaQueryList) => setMatches(e.matches);
-    if (typeof mq.addEventListener === "function") {
-      mq.addEventListener("change", update);
-    }
-  }
-
-  return matches;
-}

@@ -6,102 +6,116 @@
  * breaking the controller ↔ viewport import cycle.
  */
 import { isMobile } from "../stores";
+import { persistedSignal } from "../lib/persisted-signal";
 import type { FitMode, ReaderMode, PagedLayout } from "../types/reader";
-
-const getBool = (key: string, def = true): boolean => {
-  const val = localStorage.getItem(key);
-  return val === null ? def : val === "1" || val === "true";
-};
-const setBool = (key: string, val: boolean): void => localStorage.setItem(key, val ? "1" : "0");
-
-export const isAutoCacheChapterEnabled = (): boolean => {
-  const val = localStorage.getItem("ds-auto-cache-chapter");
-  if (val === null) return !isMobile();
-  return val === "1" || val === "true";
-};
-export const setAutoCacheChapterEnabled = (enabled: boolean): void => setBool("ds-auto-cache-chapter", enabled);
-
-export function getPrefetchBuffer(): number {
-  const val = localStorage.getItem("ds-reader-prefetch");
-  if (val === null) return isMobile() ? 3 : 0;
-  const num = parseInt(val, 10);
-  return isNaN(num) ? 0 : Math.max(0, Math.min(10, num));
-}
-
-export function setPrefetchBuffer(count: number): void {
-  localStorage.setItem("ds-reader-prefetch", String(Math.max(0, Math.min(10, count))));
-}
 
 export type ReaderNavPosition = "top" | "bottom";
 export type ReadingDirectionSetting = "auto" | "rtl" | "ltr";
-
-export function getDefaultReaderMode(): ReaderMode {
-  return localStorage.getItem("ds-reader-mode") === "paged" ? "paged" : "scroll";
-}
-
-export function setDefaultReaderMode(mode: ReaderMode): void {
-  localStorage.setItem("ds-reader-mode", mode);
-}
-
-export function getDefaultPagedLayout(): PagedLayout {
-  return localStorage.getItem("ds-reader-layout") === "spread" ? "spread" : "single";
-}
-
-export function setDefaultPagedLayout(layout: PagedLayout): void {
-  localStorage.setItem("ds-reader-layout", layout);
-}
-
-export const isLongStripSpreadOverrideEnabled = (): boolean => getBool("ds-reader-long-strip-override", true);
-export const setLongStripSpreadOverrideEnabled = (enabled: boolean): void => setBool("ds-reader-long-strip-override", enabled);
-
-export const isLongStripFitWidthEnabled = (): boolean => getBool("ds-reader-long-strip-fit-width", true);
-export const setLongStripFitWidthEnabled = (enabled: boolean): void => setBool("ds-reader-long-strip-fit-width", enabled);
-
-export function getDefaultReadingDirection(): ReadingDirectionSetting {
-  const val = localStorage.getItem("ds-reader-direction-mode") ?? localStorage.getItem("ds-reader-direction");
-  if (val === "ltr" || val === "rtl" || val === "auto") return val;
-  return "auto";
-}
-
-export function setDefaultReadingDirection(dir: ReadingDirectionSetting): void {
-  localStorage.setItem("ds-reader-direction-mode", dir);
-  if (dir === "ltr" || dir === "rtl") {
-    localStorage.setItem("ds-reader-direction", dir);
-  } else {
-    localStorage.removeItem("ds-reader-direction");
-  }
-}
-
-export const isCoverOffsetDefaultEnabled = (): boolean => getBool("ds-reader-cover-offset", false);
-export const setCoverOffsetDefaultEnabled = (enabled: boolean): void => setBool("ds-reader-cover-offset", enabled);
-
-export function getDefaultFitMode(): FitMode {
-  const val = localStorage.getItem("ds-reader-fit");
-  if (val === "height" || val === "original") return val;
-  return "width";
-}
-
-export function setDefaultFitMode(fit: FitMode): void {
-  localStorage.setItem("ds-reader-fit", fit);
-}
-
-export function getReaderNavPosition(): ReaderNavPosition {
-  const val = localStorage.getItem("ds-reader-nav-position");
-  return val === "bottom" ? "bottom" : "top";
-}
-
-export function setReaderNavPosition(pos: ReaderNavPosition): void {
-  localStorage.setItem("ds-reader-nav-position", pos);
-  window.dispatchEvent(new CustomEvent("ds-reader-nav-pos-change", { detail: pos }));
-}
-
 export type PrevChapterStartPage = "first" | "last";
 
-export function getPrevChapterStartPage(): PrevChapterStartPage {
-  const val = localStorage.getItem("ds-reader-prev-chapter-page");
-  return val === "last" ? "last" : "first";
-}
+const boolDeserialize = (v: string) => v === "true" || v === "1";
 
-export function setPrevChapterStartPage(page: PrevChapterStartPage): void {
-  localStorage.setItem("ds-reader-prev-chapter-page", page);
-}
+// Auto-cache chapter
+const [isAutoCacheChapterEnabled, setAutoCache] = persistedSignal(!isMobile(), {
+  name: "ds-auto-cache-chapter",
+  serialize: String,
+  deserialize: boolDeserialize,
+});
+export { isAutoCacheChapterEnabled, setAutoCache as setAutoCacheChapterEnabled };
+
+// Prefetch buffer
+const [getPrefetchBuffer, _setPrefetch] = persistedSignal(isMobile() ? 3 : 0, {
+  name: "ds-reader-prefetch",
+  serialize: String,
+  deserialize: (v) => Math.max(0, Math.min(10, parseInt(v, 10) || 0)),
+});
+export { getPrefetchBuffer };
+export const setPrefetchBuffer = (count: number) => _setPrefetch(Math.max(0, Math.min(10, count)));
+
+// Reader mode
+const [getDefaultReaderMode, setDefaultReaderMode] = persistedSignal<ReaderMode>("scroll", {
+  name: "ds-reader-mode",
+  deserialize: (v) => v === "paged" ? "paged" : "scroll",
+});
+export { getDefaultReaderMode, setDefaultReaderMode };
+
+// Paged layout
+const [getDefaultPagedLayout, setDefaultPagedLayout] = persistedSignal<PagedLayout>("single", {
+  name: "ds-reader-layout",
+  deserialize: (v) => v === "spread" ? "spread" : "single",
+});
+export { getDefaultPagedLayout, setDefaultPagedLayout };
+
+// Long strip spread override
+const [isLongStripSpreadOverrideEnabled, setLongStripSpreadOverrideEnabled] = persistedSignal(true, {
+  name: "ds-reader-long-strip-override",
+  serialize: String,
+  deserialize: boolDeserialize,
+});
+export { isLongStripSpreadOverrideEnabled, setLongStripSpreadOverrideEnabled };
+
+// Long strip fit width
+const [isLongStripFitWidthEnabled, setLongStripFitWidthEnabled] = persistedSignal(true, {
+  name: "ds-reader-long-strip-fit-width",
+  serialize: String,
+  deserialize: boolDeserialize,
+});
+export { isLongStripFitWidthEnabled, setLongStripFitWidthEnabled };
+
+// Reading direction (with legacy key migration on write)
+const [getDefaultReadingDirection, _setDirection] = persistedSignal<ReadingDirectionSetting>("auto", {
+  name: "ds-reader-direction-mode",
+  deserialize: (v) => (v === "ltr" || v === "rtl" || v === "auto") ? v : "auto",
+});
+export { getDefaultReadingDirection };
+export const setDefaultReadingDirection = (dir: ReadingDirectionSetting) => {
+  _setDirection(dir);
+  try {
+    if (dir === "ltr" || dir === "rtl") {
+      localStorage.setItem("ds-reader-direction", dir);
+    } else {
+      localStorage.removeItem("ds-reader-direction");
+    }
+  } catch {}
+};
+
+// Cover offset
+const [isCoverOffsetDefaultEnabled, setCoverOffsetDefaultEnabled] = persistedSignal(false, {
+  name: "ds-reader-cover-offset",
+  serialize: String,
+  deserialize: boolDeserialize,
+});
+export { isCoverOffsetDefaultEnabled, setCoverOffsetDefaultEnabled };
+
+// Fit mode
+const [getDefaultFitMode, setDefaultFitMode] = persistedSignal<FitMode>("width", {
+  name: "ds-reader-fit",
+  deserialize: (v) => (v === "height" || v === "original") ? v : "width",
+});
+export { getDefaultFitMode, setDefaultFitMode };
+
+// Nav position
+const [getReaderNavPosition, _setNavPos] = persistedSignal<ReaderNavPosition>("top", {
+  name: "ds-reader-nav-position",
+  deserialize: (v) => v === "bottom" ? "bottom" : "top",
+});
+export { getReaderNavPosition };
+export const setReaderNavPosition = (pos: ReaderNavPosition) => {
+  _setNavPos(pos);
+  window.dispatchEvent(new CustomEvent("ds-reader-nav-pos-change", { detail: pos }));
+};
+
+// Prev chapter start page
+const [getPrevChapterStartPage, setPrevChapterStartPage] = persistedSignal<PrevChapterStartPage>("first", {
+  name: "ds-reader-prev-chapter-page",
+  deserialize: (v) => v === "last" ? "last" : "first",
+});
+export { getPrevChapterStartPage, setPrevChapterStartPage };
+
+// Scroll lock
+const [getScrollLock, setScrollLock] = persistedSignal(false, {
+  name: "ds-reader-scroll-lock",
+  serialize: String,
+  deserialize: (v) => v === "true" || v === "1",
+});
+export { getScrollLock, setScrollLock };

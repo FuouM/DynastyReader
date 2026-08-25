@@ -7,45 +7,23 @@
  * / sticky elements are not displaced), replacing the imperative DOM write.
  */
 
-import { createSignal } from "solid-js";
+import { persistedSignal } from "../lib/persisted-signal";
 
-const STORAGE_KEY = "ds-ui-scale";
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 2.5;
 
-function readPersistedScale(): number {
-  if (typeof localStorage === "undefined") return 1.0;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return 1.0;
-    let val = raw;
-    try {
-      val = String(JSON.parse(raw));
-    } catch {}
-    const parsed = parseFloat(val);
-    if (!isNaN(parsed) && parsed >= MIN_SCALE && parsed <= MAX_SCALE) {
-      return parsed;
-    }
-  } catch (err) {
-    console.error("[ui-scale] failed reading persisted scale:", err);
-  }
-  return 1.0;
-}
-
-const [scaleSignal, setScaleSignal] = createSignal<number>(readPersistedScale());
+const [scaleSignal, setScaleRaw] = persistedSignal(1.0, {
+  name: "ds-ui-scale",
+  deserialize: (v) => {
+    const parsed = parseFloat(v);
+    return !isNaN(parsed) && parsed >= MIN_SCALE && parsed <= MAX_SCALE ? parsed : 1.0;
+  },
+});
 
 export const uiScale = scaleSignal;
 export const setUiScale = (scale: number | ((prev: number) => number)) => {
   const next = typeof scale === "function" ? scale(scaleSignal()) : scale;
-  const clamped = Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.round(next * 100) / 100));
-  setScaleSignal(clamped);
-  try {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, String(clamped));
-    }
-  } catch (err) {
-    console.error("[ui-scale] failed saving scale to localStorage:", err);
-  }
+  setScaleRaw(Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.round(next * 100) / 100)));
 };
 
 export function applyUiScale(scale: number): void {

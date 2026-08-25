@@ -14,8 +14,9 @@
  * remounts per route.
  */
 
-import { createEffect, lazy, onCleanup, onMount, Show, Suspense, type Component } from "solid-js";
+import { createEffect, lazy, onMount, Show, Suspense, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import {
   route,
   routeTitle,
@@ -69,15 +70,9 @@ export function App() {
       }
     };
 
-    window.addEventListener("popstate", handlePopState);
-    window.addEventListener("t-back-button", handleBackButton);
-    document.addEventListener("backbutton", handleBackButton);
-
-    onCleanup(() => {
-      window.removeEventListener("popstate", handlePopState);
-      window.removeEventListener("t-back-button", handleBackButton);
-      document.removeEventListener("backbutton", handleBackButton);
-    });
+    makeEventListener(window, "popstate", handlePopState);
+    makeEventListener(window, "t-back-button", handleBackButton);
+    makeEventListener(document, "backbutton", handleBackButton);
   });
 
   return (
