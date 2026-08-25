@@ -9,10 +9,10 @@
  * reactive state that the JSX components render.
  */
 
-import { batch, createComponent, createMemo, createRoot, createSignal, getOwner, runWithOwner } from "solid-js";
-import { debounce } from "@solid-primitives/scheduled";
+import { batch, createComponent, createRoot, getOwner, runWithOwner } from "solid-js";
 import type { JSX } from "solid-js";
 import { createStore } from "solid-js/store";
+import { debounce } from "@solid-primitives/scheduled";
 import {
   navigate,
   setBanner,
@@ -46,7 +46,6 @@ import type {
 } from "../types/reader";
 import {
   anchorPageOf,
-  computeSpreads,
   detectIsLongStrip,
   detectReadingDirection,
   spreadIndexOf,
@@ -71,6 +70,7 @@ import {
   setScrollLock as setScrollLockPersisted,
 } from "./settings";
 import { standardizeCachePaths } from "./path-migration";
+import { createReaderState, type ReaderState } from "./reader-state";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
 
 const SCROLL_ANIMATION_DURATION_MS = 280;
@@ -94,10 +94,10 @@ export interface SlotStateRecord {
 export function createReaderSession(route: Route): ReaderSession {
   return new ReaderSession(route);
 }
-
 export class ReaderSession implements ReaderQueueHost {
   readonly permalink: string;
   readonly route: Route;
+  private state: ReaderState;
 
   // Loaded data ------------------------------------------------------------
   readonly seriesPermalink: () => string | null;
@@ -232,122 +232,72 @@ export class ReaderSession implements ReaderQueueHost {
   constructor(route: Route) {
     this.route = route;
     this.permalink = route.chapterPermalink ?? "";
-
-    [this.seriesPermalink, this.setSeriesPermalink] = createSignal<string | null>(null);
-    [this.seriesName, this.setSeriesName] = createSignal("");
-    [this.chapterTitle, this.setChapterTitle] = createSignal("");
-    [this.chapterList, this.setChapterList] = createSignal<ChapterRef[]>([]);
-    [this.pages, this.setPages] = createSignal<ChapterPage[]>([]);
-    [this.currentIndex, this.setCurrentIndex] = createSignal(0);
-    [this.atEnd, this.setAtEnd] = createSignal(false);
-    [this.mode, this.setModeSignal] = createSignal<ReaderMode>("scroll");
-    [this.pagedLayout, this.setPagedLayoutSignal] = createSignal<PagedLayout>("single");
-    [this.layoutAutoDetected, this.setLayoutAutoDetected] = createSignal(false);
-    [this.isLongStrip, this.setIsLongStrip] = createSignal(false);
-    [this.direction, this.setDirectionSignal] = createSignal<ReadingDirection>("rtl");
-    [this.directionAutoDetected, this.setDirectionAutoDetected] = createSignal(false);
-    [this.coverOffset, this.setCoverOffsetSignal] = createSignal(false);
-    [this.widePages, this.setWidePagesSignal] = createSignal<ReadonlySet<number>>(new Set());
-    [this.fitMode, this.setFitModeSignal] = createSignal<FitMode>("width");
-    [this.zoomScale, this.setZoomScaleSignal] = createSignal(1.0);
-    [this.scrollLock, this.setScrollLockSignal] = createSignal(false);
-    [this.isFullscreen, this.setIsFullscreenSignal] = createSignal(false);
-    [this.loading, this.setLoading] = createSignal(true);
-    [this.error, this.setError] = createSignal<string | null>(null);
-    [this.empty, this.setEmpty] = createSignal(false);
-    [this.bookmarked, this.setBookmarked] = createSignal(false);
-    [this.restoring, this.setRestoring] = createSignal(false);
-    [this.cachedCount, this.setCachedCount] = createSignal(0);
-    [this.toolbarVisible, this.setToolbarVisible] = createSignal(true);
-    [this.controlsOpen, this.setControlsOpen] = createSignal(false);
-    this.cachedPages = createStore<Record<number, string | undefined>>({});
-    this.slotStates = createStore<Record<number, SlotStateRecord | undefined>>({});
-    this.pageDimensions = createStore<Record<number, { width: number; height: number } | undefined>>({});
+    this.state = createReaderState();
+    this.seriesPermalink = this.state.seriesPermalink;
+    this.setSeriesPermalink = this.state.setSeriesPermalink;
+    this.seriesName = this.state.seriesName;
+    this.setSeriesName = this.state.setSeriesName;
+    this.chapterTitle = this.state.chapterTitle;
+    this.setChapterTitle = this.state.setChapterTitle;
+    this.chapterList = this.state.chapterList;
+    this.setChapterList = this.state.setChapterList;
+    this.pages = this.state.pages;
+    this.setPages = this.state.setPages;
+    this.currentIndex = this.state.currentIndex;
+    this.setCurrentIndex = this.state.setCurrentIndex;
+    this.atEnd = this.state.atEnd;
+    this.setAtEnd = this.state.setAtEnd;
+    this.mode = this.state.mode;
+    this.setModeSignal = this.state.setModeSignal;
+    this.pagedLayout = this.state.pagedLayout;
+    this.setPagedLayoutSignal = this.state.setPagedLayoutSignal;
+    this.layoutAutoDetected = this.state.layoutAutoDetected;
+    this.setLayoutAutoDetected = this.state.setLayoutAutoDetected;
+    this.isLongStrip = this.state.isLongStrip;
+    this.setIsLongStrip = this.state.setIsLongStrip;
+    this.direction = this.state.direction;
+    this.setDirectionSignal = this.state.setDirectionSignal;
+    this.directionAutoDetected = this.state.directionAutoDetected;
+    this.setDirectionAutoDetected = this.state.setDirectionAutoDetected;
+    this.coverOffset = this.state.coverOffset;
+    this.setCoverOffsetSignal = this.state.setCoverOffsetSignal;
+    this.widePages = this.state.widePages;
+    this.setWidePagesSignal = this.state.setWidePagesSignal;
+    this.fitMode = this.state.fitMode;
+    this.setFitModeSignal = this.state.setFitModeSignal;
+    this.zoomScale = this.state.zoomScale;
+    this.setZoomScaleSignal = this.state.setZoomScaleSignal;
+    this.scrollLock = this.state.scrollLock;
+    this.setScrollLockSignal = this.state.setScrollLockSignal;
+    this.isFullscreen = this.state.isFullscreen;
+    this.setIsFullscreenSignal = this.state.setIsFullscreenSignal;
+    this.loading = this.state.loading;
+    this.setLoading = this.state.setLoading;
+    this.error = this.state.error;
+    this.setError = this.state.setError;
+    this.empty = this.state.empty;
+    this.setEmpty = this.state.setEmpty;
+    this.bookmarked = this.state.bookmarked;
+    this.setBookmarked = this.state.setBookmarked;
+    this.restoring = this.state.restoring;
+    this.setRestoring = this.state.setRestoring;
+    this.cachedCount = this.state.cachedCount;
+    this.setCachedCount = this.state.setCachedCount;
+    this.toolbarVisible = this.state.toolbarVisible;
+    this.setToolbarVisible = this.state.setToolbarVisible;
+    this.controlsOpen = this.state.controlsOpen;
+    this.setControlsOpen = this.state.setControlsOpen;
+    this.cachedPages = this.state.cachedPages;
+    this.slotStates = this.state.slotStates;
+    this.pageDimensions = this.state.pageDimensions;
+    this.isHorizontal = this.state.isHorizontal;
+    this.isSpread = this.state.isSpread;
+    this.spreads = this.state.spreads;
+    this.slideIndex = this.state.slideIndex;
+    this.progress = this.state.progress;
+    this.chapterNav = this.state.chapterNav;
 
     this.queue = new ReaderQueue(this);
-
-    this.isHorizontal = createMemo(() => this.mode() === "paged");
-    this.isSpread = createMemo(
-      () => this.mode() === "paged" && this.pagedLayout() === "spread",
-    );
-    this.spreads = createMemo<SpreadGroup[]>(() =>
-      computeSpreads(this.pages().length, this.coverOffset(), (i) =>
-        this.widePages().has(i),
-      ),
-    );
-    this.slideIndex = createMemo(() =>
-      this.isSpread() ? spreadIndexOf(this.spreads(), this.currentIndex()) : this.currentIndex(),
-    );
-
-    this.progress = createMemo(() => {
-      const total = this.pages().length;
-      const idx = this.currentIndex();
-      const count = this.cachedCount();
-      const cachedNote = count > 0 ? t("reader.session.cachedBadge", { count, total }) : "";
-      const isSpreadActive = this.isSpread() && this.spreads().length > 0;
-      let pct = total > 0 ? Math.round(((idx + 1) / total) * 100) : 0;
-      if (isSpreadActive) {
-        const spreads = this.spreads();
-        const curSpread = spreadIndexOf(spreads, idx);
-        pct = spreads.length > 0 ? Math.round(((curSpread + 1) / spreads.length) * 100) : 0;
-      }
-
-      let currentNumStr = `${idx + 1}`;
-      let fullPageStr = `Page ${idx + 1} of ${total}`;
-      let shortPageStr = `${idx + 1} / ${total}`;
-
-      if (isSpreadActive) {
-        const group = this.spreads()[spreadIndexOf(this.spreads(), idx)];
-        if (group && group.pageIndices.length > 1) {
-          const first = group.pageIndices[0] + 1;
-          const last = group.pageIndices[group.pageIndices.length - 1] + 1;
-          currentNumStr = `${first}–${last}`;
-          fullPageStr = `Pages ${first}–${last} of ${total}`;
-          shortPageStr = `${first}–${last} / ${total}`;
-        } else if (group) {
-          const first = group.pageIndices[0] + 1;
-          currentNumStr = `${first}`;
-          fullPageStr = `Page ${first} of ${total}`;
-          shortPageStr = `${first} / ${total}`;
-        }
-      }
-
-      const totalDigits = Math.max(1, total.toString().length);
-      const maxCurrentChars = isSpreadActive ? totalDigits * 2 + 1 : totalDigits;
-
-      let prevDisabled = false;
-      let nextDisabled = false;
-      if (isSpreadActive) {
-        const cur = spreadIndexOf(this.spreads(), idx);
-        prevDisabled = cur <= 0;
-        nextDisabled = cur >= this.spreads().length - 1;
-      } else {
-        prevDisabled = idx <= 0;
-        nextDisabled = idx >= total - 1;
-      }
-
-      return {
-        full: fullPageStr,
-        short: shortPageStr,
-        currentNumStr,
-        totalNumStr: `${total}`,
-        maxCurrentChars,
-        pct,
-        width: pct,
-        cachedNote,
-        title: `${fullPageStr} (${pct}%)${cachedNote ? ` · ${cachedNote}` : ""}`,
-        prevDisabled,
-        nextDisabled,
-      };
-    });
-
-    this.chapterNav = createMemo(() => {
-      const curIdx = this.chapterList().findIndex((c) => c.permalink === this.permalink);
-      return {
-        prevDisabled: curIdx <= 0,
-        nextDisabled: curIdx < 0 || curIdx >= this.chapterList().length - 1,
-      };
-    });
   }
 
   // ReaderQueueHost compatibility -------------------------------------------
