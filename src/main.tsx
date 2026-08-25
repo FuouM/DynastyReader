@@ -27,12 +27,12 @@ window.addEventListener("unload", () => {
 import "./styles/tokens.css";
 import "./styles/reset.css";
 import "./styles/curator-ui-base.css";
-import "./styles/utilities.css";
 import "./styles/index.css";
 import "./styles/library.css";
 import "./styles/browse.css";
 import "./styles/cache.css";
 import "./styles/reader.css";
+import "./styles/utilities.css";
 import "./styles/mobile.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 

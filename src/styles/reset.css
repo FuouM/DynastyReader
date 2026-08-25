@@ -4,32 +4,30 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
-
-html,
-body {
-  height: 100%;
-  margin: 0;
-}
-
-body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Tahoma, Arial, sans-serif;
   font-size: 12px;
-  color: var(--sys-window-text);
-  background: var(--sys-window-bg);
+}
+
+body {
+  background-color: var(--sys-control-bg);
+  color: var(--sys-control-text);
+  height: 100vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f0f0f0;
+  border: 1px solid #dcdcdc;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 6px;
+  background: #cdcdcd;
+  border: 3px solid #f0f0f0;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #a6a6a6;
@@ -41,12 +39,14 @@ body {
 :root[data-theme="dark"] ::-webkit-scrollbar-track,
 [data-theme="dark"] ::-webkit-scrollbar-track,
 body.ds-dark ::-webkit-scrollbar-track {
-  background: #2a2a2a;
+  background: #2b2b2b;
+  border-color: #3a3a3a;
 }
 :root[data-theme="dark"] ::-webkit-scrollbar-thumb,
 [data-theme="dark"] ::-webkit-scrollbar-thumb,
 body.ds-dark ::-webkit-scrollbar-thumb {
   background: #555555;
+  border-color: #2b2b2b;
 }
 :root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
@@ -54,19 +54,30 @@ body.ds-dark ::-webkit-scrollbar-thumb:hover {
   background: #6e6e6e;
 }
 
-.skeleton,
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--sys-control-bg, #e0e0e0);
+}
 .skeleton-pulse {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: ds-skeleton-slide 1.5s infinite;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--sys-control-bg, #e0e0e0);
+  border-radius: 3px;
 }
 .skeleton::after,
 .skeleton-pulse::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: ds-skeleton-slide 1.5s infinite;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: ds-skeleton-slide 1.5s ease-in-out infinite;
 }
 :root[data-theme="dark"] .skeleton::after,
 :root[data-theme="dark"] .skeleton-pulse::after,
@@ -74,30 +85,29 @@ body.ds-dark ::-webkit-scrollbar-thumb:hover {
 [data-theme="dark"] .skeleton-pulse::after,
 body.ds-dark .skeleton::after,
 body.ds-dark .skeleton-pulse::after {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-}
-.skeleton-pulse {
-  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
 }
 .skeleton-card {
   height: 80px;
   border-radius: 3px;
+  background-color: var(--sys-control-bg);
+  border: 1px solid var(--sys-border-dark);
 }
 .skeleton-text {
   height: 12px;
   border-radius: 2px;
 }
 @keyframes ds-skeleton-slide {
-  0% {
-    background-position: 200% 0;
-  }
   100% {
-    background-position: -200% 0;
+    transform: translateX(100%);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .skeleton,
-  .skeleton-pulse,
   .skeleton::after,
   .skeleton-pulse::after {
     animation: none;

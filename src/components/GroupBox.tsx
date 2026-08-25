@@ -35,6 +35,7 @@ export function GroupBox(props: GroupBoxProps) {
       <div
         class="group-box-title"
         classList={{ "group-box-title--between": !!props.between }}
+        style={props.collapsible ? "cursor:pointer;user-select:none;" : undefined}
         onClick={props.collapsible ? props.onToggle : undefined}
       >
         {props.title}

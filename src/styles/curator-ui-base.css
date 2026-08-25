@@ -15,7 +15,7 @@
 
 
 /* Layer order — declared once (tokens first). Re-declared here for standalone loads. */
-@layer tokens, reset, base, utilities, layout, components, reader, mobile;
+@layer tokens, reset, base, layout, components, reader, utilities, mobile;
 
 /* base layer — primitives extracted from base.css / components.css / layout.css / tags.css */
 @layer base {

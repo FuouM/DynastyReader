@@ -1,4 +1,4 @@
-@layer tokens, reset, base, utilities, layout, components, reader, mobile;
+@layer tokens, reset, base, layout, components, reader, utilities, mobile;
 /* tokens.css — design tokens: light palette, dark overrides, z-index */
 @layer tokens {
 :root {
