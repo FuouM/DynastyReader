@@ -33,9 +33,9 @@ export function parseSearchHtml(
   const items: SearchResultItem[] = [];
   const ddElements = doc.querySelectorAll("dl.chapter-list > dd");
 
-  ddElements.forEach((dd) => {
+  for (const dd of ddElements) {
     const mainLink = dd.querySelector<HTMLAnchorElement>("a.name, a:first-child");
-    if (!mainLink) return;
+    if (!mainLink) continue;
 
     const href = mainLink.getAttribute("href") || "";
     const { kind, permalink } = parseDynastyHref(href);
@@ -74,20 +74,20 @@ export function parseSearchHtml(
     // Extract Released On date
     let releasedOn: string | undefined;
     const smallTags = dd.querySelectorAll("small");
-    smallTags.forEach((s) => {
+    for (const s of smallTags) {
       const txt = s.textContent?.trim() || "";
       if (txt.startsWith("released ")) {
         releasedOn = txt.replace(/^released\s+/, "");
       }
-    });
+    }
 
     // Extract Tags
     const tags: ChapterTag[] = [];
     const tagLinks = dd.querySelectorAll<HTMLAnchorElement>(
       "span.tags a.label, span.tags a, a.label",
     );
-    tagLinks.forEach((tl) => {
-      if (tl === mainLink || tl === authorLink || tl === doujinLink) return;
+    for (const tl of tagLinks) {
+      if (tl === mainLink || tl === authorLink || tl === doujinLink) continue;
       const tHref = tl.getAttribute("href") || "";
       const parsedTag = parseDynastyHref(tHref);
       const tagName = decodeEntities(tl.textContent?.trim() || parsedTag.permalink);
@@ -98,7 +98,7 @@ export function parseSearchHtml(
           permalink: parsedTag.permalink,
         });
       }
-    });
+    }
 
     items.push({
       kind,
@@ -109,7 +109,7 @@ export function parseSearchHtml(
       releasedOn,
       tags,
     });
-  });
+  }
 
   // Extract Pagination
   let currentPage = requestedPage;
@@ -126,12 +126,12 @@ export function parseSearchHtml(
     }
 
     const pageLinks = pagination.querySelectorAll("a, span");
-    pageLinks.forEach((el) => {
+    for (const el of pageLinks) {
       const pageNum = parseInt(el.textContent?.trim() || "", 10);
       if (!Number.isNaN(pageNum) && pageNum > totalPages) {
         totalPages = pageNum;
       }
-    });
+    }
   }
 
   return {

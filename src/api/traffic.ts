@@ -109,11 +109,6 @@ export function getSessionTraffic(): SessionTraffic {
   return snapshot();
 }
 
-/** Returns lifetime metrics. */
-export function getLifetimeTraffic(): TrafficMetrics {
-  return { ...lifetimeMetrics() };
-}
-
 /** Resets lifetime traffic statistics. */
 export function resetLifetimeTraffic(): void {
   sessionMetrics.bytesDownloaded = 0;

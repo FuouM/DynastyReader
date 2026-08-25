@@ -1,21 +1,14 @@
-//! `EphemeralConvertImages` backend (WebP thumbnail transcoding and friends).
+//! `EphemeralConvertImages` backend (WebP thumbnail transcoding and format conversion).
 //!
-//! Mirrors the Curator engine (`curator-media/src/convert.rs`): bounded
-//! dimension + byte-budget loop. Deliberate divergences (see §8.3 of the sweep
-//! report):
-//!   * WebP is encoded **lossy at the requested quality** — covers are display
-//!     thumbnails where lossless fidelity is wasted; lossy q75 lands far under
-//!     the size budget on the first encode, so the shrink loop rarely runs.
+//! Bounded dimension + byte-budget image transcoding pipeline:
+//!   * WebP is encoded lossy at the requested quality (covers are display thumbnails).
 //!   * The byte budget uses estimate-then-verify: encoded size scales ~linearly
 //!     with pixel count, so `scale = sqrt(max_bytes / bytes)` lands near the
-//!     target in one re-encode (cheap Triangle filter) instead of blind
-//!     halving. The halving loop remains as a bounded stubborn-case fallback.
-//!   * The source is header-inspected (`into_dimensions`) before a full decode
-//!     so decompression bombs cannot allocate; sources are rejected if any
-//!     dimension exceeds `MAX_SOURCE_DIMENSION`.
-//!   * The resolved absolute source path is decoded (a plugin-relative string
-//!     would resolve against process CWD), and conversions in a batch run
-//!     concurrently while preserving input order.
+//!     target in one re-encode (cheap Triangle filter).
+//!   * The source is header-inspected (`into_dimensions`) before full decode
+//!     so decompression bombs cannot allocate (rejected if exceeding `MAX_SOURCE_DIMENSION`).
+//!   * Conversions in a batch run concurrently up to `MAX_CONCURRENT_CONVERT_TASKS`
+//!     while preserving input order.
 
 use image::{
     DynamicImage, ExtendedColorType, GenericImageView, ImageEncoder, ImageReader,
@@ -41,7 +34,11 @@ const MAX_SOURCE_DIMENSION: u32 = 16_384;
 
 /// Headroom on the estimate-then-verify scale — the next encode is inexact.
 const BUDGET_ESTIMATE_HEADROOM: f64 = 0.95;
-
+const DEFAULT_CONVERT_QUALITY: u8 = 80;
+const MAX_CONCURRENT_CONVERT_TASKS: usize = 2;
+const MAX_SHRINK_LOOP_ITERATIONS: usize = 32;
+const MIN_SHRINK_DIMENSION_PX: u32 = 8;
+const INITIAL_ENCODE_BUFFER_BYTES: usize = 32 * 1024;
 #[tauri::command(rename = "ephemeralConvertImages")]
 pub async fn ephemeral_convert_images(
     conversions: Vec<(String, String)>,
@@ -49,10 +46,10 @@ pub async fn ephemeral_convert_images(
     max_dimension: Option<u32>,
     max_bytes: Option<u64>,
 ) -> Result<serde_json::Value, String> {
-    let quality = quality.unwrap_or(80).clamp(1, 100);
+    let quality = quality.unwrap_or(DEFAULT_CONVERT_QUALITY).clamp(1, 100);
     let count = conversions.len();
-    // Bound image decode/encode concurrency to 2 parallel tasks to cap peak uncompressed RAM.
-    let semaphore = Arc::new(Semaphore::new(2));
+    // Bound image decode/encode concurrency to cap peak uncompressed RAM.
+    let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_CONVERT_TASKS));
     let mut set = JoinSet::new();
     for (i, (src, dst)) in conversions.into_iter().enumerate() {
         let sem = semaphore.clone();
@@ -114,7 +111,7 @@ async fn convert_one(
     }
     if let Some(parent) = tgt_path.parent() {
         if let Err(e) = std::fs::create_dir_all(parent) {
-            return failure(format!("Failed to create output directory: {e:?}"));
+            return failure(format!("Failed to create output directory: {e}"));
         }
     }
 
@@ -138,7 +135,7 @@ async fn convert_one(
     match res {
         Ok(Ok(())) => json!({ "source_path": source, "output_path": tgt_buf, "error": "" }),
         Ok(Err(e)) => failure(e),
-        Err(e) => failure(format!("Task join panicked: {e:?}")),
+        Err(e) => failure(format!("Task join panicked: {e}")),
     }
 }
 
@@ -152,17 +149,16 @@ fn encode_image(
 ) -> Result<(), String> {
     // Header inspection before full decode: reject decompression bombs.
     let (w, h) = ImageReader::open(source)
-        .map_err(|e| format!("Failed to open source: {e:?}"))?
+        .map_err(|e| format!("Failed to open source: {e}"))?
         .into_dimensions()
-        .map_err(|e| format!("Failed to read source dimensions: {e:?}"))?;
+        .map_err(|e| format!("Failed to read source dimensions: {e}"))?;
     if w > MAX_SOURCE_DIMENSION || h > MAX_SOURCE_DIMENSION {
         return Err(format!(
             "Source exceeds max dimension {MAX_SOURCE_DIMENSION} (got {w}x{h})"
         ));
     }
 
-    let mut img = image::open(source).map_err(|e| format!("Failed to open/decode source: {e:?}"))?;
-
+    let mut img = image::open(source).map_err(|e| format!("Failed to open/decode source: {e}"))?;
     // Bound the larger side, preserving aspect ratio. Single Lanczos3 resize
     // from the original — no cascading resamples.
     if let Some(md) = max_dimension {
@@ -195,9 +191,9 @@ fn encode_image(
             bytes = encode_dynamic(&img, ext, quality)?;
 
             let mut guard = 0;
-            while bytes.len() as u64 > mb && guard < 32 {
+            while bytes.len() as u64 > mb && guard < MAX_SHRINK_LOOP_ITERATIONS {
                 let (w, h) = img.dimensions();
-                if w < 8 || h < 8 {
+                if w < MIN_SHRINK_DIMENSION_PX || h < MIN_SHRINK_DIMENSION_PX {
                     break;
                 }
                 img = img.resize(w / 2, h / 2, FilterType::Triangle);
@@ -207,7 +203,7 @@ fn encode_image(
         }
     }
 
-    std::fs::write(output, &bytes).map_err(|e| format!("Failed to write output file: {e:?}"))
+    std::fs::write(output, &bytes).map_err(|e| format!("Failed to write output file: {e}"))
 }
 
 enum BufferRef<'a> {
@@ -241,14 +237,14 @@ fn as_rgb8_bytes(img: &DynamicImage) -> BufferRef<'_> {
 
 fn encode_dynamic(img: &DynamicImage, ext: &str, quality: u8) -> Result<Vec<u8>, String> {
     let (w, h) = img.dimensions();
-    let mut buf = Vec::with_capacity(32 * 1024);
+    let mut buf = Vec::with_capacity(INITIAL_ENCODE_BUFFER_BYTES);
     match ext {
         "png" => PngEncoder::new(&mut buf)
             .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-            .map_err(|e| format!("PNG encode failed: {e:?}"))?,
+            .map_err(|e| format!("PNG encode failed: {e}"))?,
         "jpg" | "jpeg" => JpegEncoder::new_with_quality(&mut buf, quality)
             .write_image(&as_rgb8_bytes(img), w, h, ExtendedColorType::Rgb8)
-            .map_err(|e| format!("JPEG encode failed: {e:?}"))?,
+            .map_err(|e| format!("JPEG encode failed: {e}"))?,
         "webp" => {
             let data = as_rgb8_bytes(img);
             let encoded = webp::Encoder::from_rgb(&data, w, h).encode(quality as f32);
@@ -256,35 +252,35 @@ fn encode_dynamic(img: &DynamicImage, ext: &str, quality: u8) -> Result<Vec<u8>,
         }
         "gif" => GifEncoder::new(&mut buf)
             .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-            .map_err(|e| format!("GIF encode failed: {e:?}"))?,
+            .map_err(|e| format!("GIF encode failed: {e}"))?,
         "bmp" => BmpEncoder::new(&mut buf)
             .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-            .map_err(|e| format!("BMP encode failed: {e:?}"))?,
+            .map_err(|e| format!("BMP encode failed: {e}"))?,
         "tiff" => {
             let mut cur = Cursor::new(&mut buf);
             TiffEncoder::new(&mut cur)
                 .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-                .map_err(|e| format!("TIFF encode failed: {e:?}"))?;
+                .map_err(|e| format!("TIFF encode failed: {e}"))?;
         }
         "qoi" => QoiEncoder::new(&mut buf)
             .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-            .map_err(|e| format!("QOI encode failed: {e:?}"))?,
+            .map_err(|e| format!("QOI encode failed: {e}"))?,
         "tga" => TgaEncoder::new(&mut buf)
             .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-            .map_err(|e| format!("TGA encode failed: {e:?}"))?,
+            .map_err(|e| format!("TGA encode failed: {e}"))?,
         "pnm" => PnmEncoder::new(&mut buf)
             .write_image(&as_rgb8_bytes(img), w, h, ExtendedColorType::Rgb8)
-            .map_err(|e| format!("PNM encode failed: {e:?}"))?,
+            .map_err(|e| format!("PNM encode failed: {e}"))?,
         "hdr" => {
             let rgb32f = img.to_rgb32f();
             let bytes = f32_bytes(rgb32f.as_raw());
             HdrEncoder::new(&mut buf)
                 .write_image(&bytes, w, h, ExtendedColorType::Rgb32F)
-                .map_err(|e| format!("HDR encode failed: {e:?}"))?;
+                .map_err(|e| format!("HDR encode failed: {e}"))?;
         }
         "ico" => IcoEncoder::new(&mut buf)
             .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-            .map_err(|e| format!("ICO encode failed: {e:?}"))?,
+            .map_err(|e| format!("ICO encode failed: {e}"))?,
         _ => unreachable!("ext was pre-validated against ENCODE_FORMATS"),
     }
     Ok(buf)

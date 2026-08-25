@@ -80,6 +80,8 @@ export function initAppTheme(): void {
         localStorage.setItem(STORAGE_KEY, legacy);
       }
     }
-  } catch {}
+  } catch (err) {
+    console.debug("[theme] legacy theme migration check failed:", err);
+  }
   applyThemeToDom(getAppTheme());
 }

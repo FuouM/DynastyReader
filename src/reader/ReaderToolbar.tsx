@@ -438,7 +438,9 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                         setCopied(true);
                         resetCopied();
                       }
-                    } catch {}
+                    } catch (err) {
+                      console.warn("[ReaderToolbar] clipboard writeText failed:", err);
+                    }
                   }}
                 />
                 <Button

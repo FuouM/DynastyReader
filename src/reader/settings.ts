@@ -62,23 +62,21 @@ const [isLongStripFitWidthEnabled, setLongStripFitWidthEnabled] = persistedSigna
 });
 export { isLongStripFitWidthEnabled, setLongStripFitWidthEnabled };
 
-// Reading direction (with legacy key migration on write)
-const [getDefaultReadingDirection, _setDirection] = persistedSignal<ReadingDirectionSetting>("auto", {
+// Reading direction (with legacy key migration)
+const [getDefaultReadingDirection, setDefaultReadingDirection] = persistedSignal<ReadingDirectionSetting>("auto", {
   name: "ds-reader-direction-mode",
-  deserialize: (v) => (v === "ltr" || v === "rtl" || v === "auto") ? v : "auto",
-});
-export { getDefaultReadingDirection };
-export const setDefaultReadingDirection = (dir: ReadingDirectionSetting) => {
-  _setDirection(dir);
-  try {
-    if (dir === "ltr" || dir === "rtl") {
-      localStorage.setItem("ds-reader-direction", dir);
-    } else {
-      localStorage.removeItem("ds-reader-direction");
+  deserialize: (v) => {
+    if (v === "ltr" || v === "rtl" || v === "auto") return v;
+    try {
+      const legacy = localStorage.getItem("ds-reader-direction");
+      if (legacy === "ltr" || legacy === "rtl") return legacy;
+    } catch (err) {
+      console.debug("[settings] legacy direction read failed:", err);
     }
-  } catch {}
-};
-
+    return "auto";
+  },
+});
+export { getDefaultReadingDirection, setDefaultReadingDirection };
 // Cover offset
 const [isCoverOffsetDefaultEnabled, setCoverOffsetDefaultEnabled] = persistedSignal(false, {
   name: "ds-reader-cover-offset",

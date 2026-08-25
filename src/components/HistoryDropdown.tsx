@@ -46,7 +46,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
   createEffect(() => {
     if (props.open === false) return;
     const scale = uiScale() || 1;
-    const baseStyle = `position:fixed;width:240px;max-width:90vw;background:var(--sys-window-bg,#fff);border:1px solid var(--sys-border-dark,#999);border-radius:3px;box-shadow:0 4px 16px rgba(0,0,0,0.22);display:flex;flex-direction:column;overflow:hidden;font-size:12px;color:var(--sys-window-text,#222);z-index:10001;zoom:${scale};`;
+    const baseStyle = `width:240px;max-width:90vw;zoom:${scale};`;
     const anchor = props.anchorEl;
     if (!anchor) {
       setPositionStyle(`${baseStyle}top:36px;left:80px;`);
@@ -94,7 +94,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
           }}
         >
           <div
-            class="ds-history-dropdown"
+            class="ds-popup-card ds-history-dropdown"
             style={positionStyle()}
             onClick={(ev) => ev.stopPropagation()}
           >

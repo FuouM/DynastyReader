@@ -1,8 +1,7 @@
 //! Portable data root and sandboxed path resolution for the standalone reader.
 //!
-//! Mirrors Curator's `SandboxedPath` (`curator-db/src/sandbox_path.rs`): every
-//! path a command touches must resolve strictly inside the portable `.data`
-//! root. Two input forms are accepted, identical to the Curator sandbox:
+//! Sandboxed path security boundary: every path a command touches must resolve
+//! strictly inside the portable `.data` root. Two input forms are accepted:
 //!   * plugin-relative — `pages/series/ch/page_0001.jpg`, `covers/x.webp`, `""`
 //!   * absolute — the app re-probes absolute paths it previously received from
 //!     `HttpDownloadResult.absolute_path` / `ConvertImagesResult.output_path`
@@ -148,17 +147,17 @@ pub fn is_root_dir(target: &Path) -> Result<bool, String> {
 }
 
 #[cfg(test)]
+pub(crate) fn temp_root(tag: &str) -> PathBuf {
+    // Shared across root-dependent tests: `set_root` is a one-shot OnceLock,
+    // so every FS-backed test must agree on the same root directory.
+    let dir = std::env::temp_dir().join(format!("dsreader-test-{tag}-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).expect("create temp root");
+    dir
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
-
-    fn temp_root(tag: &str) -> PathBuf {
-        // Shared across root-dependent tests: `set_root` is a one-shot OnceLock,
-        // so every FS-backed test must agree on the same root directory.
-        let dir = std::env::temp_dir().join(format!("dsreader-test-{tag}-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).expect("create temp root");
-        dir
-    }
-
     #[test]
     fn sandbox_containment() {
         let root = temp_root("shared");

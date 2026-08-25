@@ -12,8 +12,12 @@ export async function fetchDirectory(urlPath: string, key: string, kind?: "serie
     try {
       const { saveDirectoryEntries } = await import("../db");
       const groups = directoryGroups(dir);
-      void saveDirectoryEntries(kind, groups);
-    } catch {}
+      void saveDirectoryEntries(kind, groups).catch((err) => {
+        console.warn(`[api/directory] saveDirectoryEntries failed for ${kind}:`, err);
+      });
+    } catch (err) {
+      console.warn(`[api/directory] failed to import db for saving directory ${kind}:`, err);
+    }
   }
   return dir;
 }
@@ -80,8 +84,9 @@ export async function suggest(query: string): Promise<SuggestResult[]> {
       setSuggestCache(cacheKey, local);
       return local;
     }
-  } catch {}
-
+  } catch (err) {
+    console.debug("[api/directory] local suggest lookup missed or failed:", err);
+  }
   // 2. Query online endpoint
   const { status, body } = await httpGetText(absUrl("/tags/suggest"), {
     method: "POST",
@@ -96,8 +101,12 @@ export async function suggest(query: string): Promise<SuggestResult[]> {
   if (parsed.length > 0) {
     try {
       const { saveSuggestEntries } = await import("../db");
-      void saveSuggestEntries(parsed);
-    } catch {}
+      void saveSuggestEntries(parsed).catch((err) => {
+        console.warn("[api/directory] saveSuggestEntries failed:", err);
+      });
+    } catch (err) {
+      console.warn("[api/directory] failed to import db for saving suggestions:", err);
+    }
   }
 
   return parsed;

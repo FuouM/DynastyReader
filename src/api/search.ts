@@ -197,8 +197,12 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
             name: it.title,
             type: it.kind === "series" ? "Series" : it.kind === "chapter" ? "Chapter" : "Tag",
           }));
-          void saveSuggestEntries(toSave);
-        } catch {}
+          void saveSuggestEntries(toSave).catch((err) => {
+            console.warn("[api/search] saveSuggestEntries failed:", err);
+          });
+        } catch (err) {
+          console.warn("[api/search] failed to import db for saving search suggestions:", err);
+        }
       }
       return parsedPage;
     }

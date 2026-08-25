@@ -29,64 +29,56 @@ export interface DbStats {
   totalRows: number;
 }
 
+const ALLOWED_COUNT_TABLES = new Set<string>([
+  "followed_series",
+  "reading_progress",
+  "reading_history",
+  "bookmarks",
+  "cached_metadata",
+  "cached_pages",
+  "tag_blacklist",
+  "series_blacklist",
+  "collections",
+  "collection_items",
+  "directory_entries",
+]);
+
 async function countTable(table: string): Promise<number> {
+  if (!ALLOWED_COUNT_TABLES.has(table)) {
+    console.warn(`[db.manage] countTable rejected unapproved table name: "${table}"`);
+    return 0;
+  }
   try {
     const rows = await query<{ c: number }>(`SELECT COUNT(*) as c FROM ${table}`);
     return rows[0]?.c ?? 0;
-  } catch {
+  } catch (err) {
+    console.warn(`[db.manage] countTable failed for "${table}":`, err);
     return 0;
   }
 }
 
 /** File size for the main db + wal/shm sidecars. */
 export async function getDbFileStats(): Promise<DbFileStats> {
-  const extractSizes = (batch: unknown): DbFileStats | null => {
-    if (!batch || typeof batch !== "object" || !("items" in batch)) return null;
-    const batchRec = batch as { items?: unknown[] };
-    const items = Array.isArray(batchRec.items) ? batchRec.items : [];
-    const getSize = (idx: number): number => {
-      const entry = items[idx];
-      if (!entry || typeof entry !== "object" || !("size_bytes" in entry)) return 0;
-      const v = (entry as Record<string, unknown>).size_bytes;
-      return typeof v === "number" ? v : 0;
-    };
-    return {
-      dbSizeBytes: getSize(0),
-      walSizeBytes: getSize(1),
-      shmSizeBytes: getSize(2),
-      totalSizeBytes: getSize(0) + getSize(1) + getSize(2),
-    };
-  };
-
   try {
     const batch = await ipc.dirStatBatch([DB_NAME, `${DB_NAME}-wal`, `${DB_NAME}-shm`]);
-    const parsed = extractSizes(batch);
-    if (parsed) {
-      // If extracted but all zero and batch was empty, fallback
-      if (parsed.dbSizeBytes !== 0 || parsed.walSizeBytes !== 0 || parsed.shmSizeBytes !== 0) return parsed;
-      if (parsed.totalSizeBytes === 0) {
-        // try single fallback still
-      } else {
-        return parsed;
-      }
-    }
-    const single = await ipc.dirStat(DB_NAME).catch(() => null);
-    if (single && typeof single === "object" && "size_bytes" in single) {
-      const v = (single as Record<string, unknown>).size_bytes;
-      const s = typeof v === "number" ? v : 0;
-      return { dbSizeBytes: s, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: s };
-    }
-    return { dbSizeBytes: 0, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: 0 };
-  } catch {
+    const items = batch?.items ?? [];
+    const dbSizeBytes = items[0]?.total_bytes ?? 0;
+    const walSizeBytes = items[1]?.total_bytes ?? 0;
+    const shmSizeBytes = items[2]?.total_bytes ?? 0;
+    return {
+      dbSizeBytes,
+      walSizeBytes,
+      shmSizeBytes,
+      totalSizeBytes: dbSizeBytes + walSizeBytes + shmSizeBytes,
+    };
+  } catch (err) {
+    console.warn("[db.manage] dirStatBatch failed, attempting single dirStat fallback:", err);
     try {
-      const r = await ipc.dirStat(DB_NAME);
-      if (r && typeof r === "object" && "size_bytes" in r) {
-        const v = (r as Record<string, unknown>).size_bytes;
-        const s = typeof v === "number" ? v : 0;
-        return { dbSizeBytes: s, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: s };
-      }
-      return { dbSizeBytes: 0, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: 0 };
-    } catch {
+      const single = await ipc.dirStat(DB_NAME);
+      const total = single?.total_bytes ?? 0;
+      return { dbSizeBytes: total, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: total };
+    } catch (fallbackErr) {
+      console.warn("[db.manage] dirStat single fallback failed:", fallbackErr);
       return { dbSizeBytes: 0, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: 0 };
     }
   }
@@ -159,21 +151,28 @@ export async function wipeDatabase(): Promise<void> {
   // Use batch for atomicity where supported; fallback to sequential
   try {
     await ipc.dbExecuteBatch(DB_NAME, statements);
-  } catch {
+  } catch (err) {
+    console.warn("[db.manage] batch wipe failed, falling back to sequential:", err);
     for (const sql of statements) {
       try {
         await execute(sql, []);
-      } catch {}
+      } catch (stmtErr) {
+        console.warn(`[db.manage] sequential wipe statement failed (${sql}):`, stmtErr);
+      }
     }
   }
   // Shrink file
   try {
     await execute("VACUUM", []);
-  } catch {}
+  } catch (err) {
+    console.warn("[db.manage] VACUUM after wipe failed:", err);
+  }
   // Reset sqlite_sequence if present
   try {
     await execute("DELETE FROM sqlite_sequence", []);
-  } catch {}
+  } catch (err) {
+    console.warn("[db.manage] sqlite_sequence reset after wipe failed:", err);
+  }
 }
 
 /** Creates a timestamped backup via VACUUM INTO. Returns backup filename and size. */

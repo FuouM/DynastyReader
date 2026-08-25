@@ -274,7 +274,9 @@ export class BrowseCovers {
           }
           setCoverPathMap(new Map(currentMap));
         }
-      } catch {}
+      } catch (err) {
+        console.warn("[browse-covers] preloadBatch failed:", err);
+      }
     }
   }
 
@@ -326,7 +328,9 @@ export class BrowseCovers {
     const unmountedWraps = host.querySelectorAll<HTMLElement>(
       ".ds-feed-cover-wrap:not(:has(img.ds-feed-cover))",
     );
-    unmountedWraps.forEach((wrap) => observer.observe(wrap));
+    for (const wrap of unmountedWraps) {
+      observer.observe(wrap);
+    }
   }
 
   private scrollCleanups: (() => void)[] = [];

@@ -419,9 +419,9 @@ export function BrowseFeed(props: BrowseFeedProps) {
     } else {
       // Scrub all cover <img> elements from the rendered list so the UI
       // instantly reflects the disabled state without a full page reload.
-      hostEl.querySelectorAll<HTMLImageElement>("img.ds-feed-cover").forEach((img) => {
+      for (const img of hostEl.querySelectorAll<HTMLImageElement>("img.ds-feed-cover")) {
         img.remove();
-      });
+      }
     }
   });
 

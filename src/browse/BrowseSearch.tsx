@@ -254,7 +254,9 @@ export function BrowseSearch(props: BrowseSearchProps) {
             .filter((it) => it.kind === "chapter")
             .map((it) => it.permalink);
           fullyCachedSet = await getFullyCachedChapterPermalinks(chapterPermalinks);
-        } catch {}
+        } catch (cacheCheckErr) {
+          console.debug("[BrowseSearch] failed to check fully cached chapter permalinks:", cacheCheckErr);
+        }
         return { pageData, fullyCachedSet, blMode: getBlacklistMode() };
       } catch (err) {
         const msg = errorMessage(err);

@@ -1,5 +1,6 @@
 import { query, execute } from "./client";
-import { paginate, inClause } from "./paging";
+import { inClause, queryPaged } from "./paging";
+import { createChangeNotifier } from "../lib/change-notifier";
 import type {
   FollowedSeriesRow,
   FollowedSeriesPageResult,
@@ -10,114 +11,25 @@ import type {
   BookmarkRow,
   BookmarkPageResult,
 } from "../types/db";
+const followedNotifier = createChangeNotifier("library.repo:followed");
+export const getFollowedRevision = followedNotifier.getRevision;
+export const onFollowedChanged = followedNotifier.onChanged;
+export const notifyFollowedChanged = followedNotifier.notifyChanged;
 
-let followedRevision = 0;
-type FollowedListener = () => void;
-const followedListeners: FollowedListener[] = [];
+const bookmarksNotifier = createChangeNotifier("library.repo:bookmarks");
+export const getBookmarksRevision = bookmarksNotifier.getRevision;
+export const onBookmarksChanged = bookmarksNotifier.onChanged;
+export const notifyBookmarksChanged = bookmarksNotifier.notifyChanged;
 
-export function getFollowedRevision(): number {
-  return followedRevision;
-}
+const historyNotifier = createChangeNotifier("library.repo:history");
+export const getHistoryRevision = historyNotifier.getRevision;
+export const onHistoryChanged = historyNotifier.onChanged;
+export const notifyHistoryChanged = historyNotifier.notifyChanged;
 
-export function onFollowedChanged(fn: FollowedListener): () => void {
-  followedListeners.push(fn);
-  return () => {
-    const idx = followedListeners.indexOf(fn);
-    if (idx !== -1) followedListeners.splice(idx, 1);
-  };
-}
-
-export function notifyFollowedChanged(): void {
-  followedRevision++;
-  for (const fn of [...followedListeners]) {
-    try {
-      fn();
-    } catch (e) {
-      console.error("[library.repo] followed listener error", e);
-    }
-  }
-}
-
-let bookmarksRevision = 0;
-type BookmarksListener = () => void;
-const bookmarksListeners: BookmarksListener[] = [];
-
-export function getBookmarksRevision(): number {
-  return bookmarksRevision;
-}
-
-export function onBookmarksChanged(fn: BookmarksListener): () => void {
-  bookmarksListeners.push(fn);
-  return () => {
-    const idx = bookmarksListeners.indexOf(fn);
-    if (idx !== -1) bookmarksListeners.splice(idx, 1);
-  };
-}
-
-export function notifyBookmarksChanged(): void {
-  bookmarksRevision++;
-  for (const fn of [...bookmarksListeners]) {
-    try {
-      fn();
-    } catch (e) {
-      console.error("[library.repo] bookmarks listener error", e);
-    }
-  }
-}
-
-let historyRevision = 0;
-type HistoryListener = () => void;
-const historyListeners: HistoryListener[] = [];
-
-export function getHistoryRevision(): number {
-  return historyRevision;
-}
-
-export function onHistoryChanged(fn: HistoryListener): () => void {
-  historyListeners.push(fn);
-  return () => {
-    const idx = historyListeners.indexOf(fn);
-    if (idx !== -1) historyListeners.splice(idx, 1);
-  };
-}
-
-export function notifyHistoryChanged(): void {
-  historyRevision++;
-  for (const fn of [...historyListeners]) {
-    try {
-      fn();
-    } catch (e) {
-      console.error("[library.repo] history listener error", e);
-    }
-  }
-}
-
-let progressRevision = 0;
-type ProgressListener = () => void;
-const progressListeners: ProgressListener[] = [];
-
-export function getProgressRevision(): number {
-  return progressRevision;
-}
-
-export function onProgressChanged(fn: ProgressListener): () => void {
-  progressListeners.push(fn);
-  return () => {
-    const idx = progressListeners.indexOf(fn);
-    if (idx !== -1) progressListeners.splice(idx, 1);
-  };
-}
-
-export function notifyProgressChanged(): void {
-  progressRevision++;
-  for (const fn of [...progressListeners]) {
-    try {
-      fn();
-    } catch (e) {
-      console.error("[library.repo] progress listener error", e);
-    }
-  }
-}
+const progressNotifier = createChangeNotifier("library.repo:progress");
+export const getProgressRevision = progressNotifier.getRevision;
+export const onProgressChanged = progressNotifier.onChanged;
+export const notifyProgressChanged = progressNotifier.notifyChanged;
 
 export async function getFollowedSeriesCount(): Promise<number> {
   const rows = await query<{ count: number }>(`SELECT COUNT(*) as count FROM followed_series`);
@@ -128,16 +40,15 @@ export async function getFollowedSeriesPage(
   page = 1,
   pageSize = 10,
 ): Promise<FollowedSeriesPageResult> {
-  const totalCount = await getFollowedSeriesCount();
-  const { totalPages, currentPage, offset } = paginate(totalCount, page, pageSize);
-  const rows = await query<FollowedSeriesRow>(
+  return queryPaged<FollowedSeriesRow>(
+    `SELECT COUNT(*) as count FROM followed_series`,
     `SELECT permalink, name, cover, last_checked_at, latest_chapter_permalink,
             latest_chapter_title, created_at
      FROM followed_series
      ORDER BY name COLLATE NOCASE LIMIT ? OFFSET ?`,
-    [pageSize, offset],
+    page,
+    pageSize,
   );
-  return { rows, totalPages, currentPage, totalCount };
 }
 
 export async function getFollowedSeriesRow(permalink: string): Promise<FollowedSeriesRow | null> {
@@ -301,15 +212,14 @@ export async function getHistoryCount(): Promise<number> {
 }
 
 export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
-  const totalCount = await getHistoryCount();
-  const { totalPages, currentPage, offset } = paginate(totalCount, page, pageSize);
-  const rows = await query<HistoryRow>(
+  return queryPaged<HistoryRow>(
+    `SELECT COUNT(*) as count FROM reading_history`,
     `SELECT id, chapter_permalink, series_permalink, series_name, chapter_title, read_at
      FROM reading_history
      ORDER BY read_at DESC, id DESC LIMIT ? OFFSET ?`,
-    [pageSize, offset],
+    page,
+    pageSize,
   );
-  return { rows, totalPages, currentPage, totalCount };
 }
 
 /** Returns a Set of chapter permalinks that have been recorded in history. */
@@ -328,15 +238,14 @@ export async function getBookmarkCount(): Promise<number> {
 }
 
 export async function getBookmarksPage(page = 1, pageSize = 15): Promise<BookmarkPageResult> {
-  const totalCount = await getBookmarkCount();
-  const { totalPages, currentPage, offset } = paginate(totalCount, page, pageSize);
-  const rows = await query<BookmarkRow>(
+  return queryPaged<BookmarkRow>(
+    `SELECT COUNT(*) as count FROM bookmarks`,
     `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
             page_index, created_at
      FROM bookmarks ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-    [pageSize, offset],
+    page,
+    pageSize,
   );
-  return { rows, totalPages, currentPage, totalCount };
 }
 
 export async function getBookmark(chapterPermalink: string): Promise<BookmarkRow | null> {

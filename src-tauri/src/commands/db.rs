@@ -1,9 +1,7 @@
 //! `dbExecute` / `dbQuery` / `dbExecuteBatch` backends.
 //!
-//! Mirrors the Curator sandboxed SQLite primitives
-//! (`curator-db/src/plugin_db.rs`): a connection pool keyed by `db_name` under
-//! the portable data root, with the same serde_json ⇄ SQL value coercion and
-//! row-to-object serialization.
+//! Sandboxed SQLite connection pool keyed by `db_name` under the portable data
+//! root, with serde_json ⇄ SQL value coercion and row-to-object serialization.
 //!
 //! `rusqlite::Connection` is not `Sync`, so connections live behind a
 //! `Mutex<HashMap<String, Arc<Mutex<Connection>>>>` in Tauri state: the outer
@@ -21,6 +19,20 @@ use tauri::State;
 
 pub struct DbPool(pub Mutex<HashMap<String, Arc<Mutex<Connection>>>>);
 
+const SQLITE_JOURNAL_SIZE_LIMIT: i64 = 4 * 1024 * 1024;
+const SQLITE_CACHE_SIZE_PAGES: i64 = -2000;
+const SQLITE_WAL_AUTOCHECKPOINT_PAGES: i64 = 1000;
+const SQLITE_BUSY_TIMEOUT_MS: u64 = 5000;
+const BACKUP_PAGE_STEP: i32 = 100;
+const BACKUP_STEP_SLEEP_MS: u64 = 250;
+const RESTORE_RETRY_INITIAL_DELAY_MS: u64 = 150;
+const RESTORE_RETRY_BACKOFF_MS: u64 = 200;
+const RESTORE_MAX_ATTEMPTS: usize = 5;
+
+#[inline]
+fn lock_unpoisoned<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(|e| e.into_inner())
+}
 fn validate_db_name(db_name: &str) -> Result<String, String> {
     let normalized = db_name.trim().to_ascii_lowercase();
     if normalized.is_empty() {
@@ -94,15 +106,15 @@ fn open(db_name: &str) -> Result<Connection, String> {
         .map_err(|e| format!("failed enabling WAL: {e}"))?;
     conn.pragma_update(None, "synchronous", "NORMAL")
         .map_err(|e| format!("failed tuning synchronous mode: {e}"))?;
-    conn.pragma_update(None, "journal_size_limit", 4 * 1024 * 1024)
+    conn.pragma_update(None, "journal_size_limit", SQLITE_JOURNAL_SIZE_LIMIT)
         .map_err(|e| format!("failed tuning journal size limit: {e}"))?;
-    conn.pragma_update(None, "cache_size", -2000)
+    conn.pragma_update(None, "cache_size", SQLITE_CACHE_SIZE_PAGES)
         .map_err(|e| format!("failed tuning cache size: {e}"))?;
-    conn.pragma_update(None, "wal_autocheckpoint", 1000)
+    conn.pragma_update(None, "wal_autocheckpoint", SQLITE_WAL_AUTOCHECKPOINT_PAGES)
         .map_err(|e| format!("failed tuning wal autocheckpoint: {e}"))?;
     conn.pragma_update(None, "foreign_keys", "ON")
         .map_err(|e| format!("failed enabling foreign keys: {e}"))?;
-    conn.busy_timeout(std::time::Duration::from_millis(5000))
+    conn.busy_timeout(std::time::Duration::from_millis(SQLITE_BUSY_TIMEOUT_MS))
         .map_err(|e| format!("failed setting busy timeout: {e}"))?;
     Ok(conn)
 }
@@ -113,13 +125,13 @@ fn get_conn(
 ) -> Result<Arc<Mutex<Connection>>, String> {
     let key = validate_db_name(db_name)?;
     {
-        let guard = pool.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = lock_unpoisoned(pool);
         if let Some(conn) = guard.get(&key) {
             return Ok(conn.clone());
         }
     }
     let conn = Arc::new(Mutex::new(open(&key)?));
-    let mut guard = pool.lock().unwrap_or_else(|e| e.into_inner());
+    let mut guard = lock_unpoisoned(pool);
     let entry = guard.entry(key).or_insert(conn);
     Ok(entry.clone())
 }
@@ -179,7 +191,7 @@ pub async fn db_execute(
         .map(bind_value_owned)
         .collect();
     let affected = tokio::task::spawn_blocking(move || -> Result<usize, String> {
-        let conn = conn.lock().unwrap_or_else(|e| e.into_inner());
+        let conn = lock_unpoisoned(&conn);
         conn.execute(&sql, params_from_iter(values))
             .map_err(|e| format!("db execute failed: {e}"))
     })
@@ -203,7 +215,7 @@ pub async fn db_query(
         .map(bind_value_owned)
         .collect();
     let rows = tokio::task::spawn_blocking(move || -> Result<Vec<Value>, String> {
-        let conn = conn.lock().unwrap_or_else(|e| e.into_inner());
+        let conn = lock_unpoisoned(&conn);
         let mut stmt = conn
             .prepare_cached(&sql)
             .map_err(|e| format!("db query prepare failed: {e}"))?;
@@ -233,7 +245,7 @@ pub async fn db_execute_batch(
     }
     let pool_arc = get_conn(&state.0, &db_name)?;
     let affected = tokio::task::spawn_blocking(move || {
-        let conn = pool_arc.lock().map_err(|_| "db connection poisoned".to_string())?;
+        let conn = lock_unpoisoned(&pool_arc);
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
         let mut results: Vec<i64> = Vec::with_capacity(statements.len());
         for (idx, sql) in statements.iter().enumerate() {
@@ -273,13 +285,13 @@ pub async fn db_backup(
     let backup_str = backup_path.to_string_lossy().to_string();
     let backup_path_clone = backup_path.clone();
     let size = tokio::task::spawn_blocking(move || {
-        let src_conn = pool_arc.lock().map_err(|_| "db connection poisoned".to_string())?;
+        let src_conn = lock_unpoisoned(&pool_arc);
         let mut dst_conn = Connection::open(&backup_path_clone)
             .map_err(|e| format!("failed creating backup target: {e}"))?;
         let backup = rusqlite::backup::Backup::new(&src_conn, &mut dst_conn)
             .map_err(|e| format!("failed initializing backup: {e}"))?;
         backup
-            .run_to_completion(100, std::time::Duration::from_millis(250), None)
+            .run_to_completion(BACKUP_PAGE_STEP, std::time::Duration::from_millis(BACKUP_STEP_SLEEP_MS), None)
             .map_err(|e| format!("backup execution failed: {e}"))?;
         drop(backup);
         drop(dst_conn);
@@ -437,7 +449,7 @@ fn evict_pool_connection(
     pool: &Mutex<HashMap<String, Arc<Mutex<Connection>>>>,
     normalized: &str,
 ) -> Result<(), String> {
-    let mut guard = pool.lock().map_err(|_| "db pool poisoned".to_string())?;
+    let mut guard = lock_unpoisoned(pool);
     guard.retain(|k, _| k.to_ascii_lowercase() != normalized);
     Ok(())
 }
@@ -449,8 +461,8 @@ async fn copy_db_file_with_retry(
     shm: std::path::PathBuf,
 ) -> Result<(), String> {
     tokio::task::spawn_blocking(move || -> Result<(), String> {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        for attempt in 0..5 {
+        std::thread::sleep(std::time::Duration::from_millis(RESTORE_RETRY_INITIAL_DELAY_MS));
+        for attempt in 0..RESTORE_MAX_ATTEMPTS {
             let _ = std::fs::remove_file(&wal);
             let _ = std::fs::remove_file(&shm);
             match std::fs::copy(&source, &target) {
@@ -459,8 +471,8 @@ async fn copy_db_file_with_retry(
                     let is_lock = e.kind() == std::io::ErrorKind::PermissionDenied
                         || e.raw_os_error() == Some(32)
                         || e.to_string().contains("being used by another process");
-                    if is_lock && attempt < 4 {
-                        std::thread::sleep(std::time::Duration::from_millis(200 * (attempt + 1) as u64));
+                    if is_lock && attempt < RESTORE_MAX_ATTEMPTS - 1 {
+                        std::thread::sleep(std::time::Duration::from_millis(RESTORE_RETRY_BACKOFF_MS * (attempt + 1) as u64));
                         continue;
                     }
                     return Err(e.to_string());
@@ -476,14 +488,7 @@ async fn copy_db_file_with_retry(
 mod tests {
     use super::*;
 
-    fn temp_root(tag: &str) -> std::path::PathBuf {
-        // Shared with paths tests: `set_root` is a one-shot OnceLock, so every
-        // FS-backed test must agree on the same root directory.
-        let dir =
-            std::env::temp_dir().join(format!("dsreader-test-{tag}-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).expect("create temp root");
-        dir
-    }
+    use crate::paths::temp_root;
 
     #[test]
     fn db_open_normalizes_and_sets_pragmas() {

@@ -39,7 +39,22 @@ fn is_version_newer(latest: &str, current: &str) -> bool {
 }
 
 const OFFICIAL_RELEASE_PREFIX: &str = "https://github.com/FuouM/DynastyReader/releases/download/";
+const MAX_UPDATE_DOWNLOAD_BYTES: u64 = 256 * 1024 * 1024;
 
+fn get_target_extension() -> &'static str {
+    #[cfg(target_os = "windows")]
+    {
+        ".exe"
+    }
+    #[cfg(target_os = "linux")]
+    {
+        ".AppImage"
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        ""
+    }
+}
 pub fn validate_update_download_url(url: &str) -> Result<(), String> {
     if url.is_empty() {
         return Err("Download URL cannot be empty".to_string());
@@ -51,13 +66,7 @@ pub fn validate_update_download_url(url: &str) -> Result<(), String> {
         return Err("Update download URL must originate from the official DynastyReader repository releases".to_string());
     }
 
-    #[cfg(target_os = "windows")]
-    let target_ext = ".exe";
-    #[cfg(target_os = "linux")]
-    let target_ext = ".AppImage";
-    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
-    let target_ext = "";
-
+    let target_ext = get_target_extension();
     if !target_ext.is_empty() && !url.ends_with(target_ext) {
         return Err(format!("Update asset must have the expected extension ({target_ext})"));
     }
@@ -99,13 +108,7 @@ pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>)
     let mut download_url = String::new();
     let mut asset_size = 0u64;
 
-    #[cfg(target_os = "windows")]
-    let target_ext = ".exe";
-    #[cfg(target_os = "linux")]
-    let target_ext = ".AppImage";
-    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
-    let target_ext = "";
-
+    let target_ext = get_target_extension();
     if let Some(assets) = json["assets"].as_array() {
         for asset in assets {
             let name = asset["name"].as_str().unwrap_or("");
@@ -175,11 +178,15 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
 
     while let Some(chunk_result) = stream.next().await {
         let chunk = chunk_result.map_err(|e| format!("Error downloading chunk: {e}"))?;
+        if downloaded + chunk.len() as u64 > MAX_UPDATE_DOWNLOAD_BYTES {
+            return Err(format!(
+                "Update download exceeded safety limit of {MAX_UPDATE_DOWNLOAD_BYTES} bytes"
+            ));
+        }
         file.write_all(&chunk)
             .await
             .map_err(|e| format!("Failed to write chunk to file: {e}"))?;
         downloaded += chunk.len() as u64;
-
         let percentage = if total_size > 0 {
             (downloaded as f64 / total_size as f64) * 100.0
         } else {

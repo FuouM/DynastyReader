@@ -668,15 +668,23 @@ export class ReaderSession implements ReaderQueueHost {
     if (active) {
       try {
         if (!document.fullscreenElement && document.fullscreenEnabled) {
-          void container?.requestFullscreen().catch(() => {});
+          void container?.requestFullscreen().catch((err) => {
+            console.debug("[reader-session] requestFullscreen rejected:", err);
+          });
         }
-      } catch {}
+      } catch (err) {
+        console.debug("[reader-session] requestFullscreen failed:", err);
+      }
     } else {
       try {
         if (document.fullscreenElement) {
-          void document.exitFullscreen().catch(() => {});
+          void document.exitFullscreen().catch((err) => {
+            console.debug("[reader-session] exitFullscreen rejected:", err);
+          });
         }
-      } catch {}
+      } catch (err) {
+        console.debug("[reader-session] exitFullscreen failed:", err);
+      }
     }
     this.resetToCurrentPage(false);
     setTimeout(() => this.resetToCurrentPage(false), FULLSCREEN_RELAYOUT_FIRST_MS);

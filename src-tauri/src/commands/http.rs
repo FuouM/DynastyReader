@@ -1,19 +1,18 @@
 //! `httpGet` / `httpDownload` backends.
 //!
-//! Mirrors the Curator handlers (`curator-service/src/handlers/plugin_commands/network.rs`):
-//! GET bodies are capped at 8MB (oversized responses fail loudly instead of
-//! truncating), downloads write through a temp file then rename, and results
-//! return the resolved absolute path (the plugin stores it and later re-probes
-//! it). The `reqwest::Client` is managed once in Tauri state so
-//! connections/TLS are reused across calls, unknown methods are rejected, and a
-//! default timeout guards against hung servers.
+//! HTTP GET and streaming download commands with SSRF validation, body size caps,
+//! and connection reuse. GET bodies are capped at 8MB (oversized responses fail
+//! loudly instead of truncating), downloads write through a temp file then rename,
+//! and results return the resolved absolute path. The `reqwest::Client` is managed
+//! once in Tauri state so connections/TLS are reused across calls, unknown methods
+//! are rejected, and a default timeout guards against hung servers.
 
 use serde_json::json;
 use tauri::State;
 use tokio::io::AsyncWriteExt;
 use tokio_stream::StreamExt;
 
-const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Curator/1.0";
+const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DynastyReader/0.2.1";
 const MAX_GET_BODY: usize = 8 * 1024 * 1024;
 const MAX_DOWNLOAD_BYTES: u64 = 256 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS: u64 = 30_000;
@@ -189,7 +188,9 @@ pub async fn http_download(
     let validated_url = validate_http_url(&url)?;
     let target = crate::paths::resolve_in_root(&output_path)?;
     let parent = target.parent().unwrap_or(&target);
-    std::fs::create_dir_all(parent).map_err(|e| format!("failed creating output dir: {e}"))?;
+    tokio::fs::create_dir_all(parent)
+        .await
+        .map_err(|e| format!("failed creating output dir: {e}"))?;
     let client = &state.0;
     let req = apply_timeout(client.get(validated_url.as_str()), timeout_ms);
     let resp = req

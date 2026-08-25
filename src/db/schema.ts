@@ -286,7 +286,9 @@ const MIGRATIONS: Migration[] = [
             const parsed = JSON.parse(row.json_payload);
             const groups = directoryGroups(parsed);
             await saveDirectoryEntries(kind, groups);
-          } catch {}
+          } catch (rowErr) {
+            console.warn(`[db/schema] failed to backfill directory row "${row.cache_key}":`, rowErr);
+          }
         }
       } catch (err) {
         console.error("[db/schema] backfill directory_entries failed:", err);

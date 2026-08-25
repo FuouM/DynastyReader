@@ -1,35 +1,14 @@
 import { execute, query } from "./client";
 import { persistedSignal } from "../lib/persisted-signal";
+import { createChangeNotifier } from "../lib/change-notifier";
 import type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode } from "../types/blacklist";
 
 export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode };
 
-let blacklistRevision = 0;
-type BlacklistListener = () => void;
-const blacklistListeners: BlacklistListener[] = [];
-
-export function getBlacklistRevision(): number {
-  return blacklistRevision;
-}
-
-export function onBlacklistChanged(fn: BlacklistListener): () => void {
-  blacklistListeners.push(fn);
-  return () => {
-    const idx = blacklistListeners.indexOf(fn);
-    if (idx >= 0) blacklistListeners.splice(idx, 1);
-  };
-}
-
-function notifyBlacklistChanged(): void {
-  blacklistRevision++;
-  for (const fn of [...blacklistListeners]) {
-    try {
-      fn();
-    } catch (e) {
-      console.error("Blacklist listener error:", e);
-    }
-  }
-}
+const blacklistNotifier = createChangeNotifier("blacklist.repo");
+export const getBlacklistRevision = blacklistNotifier.getRevision;
+export const onBlacklistChanged = blacklistNotifier.onChanged;
+const notifyBlacklistChanged = blacklistNotifier.notifyChanged;
 
 const [blacklistModeSignal, setBlacklistModeRaw] = persistedSignal<BlacklistMode>("hide", {
   name: "ds-blacklist-mode",

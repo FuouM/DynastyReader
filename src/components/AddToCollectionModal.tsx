@@ -89,7 +89,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
   createEffect(() => {
     if (!props.open) return;
     const scale = uiScale() || 1;
-    const baseStyle = `position:fixed;width:290px;max-width:94vw;background:var(--sys-window-bg,#fff);border:1px solid var(--sys-border-dark,#999);border-radius:3px;box-shadow:0 4px 16px rgba(0,0,0,0.22);display:flex;flex-direction:column;overflow:hidden;font-size:12px;color:var(--sys-window-text,#222);z-index:10001;zoom:${scale};`;
+    const baseStyle = `width:290px;max-width:94vw;zoom:${scale};`;
 
     const anchor = props.anchorEl;
     if (!anchor) {
@@ -201,7 +201,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
             if (ev.target === ev.currentTarget) props.onClose();
           }}
         >
-          <div class="ds-add-to-collection-dropdown" style={positionStyle()}>
+          <div class="ds-popup-card ds-add-to-collection-dropdown" style={positionStyle()}>
             <div class="ds-dropdown-header">
               <IconText icon={<FolderIcon color="var(--sys-primary,#0078d4)" />}>
                 {t("dialogs.addToCollection.title")}

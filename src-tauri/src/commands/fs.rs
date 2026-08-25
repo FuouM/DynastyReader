@@ -1,14 +1,10 @@
 //! `fileExists` / `fileMove` / `fileDelete` / `dirStat` backends.
 //!
-//! Mirrors the Curator handlers (`curator-service/src/handlers/plugin_commands/storage.rs`):
-//! paths are confined to the portable data root, `fileExists` reports a file as
-//! existing only when it is at least `min_size` bytes (default 1 — so
-//! zero-byte files count as missing for cover/page probing; pass `min_size: 0`
-//! to treat them as present), `dirStat` works on both directories (recursive)
-//! and single files, and `fileDelete` supports both. Batch variants
-//! (`fileExistsBatch`, `dirStatBatch`) resolve many paths in one call so the
-//! frontend stops issuing per-file IPC bursts. Recursive walks run on the
-//! blocking pool.
+//! Sandboxed filesystem operations confined to the portable data root. `fileExists`
+//! reports a file as existing only when it is at least `min_size` bytes (default 1),
+//! `dirStat` calculates recursive directory or single-file sizes, and batch variants
+//! (`fileExistsBatch`, `dirStatBatch`) resolve multiple paths in one call to minimize
+//! IPC overhead. Recursive directory walks run on the blocking pool.
 
 use serde_json::json;
 use walkdir::WalkDir;

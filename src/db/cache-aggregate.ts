@@ -1,16 +1,6 @@
-/**
- * Shared "cached chapters" aggregation core.
- *
- * Both `getCachedSeriesGroups` (cache view) and `getFullyCachedChapters`
- * (downloaded view) need the same raw material: the per-chapter aggregate of
- * `cached_pages`, enriched with reading-progress/history identity, chapter
- * metadata, page-0 cover paths, and the cached cover-payload map. This module
- * loads that context once so the two views stop re-implementing the same
- * joins and cover lookups (~200 duplicated lines before this extraction).
- */
-
 import { query } from "./client";
 import { inClause } from "./paging";
+import { seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
 
 export interface ChapterAggRow {
   chapterPermalink: string;
@@ -123,10 +113,10 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
   // legacy bare `cover:*` scheme is normalized away by migration v1.
   const coverKeys = new Set<string>();
   for (const r of [...progRows, ...histRows]) {
-    if (r.series_permalink) coverKeys.add(`cover:series:${r.series_permalink}`);
+    if (r.series_permalink) coverKeys.add(seriesCoverKey(r.series_permalink));
   }
   for (const cp of permalinks) {
-    coverKeys.add(`cover:chapter:${cp}`);
+    coverKeys.add(chapterCoverKey(cp));
   }
   const coverKeyList = [...coverKeys];
   const metaCoverRows =

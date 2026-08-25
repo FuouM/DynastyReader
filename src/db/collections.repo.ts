@@ -1,32 +1,11 @@
 import { query, execute } from "./client";
+import { createChangeNotifier } from "../lib/change-notifier";
 import type { CollectionRow, CollectionItemRow, CollectionItemKind } from "../types/db";
 
-let collectionsRevision = 0;
-type CollectionsListener = () => void;
-const collectionsListeners: CollectionsListener[] = [];
-
-export function getCollectionsRevision(): number {
-  return collectionsRevision;
-}
-
-export function onCollectionsChanged(fn: CollectionsListener): () => void {
-  collectionsListeners.push(fn);
-  return () => {
-    const idx = collectionsListeners.indexOf(fn);
-    if (idx >= 0) collectionsListeners.splice(idx, 1);
-  };
-}
-
-export function notifyCollectionsChanged(): void {
-  collectionsRevision++;
-  for (const fn of [...collectionsListeners]) {
-    try {
-      fn();
-    } catch (e) {
-      console.error("Collections listener error:", e);
-    }
-  }
-}
+const collectionsNotifier = createChangeNotifier("collections.repo");
+export const getCollectionsRevision = collectionsNotifier.getRevision;
+export const onCollectionsChanged = collectionsNotifier.onChanged;
+export const notifyCollectionsChanged = collectionsNotifier.notifyChanged;
 
 /**
  * Returns all collections sorted with Favorites (is_default = 1) first, then alphabetical.

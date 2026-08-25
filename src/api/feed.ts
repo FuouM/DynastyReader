@@ -44,8 +44,14 @@ export async function checkFeedOnline(
             if (t.name) itemsToSave.push({ name: t.name, type: t.type || "Tag" });
           }
         }
-        if (itemsToSave.length > 0) void saveSuggestEntries(itemsToSave);
-      } catch {}
+        if (itemsToSave.length > 0) {
+          void saveSuggestEntries(itemsToSave).catch((err) => {
+            console.warn("[api/feed] saveSuggestEntries failed:", err);
+          });
+        }
+      } catch (err) {
+        console.warn("[api/feed] failed to import db for saving feed suggestions:", err);
+      }
     }
 
     return { status: 200, data: freshData, isNew: true, etag: resp.etag };
@@ -73,8 +79,9 @@ export async function fetchFeedWithRevalidation(
     try {
       const raw = JSON.parse(cached.json_payload);
       parsed = FeedSchema.parse(raw);
-    } catch {}
-
+    } catch (err) {
+      console.warn(`[api/feed] failed to parse cached feed payload for ${key}:`, err);
+    }
     if (parsed) {
       recordCacheHit(cached.json_payload.length);
       if (!isStale) {

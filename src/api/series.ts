@@ -1,6 +1,7 @@
 import { absUrl, COVERS_PREFIX, SITE_ROOT, isMobile } from "../stores";
 import { seriesTypeToPath } from "../taxonomy";
 import { getCached, setCached, deleteCached, updateFollowedSeriesCover, touchCached } from "../db";
+import { seriesKey, seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
 import { httpGetText, httpDownloadFull } from "./http";
 import { recordCacheHit } from "./traffic";
 import { fileDelete, fileExists, fileResolve } from "./fs";
@@ -50,7 +51,9 @@ async function transcodeCover(url: string, rawOutPath: string, webpOutPath: stri
       // Clean up the bulky raw download.
       try {
         await fileDelete(rawOutPath);
-      } catch {}
+      } catch (delErr) {
+        console.debug(`[api/series] raw cover delete failed for ${rawOutPath}:`, delErr);
+      }
     }
   } catch (err) {
     console.warn("Failed to transcode cover to WebP, keeping raw download:", err);
@@ -85,7 +88,7 @@ export async function fetchSeries(
   force = false,
   preferredType?: string,
 ): Promise<Series> {
-  const key = `series:${permalink}`;
+  const key = seriesKey(permalink);
   const cached = await getCached(key);
   const isStale = !cached || Date.now() - cached.cached_at >= SERIES_TTL_MS;
 
@@ -95,7 +98,9 @@ export async function fetchSeries(
       const parsed = SeriesSchema.parse(JSON.parse(cached.json_payload));
       recordCacheHit(cached.json_payload.length);
       return parsed;
-    } catch {}
+    } catch (parseErr) {
+      console.warn(`[api/series] cached JSON parse failed for series "${permalink}":`, parseErr);
+    }
   }
 
   // Stale cache: return cached immediately for 0ms latency, but revalidate in background
@@ -103,8 +108,9 @@ export async function fetchSeries(
     let parsed: Series | null = null;
     try {
       parsed = SeriesSchema.parse(JSON.parse(cached.json_payload));
-    } catch {}
-
+    } catch (parseErr) {
+      console.warn(`[api/series] stale cached JSON parse failed for series "${permalink}":`, parseErr);
+    }
     if (parsed) {
       recordCacheHit(cached.json_payload.length);
       void (async () => {
@@ -162,7 +168,9 @@ export async function fetchSeries(
   if (cached) {
     try {
       return SeriesSchema.parse(JSON.parse(cached.json_payload));
-    } catch {}
+    } catch (parseErr) {
+      console.warn(`[api/series] fallback cached JSON parse failed for series "${permalink}":`, parseErr);
+    }
   }
 
   throw lastErr ?? new Error(`Failed to load series for permalink "${permalink}"`);
@@ -179,15 +187,16 @@ export async function getSeriesCover(
   coverUrl: string | null,
 ): Promise<string | null> {
   if (!coverUrl) return null;
-  const key = `cover:series:${permalink}`;
+  const key = seriesCoverKey(permalink);
   const cached = await getCached(key);
   if (cached && cached.json_payload) {
     // The cached path may point at a file that was purged (e.g. "Clear Cached
     // Covers"). Verify on disk before trusting it; purge + refetch when stale.
     try {
       if (await fileExists(cached.json_payload)) return cached.json_payload;
-    } catch {}
-    await deleteCached(key);
+    } catch (checkErr) {
+      console.debug(`[api/series] cover file existence check failed for ${cached.json_payload}:`, checkErr);
+    }
   }
   const ext = coverExtension(coverUrl);
   const rawOutPath = `${COVERS_PREFIX}/raw_${permalink}.${ext}`;
@@ -213,14 +222,17 @@ export async function refreshFollowedSeriesCover(
   if (currentCover) {
     try {
       if (await fileExists(currentCover)) return currentCover;
-    } catch {}
+    } catch (checkErr) {
+      console.debug(`[api/series] currentCover fileExists check failed for ${currentCover}:`, checkErr);
+    }
   }
   const fresh = await getOrHydrateSeriesCover(permalink);
   if (fresh) {
     try {
       await updateFollowedSeriesCover(permalink, fresh);
-    } catch {
+    } catch (dbErr) {
       // The DB write must never break cover rendering; the fresh path still wins.
+      console.warn(`[api/series] updateFollowedSeriesCover DB write failed for "${permalink}":`, dbErr);
     }
   }
   return fresh;
@@ -260,12 +272,14 @@ export async function getChapterCover(
   firstPageUrl: string,
 ): Promise<string | null> {
   if (!firstPageUrl) return null;
-  const key = `cover:chapter:${permalink}`;
+  const key = chapterCoverKey(permalink);
   const cached = await getCached(key);
   if (cached && cached.json_payload) {
     try {
       if (await fileExists(cached.json_payload)) return cached.json_payload;
-    } catch {}
+    } catch (checkErr) {
+      console.debug(`[api/series] chapter cover fileExists check failed for ${cached.json_payload}:`, checkErr);
+    }
     await deleteCached(key);
   }
 
@@ -292,15 +306,16 @@ export async function getOrHydrateSeriesCover(
   if (local) return local;
 
   // Check if series metadata is already cached
-  const seriesCached = await getCached(`series:${permalink}`);
   let coverUrl: string | null = null;
+  const seriesCached = await getCached(seriesKey(permalink));
   if (seriesCached?.json_payload) {
     try {
       const s = JSON.parse(seriesCached.json_payload) as Series;
       coverUrl = s.cover ?? null;
-    } catch {}
+    } catch (parseErr) {
+      console.warn(`[api/series] seriesCached JSON parse failed for "${permalink}":`, parseErr);
+    }
   }
-
   if (!coverUrl) {
     try {
       const s = await fetchSeries(permalink, false, seriesType || undefined);
@@ -349,7 +364,8 @@ export async function getOrHydrateItemCover(
         return page1Cover;
       }
     }
-  } catch {}
-
+  } catch (err) {
+    console.warn(`[api/series] getOrHydrateItemCover fallback failed for chapter "${chapterPermalink}":`, err);
+  }
   return null;
 }
