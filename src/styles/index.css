@@ -1,3 +1,5 @@
+@layer tokens, reset, base, layout, components, reader, utilities, mobile;
+
 @layer layout {
 /* Root layout, top bar, banner, and generic content helpers. */
 
@@ -13,6 +15,8 @@ body {
   flex: 1;
   min-height: 0;
   height: 100%;
+  overflow: hidden;
+  transform-origin: top left;
 }
 #ds-topbar {
   display: flex;
@@ -542,6 +546,7 @@ body {
   font-weight: 500;
   height: 24px;
   min-height: 24px;
+  border-radius: 0;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -659,6 +664,7 @@ body.ds-dark .tag-pill:hover {
   height: 126px;
   border: 1px solid var(--sys-border-light, #ccc);
   background: var(--sys-control-bg, #eee);
+  border-radius: 0;
   flex-shrink: 0;
 }
 .ds-cover {
@@ -1568,7 +1574,4 @@ code,
   .ds-settings-storage-grid span {
     margin-top: 4px;
   }
-}
-
-
 }

@@ -1,5 +1,8 @@
-/* utilities.css — semantic helpers + inline-sweep extraction (was in curator-ui-base.css) */
+@layer tokens, reset, base, layout, components, reader, utilities, mobile;
+
 @layer utilities {
+/* utilities.css — semantic helpers + inline-sweep extraction (was in curator-ui-base.css) */
+
 /* ── Semantic utility classes ─────────────────────────────────────────────
    Extraction targets for the inline-style sweep (§4.5): repeated static
    styling recipes move out of JS and into these classes. Anything genuinely
@@ -1040,6 +1043,4 @@
 .ds-row-gap-2 {
   gap: 2px;
   flex-shrink: 0;
-}
-
 }

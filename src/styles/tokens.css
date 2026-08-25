@@ -1,4 +1,5 @@
 @layer tokens, reset, base, layout, components, reader, utilities, mobile;
+
 /* tokens.css — design tokens: light palette, dark overrides, z-index */
 @layer tokens {
 :root {
@@ -62,6 +63,7 @@
   --font-lg: 13px;
 }
 
+/* ── Dark theme palette (applied to the whole document) ───────────────────── */
 :root[data-theme="dark"],
 [data-theme="dark"],
 body.ds-dark {

@@ -1,3 +1,5 @@
+@layer tokens, reset, base, layout, components, reader, utilities, mobile;
+
 @layer components {
 /* Feed item cover thumbnail */
 .ds-feed-cover-wrap {
@@ -115,13 +117,13 @@
   .ds-feed-actions .ds-btn-compact,
   .ds-feed-actions .ds-btn-icon,
   .ds-feed-actions .ds-btn-icon-sm {
-    width: 26px !important;
-    height: 26px !important;
-    min-width: 26px !important;
-    max-width: 26px !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
     aspect-ratio: 1 / 1;
     padding: 0 !important;
-    font-size: 12px;
+    font-size: 11.5px;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -139,24 +141,6 @@
   }
 }
 
-#ds-root[data-mobile] .ds-feed-item {
-  gap: 8px;
-  padding: 5px 6px;
-}
-
-#ds-root[data-mobile] .ds-action-btn-text {
-  display: none !important;
-}
-
-#ds-root[data-mobile] .ds-tag-row {
-  gap: 4px;
-}
-
-#ds-root[data-mobile] .ds-tag-row-label {
-  width: 48px;
-  min-width: 48px;
-  font-size: 9.5px;
-}
 
 .ds-feed-cover {
   width: 42px;
@@ -347,5 +331,4 @@
 .ds-typeahead-type {
   font-size: 10px;
   color: var(--sys-text-muted, #888);
-}
 }

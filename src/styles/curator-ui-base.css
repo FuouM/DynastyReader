@@ -1,49 +1,23 @@
-/*
- * curator-ui-base.css — hand-extracted subset of the Curator dashboard design
- * system that the dynasty-scans plugin actually renders.
- *
- * Owned by this standalone app (stays inside dynasty-scans-reader/ when it
- * moves to its own repo). When Curator's design system changes in a relevant
- * way, a targeted manual port is made.
- *
- * Extracted from:
- *   base.css        — :root vars, reset, scrollbars, .ds-hidden, .skeleton-*
- *   components.css  — .win-button (+ .primary), .input-field
- *   layout.css      — .group-box, .group-box-title
- *   tags.css        — .tag-pill taxonomy classes
- */
-
-
-/* Layer order — declared once (tokens first). Re-declared here for standalone loads. */
 @layer tokens, reset, base, layout, components, reader, utilities, mobile;
 
-/* base layer — primitives extracted from base.css / components.css / layout.css / tags.css */
+/*
+ * curator-ui-base.css — design system primitives
+ */
+
 @layer base {
-/* ------------------------------------------------------------------ */
-/* components.css — Bootstrap Icons uniform vertical alignment        */
-/* ------------------------------------------------------------------ */
-/* Bootstrap icon fonts carry internal font metrics that add phantom
-   space above each glyph, so raw <i class="bi"> render slightly high
-   in buttons and rows (vertical-align on ::before is ignored inside
-   flex containers). Making every icon its own centered flex box keeps
-   the glyph dead-center regardless of container; the -0.125em baseline
-   nudge (twbs/icons PR #701) aligns icons sitting inline with text. */
 .bi {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 1em;
   height: 1em;
-  /* vertical-align: -0.125em; */
 }
 
-/* ------------------------------------------------------------------ */
-/* components.css — .win-button (+ .primary), .input-field            */
-/* ------------------------------------------------------------------ */
 .win-button {
   background-color: var(--sys-button-bg);
   color: var(--sys-control-text);
   border: 1px solid var(--sys-button-border);
+  border-radius: 0;
   padding: 2px 10px;
   height: 24px;
   cursor: pointer;
@@ -220,9 +194,6 @@ body.ds-dark .input-clear-btn:active {
   display: inline-flex;
 }
 
-/* ------------------------------------------------------------------ */
-/* layout.css — .group-box / .group-box-title                         */
-/* ------------------------------------------------------------------ */
 .group-box {
   border: 1px solid var(--sys-border-dark);
   border-radius: 3px;
@@ -243,14 +214,11 @@ body.ds-dark .input-clear-btn:active {
   align-items: center;
   gap: 6px;
 }
-
-/* ── Icon + Text inline pattern ─────────────────────────────────────── */
 .ds-icon-text {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-
 .group-box-collapse-btn {
   background: none;
   border: 1px solid transparent;
@@ -300,9 +268,6 @@ body.ds-dark .input-clear-btn:active {
   gap: 6px;
 }
 
-/* ------------------------------------------------------------------ */
-/* tags.css — .tag-pill taxonomy classes                              */
-/* ------------------------------------------------------------------ */
 .tag-pill {
   font-size: 11px;
   padding: 1px 6px;
@@ -315,9 +280,7 @@ body.ds-dark .input-clear-btn:active {
   max-width: 220px;
   cursor: pointer;
   user-select: none;
-  transition:
-    filter 0.15s ease,
-    opacity 0.15s ease;
+  transition: filter 0.15s ease, opacity 0.15s ease;
 }
 .tag-pill.tag-user {
   background-color: #fff3cd;
@@ -502,7 +465,6 @@ body.ds-dark .tag-pill.tag-identity:hover {
   color: #fca5a5;
 }
 
-/* ── Touhou Hakurei Yin-Yang Loading Screen ─────────────────────────────── */
 .ds-loading-screen {
   display: flex;
   flex-direction: row;
@@ -536,5 +498,4 @@ body.ds-dark .tag-pill.tag-identity:hover {
   color: var(--sys-window-text, #333333);
   letter-spacing: 0.2px;
 }
-
 }

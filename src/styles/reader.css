@@ -1,3 +1,5 @@
+@layer tokens, reset, base, layout, components, reader, utilities, mobile;
+
 @layer reader {
 /* Reader viewport, slots, shimmer, fullscreen, dark theme, fit modes. */
 
@@ -975,5 +977,4 @@
 
 #ds-reader-container.ds-dark .ds-chapter-overscroll-badge:not(.ds-ready) i {
   color: #60a5fa;
-}
 }
