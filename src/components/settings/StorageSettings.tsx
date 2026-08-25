@@ -2,6 +2,7 @@ import { navigate } from "../../stores";
 import { t } from "../../i18n";
 import * as ipc from "../../ipc";
 import { StorageIcon, BlacklistIcon, ExternalLinkIcon, Icon } from "../Icon";
+import { GroupBox } from "../GroupBox";
 import { IconText, IconButton } from "../Button";
 export interface StorageSettingsProps {
   onClose: () => void;
@@ -9,10 +10,7 @@ export interface StorageSettingsProps {
 
 export function StorageSettings(props: StorageSettingsProps) {
   return (
-    <div class="group-box" id="ds-settings-sec-storage">
-      <div class="group-box-title">
-        <IconText icon={<StorageIcon />}>{t("settings.storage.title")}</IconText>
-      </div>
+    <GroupBox id="ds-settings-sec-storage" title={<IconText icon={<StorageIcon />}>{t("settings.storage.title")}</IconText>}>
       <div class="ds-settings-storage-grid">
         <span class="ds-label">
           {t("settings.storage.manageDisk")}
@@ -59,6 +57,6 @@ export function StorageSettings(props: StorageSettingsProps) {
             }}
           />
       </div>
-    </div>
+    </GroupBox>
   );
 }

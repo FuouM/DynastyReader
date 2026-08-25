@@ -10,6 +10,7 @@ import {
 import { suggest } from "../../api";
 import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
+import { GroupBox } from "../GroupBox";
 import { BlacklistIcon, AddIcon, CloseIcon } from "../Icon";
 import { IconText, Button } from "../Button";
 export function BlacklistSettings() {
@@ -44,10 +45,7 @@ export function BlacklistSettings() {
   };
 
   return (
-    <div class="group-box" id="ds-settings-sec-blacklist">
-      <div class="group-box-title">
-        <IconText icon={<BlacklistIcon />}>{t("blacklist.settingsTitle")}</IconText>
-      </div>
+    <GroupBox id="ds-settings-sec-blacklist" title={<IconText icon={<BlacklistIcon />}>{t("blacklist.settingsTitle")}</IconText>}>
       <div class="ds-bl-view-stack">
         <div class="ds-muted">
           {t("blacklist.settingsDescription")}
@@ -140,6 +138,6 @@ export function BlacklistSettings() {
           </Show>
         </div>
       </div>
-    </div>
+    </GroupBox>
   );
 }

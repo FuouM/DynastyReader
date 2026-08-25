@@ -2,7 +2,7 @@
  * Series header: metadata, categorized tag rows, sanitized description, and cover image.
  */
 
-import { createMemo, For, Show, type JSX } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 import { decodeEntities } from "../stores";
 import { t } from "../i18n";
 import { openExternal } from "../api";
@@ -11,69 +11,11 @@ import type { GroupedSeriesTags } from "../types/taxonomy";
 import type { Series, SeriesTag } from "../types/api";
 import { TagPill } from "../components/TagPill";
 import { Cover } from "../components/Cover";
-
+import { SanitizedDescription } from "../lib/sanitize";
 export function groupTags(series: Series): GroupedSeriesTags {
   return groupSeriesTags(series.tags, series.taggings);
 }
 
-/** Recursively renders a sanitized (tag-whitelist) description tree. */
-function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {
-  const out: JSX.Element[] = [];
-  for (const node of nodes) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = decodeEntities(node.textContent || "");
-      if (text) out.push(text);
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      const tag = el.tagName.toLowerCase();
-      const kids = () => renderSanitizedNodes(Array.from(el.childNodes));
-      if (tag === "p") {
-        const children = kids();
-        if (children.length > 0) out.push(<p class="ds-series-desc-p">{children}</p>);
-      } else if (tag === "br") {
-        out.push(<br />);
-      } else if (tag === "a") {
-        const href = el.getAttribute("href") || "";
-        const text = decodeEntities(el.textContent?.trim() || "");
-        if (href) {
-          out.push(
-            <a
-              class="ds-external-link"
-              title={href}
-              onClick={(ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                void openExternal(href);
-              }}
-            >
-              {text && text !== href ? `${text} — ${href}` : href}
-            </a>,
-          );
-        } else {
-          out.push(text);
-        }
-      } else if (tag === "b" || tag === "strong") {
-        out.push(<strong>{kids()}</strong>);
-      } else if (tag === "i" || tag === "em") {
-        out.push(<em>{kids()}</em>);
-      } else {
-        out.push(...kids());
-      }
-    }
-  }
-  return out;
-}
-
-export function SanitizedDescription(props: { html: string }) {
-  const nodes = createMemo<JSX.Element[]>(() => {
-    if (!props.html) return [];
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(props.html, "text/html");
-    return renderSanitizedNodes(Array.from(doc.body.childNodes));
-  });
-
-  return <div class="ds-series-desc">{nodes()}</div>;
-}
 
 export function MetaRow(props: { label: string; tags: SeriesTag[] }) {
   return (
