@@ -3,21 +3,14 @@ import { cachedJson, httpGetText } from "./http";
 import { FEED_TTL_MS } from "./feed";
 import { tryParseJson } from "../utils/json";
 import { directoryGroups } from "../utils/directory";
+import { persistDirectoryEntries, persistSuggestEntries } from "./cache-persist";
 import type { Directory, DirectoryGroup, SuggestResult } from "../types/api";
 
-/** Series / tag directories, cached for one hour. */
 export async function fetchDirectory(urlPath: string, key: string, kind?: "series" | "tags"): Promise<Directory> {
   const dir = await cachedJson<Directory>(key, absUrl(urlPath), FEED_TTL_MS);
   if (kind) {
-    try {
-      const { saveDirectoryEntries } = await import("../db");
-      const groups = directoryGroups(dir);
-      void saveDirectoryEntries(kind, groups).catch((err) => {
-        console.warn(`[api/directory] saveDirectoryEntries failed for ${kind}:`, err);
-      });
-    } catch (err) {
-      console.warn(`[api/directory] failed to import db for saving directory ${kind}:`, err);
-    }
+    const groups = directoryGroups(dir);
+    void persistDirectoryEntries(kind, groups, "directory");
   }
   return dir;
 }
@@ -99,14 +92,7 @@ export async function suggest(query: string): Promise<SuggestResult[]> {
 
   // Persist newly discovered suggestions into SQLite directory_entries
   if (parsed.length > 0) {
-    try {
-      const { saveSuggestEntries } = await import("../db");
-      void saveSuggestEntries(parsed).catch((err) => {
-        console.warn("[api/directory] saveSuggestEntries failed:", err);
-      });
-    } catch (err) {
-      console.warn("[api/directory] failed to import db for saving suggestions:", err);
-    }
+    void persistSuggestEntries(parsed, "directory");
   }
 
   return parsed;

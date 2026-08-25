@@ -4,6 +4,7 @@ import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";
 import { tryParseJson } from "../utils/json";
 import { FeedSchema } from "./schemas";
+import { persistSuggestEntries } from "./cache-persist";
 import type { Feed, FeedRevalidationResult, RevalidateOnlineResult } from "../types/api";
 
 export const FEED_TTL_MS = 60 * 60 * 1000;
@@ -35,23 +36,14 @@ export async function checkFeedOnline(
 
     // Opportunistically index series and tags from new feed chapters into directory_entries
     if (freshData.chapters && freshData.chapters.length > 0) {
-      try {
-        const { saveSuggestEntries } = await import("../db");
-        const itemsToSave: { name: string; type: string }[] = [];
-        for (const ch of freshData.chapters) {
-          if (ch.series) itemsToSave.push({ name: ch.series, type: "Series" });
-          for (const t of ch.tags ?? []) {
-            if (t.name) itemsToSave.push({ name: t.name, type: t.type || "Tag" });
-          }
+      const itemsToSave: { name: string; type: string }[] = [];
+      for (const ch of freshData.chapters) {
+        if (ch.series) itemsToSave.push({ name: ch.series, type: "Series" });
+        for (const t of ch.tags ?? []) {
+          if (t.name) itemsToSave.push({ name: t.name, type: t.type || "Tag" });
         }
-        if (itemsToSave.length > 0) {
-          void saveSuggestEntries(itemsToSave).catch((err) => {
-            console.warn("[api/feed] saveSuggestEntries failed:", err);
-          });
-        }
-      } catch (err) {
-        console.warn("[api/feed] failed to import db for saving feed suggestions:", err);
       }
+      void persistSuggestEntries(itemsToSave, "feed");
     }
 
     return { status: 200, data: freshData, isNew: true, etag: resp.etag };

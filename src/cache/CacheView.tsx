@@ -21,14 +21,10 @@ import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api";
 import {
-  clearAllCacheStorage,
-  clearAllCachedPages,
-  clearAllCachedCovers,
   clearCachedGroupPages,
   getCacheOverviewStats,
   getCachedSeriesGroups,
   getDbStats,
-  wipeDatabase,
   backupDatabase,
   restoreDatabaseFromPath,
   type CachedSeriesGroup,
@@ -41,6 +37,7 @@ import { EmptyState } from "../components/EmptyState";
 import { GroupBox } from "../components/GroupBox";
 import { HydratedCover } from "../components/HydratedCover";
 import { ConfirmDeleteButton, DsSelect, IconText, IconButton, StatCard } from "../components/Button";
+import { useCacheActions } from "./useCacheActions";
 import { InputField } from "../components/InputField";
 import { Loading } from "../components/Loading";
 import {
@@ -90,33 +87,8 @@ export function CacheView() {
       });
     }
   };
+  const { purgeAll, purgePages, purgeCovers, wipeDb } = useCacheActions(refetch as unknown as () => void);
 
-  const purgeAll = async (): Promise<void> => {
-    await clearAllCacheStorage();
-    browseCovers.clearMemoryCache();
-    showBanner(t("cache.clearAllSuccess"));
-    void refetch();
-  };
-
-  const purgePages = async (): Promise<void> => {
-    await clearAllCachedPages();
-    showBanner(t("cache.clearPagesOnlySuccess"));
-    void refetch();
-  };
-
-  const purgeCovers = async (): Promise<void> => {
-    await clearAllCachedCovers();
-    browseCovers.clearMemoryCache();
-    showBanner(t("cache.clearCoversOnlySuccess"));
-    void refetch();
-  };
-
-  const wipeDb = async (): Promise<void> => {
-    await wipeDatabase();
-    browseCovers.clearMemoryCache();
-    showBanner(t("cache.dbWipeSuccess"));
-    void refetch();
-  };
 
   const backupDb = async (): Promise<void> => {
     try {

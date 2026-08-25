@@ -5,6 +5,7 @@ import { parseSearchHtml } from "./search-parser";
 import { fetchSeries } from "./series";
 import { getCached, setCached } from "../db";
 import { recordCacheHit } from "./traffic";
+import { persistSuggestEntries } from "./cache-persist";
 import type { SearchParams, SearchResultItem, SearchResultPage, ChapterTag } from "../types/api";
 
 const SEARCH_CACHE_PREFIX = "search_v2:";
@@ -191,18 +192,11 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
       const parsedPage = parseSearchHtml(body, query, page);
       // Persist series and tags found in search results into local directory entries
       if (parsedPage.items.length > 0) {
-        try {
-          const { saveSuggestEntries } = await import("../db");
-          const toSave = parsedPage.items.map((it) => ({
-            name: it.title,
-            type: it.kind === "series" ? "Series" : it.kind === "chapter" ? "Chapter" : "Tag",
-          }));
-          void saveSuggestEntries(toSave).catch((err) => {
-            console.warn("[api/search] saveSuggestEntries failed:", err);
-          });
-        } catch (err) {
-          console.warn("[api/search] failed to import db for saving search suggestions:", err);
-        }
+        const toSave = parsedPage.items.map((it) => ({
+          name: it.title,
+          type: it.kind === "series" ? "Series" : it.kind === "chapter" ? "Chapter" : "Tag",
+        }));
+        void persistSuggestEntries(toSave, "search");
       }
       return parsedPage;
     }
