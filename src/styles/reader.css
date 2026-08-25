@@ -704,18 +704,12 @@
 }
 #ds-reader-viewport.horizontal.ltr .ds-spread-canvas,
 #ds-reader-viewport.horizontal #ds-reader-strip.ltr .ds-spread-canvas,
-#ds-reader-viewport.horizontal .ds-spread-canvas.ltr,
-.fit-height #ds-reader-viewport.horizontal.ltr .ds-spread-canvas,
-.fit-width #ds-reader-viewport.horizontal.ltr .ds-spread-canvas,
-.fit-original #ds-reader-viewport.horizontal.ltr .ds-spread-canvas {
+#ds-reader-viewport.horizontal .ds-spread-canvas.ltr {
   flex-direction: row !important;
 }
 #ds-reader-viewport.horizontal.rtl .ds-spread-canvas,
 #ds-reader-viewport.horizontal #ds-reader-strip.rtl .ds-spread-canvas,
-#ds-reader-viewport.horizontal .ds-spread-canvas.rtl,
-.fit-height #ds-reader-viewport.horizontal.rtl .ds-spread-canvas,
-.fit-width #ds-reader-viewport.horizontal.rtl .ds-spread-canvas,
-.fit-original #ds-reader-viewport.horizontal.rtl .ds-spread-canvas {
+#ds-reader-viewport.horizontal .ds-spread-canvas.rtl {
   flex-direction: row-reverse !important;
 }
 #ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot {

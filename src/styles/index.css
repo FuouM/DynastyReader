@@ -611,11 +611,6 @@ body.ds-dark .ds-series-link {
 body.ds-dark .ds-series-link:hover {
   color: #7dd3fc;
 }
-.tag-pill {
-  cursor: pointer;
-  user-select: none;
-  transition: filter 0.15s ease, opacity 0.15s ease;
-}
 :root:not([data-theme="dark"]) .tag-pill:hover {
   filter: brightness(0.92);
   opacity: 0.9;
@@ -658,24 +653,22 @@ body.ds-dark .tag-pill:hover {
   gap: 12px;
   margin-bottom: 10px;
 }
-.ds-cover {
-  width: 90px;
-  height: 126px;
-  object-fit: cover;
-  border: 1px solid var(--sys-border-light, #ccc);
-  background: var(--sys-control-bg, #eee);
-  flex-shrink: 0;
-}
+.ds-cover,
 .ds-cover-placeholder {
   width: 90px;
   height: 126px;
   border: 1px solid var(--sys-border-light, #ccc);
   background: var(--sys-control-bg, #eee);
+  flex-shrink: 0;
+}
+.ds-cover {
+  object-fit: cover;
+}
+.ds-cover-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--sys-text-muted, #aaa);
-  flex-shrink: 0;
 }
 .ds-series-desc {
   font-size: 11px;

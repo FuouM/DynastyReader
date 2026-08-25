@@ -313,6 +313,11 @@ body.ds-dark .input-clear-btn:active {
   overflow-wrap: anywhere;
   word-break: break-word;
   max-width: 220px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    filter 0.15s ease,
+    opacity 0.15s ease;
 }
 .tag-pill.tag-user {
   background-color: #fff3cd;
