@@ -14,15 +14,15 @@ import {
   Show,
 } from "solid-js";
 import {
-  decodeEntities,
-  formatDate,
   navigate,
   setActions,
   setTitle,
   showBanner,
-  seriesTypeToPath,
   SITE_ROOT,
 } from "../stores";
+import { decodeEntities } from "../utils/html";
+import { formatDate } from "../utils/formatting";
+import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api";
 import {

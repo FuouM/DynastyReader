@@ -8,7 +8,7 @@
  */
 
 import { Show } from "solid-js";
-import { decodeEntities } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { ListItem } from "../components/ListItem";
 import { Cover } from "../components/Cover";

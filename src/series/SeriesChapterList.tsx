@@ -3,7 +3,8 @@
  */
 
 import { For, Show, type Accessor } from "solid-js";
-import { decodeEntities, navigate } from "../stores";
+import { navigate } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import type { ChapterRef } from "../types/routes";
 import type { Series } from "../types/api";

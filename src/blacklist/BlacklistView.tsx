@@ -5,7 +5,9 @@
  */
 
 import { createEffect, createResource, createSignal, For, Show } from "solid-js";
-import { decodeEntities, formatDate, navigate, safeHtml, setActions, showBanner, SITE_ROOT } from "../stores";
+import { navigate, setActions, showBanner, SITE_ROOT } from "../stores";
+import { decodeEntities, safeHtml } from "../utils/html";
+import { formatDate } from "../utils/formatting";
 import { t } from "../i18n";
 import {
   getBlacklistMode,

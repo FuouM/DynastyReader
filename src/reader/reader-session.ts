@@ -19,9 +19,9 @@ import {
   setActions,
   clearActions,
   isOnline,
-  isSeriesKind,
   isMobile,
 } from "../stores";
+import { isSeriesKind } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { toggleAppTheme } from "../stores/theme";

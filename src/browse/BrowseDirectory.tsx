@@ -5,9 +5,11 @@
  */
 
 import { createEffect, createMemo, createResource, createSignal, For, Show, type Accessor } from "solid-js";
-import { decodeEntities, navigate, SITE_ROOT } from "../stores";
+import { navigate, SITE_ROOT } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
-import { directoryGroups, fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages } from "../api";
+import { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages } from "../api";
+import { directoryGroups } from "../utils/directory";
 import { getBlacklistMode, isSeriesBlacklisted, type BlacklistMode } from "../db";
 import {
   setPaneLoading,

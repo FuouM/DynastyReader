@@ -4,7 +4,7 @@
  * (FeedItemRow, BrowseSearch SearchResultRow).
  */
 
-import { decodeEntities } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import type { BlacklistMode } from "../db";
 import { WarningIcon } from "./Icon";

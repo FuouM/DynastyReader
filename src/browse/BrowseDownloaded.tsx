@@ -5,7 +5,9 @@
  */
 
 import { createEffect, createSignal, For, Show, type Accessor } from "solid-js";
-import { formatBytes, formatDate, route } from "../stores";
+import { route } from "../stores";
+import { formatBytes } from "../lib/format";
+import { formatDate } from "../utils/formatting";
 import { t } from "../i18n";
 import {
   getFullyCachedChapters,

@@ -13,11 +13,11 @@
 
 import { createEffect, createSignal, onMount, Show, type JSX } from "solid-js";
 import {
-  decodeEntities,
   navigate,
   setBanner,
   SITE_ROOT,
 } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { categorizeChapterTags, isSeriesKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";

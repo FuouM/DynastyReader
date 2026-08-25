@@ -3,7 +3,8 @@
  */
 
 import { For, Show } from "solid-js";
-import { decodeEntities, navigate } from "../stores";
+import { navigate } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import type { Series } from "../types/api";
 import { StorageIcon, BookIcon } from "../components/Icon";

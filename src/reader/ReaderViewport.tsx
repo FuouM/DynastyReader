@@ -10,7 +10,7 @@ import { createEffect, createSignal, onCleanup, onMount, Show, type JSX } from "
 import type { ReaderSession } from "./reader-session";
 import type { ChapterRef } from "../types/routes";
 import { getPrefetchBuffer, isAutoCacheChapterEnabled } from "./settings";
-import { decodeEntities } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { createResizeObserver } from "@solid-primitives/resize-observer";
 export function ReaderViewport(props: { session: ReaderSession; children?: JSX.Element }) {
   const s = props.session;

@@ -6,7 +6,7 @@
  */
 
 import { createMemo, type JSX } from "solid-js";
-import { decodeEntities } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { openExternal } from "../api";
 
 function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {

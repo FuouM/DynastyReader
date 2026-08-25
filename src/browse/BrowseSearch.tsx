@@ -19,8 +19,9 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import { decodeEntities, navigate, setBanner, seriesTypeToPath, SITE_ROOT } from "../stores";
-import { isContentKind } from "../taxonomy";
+import { navigate, setBanner, SITE_ROOT } from "../stores";
+import { decodeEntities } from "../utils/html";
+import { isContentKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { searchDynasty, suggest } from "../api";

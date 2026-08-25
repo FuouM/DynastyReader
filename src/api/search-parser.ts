@@ -1,4 +1,4 @@
-import { decodeEntities } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { KIND_BY_PATH_SEGMENT, tagKindToType } from "../taxonomy";
 import type { ChapterTag, SearchResultItem, SearchResultPage } from "../types/api";
 

@@ -3,7 +3,7 @@
  */
 
 import { createMemo, For, Show } from "solid-js";
-import { decodeEntities } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { openExternal } from "../api";
 import { groupSeriesTags } from "../taxonomy";

@@ -3,7 +3,8 @@
  * type→URL routing. Port of `tag-pill.ts`.
  */
 
-import { navigate, tagClass } from "../stores";
+import { navigate } from "../stores";
+import { tagClass } from "../taxonomy";
 import { t } from "../i18n";
 
 export interface TagPillProps {

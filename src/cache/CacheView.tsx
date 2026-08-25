@@ -16,7 +16,10 @@ import {
   For,
   Show,
 } from "solid-js";
-import { decodeEntities, formatBytes, formatDate, navigate, setActions, showBanner } from "../stores";
+import { navigate, setActions, showBanner } from "../stores";
+import { decodeEntities } from "../utils/html";
+import { formatBytes } from "../lib/format";
+import { formatDate } from "../utils/formatting";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api";

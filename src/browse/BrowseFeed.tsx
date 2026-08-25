@@ -23,10 +23,8 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import {
-  formatBytes,
-  formatDateTime,
-} from "../stores";
+import { formatBytes } from "../lib/format";
+import { formatDateTime } from "../utils/formatting";
 import { t } from "../i18n";
 import {
   checkFeedOnline,

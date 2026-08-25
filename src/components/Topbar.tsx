@@ -14,8 +14,8 @@ import {
   title,
   banner,
   actions,
-  decodeEntities,
 } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { SettingsModal } from "./SettingsModal";
 import { HistoryDropdown } from "./HistoryDropdown";

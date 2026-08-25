@@ -2,7 +2,6 @@ export { httpGetText, httpDownload, httpDownloadFull, cachedJson } from "./http"
 export { fileResolve, fileExists, fileMove, fileDelete } from "./fs";
 export { checkFeedOnline, fetchFeedWithRevalidation } from "./feed";
 export { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages, suggest } from "./directory";
-export { directoryGroups } from "../utils/directory";
 export {
   fetchSeries,
   getSeriesCover,

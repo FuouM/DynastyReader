@@ -59,22 +59,6 @@ export { uiScale, setUiScale, applyUiScale } from "./ui-scale";
 export { isMobile, uiMode, setUiMode } from "./platform";
 export type { UiMode } from "./platform";
 
-export {
-  tagClass,
-  sortTagsByCategory,
-  groupSeriesTags,
-  categorizeChapterTags,
-  isSeriesKind,
-  isArtistTag,
-  isScanlatorTag,
-  isDoujinTag,
-  isPairingTag,
-  isCharacterTag,
-  isStatusTag,
-  seriesTypeToPath,
-  ENTITY_TAXONOMY,
-  KIND_BY_PATH_SEGMENT,
-} from "../taxonomy";
 
 /** Reactive signal for whether the webview has a network connection. */
 export const isOnline = createConnectivitySignal();
@@ -84,7 +68,3 @@ export function absUrl(u: string): string {
   if (/^https?:\/\//i.test(u)) return u;
   return SITE_ROOT + u;
 }
-
-export { formatBytes } from "../lib/format";
-export { decodeEntities, esc, safeHtml } from "../utils/html";
-export { formatDate, formatDateTime } from "../utils/formatting";

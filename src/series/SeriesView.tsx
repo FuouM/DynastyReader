@@ -18,7 +18,6 @@ import {
   type JSX,
 } from "solid-js";
 import {
-  decodeEntities,
   isMobile,
   navigate,
   route,
@@ -26,9 +25,10 @@ import {
   setSessionTab,
   setTitle,
   showBanner,
-  seriesTypeToPath,
   SITE_ROOT,
 } from "../stores";
+import { decodeEntities } from "../utils/html";
+import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { fetchChapter, fetchSeries, getSeriesCover } from "../api";

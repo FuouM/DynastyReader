@@ -16,7 +16,9 @@ import {
   Show,
 
 } from "solid-js";
-import { decodeEntities, formatDate, navigate, showBanner, SITE_ROOT } from "../stores";
+import { navigate, showBanner, SITE_ROOT } from "../stores";
+import { decodeEntities } from "../utils/html";
+import { formatDate } from "../utils/formatting";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import {
