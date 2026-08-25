@@ -11,6 +11,7 @@ import type { ReaderSession } from "./reader-session";
 import type { ChapterRef } from "../types/routes";
 import { getPrefetchBuffer, isAutoCacheChapterEnabled } from "./settings";
 import { decodeEntities } from "../stores";
+import { createResizeObserver } from "@solid-primitives/resize-observer";
 export function ReaderViewport(props: { session: ReaderSession; children?: JSX.Element }) {
   const s = props.session;
   const [overscrollHint, setOverscrollHint] = createSignal<{
@@ -23,19 +24,9 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     const vpEl = s.viewportEl;
     if (!vpEl) return;
 
-    // Compute exact available viewport height dynamically with RAF throttle
-    let roRaf: number | null = null;
-    const ro = new ResizeObserver(() => {
-      if (roRaf !== null) cancelAnimationFrame(roRaf);
-      roRaf = requestAnimationFrame(() => {
-        roRaf = null;
-        s.updateViewportHeight();
-      });
-    });
-    ro.observe(vpEl);
-    s.onDispose(() => {
-      ro.disconnect();
-      if (roRaf !== null) cancelAnimationFrame(roRaf);
+    // Compute exact available viewport height dynamically via reactive primitive
+    createResizeObserver(() => vpEl, () => {
+      s.updateViewportHeight();
     });
     window.setTimeout(() => {
       s.updateViewportHeight();
