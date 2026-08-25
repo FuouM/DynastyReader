@@ -1,7 +1,7 @@
 import { query, execute } from "./client";
 import { DB_NAME } from "../stores";
 import * as ipc from "../ipc";
-
+import { withDbWarn } from "./withDbWarn";
 export interface DbFileStats {
   dbSizeBytes: number;
   walSizeBytes: number;
@@ -48,13 +48,10 @@ async function countTable(table: string): Promise<number> {
     console.warn(`[db.manage] countTable rejected unapproved table name: "${table}"`);
     return 0;
   }
-  try {
+  return withDbWarn(`countTable failed for "${table}"`, async () => {
     const rows = await query<{ c: number }>(`SELECT COUNT(*) as c FROM ${table}`);
     return rows[0]?.c ?? 0;
-  } catch (err) {
-    console.warn(`[db.manage] countTable failed for "${table}":`, err);
-    return 0;
-  }
+  }, 0);
 }
 
 /** File size for the main db + wal/shm sidecars. */

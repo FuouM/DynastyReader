@@ -37,6 +37,7 @@ import {
   useDelayedSpinner,
   useTabPane,
 } from "./browse-state";
+import { createSearchFilters } from "./useSearchFilters";
 import { browseCovers } from "./browse-covers";
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
@@ -219,13 +220,8 @@ export interface BrowseSearchProps {
 }
 
 export function BrowseSearch(props: BrowseSearchProps) {
-  const [q, setQ] = createSignal("");
-  const [classes, setClasses] = createSignal<Set<SearchClass>>(new Set());
-  const [withTags, setWithTags] = createSignal<string[]>([]);
-  const [withoutTags, setWithoutTags] = createSignal<string[]>([]);
-  const [sort, setSort] = createSignal<SearchSort>("");
-  const [withDraft, setWithDraft] = createSignal("");
-  const [withoutDraft, setWithoutDraft] = createSignal("");
+  const filters = createSearchFilters();
+  const { q, setQ, classes, setClasses, withTags, withoutTags, sort, setSort, withDraft, setWithDraft, withoutDraft, setWithoutDraft } = filters;
   const [showHidden, setShowHidden] = createSignal(false);
   const triggerWarning = useTriggerWarning();
   const addToCol = useAddToCollection();
@@ -269,79 +265,47 @@ export function BrowseSearch(props: BrowseSearchProps) {
     setPaneError("search", pane.error() !== undefined);
   });
 
-  // Consume transient search directives (search-box submit, tag-pill click).
   createEffect(() => {
     const t = props.transient;
     if (!t) return;
-    if (t.searchQuery !== undefined) {
-      setQ(t.searchQuery);
-      setClasses(new Set<SearchClass>());
-      setWithTags([]);
-      setWithoutTags([]);
-      setSort("");
-    }
-    if (t.withTag) {
-      setQ("");
-      setWithoutTags([]);
-      setSort("");
-      setWithTags([t.withTag]);
-    }
-    if (t.searchClass !== undefined) {
-      if (t.searchClass) setClasses(new Set([t.searchClass as SearchClass]));
-      else setClasses(new Set<SearchClass>());
-    }
+    filters.applyTransient(t);
     setShowHidden(false);
     pane.goToPage(1);
     props.onTransientConsumed();
   });
 
   const runSearch = (value: string): void => {
-    setQ(value.trim());
+    filters.runSearch(value);
     pane.goToPage(1);
   };
 
   const toggleClass = (c: SearchClass): void => {
-    setClasses((prev) => {
-      const next = new Set(prev);
-      if (next.has(c)) next.delete(c);
-      else next.add(c);
-      return next;
-    });
+    filters.toggleClass(c);
     pane.goToPage(1);
   };
 
   const clearAll = (): void => {
-    setQ("");
-    setClasses(new Set<SearchClass>());
-    setWithTags([]);
-    setWithoutTags([]);
-    setSort("");
+    filters.clearAll();
     pane.goToPage(1);
   };
 
   const addWithTag = (tag: string): void => {
-    const t = tag.trim();
-    if (!t) return;
-    if (!withTags().includes(t)) setWithTags((tags) => [...tags, t]);
-    setWithDraft("");
+    filters.addWithTag(tag);
     pane.goToPage(1);
   };
 
   const addWithoutTag = (tag: string): void => {
-    const t = tag.trim();
-    if (!t) return;
-    if (!withoutTags().includes(t)) setWithoutTags((tags) => [...tags, t]);
-    setWithoutDraft("");
+    filters.addWithoutTag(tag);
     pane.goToPage(1);
   };
 
   const removeWithTag = (t: string): void => {
-    setWithTags((tags) => tags.filter((x) => x !== t));
+    filters.removeWithTag(t);
     pane.goToPage(1);
   };
 
   const removeWithoutTag = (t: string): void => {
-    setWithoutTags((tags) => tags.filter((x) => x !== t));
+    filters.removeWithoutTag(t);
     pane.goToPage(1);
   };
 

@@ -5,6 +5,7 @@ import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
 import { DsSelect, IconText, IconButton, SegmentedSwitch, ToggleButton } from "../Button";
 import { SettingsRow } from "../SettingsRow";
+import { GroupBox } from "../GroupBox";
 import { SCALE_PRESETS } from "./types";
 export function DisplaySettings() {
   const [scale, setScale] = createSignal(uiScale());
@@ -21,10 +22,7 @@ export function DisplaySettings() {
   );
 
   return (
-    <div class="group-box" id="ds-settings-sec-display">
-      <div class="group-box-title">
-        <IconText icon={<Icon name="aspect-ratio" />}>{t("settings.display.title")}</IconText>
-      </div>
+    <GroupBox id="ds-settings-sec-display" title={<IconText icon={<Icon name="aspect-ratio" />}>{t("settings.display.title")}</IconText>}>
       <div class="ds-col">
         {/* Scale Factor */}
         <SettingsRow
@@ -154,6 +152,6 @@ export function DisplaySettings() {
           />
         </SettingsRow>
       </div>
-    </div>
+    </GroupBox>
   );
 }
