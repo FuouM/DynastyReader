@@ -463,7 +463,6 @@
 
 #ds-reader-viewport:not(.horizontal) .ds-slot {
   width: 100%;
-  min-height: max(320px, 60dvh);
 }
 .ds-page-wrap {
   position: relative;
@@ -577,23 +576,27 @@
 }
 .fit-height #ds-reader-strip {
   align-items: center;
-  gap: 0 !important;
   width: 100%;
+}
+.fit-height #ds-reader-viewport.horizontal #ds-reader-strip {
+  gap: 0 !important;
 }
 .fit-height .ds-slot {
   width: 100%;
-  height: var(--ds-viewport-full, 100vh);
-  min-height: var(--ds-viewport-full, 100vh);
-  max-height: var(--ds-viewport-full, 100vh);
   box-sizing: border-box;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.fit-height #ds-reader-viewport.horizontal .ds-slot {
+  height: var(--ds-viewport-full, 100vh);
+  min-height: var(--ds-viewport-full, 100vh);
+  max-height: var(--ds-viewport-full, 100vh);
   flex-shrink: 0;
 }
 .fit-height .ds-page-img {
-  max-height: 100% !important;
+  max-height: var(--ds-viewport-full, 100vh) !important;
   max-width: 100% !important;
   height: auto !important;
   width: auto !important;
@@ -866,7 +869,7 @@
 .ds-slot-placeholder {
   width: 100%;
   max-width: 800px;
-  min-height: max(320px, 60dvh);
+  min-height: 200px;
   background: transparent;
   display: block;
 }
