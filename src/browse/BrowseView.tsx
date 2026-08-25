@@ -287,7 +287,7 @@ export function BrowseView() {
         tabs={getBrowseTabs()}
         activeTab={activeTab()}
         onSwitch={(id) => switchTab(id as BrowseTabId)}
-        compact={isCompact()}
+        compact={isCompact() || isMobile()}
         right={
           <>
             <IconButton

@@ -1,5 +1,5 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
-import { theme, setTheme, uiScale, applyUiScale } from "../../stores";
+import { theme, setTheme, uiScale, applyUiScale, uiMode, setUiMode, type UiMode } from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
@@ -135,6 +135,24 @@ export function DisplaySettings() {
               )}
             </For>
           </DsSelect>
+        </SettingsRow>
+
+        {/* Interface Layout (Auto / Desktop / Mobile) */}
+        <SettingsRow
+          label={t("settings.display.uiMode")}
+          desc={t("settings.display.uiModeDesc")}
+          divider
+        >
+          <SegmentedSwitch
+            id="ds-settings-uimode-switch"
+            value={uiMode()}
+            onChange={(val) => setUiMode(val as UiMode)}
+            options={[
+              { id: "ds-settings-uimode-auto", value: "auto", icon: <Icon name="display" />, text: t("settings.display.uiModeAuto"), title: t("settings.display.uiModeAutoTooltip") },
+              { id: "ds-settings-uimode-desktop", value: "desktop", icon: <Icon name="pc-display" />, text: t("settings.display.uiModeDesktop"), title: t("settings.display.uiModeDesktopTooltip") },
+              { id: "ds-settings-uimode-mobile", value: "mobile", icon: <Icon name="phone" />, text: t("settings.display.uiModeMobile"), title: t("settings.display.uiModeMobileTooltip") },
+            ]}
+          />
         </SettingsRow>
       </div>
     </div>
