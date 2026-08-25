@@ -1,0 +1,106 @@
+/* reset.css — box model, body, scrollbars, skeleton placeholders */
+@layer reset {
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 12px;
+  color: var(--sys-window-text);
+  background: var(--sys-window-bg);
+  overflow: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a6a6a6;
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-track,
+[data-theme="dark"] ::-webkit-scrollbar-track,
+body.ds-dark ::-webkit-scrollbar-track {
+  background: #2a2a2a;
+}
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb,
+body.ds-dark ::-webkit-scrollbar-thumb {
+  background: #555555;
+}
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+body.ds-dark ::-webkit-scrollbar-thumb:hover {
+  background: #6e6e6e;
+}
+
+.skeleton,
+.skeleton-pulse {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: ds-skeleton-slide 1.5s infinite;
+}
+.skeleton::after,
+.skeleton-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: ds-skeleton-slide 1.5s infinite;
+}
+:root[data-theme="dark"] .skeleton::after,
+:root[data-theme="dark"] .skeleton-pulse::after,
+[data-theme="dark"] .skeleton::after,
+[data-theme="dark"] .skeleton-pulse::after,
+body.ds-dark .skeleton::after,
+body.ds-dark .skeleton-pulse::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+}
+.skeleton-pulse {
+  border-radius: 3px;
+}
+.skeleton-card {
+  height: 80px;
+  border-radius: 3px;
+}
+.skeleton-text {
+  height: 12px;
+  border-radius: 2px;
+}
+@keyframes ds-skeleton-slide {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .skeleton-pulse,
+  .skeleton::after,
+  .skeleton-pulse::after {
+    animation: none;
+  }
+}
+}

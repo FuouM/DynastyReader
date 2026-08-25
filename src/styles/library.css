@@ -1,3 +1,4 @@
+@layer components {
 #ds-library-container {
   display: flex;
   flex-direction: column;
@@ -169,4 +170,5 @@
 }
 .ds-library-tab-pane.ds-hidden {
   display: none !important;
+}
 }

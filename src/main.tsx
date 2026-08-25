@@ -24,7 +24,10 @@ window.addEventListener("unload", () => {
   saveWindowState(StateFlags.ALL).catch((_err) => {});
 });
 
+import "./styles/tokens.css";
+import "./styles/reset.css";
 import "./styles/curator-ui-base.css";
+import "./styles/utilities.css";
 import "./styles/index.css";
 import "./styles/library.css";
 import "./styles/browse.css";
