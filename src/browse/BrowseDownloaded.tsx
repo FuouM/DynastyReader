@@ -165,7 +165,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         </span>
       </div>
 
-      <div id="ds-downloaded-filter-wrap" style="margin-bottom:8px;">
+      <div id="ds-downloaded-filter-wrap" class="ds-mb-8">
         <InputField
           placeholder={t("browse.downloaded.filterPlaceholder")}
           value={query()}
@@ -205,7 +205,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         </Show>
       </div>
 
-      <div id="ds-downloaded-pager" style="display:flex;justify-content:flex-end;margin-top:8px;">
+      <div id="ds-downloaded-pager" class="ds-pager-wrap">
         <Show when={totalPages() > 1}>
           <Pager totalPages={totalPages()} currentPage={currentPage()} onPage={(p) => goToPage(p)} cssText="justify-content:flex-end;margin:0;" />
         </Show>

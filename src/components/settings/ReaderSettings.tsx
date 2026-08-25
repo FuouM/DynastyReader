@@ -93,7 +93,7 @@ export function ReaderSettings() {
         <SettingsRow divider label={<>{t("settings.reader.longStripOverride")}:</>} desc={t("settings.reader.longStripOverrideDesc")}>
           <ToggleButton
             id="ds-settings-longstrip-toggle"
-            style="font-size:11px;padding:2px 10px;min-width:105px;"
+            className="ds-toggle-btn ds-toggle--w105"
             value={longStripOverride()}
             icon={<Icon name="slash-circle" />}
             activeIcon={<Icon name="check-circle" />}
@@ -108,7 +108,7 @@ export function ReaderSettings() {
         <SettingsRow divider label={<>{t("settings.reader.longStripFitWidth")}:</>} desc={t("settings.reader.longStripFitWidthDesc")}>
           <ToggleButton
             id="ds-settings-longstrip-fit-toggle"
-            style="font-size:11px;padding:2px 10px;min-width:105px;"
+            className="ds-toggle-btn ds-toggle--w105"
             value={longStripFitWidth()}
             icon={<Icon name="slash-circle" />}
             activeIcon={<Icon name="check-circle" />}
@@ -123,7 +123,7 @@ export function ReaderSettings() {
         <SettingsRow divider label={<>{t("settings.reader.coverOffset")}:</>} desc={t("settings.reader.coverOffsetDesc")}>
           <ToggleButton
             id="ds-settings-cover-offset-toggle"
-            style="font-size:11px;padding:2px 10px;min-width:95px;"
+            className="ds-toggle-btn ds-toggle--w95"
             value={coverOffsetPref()}
             icon={<Icon name="dash-circle" />}
             activeIcon={<Icon name="book-half" />}
@@ -153,7 +153,7 @@ export function ReaderSettings() {
         <SettingsRow divider label={<>{t("settings.reader.fitMode")}:</>} desc={t("settings.reader.fitModeDesc")}>
           <DsSelect
             id="ds-settings-fit-select"
-            style="width:130px;"
+            className="ds-select--w130"
             value={fitModePref()}
             onChange={(val) => {
               setDefaultFitMode(val as FitMode);
@@ -171,7 +171,7 @@ export function ReaderSettings() {
         <SettingsRow divider label={<>{t("settings.reader.autoCache")}:</>} desc={t("settings.reader.autoCacheDesc")}>
           <ToggleButton
             id="ds-settings-autocache-toggle"
-            style="font-size:11px;padding:2px 10px;min-width:70px;"
+            className="ds-toggle-btn ds-toggle--w70"
             value={autoCacheEnabled()}
             icon={<Icon name="cloud-slash" />}
             activeIcon={<CloudDownloadIcon />}
@@ -184,7 +184,7 @@ export function ReaderSettings() {
 
         {/* Page Prefetch Buffer */}
         <SettingsRow divider label={<>{t("settings.reader.prefetchBuffer")}:</>} desc={t("settings.reader.prefetchBufferDesc")}>
-          <div style="display:flex;align-items:center;gap:4px;">
+          <div class="ds-prefetch-row">
             <IconButton
               className="ds-btn-icon"
               id="ds-settings-prefetch-dec"
@@ -192,7 +192,7 @@ export function ReaderSettings() {
               title="−"
               onClick={() => { const next = Math.max(0, prefetchBuffer() - 1); setPrefetchBuffer(next); setPrefetchBufferLocal(next); }}
             />
-            <span id="ds-settings-prefetch-val" style="font-size:11px;font-weight:600;min-width:54px;text-align:center;">
+            <span id="ds-settings-prefetch-val" class="ds-prefetch-val">
               {prefetchBuffer() === 0 ? t("settings.reader.prefetchBufferOff") : prefetchBuffer() === 1 ? t("settings.reader.prefetchBufferPage", { count: prefetchBuffer() }) : t("settings.reader.prefetchBufferPages", { count: prefetchBuffer() })}
             </span>
             <IconButton

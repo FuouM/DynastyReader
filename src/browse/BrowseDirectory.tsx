@@ -67,12 +67,11 @@ function DirectoryRow(props: {
       cssText="justify-content:space-between;padding:3px 6px;cursor:pointer;"
       onClick={openEntry}
       title={
-        <span class="ds-item-title" style="display:inline-flex;align-items:center;gap:6px;">
+        <span class="ds-item-title ds-inline-flex-center-6">
           {decodeEntities(props.entry.name)}
           <Show when={isBl}>
             <span
-              class="ds-muted"
-              style="font-size:10px;margin-left:6px;color:var(--ds-warn-text,#d97706);font-weight:600;"
+              class="ds-muted ds-warn-badge"
             >
               <IconText icon={<BlacklistIcon filled={true} />}>{t("series.blacklistedBadge")}</IconText>
             </span>
@@ -178,7 +177,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
 
   return (
     <div>
-      <div style="margin-bottom:8px;">
+      <div class="ds-mb-8">
         <InputField
           placeholder={props.kind === "series" ? t("browse.directory.filterSeriesPlaceholder") : t("browse.directory.filterTagsPlaceholder")}
           value={query()}
@@ -189,7 +188,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
 
       <Show when={model() !== undefined && displayGroups().length > 0}>
         <Show when={query().trim().length > 0}>
-          <div class="ds-muted" style="font-size:11px;margin-bottom:6px;padding:0 2px;">
+          <div class="ds-muted ds-filter-count">
             {t("browse.directory.matchingCount", {
               count: totalFilteredEntries(),
               noun: props.kind === "series" ? t("browse.directory.nounSeries") : t("browse.directory.nounTags"),
@@ -200,7 +199,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
           {(group) => (
             <>
               <div class="ds-vol-header">{group.letter}</div>
-              <div style="display:flex;flex-direction:column;">
+              <div class="ds-flex-col">
                 <For each={group.entries}>
                   {(entry) => (
                     <DirectoryRow
@@ -216,7 +215,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
           )}
         </For>
         <Show when={query().trim().length === 0}>
-          <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+          <div class="ds-pager-wrap">
             <Pager
               totalPages={model()!.dir.total_pages}
               currentPage={model()!.dir.current_page}

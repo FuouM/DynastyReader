@@ -214,8 +214,7 @@ export function BrowseView() {
     <>
       {/* ── Search + Open-by-URL ─────────────────────────────────────────── */}
       <div
-        class="group-box"
-        style="margin-bottom:8px;"
+        class="group-box ds-mb-8"
         classList={{ collapsed: searchGoCollapsed() }}
       >
         <div class="group-box-title" onClick={toggleSearchGo}>
@@ -234,7 +233,7 @@ export function BrowseView() {
         </div>
         <div class="group-box-body">
           <div class="ds-row">
-            <div class="ds-search-wrap" style="flex:1;">
+            <div class="ds-search-wrap ds-flex-1">
               <Typeahead
                 fetcher={suggest}
                 onSelect={(item) => runSearch(item.name)}
@@ -257,7 +256,7 @@ export function BrowseView() {
             <InputField
               id="ds-url-input"
               placeholder={t("browse.searchAndGo.urlPlaceholder")}
-              style="flex:1;"
+              wrapperClass="ds-flex-1"
               value={urlValue()}
               onInput={(val) => setUrlValue(val)}
               onEnter={() => openByUrl()}
@@ -277,7 +276,7 @@ export function BrowseView() {
               onClick={openByUrl}
             />
           </div>
-          <div class="ds-muted" style="margin-top:2px;">
+          <div class="ds-muted ds-mt-2">
             {t("browse.searchAndGo.acceptedNotice")}
           </div>
         </div>
@@ -300,7 +299,7 @@ export function BrowseView() {
               icon={checkBtnIcon()}
               text={checkBtnText()}
             />
-            <div id="ds-browse-top-pager" class="ds-row" style="margin-left:auto;">
+            <div id="ds-browse-top-pager" class="ds-row ds-ml-auto">
               <Show when={topCfg() && topCfg()!.totalPages > 1}>
                 <Pager
                   totalPages={topCfg()!.totalPages}
@@ -322,7 +321,7 @@ export function BrowseView() {
       />
 
       {/* ── Persistent tab panes ────────────────────────────────────────── */}
-      <div id="ds-browse-content" style="margin-top:8px;">
+      <div id="ds-browse-content" class="ds-browse-content">
         <div
           id="ds-browse-tab-releases"
           class="ds-browse-tab-pane"

@@ -48,7 +48,7 @@ export function BlacklistSettings() {
       <div class="group-box-title">
         <IconText icon={<BlacklistIcon />}>{t("blacklist.settingsTitle")}</IconText>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="ds-bl-view-stack">
         <div class="ds-muted">
           {t("blacklist.settingsDescription")}
         </div>
@@ -83,8 +83,8 @@ export function BlacklistSettings() {
         </div>
 
         {/* Add Tag Input */}
-        <div style="display:flex;gap:6px;position:relative;">
-          <div style="flex:1;">
+        <div class="ds-bl-input-row">
+          <div class="ds-flex-1">
             <Typeahead
               fetcher={suggest}
               value={blInput()}
@@ -130,7 +130,7 @@ export function BlacklistSettings() {
                 <span class="ds-bl-chip">
                   <span>{item.tag_name}</span>
                   <CloseIcon
-                    style={{ cursor: "pointer", "font-size": "13px" }}
+                    class="ds-bl-chip-remove"
                     title={t("blacklist.removeTagTooltip")}
                     onClick={() => void removeTag(item.tag_name)}
                   />

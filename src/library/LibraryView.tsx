@@ -188,10 +188,7 @@ function LibraryGrid() {
 
             {/* 2. Collections & Favorites */}
             <div class="group-box ds-library-panel">
-              <div
-                class="group-box-title"
-                style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
-              >
+              <div class="group-box-title group-box-title--between">
                 <span>
                   <IconText icon={<FolderIcon />}>{t("library.collections")}</IconText>
                 </span>
@@ -227,10 +224,7 @@ function LibraryGrid() {
 
             {/* 4. Reading History */}
             <div class="group-box ds-library-panel">
-              <div
-                class="group-box-title"
-                style="display:flex;align-items:center;justify-content:space-between;width:calc(100% - 16px);right:8px;"
-              >
+              <div class="group-box-title group-box-title--between">
                 <span>
                   <IconText icon={<Icon name="clock-history" />}>{t("library.history")}</IconText>
                 </span>
@@ -386,14 +380,13 @@ function CreateCollectionModal(props: {
         </>
       }
       body={
-        <div style="padding:10px 12px 8px;display:flex;flex-direction:column;gap:6px;">
-          <label style="font-size:11px;font-weight:600;color:var(--sys-window-text,#111);">
+        <div class="ds-form-stack">
+          <label class="ds-form-label-sm">
             {t("library.createCollectionNameLabel")}
           </label>
           <InputField
             ref={(el) => { inputEl = el; }}
             placeholder={t("library.createCollectionNamePlaceholder")}
-            style="width:100%;"
             value={name()}
             onInput={(val) => setName(val)}
             onEnter={() => void submit()}
@@ -401,11 +394,9 @@ function CreateCollectionModal(props: {
         </div>
       }
       footer={
-        <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;width:100%;">
+        <div class="ds-modal-footer-actions">
           <button
-            type="button"
-            class="win-button ds-modal-cancel"
-            style="font-size:11px;padding:2px 10px;"
+            class="win-button ds-btn-sm ds-modal-cancel"
             onClick={props.onClose}
           >
             {t("common.cancel")}

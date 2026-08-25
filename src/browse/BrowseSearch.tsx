@@ -128,13 +128,12 @@ function SearchResultRow(props: {
     const extraMeta = (
       <>
         <span
-          class="ds-muted"
-          style="font-size:10px;background:var(--sys-hover-bg,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;"
+          class="ds-muted ds-kind-badge"
         >
           {item.kind}
         </span>
         <Show when={item.releasedOn}>
-          <span class="ds-muted" style="font-size:11px;">
+          <span class="ds-muted ds-text-11">
             {t("browse.search.releasedOn", { date: item.releasedOn })}
           </span>
         </Show>
@@ -179,21 +178,19 @@ function SearchResultRow(props: {
       blacklisted={isBlacklisted}
       onClick={openTaxonomicItem}
       leading={
-        <div style="font-size:15px;min-width:24px;text-align:center;">
+        <div class="ds-entity-icon">
           <EntityIcon kind={item.kind} />
         </div>
       }
       title={
-        <div class="ds-flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;">
+        <div class="ds-flex-row ds-search-title-link--row">
           <span
-            class="ds-item-title"
-            style="font-size:12px;font-weight:600;color:var(--sys-text-primary,#000);cursor:pointer;"
+            class="ds-item-title ds-search-title-link"
           >
             {decodeEntities(item.title)}
           </span>
           <span
-            class="ds-muted"
-            style="font-size:10px;background:var(--sys-hover-bg,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;"
+            class="ds-muted ds-kind-badge"
           >
             {item.kind}
           </span>
@@ -403,13 +400,13 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
   return (
     <div ref={(el) => { hostEl = el; }}>
-      <div class="group-box" style="margin-bottom:8px;padding:8px;">
+      <div class="group-box ds-search-panel">
         <div class="group-box-title">
           <IconText icon={<SearchIcon />}>{t("browse.search.panelTitle")}</IconText>
         </div>
         <div class="ds-col">
-          <div class="ds-row" style="gap:6px;">
-            <div class="ds-search-wrap" style="flex:1;position:relative;">
+          <div class="ds-flex-row">
+            <div class="ds-search-wrap ds-flex-1 ds-relative">
               <Typeahead
                 value={q()}
                 onInputValue={setQ}
@@ -470,13 +467,13 @@ export function BrowseSearch(props: BrowseSearchProps) {
           </div>
 
           <div
-            style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:8px;align-items:start;"
+            class="ds-search-grid"
           >
             <div class="ds-col-4">
               <div class="ds-label-sm">
                 <IconText icon={<Icon name="plus-circle" />}>{t("browse.search.withTags")}</IconText>
               </div>
-              <div style="position:relative;">
+              <div class="ds-relative">
                 <Typeahead
                   value={withDraft()}
                   onInputValue={setWithDraft}
@@ -506,7 +503,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               <div class="ds-label-sm">
                 <IconText icon={<Icon name="dash-circle" />}>{t("browse.search.withoutTags")}</IconText>
               </div>
-              <div style="position:relative;">
+              <div class="ds-relative">
                 <Typeahead
                   value={withoutDraft()}
                   onInputValue={setWithoutDraft}
@@ -538,7 +535,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               </div>
               <DsSelect
                 id="ds-search-sort"
-                style="padding:3px 6px;"
+                className="ds-search-sort"
                 value={sort()}
                 onChange={(val) => {
                   setSort(val as SearchSort);
@@ -556,20 +553,19 @@ export function BrowseSearch(props: BrowseSearchProps) {
         </div>
       </div>
 
-      <div id="ds-search-results-area" style="display:flex;flex-direction:column;gap:6px;">
+      <div id="ds-search-results-area" class="ds-stack-6">
         <Show when={showSpinner() && pane.loading() && pane.error() === undefined}>
           <Loading message={t("browse.search.searching")} />
         </Show>
 
         <Show when={!pane.loading() && model() !== undefined && pane.error() === undefined}>
           <div
-            class="ds-row"
-            style="justify-content:space-between;align-items:center;padding:4px 2px;border-bottom:1px solid var(--sys-border-light,#ddd);margin-bottom:6px;"
+            class="ds-row ds-results-header"
           >
-            <div style="font-size:12px;font-weight:600;">
+            <div class="ds-results-title">
               <IconText icon={<Icon name="list-stars" />}>{t("browse.search.resultsTitle")}</IconText>
               {model()!.pageData.query ? ` ${t("browse.search.resultsFor", { query: decodeEntities(model()!.pageData.query) })}` : ""}{" "}
-              <span class="ds-muted" style="font-weight:normal;font-size:11px;">
+              <span class="ds-muted ds-results-summary">
                 {t("browse.search.resultsSummary", {
                   count: model()!.pageData.items.length,
                   page: model()!.pageData.currentPage,
@@ -581,10 +577,10 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
           <Show when={model()!.pageData.items.length === 0}>
             <EmptyState cssText="padding:24px;text-align:center;">
-              <div style="font-size:14px;margin-bottom:4px;">
+              <div class="ds-empty-title">
                 <IconText icon={<SearchIcon />}>{t("browse.search.noResults")}</IconText>
               </div>
-              <div style="font-size:11px;">
+              <div class="ds-text-11">
                 {t("browse.search.noResultsHint")}
               </div>
             </EmptyState>
@@ -600,7 +596,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 cssText="margin-bottom:8px;"
               />
               <Show when={showHidden()}>
-                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+                <div class="ds-stack-6 ds-mb-8">
                   <For each={blacklistedRows()}>{renderResultRow}</For>
                 </div>
               </Show>
@@ -609,7 +605,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
             <Show
               when={model()!.blMode === "hide" && normalRows().length === 0 && blacklistedRows().length > 0}
             >
-              <div class="ds-muted" style="padding:12px 0;text-align:center;font-size:11px;">
+              <div class="ds-muted ds-empty-muted">
                 {t("browse.search.emptyBlacklist")}
               </div>
             </Show>
@@ -634,7 +630,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
         </Show>
 
         <Show when={pane.error() !== undefined}>
-          <div class="ds-row" style="padding:12px;gap:8px;align-items:center;">
+          <div class="ds-row ds-error-row">
             <span class="ds-muted">{t("browse.search.searchError", { msg: paneErrorText() })}</span>
             <IconButton
               icon={<RefreshIcon />}

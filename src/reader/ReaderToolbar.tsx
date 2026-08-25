@@ -409,12 +409,12 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               </SettingsRow>
 
               {/* Chapter Actions */}
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+              <div class="ds-reader-toolbar-grid">
                 <Show when={s.seriesPermalink()}>
                   <Button
                     icon={<StorageIcon />}
                     text={t("reader.toolbar.seriesButton")}
-                    style="height:32px;font-size:11.5px;justify-content:center;"
+                    cssText="height:32px;font-size:11.5px;justify-content:center;"
                     onClick={() => {
                       requestClose();
                       s.gotoSeries();
@@ -424,13 +424,13 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <Button
                   icon={s.isFullyCached() ? <CheckIcon /> : <CloudDownloadIcon />}
                   text={s.isFullyCached() ? t("reader.toolbar.cachedShort") : t("reader.toolbar.cacheShort")}
-                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  cssText="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => s.cacheFullChapter()}
                 />
                 <Button
                   icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
                   text={copied() ? t("common.copied") : t("reader.toolbar.copyLinkShort")}
-                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  cssText="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={async () => {
                     try {
                       if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -446,7 +446,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <Button
                   icon={<ExternalLinkIcon />}
                   text={t("reader.toolbar.openInBrowserShort")}
-                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  cssText="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => void openExternal(`${SITE_ROOT}/chapters/${s.permalink}`)}
                 />
               </div>
@@ -455,8 +455,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
             <div class="ds-reader-sheet-footer">
               <Button
                 className="primary"
-                style="min-width:70px;"
-                onClick={requestClose}
+                cssText="min-width:70px;"
                 text={t("settings.done")}
               />
             </div>
@@ -529,29 +528,24 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
         classList={{ "ds-toolbar-hidden": isMobile() && !s.toolbarVisible() }}
       >
         <Show when={isMobile()}>
-          <div class="ds-reader-nav-row nav-main" style="width:100%;justify-content:space-between;">
+          <div class="ds-reader-nav-row nav-main ds-reader-mobile-row--full">
             <IconButton
               className="ds-btn-icon"
               icon={<ArrowLeftIcon />}
               title={t("topbar.navBackTooltip")}
               onClick={handleBack}
             />
-            <div
-              style="display:flex;flex-direction:column;justify-content:center;flex:1;min-width:0;margin:0 6px;cursor:pointer;"
-              onClick={handleOpenSeries}
-              title={s.seriesPermalink() ? t("reader.toolbar.viewSeries") : undefined}
-            >
-              <span class="ds-truncate" style="font-size:13px;font-weight:600;">
+            <div class="ds-reader-mobile-title--flex" onClick={handleOpenSeries} title={s.seriesPermalink() ? t("reader.toolbar.viewSeries") : undefined}>
+              <span class="ds-truncate ds-text-13-600">
                 {decodeEntities(s.chapterTitle() || s.permalink)}
               </span>
               <Show when={s.seriesName() && s.seriesName() !== s.chapterTitle()}>
-                <span class="ds-truncate ds-muted" style="font-size:11px;display:inline-flex;align-items:center;gap:3px;">
-                  <StorageIcon />
+                <span class="ds-truncate ds-muted ds-text-11-inline">
                   {decodeEntities(s.seriesName())}
                 </span>
               </Show>
             </div>
-            <div class="ds-row" style="gap:2px;flex-shrink:0;">
+            <div class="ds-row ds-row-gap-2">
               <Show when={s.seriesPermalink()}>
                 <IconButton
                   className="ds-btn-icon"

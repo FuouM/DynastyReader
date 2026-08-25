@@ -40,7 +40,7 @@ export function Pager(props: PagerProps) {
   return (
     <div
       class="ds-row ds-pager-widget"
-      style={props.cssText ?? "align-items:center;justify-content:flex-end;gap:4px;margin-top:8px;flex-wrap:wrap;"}
+      style={props.cssText}
     >
       <Button
         className="ds-btn-icon"
@@ -57,8 +57,8 @@ export function Pager(props: PagerProps) {
         icon={<ChevronLeftIcon />}
       />
 
-      <div class="ds-row" style="align-items:center;gap:3px;margin:0 2px;">
-        <span class="ds-progress-text" style="font-size:11px;color:var(--sys-text-muted, #666);">
+      <div class="ds-row ds-pager-row">
+        <span class="ds-progress-text ds-pager-label">
           {t("dialogs.pager.pageLabel")}
         </span>
         <input
@@ -66,8 +66,7 @@ export function Pager(props: PagerProps) {
           min="1"
           max={String(Math.max(1, props.totalPages))}
           value={jumpValue()}
-          class="input-field"
-          style="width:44px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;text-align:center;font-size:11px;padding:1px 2px;line-height:20px;"
+          class="input-field ds-pager-input"
           title={t("dialogs.pager.jumpPrompt")}
           onInput={(ev) => setJumpValue((ev.target as HTMLInputElement).value)}
           onKeyDown={(ev) => {
@@ -77,7 +76,7 @@ export function Pager(props: PagerProps) {
             }
           }}
         />
-        <span class="ds-progress-text" style="font-size:11px;color:var(--sys-text-muted, #666);">
+        <span class="ds-progress-text ds-pager-label">
           {t("dialogs.pager.ofTotal", { total: props.totalPages })}
         </span>
         <Button

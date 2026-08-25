@@ -208,26 +208,25 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
               </IconText>
               <Button className="ds-btn-icon" icon={<CloseIcon />} title={t("common.close")} onClick={props.onClose} />
             </div>
-            <div style="padding:4px 8px;border-bottom:1px solid var(--sys-border-light,#eee);background:var(--sys-window-bg,#fafafa);">
-              <div class="ds-truncate" style="font-weight:600;font-size:11px;color:var(--sys-window-text,#111);" title={props.item.title}>
+            <div class="ds-add-col-header">
+              <div class="ds-truncate ds-add-col-title" title={props.item.title}>
                 {props.item.title}
               </div>
             </div>
-            <div id="ds-add-to-col-list" style="max-height:180px;overflow-y:auto;padding:3px 4px;display:flex;flex-direction:column;gap:1px;">
+            <div id="ds-add-to-col-list" class="ds-add-col-list">
               <Show when={loading()} fallback={null}>
-                <span class="ds-muted" style="font-size:10px;padding:6px;text-align:center;">{t("dialogs.addToCollection.loading")}</span>
+                <span class="ds-muted ds-add-col-status">{t("dialogs.addToCollection.loading")}</span>
               </Show>
               <Show when={loadError()}>
-                <span class="ds-muted" style="color:var(--ds-danger-text);padding:6px;font-size:10px;">{t("dialogs.addToCollection.loadError")}</span>
+                <span class="ds-muted ds-add-col-status--error">{t("dialogs.addToCollection.loadError")}</span>
               </Show>
               <For each={rows()}>
                 {(col) => (
                   <div
-                    class={`ds-item${col.active ? " active" : ""}`}
+                    class={`ds-item ds-add-col-row${col.active ? " active" : ""}`}
                     role="checkbox"
                     tabIndex={0}
                     aria-checked={col.active}
-                    style="display:flex;align-items:center;justify-content:space-between;padding:3px 6px;border-radius:2px;cursor:pointer;user-select:none;"
                     onClick={() => void toggle(col)}
                     onKeyDown={(ev) => {
                       if (ev.key === "Enter" || ev.key === " ") {
@@ -236,32 +235,28 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                       }
                     }}
                   >
-                    <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
+                    <div class="ds-add-col-row-main">
                       <Icon
                         name={col.active ? "check-circle-fill" : "circle"}
-                        style={{
-                          color: col.active ? "var(--sys-primary,#0078d4)" : "var(--sys-text-muted,#888)",
-                          "font-size": "12px",
-                          "flex-shrink": "0",
-                        }}
+                        class={col.active ? "ds-add-col-icon--active" : "ds-add-col-icon--inactive"}
                       />
-                      <span class="ds-truncate" style={col.is_default ? "font-weight:600;font-size:11px;" : "font-size:11px;"}>
+                      <span class={`ds-truncate ds-text-11${col.is_default ? " ds-font-600" : ""}`}>
                         <Show when={col.is_default}>
-                          <StarIcon filled={true} style={{ color: "#d97706", "font-size": "10px", "margin-right": "2px" }} />
+                          <StarIcon filled={true} class="ds-add-col-star" />
                         </Show>
                         {col.name}
                       </span>
                     </div>
-                    <span class="ds-muted" style="font-size:10px;">{col.itemCount ?? 0}</span>
+                    <span class="ds-muted ds-text-10">{col.itemCount ?? 0}</span>
                   </div>
                 )}
               </For>
             </div>
-            <div style="padding:5px 6px;border-top:1px solid var(--sys-border-light,#ddd);background:var(--sys-control-bg,#f9f9f9);display:flex;gap:3px;">
+            <div class="ds-add-col-footer">
               <InputField
                 id="ds-add-to-col-new-input"
                 placeholder={t("dialogs.addToCollection.createPrompt")}
-                style="flex:1;"
+                wrapperClass="ds-flex-1"
                 value={newName()}
                 onInput={(val) => setNewName(val)}
                 onEnter={() => void handleCreate()}
@@ -270,7 +265,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
                 className="ds-btn-sm"
                 id="ds-add-to-col-create-btn"
                 disabled={creating()}
-                icon={<AddIcon style={{ "font-size": "10px" }} />}
+                icon={<AddIcon class="ds-add-col-create-icon" />}
                 text={t("common.create")}
                 onClick={() => void handleCreate()}
               />

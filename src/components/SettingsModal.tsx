@@ -98,14 +98,8 @@ export function SettingsModal(props: SettingsModalProps) {
       width={680}
       onClose={props.onClose}
       footer={
-        <div style="display:flex;justify-content:flex-end;width:100%;">
-          <button
-            type="button"
-            class="win-button primary ds-modal-done"
-            id="ds-settings-done-btn"
-            style="min-width:70px;"
-            onClick={props.onClose}
-          >
+        <div class="ds-modal-footer-end">
+          <button type="button" class="win-button primary ds-modal-done" id="ds-settings-done-btn" style="min-width:70px;" onClick={props.onClose}>
             {t("settings.done")}
           </button>
         </div>

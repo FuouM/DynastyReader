@@ -43,7 +43,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
       leading={
         <>
           <Show when={props.cover !== undefined}>
-            <div style="flex-shrink:0;cursor:pointer;">
+            <div class="ds-cover-wrap--shrink">
               <Cover
                 path={props.cover ?? null}
                 alt={props.coverAlt || props.title}
@@ -54,31 +54,18 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
           </Show>
 
           <Show when={props.icon}>
-            <i
-              class={`bi ${props.icon}`}
-              style={{
-                color: props.iconColor || "var(--sys-primary,#0078d4)",
-                "font-size": "14px",
-                "flex-shrink": 0,
-              }}
-            ></i>
+            <i class={`bi ${props.icon} ds-icon-14`} style={{ color: props.iconColor || "var(--sys-primary,#0078d4)" }}></i>
           </Show>
         </>
       }
       title={
-        <div class="ds-flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;">
-          <span
-            class="ds-item-title"
-            style="font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:4px;"
-          >
+        <div class="ds-flex-row ds-flex-wrap-6">
+          <span class="ds-item-title ds-item-title--row">
             <span>{decodeEntities(props.title)}</span>
             <OfflineBadge when={props.isFullyCached} />
           </span>
           <Show when={props.badge}>
-            <span
-              class="ds-muted"
-              style="font-size:10px;background:var(--sys-control-bg,#eaeaea);padding:1px 5px;border-radius:2px;text-transform:capitalize;"
-            >
+            <span class="ds-muted ds-kind-badge">
               {props.badge}
             </span>
           </Show>

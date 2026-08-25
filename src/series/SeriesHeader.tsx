@@ -29,7 +29,7 @@ function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {
       const kids = () => renderSanitizedNodes(Array.from(el.childNodes));
       if (tag === "p") {
         const children = kids();
-        if (children.length > 0) out.push(<p style="margin:4px 0;">{children}</p>);
+        if (children.length > 0) out.push(<p class="ds-series-desc-p">{children}</p>);
       } else if (tag === "br") {
         out.push(<br />);
       } else if (tag === "a") {
@@ -39,7 +39,6 @@ function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {
           out.push(
             <a
               class="ds-external-link"
-              style="color:var(--sys-primary,#0078d4);text-decoration:underline;cursor:pointer;word-break:break-all;"
               title={href}
               onClick={(ev) => {
                 ev.preventDefault();
@@ -120,16 +119,15 @@ export function SeriesHeader(props: SeriesHeaderProps) {
         placeholderClass="ds-cover-placeholder"
       />
       <div class="ds-fill">
-        <div style="font-size:14px;font-weight:600;">{decodeEntities(props.series.name)}</div>
+        <div class="ds-series-name">{decodeEntities(props.series.name)}</div>
         <div class="ds-muted">{props.series.type ?? "Series"}</div>
         <Show when={props.series.description}>
           <SanitizedDescription html={props.series.description!} />
         </Show>
         <Show when={props.series.link}>
-          <div class="ds-series-desc" style="margin:4px 0;">
+          <div class="ds-series-desc ds-series-desc-p">
             <a
               class="ds-external-link"
-              style="color:var(--sys-primary,#0078d4);text-decoration:underline;cursor:pointer;word-break:break-all;"
               title={props.series.link!}
               onClick={(ev) => {
                 ev.preventDefault();

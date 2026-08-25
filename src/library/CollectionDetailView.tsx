@@ -144,20 +144,20 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
           </div>
           <InputField
             placeholder={t("library.filterCollectionPlaceholder")}
-            style="width:220px;max-width:100%;"
+            wrapperClass="ds-collection-filter"
             value={filter()}
             onInput={(val) => setFilter(val)}
           />
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow-y:auto;">
+        <div class="ds-collection-list">
           <Show when={totalItems() === 0}>
-            <div class="ds-muted" style="padding:16px 8px;font-size:11px;">
+            <div class="ds-muted ds-collection-empty">
               {t("library.emptyCollectionNotice")}
             </div>
           </Show>
           <Show when={totalItems() > 0 && filteredItems().length === 0}>
-            <div class="ds-muted" style="padding:16px 8px;text-align:center;font-size:11px;">
+            <div class="ds-muted ds-collection-empty--center">
               {t("library.noMatchingCollectionItems", { query: filter() })}
             </div>
           </Show>

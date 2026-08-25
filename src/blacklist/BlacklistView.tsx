@@ -92,7 +92,7 @@ export function BlacklistView() {
           <div class="group-box-title">
             <IconText icon={<BlacklistIcon filled={false} />}>{t("blacklist.title")}</IconText>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="ds-stack-8">
             <div class="ds-muted">
               {t("blacklist.description")}
             </div>
@@ -127,7 +127,7 @@ export function BlacklistView() {
         </div>
 
         <div class="group-box">
-          <div class="group-box-title" style="justify-content:space-between;">
+          <div class="group-box-title group-box-title--between">
             <IconText icon={<ListCheckIcon />}>{t("blacklist.seriesTitle", { count: data()!.length })}</IconText>
           </div>
 

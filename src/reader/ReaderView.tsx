@@ -34,14 +34,14 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
   onCleanup(() => session.dispose());
 
   return (
-    <div style="width:100%;height:100%;display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+    <div class="ds-reader-view">
       <Show when={session.loading()}>
         <Loading />
       </Show>
       <Show when={session.error()}>
         {(msg) => (
-          <div style="padding:24px;text-align:center;">
-            <div style="color:var(--sys-error,#d13438);margin-bottom:12px;">{msg()}</div>
+          <div class="ds-reader-empty">
+            <div class="ds-reader-error">{msg()}</div>
             <IconButton
               icon={<RefreshIcon />}
               text={t("reader.session.retry")}
@@ -51,7 +51,7 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
         )}
       </Show>
       <Show when={session.empty()}>
-        <div class="ds-muted" style="padding:24px;text-align:center;">
+        <div class="ds-muted ds-reader-empty">
           {t("reader.session.empty")}
         </div>
       </Show>

@@ -98,15 +98,15 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
             style={positionStyle()}
             onClick={(ev) => ev.stopPropagation()}
           >
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--sys-control-bg,#f0f0f0);border-bottom:1px solid var(--sys-border-light,#ddd);font-weight:600;font-size:10px;color:var(--sys-text-secondary,#555);">
-              <span style="display:flex;align-items:center;gap:4px;">
+            <div class="ds-history-header">
+              <span class="ds-history-header-label">
                 {props.direction === "back" ? <ArrowLeftIcon /> : <ArrowRightIcon />}
                 <span>{props.direction === "back" ? t("topbar.backHistoryTitle") : t("topbar.forwardHistoryTitle")}</span>
               </span>
               <span>{t("topbar.historyEntries", { count: items().length })}</span>
             </div>
 
-            <div style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;padding:2px 0;">
+            <div class="ds-history-list">
               <For each={items()}>
                 {(entry) => {
                   const meta = routeLabel(entry.route);
@@ -114,29 +114,22 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
                   return (
                     <div
                       class="ds-history-item ds-item"
-                      style="display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;border:none;border-bottom:1px solid var(--sys-border-light,#f0f0f0);margin-bottom:0;"
                       onClick={() => selectItem(entry.index)}
                     >
                       <Icon
                         name={iconName}
-                        style={{
-                          "font-size": "13px",
-                          color: "var(--sys-primary,#0078d4)",
-                          "flex-shrink": 0,
-                        }}
+                        class="ds-history-icon"
                       />
-                      <div class="ds-fill" style="overflow:hidden;line-height:1.2;">
+                      <div class="ds-fill ds-history-item-main">
                         <div
-                          class="ds-truncate"
-                          style="font-weight:600;font-size:11px;color:var(--sys-text-primary,#111);"
+                          class="ds-truncate ds-history-item-title"
                           title={meta.title}
                         >
                           {meta.title}
                         </div>
                         <Show when={meta.subtitle}>
                           <div
-                            class="ds-truncate"
-                            style="font-size:10px;color:var(--sys-text-muted,#777);"
+                            class="ds-truncate ds-history-item-sub"
                           >
                             {meta.subtitle}
                           </div>

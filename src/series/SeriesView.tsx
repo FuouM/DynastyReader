@@ -389,10 +389,7 @@ function SeriesBody(props: {
   return (
     <>
       <Show when={props.data.blacklisted}>
-        <div
-          class="ds-row ds-blacklist-notice"
-          style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);border-radius:3px;padding:6px 12px;margin-bottom:10px;font-size:11px;"
-        >
+        <div class="ds-row ds-blacklist-notice">
           <BlacklistIcon
             filled={true}
             style={{

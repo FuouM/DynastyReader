@@ -240,11 +240,10 @@ export function FeedItemRow(props: FeedItemRowProps) {
         />
       }
       title={
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;width:100%;">
-          <div class="ds-flex-row" style="align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0;">
+        <div class="ds-feed-title-row">
+          <div class="ds-flex-row ds-feed-title-main">
             <span
-              class="ds-item-title"
-              style="font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"
+              class="ds-item-title ds-feed-title"
               onClick={(ev) => {
                 ev.stopPropagation();
                 guardedOpen(ch.title, openMainTarget);
@@ -255,7 +254,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
             </span>
 
             <Show when={ch.series && ch.series !== ch.title}>
-              <span class="ds-muted" style="font-size:11px;">{t("common.in")}</span>
+              <span class="ds-muted ds-text-11">{t("common.in")}</span>
               <span
                 class="ds-series-link"
                 title={t("browse.feed.goToSeriesTooltip", { series: decodeEntities(ch.series!) })}

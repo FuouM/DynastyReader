@@ -24,13 +24,13 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
       backdropId="ds-trigger-warning-backdrop"
       width={380}
       title={
-        <span style="color:#d9534f;">
+        <span class="ds-trigger-title--warn">
           <IconText icon={<WarningIcon />}>{t("dialogs.triggerWarning.title")}</IconText>
         </span>
       }
       onClose={props.onClose}
       footer={
-        <div style="display:flex;justify-content:flex-end;gap:8px;width:100%;">
+        <div class="ds-modal-footer-actions">
           <DsButton
             className="ds-modal-cancel"
             cssText="min-width:70px;"
@@ -53,22 +53,22 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
       }
     >
       <div class="ds-col">
-        <div class="ds-label" style="word-break:break-word;">
+        <div class="ds-label ds-trigger-label">
           {props.title}
         </div>
-        <div style="font-size:11px;color:var(--sys-text-muted,#555);line-height:1.4;">
+        <div class="ds-trigger-message">
           {t("dialogs.triggerWarning.message", { title: props.title })}
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow-y:auto;padding:2px 0;">
+        <div class="ds-trigger-tags">
           <For each={props.matchedTags}>
             {(tag) => (
-              <span class="tag-pill" style="background:var(--ds-warn-bg);border:1px solid var(--ds-warn-border);color:var(--ds-warn-text);font-weight:600;font-size:11px;padding:2px 7px;">
+              <span class="tag-pill ds-chip-warn-inline">
                 <BlacklistIcon filled={true} /> {tag}
               </span>
             )}
           </For>
         </div>
-        <div class="ds-muted" style="font-size:11px;color:#777;margin-top:2px;">
+        <div class="ds-muted ds-trigger-proceed">
           {t("dialogs.triggerWarning.proceedPrompt")}
         </div>
       </div>

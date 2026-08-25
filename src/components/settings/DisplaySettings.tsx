@@ -40,7 +40,7 @@ export function DisplaySettings() {
             />
             <DsSelect
               id="ds-settings-scale-select"
-              style="min-width:115px;"
+              className="ds-select--w115"
               value={String(scale())}
               onChange={(val) => {
                 const num = parseFloat(val);
@@ -105,8 +105,7 @@ export function DisplaySettings() {
         >
           <ToggleButton
             id="ds-settings-covers-toggle"
-            className="ds-toggle-btn"
-            style="font-size:11px;padding:2px 10px;min-width:90px;"
+            className="ds-toggle-btn ds-toggle--w90"
             value={coversEnabled()}
             icon={<Icon name="eye-slash" />}
             activeIcon={<ImageIcon />}
@@ -123,7 +122,7 @@ export function DisplaySettings() {
         >
           <DsSelect
             id="ds-settings-language-select"
-            style="min-width:115px;"
+            className="ds-select--w115"
             value={locale()}
             onChange={(val) => setLocale(val as Locale)}
           >

@@ -41,11 +41,7 @@ export function Button(props: ButtonProps) {
     return hasExplicitSize ? props.className : `${defaultClass} ${props.className}`;
   };
 
-  const iconSpan = props.icon ? (
-    <span class="ds-btn-icon-wrap" style="display:inline-flex; align-items:center; line-height:1;">
-      {props.icon}
-    </span>
-  ) : null;
+  const iconSpan = props.icon ? <span class="ds-btn-icon-wrap">{props.icon}</span> : null;
   const content = props.text !== undefined && props.text !== "" ? (
     <span class={props.textClass ?? "ds-btn-text"}>{props.text}</span>
   ) : props.children !== undefined ? (
@@ -188,11 +184,8 @@ export function DsSelect(props: DsSelectProps) {
  */
 export function IconText(props: IconTextProps) {
   return (
-    <span
-      class={`ds-icon-text${props.class ? ` ${props.class}` : ""}`}
-      style={props.style}
-    >
-      <span style="display:inline-flex;align-items:center;">{props.icon}</span>
+    <span class={`ds-icon-text${props.class ? ` ${props.class}` : ""}`} style={props.style}>
+      <span class="ds-icon-inline">{props.icon}</span>
       <span>{props.children}</span>
     </span>
   );

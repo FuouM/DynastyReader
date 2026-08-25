@@ -323,7 +323,7 @@ function FeedStatusFooter(props: {
           icon={checkBtnIcon()}
           text={checkBtnText()}
         />
-        <div class="ds-feed-status-pager-wrap" style="margin-left:auto;">
+        <div class="ds-feed-status-pager-wrap ds-ml-auto">
           <Show when={props.pager}>{props.pager}</Show>
         </div>
         <IconButton
@@ -583,7 +583,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
             onToggle={() => setShowHidden(!showHidden())}
           />
           <Show when={showHidden()}>
-            <div class="ds-col-4" style="margin-bottom:8px;">
+            <div class="ds-col-4 ds-mb-8">
               <For each={model()!.blacklistedRows}>{renderRow}</For>
             </div>
           </Show>
@@ -592,7 +592,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
         <Show
           when={model()!.blMode === "hide" && normalRows().length === 0 && model()!.blacklistedRows.length > 0}
         >
-          <div class="ds-muted" style="padding:12px 0;text-align:center;font-size:11px;">
+          <div class="ds-muted ds-empty-muted">
             {t("browse.feed.emptyBlacklist")}
           </div>
         </Show>

@@ -217,14 +217,14 @@ export function CacheView() {
   return (
     <div
       id="ds-cache-view-container"
-      style="display:flex;flex-direction:column;gap:12px;padding:8px 4px;width:100%;box-sizing:border-box;"
+      class="ds-cache-view"
     >
       <Show when={data.loading && data() === undefined}>
         <Loading />
       </Show>
 
       <Show when={data.error !== undefined}>
-        <div class="ds-row" style="padding:12px;">
+        <div class="ds-error-row">
           <span class="ds-muted">
             {t("cache.statsLoadError", { msg: errorMessage(data.error) })}
           </span>
@@ -284,7 +284,7 @@ function CacheBody(props: {
         <div class="group-box-title">
           <IconText icon={<ChartIcon />}>{t("cache.overviewTitle")}</IconText>
         </div>
-        <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="ds-stats-grid ds-stats-grid--4">
           <StatCard value={formatBytes(stats.totalSizeBytes)} label={t("cache.diskFootprint")} />
           <StatCard value={stats.totalCachedPages} label={t("cache.pagesCached")} />
           <StatCard value={stats.totalCachedChapters} label={t("cache.chaptersCached")} />
@@ -296,7 +296,7 @@ function CacheBody(props: {
         <div class="group-box-title">
           <IconText icon={<DatabaseIcon />}>{t("cache.dbStatsTitle")}</IconText>
         </div>
-        <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="ds-stats-grid ds-stats-grid--4">
           <StatCard value={formatBytes(dbStats.file.totalSizeBytes)} label={t("cache.dbSizeTotal")} />
           <StatCard value={formatBytes(dbStats.file.dbSizeBytes)} label={t("cache.dbFile")} />
           <StatCard value={dbStats.totalRows} label={t("cache.totalRecords")} />
@@ -314,7 +314,7 @@ function CacheBody(props: {
           <span>{t("cache.tagBlacklistCount")} <strong>{dbStats.counts.tagBlacklist}</strong></span>
           <span>{t("cache.seriesBlacklistCount")} <strong>{dbStats.counts.seriesBlacklist}</strong></span>
         </div>
-        <div class="ds-cache-actions" style="margin-top:10px;">
+        <div class="ds-cache-actions ds-cache-actions--mt">
           <IconButton icon={<DatabaseIcon />} text={t("cache.dbBackup")} title={t("cache.dbBackupTooltip")} onClick={() => void props.backupDb()} />
           <IconButton icon={<RefreshIcon />} text={t("cache.dbRestore")} title={t("cache.dbRestoreTooltip")} onClick={() => void props.restoreFromPicker()} />
           <ConfirmDeleteButton
@@ -329,13 +329,13 @@ function CacheBody(props: {
         <div class="group-box-title">
           <IconText icon={<TrafficIcon />}>{t("cache.trafficTitle")}</IconText>
         </div>
-        <div class="ds-stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="ds-stats-grid ds-stats-grid--4">
           <StatCard value={formatBytes(traffic().bytesDownloaded)} label={t("cache.sessionDownloaded", { count: traffic().networkRequests })} />
           <StatCard value={formatBytes(traffic().bytesSaved)} label={t("cache.sessionSaved", { count: traffic().cacheHits })} />
           <StatCard value={formatBytes(traffic().lifetime.bytesDownloaded)} label={t("cache.lifetimeDownloaded", { count: traffic().lifetime.networkRequests })} />
           <StatCard value={formatBytes(traffic().lifetime.bytesSaved)} label={t("cache.lifetimeSaved", { count: traffic().lifetime.cacheHits })} />
         </div>
-        <div class="ds-cache-actions" style="margin-top:10px;">
+        <div class="ds-cache-actions ds-cache-actions--mt">
           <ConfirmDeleteButton
             icon={<TrashIcon />}
             text={t("cache.resetLifetimeStatsButton")}
@@ -372,7 +372,7 @@ function CacheBody(props: {
           />
         </div>
       </div>
-      <div class="group-box" style="display:flex;flex-direction:column;">
+      <div class="group-box ds-flex-col">
         <div class="group-box-title">
           <IconText icon={<StorageIcon />}>{t("cache.cachedWorksTitle", { count: groups.length })}</IconText>
         </div>
@@ -381,15 +381,15 @@ function CacheBody(props: {
           when={groups.length === 0}
           fallback={
             <>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+              <div class="ds-cache-filter-bar">
                 <InputField
                   placeholder={t("cache.filterPlaceholder")}
-                  style="flex:1;min-width:200px;"
+                  wrapperClass="ds-cache-input-flex"
                   value={props.filterText()}
                   onInput={(val) => props.setFilterText(val)}
                 />
                 <div class="ds-flex-row">
-                  <span class="ds-item-meta" style="font-size:11px;white-space:nowrap;">
+                  <span class="ds-item-meta ds-nowrap">
                     {t("cache.sortBy")}
                   </span>
                   <DsSelect
@@ -407,7 +407,7 @@ function CacheBody(props: {
                 </div>
               </div>
 
-              <div class="ds-cache-list" style="max-height:none;">
+              <div class="ds-cache-list ds-cache-list--auto">
                 <Show
                   when={props.filtered().length > 0}
                   fallback={
@@ -418,7 +418,7 @@ function CacheBody(props: {
                 >
                   <For each={props.filtered()}>
                     {(item) => (
-                      <div class="ds-cache-item" style="padding:8px 10px;">
+                      <div class="ds-cache-item">
                         <HydratedCover
                           path={item.coverPath}
                           coverKey={item.seriesName}
@@ -427,7 +427,7 @@ function CacheBody(props: {
                         />
                         <div class="ds-fill">
                           <div
-                            style="font-size:12px;font-weight:600;cursor:pointer;"
+                            class="ds-cache-item-title"
                             onClick={() => props.openItem(item)}
                           >
                             {decodeEntities(item.seriesName)}

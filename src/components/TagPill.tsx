@@ -38,12 +38,7 @@ export function TagPill(props: TagPillProps) {
     <span
       role="button"
       tabindex="0"
-      class={tagClass(props.type, props.name)}
-      style={
-        isCompact
-          ? "font-size:10px;padding:1px 6px;border-radius:2px;cursor:pointer;"
-          : "font-size:10px;padding:2px 6px;border-radius:2px;cursor:pointer;"
-      }
+      class={`${tagClass(props.type, props.name)} ${isCompact ? "ds-tag-pill--compact" : "ds-tag-pill--normal"}`}
       title={t("series.clickToOpen", { type: props.type, name: props.name })}
       onClick={activate}
       onKeyDown={(ev) => {

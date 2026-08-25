@@ -18,18 +18,15 @@ export function SeriesTaggables(props: SeriesTaggablesProps) {
 
   return (
     <Show when={taggables() && taggables()!.length > 0}>
-      <div class="group-box" style="margin-top:10px;">
+      <div class="group-box ds-mt-10">
         <div class="group-box-title">
           <IconText icon={<StorageIcon />}>{t("series.relatedAnthologies", { count: taggables()!.length })}</IconText>
         </div>
-        <div
-          style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:6px;margin-top:4px;"
-        >
+        <div class="ds-taggables-grid">
           <For each={taggables()}>
             {(tg) => (
               <div
-                class="ds-row"
-                style="padding:5px 8px;background:var(--sys-bg-active, #f5f5f5);border:1px solid var(--sys-border-light, #e0e0e0);border-radius:3px;cursor:pointer;align-items:flex-start;gap:6px;"
+                class="ds-row ds-taggable-card"
                 title={decodeEntities(tg.name)}
                 onClick={() =>
                   navigate({
@@ -46,12 +43,10 @@ export function SeriesTaggables(props: SeriesTaggablesProps) {
                     "flex-shrink": 0,
                   }}
                 />
-                <span
-                  style="flex:1;min-width:0;line-height:1.3;word-break:break-word;font-size:11px;font-weight:500;"
-                >
+                <span class="ds-taggable-title">
                   {decodeEntities(tg.name)}
                 </span>
-                <span class="ds-muted" style="font-size:10px;flex-shrink:0;margin-top:1px;">
+                <span class="ds-muted ds-taggable-type">
                   {tg.type}
                 </span>
               </div>

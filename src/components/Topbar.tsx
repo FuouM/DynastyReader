@@ -161,7 +161,7 @@ export function Topbar() {
               />
             </button>
           </Show>
-          <span id="ds-title" style="margin-left:8px;">
+          <span id="ds-title">
             {title()}
           </span>
           <Show when={banner() !== null}>

@@ -139,20 +139,20 @@ export function HotkeysSection(props: HotkeysSectionProps) {
   };
 
   return (
-    <div style="display:flex;flex-direction:column;gap:0;height:100%;">
+    <div class="ds-hotkey-view">
       {/* Sticky Filter & Reset Header */}
       <div
-        style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--sys-control-bg);z-index:10;padding:2px 0 6px 0;flex-shrink:0;"
+        class="ds-hotkey-header"
       >
         <InputField
-          wrapperStyle="flex:1;"
+          wrapperClass="ds-flex-1"
           placeholder={t("settings.hotkeys.searchPlaceholder")}
           value={search()}
           onInput={(val) => setSearch(val)}
           onEscape={() => { if (search()) { setSearch(""); } }}
         />
 
-        <div style="display:flex;align-items:center;gap:6px;">
+        <div class="ds-hotkey-actions">
           <Show
             when={resetConfirm()}
             fallback={
@@ -191,9 +191,9 @@ export function HotkeysSection(props: HotkeysSectionProps) {
           const targetDef = () => HOTKEY_DEFINITIONS_MAP[pending().targetActionId];
           return (
             <div
-              style="display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:var(--ds-status-stale-bg,#fffbeb);border:1px solid var(--ds-status-stale-border,#fde68a);border-radius:3px;font-size:11px;color:var(--ds-status-stale-text,#92400e);"
+              class="ds-conflict-card"
             >
-              <div style="display:flex;align-items:center;gap:6px;font-weight:600;">
+              <div class="ds-conflict-title">
                 <IconText icon={<Icon name="exclamation-triangle" />}>{t("settings.hotkeys.conflictDetected")}</IconText>
               </div>
               <div>
@@ -202,7 +202,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                   action: existingDef()?.label ?? pending().conflict.actionId,
                 })}
               </div>
-              <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:2px;">
+              <div class="ds-conflict-actions">
                 <Button
                   cssText="font-size:10px;padding:2px 8px;"
                   text={t("common.cancel")}
@@ -221,7 +221,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
       </Show>
 
       {/* Categorized Hotkeys Table */}
-      <div style="flex:1;overflow-y:auto;min-height:0;">
+      <div class="ds-hotkey-scroll">
       <For each={categories()}>
         {(category) => {
           const items = () =>
@@ -229,7 +229,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
 
           return (
             <Show when={items().length > 0}>
-              <div style="margin-top:4px;">
+              <div class="ds-hotkey-category">
                 <div
                   class="ds-section-title"
                 >
@@ -253,7 +253,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                               fallback={
                                 <div class="ds-key-recording">
                                   <span>{t("settings.hotkeys.pressKeys")}</span>
-                                  <span class="ds-muted" style="color:inherit;opacity:0.7;">({t("settings.hotkeys.cancelEsc")})</span>
+                                  <span class="ds-muted ds-key-recording-esc">({t("settings.hotkeys.cancelEsc")})</span>
                                 </div>
                               }
                             >
@@ -307,8 +307,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
 
       <Show when={filteredDefs().length === 0}>
         <div
-          class="ds-muted"
-          style="text-align:center;padding:24px;font-size:12px;color:var(--sys-text-muted,#666);"
+          class="ds-muted ds-hotkey-no-matches"
         >
           {t("settings.hotkeys.noMatches", { query: search() })}
         </div>

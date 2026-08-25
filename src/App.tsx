@@ -76,36 +76,20 @@ export function App() {
   });
 
   return (
-    <div
-      id="ds-root"
-      data-mobile={isMobile() ? "1" : undefined}
-      style={{ zoom: String(uiScale()) }}
-    >
+    <div id="ds-root" data-mobile={isMobile() ? "1" : undefined} style={{ zoom: String(uiScale()) }}>
       <GlobalShortcuts />
       <Topbar />
       <div id="ds-view">
-        <div
-          id="ds-pane-browse"
-          style={{ display: route().view === "browse" ? "flex" : "none" }}
-        >
+        <div id="ds-pane-browse" classList={{ "ds-pane-hidden": route().view !== "browse" }}>
           <Dynamic component={viewComponents.browse} route={route()} />
         </div>
-        <div
-          id="ds-pane-library"
-          style={{ display: route().view === "library" ? "flex" : "none" }}
-        >
+        <div id="ds-pane-library" classList={{ "ds-pane-hidden": route().view !== "library" }}>
           <Dynamic component={viewComponents.library} route={route()} />
         </div>
         <Show when={!isPersistentView()} keyed>
           {(show) =>
             show ? (
-              <div
-                id="ds-pane-dynamic"
-                style={{
-                  padding: route().view === "reader" ? "0" : "8px",
-                  overflow: route().view === "reader" ? "hidden" : "auto",
-                }}
-              >
+              <div id="ds-pane-dynamic" classList={{ "ds-pane-dynamic--reader": route().view === "reader" }}>
                 <Suspense fallback={<Loading />}>
                   <Dynamic component={viewComponents[route().view]} route={route()} />
                 </Suspense>
