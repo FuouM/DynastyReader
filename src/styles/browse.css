@@ -100,13 +100,7 @@
   flex: 1 1 auto;
   min-width: 0;
 }
-
 @media (max-width: 680px) {
-  .ds-feed-item {
-    gap: 8px;
-    padding: 5px 6px;
-  }
-
   .ds-action-btn-text {
     display: none !important;
   }
@@ -140,8 +134,6 @@
     font-size: 9.5px;
   }
 }
-
-
 .ds-feed-cover {
   width: 42px;
   height: 58px;

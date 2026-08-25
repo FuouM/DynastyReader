@@ -26,30 +26,33 @@ export function ChapterRow(props: {
   seriesName: string;
   isReadInHistory: boolean;
 }) {
-  const isCompleted = props.prog?.completed === 1;
-  const isRead = isCompleted || props.isReadInHistory;
-  const isFullyCached =
+  const isCompleted = () => props.prog?.completed === 1;
+  const isRead = () => isCompleted() || props.isReadInHistory;
+  const isFullyCached = () =>
     props.cachedCount > 0 &&
     (props.prog && props.prog.page_total > 0 ? props.cachedCount >= props.prog.page_total : true);
 
-  const badges: string[] = [];
-  if (isCompleted) {
-    badges.push(`✓ ${t("series.completedBadge")}`);
-  } else if (props.prog && props.prog.page_index > 0) {
-    badges.push(t("series.pageProgress", { current: props.prog.page_index + 1, total: props.prog.page_total }));
-  } else if (props.isReadInHistory) {
-    badges.push(`✓ ${t("series.readBadge")}`);
-  }
-  if (props.cachedCount > 0) {
-    badges.push(t("series.cachedBadge", { count: props.cachedCount }));
-  }
-  if (props.ch.released_on) {
-    badges.push(props.ch.released_on);
-  }
+  const badges = () => {
+    const list: string[] = [];
+    if (isCompleted()) {
+      list.push(`✓ ${t("series.completedBadge")}`);
+    } else if (props.prog && props.prog.page_index > 0) {
+      list.push(t("series.pageProgress", { current: props.prog.page_index + 1, total: props.prog.page_total }));
+    } else if (props.isReadInHistory) {
+      list.push(`✓ ${t("series.readBadge")}`);
+    }
+    if (props.cachedCount > 0) {
+      list.push(t("series.cachedBadge", { count: props.cachedCount }));
+    }
+    if (props.ch.released_on) {
+      list.push(props.ch.released_on);
+    }
+    return list;
+  };
 
   return (
     <div
-      class={`ds-chapter-row${isRead ? " ds-chapter-read" : ""}`}
+      class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
       onClick={() =>
         navigate({
           view: "reader",
@@ -64,9 +67,11 @@ export function ChapterRow(props: {
     >
       <div class="ds-chapter-title ds-inline-flex-center-4">
         <span>{decodeEntities(props.ch.title)}</span>
-        <OfflineBadge when={isFullyCached} />
+        <OfflineBadge when={isFullyCached()} />
       </div>
-      {badges.length > 0 ? <div class="ds-chapter-badge">{badges.join(" · ")}</div> : null}
+      <Show when={badges().length > 0}>
+        <div class="ds-chapter-badge">{badges().join(" · ")}</div>
+      </Show>
     </div>
   );
 }

@@ -40,7 +40,7 @@ function DirectoryRow(props: {
   blMode: BlacklistMode;
   onWarn: (title: string, matchedTags: string[], proceed: () => void) => void;
 }) {
-  const isBl = props.kind === "series" && isSeriesBlacklisted(props.entry.permalink, props.entry.name);
+  const isBl = () => props.kind === "series" && isSeriesBlacklisted(props.entry.permalink, props.entry.name);
 
   const openEntry = (): void => {
     if (props.kind === "series") {
@@ -50,7 +50,7 @@ function DirectoryRow(props: {
           seriesPermalink: props.entry.permalink,
           seriesName: props.entry.name,
         });
-      if (isBl && props.blMode === "warn") {
+      if (isBl() && props.blMode === "warn") {
         props.onWarn(props.entry.name, [props.entry.name], openSeries);
       } else {
         openSeries();
@@ -71,7 +71,7 @@ function DirectoryRow(props: {
       title={
         <span class="ds-item-title ds-inline-flex-center-6">
           {decodeEntities(props.entry.name)}
-          <Show when={isBl}>
+          <Show when={isBl()}>
             <span
               class="ds-muted ds-warn-badge"
             >

@@ -3,6 +3,8 @@
  * Deduplicates the listener/revision boilerplate across repositories.
  */
 
+import { createSignal } from "solid-js";
+
 export type ChangeListener = () => void;
 
 export interface ChangeNotifier {
@@ -12,10 +14,10 @@ export interface ChangeNotifier {
 }
 
 export function createChangeNotifier(name = "change-notifier"): ChangeNotifier {
-  let revision = 0;
+  const [revision, setRevision] = createSignal(0);
   const listeners: ChangeListener[] = [];
 
-  const getRevision = (): number => revision;
+  const getRevision = (): number => revision();
 
   const onChanged = (fn: ChangeListener): (() => void) => {
     listeners.push(fn);
@@ -26,7 +28,7 @@ export function createChangeNotifier(name = "change-notifier"): ChangeNotifier {
   };
 
   const notifyChanged = (): void => {
-    revision++;
+    setRevision((r) => r + 1);
     for (const fn of [...listeners]) {
       try {
         fn();

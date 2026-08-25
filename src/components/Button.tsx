@@ -31,22 +31,28 @@ export interface ButtonProps {
  * - Button with text / children: "ds-btn-compact"
  */
 export function Button(props: ButtonProps) {
-  const defaultClass = props.icon && !props.text && !props.children
+  const defaultClass = () => (props.icon && !props.text && !props.children
     ? "ds-btn-icon"
-    : "ds-btn-compact";
+    : "ds-btn-compact");
 
   const resolvedClass = () => {
-    if (!props.className) return defaultClass;
+    if (!props.className) return defaultClass();
     const hasExplicitSize = /(?:^|\s)(ds-btn-(?:compact|sm|xs|icon|icon-xs|icon-sm)|ds-segmented-btn|ds-subtab|ds-bn-tab|ds-nav-btn|ds-modal-close)(?:$|\s)/.test(props.className);
-    return hasExplicitSize ? props.className : `${defaultClass} ${props.className}`;
+    return hasExplicitSize ? props.className : `${defaultClass()} ${props.className}`;
   };
 
-  const iconSpan = props.icon ? <span class="ds-btn-icon-wrap">{props.icon}</span> : null;
-  const content = props.text !== undefined && props.text !== "" ? (
+  const iconSpan = () => (props.icon ? (
+    <span class="ds-btn-icon-wrap" style="display:inline-flex; align-items:center; line-height:1;">
+      {props.icon}
+    </span>
+  ) : null);
+
+  const content = () => (props.text !== undefined && props.text !== "" ? (
     <span class={props.textClass ?? "ds-btn-text"}>{props.text}</span>
   ) : props.children !== undefined ? (
     <span class="ds-btn-text">{props.children}</span>
-  ) : null;
+  ) : null);
+
   return (
     <button
       type="button"
@@ -58,7 +64,7 @@ export function Button(props: ButtonProps) {
       disabled={props.disabled}
       onClick={props.onClick}
     >
-      {props.reverse ? <>{content}{iconSpan}</> : <>{iconSpan}{content}</>}
+      {props.reverse ? <>{content()}{iconSpan()}</> : <>{iconSpan()}{content()}</>}
     </button>
   );
 }

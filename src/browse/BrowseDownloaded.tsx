@@ -44,25 +44,26 @@ function DownloadedRow(props: {
   isRead: boolean;
   onAddToCol: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
 }) {
-  const { ch } = props;
   return (
     <FeedItemRow
       item={{
-        permalink: ch.chapterPermalink,
-        title: ch.chapterTitle,
-        series: ch.seriesName,
-        tags: ch.tags,
+        permalink: props.ch.chapterPermalink,
+        title: props.ch.chapterTitle,
+        series: props.ch.seriesName,
+        tags: props.ch.tags,
       }}
-      coverPath={ch.coverPath}
+      isBookmarked={props.isBookmarked}
+      isRead={props.isRead}
+      coverPath={props.ch.coverPath}
       isFullyCached={true}
       extraMeta={
         <>
-          <span class="ds-muted">{t("browse.downloaded.pagesCount", { count: ch.pageCount })}</span>
-          <Show when={ch.totalSizeBytes > 0}>
-            <span class="ds-muted">· {formatBytes(ch.totalSizeBytes)}</span>
+          <span class="ds-muted">{t("browse.downloaded.pagesCount", { count: props.ch.pageCount })}</span>
+          <Show when={props.ch.totalSizeBytes > 0}>
+            <span class="ds-muted">· {formatBytes(props.ch.totalSizeBytes)}</span>
           </Show>
-          <Show when={ch.lastCachedAt > 0}>
-            <span class="ds-muted">· {formatDate(ch.lastCachedAt)}</span>
+          <Show when={props.ch.lastCachedAt > 0}>
+            <span class="ds-muted">· {formatDate(props.ch.lastCachedAt)}</span>
           </Show>
         </>
       }

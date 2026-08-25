@@ -204,37 +204,35 @@ function CacheBody(props: {
   restoreFromPicker: () => Promise<void>;
   deleteGroup: (item: CachedSeriesGroup) => Promise<void>;
 }) {
-  const { stats, groups, dbStats, traffic } = props;
-
   return (
     <>
       <GroupBox title={<IconText icon={<ChartIcon />}>{t("cache.overviewTitle")}</IconText>}>
         <div class="ds-stats-grid ds-stats-grid--4">
-          <StatCard value={formatBytes(stats.totalSizeBytes)} label={t("cache.diskFootprint")} />
-          <StatCard value={stats.totalCachedPages} label={t("cache.pagesCached")} />
-          <StatCard value={stats.totalCachedChapters} label={t("cache.chaptersCached")} />
-          <StatCard value={groups.length} label={t("cache.seriesCached")} />
+          <StatCard value={formatBytes(props.stats.totalSizeBytes)} label={t("cache.diskFootprint")} />
+          <StatCard value={props.stats.totalCachedPages} label={t("cache.pagesCached")} />
+          <StatCard value={props.stats.totalCachedChapters} label={t("cache.chaptersCached")} />
+          <StatCard value={props.groups.length} label={t("cache.seriesCached")} />
         </div>
       </GroupBox>
 
       <GroupBox title={<IconText icon={<DatabaseIcon />}>{t("cache.dbStatsTitle")}</IconText>}>
         <div class="ds-stats-grid ds-stats-grid--4">
-          <StatCard value={formatBytes(dbStats.file.totalSizeBytes)} label={t("cache.dbSizeTotal")} />
-          <StatCard value={formatBytes(dbStats.file.dbSizeBytes)} label={t("cache.dbFile")} />
-          <StatCard value={dbStats.totalRows} label={t("cache.totalRecords")} />
-          <StatCard value={formatBytes(dbStats.file.walSizeBytes)} label={t("cache.walSize")} />
+          <StatCard value={formatBytes(props.dbStats.file.totalSizeBytes)} label={t("cache.dbSizeTotal")} />
+          <StatCard value={formatBytes(props.dbStats.file.dbSizeBytes)} label={t("cache.dbFile")} />
+          <StatCard value={props.dbStats.totalRows} label={t("cache.totalRecords")} />
+          <StatCard value={formatBytes(props.dbStats.file.walSizeBytes)} label={t("cache.walSize")} />
         </div>
         <div class="ds-db-details">
-          <span>{t("cache.followedSeriesCount")} <strong>{dbStats.counts.followedSeries}</strong></span>
-          <span>{t("cache.readingProgressCount")} <strong>{dbStats.counts.readingProgress}</strong></span>
-          <span>{t("cache.historyCount")} <strong>{dbStats.counts.readingHistory}</strong></span>
-          <span>{t("cache.bookmarksCount")} <strong>{dbStats.counts.bookmarks}</strong></span>
-          <span>{t("cache.collectionsCount")} <strong>{dbStats.counts.collections}</strong> {t("cache.collectionItemsSuffix", { count: dbStats.counts.collectionItems })}</span>
-          <span>{t("cache.cachedPagesCount")} <strong>{dbStats.counts.cachedPages}</strong></span>
-          <span>{t("cache.cachedMetadataCount")} <strong>{dbStats.counts.cachedMetadata}</strong></span>
-          <span>{t("cache.directoryEntriesCount")} <strong>{dbStats.counts.directoryEntries}</strong></span>
-          <span>{t("cache.tagBlacklistCount")} <strong>{dbStats.counts.tagBlacklist}</strong></span>
-          <span>{t("cache.seriesBlacklistCount")} <strong>{dbStats.counts.seriesBlacklist}</strong></span>
+          <span>{t("cache.followedSeriesCount")} <strong>{props.dbStats.counts.followedSeries}</strong></span>
+          <span>{t("cache.readingProgressCount")} <strong>{props.dbStats.counts.readingProgress}</strong></span>
+          <span>{t("cache.historyCount")} <strong>{props.dbStats.counts.readingHistory}</strong></span>
+          <span>{t("cache.bookmarksCount")} <strong>{props.dbStats.counts.bookmarks}</strong></span>
+          <span>{t("cache.collectionsCount")} <strong>{props.dbStats.counts.collections}</strong> {t("cache.collectionItemsSuffix", { count: props.dbStats.counts.collectionItems })}</span>
+          <span>{t("cache.cachedPagesCount")} <strong>{props.dbStats.counts.cachedPages}</strong></span>
+          <span>{t("cache.cachedMetadataCount")} <strong>{props.dbStats.counts.cachedMetadata}</strong></span>
+          <span>{t("cache.directoryEntriesCount")} <strong>{props.dbStats.counts.directoryEntries}</strong></span>
+          <span>{t("cache.tagBlacklistCount")} <strong>{props.dbStats.counts.tagBlacklist}</strong></span>
+          <span>{t("cache.seriesBlacklistCount")} <strong>{props.dbStats.counts.seriesBlacklist}</strong></span>
         </div>
         <div class="ds-cache-actions ds-cache-actions--mt">
           <IconButton icon={<DatabaseIcon />} text={t("cache.dbBackup")} title={t("cache.dbBackupTooltip")} onClick={() => void props.backupDb()} />
@@ -249,10 +247,10 @@ function CacheBody(props: {
       </GroupBox>
       <GroupBox title={<IconText icon={<TrafficIcon />}>{t("cache.trafficTitle")}</IconText>}>
         <div class="ds-stats-grid ds-stats-grid--4">
-          <StatCard value={formatBytes(traffic().bytesDownloaded)} label={t("cache.sessionDownloaded", { count: traffic().networkRequests })} />
-          <StatCard value={formatBytes(traffic().bytesSaved)} label={t("cache.sessionSaved", { count: traffic().cacheHits })} />
-          <StatCard value={formatBytes(traffic().lifetime.bytesDownloaded)} label={t("cache.lifetimeDownloaded", { count: traffic().lifetime.networkRequests })} />
-          <StatCard value={formatBytes(traffic().lifetime.bytesSaved)} label={t("cache.lifetimeSaved", { count: traffic().lifetime.cacheHits })} />
+          <StatCard value={formatBytes(props.traffic().bytesDownloaded)} label={t("cache.sessionDownloaded", { count: props.traffic().networkRequests })} />
+          <StatCard value={formatBytes(props.traffic().bytesSaved)} label={t("cache.sessionSaved", { count: props.traffic().cacheHits })} />
+          <StatCard value={formatBytes(props.traffic().lifetime.bytesDownloaded)} label={t("cache.lifetimeDownloaded", { count: props.traffic().lifetime.networkRequests })} />
+          <StatCard value={formatBytes(props.traffic().lifetime.bytesSaved)} label={t("cache.lifetimeSaved", { count: props.traffic().lifetime.cacheHits })} />
         </div>
         <div class="ds-cache-actions ds-cache-actions--mt">
           <ConfirmDeleteButton
@@ -290,11 +288,11 @@ function CacheBody(props: {
       </GroupBox>
       <GroupBox
         class="ds-flex-col"
-        title={<IconText icon={<StorageIcon />}>{t("cache.cachedWorksTitle", { count: groups.length })}</IconText>}
+        title={<IconText icon={<StorageIcon />}>{t("cache.cachedWorksTitle", { count: props.groups.length })}</IconText>}
       >
 
         <Show
-          when={groups.length === 0}
+          when={props.groups.length === 0}
           fallback={
             <>
               <div class="ds-cache-filter-bar">

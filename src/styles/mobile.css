@@ -270,16 +270,18 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
 }
 
 #ds-root[data-mobile] .ds-item-actions .win-button,
-#ds-root[data-mobile] .ds-item-actions .ds-btn-compact {
-  width: 26px !important;
-  height: 26px !important;
-  min-width: 26px !important;
-  max-width: 26px !important;
-  min-height: 26px !important;
-  max-height: 26px !important;
+#ds-root[data-mobile] .ds-item-actions .ds-btn-compact,
+#ds-root[data-mobile] .ds-feed-actions .win-button,
+#ds-root[data-mobile] .ds-feed-actions .ds-btn-compact {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
   aspect-ratio: 1 / 1;
   padding: 0 !important;
-  font-size: 12px;
+  font-size: 11.5px;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -392,78 +394,9 @@ body.ds-dark #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover {
   padding: 0 8px !important;
 }
 
-/* Feed items layout on mobile */
-#ds-root[data-mobile] .ds-feed-item {
-  gap: 8px;
-  padding: 8px 6px;
-  align-items: flex-start;
-}
-
-#ds-root[data-mobile] .ds-feed-cover-wrap {
-  width: 52px;
-  height: 74px;
-  min-width: 52px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-#ds-root[data-mobile] .ds-feed-cover {
-  width: 52px;
-  height: 74px;
-  border-radius: 2px;
-}
-#ds-root[data-mobile] .ds-item-title {
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-#ds-root[data-mobile] .ds-tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  margin-top: 3px;
-}
-
-#ds-root[data-mobile] .ds-tag-row-label {
-  display: none !important;
-}
-
-#ds-root[data-mobile] .ds-tag-row-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-#ds-root[data-mobile] .ds-feed-actions {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-}
-
-#ds-root[data-mobile] .ds-feed-actions .win-button,
-#ds-root[data-mobile] .ds-feed-actions .ds-btn-compact {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  max-width: 28px !important;
-  aspect-ratio: 1 / 1;
-  padding: 0 !important;
-  font-size: 12.5px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-sizing: border-box;
-  border-radius: 0;
-}
-
 #ds-root[data-mobile] .tag-pill {
-  font-size: 10.5px;
-  padding: 1.5px 6px;
-  min-height: 18px;
-  height: auto;
-  line-height: 1.3;
+  font-size: 11px;
+  padding: 1px 6px;
   border-radius: 2px;
 }
 

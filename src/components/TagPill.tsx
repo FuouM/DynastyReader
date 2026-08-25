@@ -15,8 +15,6 @@ export interface TagPillProps {
 }
 
 export function TagPill(props: TagPillProps) {
-  const isCompact = props.compact ?? true;
-
   const activate = (ev: Event) => {
     ev.stopPropagation();
     if (props.permalink) {
@@ -39,7 +37,7 @@ export function TagPill(props: TagPillProps) {
     <span
       role="button"
       tabindex="0"
-      class={`${tagClass(props.type, props.name)} ${isCompact ? "ds-tag-pill--compact" : "ds-tag-pill--normal"}`}
+      class={`${tagClass(props.type, props.name)} ${(props.compact ?? true) ? "ds-tag-pill--compact" : "ds-tag-pill--normal"}`}
       title={t("series.clickToOpen", { type: props.type, name: props.name })}
       onClick={activate}
       onKeyDown={(ev) => {

@@ -185,19 +185,22 @@ function CollectionItemCard(props: {
   collectionId: number;
   onChanged: () => void;
 }) {
-  const isChapterLike =
+  const isChapterLike = () =>
     props.it.item_kind === "chapter" ||
     props.it.item_kind === "oneshot" ||
     props.it.item_kind === "doujin";
 
   const [cover, setCover] = createSignal(props.it.cover);
 
+  createEffect(() => {
+    setCover(props.it.cover);
+  });
   // Lazy cover hydration when no local file path is cached yet.
   createEffect(() => {
     const c = props.it.cover;
     if (c && (c.includes("/") || c.includes("\\"))) return;
     const task =
-      !isChapterLike && props.it.item_kind === "series"
+      !isChapterLike() && props.it.item_kind === "series"
         ? getOrHydrateSeriesCover(props.it.item_permalink)
         : getOrHydrateItemCover(
             props.it.cover || `chapter:${props.it.item_permalink}`,
@@ -214,7 +217,7 @@ function CollectionItemCard(props: {
   });
 
   const onOpen = (): void => {
-    if (isChapterLike) {
+    if (isChapterLike()) {
       navigate({
         view: "reader",
         chapterPermalink: props.it.item_permalink,
@@ -231,7 +234,7 @@ function CollectionItemCard(props: {
     }
   };
 
-  const kindLabel =
+  const kindLabel = () =>
     props.it.item_kind === "oneshot"
       ? t("library.kinds.oneshot")
       : props.it.item_kind === "chapter"
@@ -242,8 +245,7 @@ function CollectionItemCard(props: {
             ? t("library.kinds.anthology")
             : t("library.kinds.series");
 
-  const endpoint = isChapterLike ? "chapters" : seriesTypeToPath(props.it.item_kind);
-
+  const endpoint = () => (isChapterLike() ? "chapters" : seriesTypeToPath(props.it.item_kind));
   return (
     <LibraryItemRow
       title={props.it.item_title}
@@ -252,13 +254,13 @@ function CollectionItemCard(props: {
           ? `${decodeEntities(props.it.parent_series_name)} · ${t("library.addedOn", { date: formatDate(Number(props.it.created_at)) })}`
           : t("library.addedOn", { date: formatDate(Number(props.it.created_at)) })
       }
-      badge={kindLabel}
+      badge={kindLabel()}
       cover={cover()}
       coverAlt={props.it.item_title}
       onOpen={onOpen}
-      actionLabel={isChapterLike ? t("common.read") : t("common.open")}
-      actionIcon={isChapterLike ? "bi-book" : "bi-folder2-open"}
-      externalUrl={`${SITE_ROOT}/${endpoint}/${props.it.item_permalink}`}
+      actionLabel={isChapterLike() ? t("common.read") : t("common.open")}
+      actionIcon={isChapterLike() ? "bi-book" : "bi-folder2-open"}
+      externalUrl={`${SITE_ROOT}/${endpoint()}/${props.it.item_permalink}`}
       deleteTitle={t("library.removeFromCollectionTooltip")}
       onDelete={async () => {
         await removeItemFromCollection(props.collectionId, props.it.item_permalink);

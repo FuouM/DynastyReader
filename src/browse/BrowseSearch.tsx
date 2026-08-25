@@ -49,7 +49,7 @@ import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { BlacklistNotice } from "../components/BlacklistNotice";
 import { EmptyState } from "../components/EmptyState";
 import { DsSelect, IconText, IconButton } from "../components/Button";
-import { FeedItemRow, type FeedItemData } from "../components/FeedItemRow";
+import { FeedItemRow } from "../components/FeedItemRow";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
 import type { AddToCollectionItem } from "../components/AddToCollectionModal";
@@ -99,44 +99,40 @@ function SearchResultRow(props: {
   onWarn: (title: string, matchedTags: string[], proceed: () => void) => void;
   onAddToCol: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
 }) {
-  const { item, isBlacklisted, matchedTags } = props.row;
-
   // ── 1. Content items (Series, Chapters, Doujins, Anthologies, Issues) ────────
-  if (isContentKind(item.kind)) {
-    const itemTags = (item.tags ?? []).map((t) => ({
-      type: t.type || "General",
-      name: t.name || "",
-      permalink: t.permalink || "",
-    }));
-
-    if (item.author && !itemTags.some((t) => t.permalink === item.author!.permalink)) {
-      itemTags.push({ type: "Author", name: item.author.name, permalink: item.author.permalink });
-    }
-
-    if (item.doujin && !itemTags.some((t) => t.permalink === item.doujin!.permalink)) {
-      itemTags.push({ type: "Doujin", name: item.doujin.name, permalink: item.doujin.permalink });
-    }
-
-    const isSeriesType = item.kind !== "chapter";
-
-    const feedData: FeedItemData = {
-      permalink: item.permalink,
-      title: item.title,
-      kind: item.kind,
-      series: isSeriesType ? item.title : item.doujin?.name || null,
-      tags: itemTags,
+  if (isContentKind(props.row.item.kind)) {
+    const item = () => props.row.item;
+    const itemTags = () => {
+      const tags = (item().tags ?? []).map((t) => ({
+        type: t.type || "General",
+        name: t.name || "",
+        permalink: t.permalink || "",
+      }));
+      if (item().author && !tags.some((t) => t.permalink === item().author!.permalink)) {
+        tags.push({ type: "Author", name: item().author!.name, permalink: item().author!.permalink });
+      }
+      if (item().doujin && !tags.some((t) => t.permalink === item().doujin!.permalink)) {
+        tags.push({ type: "Doujin", name: item().doujin!.name, permalink: item().doujin!.permalink });
+      }
+      return tags;
     };
+
+    const feedData = () => ({
+      permalink: item().permalink,
+      title: item().title,
+      kind: item().kind,
+      series: item().kind !== "chapter" ? item().title : item().doujin?.name || null,
+      tags: itemTags(),
+    });
 
     const extraMeta = (
       <>
-        <span
-          class="ds-muted ds-kind-badge"
-        >
-          {item.kind}
+        <span class="ds-muted ds-kind-badge">
+          {item().kind}
         </span>
-        <Show when={item.releasedOn}>
+        <Show when={item().releasedOn}>
           <span class="ds-muted ds-text-11">
-            {t("browse.search.releasedOn", { date: item.releasedOn })}
+            {t("browse.search.releasedOn", { date: item().releasedOn })}
           </span>
         </Show>
       </>
@@ -144,9 +140,9 @@ function SearchResultRow(props: {
 
     return (
       <FeedItemRow
-        item={feedData}
-        isBlacklisted={isBlacklisted}
-        matchedTags={matchedTags}
+        item={feedData()}
+        isBlacklisted={props.row.isBlacklisted}
+        matchedTags={props.row.matchedTags}
         isFullyCached={props.isFullyCached}
         extraMeta={extraMeta}
         onWarn={props.onWarn}
@@ -156,32 +152,35 @@ function SearchResultRow(props: {
   }
 
   // ── 2. Taxonomic metadata items (Authors, Scanlators, Tags, Pairings) ────────
+  const item = () => props.row.item;
+  const isBlacklisted = () => props.row.isBlacklisted;
+  const matchedTags = () => props.row.matchedTags;
+
   const openTaxonomicItem = (): void => {
-    if (item.kind === "tag") {
+    if (item().kind === "tag") {
       navigate({
         view: "browse",
         browseTab: "search",
-        withTag: item.title,
+        withTag: item().title,
       });
     } else {
       navigate({
         view: "series",
-        seriesPermalink: item.permalink,
-        seriesName: item.title,
+        seriesPermalink: item().permalink,
+        seriesName: item().title,
       });
     }
   };
-
 
   return (
     <ListItem
       class="ds-row"
       cssText="gap:8px;padding:4px 8px;cursor:pointer;min-height:30px;align-items:center;"
-      blacklisted={isBlacklisted}
+      blacklisted={isBlacklisted()}
       onClick={openTaxonomicItem}
       leading={
         <div class="ds-entity-icon">
-          <EntityIcon kind={item.kind} />
+          <EntityIcon kind={item().kind} />
         </div>
       }
       title={
@@ -189,23 +188,23 @@ function SearchResultRow(props: {
           <span
             class="ds-item-title ds-search-title-link"
           >
-            {decodeEntities(item.title)}
+            {decodeEntities(item().title)}
           </span>
           <span
             class="ds-muted ds-kind-badge"
           >
-            {item.kind}
+            {item().kind}
           </span>
-          <Show when={isBlacklisted && matchedTags.length > 0}>
-            <WarningChip mode={props.blMode} tags={matchedTags} />
+          <Show when={isBlacklisted() && matchedTags().length > 0}>
+            <WarningChip mode={props.blMode} tags={matchedTags()} />
           </Show>
         </div>
       }
       actions={
         <ExternalLinkButton
           className="ds-btn-icon"
-          title={t("browse.search.openExternalTooltip", { kind: item.kind, title: decodeEntities(item.title) })}
-          url={`${SITE_ROOT}/${seriesTypeToPath(item.kind)}/${item.permalink}`}
+          title={t("browse.search.openExternalTooltip", { kind: item().kind, title: decodeEntities(item().title) })}
+          url={`${SITE_ROOT}/${seriesTypeToPath(item().kind)}/${item().permalink}`}
         />
       }
     />
