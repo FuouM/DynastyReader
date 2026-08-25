@@ -241,16 +241,16 @@ body.ds-dark .skeleton-pulse::after {
   background-color: var(--sys-button-bg);
   color: var(--sys-control-text);
   border: 1px solid var(--sys-button-border);
-  padding: 0 10px;
+  padding: 2px 10px;
   height: 24px;
   cursor: pointer;
   font-size: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   user-select: none;
-  line-height: 1;
+  line-height: normal;
   box-sizing: border-box;
 }
 .win-button i,
@@ -259,7 +259,6 @@ body.ds-dark .skeleton-pulse::after {
   align-items: center;
   justify-content: center;
   line-height: 1;
-  font-size: 13px;
 }
 .ds-btn-icon-wrap {
   display: inline-flex;
@@ -797,13 +796,11 @@ body.ds-dark .tag-pill.tag-identity:hover {
   box-sizing: border-box;
 }
 .ds-btn-text {
-  display: inline-flex;
-  align-items: center;
-  line-height: 1;
   white-space: nowrap;
 }
 .ds-external-link {
   color: var(--sys-primary, #0078d4);
+  text-decoration: underline;
   cursor: pointer;
   word-break: break-all;
 }

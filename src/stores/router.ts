@@ -9,6 +9,7 @@
 
 import { batch, createSignal } from "solid-js";
 import { clearActions } from "./topbar";
+import { isMobile } from "./platform";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import type { Route, SessionMangaTab } from "../types/routes";
@@ -91,10 +92,12 @@ export function navigate(r: Route): void {
       setHistoryForwardStack([]);
 
       // Push state into browser history so Android's WebView / Hardware Back gesture triggers popstate
-      try {
-        window.history.pushState({ view: r.view }, "");
-      } catch {
-        // Ignored if history API is restricted
+      if (isMobile()) {
+        try {
+          window.history.pushState({ view: r.view }, "");
+        } catch {
+          // Ignored if history API is restricted
+        }
       }
     }
     setRoute(r);

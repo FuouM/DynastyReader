@@ -14,7 +14,6 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
       if (isTextInputTarget(ev.target)) return;
 
       if (matchesHotkey(ev, "reader.nextPage")) {
-        if (!c.isHorizontal() && ev.key === " ") return;
         ev.preventDefault();
         if (c.isSpread()) {
           c.stepSpread(1);

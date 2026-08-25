@@ -67,7 +67,7 @@ export function Pager(props: PagerProps) {
           max={String(Math.max(1, props.totalPages))}
           value={jumpValue()}
           class="input-field"
-          style="width:44px;height:24px;min-height:24px;max-height:24px;box-sizing:border-box;text-align:center;font-size:11px;padding:0 2px;line-height:22px;"
+          style="width:44px;height:22px;min-height:22px;max-height:22px;box-sizing:border-box;text-align:center;font-size:11px;padding:1px 2px;line-height:20px;"
           title={t("dialogs.pager.jumpPrompt")}
           onInput={(ev) => setJumpValue((ev.target as HTMLInputElement).value)}
           onKeyDown={(ev) => {
@@ -81,7 +81,7 @@ export function Pager(props: PagerProps) {
           {t("dialogs.pager.ofTotal", { total: props.totalPages })}
         </span>
         <Button
-          className="ds-btn-compact"
+          className="ds-btn-sm"
           title={t("dialogs.pager.jumpButton")}
           onClick={doJump}
         >

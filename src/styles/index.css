@@ -11,11 +11,7 @@ body {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
-  transform-origin: top left;
-  box-sizing: border-box;
+  height: 100%;
 }
 #ds-topbar {
   display: flex;
@@ -128,7 +124,7 @@ body {
   border: none !important;
   background: transparent;
   color: var(--sys-control-text, #000);
-  padding: 0 8px;
+  padding: 0 10px;
   height: 100%;
   font-size: 11px;
   font-weight: 500;
@@ -136,16 +132,16 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
   user-select: none;
   border-radius: 0 !important;
-  line-height: 1;
+  line-height: normal;
   box-sizing: border-box;
 }
 .ds-segmented-btn span {
+  line-height: normal;
   display: inline-flex;
   align-items: center;
-  line-height: 1;
 }
 .ds-segmented-btn span.ds-btn-icon-wrap {
   display: inline-flex;
@@ -734,7 +730,7 @@ body.ds-dark .tag-pill:hover {
   align-items: center;
   justify-content: center;
   z-index: var(--z-modal, 99999);
-  padding: calc(10px + env(safe-area-inset-top, 0px)) calc(10px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px));
+  padding: 20px;
   box-sizing: border-box;
   overflow: hidden;
 }
