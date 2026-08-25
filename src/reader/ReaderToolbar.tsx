@@ -132,15 +132,13 @@ export function ReaderMainRow(props: NavRowProps) {
         disabled={s.chapterNav().nextDisabled}
         onClick={() => s.gotoNextChapter()}
       />
-      <Show when={isMobile()}>
-        <IconButton
-          className="ds-nav-btn-page ds-btn-icon"
-          classList={{ active: !!props.controlsOpen?.() }}
-          icon={<ToolIcon />}
-          title={t("reader.toolbar.toggleControlsTooltip")}
-          onClick={props.onToggleControls}
-        />
-      </Show>
+      <IconButton
+        className="ds-nav-btn-page ds-btn-icon"
+        classList={{ active: !!props.controlsOpen?.() }}
+        icon={<ToolIcon />}
+        title={t("reader.toolbar.toggleControlsTooltip")}
+        onClick={props.onToggleControls}
+      />
     </div>
   );
 }

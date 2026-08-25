@@ -80,15 +80,17 @@ export function Topbar() {
     <>
       <div id="ds-topbar" ref={topbarEl} classList={{ "ds-narrow": isNarrow(), "ds-compact": isCompact() }}>
         <div id="ds-topbar-main">
-          <SegmentedSwitch
-            id="ds-view-switch"
-            value={route().view}
-            onChange={(val) => navigate({ view: val as "browse" | "library" })}
-            options={[
-              { id: "ds-tab-browse", value: "browse", icon: <Icon name="compass" />, text: isNarrow() ? t("topbar.browse") : t("topbar.browseRecent"), title: t("topbar.browseRecent") },
-              { id: "ds-tab-library", value: "library", icon: <StorageIcon />, text: t("topbar.library"), title: t("topbar.library") },
-            ]}
-          />
+          <Show when={route().view !== "reader"}>
+            <SegmentedSwitch
+              id="ds-view-switch"
+              value={route().view}
+              onChange={(val) => navigate({ view: val as "browse" | "library" })}
+              options={[
+                { id: "ds-tab-browse", value: "browse", icon: <Icon name="compass" />, text: isNarrow() ? t("topbar.browse") : t("topbar.browseRecent"), title: t("topbar.browseRecent") },
+                { id: "ds-tab-library", value: "library", icon: <StorageIcon />, text: t("topbar.library"), title: t("topbar.library") },
+              ]}
+            />
+          </Show>
           <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
             <button
               type="button"
@@ -178,13 +180,15 @@ export function Topbar() {
           </Show>
           <div id="ds-actions">{actions()}</div>
           <div id="ds-topbar-tools">
-            <IconButton
-              className="ds-btn-icon"
-              id="ds-page-refresh-btn"
-              icon={<RefreshIcon />}
-              title={t("topbar.refreshPageTooltip")}
-              onClick={() => window.location.reload()}
-            />
+            <Show when={route().view !== "reader"}>
+              <IconButton
+                className="ds-btn-icon"
+                id="ds-page-refresh-btn"
+                icon={<RefreshIcon />}
+                title={t("topbar.refreshPageTooltip")}
+                onClick={() => window.location.reload()}
+              />
+            </Show>
             <IconButton
               className="ds-btn-icon"
               id="ds-settings-btn"

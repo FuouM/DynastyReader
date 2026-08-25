@@ -36,13 +36,14 @@
 #ds-reader-container.ds-fullscreen .ds-reader-nav {
   background: var(--ds-reader-bg) !important;
   color: var(--sys-window-text, #333) !important;
-  padding: 6px 12px !important;
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-top {
+  padding: calc(6px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 6px calc(12px + env(safe-area-inset-left, 0px)) !important;
   border-bottom: 1px solid var(--sys-border-light, #ccc) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-bottom {
+  padding: 6px calc(12px + env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px)) !important;
   border-top: 1px solid var(--sys-border-light, #ccc) !important;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -103,18 +104,19 @@
   width: 100%;
   max-width: 100vw;
   box-sizing: border-box;
-  padding: 4px 8px;
   background: var(--sys-window-bg, #fafafa);
   flex-shrink: 0;
   z-index: 20;
   overflow-x: hidden;
 }
 .ds-reader-nav.ds-reader-nav-top {
+  padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px));
   border-bottom: 1px solid var(--sys-border-light, #ccc);
   position: sticky;
   top: 0;
 }
 .ds-reader-nav.ds-reader-nav-bottom {
+  padding: 4px calc(8px + env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px));
   border-top: 1px solid var(--sys-border-light, #ccc);
   position: sticky;
   bottom: 0;
