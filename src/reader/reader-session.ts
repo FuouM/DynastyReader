@@ -594,6 +594,9 @@ export class ReaderSession implements ReaderQueueHost {
     if (index === 0) {
       this.updateFirstSlotHeight();
     }
+    if (index === this.pages().length - 1) {
+      this.updateLastSlotHeight();
+    }
   }
 
   zoomIn(): void {
@@ -686,7 +689,7 @@ export class ReaderSession implements ReaderQueueHost {
     if (h && h > 50 && this.containerEl) {
       this.containerEl.style.setProperty("--ds-viewport-full", `${h}px`);
       this.containerEl.style.setProperty("--ds-viewport-height", `${h - 20}px`);
-      this.updateFirstSlotHeight();
+      this.updateSlotClearances();
     }
   }
 
@@ -699,6 +702,24 @@ export class ReaderSession implements ReaderQueueHost {
         this.containerEl.style.setProperty("--ds-first-slot-height", `${h}px`);
       }
     }
+  }
+
+  updateLastSlotHeight(): void {
+    if (!this.containerEl || this.isHorizontal()) return;
+    const lastIdx = this.pages().length - 1;
+    if (lastIdx < 0) return;
+    const lastSlot = this.slotEls[lastIdx];
+    if (lastSlot) {
+      const h = lastSlot.offsetHeight;
+      if (h > 0) {
+        this.containerEl.style.setProperty("--ds-last-slot-height", `${h}px`);
+      }
+    }
+  }
+
+  updateSlotClearances(): void {
+    this.updateFirstSlotHeight();
+    this.updateLastSlotHeight();
   }
 
   slideTo(index: number, instant = false, scrollToBottom = false): void {

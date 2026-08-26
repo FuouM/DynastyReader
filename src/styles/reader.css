@@ -438,18 +438,17 @@
   width: 100%;
 }
 
-/* Scroll Mode: Container strip has dynamic top and bottom clearance for first/last page centering */
+/* Scroll Mode: Container strip has dynamic top and bottom clearance for first- and last-page centering */
 #ds-reader-viewport:not(.horizontal) #ds-reader-strip {
   padding-top: max(0px, calc((var(--ds-viewport-height, calc(100vh - 48px)) - var(--ds-first-slot-height, 0px)) / 2));
-  padding-bottom: max(24px, calc(var(--ds-viewport-height, calc(100vh - 48px)) / 2));
+  padding-bottom: max(24px, calc((var(--ds-viewport-height, calc(100vh - 48px)) - var(--ds-last-slot-height, 0px)) / 2));
   box-sizing: border-box;
 }
 
 #ds-root[data-mobile] #ds-reader-viewport:not(.horizontal) #ds-reader-strip {
   padding-top: max(0px, calc((var(--ds-viewport-height, calc(100vh - 48px)) - var(--ds-first-slot-height, 0px)) / 2));
-  padding-bottom: max(calc(24px + env(safe-area-inset-bottom, 0px)), calc(var(--ds-viewport-height, calc(100vh - 48px)) / 2));
+  padding-bottom: max(calc(24px + env(safe-area-inset-bottom, 0px)), calc((var(--ds-viewport-height, calc(100vh - 48px)) - var(--ds-last-slot-height, 0px)) / 2));
 }
-
 /* Seamless Webtoon / Long-Strip stitching */
 #ds-reader-container.is-long-strip #ds-reader-viewport:not(.horizontal) #ds-reader-strip {
   padding-top: 0 !important;
