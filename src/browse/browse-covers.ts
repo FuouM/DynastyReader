@@ -3,7 +3,7 @@ import { persistedSignal } from "../lib/persisted-signal";
 import { debounce } from "@solid-primitives/scheduled";
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
-import { isSeriesKind, isDoujinTag } from "../taxonomy";
+import { isSeriesKind, isDoujinTag, getChapterContainerTag } from "../taxonomy";
 
 /**
  * Module-level reactive signal that mirrors `BrowseCovers.enabled`. Any Solid
@@ -173,24 +173,22 @@ export class BrowseCovers {
       };
     }
 
-    // A chapter is part of an official series if ch.series is a non-empty string
-    const isOfficialSeries = Boolean(ch.series && ch.series.trim().length > 0);
-
-    const seriesTag = (ch.tags ?? []).find((t) => isSeriesKind(t.type));
+    const containerTag = getChapterContainerTag(ch.tags);
     const doujinTag = (ch.tags ?? []).find((t) => isDoujinTag(t.type));
+    const hasSeriesContainer = Boolean(containerTag || (ch.series && ch.series.trim().length > 0));
 
-    // 1. Official serialized series (e.g. Citrus +, Bloom Into You, The Blue Star on That Day)
-    if (isOfficialSeries) {
+    // 1. Chapters that belong to a structured Series, Anthology, or Issue container
+    if (hasSeriesContainer) {
       const seriesPermalink =
-        seriesTag?.permalink ||
+        containerTag?.permalink ||
         (ch.series
           ? ch.series
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, "_")
               .replace(/^_+|_+$/g, "")
           : ch.permalink);
-      const seriesName = ch.series || seriesTag?.name || "";
-      const seriesType = seriesTag?.type || "series";
+      const seriesName = containerTag?.name || ch.series || "";
+      const seriesType = containerTag?.type?.toLowerCase() === "anthology" ? "anthology" : (containerTag?.type || "series");
 
       return {
         coverKey: `series:${seriesPermalink}`,
@@ -202,12 +200,12 @@ export class BrowseCovers {
       };
     }
 
-    // 2. Doujins, fan works, and standalone oneshots (ch.series is null)
-    // The Doujin tag represents the franchise being parodied (e.g. Kamiina Botan, Touhou, BanG Dream),
-    // but the cover must be the chapter's own Page 1 cover art.
-    const franchisePermalink = doujinTag?.permalink || seriesTag?.permalink || "";
-    const franchiseName = doujinTag?.name || seriesTag?.name || "";
-    const franchiseType = doujinTag?.type || seriesTag?.type || "doujin";
+    // 2. Standalone doujins, fan works, and oneshots (no Series/Anthology container)
+    // The Doujin tag represents the franchise being parodied (e.g. Touhou, BanG Dream),
+    // and the cover is the chapter's own Page 1 cover art.
+    const franchisePermalink = doujinTag?.permalink || "";
+    const franchiseName = doujinTag?.name || "";
+    const franchiseType = doujinTag?.type || "doujin";
 
     return {
       coverKey: `chapter:${ch.permalink}`,

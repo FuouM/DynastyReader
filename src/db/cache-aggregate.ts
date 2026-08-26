@@ -1,6 +1,7 @@
 import { query } from "./client";
 import { inClause } from "./paging";
 import { seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
+import { getChapterContainerTag } from "../taxonomy";
 
 export interface ChapterAggRow {
   chapterPermalink: string;
@@ -159,12 +160,12 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
     try {
       const pl = m.cache_key.replace(/^chapter:/, "");
       const parsed = JSON.parse(m.json_payload) as ChapterMeta & { pages?: unknown };
-      const seriesTag = (parsed.tags ?? []).find((t) => (t.type ?? "").toLowerCase() === "series");
+      const containerTag = getChapterContainerTag(parsed.tags);
       chapterMeta.set(pl, {
         title: parsed.title || pl,
         pagesCount: Array.isArray(parsed.pages) ? parsed.pages.length : 0,
-        seriesPermalink: seriesTag?.permalink,
-        seriesName: seriesTag?.name,
+        seriesPermalink: containerTag?.permalink,
+        seriesName: containerTag?.name,
         tags: parsed.tags,
       });
     } catch (err) {

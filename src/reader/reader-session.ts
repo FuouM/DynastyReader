@@ -21,7 +21,7 @@ import {
   isOnline,
   isMobile,
 } from "../stores";
-import { isSeriesKind } from "../taxonomy";
+import { getChapterContainerTag } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { toggleAppTheme } from "../stores/theme";
@@ -958,11 +958,19 @@ export class ReaderSession implements ReaderQueueHost {
     }
     if (this.disposedFlag) return;
 
-    const seriesTag = (chapter.tags ?? []).find((t) => isSeriesKind(t.type));
-    this.setSeriesPermalink(seriesTag?.permalink ?? route.seriesPermalink ?? null);
-    this.setSeriesName(seriesTag?.name ?? route.seriesName ?? chapter.title);
+    const containerTag = getChapterContainerTag(chapter.tags);
+    const seriesPermalink = route.seriesPermalink || containerTag?.permalink || null;
+    const seriesName = route.seriesName || containerTag?.name || chapter.title;
+    const preferredType = containerTag?.type || (route.seriesPermalink ? "series" : undefined);
+
+    this.setSeriesPermalink(seriesPermalink);
+    this.setSeriesName(seriesName);
     this.setChapterTitle(chapter.title || route.chapterTitle || "Chapter");
-    this.setChapterList(route.chapterList ?? []);
+    if (route.chapterList && route.chapterList.length > 0) {
+      this.setChapterList(route.chapterList);
+    } else {
+      this.setChapterList([]);
+    }
     this.setPages(chapter.pages ?? []);
 
     const pageCount = this.pages().length;
@@ -987,15 +995,19 @@ export class ReaderSession implements ReaderQueueHost {
     }
     this.setCurrentIndex(Math.min(startPage, Math.max(0, pageCount - 1)));
 
-    // Fetch latest series chapterList and auto-detect layout
+    // Fetch latest series / anthology chapterList and auto-detect layout
     if (this.seriesPermalink()) {
-      const preferredType = seriesTag?.type;
       void fetchSeries(this.seriesPermalink()!, false, preferredType).then((s) => {
         if (this.disposedFlag) return;
         const cl: ChapterRef[] = [];
         for (const t of s.taggings ?? []) {
-          if (t.title && t.permalink) {
-            cl.push({ title: t.title, permalink: t.permalink, released_on: t.released_on ?? undefined });
+          if (t.header) continue;
+          if (t.permalink) {
+            cl.push({
+              title: t.title || t.permalink,
+              permalink: t.permalink,
+              released_on: t.released_on ?? undefined,
+            });
           }
         }
         if (cl.length > 0) {

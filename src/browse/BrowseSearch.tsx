@@ -121,7 +121,7 @@ function SearchResultRow(props: {
       permalink: item().permalink,
       title: item().title,
       kind: item().kind,
-      series: item().kind !== "chapter" ? item().title : item().doujin?.name || null,
+      series: item().kind !== "chapter" ? item().title : null,
       tags: itemTags(),
     });
 

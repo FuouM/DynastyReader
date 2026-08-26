@@ -19,7 +19,7 @@ import {
   SITE_ROOT,
 } from "../stores";
 import { decodeEntities } from "../utils/html";
-import { categorizeChapterTags, isSeriesKind, seriesTypeToPath } from "../taxonomy";
+import { categorizeChapterTags, isSeriesKind, seriesTypeToPath, getChapterContainerTag, isDoujinTag } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import {
@@ -201,15 +201,12 @@ export function FeedItemRow(props: FeedItemRowProps) {
         anchorEl,
       );
     } else {
-      const doujinTag = rawTags.find((t) => {
-        const type = (t.type ?? "").toLowerCase();
-        return type === "doujin" || type === "doujinshi";
-      });
-      const anthologyTag = rawTags.find((t) => (t.type ?? "").toLowerCase() === "anthology");
-      const kind: CollectionItemKind = doujinTag
-        ? "doujin"
-        : anthologyTag
-          ? "anthology"
+      const containerTag = getChapterContainerTag(rawTags);
+      const doujinTag = rawTags.find((t) => isDoujinTag(t.type));
+      const kind: CollectionItemKind = containerTag
+        ? (containerTag.type.toLowerCase() === "anthology" ? "anthology" : "series")
+        : doujinTag
+          ? "doujin"
           : "oneshot";
       props.onAddToCol(
         {

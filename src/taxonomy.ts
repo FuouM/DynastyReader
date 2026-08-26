@@ -96,6 +96,56 @@ export function isContentKind(kind?: string | null): boolean {
   return isEntityKind(k) && (ENTITY_TAXONOMY[k]?.isContent ?? false);
 }
 
+/**
+ * Canonical chapter container kinds (ordered by priority when selecting a parent container for a chapter).
+ * Series, Anthology, and Issue are structured sequential chapter containers.
+ * Doujin tags are copyright/parody tags rather than sequential chapter containers.
+ */
+export const CHAPTER_CONTAINER_KINDS = ["series", "anthology", "issue"] as const;
+
+/** Checks whether a tag type represents a chapter container (Series, Anthology, Issue). */
+export function isContainerKind(type?: string | null): boolean {
+  if (!type) return false;
+  const clean = type.toLowerCase().trim();
+  const kind = KIND_BY_PATH_SEGMENT[clean] ?? KIND_BY_PATH_SEGMENT[`${clean}s`] ?? clean;
+  return (CHAPTER_CONTAINER_KINDS as readonly string[]).includes(kind);
+}
+
+/**
+ * Finds the parent container tag for a chapter in priority order:
+ * 1. Series
+ * 2. Anthology
+ * 3. Issue
+ *
+ * Explicitly excludes non-container tags like Author, Scanlator, Doujin (copyright/parody), Pairing, General, etc.
+ */
+export function getChapterContainerTag(
+  tags?: { type?: string; name?: string; permalink?: string }[],
+): { type: string; name: string; permalink: string } | null {
+  if (!tags || tags.length === 0) return null;
+
+  const normalizeType = (t?: string): string => {
+    if (!t) return "";
+    const clean = t.toLowerCase().trim();
+    return KIND_BY_PATH_SEGMENT[clean] ?? KIND_BY_PATH_SEGMENT[`${clean}s`] ?? clean;
+  };
+
+  for (const priority of CHAPTER_CONTAINER_KINDS) {
+    const found = tags.find(
+      (t) => normalizeType(t.type) === priority && Boolean(t.permalink && t.permalink.trim().length > 0),
+    );
+    if (found && found.permalink) {
+      return {
+        type: found.type || priority,
+        name: found.name || "",
+        permalink: found.permalink,
+      };
+    }
+  }
+
+  return null;
+}
+
 // ── 2. Tag Classification & Categories ────────────────────────────────────────
 
 export type TagCategory =
