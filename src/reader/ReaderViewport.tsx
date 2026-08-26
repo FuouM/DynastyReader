@@ -12,6 +12,47 @@ import type { ChapterRef } from "../types/routes";
 import { getPrefetchBuffer, isAutoCacheChapterEnabled, isMobileGesturesOnDesktopEnabled } from "./settings";
 import { decodeEntities } from "../utils/html";
 import { createResizeObserver } from "@solid-primitives/resize-observer";
+
+const OVERSCROLL_ENGAGE_THRESHOLD_PX = 60;
+const OVERSCROLL_READY_THRESHOLD_PX = 150;
+const OVERSCROLL_HOLD_TIME_MS = 250;
+const OVERSCROLL_MAX_PULL_PX = 70;
+const SWIPE_MIN_DIST_TOUCH_PX = 35;
+const SWIPE_MIN_DIST_MOUSE_PX = 45;
+
+const getAdjacentChapters = (
+  s: ReaderSession,
+): { prevCh: ChapterRef | null; nextCh: ChapterRef | null } => {
+  const list = s.chapterList();
+  if (list.length === 0) return { prevCh: null, nextCh: null };
+
+  const clean = (p: string) => p.toLowerCase().replace(/^\/+|\/+$/g, "").trim();
+  const curPermalink = clean(s.permalink);
+  const curTitle = s.chapterTitle().trim().toLowerCase();
+
+  let curIdx = list.findIndex((x) => {
+    const p = clean(x.permalink);
+    return (
+      p === curPermalink ||
+      p.endsWith(`/${curPermalink}`) ||
+      curPermalink.endsWith(`/${p}`) ||
+      (x.title && x.title.trim().toLowerCase() === curTitle)
+    );
+  });
+
+  if (curIdx < 0) {
+    const baseSlug = curPermalink.split("/").pop();
+    if (baseSlug) {
+      curIdx = list.findIndex((x) => clean(x.permalink).endsWith(baseSlug));
+    }
+  }
+
+  if (curIdx < 0) return { prevCh: null, nextCh: null };
+  const prevCh = curIdx > 0 ? list[curIdx - 1] : null;
+  const nextCh = curIdx < list.length - 1 ? list[curIdx + 1] : null;
+  return { prevCh, nextCh };
+};
+
 export function ReaderViewport(props: { session: ReaderSession; children?: JSX.Element }) {
   const s = props.session;
   const [overscrollHint, setOverscrollHint] = createSignal<{
@@ -157,31 +198,35 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         touchMoved = true;
       }
 
-      // Check for overscroll chapter pull at boundaries with loose permalink resolution
-      const list = s.chapterList();
-      const curIdx = list.findIndex(
-        (x) =>
-          x.permalink === s.permalink ||
-          x.permalink.toLowerCase().trim() === s.permalink.toLowerCase().trim() ||
-          x.permalink.endsWith(`/${s.permalink}`) ||
-          s.permalink.endsWith(`/${x.permalink}`),
-      );
-      const prevCh = curIdx > 0 ? list[curIdx - 1] : null;
-      const nextCh = curIdx >= 0 && curIdx < list.length - 1 ? list[curIdx + 1] : null;
+      // Check for overscroll chapter pull at boundaries
+      const { prevCh, nextCh } = getAdjacentChapters(s);
 
       if (s.isHorizontal()) {
         const isRtl = s.direction() === "rtl";
         const cur = s.isSpread() ? s.slideIndex() : s.currentIndex();
         const total = s.isSpread() ? s.spreads().length : s.pages().length;
 
-        // In RTL: drag left (dx < -40) pulls previous; drag right (dx > 40) pulls next
-        // In LTR: drag right (dx > 40) pulls previous; drag left (dx < -40) pulls next
-        const isPullingPrev = cur === 0 && (isRtl ? dx < -40 : dx > 40) && absX > absY;
-        const isPullingNext = cur >= total - 1 && (isRtl ? dx > 40 : dx < -40) && absX > absY;
+        // In RTL:
+        // - Advance to next page is dragging RIGHT (dx > 0)
+        // - Pull previous chapter (before page 0) is dragging LEFT (dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX)
+        // - Pull next chapter (after last page) is dragging RIGHT (dx > OVERSCROLL_ENGAGE_THRESHOLD_PX)
+        // In LTR:
+        // - Advance to next page is dragging LEFT (dx < 0)
+        // - Pull previous chapter (before page 0) is dragging RIGHT (dx > OVERSCROLL_ENGAGE_THRESHOLD_PX)
+        // - Pull next chapter (after last page) is dragging LEFT (dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX)
+        const isPullingPrev =
+          cur === 0 &&
+          (isRtl ? dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX : dx > OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
+          absX > absY * 1.25;
+
+        const isPullingNext =
+          cur >= total - 1 &&
+          (isRtl ? dx > OVERSCROLL_ENGAGE_THRESHOLD_PX : dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
+          absX > absY * 1.25;
 
         if (isPullingPrev) {
           const dist = absX;
-          const ready = dist >= 120;
+          const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
           activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
           if (ready && !hasVibrated) {
             if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
@@ -193,12 +238,12 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
             text: prevCh
               ? (ready
                   ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
-                  : `Pull for previous chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                  : `Pull for previous chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
               : "First chapter (no previous chapter)",
           });
           if (s.stripEl) {
             const pullSign = isRtl ? -1 : 1;
-            const damped = pullSign * Math.min(60, Math.pow(dist, 0.72));
+            const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
             const sign = isRtl ? 1 : -1;
             s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
           }
@@ -207,7 +252,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
         if (isPullingNext) {
           const dist = absX;
-          const ready = dist >= 120;
+          const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
           activeOverscroll = { direction: "next", chapter: nextCh, ready, dist };
           if (ready && !hasVibrated) {
             if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
@@ -219,12 +264,12 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
             text: nextCh
               ? (ready
                   ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
-                  : `Pull for next chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                  : `Pull for next chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
               : "End of series (no next chapter)",
           });
           if (s.stripEl) {
             const pullSign = isRtl ? 1 : -1;
-            const damped = pullSign * Math.min(60, Math.pow(dist, 0.72));
+            const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
             const sign = isRtl ? 1 : -1;
             s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
           }
@@ -237,9 +282,9 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           const isAtTop = vp.scrollTop <= 5;
           const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 5;
 
-          if (isAtTop && dy > 40 && absY > absX) {
+          if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.25) {
             const dist = dy;
-            const ready = dist >= 120;
+            const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
             activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
             if (ready && !hasVibrated) {
               if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
@@ -251,19 +296,19 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
               text: prevCh
                 ? (ready
                     ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
-                    : `Pull down for previous chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                    : `Pull down for previous chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
                 : "First chapter (no previous chapter)",
             });
             if (s.stripEl) {
-              const damped = Math.min(60, Math.pow(dist, 0.72));
+              const damped = Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
               s.stripEl.style.transform = `translateY(${damped}px)`;
             }
             return;
           }
 
-          if (isAtBottom && dy < -40 && absY > absX) {
+          if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.25) {
             const dist = -dy;
-            const ready = dist >= 120;
+            const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
             activeOverscroll = { direction: "next", chapter: nextCh, ready, dist };
             if (ready && !hasVibrated) {
               if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
@@ -275,11 +320,11 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
               text: nextCh
                 ? (ready
                     ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
-                    : `Pull up for next chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                    : `Pull up for next chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
                 : "End of series (no next chapter)",
             });
             if (s.stripEl) {
-              const damped = -Math.min(60, Math.pow(dist, 0.72));
+              const damped = -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
               s.stripEl.style.transform = `translateY(${damped}px)`;
             }
             return;
@@ -309,7 +354,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         activeOverscroll = null;
         setOverscrollHint(null);
         resetStripTransform(true);
-        const isIntentional = over.ready && (dt >= 200 || over.dist >= 150);
+        const isIntentional = over.ready && (dt >= OVERSCROLL_HOLD_TIME_MS || over.dist >= 190);
         if (isIntentional && over.chapter) {
           if (over.direction === "prev") {
             s.gotoPrevChapter();
@@ -325,7 +370,12 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       resetStripTransform(true);
 
       // 1. Horizontal Swipe gesture for in-chapter page flips
-      if (touchMoved && absX > 25 && absX > absY * 1.1 && (absX > 45 || dt < 500)) {
+      if (
+        touchMoved &&
+        absX > SWIPE_MIN_DIST_TOUCH_PX &&
+        absX > absY * 1.25 &&
+        (absX > 60 || (absX > SWIPE_MIN_DIST_TOUCH_PX && dt < 350))
+      ) {
         const isRtl = s.direction() === "rtl";
         const step = isRtl ? (totalDx > 0 ? 1 : -1) : (totalDx < 0 ? 1 : -1);
         const cur = s.currentIndex();
@@ -456,28 +506,26 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         const absX = Math.abs(dx);
         const absY = Math.abs(dy);
 
-        const list = s.chapterList();
-        const curIdx = list.findIndex(
-          (x) =>
-            x.permalink === s.permalink ||
-            x.permalink.toLowerCase().trim() === s.permalink.toLowerCase().trim() ||
-            x.permalink.endsWith(`/${s.permalink}`) ||
-            s.permalink.endsWith(`/${x.permalink}`),
-        );
-        const prevCh = curIdx > 0 ? list[curIdx - 1] : null;
-        const nextCh = curIdx >= 0 && curIdx < list.length - 1 ? list[curIdx + 1] : null;
+        // Check for overscroll chapter pull at boundaries
+        const { prevCh, nextCh } = getAdjacentChapters(s);
 
         if (s.isHorizontal()) {
           const isRtl = s.direction() === "rtl";
           const cur = s.isSpread() ? s.slideIndex() : s.currentIndex();
           const total = s.isSpread() ? s.spreads().length : s.pages().length;
 
-          const isPullingPrev = cur === 0 && (isRtl ? dx < -40 : dx > 40) && absX > absY;
-          const isPullingNext = cur >= total - 1 && (isRtl ? dx > 40 : dx < -40) && absX > absY;
+          const isPullingPrev =
+            cur === 0 &&
+            (isRtl ? dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX : dx > OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
+            absX > absY * 1.25;
 
+          const isPullingNext =
+            cur >= total - 1 &&
+            (isRtl ? dx > OVERSCROLL_ENGAGE_THRESHOLD_PX : dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
+            absX > absY * 1.25;
           if (isPullingPrev) {
             const dist = absX;
-            const ready = dist >= 120;
+            const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
             activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
             setOverscrollHint({
               direction: "prev",
@@ -485,12 +533,12 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
               text: prevCh
                 ? (ready
                     ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
-                    : `Pull for previous chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                    : `Pull for previous chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
                 : "First chapter (no previous chapter)",
             });
             if (s.stripEl) {
               const pullSign = isRtl ? -1 : 1;
-              const damped = pullSign * Math.min(60, Math.pow(dist, 0.72));
+              const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
               const sign = isRtl ? 1 : -1;
               s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
             }
@@ -499,7 +547,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
           if (isPullingNext) {
             const dist = absX;
-            const ready = dist >= 120;
+            const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
             activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist };
             setOverscrollHint({
               direction: "next",
@@ -507,12 +555,12 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
               text: nextCh
                 ? (ready
                     ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
-                    : `Pull for next chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                    : `Pull for next chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
                 : "End of series (no next chapter)",
             });
             if (s.stripEl) {
               const pullSign = isRtl ? 1 : -1;
-              const damped = pullSign * Math.min(60, Math.pow(dist, 0.72));
+              const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
               const sign = isRtl ? 1 : -1;
               s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
             }
@@ -525,9 +573,9 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
             const isAtTop = vp.scrollTop <= 5;
             const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 5;
 
-            if (isAtTop && dy > 40 && absY > absX) {
+            if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.25) {
               const dist = dy;
-              const ready = dist >= 120;
+              const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
               activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
               setOverscrollHint({
                 direction: "prev",
@@ -535,19 +583,19 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
                 text: prevCh
                   ? (ready
                       ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
-                      : `Pull down for previous chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                      : `Pull down for previous chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
                   : "First chapter (no previous chapter)",
               });
               if (s.stripEl) {
-                const damped = Math.min(60, Math.pow(dist, 0.72));
+                const damped = Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
                 s.stripEl.style.transform = `translateY(${damped}px)`;
               }
               return;
             }
 
-            if (isAtBottom && dy < -40 && absY > absX) {
+            if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.25) {
               const dist = -dy;
-              const ready = dist >= 120;
+              const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
               activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist };
               setOverscrollHint({
                 direction: "next",
@@ -555,11 +603,11 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
                 text: nextCh
                   ? (ready
                       ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
-                      : `Pull up for next chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                      : `Pull up for next chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
                   : "End of series (no next chapter)",
               });
               if (s.stripEl) {
-                const damped = -Math.min(60, Math.pow(dist, 0.72));
+                const damped = -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
                 s.stripEl.style.transform = `translateY(${damped}px)`;
               }
               return;
@@ -594,7 +642,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         activeMouseOverscroll = null;
         setOverscrollHint(null);
         resetStripTransform(true);
-        const isIntentional = over.ready && (dt >= 180 || over.dist >= 150);
+        const isIntentional = over.ready && (dt >= OVERSCROLL_HOLD_TIME_MS || over.dist >= 190);
         if (isIntentional && over.chapter) {
           if (over.direction === "prev") {
             s.gotoPrevChapter();
@@ -611,7 +659,12 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       }
 
       // Horizontal swipe for page flips
-      if (mouseMoved && absX > 40 && absX > absY * 1.1) {
+      if (
+        mouseMoved &&
+        absX > SWIPE_MIN_DIST_MOUSE_PX &&
+        absX > absY * 1.25 &&
+        (absX > 65 || (absX > SWIPE_MIN_DIST_MOUSE_PX && dt < 300))
+      ) {
         const isRtl = s.direction() === "rtl";
         const step = isRtl ? (totalDx > 0 ? 1 : -1) : (totalDx < 0 ? 1 : -1);
         const cur = s.currentIndex();

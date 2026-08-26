@@ -650,13 +650,22 @@ export class ReaderSession implements ReaderQueueHost {
 
   gotoPrevChapter(): void {
     const list = this.chapterList();
-    const curIdx = list.findIndex(
-      (x) =>
-        x.permalink === this.permalink ||
-        x.permalink.toLowerCase().trim() === this.permalink.toLowerCase().trim() ||
-        x.permalink.endsWith(`/${this.permalink}`) ||
-        this.permalink.endsWith(`/${x.permalink}`),
-    );
+    if (list.length === 0) return;
+    const clean = (p: string) => p.toLowerCase().replace(/^\/+|\/+$/g, "").trim();
+    const curPermalink = clean(this.permalink);
+    const curTitle = this.chapterTitle().trim().toLowerCase();
+
+    let curIdx = list.findIndex((x) => {
+      const p = clean(x.permalink);
+      return p === curPermalink || p.endsWith(`/${curPermalink}`) || curPermalink.endsWith(`/${p}`) || (x.title && x.title.trim().toLowerCase() === curTitle);
+    });
+    if (curIdx < 0) {
+      const baseSlug = curPermalink.split("/").pop();
+      if (baseSlug) {
+        curIdx = list.findIndex((x) => clean(x.permalink).endsWith(baseSlug));
+      }
+    }
+
     if (curIdx > 0) {
       const prevCh = list[curIdx - 1];
       const target = getPrevChapterStartPage() === "last" ? "last" : 0;
@@ -666,13 +675,22 @@ export class ReaderSession implements ReaderQueueHost {
 
   gotoNextChapter(): void {
     const list = this.chapterList();
-    const curIdx = list.findIndex(
-      (x) =>
-        x.permalink === this.permalink ||
-        x.permalink.toLowerCase().trim() === this.permalink.toLowerCase().trim() ||
-        x.permalink.endsWith(`/${this.permalink}`) ||
-        this.permalink.endsWith(`/${x.permalink}`),
-    );
+    if (list.length === 0) return;
+    const clean = (p: string) => p.toLowerCase().replace(/^\/+|\/+$/g, "").trim();
+    const curPermalink = clean(this.permalink);
+    const curTitle = this.chapterTitle().trim().toLowerCase();
+
+    let curIdx = list.findIndex((x) => {
+      const p = clean(x.permalink);
+      return p === curPermalink || p.endsWith(`/${curPermalink}`) || curPermalink.endsWith(`/${p}`) || (x.title && x.title.trim().toLowerCase() === curTitle);
+    });
+    if (curIdx < 0) {
+      const baseSlug = curPermalink.split("/").pop();
+      if (baseSlug) {
+        curIdx = list.findIndex((x) => clean(x.permalink).endsWith(baseSlug));
+      }
+    }
+
     if (curIdx >= 0 && curIdx < list.length - 1) {
       const nextCh = list[curIdx + 1];
       this.gotoChapter(nextCh, 0);
