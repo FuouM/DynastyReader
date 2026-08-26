@@ -212,7 +212,7 @@ export const en = {
     blacklistButton: "Blacklist",
     reloadTooltip: "Re-fetch series data from the server",
     authorsLabel: "Author",
-    scanlatorsLabel: "Scanlation Group",
+    scanlatorsLabel: "Scanlation",
     doujinLabel: "Doujin",
     pairingLabel: "Pairings",
     charactersLabel: "Characters",
