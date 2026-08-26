@@ -87,7 +87,7 @@ export function App() {
   });
 
   return (
-    <div id="ds-root" data-mobile={isMobile() ? "1" : undefined} style={{ zoom: String(uiScale()) }}>
+    <div id="ds-root" data-mobile={isMobile() ? "1" : undefined} style={!isMobile() && uiScale() !== 1.0 ? { zoom: String(uiScale()) } : undefined}>
       <GlobalShortcuts />
       <Topbar />
       <div id="ds-view">

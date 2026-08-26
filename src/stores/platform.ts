@@ -4,7 +4,13 @@ import { persistedSignal } from "../lib/persisted-signal";
 
 export type UiMode = "auto" | "desktop" | "mobile";
 
-const MOBILE_MEDIA_QUERY = "(max-width: 680px)";
+const MOBILE_MEDIA_QUERY = "(max-width: 680px), (max-height: 550px) and (orientation: landscape), ((pointer: coarse) and (max-width: 1024px))";
+
+const isNativeMobileDevice = (): boolean => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return /Android|iPhone|iPad|iPod|Mobile|Silk/i.test(ua);
+};
 
 const [uiModeSignal, setUiModeSignal] = persistedSignal<UiMode>("auto", {
   name: "ds-ui-mode",
@@ -23,5 +29,5 @@ export const isMobile: Accessor<boolean> = () => {
   const mode = uiModeSignal();
   if (mode === "mobile") return true;
   if (mode === "desktop") return false;
-  return matchesMediaQuery();
+  return isNativeMobileDevice() || matchesMediaQuery();
 };

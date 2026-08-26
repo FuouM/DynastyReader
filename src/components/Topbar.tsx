@@ -92,23 +92,17 @@ export function Topbar() {
               id="ds-nav-back"
               title={t("topbar.navBackTooltip")}
               disabled={!canGoBack()}
-              onTouchStart={(ev) => {
-                if (canGoBack()) {
-                  startHold("back", ev.currentTarget);
-                }
-              }}
-              onTouchEnd={(ev) => {
-                if (didHold) ev.preventDefault();
-                cancelHold();
-              }}
-              onTouchCancel={() => cancelHold()}
-              onMouseDown={(ev) => {
+              onPointerDown={(ev) => {
                 if (ev.button === 0 && canGoBack()) {
                   startHold("back", ev.currentTarget);
                 }
               }}
-              onMouseUp={() => cancelHold()}
-              onMouseLeave={() => cancelHold()}
+              onPointerUp={(ev) => {
+                if (didHold) ev.preventDefault();
+                cancelHold();
+              }}
+              onPointerCancel={() => cancelHold()}
+              onPointerLeave={() => cancelHold()}
               onContextMenu={(ev) => {
                 ev.preventDefault();
                 if (canGoBack()) {
@@ -129,23 +123,17 @@ export function Topbar() {
               id="ds-nav-forward"
               title={t("topbar.navForwardTooltip")}
               disabled={!canGoForward()}
-              onTouchStart={(ev) => {
-                if (canGoForward()) {
-                  startHold("forward", ev.currentTarget);
-                }
-              }}
-              onTouchEnd={(ev) => {
-                if (didHold) ev.preventDefault();
-                cancelHold();
-              }}
-              onTouchCancel={() => cancelHold()}
-              onMouseDown={(ev) => {
+              onPointerDown={(ev) => {
                 if (ev.button === 0 && canGoForward()) {
                   startHold("forward", ev.currentTarget);
                 }
               }}
-              onMouseUp={() => cancelHold()}
-              onMouseLeave={() => cancelHold()}
+              onPointerUp={(ev) => {
+                if (didHold) ev.preventDefault();
+                cancelHold();
+              }}
+              onPointerCancel={() => cancelHold()}
+              onPointerLeave={() => cancelHold()}
               onContextMenu={(ev) => {
                 ev.preventDefault();
                 if (canGoForward()) {

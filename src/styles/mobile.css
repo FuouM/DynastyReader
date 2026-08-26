@@ -115,13 +115,13 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
 #ds-root[data-mobile] .ds-settings-content {
   overscroll-behavior-y: contain;
 }
-/* Compact Mobile Topbar (38px height) */
+/* Compact Mobile Topbar */
 #ds-root[data-mobile] #ds-topbar {
   flex-direction: row;
   align-items: center;
-  padding: env(safe-area-inset-top, 0px) 10px 0 10px;
-  height: calc(44px + env(safe-area-inset-top, 0px));
-  min-height: calc(44px + env(safe-area-inset-top, 0px));
+  padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px));
+  height: auto;
+  min-height: 0;
   box-sizing: border-box;
 }
 
@@ -130,10 +130,10 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   align-items: center;
   flex-wrap: nowrap;
   width: 100%;
-  gap: 8px;
-  height: 44px;
+  gap: 6px;
+  height: auto;
+  min-height: 28px;
 }
-
 #ds-root[data-mobile] #ds-nav-history {
   display: inline-flex;
   align-items: stretch;
@@ -201,7 +201,7 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
 #ds-root[data-mobile] #ds-topbar-tools {
   display: inline-flex;
   align-items: center;
-  margin-left: 4px;
+  margin-left: auto !important;
   gap: 4px;
   flex-shrink: 0;
 }
@@ -222,15 +222,46 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   font-size: 13px;
 }
 
-/* Hide desktop topbar segmented view switch on mobile (bottom nav handles switching) */
+/* Hide desktop topbar segmented view switch on portrait mobile (bottom nav handles switching) */
 #ds-root[data-mobile] #ds-view-switch {
-  display: none !important;
+  display: none;
 }
 /* Hide desktop refresh button on mobile */
 #ds-root[data-mobile] #ds-page-refresh-btn {
   display: none !important;
 }
 
+/* Landscape / Wide mobile: show topbar view switch, session tab, refresh btn, hide bottom nav */
+@media (orientation: landscape), (min-width: 600px) {
+  #ds-root[data-mobile] #ds-topbar {
+    padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  #ds-root[data-mobile] #ds-topbar-main {
+    height: auto !important;
+    min-height: 28px !important;
+    gap: 6px !important;
+  }
+  #ds-root[data-mobile] #ds-view-switch {
+    display: inline-flex !important;
+  }
+  #ds-root[data-mobile] #ds-bottom-nav {
+    display: none !important;
+  }
+  #ds-root[data-mobile] #ds-page-refresh-btn {
+    display: inline-flex !important;
+  }
+  #ds-root[data-mobile] .ds-session-tab {
+    display: inline-flex !important;
+  }
+  #ds-root[data-mobile] #ds-view {
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  #ds-root[data-mobile] #ds-title {
+    flex: 0 1 auto !important;
+  }
+}
 /* Mobile Bottom Navigation Bar (Styled identical to WinForms segmented switch) */
 #ds-bottom-nav {
   display: flex;
@@ -297,10 +328,10 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   font-weight: 600 !important;
   border-radius: 0;
 }
-
 .ds-bn-tab.active .bi {
   color: var(--sys-highlight-text, #ffffff) !important;
 }
+
 
 /* Action button text collapse & compact item row actions on mobile */
 #ds-root[data-mobile] .ds-action-btn-text {
@@ -379,6 +410,36 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   gap: 4px;
 }
 
+@media (orientation: landscape), (min-width: 600px) {
+  #ds-root[data-mobile] .ds-subtabs {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  #ds-root[data-mobile] .ds-subtabs-left {
+    width: auto !important;
+    flex: 0 1 auto !important;
+    padding-bottom: 0 !important;
+  }
+  #ds-root[data-mobile] .ds-subtabs-right {
+    width: auto !important;
+    flex: 0 0 auto !important;
+    justify-content: flex-end !important;
+    margin-left: auto !important;
+    gap: 6px !important;
+  }
+  #ds-root[data-mobile] .ds-feed-status-bar {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  #ds-root[data-mobile] .ds-feed-status-right {
+    width: auto !important;
+    justify-content: flex-end !important;
+    margin-left: auto !important;
+  }
+}
 #ds-root[data-mobile] .ds-subtabs-right .ds-scroll-top-btn {
   display: inline-flex;
   align-items: center;
@@ -573,7 +634,7 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   left: 0 !important;
   right: 0 !important;
   z-index: 1100 !important;
-  padding: env(safe-area-inset-top, 0px) 8px 6px 8px !important;
+  padding: calc(4px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 6px max(12px, env(safe-area-inset-left, 0px)) !important;
   background: rgba(248, 248, 248, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -588,7 +649,7 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   left: 0 !important;
   right: 0 !important;
   z-index: 1100 !important;
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)) 8px !important;
+  padding: 6px max(12px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)) !important;
   background: rgba(248, 248, 248, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -803,14 +864,19 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   to { transform: translateY(100%); }
 }
 
+#ds-root[data-mobile] #ds-topbar,
+#ds-root[data-mobile] #ds-topbar *,
 #ds-root[data-mobile] .win-button,
 #ds-root[data-mobile] .ds-segmented-btn,
+#ds-root[data-mobile] .ds-segmented-switch,
+#ds-root[data-mobile] .ds-nav-history-btn,
 #ds-root[data-mobile] .ds-subtab,
 #ds-root[data-mobile] .ds-chapter-row,
 #ds-root[data-mobile] .ds-feed-item,
 #ds-root[data-mobile] .ds-bn-tab,
 #ds-root[data-mobile] .tag-pill {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #ds-root[data-mobile] #ds-reader-viewport.horizontal #ds-reader-strip {
@@ -860,10 +926,10 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
 }
 
 #ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-header {
-  height: calc(44px + env(safe-area-inset-top, 0px)) !important;
-  min-height: calc(44px + env(safe-area-inset-top, 0px)) !important;
-  max-height: calc(44px + env(safe-area-inset-top, 0px)) !important;
-  padding: env(safe-area-inset-top, 0px) 10px 0 12px !important;
+  height: calc(40px + env(safe-area-inset-top, 0px)) !important;
+  min-height: calc(40px + env(safe-area-inset-top, 0px)) !important;
+  max-height: calc(40px + env(safe-area-inset-top, 0px)) !important;
+  padding: calc(4px + env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) 4px max(14px, env(safe-area-inset-left, 0px)) !important;
   margin: 0 !important;
   background: var(--sys-control-bg, #ececec) !important;
   border-bottom: 1px solid var(--sys-border-dark, #b0b0b0) !important;
@@ -907,7 +973,7 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
 }
 
 #ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-footer {
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)) 12px !important;
+  padding: 6px max(14px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)) !important;
   background: var(--sys-control-bg, #ececec) !important;
   border-top: 1px solid var(--sys-border-dark, #b0b0b0) !important;
   display: flex !important;
@@ -966,7 +1032,7 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
 }
 
 #ds-root[data-mobile] .ds-hotkey-scroll {
-  padding: 0 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px !important;
+  padding: 0 max(14px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)) !important;
 }
 
 #ds-root[data-mobile] .ds-settings-content {
@@ -977,7 +1043,7 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   overflow-y: scroll !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior-y: contain !important;
-  padding: 10px 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px !important;
+  padding: 10px max(14px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)) !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 10px !important;
