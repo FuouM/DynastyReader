@@ -458,6 +458,8 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     let activeSlot: HTMLElement | null = null;
     let slotScrollLeft = 0;
     let slotScrollTop = 0;
+    let vpScrollTop = 0;
+    let vpScrollLeft = 0;
     let activeMouseOverscroll: {
       direction: "prev" | "next";
       chapter: ChapterRef | null;
@@ -484,6 +486,12 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           slotScrollLeft = target.scrollLeft;
           slotScrollTop = target.scrollTop;
           target.classList.add("ds-dragging");
+          vpEl.classList.add("ds-dragging");
+        }
+      } else {
+        vpScrollTop = vpEl.scrollTop;
+        vpScrollLeft = vpEl.scrollLeft;
+        if (isMobileGesturesOnDesktopEnabled()) {
           vpEl.classList.add("ds-dragging");
         }
       }
@@ -612,6 +620,15 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
               }
               return;
             }
+
+            if (activeMouseOverscroll) {
+              activeMouseOverscroll = null;
+              setOverscrollHint(null);
+              resetStripTransform(false);
+            }
+            vp.scrollTop = vpScrollTop - dy;
+            vp.scrollLeft = vpScrollLeft - dx;
+            return;
           }
         }
         if (activeMouseOverscroll) {
@@ -658,8 +675,9 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         resetStripTransform(true);
       }
 
-      // Horizontal swipe for page flips
+      // Horizontal swipe for page flips in horizontal mode
       if (
+        s.isHorizontal() &&
         mouseMoved &&
         absX > SWIPE_MIN_DIST_MOUSE_PX &&
         absX > absY * 1.25 &&
