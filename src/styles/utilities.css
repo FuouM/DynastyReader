@@ -713,6 +713,8 @@
 .ds-add-col-list {
   max-height: 180px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
   padding: 3px 4px;
   display: flex;
   flex-direction: column;

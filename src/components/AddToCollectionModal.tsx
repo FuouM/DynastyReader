@@ -60,7 +60,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
   const [positionStyle, setPositionStyle] = createSignal(
     "top:20%;left:50%;transform:translateX(-50%);",
   );
-
+  let dropdownRef: HTMLDivElement | undefined;
   createEffect(() => {
     if (!props.open) return;
 
@@ -71,12 +71,16 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
       }
     };
 
-    const onScroll = (): void => {
+    const onScroll = (ev: Event): void => {
+      const target = ev.target as Node | null;
+      if (target && dropdownRef && dropdownRef.contains(target)) {
+        return;
+      }
       props.onClose();
     };
 
     makeEventListener(window, "keydown", onKeyDown);
-    makeEventListener(window, "scroll", onScroll, { capture: true, once: true, passive: true });
+    makeEventListener(window, "scroll", onScroll, { capture: true, passive: true });
   });
 
   createEffect(() => {
@@ -201,7 +205,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
             if (ev.target === ev.currentTarget) props.onClose();
           }}
         >
-          <div class="ds-popup-card ds-add-to-collection-dropdown" style={positionStyle()}>
+          <div ref={dropdownRef} class="ds-popup-card ds-add-to-collection-dropdown" style={positionStyle()}>
             <div class="ds-dropdown-header">
               <IconText icon={<FolderIcon color="var(--sys-primary,#0078d4)" />}>
                 {t("dialogs.addToCollection.title")}
