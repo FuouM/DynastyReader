@@ -7,7 +7,6 @@
 import { For, Show } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import { ReaderSlot } from "./ReaderSlot";
-
 export interface ReaderStripProps {
   session: ReaderSession;
 }

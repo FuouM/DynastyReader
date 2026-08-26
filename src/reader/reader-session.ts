@@ -47,6 +47,7 @@ import {
   detectIsLongStrip,
   detectReadingDirection,
   spreadIndexOf,
+  getAdjacentChapters,
 } from "./reader-spread";
 import { ReaderQueue, type ReaderQueueHost, type SlotStateKind } from "./reader-queue";
 import {
@@ -104,6 +105,9 @@ export class ReaderSession implements ReaderQueueHost {
 
   readonly seriesName: () => string;
   readonly setSeriesName: (val: string) => void;
+
+  readonly chapterPermalink: () => string;
+  readonly setChapterPermalink: (val: string) => void;
 
   readonly chapterTitle: () => string;
   readonly setChapterTitle: (val: string) => void;
@@ -234,6 +238,8 @@ export class ReaderSession implements ReaderQueueHost {
     this.setSeriesPermalink = this.state.setSeriesPermalink;
     this.seriesName = this.state.seriesName;
     this.setSeriesName = this.state.setSeriesName;
+    this.chapterPermalink = this.state.chapterPermalink;
+    this.setChapterPermalink = this.state.setChapterPermalink;
     this.chapterTitle = this.state.chapterTitle;
     this.setChapterTitle = this.state.setChapterTitle;
     this.chapterList = this.state.chapterList;
@@ -649,50 +655,16 @@ export class ReaderSession implements ReaderQueueHost {
   }
 
   gotoPrevChapter(): void {
-    const list = this.chapterList();
-    if (list.length === 0) return;
-    const clean = (p: string) => p.toLowerCase().replace(/^\/+|\/+$/g, "").trim();
-    const curPermalink = clean(this.permalink);
-    const curTitle = this.chapterTitle().trim().toLowerCase();
-
-    let curIdx = list.findIndex((x) => {
-      const p = clean(x.permalink);
-      return p === curPermalink || p.endsWith(`/${curPermalink}`) || curPermalink.endsWith(`/${p}`) || (x.title && x.title.trim().toLowerCase() === curTitle);
-    });
-    if (curIdx < 0) {
-      const baseSlug = curPermalink.split("/").pop();
-      if (baseSlug) {
-        curIdx = list.findIndex((x) => clean(x.permalink).endsWith(baseSlug));
-      }
-    }
-
-    if (curIdx > 0) {
-      const prevCh = list[curIdx - 1];
+    const { prevCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
+    if (prevCh) {
       const target = getPrevChapterStartPage() === "last" ? "last" : 0;
       this.gotoChapter(prevCh, target);
     }
   }
 
   gotoNextChapter(): void {
-    const list = this.chapterList();
-    if (list.length === 0) return;
-    const clean = (p: string) => p.toLowerCase().replace(/^\/+|\/+$/g, "").trim();
-    const curPermalink = clean(this.permalink);
-    const curTitle = this.chapterTitle().trim().toLowerCase();
-
-    let curIdx = list.findIndex((x) => {
-      const p = clean(x.permalink);
-      return p === curPermalink || p.endsWith(`/${curPermalink}`) || curPermalink.endsWith(`/${p}`) || (x.title && x.title.trim().toLowerCase() === curTitle);
-    });
-    if (curIdx < 0) {
-      const baseSlug = curPermalink.split("/").pop();
-      if (baseSlug) {
-        curIdx = list.findIndex((x) => clean(x.permalink).endsWith(baseSlug));
-      }
-    }
-
-    if (curIdx >= 0 && curIdx < list.length - 1) {
-      const nextCh = list[curIdx + 1];
+    const { nextCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
+    if (nextCh) {
       this.gotoChapter(nextCh, 0);
     }
   }
@@ -776,11 +748,14 @@ export class ReaderSession implements ReaderQueueHost {
         const vpRect = vp.getBoundingClientRect();
         const targetRect = target.getBoundingClientRect();
         const startScrollTop = vp.scrollTop;
-        const verticalOffset = (targetRect.top - vpRect.top) - Math.max(0, (vpRect.height - targetRect.height) / 2);
-        const targetScrollTop = Math.max(0, startScrollTop + verticalOffset);
+        const targetScrollTop = index === 0 ? 0 : Math.max(0, startScrollTop + (targetRect.top - vpRect.top));
 
         if (instant || !this.scrollLock()) {
-          target.scrollIntoView({ behavior: "auto", block: "center" });
+          if (index === 0) {
+            vp.scrollTop = 0;
+          } else {
+            target.scrollIntoView({ behavior: "auto", block: "start" });
+          }
           this.isProgrammaticScroll = false;
         } else {
           const distance = targetScrollTop - startScrollTop;
@@ -848,15 +823,17 @@ export class ReaderSession implements ReaderQueueHost {
 
       const target = this.slotEls[this.currentIndex()];
       if (target && this.viewportEl) {
-        const vpRect = this.viewportEl.getBoundingClientRect();
-        const targetRect = target.getBoundingClientRect();
-        const verticalOffset = (targetRect.top - vpRect.top) - Math.max(0, (vpRect.height - targetRect.height) / 2);
-        const targetTop = Math.max(0, this.viewportEl.scrollTop + verticalOffset);
-
-        if (!smooth) {
-          target.scrollIntoView({ behavior: "auto", block: "center" });
+        if (this.currentIndex() === 0) {
+          this.viewportEl.scrollTop = 0;
         } else {
-          this.viewportEl.scrollTo({ top: targetTop, behavior: "smooth" });
+          const vpRect = this.viewportEl.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const targetTop = Math.max(0, this.viewportEl.scrollTop + (targetRect.top - vpRect.top));
+          if (!smooth) {
+            target.scrollIntoView({ behavior: "auto", block: "start" });
+          } else {
+            this.viewportEl.scrollTo({ top: targetTop, behavior: "smooth" });
+          }
         }
       } else if (this.viewportEl && this.currentIndex() === 0) {
         this.viewportEl.scrollTop = 0;
@@ -966,6 +943,7 @@ export class ReaderSession implements ReaderQueueHost {
     this.setSeriesPermalink(seriesPermalink);
     this.setSeriesName(seriesName);
     this.setChapterTitle(chapter.title || route.chapterTitle || "Chapter");
+    this.setChapterPermalink(this.permalink);
     if (route.chapterList && route.chapterList.length > 0) {
       this.setChapterList(route.chapterList);
     } else {

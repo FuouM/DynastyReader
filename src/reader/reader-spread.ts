@@ -1,5 +1,6 @@
 import type { ChapterTag, SeriesTag } from "../types/api";
 import type { ReadingDirection, SpreadGroup } from "../types/reader";
+import type { ChapterRef } from "../types/routes";
 
 /**
  * Spread layout engine: maps page indices to dual-page (or standalone) spread
@@ -137,4 +138,39 @@ export function detectIsLongStrip(
 ): boolean {
   const tags = [...(chapterTags ?? []), ...(seriesTags ?? [])];
   return tags.some(isLongStripTag);
+}
+
+/**
+ * Computes adjacent previous and next chapters from a chapter list and current permalink/title.
+ */
+export function getAdjacentChapters(
+  chapterList: ChapterRef[],
+  permalink: string,
+  chapterTitle?: string,
+): { prevCh: ChapterRef | null; nextCh: ChapterRef | null } {
+  if (!chapterList || chapterList.length === 0) return { prevCh: null, nextCh: null };
+
+  const clean = (p: string) => p.toLowerCase().replace(/^\/+|\/+$/g, "").trim();
+  const curPermalink = clean(permalink);
+  const curTitle = (chapterTitle || "").trim().toLowerCase();
+
+  let curIdx = chapterList.findIndex((x) => {
+    const p = clean(x.permalink);
+    return (
+      (curPermalink.length > 0 && (p === curPermalink || p.endsWith(`/${curPermalink}`) || curPermalink.endsWith(`/${p}`))) ||
+      (curTitle.length > 0 && Boolean(x.title && x.title.trim().toLowerCase() === curTitle))
+    );
+  });
+
+  if (curIdx < 0 && curPermalink.length > 0) {
+    const baseSlug = curPermalink.split("/").pop();
+    if (baseSlug) {
+      curIdx = chapterList.findIndex((x) => clean(x.permalink).endsWith(baseSlug));
+    }
+  }
+
+  if (curIdx < 0) return { prevCh: null, nextCh: null };
+  const prevCh = curIdx > 0 ? chapterList[curIdx - 1] : null;
+  const nextCh = curIdx < chapterList.length - 1 ? chapterList[curIdx + 1] : null;
+  return { prevCh, nextCh };
 }

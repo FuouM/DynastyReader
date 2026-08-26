@@ -8,7 +8,7 @@
 import { createMemo, createSignal } from "solid-js";
 import { createStore } from "solid-js/store";
 import { t } from "../i18n";
-import { computeSpreads, spreadIndexOf } from "./reader-spread";
+import { computeSpreads, spreadIndexOf, getAdjacentChapters } from "./reader-spread";
 import type { ChapterPage } from "../types/api";
 import type { ChapterRef } from "../types/routes";
 import type { FitMode, PagedLayout, ReaderMode, ReadingDirection, SpreadGroup } from "../types/reader";
@@ -33,6 +33,8 @@ export interface ReaderState {
   setSeriesPermalink: (v: string | null) => void;
   seriesName: () => string;
   setSeriesName: (v: string) => void;
+  chapterPermalink: () => string;
+  setChapterPermalink: (v: string) => void;
   chapterTitle: () => string;
   setChapterTitle: (v: string) => void;
   chapterList: () => ChapterRef[];
@@ -112,6 +114,7 @@ export interface ReaderState {
 export function createReaderState(): ReaderState {
   const [seriesPermalink, setSeriesPermalink] = createSignal<string | null>(null);
   const [seriesName, setSeriesName] = createSignal("");
+  const [chapterPermalink, setChapterPermalink] = createSignal("");
   const [chapterTitle, setChapterTitle] = createSignal("");
   const [chapterList, setChapterList] = createSignal<ChapterRef[]>([]);
   const [pages, setPages] = createSignal<ChapterPage[]>([]);
@@ -197,14 +200,11 @@ export function createReaderState(): ReaderState {
   });
 
   const chapterNav = createMemo(() => {
-    const total = pages().length;
-    const idx = currentIndex();
-    const isSpreadActive = isSpread() && spreads().length > 0;
-    if (isSpreadActive) {
-      const cur = spreadIndexOf(spreads(), idx);
-      return { prevDisabled: cur === 0, nextDisabled: cur >= spreads().length - 1 };
-    }
-    return { prevDisabled: idx === 0, nextDisabled: idx >= total - 1 };
+    const { prevCh, nextCh } = getAdjacentChapters(chapterList(), chapterPermalink(), chapterTitle());
+    return {
+      prevDisabled: prevCh === null,
+      nextDisabled: nextCh === null,
+    };
   });
 
   return {
@@ -212,6 +212,8 @@ export function createReaderState(): ReaderState {
     setSeriesPermalink,
     seriesName,
     setSeriesName,
+    chapterPermalink,
+    setChapterPermalink,
     chapterTitle,
     setChapterTitle,
     chapterList,

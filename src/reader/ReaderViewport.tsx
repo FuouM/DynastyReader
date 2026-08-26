@@ -12,55 +12,22 @@ import type { ChapterRef } from "../types/routes";
 import { getPrefetchBuffer, isAutoCacheChapterEnabled, isMobileGesturesOnDesktopEnabled } from "./settings";
 import { decodeEntities } from "../utils/html";
 import { createResizeObserver } from "@solid-primitives/resize-observer";
+import { getAdjacentChapters } from "./reader-spread";
+import { t } from "../i18n";
 
-const OVERSCROLL_ENGAGE_THRESHOLD_PX = 60;
-const OVERSCROLL_READY_THRESHOLD_PX = 150;
-const OVERSCROLL_HOLD_TIME_MS = 250;
+const OVERSCROLL_ENGAGE_THRESHOLD_PX = 50;
 const OVERSCROLL_MAX_PULL_PX = 70;
 const SWIPE_MIN_DIST_TOUCH_PX = 35;
 const SWIPE_MIN_DIST_MOUSE_PX = 45;
-
-const getAdjacentChapters = (
-  s: ReaderSession,
-): { prevCh: ChapterRef | null; nextCh: ChapterRef | null } => {
-  const list = s.chapterList();
-  if (list.length === 0) return { prevCh: null, nextCh: null };
-
-  const clean = (p: string) => p.toLowerCase().replace(/^\/+|\/+$/g, "").trim();
-  const curPermalink = clean(s.permalink);
-  const curTitle = s.chapterTitle().trim().toLowerCase();
-
-  let curIdx = list.findIndex((x) => {
-    const p = clean(x.permalink);
-    return (
-      p === curPermalink ||
-      p.endsWith(`/${curPermalink}`) ||
-      curPermalink.endsWith(`/${p}`) ||
-      (x.title && x.title.trim().toLowerCase() === curTitle)
-    );
-  });
-
-  if (curIdx < 0) {
-    const baseSlug = curPermalink.split("/").pop();
-    if (baseSlug) {
-      curIdx = list.findIndex((x) => clean(x.permalink).endsWith(baseSlug));
-    }
-  }
-
-  if (curIdx < 0) return { prevCh: null, nextCh: null };
-  const prevCh = curIdx > 0 ? list[curIdx - 1] : null;
-  const nextCh = curIdx < list.length - 1 ? list[curIdx + 1] : null;
-  return { prevCh, nextCh };
-};
-
 export function ReaderViewport(props: { session: ReaderSession; children?: JSX.Element }) {
   const s = props.session;
-  const [overscrollHint, setOverscrollHint] = createSignal<{
-    text: string;
-    ready: boolean;
+  const [overscrollGesture, setOverscrollGesture] = createSignal<{
+    fingerX: number;
+    fingerY: number;
     direction: "prev" | "next";
+    chapter: ChapterRef | null;
+    ready: boolean;
   } | null>(null);
-
   onMount(() => {
     const vpEl = s.viewportEl;
     if (!vpEl) return;
@@ -183,7 +150,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       touchMoved = false;
       hasVibrated = false;
       activeOverscroll = null;
-      setOverscrollHint(null);
+      setOverscrollGesture(null);
     };
 
     const onTouchMove = (ev: TouchEvent): void => {
@@ -198,52 +165,57 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         touchMoved = true;
       }
 
-      // Check for overscroll chapter pull at boundaries
-      const { prevCh, nextCh } = getAdjacentChapters(s);
+      // If overscroll gesture is already engaged, update finger tracking and check center collision
+      if (activeOverscroll) {
+        const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
+        const ready = distToCenter <= 36;
+        if (ready && !hasVibrated) {
+          if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(35);
+          hasVibrated = true;
+        } else if (!ready) {
+          hasVibrated = false;
+        }
+        setOverscrollGesture({
+          fingerX: t.clientX,
+          fingerY: t.clientY,
+          direction: activeOverscroll.direction,
+          chapter: activeOverscroll.chapter,
+          ready,
+        });
+        return;
+      }
 
+      // Check for overscroll boundary engagement
+      const { prevCh, nextCh } = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
       if (s.isHorizontal()) {
         const isRtl = s.direction() === "rtl";
         const cur = s.isSpread() ? s.slideIndex() : s.currentIndex();
         const total = s.isSpread() ? s.spreads().length : s.pages().length;
 
-        // In RTL:
-        // - Advance to next page is dragging RIGHT (dx > 0)
-        // - Pull previous chapter (before page 0) is dragging LEFT (dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX)
-        // - Pull next chapter (after last page) is dragging RIGHT (dx > OVERSCROLL_ENGAGE_THRESHOLD_PX)
-        // In LTR:
-        // - Advance to next page is dragging LEFT (dx < 0)
-        // - Pull previous chapter (before page 0) is dragging RIGHT (dx > OVERSCROLL_ENGAGE_THRESHOLD_PX)
-        // - Pull next chapter (after last page) is dragging LEFT (dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX)
         const isPullingPrev =
           cur === 0 &&
           (isRtl ? dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX : dx > OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
-          absX > absY * 1.25;
+          absX > absY * 1.1;
 
         const isPullingNext =
           cur >= total - 1 &&
           (isRtl ? dx > OVERSCROLL_ENGAGE_THRESHOLD_PX : dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
-          absX > absY * 1.25;
+          absX > absY * 1.1;
 
         if (isPullingPrev) {
-          const dist = absX;
-          const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
-          activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
-          if (ready && !hasVibrated) {
-            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
-            hasVibrated = true;
-          }
-          setOverscrollHint({
+          const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
+          const ready = distToCenter <= 36;
+          activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist: absX };
+          setOverscrollGesture({
+            fingerX: t.clientX,
+            fingerY: t.clientY,
             direction: "prev",
+            chapter: prevCh,
             ready,
-            text: prevCh
-              ? (ready
-                  ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
-                  : `Pull for previous chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
-              : "First chapter (no previous chapter)",
           });
           if (s.stripEl) {
             const pullSign = isRtl ? -1 : 1;
-            const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
+            const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
             const sign = isRtl ? 1 : -1;
             s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
           }
@@ -251,25 +223,19 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         }
 
         if (isPullingNext) {
-          const dist = absX;
-          const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
-          activeOverscroll = { direction: "next", chapter: nextCh, ready, dist };
-          if (ready && !hasVibrated) {
-            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
-            hasVibrated = true;
-          }
-          setOverscrollHint({
+          const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
+          const ready = distToCenter <= 36;
+          activeOverscroll = { direction: "next", chapter: nextCh, ready, dist: absX };
+          setOverscrollGesture({
+            fingerX: t.clientX,
+            fingerY: t.clientY,
             direction: "next",
+            chapter: nextCh,
             ready,
-            text: nextCh
-              ? (ready
-                  ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
-                  : `Pull for next chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
-              : "End of series (no next chapter)",
           });
           if (s.stripEl) {
             const pullSign = isRtl ? 1 : -1;
-            const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
+            const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
             const sign = isRtl ? 1 : -1;
             s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
           }
@@ -282,59 +248,42 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           const isAtTop = vp.scrollTop <= 5;
           const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 5;
 
-          if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.25) {
-            const dist = dy;
-            const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
-            activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
-            if (ready && !hasVibrated) {
-              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
-              hasVibrated = true;
-            }
-            setOverscrollHint({
+          if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
+            const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
+            const ready = distToCenter <= 36;
+            activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist: dy };
+            setOverscrollGesture({
+              fingerX: t.clientX,
+              fingerY: t.clientY,
               direction: "prev",
+              chapter: prevCh,
               ready,
-              text: prevCh
-                ? (ready
-                    ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
-                    : `Pull down for previous chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
-                : "First chapter (no previous chapter)",
             });
             if (s.stripEl) {
-              const damped = Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
+              const damped = Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dy, 0.72));
               s.stripEl.style.transform = `translateY(${damped}px)`;
             }
             return;
           }
 
-          if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.25) {
-            const dist = -dy;
-            const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
-            activeOverscroll = { direction: "next", chapter: nextCh, ready, dist };
-            if (ready && !hasVibrated) {
-              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
-              hasVibrated = true;
-            }
-            setOverscrollHint({
+          if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
+            const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
+            const ready = distToCenter <= 36;
+            activeOverscroll = { direction: "next", chapter: nextCh, ready, dist: -dy };
+            setOverscrollGesture({
+              fingerX: t.clientX,
+              fingerY: t.clientY,
               direction: "next",
+              chapter: nextCh,
               ready,
-              text: nextCh
-                ? (ready
-                    ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
-                    : `Pull up for next chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
-                : "End of series (no next chapter)",
             });
             if (s.stripEl) {
-              const damped = -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
+              const damped = -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(-dy, 0.72));
               s.stripEl.style.transform = `translateY(${damped}px)`;
             }
             return;
           }
         }
-      }
-      if (activeOverscroll) {
-        activeOverscroll = null;
-        setOverscrollHint(null);
-        resetStripTransform(false);
       }
     };
 
@@ -347,25 +296,18 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       const absX = Math.abs(totalDx);
       const absY = Math.abs(totalDy);
 
-      // Check if overscroll was released ready
-      // Check if overscroll was released ready with intentional hold
       if (activeOverscroll) {
         const over = activeOverscroll;
         activeOverscroll = null;
-        setOverscrollHint(null);
+        setOverscrollGesture(null);
         resetStripTransform(true);
-        const isIntentional = over.ready && (dt >= OVERSCROLL_HOLD_TIME_MS || over.dist >= 190);
-        if (isIntentional && over.chapter) {
-          if (over.direction === "prev") {
-            s.gotoPrevChapter();
-          } else {
-            s.gotoNextChapter();
-          }
-          return;
+        if (over.direction === "prev") {
+          s.gotoPrevChapter();
+        } else {
+          s.gotoNextChapter();
         }
         return;
       }
-
       // Always reset strip transform smoothly in case a drag slightly displaced it
       resetStripTransform(true);
 
@@ -509,15 +451,31 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         return;
       }
 
-      // Chapter boundary overscroll pull with mouse when mobile gestures enabled on desktop
-      if (isMobileGesturesOnDesktopEnabled()) {
-        const absX = Math.abs(dx);
-        const absY = Math.abs(dy);
+      // If mouse overscroll gesture is already engaged, update finger tracking and check center collision
+      if (activeMouseOverscroll) {
+        const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
+        const ready = distToCenter <= 36;
+        if (ready && !hasVibrated) {
+          if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(35);
+          hasVibrated = true;
+        } else if (!ready) {
+          hasVibrated = false;
+        }
+        setOverscrollGesture({
+          fingerX: ev.clientX,
+          fingerY: ev.clientY,
+          direction: activeMouseOverscroll.direction,
+          chapter: activeMouseOverscroll.chapter,
+          ready,
+        });
+        return;
+      }
 
-        // Check for overscroll chapter pull at boundaries
-        const { prevCh, nextCh } = getAdjacentChapters(s);
-
-        if (s.isHorizontal()) {
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      const { prevCh, nextCh } = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
+      if (s.isHorizontal()) {
+        if (isMobileGesturesOnDesktopEnabled()) {
           const isRtl = s.direction() === "rtl";
           const cur = s.isSpread() ? s.slideIndex() : s.currentIndex();
           const total = s.isSpread() ? s.spreads().length : s.pages().length;
@@ -525,28 +483,27 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           const isPullingPrev =
             cur === 0 &&
             (isRtl ? dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX : dx > OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
-            absX > absY * 1.25;
+            absX > absY * 1.1;
 
           const isPullingNext =
             cur >= total - 1 &&
             (isRtl ? dx > OVERSCROLL_ENGAGE_THRESHOLD_PX : dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
-            absX > absY * 1.25;
+            absX > absY * 1.1;
+
           if (isPullingPrev) {
-            const dist = absX;
-            const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
-            activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
-            setOverscrollHint({
+            const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
+            const ready = distToCenter <= 36;
+            activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist: absX };
+            setOverscrollGesture({
+              fingerX: ev.clientX,
+              fingerY: ev.clientY,
               direction: "prev",
+              chapter: prevCh,
               ready,
-              text: prevCh
-                ? (ready
-                    ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
-                    : `Pull for previous chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
-                : "First chapter (no previous chapter)",
             });
             if (s.stripEl) {
               const pullSign = isRtl ? -1 : 1;
-              const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
+              const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
               const sign = isRtl ? 1 : -1;
               s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
             }
@@ -554,87 +511,72 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           }
 
           if (isPullingNext) {
-            const dist = absX;
-            const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
-            activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist };
-            setOverscrollHint({
+            const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
+            const ready = distToCenter <= 36;
+            activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist: absX };
+            setOverscrollGesture({
+              fingerX: ev.clientX,
+              fingerY: ev.clientY,
               direction: "next",
+              chapter: nextCh,
               ready,
-              text: nextCh
-                ? (ready
-                    ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
-                    : `Pull for next chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
-                : "End of series (no next chapter)",
             });
             if (s.stripEl) {
               const pullSign = isRtl ? 1 : -1;
-              const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
+              const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
               const sign = isRtl ? 1 : -1;
               s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
             }
             return;
           }
-        } else {
-          // Vertical Continuous Scroll Mode
-          const vp = s.viewportEl;
-          if (vp) {
-            const isAtTop = vp.scrollTop <= 5;
-            const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 5;
+        }
+      } else {
+        // Vertical Continuous Scroll Mode
+        const vp = s.viewportEl;
+        if (vp) {
+          const isAtTop = vp.scrollTop <= 5;
+          const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 5;
 
-            if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.25) {
-              const dist = dy;
-              const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
-              activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
-              setOverscrollHint({
-                direction: "prev",
-                ready,
-                text: prevCh
-                  ? (ready
-                      ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
-                      : `Pull down for previous chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
-                  : "First chapter (no previous chapter)",
-              });
-              if (s.stripEl) {
-                const damped = Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
-                s.stripEl.style.transform = `translateY(${damped}px)`;
-              }
-              return;
+          if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
+            const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
+            const ready = distToCenter <= 36;
+            activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist: dy };
+            setOverscrollGesture({
+              fingerX: ev.clientX,
+              fingerY: ev.clientY,
+              direction: "prev",
+              chapter: prevCh,
+              ready,
+            });
+            if (s.stripEl) {
+              const damped = Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dy, 0.72));
+              s.stripEl.style.transform = `translateY(${damped}px)`;
             }
-
-            if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.25) {
-              const dist = -dy;
-              const ready = dist >= OVERSCROLL_READY_THRESHOLD_PX;
-              activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist };
-              setOverscrollHint({
-                direction: "next",
-                ready,
-                text: nextCh
-                  ? (ready
-                      ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
-                      : `Pull up for next chapter (${Math.min(100, Math.round((dist / OVERSCROLL_READY_THRESHOLD_PX) * 100))}%)`)
-                  : "End of series (no next chapter)",
-              });
-              if (s.stripEl) {
-                const damped = -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, 0.72));
-                s.stripEl.style.transform = `translateY(${damped}px)`;
-              }
-              return;
-            }
-
-            if (activeMouseOverscroll) {
-              activeMouseOverscroll = null;
-              setOverscrollHint(null);
-              resetStripTransform(false);
-            }
-            vp.scrollTop = vpScrollTop - dy;
-            vp.scrollLeft = vpScrollLeft - dx;
             return;
           }
-        }
-        if (activeMouseOverscroll) {
-          activeMouseOverscroll = null;
-          setOverscrollHint(null);
-          resetStripTransform(false);
+
+          if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
+            const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
+            const ready = distToCenter <= 36;
+            activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist: -dy };
+            setOverscrollGesture({
+              fingerX: ev.clientX,
+              fingerY: ev.clientY,
+              direction: "next",
+              chapter: nextCh,
+              ready,
+            });
+            if (s.stripEl) {
+              const damped = -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(-dy, 0.72));
+              s.stripEl.style.transform = `translateY(${damped}px)`;
+            }
+            return;
+          }
+
+          if (isMobileGesturesOnDesktopEnabled()) {
+            vp.scrollTop = vpScrollTop - dy;
+            vp.scrollLeft = vpScrollLeft - dx;
+          }
         }
       }
     };
@@ -653,24 +595,18 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       const dt = Date.now() - mouseStartTime;
       const absX = Math.abs(totalDx);
       const absY = Math.abs(totalDy);
-
       if (activeMouseOverscroll) {
         const over = activeMouseOverscroll;
         activeMouseOverscroll = null;
-        setOverscrollHint(null);
+        setOverscrollGesture(null);
         resetStripTransform(true);
-        const isIntentional = over.ready && (dt >= OVERSCROLL_HOLD_TIME_MS || over.dist >= 190);
-        if (isIntentional && over.chapter) {
-          if (over.direction === "prev") {
-            s.gotoPrevChapter();
-          } else {
-            s.gotoNextChapter();
-          }
-          return;
+        if (over.direction === "prev") {
+          s.gotoPrevChapter();
+        } else {
+          s.gotoNextChapter();
         }
         return;
       }
-
       if (isMobileGesturesOnDesktopEnabled()) {
         resetStripTransform(true);
       }
@@ -829,30 +765,70 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       }}
     >
       {props.children}
-      <Show when={overscrollHint()}>
-        {(hint) => {
-          const iconClass = () => {
-            if (!s.isHorizontal()) {
-              return hint().direction === "next" ? "bi-arrow-up-circle-fill" : "bi-arrow-down-circle-fill";
-            }
-            const isRtl = s.direction() === "rtl";
-            if (hint().direction === "next") {
-              return isRtl ? "bi-arrow-right-circle-fill" : "bi-arrow-left-circle-fill";
-            }
-            return isRtl ? "bi-arrow-left-circle-fill" : "bi-arrow-right-circle-fill";
-          };
+      <Show when={overscrollGesture()}>
+        {(g) => {
+          const isNext = () => g().direction === "next";
+          const chapter = () => g().chapter;
 
           return (
-            <div
-              class="ds-chapter-overscroll-badge"
-              classList={{ "ds-ready": hint().ready }}
-            >
-              <i class={`bi ${iconClass()}`} />
-              <span>{hint().text}</span>
+            <div class="ds-overscroll-gesture-overlay">
+              <Show
+                when={chapter()}
+                fallback={
+                  /* Clean informational notice when at start or end of series without lock/drag mechanics */
+                  <div class="ds-overscroll-target-card" style={{ bottom: "calc(50% - 20px)" }}>
+                    <span class="ds-overscroll-target-badge">
+                      {isNext()
+                        ? t("reader.overscrollLock.endOfSeriesTitle")
+                        : t("reader.overscrollLock.firstChapterTitle")}
+                    </span>
+                    <div class="ds-overscroll-target-hint" style={{ "margin-top": "2px" }}>
+                      {isNext()
+                        ? t("reader.overscrollLock.endOfSeriesDesc")
+                        : t("reader.overscrollLock.firstChapterDesc")}
+                    </div>
+                  </div>
+                }
+              >
+                {/* Floating Info Card (Above Lock Ring) */}
+                <div class="ds-overscroll-target-card">
+                  <span class="ds-overscroll-target-badge">
+                    {isNext() ? t("reader.overscrollLock.nextChapterBadge") : t("reader.overscrollLock.prevChapterBadge")}
+                  </span>
+                  <div class="ds-overscroll-target-title">
+                    {decodeEntities(chapter()!.title || s.permalink)}
+                  </div>
+                  <div class="ds-overscroll-target-hint">
+                    {g().ready
+                      ? t("reader.overscrollLock.unlocked")
+                      : (isNext() ? t("reader.overscrollLock.slideToUnlockNext") : t("reader.overscrollLock.slideToUnlockPrev"))}
+                  </div>
+                </div>
+
+                {/* Real-time Finger Tracking Circle */}
+                <div
+                  class="ds-overscroll-finger-circle"
+                  classList={{ "ds-snap-ready": g().ready }}
+                  style={{
+                    left: `${g().fingerX}px`,
+                    top: `${g().fingerY}px`,
+                  }}
+                >
+                  <i class={g().ready ? "bi bi-check-lg" : isNext() ? "bi bi-chevron-up" : "bi bi-chevron-down"} />
+                </div>
+
+                {/* Center Lock Target Circle (Exact Center) */}
+                <div
+                  class="ds-overscroll-target-ring"
+                  classList={{ "ds-snap-ready": g().ready }}
+                >
+                  <i class={g().ready ? "bi bi-unlock-fill" : "bi bi-lock-fill"} />
+                </div>
+              </Show>
             </div>
           );
         }}
       </Show>
-    </div>
-  );
-}
+      </div>
+    );
+  }
