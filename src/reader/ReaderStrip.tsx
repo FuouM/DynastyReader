@@ -58,6 +58,7 @@ export function ReaderStrip(props: ReaderStripProps) {
               return {
                 "--spread-pct-0": `${pct0}%`,
                 "--spread-pct-1": `${pct1}%`,
+                "--spread-ratio": `${total}`,
                 "--spread-orig-height": `${targetHeight}px`,
               };
             };
@@ -92,7 +93,7 @@ export function ReaderStrip(props: ReaderStripProps) {
                         style={
                           single
                             ? { flex: "0 0 100%" }
-                            : { "--spread-flex": `0 0 var(--spread-pct-${i()}, 50%)` }
+                            : { flex: `0 0 var(--spread-pct-${i()}, 50%)`, "--spread-flex": `0 0 var(--spread-pct-${i()}, 50%)` }
                         }
                       />
                     )}

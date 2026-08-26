@@ -13,8 +13,8 @@ import type { ChapterPage } from "../types/api";
 import type { ChapterRef } from "../types/routes";
 import type { FitMode, PagedLayout, ReaderMode, ReadingDirection, SpreadGroup } from "../types/reader";
 import {
-  getDefaultReaderMode,
-  getDefaultPagedLayout,
+  getEffectiveDefaultReaderMode,
+  getEffectiveDefaultPagedLayout,
   getDefaultReadingDirection,
   isCoverOffsetDefaultEnabled,
   getDefaultFitMode,
@@ -121,8 +121,8 @@ export function createReaderState(): ReaderState {
   const [currentIndex, setCurrentIndex] = createSignal(0);
   const [atEnd, setAtEnd] = createSignal(false);
   const defaultDir = getDefaultReadingDirection();
-  const [mode, setModeSignal] = createSignal<ReaderMode>(getDefaultReaderMode());
-  const [pagedLayout, setPagedLayoutSignal] = createSignal<PagedLayout>(getDefaultPagedLayout());
+  const [mode, setModeSignal] = createSignal<ReaderMode>(getEffectiveDefaultReaderMode());
+  const [pagedLayout, setPagedLayoutSignal] = createSignal<PagedLayout>(getEffectiveDefaultPagedLayout());
   const [layoutAutoDetected, setLayoutAutoDetected] = createSignal(false);
   const [isLongStrip, setIsLongStrip] = createSignal(false);
   const [direction, setDirectionSignal] = createSignal<ReadingDirection>(defaultDir === "auto" ? "rtl" : defaultDir);

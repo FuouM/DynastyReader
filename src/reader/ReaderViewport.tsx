@@ -9,10 +9,20 @@
 import { createEffect, createSignal, onCleanup, onMount, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import type { ChapterRef } from "../types/routes";
-import { getPrefetchBuffer, isAutoCacheChapterEnabled, isMobileGesturesOnDesktopEnabled } from "./settings";
+import { isMobile } from "../stores";
+import {
+  getPrefetchBuffer,
+  isAutoCacheChapterEnabled,
+  isMobileGesturesOnDesktopEnabled,
+  getDefaultReaderMode,
+  getDefaultPagedLayout,
+  getEffectiveDefaultReaderMode,
+  getEffectiveDefaultPagedLayout,
+} from "./settings";
 import { decodeEntities } from "../utils/html";
 import { createResizeObserver } from "@solid-primitives/resize-observer";
 import { getAdjacentChapters } from "./reader-spread";
+import { ChevronLeftIcon, ChevronRightIcon, Icon } from "../components/Icon";
 import { t } from "../i18n";
 
 const OVERSCROLL_ENGAGE_THRESHOLD_PX = 35;
@@ -27,6 +37,21 @@ const isOverscrollReady = (clientX: number, clientY: number): boolean => {
 };
 export function ReaderViewport(props: { session: ReaderSession; children?: JSX.Element }) {
   const s = props.session;
+  const [tapZoneGuide, setTapZoneGuide] = createSignal<{
+    activeZone: "left" | "center" | "right";
+  } | null>(null);
+
+  const getTapZone = (clientX: number): "left" | "center" | "right" => {
+    const vpEl = s.viewportEl;
+    if (!vpEl) return "center";
+    const vpRect = vpEl.getBoundingClientRect();
+    if (vpRect.width <= 0) return "center";
+    const relX = (clientX - vpRect.left) / vpRect.width;
+    if (relX < 0.22) return "left";
+    if (relX > 0.78) return "right";
+    return "center";
+  };
+
   const [overscrollGesture, setOverscrollGesture] = createSignal<{
     fingerX: number;
     fingerY: number;
@@ -39,14 +64,41 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     if (!vpEl) return;
 
     // Compute exact available viewport height dynamically via reactive primitive
+    let lastIsLandscape = isMobile() && typeof window !== "undefined" && window.innerWidth > window.innerHeight;
     createResizeObserver(() => vpEl, () => {
       s.updateViewportHeight();
+      if (isMobile() && typeof window !== "undefined") {
+        const currentIsLandscape = window.innerWidth > window.innerHeight;
+        if (currentIsLandscape !== lastIsLandscape) {
+          lastIsLandscape = currentIsLandscape;
+          if (!s.isLongStrip()) {
+            const targetMode = currentIsLandscape
+              ? getEffectiveDefaultReaderMode(s.mode())
+              : getDefaultReaderMode();
+            const targetLayout = currentIsLandscape
+              ? getEffectiveDefaultPagedLayout(s.pagedLayout())
+              : getDefaultPagedLayout();
+            let changed = false;
+            if (targetMode !== s.mode()) {
+              s.setModeSignal(targetMode);
+              changed = true;
+            }
+            if (targetLayout !== s.pagedLayout()) {
+              s.setPagedLayoutSignal(targetLayout);
+              changed = true;
+            }
+            if (changed) {
+              s.applyLayoutMode();
+              s.resetToCurrentPage(false);
+            }
+          }
+        }
+      }
     });
     window.setTimeout(() => {
       s.updateViewportHeight();
       s.applyLayoutMode();
     }, 0);
-
     // Dynamic scroll-position tracking (continuous scroll mode)
     const computeCurrentPageFromScroll = (): void => {
       if (s.isHorizontal() || s.isProgrammaticScroll) return;
@@ -146,6 +198,9 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       dist: number;
     } | null = null;
 
+    let touchLongPressTimer: number | null = null;
+    let didTouchLongPress = false;
+
     const onTouchStart = (ev: TouchEvent): void => {
       if (ev.touches.length !== 1) return;
       s.cancelScrollAnimation();
@@ -154,9 +209,21 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       touchStartY = t.clientY;
       touchStartTime = Date.now();
       touchMoved = false;
+      didTouchLongPress = false;
       hasVibrated = false;
       activeOverscroll = null;
       setOverscrollGesture(null);
+
+      if (touchLongPressTimer !== null) clearTimeout(touchLongPressTimer);
+      if (s.isHorizontal()) {
+        touchLongPressTimer = window.setTimeout(() => {
+          if (!touchMoved && s.isHorizontal()) {
+            didTouchLongPress = true;
+            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+            setTapZoneGuide({ activeZone: getTapZone(t.clientX) });
+          }
+        }, 350);
+      }
     };
 
     const onTouchMove = (ev: TouchEvent): void => {
@@ -169,8 +236,16 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
       if (Math.hypot(dx, dy) > 8) {
         touchMoved = true;
+        if (touchLongPressTimer !== null) {
+          clearTimeout(touchLongPressTimer);
+          touchLongPressTimer = null;
+        }
       }
 
+      if (tapZoneGuide()) {
+        setTapZoneGuide({ activeZone: getTapZone(t.clientX) });
+        return;
+      }
       // If overscroll gesture is already engaged, update finger tracking and check center collision
       if (activeOverscroll) {
         const ready = isOverscrollReady(t.clientX, t.clientY);
@@ -289,6 +364,19 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     };
 
     const onTouchEnd = (ev: TouchEvent): void => {
+      if (touchLongPressTimer !== null) {
+        clearTimeout(touchLongPressTimer);
+        touchLongPressTimer = null;
+      }
+
+      if (tapZoneGuide()) {
+        setTapZoneGuide(null);
+        if (didTouchLongPress) {
+          didTouchLongPress = false;
+          return;
+        }
+      }
+
       if (ev.changedTouches.length !== 1) return;
       const t = ev.changedTouches[0];
       const totalDx = t.clientX - touchStartX;
@@ -296,7 +384,6 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       const dt = Date.now() - touchStartTime;
       const absX = Math.abs(totalDx);
       const absY = Math.abs(totalDy);
-
       if (activeOverscroll) {
         const over = activeOverscroll;
         activeOverscroll = null;
@@ -343,63 +430,35 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           return;
         }
 
-        let activeEl: HTMLElement | null = null;
-        if (s.isSpread()) {
-          const curSlide = s.slideIndex();
-          const spreadSlot = s.spreadSlotEls[curSlide];
-          activeEl = spreadSlot?.querySelector<HTMLElement>(".ds-spread-canvas") ?? spreadSlot ?? null;
-        } else {
-          const curSlot = s.slotEls[s.currentIndex()];
-          activeEl = curSlot?.querySelector<HTMLElement>(".ds-page-img, .ds-slot-state") ?? curSlot ?? null;
-        }
-
-        const rect = activeEl ? activeEl.getBoundingClientRect() : vpEl.getBoundingClientRect();
-        if (rect.width <= 0 || rect.height <= 0) return;
-
-        const isInsidePage =
-          t.clientX >= rect.left &&
-          t.clientX <= rect.right &&
-          t.clientY >= rect.top &&
-          t.clientY <= rect.bottom;
-
-        if (!isInsidePage) {
-          s.toggleToolbarVisible();
-          return;
-        }
-
-        const relX = (t.clientX - rect.left) / rect.width;
+        const zone = getTapZone(t.clientX);
         const isRtl = s.direction() === "rtl";
-        if (relX < 0.28) {
-          // Left Tap
+        if (zone === "left") {
           const step = isRtl ? 1 : -1;
-          const cur = s.currentIndex();
-          const total = s.pages().length;
-          const targetPage = cur + step;
-          if (targetPage >= 0 && targetPage < total) {
+          const targetPage = s.currentIndex() + step;
+          if (targetPage >= 0 && targetPage < s.pages().length) {
             if (s.isSpread()) s.stepSpread(step as 1 | -1);
             else s.setPage(targetPage);
           }
-        } else if (relX > 0.72) {
-          // Right Tap
+        } else if (zone === "right") {
           const step = isRtl ? -1 : 1;
-          const cur = s.currentIndex();
-          const total = s.pages().length;
-          const targetPage = cur + step;
-          if (targetPage >= 0 && targetPage < total) {
+          const targetPage = s.currentIndex() + step;
+          if (targetPage >= 0 && targetPage < s.pages().length) {
             if (s.isSpread()) s.stepSpread(step as 1 | -1);
             else s.setPage(targetPage);
           }
         } else {
           s.toggleToolbarVisible();
-         }
-       }
-     };
+        }
+      }
+    };
     // ── Desktop Mouse Drag Engine (Panning when zoomed, Mouse swipe, Tap & Overscroll when enabled) ──
     let isMouseDown = false;
     let mouseStartX = 0;
     let mouseStartY = 0;
     let mouseStartTime = 0;
     let mouseMoved = false;
+    let mouseLongPressTimer: number | null = null;
+    let didMouseLongPress = false;
     let activeSlot: HTMLElement | null = null;
     let slotScrollLeft = 0;
     let slotScrollTop = 0;
@@ -416,13 +475,25 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       if (ev.button !== 0) return;
       if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
       s.cancelScrollAnimation();
-      ev.preventDefault();
       isMouseDown = true;
       mouseStartX = ev.clientX;
       mouseStartY = ev.clientY;
       mouseStartTime = Date.now();
       mouseMoved = false;
+      didMouseLongPress = false;
       activeMouseOverscroll = null;
+      setOverscrollGesture(null);
+
+      if (mouseLongPressTimer !== null) clearTimeout(mouseLongPressTimer);
+      if (isMobileGesturesOnDesktopEnabled() && s.isHorizontal()) {
+        mouseLongPressTimer = window.setTimeout(() => {
+          if (!mouseMoved && isMobileGesturesOnDesktopEnabled() && s.isHorizontal()) {
+            didMouseLongPress = true;
+            setTapZoneGuide({ activeZone: getTapZone(ev.clientX) });
+          }
+        }, 350);
+      }
+
       if (s.isHorizontal()) {
         const curSlide = s.isSpread() ? s.slideIndex() : s.currentIndex();
         const target = s.isSpread() ? s.spreadSlotEls[curSlide] : s.slotEls[curSlide];
@@ -446,14 +517,24 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       if (!isMouseDown) return;
       const dx = ev.clientX - mouseStartX;
       const dy = ev.clientY - mouseStartY;
-      if (Math.hypot(dx, dy) > 6) mouseMoved = true;
+
+      if (Math.hypot(dx, dy) > 8) {
+        mouseMoved = true;
+        if (mouseLongPressTimer !== null) {
+          clearTimeout(mouseLongPressTimer);
+          mouseLongPressTimer = null;
+        }
+      }
+      if (tapZoneGuide()) {
+        setTapZoneGuide({ activeZone: getTapZone(ev.clientX) });
+        return;
+      }
 
       if (activeSlot) {
         activeSlot.scrollLeft = slotScrollLeft - dx;
         activeSlot.scrollTop = slotScrollTop - dy;
         return;
       }
-
       // If mouse overscroll gesture is already engaged, update finger tracking and check center collision
       if (activeMouseOverscroll) {
         const ready = isOverscrollReady(ev.clientX, ev.clientY);
@@ -582,6 +663,19 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     const onMouseUp = (ev: MouseEvent): void => {
       if (!isMouseDown) return;
       isMouseDown = false;
+      if (mouseLongPressTimer !== null) {
+        clearTimeout(mouseLongPressTimer);
+        mouseLongPressTimer = null;
+      }
+
+      if (tapZoneGuide()) {
+        setTapZoneGuide(null);
+        if (didMouseLongPress) {
+          didMouseLongPress = false;
+          return;
+        }
+      }
+
       if (activeSlot) {
         activeSlot.classList.remove("ds-dragging");
         activeSlot = null;
@@ -610,7 +704,6 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       if (isMobileGesturesOnDesktopEnabled()) {
         resetStripTransform(true);
       }
-
       // Horizontal swipe for page flips in horizontal mode
       if (
         s.isHorizontal() &&
@@ -641,49 +734,19 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           return;
         }
 
-        let activeEl: HTMLElement | null = null;
-        if (s.isSpread()) {
-          const curSlide = s.slideIndex();
-          const spreadSlot = s.spreadSlotEls[curSlide];
-          activeEl = spreadSlot?.querySelector<HTMLElement>(".ds-spread-canvas") ?? spreadSlot ?? null;
-        } else {
-          const curSlot = s.slotEls[s.currentIndex()];
-          activeEl = curSlot?.querySelector<HTMLElement>(".ds-page-img, .ds-slot-state") ?? curSlot ?? null;
-        }
-
-        const rect = activeEl ? activeEl.getBoundingClientRect() : vpEl.getBoundingClientRect();
-        if (rect.width <= 0 || rect.height <= 0) return;
-
-        const isInsidePage =
-          ev.clientX >= rect.left &&
-          ev.clientX <= rect.right &&
-          ev.clientY >= rect.top &&
-          ev.clientY <= rect.bottom;
-
-        if (!isInsidePage) {
-          s.toggleToolbarVisible();
-          return;
-        }
-
-        const relX = (ev.clientX - rect.left) / rect.width;
+        const zone = getTapZone(ev.clientX);
         const isRtl = s.direction() === "rtl";
-        if (relX < 0.28) {
-          // Left Tap
+        if (zone === "left") {
           const step = isRtl ? 1 : -1;
-          const cur = s.currentIndex();
-          const total = s.pages().length;
-          const targetPage = cur + step;
-          if (targetPage >= 0 && targetPage < total) {
+          const targetPage = s.currentIndex() + step;
+          if (targetPage >= 0 && targetPage < s.pages().length) {
             if (s.isSpread()) s.stepSpread(step as 1 | -1);
             else s.setPage(targetPage);
           }
-        } else if (relX > 0.72) {
-          // Right Tap
+        } else if (zone === "right") {
           const step = isRtl ? -1 : 1;
-          const cur = s.currentIndex();
-          const total = s.pages().length;
-          const targetPage = cur + step;
-          if (targetPage >= 0 && targetPage < total) {
+          const targetPage = s.currentIndex() + step;
+          if (targetPage >= 0 && targetPage < s.pages().length) {
             if (s.isSpread()) s.stepSpread(step as 1 | -1);
             else s.setPage(targetPage);
           }
@@ -829,6 +892,38 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           );
         }}
       </Show>
-      </div>
-    );
-  }
+      <Show when={tapZoneGuide()}>
+        {(guide) => {
+          const isRtl = () => s.direction() === "rtl";
+          const leftLabel = () => isRtl() ? t("reader.tapZones.nextPage") : t("reader.tapZones.prevPage");
+          const rightLabel = () => isRtl() ? t("reader.tapZones.prevPage") : t("reader.tapZones.nextPage");
+          const leftIcon = () => isRtl() ? <ChevronRightIcon /> : <ChevronLeftIcon />;
+          const rightIcon = () => isRtl() ? <ChevronLeftIcon /> : <ChevronRightIcon />;
+
+          return (
+            <div class="ds-tap-zone-guide">
+              <div class="ds-tap-zone ds-tap-zone-side" classList={{ "is-active": guide().activeZone === "left" }}>
+                <div class="ds-tap-zone-pill">
+                  {leftIcon()}
+                  <span>{leftLabel()}</span>
+                </div>
+              </div>
+              <div class="ds-tap-zone ds-tap-zone-center" classList={{ "is-active": guide().activeZone === "center" }}>
+                <div class="ds-tap-zone-pill">
+                  <Icon name="layout-text-window" />
+                  <span>{t("reader.tapZones.toggleMenu")}</span>
+                </div>
+              </div>
+              <div class="ds-tap-zone ds-tap-zone-side" classList={{ "is-active": guide().activeZone === "right" }}>
+                <div class="ds-tap-zone-pill">
+                  <span>{rightLabel()}</span>
+                  {rightIcon()}
+                </div>
+              </div>
+            </div>
+          );
+        }}
+      </Show>
+    </div>
+  );
+}

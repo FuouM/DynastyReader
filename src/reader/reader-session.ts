@@ -52,8 +52,8 @@ import {
 import { ReaderQueue, type ReaderQueueHost, type SlotStateKind } from "./reader-queue";
 import {
   getDefaultFitMode,
-  getDefaultPagedLayout,
-  getDefaultReaderMode,
+  getEffectiveDefaultReaderMode,
+  getEffectiveDefaultPagedLayout,
   getDefaultReadingDirection,
   getPrefetchBuffer,
   isAutoCacheChapterEnabled,
@@ -1054,7 +1054,7 @@ export class ReaderSession implements ReaderQueueHost {
     }
 
     // Display-mode preferences
-    this.setModeSignal(getDefaultReaderMode());
+    this.setModeSignal(getEffectiveDefaultReaderMode());
 
     const isLong = detectIsLongStrip(chapter.tags ?? []);
     this.setIsLongStrip(isLong);
@@ -1064,7 +1064,7 @@ export class ReaderSession implements ReaderQueueHost {
       this.setPagedLayoutSignal("single");
       this.setLayoutAutoDetected(true);
     } else {
-      this.setPagedLayoutSignal(getDefaultPagedLayout());
+      this.setPagedLayoutSignal(getEffectiveDefaultPagedLayout());
       this.setLayoutAutoDetected(false);
     }
 

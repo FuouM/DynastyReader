@@ -316,6 +316,9 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
         <div
           class="ds-reader-sheet-backdrop"
           classList={{ "ds-sheet-closing": closing() }}
+          onPointerDown={(ev) => {
+            if (ev.target === ev.currentTarget) requestClose();
+          }}
           onClick={(ev) => {
             if (ev.target === ev.currentTarget) requestClose();
           }}
@@ -323,6 +326,8 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
           <div
             class="ds-reader-sheet-window"
             classList={{ "ds-sheet-closing": closing() }}
+            onPointerDown={(ev) => ev.stopPropagation()}
+            onClick={(ev) => ev.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
@@ -502,6 +507,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 className="primary"
                 cssText="min-width:70px;"
                 text={t("settings.done")}
+                onClick={requestClose}
               />
             </div>
           </div>

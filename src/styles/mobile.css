@@ -756,6 +756,7 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   flex-direction: column;
   justify-content: flex-end;
   animation: ds-modal-fade 0.15s ease forwards;
+  touch-action: manipulation;
 }
 
 .ds-reader-sheet-backdrop.ds-sheet-closing {
@@ -777,8 +778,8 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   animation: ds-sheet-slide-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   color: var(--sys-window-text, #000);
   box-sizing: border-box;
+  touch-action: manipulation;
 }
-
 .ds-reader-sheet-window.ds-sheet-closing {
   animation: ds-sheet-slide-down 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
 }

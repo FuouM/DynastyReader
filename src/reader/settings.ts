@@ -12,7 +12,8 @@ import type { FitMode, ReaderMode, PagedLayout } from "../types/reader";
 export type ReaderNavPosition = "top" | "bottom";
 export type ReadingDirectionSetting = "auto" | "rtl" | "ltr";
 export type PrevChapterStartPage = "first" | "last";
-
+export type MobileLandscapeReaderModeSetting = "default" | "scroll" | "paged";
+export type MobileLandscapePagedLayoutSetting = "default" | "single" | "spread";
 const boolDeserialize = (v: string) => v === "true" || v === "1";
 
 // Auto-cache chapter
@@ -46,6 +47,45 @@ const [getDefaultPagedLayout, setDefaultPagedLayout] = persistedSignal<PagedLayo
 });
 export { getDefaultPagedLayout, setDefaultPagedLayout };
 
+// Mobile landscape reader mode (default: paged)
+const [getMobileLandscapeReaderMode, setMobileLandscapeReaderMode] = persistedSignal<MobileLandscapeReaderModeSetting>("paged", {
+  name: "ds-reader-mobile-landscape-mode",
+  deserialize: (v) => (v === "scroll" || v === "paged" || v === "default") ? v : "paged",
+});
+export { getMobileLandscapeReaderMode, setMobileLandscapeReaderMode };
+
+// Mobile landscape paged layout (default: spread)
+const [getMobileLandscapePagedLayout, setMobileLandscapePagedLayout] = persistedSignal<MobileLandscapePagedLayoutSetting>("spread", {
+  name: "ds-reader-mobile-landscape-layout",
+  deserialize: (v) => (v === "single" || v === "spread" || v === "default") ? v : "spread",
+});
+export { getMobileLandscapePagedLayout, setMobileLandscapePagedLayout };
+
+export function isMobileLandscape(): boolean {
+  if (!isMobile()) return false;
+  if (typeof window === "undefined") return false;
+  return window.innerWidth > window.innerHeight;
+}
+
+export function getEffectiveDefaultReaderMode(currentMode?: ReaderMode): ReaderMode {
+  if (isMobileLandscape()) {
+    const pref = getMobileLandscapeReaderMode();
+    if (pref === "scroll" || pref === "paged") return pref;
+    if (pref === "default") return currentMode ?? getDefaultReaderMode();
+    return "paged";
+  }
+  return currentMode ?? getDefaultReaderMode();
+}
+
+export function getEffectiveDefaultPagedLayout(currentLayout?: PagedLayout): PagedLayout {
+  if (isMobileLandscape()) {
+    const pref = getMobileLandscapePagedLayout();
+    if (pref === "single" || pref === "spread") return pref;
+    if (pref === "default") return currentLayout ?? getDefaultPagedLayout();
+    return "spread";
+  }
+  return currentLayout ?? getDefaultPagedLayout();
+}
 // Long strip spread override
 const [isLongStripSpreadOverrideEnabled, setLongStripSpreadOverrideEnabled] = persistedSignal(true, {
   name: "ds-reader-long-strip-override",
