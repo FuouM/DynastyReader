@@ -193,7 +193,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
 
   return (
     <Show when={props.open}>
-      <Portal mount={document.body}>
+      <Portal mount={document.getElementById("ds-root") ?? document.body}>
         <div
           id="ds-add-to-collection-overlay"
           class="ds-overlay"

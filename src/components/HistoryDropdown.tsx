@@ -81,7 +81,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
 
   return (
     <Show when={(props.open !== false) && items().length > 0}>
-      <Portal mount={document.body}>
+      <Portal mount={document.getElementById("ds-root") ?? document.body}>
         <div
           id="ds-history-dropdown-overlay"
           class="ds-overlay"
