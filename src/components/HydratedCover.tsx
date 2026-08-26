@@ -11,7 +11,7 @@
  * - `size` maps to the 42×58 feed or 36×50 cache dimensions.
  */
 
-import { createEffect, Show } from "solid-js";
+import { createEffect, on, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { browseCovers, coversEnabledSignal } from "../browse/browse-covers";
 import { BookIcon } from "./Icon";
@@ -49,17 +49,19 @@ const SIZES = {
 } as const;
 
 export function HydratedCover(props: HydratedCoverProps) {
-  const { error, handleError, retry } = useImageRetry();
+  const { error, handleError, retry, reset, retryNonce } = useImageRetry();
   let wrapEl: HTMLDivElement | undefined;
 
   const resolvedPath = () => props.path || (props.coverKey ? browseCovers.getCover(props.coverKey) : undefined);
   const isLoaded = () => Boolean(resolvedPath()) && !error() && coversEnabledSignal();
 
-  createEffect(() => {
-    if (resolvedPath()) {
-      handleError(); // no-op, just resets via the hook's internal state
-    }
-  });
+  createEffect(
+    on(
+      () => [resolvedPath(), retryNonce()] as const,
+      () => reset(),
+      { defer: true },
+    ),
+  );
 
   // Keep unhydrated element observed whenever covers are enabled
   createEffect(() => {

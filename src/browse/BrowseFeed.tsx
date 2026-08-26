@@ -404,22 +404,15 @@ export function BrowseFeed(props: BrowseFeedProps) {
     }
   });
 
-  // Covers toggle: re-arm hydration when the setting is turned on, or scrub
-  // all <img> placeholders when turned off. Mirrors the old renderCurrent()
-  // call that the vanilla-JS settings modal used to force a page rebuild.
+  // Covers toggle: re-arm hydration when the setting is turned on.
+  // Solid's reactive Show primitive in HydratedCover automatically manages
+  // mounting/unmounting cover images when coversEnabledSignal() changes.
   createEffect(() => {
     const enabled = coversEnabledSignal();
     if (!hostEl) return;
     if (enabled) {
-      // Re-arm: kick off a fresh hydration pass on the current DOM.
       browseCovers.beginPage(hostEl);
       browseCovers.reobserveUnloadedCovers(hostEl);
-    } else {
-      // Scrub all cover <img> elements from the rendered list so the UI
-      // instantly reflects the disabled state without a full page reload.
-      for (const img of hostEl.querySelectorAll<HTMLImageElement>("img.ds-feed-cover")) {
-        img.remove();
-      }
     }
   });
 
