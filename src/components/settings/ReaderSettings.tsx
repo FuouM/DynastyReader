@@ -18,6 +18,8 @@ import {
   setDefaultReadingDirection,
   isCoverOffsetDefaultEnabled,
   setCoverOffsetDefaultEnabled,
+  isMobileGesturesOnDesktopEnabled,
+  setMobileGesturesOnDesktopEnabled,
   getDefaultFitMode,
   setDefaultFitMode,
   getPrevChapterStartPage,
@@ -41,6 +43,7 @@ export function ReaderSettings() {
   const [longStripFitWidth, setLongStripFitWidth] = createSignal<boolean>(isLongStripFitWidthEnabled());
   const [directionPref, setDirectionPref] = createSignal<ReadingDirectionSetting>(getDefaultReadingDirection());
   const [coverOffsetPref, setCoverOffsetPref] = createSignal<boolean>(isCoverOffsetDefaultEnabled());
+  const [mobileGesturesDesktopPref, setMobileGesturesDesktopPref] = createSignal<boolean>(isMobileGesturesOnDesktopEnabled());
   const [fitModePref, setFitModePref] = createSignal<FitMode>(getDefaultFitMode());
   const [prevChapterPagePref, setPrevChapterPagePref] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
   return (
@@ -116,6 +119,16 @@ export function ReaderSettings() {
             checked={coverOffsetPref()}
             title={t("settings.reader.coverOffsetTooltip")}
             onChange={(next) => { setCoverOffsetDefaultEnabled(next); setCoverOffsetPref(next); }}
+          />
+        </SettingsRow>
+
+        {/* Mobile Gestures on Desktop */}
+        <SettingsRow divider label={<>{t("settings.reader.mobileGesturesDesktop")}:</>} desc={t("settings.reader.mobileGesturesDesktopDesc")}>
+          <DsSwitch
+            id="ds-settings-mobile-gestures-desktop-toggle"
+            checked={mobileGesturesDesktopPref()}
+            title={t("settings.reader.mobileGesturesDesktopTooltip")}
+            onChange={(next) => { setMobileGesturesOnDesktopEnabled(next); setMobileGesturesDesktopPref(next); }}
           />
         </SettingsRow>
         {/* Previous Chapter Landing Page */}

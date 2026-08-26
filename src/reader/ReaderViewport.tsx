@@ -9,7 +9,7 @@
 import { createEffect, createSignal, onCleanup, onMount, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import type { ChapterRef } from "../types/routes";
-import { getPrefetchBuffer, isAutoCacheChapterEnabled } from "./settings";
+import { getPrefetchBuffer, isAutoCacheChapterEnabled, isMobileGesturesOnDesktopEnabled } from "./settings";
 import { decodeEntities } from "../utils/html";
 import { createResizeObserver } from "@solid-primitives/resize-observer";
 export function ReaderViewport(props: { session: ReaderSession; children?: JSX.Element }) {
@@ -399,14 +399,21 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
          }
        }
      };
-    // ── Desktop Mouse Drag Engine (Panning when zoomed, Mouse swipe) ──
+    // ── Desktop Mouse Drag Engine (Panning when zoomed, Mouse swipe, Tap & Overscroll when enabled) ──
     let isMouseDown = false;
     let mouseStartX = 0;
     let mouseStartY = 0;
+    let mouseStartTime = 0;
     let mouseMoved = false;
     let activeSlot: HTMLElement | null = null;
     let slotScrollLeft = 0;
     let slotScrollTop = 0;
+    let activeMouseOverscroll: {
+      direction: "prev" | "next";
+      chapter: ChapterRef | null;
+      ready: boolean;
+      dist: number;
+    } | null = null;
 
     const onMouseDown = (ev: MouseEvent): void => {
       if (ev.button !== 0) return;
@@ -416,7 +423,9 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       isMouseDown = true;
       mouseStartX = ev.clientX;
       mouseStartY = ev.clientY;
+      mouseStartTime = Date.now();
       mouseMoved = false;
+      activeMouseOverscroll = null;
       if (s.isHorizontal()) {
         const curSlide = s.isSpread() ? s.slideIndex() : s.currentIndex();
         const target = s.isSpread() ? s.spreadSlotEls[curSlide] : s.slotEls[curSlide];
@@ -439,6 +448,129 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       if (activeSlot) {
         activeSlot.scrollLeft = slotScrollLeft - dx;
         activeSlot.scrollTop = slotScrollTop - dy;
+        return;
+      }
+
+      // Chapter boundary overscroll pull with mouse when mobile gestures enabled on desktop
+      if (isMobileGesturesOnDesktopEnabled()) {
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+
+        const list = s.chapterList();
+        const curIdx = list.findIndex(
+          (x) =>
+            x.permalink === s.permalink ||
+            x.permalink.toLowerCase().trim() === s.permalink.toLowerCase().trim() ||
+            x.permalink.endsWith(`/${s.permalink}`) ||
+            s.permalink.endsWith(`/${x.permalink}`),
+        );
+        const prevCh = curIdx > 0 ? list[curIdx - 1] : null;
+        const nextCh = curIdx >= 0 && curIdx < list.length - 1 ? list[curIdx + 1] : null;
+
+        if (s.isHorizontal()) {
+          const isRtl = s.direction() === "rtl";
+          const cur = s.isSpread() ? s.slideIndex() : s.currentIndex();
+          const total = s.isSpread() ? s.spreads().length : s.pages().length;
+
+          const isPullingPrev = cur === 0 && (isRtl ? dx < -40 : dx > 40) && absX > absY;
+          const isPullingNext = cur >= total - 1 && (isRtl ? dx > 40 : dx < -40) && absX > absY;
+
+          if (isPullingPrev) {
+            const dist = absX;
+            const ready = dist >= 120;
+            activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
+            setOverscrollHint({
+              direction: "prev",
+              ready,
+              text: prevCh
+                ? (ready
+                    ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
+                    : `Pull for previous chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                : "First chapter (no previous chapter)",
+            });
+            if (s.stripEl) {
+              const pullSign = isRtl ? -1 : 1;
+              const damped = pullSign * Math.min(60, Math.pow(dist, 0.72));
+              const sign = isRtl ? 1 : -1;
+              s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
+            }
+            return;
+          }
+
+          if (isPullingNext) {
+            const dist = absX;
+            const ready = dist >= 120;
+            activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist };
+            setOverscrollHint({
+              direction: "next",
+              ready,
+              text: nextCh
+                ? (ready
+                    ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
+                    : `Pull for next chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                : "End of series (no next chapter)",
+            });
+            if (s.stripEl) {
+              const pullSign = isRtl ? 1 : -1;
+              const damped = pullSign * Math.min(60, Math.pow(dist, 0.72));
+              const sign = isRtl ? 1 : -1;
+              s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
+            }
+            return;
+          }
+        } else {
+          // Vertical Continuous Scroll Mode
+          const vp = s.viewportEl;
+          if (vp) {
+            const isAtTop = vp.scrollTop <= 5;
+            const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 5;
+
+            if (isAtTop && dy > 40 && absY > absX) {
+              const dist = dy;
+              const ready = dist >= 120;
+              activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist };
+              setOverscrollHint({
+                direction: "prev",
+                ready,
+                text: prevCh
+                  ? (ready
+                      ? `Release for previous chapter: ${decodeEntities(prevCh.title)}`
+                      : `Pull down for previous chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                  : "First chapter (no previous chapter)",
+              });
+              if (s.stripEl) {
+                const damped = Math.min(60, Math.pow(dist, 0.72));
+                s.stripEl.style.transform = `translateY(${damped}px)`;
+              }
+              return;
+            }
+
+            if (isAtBottom && dy < -40 && absY > absX) {
+              const dist = -dy;
+              const ready = dist >= 120;
+              activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist };
+              setOverscrollHint({
+                direction: "next",
+                ready,
+                text: nextCh
+                  ? (ready
+                      ? `Release for next chapter: ${decodeEntities(nextCh.title)}`
+                      : `Pull up for next chapter (${Math.min(100, Math.round((dist / 120) * 100))}%)`)
+                  : "End of series (no next chapter)",
+              });
+              if (s.stripEl) {
+                const damped = -Math.min(60, Math.pow(dist, 0.72));
+                s.stripEl.style.transform = `translateY(${damped}px)`;
+              }
+              return;
+            }
+          }
+        }
+        if (activeMouseOverscroll) {
+          activeMouseOverscroll = null;
+          setOverscrollHint(null);
+          resetStripTransform(false);
+        }
       }
     };
 
@@ -453,9 +585,32 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
       const totalDx = ev.clientX - mouseStartX;
       const totalDy = ev.clientY - mouseStartY;
+      const dt = Date.now() - mouseStartTime;
       const absX = Math.abs(totalDx);
       const absY = Math.abs(totalDy);
 
+      if (activeMouseOverscroll) {
+        const over = activeMouseOverscroll;
+        activeMouseOverscroll = null;
+        setOverscrollHint(null);
+        resetStripTransform(true);
+        const isIntentional = over.ready && (dt >= 180 || over.dist >= 150);
+        if (isIntentional && over.chapter) {
+          if (over.direction === "prev") {
+            s.gotoPrevChapter();
+          } else {
+            s.gotoNextChapter();
+          }
+          return;
+        }
+        return;
+      }
+
+      if (isMobileGesturesOnDesktopEnabled()) {
+        resetStripTransform(true);
+      }
+
+      // Horizontal swipe for page flips
       if (mouseMoved && absX > 40 && absX > absY * 1.1) {
         const isRtl = s.direction() === "rtl";
         const step = isRtl ? (totalDx > 0 ? 1 : -1) : (totalDx < 0 ? 1 : -1);
@@ -468,6 +623,65 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           } else {
             s.setPage(targetPage, false);
           }
+        }
+        return;
+      }
+
+      // Tap / Click gesture without drag when mobile gestures on desktop is enabled
+      if (isMobileGesturesOnDesktopEnabled() && !mouseMoved && dt < 450) {
+        if (!s.isHorizontal()) {
+          s.toggleToolbarVisible();
+          return;
+        }
+
+        let activeEl: HTMLElement | null = null;
+        if (s.isSpread()) {
+          const curSlide = s.slideIndex();
+          const spreadSlot = s.spreadSlotEls[curSlide];
+          activeEl = spreadSlot?.querySelector<HTMLElement>(".ds-spread-canvas") ?? spreadSlot ?? null;
+        } else {
+          const curSlot = s.slotEls[s.currentIndex()];
+          activeEl = curSlot?.querySelector<HTMLElement>(".ds-page-img, .ds-slot-state") ?? curSlot ?? null;
+        }
+
+        const rect = activeEl ? activeEl.getBoundingClientRect() : vpEl.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+
+        const isInsidePage =
+          ev.clientX >= rect.left &&
+          ev.clientX <= rect.right &&
+          ev.clientY >= rect.top &&
+          ev.clientY <= rect.bottom;
+
+        if (!isInsidePage) {
+          s.toggleToolbarVisible();
+          return;
+        }
+
+        const relX = (ev.clientX - rect.left) / rect.width;
+        const isRtl = s.direction() === "rtl";
+        if (relX < 0.28) {
+          // Left Tap
+          const step = isRtl ? 1 : -1;
+          const cur = s.currentIndex();
+          const total = s.pages().length;
+          const targetPage = cur + step;
+          if (targetPage >= 0 && targetPage < total) {
+            if (s.isSpread()) s.stepSpread(step as 1 | -1);
+            else s.setPage(targetPage);
+          }
+        } else if (relX > 0.72) {
+          // Right Tap
+          const step = isRtl ? -1 : 1;
+          const cur = s.currentIndex();
+          const total = s.pages().length;
+          const targetPage = cur + step;
+          if (targetPage >= 0 && targetPage < total) {
+            if (s.isSpread()) s.stepSpread(step as 1 | -1);
+            else s.setPage(targetPage);
+          }
+        } else {
+          s.toggleToolbarVisible();
         }
       }
     };

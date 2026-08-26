@@ -117,3 +117,11 @@ const [getScrollLock, setScrollLock] = persistedSignal(false, {
   deserialize: (v) => v === "true" || v === "1",
 });
 export { getScrollLock, setScrollLock };
+
+// Mobile gestures on desktop (tap-to-turn, drag pull overscroll)
+const [isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled] = persistedSignal(false, {
+  name: "ds-reader-mobile-gestures-desktop",
+  serialize: String,
+  deserialize: boolDeserialize,
+});
+export { isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled };
