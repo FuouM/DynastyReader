@@ -4,6 +4,7 @@ import * as ipc from "../../ipc";
 import { StorageIcon, BlacklistIcon, ExternalLinkIcon, Icon } from "../Icon";
 import { GroupBox } from "../GroupBox";
 import { IconText, IconButton } from "../Button";
+import { SettingsRow } from "../SettingsRow";
 export interface StorageSettingsProps {
   onClose: () => void;
 }
@@ -11,13 +12,10 @@ export interface StorageSettingsProps {
 export function StorageSettings(props: StorageSettingsProps) {
   return (
     <GroupBox id="ds-settings-sec-storage" title={<IconText icon={<StorageIcon />}>{t("settings.storage.title")}</IconText>}>
-      <div class="ds-settings-storage-grid">
-        <span class="ds-label">
-          {t("settings.storage.manageDisk")}
-        </span>
+      <div class="ds-col">
+        <SettingsRow label={t("settings.storage.manageDisk")}>
           <IconButton
             id="ds-settings-goto-cache"
-            cssText="width:100%;justify-content:flex-start;"
             icon={<ExternalLinkIcon />}
             text={t("settings.storage.openCacheButton")}
             onClick={() => {
@@ -25,13 +23,11 @@ export function StorageSettings(props: StorageSettingsProps) {
               navigate({ view: "cache" });
             }}
           />
+        </SettingsRow>
 
-        <span class="ds-label">
-          {t("settings.storage.seriesBlacklist")}
-        </span>
+        <SettingsRow label={t("settings.storage.seriesBlacklist")} divider>
           <IconButton
             id="ds-settings-goto-blacklist"
-            cssText="width:100%;justify-content:flex-start;"
             title={t("settings.storage.openBlacklistTooltip")}
             icon={<BlacklistIcon />}
             text={t("settings.storage.openBlacklistButton")}
@@ -40,13 +36,11 @@ export function StorageSettings(props: StorageSettingsProps) {
               navigate({ view: "blacklist" });
             }}
           />
+        </SettingsRow>
 
-        <span class="ds-label">
-          {t("settings.storage.troubleshooting")}
-        </span>
+        <SettingsRow label={t("settings.storage.troubleshooting")} divider>
           <IconButton
             id="ds-settings-open-logs"
-            cssText="width:100%;justify-content:flex-start;"
             title={t("settings.storage.openLogsTooltip")}
             icon={<Icon name="folder2-open" />}
             text={t("settings.storage.openLogsButton")}
@@ -56,6 +50,7 @@ export function StorageSettings(props: StorageSettingsProps) {
               });
             }}
           />
+        </SettingsRow>
       </div>
     </GroupBox>
   );
