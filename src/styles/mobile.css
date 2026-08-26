@@ -768,17 +768,24 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   background: var(--sys-control-bg, #ececec);
   border-top: 1px solid var(--sys-border-dark, #707070);
   border-radius: 4px 4px 0 0;
-  padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px;
+  padding: 8px max(14px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 85dvh;
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px);
   overflow-y: auto;
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
   animation: ds-sheet-slide-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   color: var(--sys-window-text, #000);
   box-sizing: border-box;
   touch-action: manipulation;
+}
+
+@media (orientation: landscape), (min-width: 600px) {
+  .ds-reader-sheet-window {
+    padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)) !important;
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 8px) !important;
+  }
 }
 .ds-reader-sheet-window.ds-sheet-closing {
   animation: ds-sheet-slide-down 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
