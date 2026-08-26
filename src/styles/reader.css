@@ -438,16 +438,27 @@
   width: 100%;
 }
 
-/* Scroll Mode: Container strip */
+/* Scroll Mode: Container strip has dynamic top and bottom clearance for first/last page centering */
 #ds-reader-viewport:not(.horizontal) #ds-reader-strip {
-  padding-top: 0;
-  padding-bottom: 24px;
+  padding-top: max(0px, calc((var(--ds-viewport-height, calc(100vh - 48px)) - var(--ds-first-slot-height, 0px)) / 2));
+  padding-bottom: max(24px, calc(var(--ds-viewport-height, calc(100vh - 48px)) / 2));
   box-sizing: border-box;
 }
 
 #ds-root[data-mobile] #ds-reader-viewport:not(.horizontal) #ds-reader-strip {
-  padding-top: 0;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  padding-top: max(0px, calc((var(--ds-viewport-height, calc(100vh - 48px)) - var(--ds-first-slot-height, 0px)) / 2));
+  padding-bottom: max(calc(24px + env(safe-area-inset-bottom, 0px)), calc(var(--ds-viewport-height, calc(100vh - 48px)) / 2));
+}
+
+/* Seamless Webtoon / Long-Strip stitching */
+#ds-reader-container.is-long-strip #ds-reader-viewport:not(.horizontal) #ds-reader-strip {
+  padding-top: 0 !important;
+  padding-bottom: 24px !important;
+}
+
+#ds-root[data-mobile] #ds-reader-container.is-long-strip #ds-reader-viewport:not(.horizontal) #ds-reader-strip {
+  padding-top: 0 !important;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 /* While restoring a saved position the strip is kept off-screen until the
@@ -456,7 +467,6 @@
 #ds-reader-container.ds-restoring #ds-reader-strip {
   visibility: hidden;
 }
-
 .ds-slot {
   display: flex;
   flex-direction: column;
@@ -466,20 +476,15 @@
   margin: 0 auto;
 }
 
-/* Vertical Scroll Mode: Slots take full viewport height so pages are vertically centered with equal top & bottom margins */
+/* Vertical Scroll Mode: Slots wrap image content naturally without internal height inflation */
 #ds-reader-viewport:not(.horizontal) .ds-slot {
   width: 100%;
-  min-height: var(--ds-viewport-height, calc(100vh - 48px));
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-}
-
-/* Seamless Webtoon / Long-Strip stitching */
-#ds-reader-container.is-long-strip #ds-reader-viewport:not(.horizontal) .ds-slot {
-  min-height: 0;
 }
 
 .ds-page-wrap {

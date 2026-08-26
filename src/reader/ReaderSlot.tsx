@@ -80,12 +80,14 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
           if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
             setLoaded(true);
             s.setPageDimension(props.index, img.naturalWidth, img.naturalHeight);
+            if (props.index === 0) s.updateFirstSlotHeight();
           }
         }}
         onLoad={(ev) => {
           setLoaded(true);
           const img = ev.currentTarget as HTMLImageElement;
           s.setPageDimension(props.index, img.naturalWidth, img.naturalHeight);
+          if (props.index === 0) s.updateFirstSlotHeight();
           const isWide = img.naturalWidth > img.naturalHeight * WIDE_RATIO;
           if (isWide !== s.widePages().has(props.index)) {
             const next = new Set(s.widePages());

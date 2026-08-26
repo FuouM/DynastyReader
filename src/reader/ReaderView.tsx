@@ -67,6 +67,8 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
             "ds-dark": theme() === "dark",
             "ds-restoring": session.restoring(),
             "ds-hud-visible": session.toolbarVisible(),
+            "is-scroll-locked": session.scrollLock(),
+            "is-long-strip": session.isLongStrip(),
           }}
         >
           <ReaderToolbar session={session} />

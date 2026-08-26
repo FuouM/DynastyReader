@@ -591,6 +591,9 @@ export class ReaderSession implements ReaderQueueHost {
     const cur = this.pageDimensions[0][index];
     if (cur?.width === width && cur?.height === height) return;
     this.pageDimensions[1](index, { width, height });
+    if (index === 0) {
+      this.updateFirstSlotHeight();
+    }
   }
 
   zoomIn(): void {
@@ -683,6 +686,18 @@ export class ReaderSession implements ReaderQueueHost {
     if (h && h > 50 && this.containerEl) {
       this.containerEl.style.setProperty("--ds-viewport-full", `${h}px`);
       this.containerEl.style.setProperty("--ds-viewport-height", `${h - 20}px`);
+      this.updateFirstSlotHeight();
+    }
+  }
+
+  updateFirstSlotHeight(): void {
+    if (!this.containerEl || this.isHorizontal()) return;
+    const firstSlot = this.slotEls[0];
+    if (firstSlot) {
+      const h = firstSlot.offsetHeight;
+      if (h > 0) {
+        this.containerEl.style.setProperty("--ds-first-slot-height", `${h}px`);
+      }
     }
   }
 
@@ -748,14 +763,11 @@ export class ReaderSession implements ReaderQueueHost {
         const vpRect = vp.getBoundingClientRect();
         const targetRect = target.getBoundingClientRect();
         const startScrollTop = vp.scrollTop;
-        const targetScrollTop = index === 0 ? 0 : Math.max(0, startScrollTop + (targetRect.top - vpRect.top));
+        const centerOffset = this.isLongStrip() ? 0 : Math.max(0, (vpRect.height - targetRect.height) / 2);
+        const targetScrollTop = index === 0 ? 0 : Math.max(0, startScrollTop + (targetRect.top - vpRect.top) - centerOffset);
 
         if (instant || !this.scrollLock()) {
-          if (index === 0) {
-            vp.scrollTop = 0;
-          } else {
-            target.scrollIntoView({ behavior: "auto", block: "start" });
-          }
+          vp.scrollTop = targetScrollTop;
           this.isProgrammaticScroll = false;
         } else {
           const distance = targetScrollTop - startScrollTop;
@@ -828,9 +840,10 @@ export class ReaderSession implements ReaderQueueHost {
         } else {
           const vpRect = this.viewportEl.getBoundingClientRect();
           const targetRect = target.getBoundingClientRect();
-          const targetTop = Math.max(0, this.viewportEl.scrollTop + (targetRect.top - vpRect.top));
+          const centerOffset = this.isLongStrip() ? 0 : Math.max(0, (vpRect.height - targetRect.height) / 2);
+          const targetTop = Math.max(0, this.viewportEl.scrollTop + (targetRect.top - vpRect.top) - centerOffset);
           if (!smooth) {
-            target.scrollIntoView({ behavior: "auto", block: "start" });
+            this.viewportEl.scrollTop = targetTop;
           } else {
             this.viewportEl.scrollTo({ top: targetTop, behavior: "smooth" });
           }
