@@ -12,6 +12,14 @@ import { computeSpreads, spreadIndexOf } from "./reader-spread";
 import type { ChapterPage } from "../types/api";
 import type { ChapterRef } from "../types/routes";
 import type { FitMode, PagedLayout, ReaderMode, ReadingDirection, SpreadGroup } from "../types/reader";
+import {
+  getDefaultReaderMode,
+  getDefaultPagedLayout,
+  getDefaultReadingDirection,
+  isCoverOffsetDefaultEnabled,
+  getDefaultFitMode,
+  getScrollLock,
+} from "./settings";
 import type { SlotStateKind } from "./reader-queue";
 
 export interface SlotStateRecord {
@@ -109,17 +117,18 @@ export function createReaderState(): ReaderState {
   const [pages, setPages] = createSignal<ChapterPage[]>([]);
   const [currentIndex, setCurrentIndex] = createSignal(0);
   const [atEnd, setAtEnd] = createSignal(false);
-  const [mode, setModeSignal] = createSignal<ReaderMode>("scroll");
-  const [pagedLayout, setPagedLayoutSignal] = createSignal<PagedLayout>("single");
+  const defaultDir = getDefaultReadingDirection();
+  const [mode, setModeSignal] = createSignal<ReaderMode>(getDefaultReaderMode());
+  const [pagedLayout, setPagedLayoutSignal] = createSignal<PagedLayout>(getDefaultPagedLayout());
   const [layoutAutoDetected, setLayoutAutoDetected] = createSignal(false);
   const [isLongStrip, setIsLongStrip] = createSignal(false);
-  const [direction, setDirectionSignal] = createSignal<ReadingDirection>("rtl");
-  const [directionAutoDetected, setDirectionAutoDetected] = createSignal(false);
-  const [coverOffset, setCoverOffsetSignal] = createSignal(false);
+  const [direction, setDirectionSignal] = createSignal<ReadingDirection>(defaultDir === "auto" ? "rtl" : defaultDir);
+  const [directionAutoDetected, setDirectionAutoDetected] = createSignal(defaultDir === "auto");
+  const [coverOffset, setCoverOffsetSignal] = createSignal(isCoverOffsetDefaultEnabled());
   const [widePages, setWidePagesSignal] = createSignal<ReadonlySet<number>>(new Set());
-  const [fitMode, setFitModeSignal] = createSignal<FitMode>("width");
+  const [fitMode, setFitModeSignal] = createSignal<FitMode>(getDefaultFitMode());
   const [zoomScale, setZoomScaleSignal] = createSignal(1.0);
-  const [scrollLock, setScrollLockSignal] = createSignal(false);
+  const [scrollLock, setScrollLockSignal] = createSignal(getScrollLock());
   const [isFullscreen, setIsFullscreenSignal] = createSignal(false);
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);

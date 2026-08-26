@@ -24,6 +24,8 @@ import {
   setDefaultFitMode,
   getPrevChapterStartPage,
   setPrevChapterStartPage,
+  getScrollLock,
+  setScrollLock,
   type PrevChapterStartPage,
   type ReadingDirectionSetting,
 } from "../../reader/settings";
@@ -46,6 +48,7 @@ export function ReaderSettings() {
   const [mobileGesturesDesktopPref, setMobileGesturesDesktopPref] = createSignal<boolean>(isMobileGesturesOnDesktopEnabled());
   const [fitModePref, setFitModePref] = createSignal<FitMode>(getDefaultFitMode());
   const [prevChapterPagePref, setPrevChapterPagePref] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
+  const [scrollLockPref, setScrollLockPref] = createSignal<boolean>(getScrollLock());
   return (
     <div class="group-box" id="ds-settings-sec-reading">
       <div class="group-box-title">
@@ -129,6 +132,40 @@ export function ReaderSettings() {
             checked={mobileGesturesDesktopPref()}
             title={t("settings.reader.mobileGesturesDesktopTooltip")}
             onChange={(next) => { setMobileGesturesOnDesktopEnabled(next); setMobileGesturesDesktopPref(next); }}
+          />
+        </SettingsRow>
+
+        {/* Paged Mode: Slide Animation */}
+        <SettingsRow divider label={<>{t("settings.reader.slideAnimation")}:</>} desc={t("settings.reader.slideAnimationDesc")}>
+          <SegmentedSwitch
+            id="ds-settings-slide-anim-switch"
+            value={scrollLockPref() ? "smooth" : "instant"}
+            onChange={(val) => {
+              const isSmooth = val === "smooth";
+              setScrollLock(isSmooth);
+              setScrollLockPref(isSmooth);
+            }}
+            options={[
+              { id: "ds-settings-anim-smooth", value: "smooth", icon: <Icon name="arrow-left-right" />, text: t("settings.reader.scrollAnimationSmooth"), title: t("settings.reader.scrollAnimationSmoothTooltip") },
+              { id: "ds-settings-anim-instant", value: "instant", icon: <Icon name="lightning" />, text: t("settings.reader.scrollAnimationInstant"), title: t("settings.reader.scrollAnimationInstantTooltip") },
+            ]}
+          />
+        </SettingsRow>
+
+        {/* Scroll Mode: Page Snap (Scroll Lock) */}
+        <SettingsRow divider label={<>{t("settings.reader.scrollLock")}:</>} desc={t("settings.reader.scrollLockDesc")}>
+          <SegmentedSwitch
+            id="ds-settings-scroll-lock-switch"
+            value={scrollLockPref() ? "locked" : "free"}
+            onChange={(val) => {
+              const isLocked = val === "locked";
+              setScrollLock(isLocked);
+              setScrollLockPref(isLocked);
+            }}
+            options={[
+              { id: "ds-settings-lock-free", value: "free", icon: <Icon name="unlock" />, text: t("settings.reader.scrollLockFree"), title: t("settings.reader.scrollLockFreeTooltip") },
+              { id: "ds-settings-lock-locked", value: "locked", icon: <Icon name="lock" />, text: t("settings.reader.scrollLockLocked"), title: t("settings.reader.scrollLockLockedTooltip") },
+            ]}
           />
         </SettingsRow>
         {/* Previous Chapter Landing Page */}

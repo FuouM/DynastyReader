@@ -152,13 +152,19 @@ export function ReaderControlsRow(props: NavRowProps) {
         className="ds-ctrl-btn"
         classList={{ primary: s.scrollLock() }}
         icon={s.isHorizontal() ? <ArrowLeftRightIcon /> : s.scrollLock() ? <LockIcon /> : <UnlockIcon />}
-        text={s.isHorizontal() ? t("reader.toolbar.scrollSmooth") : t("reader.toolbar.scrollLock")}
+        text={
+          s.isHorizontal()
+            ? (s.scrollLock() ? t("reader.toolbar.smoothOn") : t("reader.toolbar.smoothOff"))
+            : (s.scrollLock() ? t("reader.toolbar.lockOn") : t("reader.toolbar.lockOff"))
+        }
         title={
           s.isHorizontal()
-            ? s.scrollLock()
-              ? t("reader.toolbar.scrollLockInstantTooltip")
-              : t("reader.toolbar.scrollLockSmoothTooltip")
-            : t("reader.toolbar.scrollLockWheelTooltip")
+            ? (s.scrollLock()
+                ? t("reader.toolbar.scrollLockInstantTooltip")
+                : t("reader.toolbar.scrollLockSmoothTooltip"))
+            : (s.scrollLock()
+                ? t("reader.toolbar.scrollLockOnTooltip")
+                : t("reader.toolbar.scrollLockOffTooltip"))
         }
         onClick={() => s.setScrollLock()}
       />
@@ -344,6 +350,43 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 />
               </SettingsRow>
 
+              {/* Paged Mode: Smooth Slide Animation */}
+              <Show when={s.mode() === "paged"}>
+                <SettingsRow label={t("settings.reader.slideAnimation")} divider>
+                  <SegmentedSwitch
+                    value={s.scrollLock() ? "smooth" : "instant"}
+                    onChange={(val) => {
+                      const isSmooth = val === "smooth";
+                      if (s.scrollLock() !== isSmooth) {
+                        s.setScrollLock();
+                      }
+                    }}
+                    options={[
+                      { id: "ds-ctrl-anim-smooth", value: "smooth", icon: <ArrowLeftRightIcon />, text: t("settings.reader.scrollAnimationSmooth"), title: t("settings.reader.scrollAnimationSmoothTooltip") },
+                      { id: "ds-ctrl-anim-instant", value: "instant", icon: <Icon name="lightning" />, text: t("settings.reader.scrollAnimationInstant"), title: t("settings.reader.scrollAnimationInstantTooltip") },
+                    ]}
+                  />
+                </SettingsRow>
+              </Show>
+
+              {/* Scroll Mode: Scroll Lock (Page Snap vs Free Scroll) */}
+              <Show when={s.mode() === "scroll"}>
+                <SettingsRow label={t("settings.reader.scrollLock")} divider desc={t("settings.reader.scrollLockDesc")}>
+                  <SegmentedSwitch
+                    value={s.scrollLock() ? "locked" : "free"}
+                    onChange={(val) => {
+                      const isLocked = val === "locked";
+                      if (s.scrollLock() !== isLocked) {
+                        s.setScrollLock();
+                      }
+                    }}
+                    options={[
+                      { id: "ds-ctrl-lock-free", value: "free", icon: <UnlockIcon />, text: t("settings.reader.scrollLockFree"), title: t("settings.reader.scrollLockFreeTooltip") },
+                      { id: "ds-ctrl-lock-locked", value: "locked", icon: <LockIcon />, text: t("settings.reader.scrollLockLocked"), title: t("settings.reader.scrollLockLockedTooltip") },
+                    ]}
+                  />
+                </SettingsRow>
+              </Show>
               {/* Reading Direction (when paged) */}
               <Show when={s.mode() === "paged"}>
                 <SettingsRow label={t("settings.reader.readingDirection")} divider>
