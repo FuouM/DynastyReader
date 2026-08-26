@@ -936,7 +936,8 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   height: 100% !important;
   max-height: none !important;
   min-height: 0 !important;
-  overflow-y: auto !important;
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior-y: contain !important;
   padding: 10px 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px !important;

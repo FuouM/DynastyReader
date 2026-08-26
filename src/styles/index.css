@@ -456,7 +456,8 @@ body {
 #ds-pane-browse {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   overflow-x: hidden;
   padding: 8px;
   display: flex;
@@ -478,7 +479,8 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   overflow-x: hidden;
   padding: 8px;
 }
@@ -887,6 +889,7 @@ body.ds-dark .tag-pill:hover {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 .ds-modal-footer {
   border-top: 1px solid var(--sys-border-dark, #b0b0b0);
@@ -1018,7 +1021,8 @@ code,
 .ds-settings-subpage-content {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   padding-right: 4px;
 }
 
@@ -1076,7 +1080,8 @@ code,
 .ds-settings-content {
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   padding: 12px 8px 12px 2px;
   display: flex;
   flex-direction: column;
