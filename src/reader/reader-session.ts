@@ -348,11 +348,23 @@ export class ReaderSession implements ReaderQueueHost {
     this.cleanupFns.push(fn);
   }
 
+  cancelScrollAnimation(): void {
+    if (this.scrollAnimRaf !== null) {
+      cancelAnimationFrame(this.scrollAnimRaf);
+      this.scrollAnimRaf = null;
+    }
+    if (this.programmaticScrollTimer !== null) {
+      clearTimeout(this.programmaticScrollTimer);
+      this.programmaticScrollTimer = null;
+    }
+    this.isProgrammaticScroll = false;
+  }
+
   dispose(): void {
     this.disposedFlag = true;
+    this.cancelScrollAnimation();
     this.persistence.dispose();
     this.clearToolbarTimer();
-    if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
     for (const fn of this.cleanupFns) fn();
     this.cleanupFns.length = 0;
     if (this.actionsDispose) {
@@ -514,7 +526,7 @@ export class ReaderSession implements ReaderQueueHost {
     this.setModeSignal(mode);
     setDefaultReaderMode(mode);
     this.applyLayoutMode();
-    this.resetToCurrentPage(true);
+    this.resetToCurrentPage(false);
   }
 
   setPagedLayout(layout: PagedLayout): void {
@@ -523,7 +535,7 @@ export class ReaderSession implements ReaderQueueHost {
     this.setLayoutAutoDetected(false);
     setDefaultPagedLayout(layout);
     this.applyLayoutMode();
-    this.resetToCurrentPage(true);
+    this.resetToCurrentPage(false);
   }
 
   setDirection(dir: ReadingDirection): void {
@@ -533,7 +545,7 @@ export class ReaderSession implements ReaderQueueHost {
     setDefaultReadingDirection(dir);
     if (this.isHorizontal()) {
       this.applyLayoutMode();
-      this.resetToCurrentPage(true);
+      this.resetToCurrentPage(false);
     }
   }
 
@@ -541,7 +553,7 @@ export class ReaderSession implements ReaderQueueHost {
     this.setCoverOffsetSignal(!this.coverOffset());
     setCoverOffsetDefaultEnabled(this.coverOffset());
     if (this.isSpread()) {
-      this.resetToCurrentPage(true);
+      this.resetToCurrentPage(false);
     }
   }
 
@@ -731,7 +743,10 @@ export class ReaderSession implements ReaderQueueHost {
       }
     } else {
       this.isProgrammaticScroll = true;
-      if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
+      if (this.programmaticScrollTimer !== null) {
+        clearTimeout(this.programmaticScrollTimer);
+        this.programmaticScrollTimer = null;
+      }
       if (this.scrollAnimRaf !== null) {
         cancelAnimationFrame(this.scrollAnimRaf);
         this.scrollAnimRaf = null;
@@ -751,8 +766,16 @@ export class ReaderSession implements ReaderQueueHost {
           this.isProgrammaticScroll = false;
         } else {
           const distance = targetScrollTop - startScrollTop;
+          if (Math.abs(distance) < 2) {
+            vp.scrollTop = targetScrollTop;
+            this.isProgrammaticScroll = false;
+            return;
+          }
+
           const startTime = performance.now();
-          const duration = SCROLL_ANIMATION_DURATION_MS;
+          const fullSpan = Math.max(1, vpRect.height);
+          const normalizedDist = Math.min(1, Math.abs(distance) / fullSpan);
+          const duration = Math.max(90, Math.round(SCROLL_ANIMATION_DURATION_MS * Math.sqrt(normalizedDist)));
 
           const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
 
@@ -764,6 +787,7 @@ export class ReaderSession implements ReaderQueueHost {
             if (progress < 1) {
               this.scrollAnimRaf = requestAnimationFrame(step);
             } else {
+              vp.scrollTop = targetScrollTop;
               this.scrollAnimRaf = null;
               this.isProgrammaticScroll = false;
             }
@@ -795,9 +819,13 @@ export class ReaderSession implements ReaderQueueHost {
       }
     } else {
       this.isProgrammaticScroll = true;
-      if (this.programmaticScrollTimer !== null) clearTimeout(this.programmaticScrollTimer);
+      if (this.programmaticScrollTimer !== null) {
+        clearTimeout(this.programmaticScrollTimer);
+        this.programmaticScrollTimer = null;
+      }
       this.programmaticScrollTimer = window.setTimeout(() => {
         this.isProgrammaticScroll = false;
+        this.programmaticScrollTimer = null;
       }, PROGRAMMATIC_SCROLL_LOCK_MS);
 
       const target = this.slotEls[this.currentIndex()];

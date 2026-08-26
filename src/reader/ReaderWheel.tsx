@@ -6,10 +6,12 @@
  */
 
 const MOMENTUM_INDICATOR_TIMEOUT_MS = 1200;
-const MOMENTUM_PAGE_FLIP_COOLDOWN_MS = 300;
+const MOMENTUM_PAGE_FLIP_COOLDOWN_MS = 280;
 const WHEEL_DELTA_THRESHOLD = 10;
-const PAGE_FLIP_COOLDOWN_MS = 250;
+const PAGE_FLIP_COOLDOWN_MS = 220;
+const WHEEL_IDLE_RESET_MS = 350;
 
+import { onCleanup } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { spreadIndexOf } from "./reader-spread";
@@ -17,6 +19,8 @@ import { spreadIndexOf } from "./reader-spread";
 export function ReaderWheel(props: { session: ReaderSession }) {
   const c = props.session;
   let wheelCooldown = 0;
+  let lastWheelDirection: 1 | -1 | null = null;
+  let lastWheelTime = 0;
   let momentumDir: "next" | "prev" | null = null;
   let momentumTimer: number | null = null;
   let indicator: HTMLElement | null = null;
@@ -42,16 +46,21 @@ export function ReaderWheel(props: { session: ReaderSession }) {
     momentumDir = null;
   };
 
+  onCleanup(() => {
+    if (momentumTimer !== null) {
+      clearTimeout(momentumTimer);
+      momentumTimer = null;
+    }
+    if (indicator) {
+      indicator.remove();
+      indicator = null;
+    }
+  });
+
   const onWheel = (ev: WheelEvent): void => {
     // Ignore if event target is an input / textarea / select
     const targetTag = (ev.target as HTMLElement)?.tagName;
     if (targetTag === "INPUT" || targetTag === "TEXTAREA" || targetTag === "SELECT") return;
-
-    const now = Date.now();
-    if (now < wheelCooldown) {
-      ev.preventDefault();
-      return;
-    }
 
     if (ev.ctrlKey) {
       // Ctrl + Wheel: Zoom In / Out when in Original Size
@@ -63,6 +72,39 @@ export function ReaderWheel(props: { session: ReaderSession }) {
           c.zoomOut();
         }
         return;
+      }
+    }
+
+    const now = Date.now();
+    const primaryDelta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
+    if (
+      Math.abs(primaryDelta) < WHEEL_DELTA_THRESHOLD &&
+      Math.abs(ev.deltaY) < WHEEL_DELTA_THRESHOLD &&
+      Math.abs(ev.deltaX) < WHEEL_DELTA_THRESHOLD
+    ) {
+      return;
+    }
+
+    if (now - lastWheelTime > WHEEL_IDLE_RESET_MS) {
+      lastWheelDirection = null;
+    }
+    lastWheelTime = now;
+
+    const currentDirection: 1 | -1 = primaryDelta > 0 ? 1 : -1;
+    const isDirectionReversal = lastWheelDirection !== null && currentDirection !== lastWheelDirection;
+
+    // Throttle repeated flips in the SAME direction to prevent skipping multiple pages on one trackpad flick.
+    // When the user deliberately reverses scroll direction, waive cooldown for immediate responsive turnaround.
+    if (!isDirectionReversal && now < wheelCooldown) {
+      ev.preventDefault();
+      return;
+    }
+
+    if (isDirectionReversal) {
+      hideIndicator();
+      if (momentumTimer !== null) {
+        clearTimeout(momentumTimer);
+        momentumTimer = null;
       }
     }
 
@@ -92,6 +134,11 @@ export function ReaderWheel(props: { session: ReaderSession }) {
           ev.preventDefault();
           slide.scrollTop = Math.max(0, Math.min(maxScrollTop, slide.scrollTop + ev.deltaY));
           hideIndicator();
+          if (momentumTimer !== null) {
+            clearTimeout(momentumTimer);
+            momentumTimer = null;
+          }
+          lastWheelDirection = currentDirection;
           return;
         }
 
@@ -116,12 +163,16 @@ export function ReaderWheel(props: { session: ReaderSession }) {
           showIndicator(targetDir);
           clearTimeout(momentumTimer!);
           momentumTimer = window.setTimeout(hideIndicator, MOMENTUM_INDICATOR_TIMEOUT_MS);
+          lastWheelDirection = currentDirection;
           return;
         }
 
         // Second deliberate scroll in the same direction: flip page
         hideIndicator();
         clearTimeout(momentumTimer!);
+        momentumTimer = null;
+        momentumDir = null;
+        lastWheelDirection = currentDirection;
         wheelCooldown = Date.now() + MOMENTUM_PAGE_FLIP_COOLDOWN_MS;
         if (c.isSpread()) {
           c.stepSpread(targetDir === "next" ? 1 : -1);
@@ -143,7 +194,7 @@ export function ReaderWheel(props: { session: ReaderSession }) {
       // Standard paged mode without vertical overflow: flip page directly
       hideIndicator();
       ev.preventDefault();
-      if (Math.abs(ev.deltaY) < WHEEL_DELTA_THRESHOLD && Math.abs(ev.deltaX) < WHEEL_DELTA_THRESHOLD) return;
+      lastWheelDirection = currentDirection;
       wheelCooldown = Date.now() + PAGE_FLIP_COOLDOWN_MS;
       const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
       if (c.isSpread()) {
@@ -161,7 +212,7 @@ export function ReaderWheel(props: { session: ReaderSession }) {
     // In Continuous Scroll mode, wheel scrolling turns pages when Scroll Lock is active
     if (!c.scrollLock()) return;
     ev.preventDefault();
-    if (Math.abs(ev.deltaY) < WHEEL_DELTA_THRESHOLD && Math.abs(ev.deltaX) < WHEEL_DELTA_THRESHOLD) return;
+    lastWheelDirection = currentDirection;
     wheelCooldown = Date.now() + PAGE_FLIP_COOLDOWN_MS;
     const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
 

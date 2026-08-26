@@ -81,26 +81,37 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     });
 
     // ── Helper: Restore Canvas Strip Transform (Never Jump to Void) ──
+    let resetTransformTimer: number | null = null;
     const resetStripTransform = (smooth = true) => {
       if (!s.stripEl) return;
+      if (resetTransformTimer !== null) {
+        clearTimeout(resetTransformTimer);
+        resetTransformTimer = null;
+      }
       if (s.isHorizontal()) {
         const slideIndex = s.isSpread() ? s.slideIndex() : s.currentIndex();
         const sign = s.direction() === "rtl" ? 1 : -1;
         if (smooth) {
           s.stripEl.style.transition = "transform 0.2s ease-out";
           s.stripEl.style.transform = `translateX(${sign * slideIndex * 100}%)`;
-          window.setTimeout(() => {
+          resetTransformTimer = window.setTimeout(() => {
             if (s.stripEl) s.stripEl.style.transition = "";
+            resetTransformTimer = null;
           }, 200);
         } else {
+          s.stripEl.style.transition = "none";
           s.stripEl.style.transform = `translateX(${sign * slideIndex * 100}%)`;
+          requestAnimationFrame(() => {
+            if (s.stripEl) s.stripEl.style.transition = "";
+          });
         }
       } else {
         if (smooth) {
           s.stripEl.style.transition = "transform 0.2s ease-out";
           s.stripEl.style.transform = "translateY(0px)";
-          window.setTimeout(() => {
+          resetTransformTimer = window.setTimeout(() => {
             if (s.stripEl) s.stripEl.style.transition = "";
+            resetTransformTimer = null;
           }, 200);
         } else {
           s.stripEl.style.transform = "";
@@ -123,6 +134,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
     const onTouchStart = (ev: TouchEvent): void => {
       if (ev.touches.length !== 1) return;
+      s.cancelScrollAnimation();
       const t = ev.touches[0];
       touchStartX = t.clientX;
       touchStartY = t.clientY;
@@ -399,6 +411,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     const onMouseDown = (ev: MouseEvent): void => {
       if (ev.button !== 0) return;
       if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
+      s.cancelScrollAnimation();
       ev.preventDefault();
       isMouseDown = true;
       mouseStartX = ev.clientX;
@@ -469,6 +482,10 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     window.addEventListener("mouseup", onMouseUp);
 
     s.onDispose(() => {
+      if (resetTransformTimer !== null) {
+        clearTimeout(resetTransformTimer);
+        resetTransformTimer = null;
+      }
       vpEl.removeEventListener("touchstart", onTouchStart);
       vpEl.removeEventListener("touchmove", onTouchMove);
       vpEl.removeEventListener("touchend", onTouchEnd);
