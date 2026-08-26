@@ -54,6 +54,11 @@ export function Topbar() {
       clearTimeout(holdTimer);
       holdTimer = null;
     }
+    if (didHold) {
+      window.setTimeout(() => {
+        didHold = false;
+      }, 200);
+    }
   };
 
   onCleanup(() => cancelHold());
@@ -87,6 +92,16 @@ export function Topbar() {
               id="ds-nav-back"
               title={t("topbar.navBackTooltip")}
               disabled={!canGoBack()}
+              onTouchStart={(ev) => {
+                if (canGoBack()) {
+                  startHold("back", ev.currentTarget);
+                }
+              }}
+              onTouchEnd={(ev) => {
+                if (didHold) ev.preventDefault();
+                cancelHold();
+              }}
+              onTouchCancel={() => cancelHold()}
               onMouseDown={(ev) => {
                 if (ev.button === 0 && canGoBack()) {
                   startHold("back", ev.currentTarget);
@@ -114,6 +129,16 @@ export function Topbar() {
               id="ds-nav-forward"
               title={t("topbar.navForwardTooltip")}
               disabled={!canGoForward()}
+              onTouchStart={(ev) => {
+                if (canGoForward()) {
+                  startHold("forward", ev.currentTarget);
+                }
+              }}
+              onTouchEnd={(ev) => {
+                if (didHold) ev.preventDefault();
+                cancelHold();
+              }}
+              onTouchCancel={() => cancelHold()}
               onMouseDown={(ev) => {
                 if (ev.button === 0 && canGoForward()) {
                   startHold("forward", ev.currentTarget);

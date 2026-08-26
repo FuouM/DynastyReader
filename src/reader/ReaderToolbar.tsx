@@ -11,7 +11,8 @@ import { makeEventListener } from "@solid-primitives/event-listener";
 import { debounce } from "@solid-primitives/scheduled";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode, ReaderMode, PagedLayout, ReadingDirection } from "../types/reader";
-import { theme, setTheme, isMobile, goBack, closeSessionMangaTab, showBanner, SITE_ROOT } from "../stores";
+import { theme, setTheme, isMobile, goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, showBanner, SITE_ROOT } from "../stores";
+import { HistoryDropdown } from "../components/HistoryDropdown";
 import { decodeEntities } from "../utils/html";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
@@ -552,10 +553,35 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
   };
   makeEventListener(document, "fullscreenchange", onFullscreenChange);
 
-  const handleBack = () => {
-    goBack();
+  const [historyMenu, setHistoryMenu] = createSignal<{
+    direction: "back" | "forward";
+    anchorEl: HTMLElement;
+  } | null>(null);
+  let holdTimer: number | null = null;
+  let didHold = false;
+
+  const startHold = (direction: "back" | "forward", anchorEl: HTMLElement): void => {
+    didHold = false;
+    if (holdTimer !== null) window.clearTimeout(holdTimer);
+    holdTimer = window.setTimeout(() => {
+      didHold = true;
+      setHistoryMenu({ direction, anchorEl });
+    }, 450);
   };
 
+  const cancelHold = (): void => {
+    if (holdTimer !== null) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    if (didHold) {
+      window.setTimeout(() => {
+        didHold = false;
+      }, 200);
+    }
+  };
+
+  onCleanup(() => cancelHold());
   const handleOpenSeries = () => {
     s.gotoSeries();
   };
@@ -590,12 +616,82 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
       >
         <Show when={isMobile()}>
           <div class="ds-reader-nav-row nav-main ds-reader-mobile-row--full">
-            <IconButton
-              className="ds-btn-icon"
-              icon={<ArrowLeftIcon />}
-              title={t("topbar.navBackTooltip")}
-              onClick={handleBack}
-            />
+            <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
+              <button
+                type="button"
+                class="ds-segmented-btn ds-nav-history-btn"
+                id="ds-nav-back"
+                title={t("topbar.navBackTooltip")}
+                disabled={!canGoBack()}
+                onTouchStart={(ev) => {
+                  if (canGoBack()) {
+                    startHold("back", ev.currentTarget);
+                  }
+                }}
+                onTouchEnd={(ev) => {
+                  if (didHold) ev.preventDefault();
+                  cancelHold();
+                }}
+                onTouchCancel={() => cancelHold()}
+                onMouseDown={(ev) => {
+                  if (ev.button === 0 && canGoBack()) {
+                    startHold("back", ev.currentTarget);
+                  }
+                }}
+                onMouseUp={() => cancelHold()}
+                onMouseLeave={() => cancelHold()}
+                onContextMenu={(ev) => {
+                  ev.preventDefault();
+                  if (canGoBack()) {
+                    setHistoryMenu({ direction: "back", anchorEl: ev.currentTarget });
+                  }
+                }}
+                onClick={() => {
+                  if (!didHold && canGoBack()) {
+                    goBack();
+                  }
+                }}
+              >
+                <ArrowLeftIcon />
+              </button>
+              <button
+                type="button"
+                class="ds-segmented-btn ds-nav-history-btn"
+                id="ds-nav-forward"
+                title={t("topbar.navForwardTooltip")}
+                disabled={!canGoForward()}
+                onTouchStart={(ev) => {
+                  if (canGoForward()) {
+                    startHold("forward", ev.currentTarget);
+                  }
+                }}
+                onTouchEnd={(ev) => {
+                  if (didHold) ev.preventDefault();
+                  cancelHold();
+                }}
+                onTouchCancel={() => cancelHold()}
+                onMouseDown={(ev) => {
+                  if (ev.button === 0 && canGoForward()) {
+                    startHold("forward", ev.currentTarget);
+                  }
+                }}
+                onMouseUp={() => cancelHold()}
+                onMouseLeave={() => cancelHold()}
+                onContextMenu={(ev) => {
+                  ev.preventDefault();
+                  if (canGoForward()) {
+                    setHistoryMenu({ direction: "forward", anchorEl: ev.currentTarget });
+                  }
+                }}
+                onClick={() => {
+                  if (!didHold && canGoForward()) {
+                    goForward();
+                  }
+                }}
+              >
+                <ArrowRightIcon />
+              </button>
+            </div>
             <div class="ds-reader-mobile-title--flex" onClick={handleOpenSeries} title={s.seriesPermalink() ? t("reader.toolbar.viewSeries") : undefined}>
               <span class="ds-truncate ds-text-13-600">
                 {decodeEntities(s.chapterTitle() || s.permalink)}
@@ -675,6 +771,15 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
 
       <Show when={isMobile()}>
         <ReaderMobileControlsSheet session={s} />
+      </Show>
+      <Show when={historyMenu()}>
+        {(menu) => (
+          <HistoryDropdown
+            direction={menu().direction}
+            anchorEl={menu().anchorEl}
+            onClose={() => setHistoryMenu(null)}
+          />
+        )}
       </Show>
     </>
   );

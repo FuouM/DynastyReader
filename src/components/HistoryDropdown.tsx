@@ -23,8 +23,8 @@ export interface HistoryDropdownProps {
   onClose: () => void;
 }
 export function HistoryDropdown(props: HistoryDropdownProps) {
+  const mountTime = Date.now();
   const [positionStyle, setPositionStyle] = createSignal("");
-
   const items = () => {
     if (props.direction === "back") {
       const back = historyBackStack();
@@ -86,10 +86,14 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
           id="ds-history-dropdown-overlay"
           class="ds-overlay"
           onClick={(ev) => {
-            if (ev.target === ev.currentTarget) props.onClose();
+            if (ev.target === ev.currentTarget) {
+              if (Date.now() - mountTime < 350) return;
+              props.onClose();
+            }
           }}
           onContextMenu={(ev) => {
             ev.preventDefault();
+            if (Date.now() - mountTime < 350) return;
             props.onClose();
           }}
         >
