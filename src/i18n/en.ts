@@ -397,6 +397,7 @@ export const en = {
         queued: "Queued for download…",
         waiting: "Waiting to read…",
         downloadFailed: "Download failed: {{msg}}",
+        imageLoadFailed: "Failed to load image (Page {{page}})",
       },
       slot: {
         pageAlt: "Page {{page}}",

@@ -25,6 +25,7 @@ export default defineConfig({
     target: "es2020",
     outDir: "dist",
     sourcemap: false,
+    assetsInlineLimit: 1024 * 300,
     rollupOptions: {
       output: {
         manualChunks: {

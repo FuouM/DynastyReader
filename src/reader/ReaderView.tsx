@@ -32,7 +32,6 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
     void session.init();
   });
   onCleanup(() => session.dispose());
-
   return (
     <div class="ds-reader-view">
       <Show when={session.loading()}>

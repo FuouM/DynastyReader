@@ -197,7 +197,7 @@ export class ReaderSession implements ReaderQueueHost {
 
   queue: ReaderQueue;
   readonly retrying = new Set<number>();
-
+  readonly imgErrorCount = new Map<number, number>();
   private persistence!: ReaderPersistence;
   private disposedFlag = false;
   isProgrammaticScroll = false;
@@ -403,21 +403,30 @@ export class ReaderSession implements ReaderQueueHost {
     this.queue.enqueue(index, priority);
   }
 
-  /** Image-load failure: drop the cached path and re-download the page. */
+  /** Image-load failure: bounded retry before settling into an error state. */
   onPageImgError(index: number): void {
+    const count = (this.imgErrorCount.get(index) ?? 0) + 1;
+    this.imgErrorCount.set(index, count);
     this.cachedPages[1](index, undefined);
-    if (this.retrying.has(index)) return;
-    this.retrying.add(index);
-    this.setSlotState(index, "spinner", t("reader.session.slotState.redownloading"));
-    this.queue.enqueue(index, true);
+    if (count <= 2) {
+      this.setSlotState(index, "spinner", t("reader.session.slotState.redownloading"));
+      this.queue.enqueue(index, true);
+    } else {
+      this.setSlotState(
+        index,
+        "error",
+        t("reader.session.slotState.imageLoadFailed", { page: index + 1 }),
+      );
+    }
   }
 
   /** Slot Retry button: clears the failure and re-queues the page. */
   retrySlot(index: number): void {
+    this.imgErrorCount.delete(index);
     this.retrying.delete(index);
     this.queue.clearFailed(index);
     this.setSlotState(index, "spinner", t("reader.session.slotState.downloading"));
-    this.queue.enqueue(index);
+    this.queue.enqueue(index, true);
   }
 
   /** Pre-caches all pages in the current chapter. */

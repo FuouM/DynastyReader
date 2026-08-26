@@ -27,10 +27,9 @@ export function ReaderSlot(props: ReaderSlotProps) {
   const s = props.session;
   const cachedPath = (): string | undefined => s.cachedPages[0][props.index];
   const isVisible = () => {
-    if (cachedPath() !== undefined) return true;
     const cur = s.currentIndex();
-    const behind = isMobile() ? 2 : 5;
-    const ahead = isMobile() ? 4 : 8;
+    const behind = isMobile() ? 3 : 6;
+    const ahead = isMobile() ? 5 : 10;
     return props.index >= cur - behind && props.index <= cur + ahead;
   };
   const placeholderStyle = (): string => {
