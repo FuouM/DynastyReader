@@ -168,7 +168,8 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       // If overscroll gesture is already engaged, update finger tracking and check center collision
       if (activeOverscroll) {
         const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
-        const ready = distToCenter <= 36;
+        const ready = distToCenter <= 52;
+        activeOverscroll.ready = ready;
         if (ready && !hasVibrated) {
           if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(35);
           hasVibrated = true;
@@ -184,7 +185,6 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         });
         return;
       }
-
       // Check for overscroll boundary engagement
       const { prevCh, nextCh } = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
       if (s.isHorizontal()) {
@@ -204,7 +204,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
         if (isPullingPrev) {
           const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
-          const ready = distToCenter <= 36;
+          const ready = distToCenter <= 52;
           activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist: absX };
           setOverscrollGesture({
             fingerX: t.clientX,
@@ -224,7 +224,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
         if (isPullingNext) {
           const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
-          const ready = distToCenter <= 36;
+          const ready = distToCenter <= 52;
           activeOverscroll = { direction: "next", chapter: nextCh, ready, dist: absX };
           setOverscrollGesture({
             fingerX: t.clientX,
@@ -250,7 +250,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
           if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
             const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
-            const ready = distToCenter <= 36;
+            const ready = distToCenter <= 52;
             activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist: dy };
             setOverscrollGesture({
               fingerX: t.clientX,
@@ -268,7 +268,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
           if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
             const distToCenter = Math.hypot(t.clientX - window.innerWidth / 2, t.clientY - window.innerHeight / 2);
-            const ready = distToCenter <= 36;
+            const ready = distToCenter <= 52;
             activeOverscroll = { direction: "next", chapter: nextCh, ready, dist: -dy };
             setOverscrollGesture({
               fingerX: t.clientX,
@@ -301,10 +301,12 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         activeOverscroll = null;
         setOverscrollGesture(null);
         resetStripTransform(true);
-        if (over.direction === "prev") {
-          s.gotoPrevChapter();
-        } else {
-          s.gotoNextChapter();
+        if (over.ready && over.chapter) {
+          if (over.direction === "prev") {
+            s.gotoPrevChapter();
+          } else {
+            s.gotoNextChapter();
+          }
         }
         return;
       }
@@ -454,7 +456,8 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       // If mouse overscroll gesture is already engaged, update finger tracking and check center collision
       if (activeMouseOverscroll) {
         const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
-        const ready = distToCenter <= 36;
+        const ready = distToCenter <= 52;
+        activeMouseOverscroll.ready = ready;
         if (ready && !hasVibrated) {
           if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(35);
           hasVibrated = true;
@@ -470,7 +473,6 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         });
         return;
       }
-
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
       const { prevCh, nextCh } = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
@@ -492,7 +494,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
           if (isPullingPrev) {
             const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
-            const ready = distToCenter <= 36;
+            const ready = distToCenter <= 52;
             activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist: absX };
             setOverscrollGesture({
               fingerX: ev.clientX,
@@ -512,7 +514,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
           if (isPullingNext) {
             const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
-            const ready = distToCenter <= 36;
+            const ready = distToCenter <= 52;
             activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist: absX };
             setOverscrollGesture({
               fingerX: ev.clientX,
@@ -539,7 +541,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
           if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
             const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
-            const ready = distToCenter <= 36;
+            const ready = distToCenter <= 52;
             activeMouseOverscroll = { direction: "prev", chapter: prevCh, ready, dist: dy };
             setOverscrollGesture({
               fingerX: ev.clientX,
@@ -557,7 +559,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
           if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
             const distToCenter = Math.hypot(ev.clientX - window.innerWidth / 2, ev.clientY - window.innerHeight / 2);
-            const ready = distToCenter <= 36;
+            const ready = distToCenter <= 52;
             activeMouseOverscroll = { direction: "next", chapter: nextCh, ready, dist: -dy };
             setOverscrollGesture({
               fingerX: ev.clientX,
@@ -600,10 +602,12 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         activeMouseOverscroll = null;
         setOverscrollGesture(null);
         resetStripTransform(true);
-        if (over.direction === "prev") {
-          s.gotoPrevChapter();
-        } else {
-          s.gotoNextChapter();
+        if (over.ready && over.chapter) {
+          if (over.direction === "prev") {
+            s.gotoPrevChapter();
+          } else {
+            s.gotoNextChapter();
+          }
         }
         return;
       }
