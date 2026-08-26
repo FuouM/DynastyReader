@@ -117,14 +117,13 @@ async fn convert_one(
 
     let src_buf = src_path.to_string_lossy().into_owned();
     let tgt_buf = tgt_path.to_string_lossy().into_owned();
-    let tgt_io = tgt_buf.clone();
-    let ext_buf = ext.clone();
+    let output_display = tgt_buf.clone();
 
     let res = tokio::task::spawn_blocking(move || {
         encode_image(
             &src_buf,
-            &tgt_io,
-            &ext_buf,
+            &tgt_buf,
+            &ext,
             quality,
             max_dimension,
             max_bytes,
@@ -133,7 +132,7 @@ async fn convert_one(
     .await;
 
     match res {
-        Ok(Ok(())) => json!({ "source_path": source, "output_path": tgt_buf, "error": "" }),
+        Ok(Ok(())) => json!({ "source_path": source, "output_path": output_display, "error": "" }),
         Ok(Err(e)) => failure(e),
         Err(e) => failure(format!("Task join panicked: {e}")),
     }

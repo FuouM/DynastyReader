@@ -136,7 +136,6 @@ fn get_conn(
     Ok(entry.clone())
 }
 
-
 fn bind_value_owned(v: Value) -> rusqlite::types::Value {
     match v {
         Value::Null => rusqlite::types::Value::Null,
@@ -283,10 +282,9 @@ pub async fn db_backup(
     let backup_filename = format!("{}.backup.{}.db", normalized, ts);
     let backup_path = crate::paths::data_root().join(&backup_filename);
     let backup_str = backup_path.to_string_lossy().to_string();
-    let backup_path_clone = backup_path.clone();
     let size = tokio::task::spawn_blocking(move || {
         let src_conn = lock_unpoisoned(&pool_arc);
-        let mut dst_conn = Connection::open(&backup_path_clone)
+        let mut dst_conn = Connection::open(&backup_path)
             .map_err(|e| format!("failed creating backup target: {e}"))?;
         let backup = rusqlite::backup::Backup::new(&src_conn, &mut dst_conn)
             .map_err(|e| format!("failed initializing backup: {e}"))?;
@@ -295,7 +293,7 @@ pub async fn db_backup(
             .map_err(|e| format!("backup execution failed: {e}"))?;
         drop(backup);
         drop(dst_conn);
-        let meta = std::fs::metadata(&backup_path_clone).map_err(|e| e.to_string())?;
+        let meta = std::fs::metadata(&backup_path).map_err(|e| e.to_string())?;
         Ok::<u64, String>(meta.len())
     })
     .await
@@ -450,7 +448,7 @@ fn evict_pool_connection(
     normalized: &str,
 ) -> Result<(), String> {
     let mut guard = lock_unpoisoned(pool);
-    guard.retain(|k, _| k.to_ascii_lowercase() != normalized);
+    guard.retain(|k, _| k != &normalized);
     Ok(())
 }
 
@@ -463,8 +461,12 @@ async fn copy_db_file_with_retry(
     tokio::task::spawn_blocking(move || -> Result<(), String> {
         std::thread::sleep(std::time::Duration::from_millis(RESTORE_RETRY_INITIAL_DELAY_MS));
         for attempt in 0..RESTORE_MAX_ATTEMPTS {
-            let _ = std::fs::remove_file(&wal);
-            let _ = std::fs::remove_file(&shm);
+            if let Err(e) = std::fs::remove_file(&wal) {
+                log::warn!("failed removing WAL sidecar: {e}");
+            }
+            if let Err(e) = std::fs::remove_file(&shm) {
+                log::warn!("failed removing SHM sidecar: {e}");
+            }
             match std::fs::copy(&source, &target) {
                 Ok(_) => return Ok(()),
                 Err(e) => {
@@ -484,6 +486,7 @@ async fn copy_db_file_with_retry(
     .await
     .map_err(|e| e.to_string())?
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

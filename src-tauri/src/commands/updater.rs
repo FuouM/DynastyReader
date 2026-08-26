@@ -9,6 +9,8 @@ use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Emitter, State};
 use crate::commands::http::HttpState;
+use tokio::io::AsyncWriteExt;
+use tokio_stream::StreamExt;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateInfo {
@@ -161,8 +163,6 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
     }
 
     let total_size = response.content_length().unwrap_or(0);
-    use tokio::io::AsyncWriteExt;
-    use tokio_stream::StreamExt;
 
     let temp_update = tempfile::Builder::new()
         .prefix(".tmp-update-")
@@ -193,14 +193,16 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
             0.0
         };
 
-        let _ = app.emit(
+        if let Err(e) = app.emit(
             "update-progress",
             DownloadProgress {
                 downloaded_bytes: downloaded,
                 total_bytes: total_size,
                 percentage,
             },
-        );
+        ) {
+            log::warn!("failed emitting update-progress: {e}");
+        }
     }
     file.flush()
         .await
@@ -217,7 +219,9 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
     {
         // 1. Remove previous leftover .old if present
         if old_exe.exists() {
-            let _ = fs::remove_file(&old_exe);
+            if let Err(e) = fs::remove_file(&old_exe) {
+                log::warn!("failed removing old executable: {e}");
+            }
         }
 
         // 2. Windows allows renaming a running binary
@@ -227,7 +231,9 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
         // 3. Move .new into current_exe
         if let Err(e) = fs::rename(&new_exe, &current_exe) {
             // Rollback if renaming new exe failed
-            let _ = fs::rename(&old_exe, &current_exe);
+            if let Err(e) = fs::rename(&old_exe, &current_exe) {
+                log::warn!("rollback rename failed: {e}");
+            }
             return Err(format!("Failed to activate new executable: {e}"));
         }
 
@@ -246,11 +252,15 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
         #[cfg(target_family = "unix")]
         {
             use std::os::unix::fs::PermissionsExt;
-            let _ = fs::set_permissions(&new_exe, fs::Permissions::from_mode(0o755));
+            if let Err(e) = fs::set_permissions(&new_exe, fs::Permissions::from_mode(0o755)) {
+                log::warn!("failed setting permissions on new executable: {e}");
+            }
         }
 
         if old_exe.exists() {
-            let _ = fs::remove_file(&old_exe);
+            if let Err(e) = fs::remove_file(&old_exe) {
+                log::warn!("failed removing old executable: {e}");
+            }
         }
         fs::rename(&current_exe, &old_exe)
             .map_err(|e| format!("Failed to backup executable: {e}"))?;
@@ -272,11 +282,15 @@ pub fn cleanup_old_executables() {
             if let Some(file_name) = current_exe.file_name() {
                 let old_exe = dir.join(format!("{}.old", file_name.to_string_lossy()));
                 if old_exe.exists() {
-                    let _ = fs::remove_file(old_exe);
+                    if let Err(e) = fs::remove_file(old_exe) {
+                        log::warn!("failed cleaning up old executable: {e}");
+                    }
                 }
                 let new_exe = dir.join(format!("{}.new", file_name.to_string_lossy()));
                 if new_exe.exists() {
-                    let _ = fs::remove_file(new_exe);
+                    if let Err(e) = fs::remove_file(new_exe) {
+                        log::warn!("failed cleaning up new executable: {e}");
+                    }
                 }
             }
         }

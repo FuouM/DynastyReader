@@ -12,16 +12,13 @@ pub fn run() {
     let log_plugin = build_log_plugin();
     let http_client = commands::http::build_client().expect("failed to build http client");
 
-    #[allow(unused_mut)]
-    let mut builder = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(log_plugin)
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init());
 
     #[cfg(desktop)]
-    {
-        builder = builder.plugin(tauri_plugin_window_state::Builder::new().build());
-    }
+    let builder = builder.plugin(tauri_plugin_window_state::Builder::new().build());
 
     builder
         .setup(|app| {
