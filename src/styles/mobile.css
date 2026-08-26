@@ -931,13 +931,40 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   display: none !important;
 }
 
+#ds-root[data-mobile] .ds-settings-subpage {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+#ds-root[data-mobile] .ds-settings-subpage-content {
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#ds-root[data-mobile] .ds-hotkey-scroll {
+  padding: 0 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px !important;
+}
+
 #ds-root[data-mobile] .ds-settings-content {
   flex: 1 1 auto !important;
   height: 100% !important;
   max-height: none !important;
   min-height: 0 !important;
   overflow-y: scroll !important;
-  scrollbar-gutter: stable !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior-y: contain !important;
   padding: 10px 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px !important;

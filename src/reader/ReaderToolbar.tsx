@@ -470,6 +470,23 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
 export function ReaderToolbar(props: { session: ReaderSession }) {
   const s = props.session;
   const [navPos, setNavPos] = createSignal<ReaderNavPosition>(getReaderNavPosition());
+  const [copied, setCopied] = createSignal(false);
+  const resetCopied = debounce(() => setCopied(false), 2000);
+
+  const handleCopyLink = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(`${SITE_ROOT}/chapters/${s.permalink}`);
+        setCopied(true);
+        showBanner(t("reader.toolbar.copiedLinkBanner"));
+        resetCopied();
+      }
+    } catch (err) {
+      console.warn("[ReaderToolbar] copy link failed:", err);
+      const msg = errorMessage(err);
+      showBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
+    }
+  };
   createEffect(() => {
     const z = s.zoomScale();
     if (s.containerEl) {
@@ -555,6 +572,12 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
                   onClick={handleOpenSeries}
                 />
               </Show>
+              <IconButton
+                className="ds-btn-icon"
+                icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
+                title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
+                onClick={() => void handleCopyLink()}
+              />
               <IconButton
                 className="ds-btn-icon"
                 classList={{ primary: s.bookmarked() }}

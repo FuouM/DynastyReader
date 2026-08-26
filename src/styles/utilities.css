@@ -533,7 +533,7 @@
   gap: 8px;
   background: var(--sys-control-bg);
   z-index: 10;
-  padding: 2px 0 6px 0;
+  padding: 2px 8px 6px 8px;
   flex-shrink: 0;
 }
 .ds-hotkey-actions {
@@ -546,6 +546,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
+  margin: 0 8px 6px 8px;
   background: var(--ds-status-stale-bg, #fffbeb);
   border: 1px solid var(--ds-status-stale-border, #fde68a);
   border-radius: 3px;
@@ -565,9 +566,11 @@
   margin-top: 2px;
 }
 .ds-hotkey-scroll {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1 1 auto;
+  overflow-y: scroll;
   min-height: 0;
+  padding: 0 8px 8px 8px;
+  box-sizing: border-box;
 }
 .ds-hotkey-category {
   margin-top: 4px;
@@ -713,7 +716,6 @@
 .ds-add-col-list {
   max-height: 180px;
   overflow-y: auto;
-  scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
   padding: 3px 4px;
   display: flex;
@@ -977,6 +979,9 @@
   flex-direction: column;
   gap: 0;
   height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 .ds-key-recording-esc {
   color: inherit;

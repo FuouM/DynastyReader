@@ -40,7 +40,6 @@
   width: 100%;
   box-sizing: border-box;
   overflow-y: scroll;
-  scrollbar-gutter: stable;
   border: 1px solid var(--sys-border-light, #e0e0e0);
   padding: 8px;
   background: var(--sys-window-bg, #fff);

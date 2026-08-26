@@ -457,7 +457,6 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: scroll;
-  scrollbar-gutter: stable;
   overflow-x: hidden;
   padding: 8px;
   display: flex;
@@ -480,7 +479,6 @@ body {
   display: flex;
   flex-direction: column;
   overflow-y: scroll;
-  scrollbar-gutter: stable;
   overflow-x: hidden;
   padding: 8px;
 }
@@ -889,7 +887,7 @@ body.ds-dark .tag-pill:hover {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-gutter: stable;
+  overflow-y: overlay;
 }
 .ds-modal-footer {
   border-top: 1px solid var(--sys-border-dark, #b0b0b0);
@@ -1006,24 +1004,25 @@ code,
   min-height: 0;
   box-sizing: border-box;
   overflow: hidden;
-  padding: 4px 2px;
+  padding: 4px 0 0 0;
   flex: 1 1 auto;
 }
 .ds-settings-subpage-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-bottom: 8px;
+  padding: 0 8px 8px 8px;
   border-bottom: 1px solid var(--sys-border-light, #eaeaea);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   flex-shrink: 0;
 }
 .ds-settings-subpage-content {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: scroll;
-  scrollbar-gutter: stable;
-  padding-right: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
 }
 
 
@@ -1081,7 +1080,6 @@ code,
   flex: 1;
   min-width: 0;
   overflow-y: scroll;
-  scrollbar-gutter: stable;
   padding: 12px 8px 12px 2px;
   display: flex;
   flex-direction: column;
@@ -1659,10 +1657,10 @@ code,
     height: 100% !important;
     max-height: none !important;
     min-height: 0 !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior-y: contain !important;
-    padding: 10px 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
   }
 
