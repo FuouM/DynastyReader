@@ -182,6 +182,114 @@ body {
     padding: 0 6px;
   }
 }
+/* ── WinForms Toggle Switch Control ───────────────────────────────────────── */
+.ds-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--sys-control-text, #000);
+  vertical-align: middle;
+  outline: none;
+}
+.ds-switch:focus-visible .ds-switch-track {
+  outline: 1px dotted var(--sys-border-focus, #0078d7);
+  outline-offset: 2px;
+}
+.ds-switch:disabled,
+.ds-switch[disabled] {
+  opacity: 0.45;
+  cursor: default !important;
+  pointer-events: none;
+}
+.ds-switch-track {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 20px;
+  min-width: 38px;
+  box-sizing: border-box;
+  border: 1px solid var(--sys-button-border, #707070);
+  border-radius: 2px;
+  background: var(--sys-button-bg, #f0f0f0);
+  transition: background 0.12s ease, border-color 0.12s ease;
+  flex-shrink: 0;
+}
+.ds-switch:hover:not([disabled]) .ds-switch-track {
+  background: var(--sys-button-hover, #e5f1fb);
+  border-color: var(--sys-border-focus, #0078d7);
+}
+.ds-switch.checked .ds-switch-track {
+  background: var(--sys-highlight-bg, #0078d7);
+  border-color: var(--sys-highlight-bg, #0078d7);
+}
+.ds-switch.checked:hover:not([disabled]) .ds-switch-track {
+  background: #006cc1;
+  border-color: #006cc1;
+}
+.ds-switch-thumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border-radius: 1px;
+  background: var(--sys-window-bg, #ffffff);
+  border: 1px solid var(--sys-border-dark, #b0b0b0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), background 0.12s ease, border-color 0.12s ease;
+}
+.ds-switch.checked .ds-switch-thumb {
+  transform: translateX(18px);
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.25);
+}
+.ds-switch-label {
+  line-height: normal;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Dark mode overrides for switch */
+:root[data-theme="dark"] .ds-switch-track,
+[data-theme="dark"] .ds-switch-track {
+  background: var(--sys-button-bg, #2d2d2d);
+  border-color: var(--sys-border-dark, #555555);
+}
+:root[data-theme="dark"] .ds-switch:hover:not([disabled]) .ds-switch-track,
+[data-theme="dark"] .ds-switch:hover:not([disabled]) .ds-switch-track {
+  background: var(--sys-button-hover, #3c3c3c);
+  border-color: var(--sys-border-focus, #0078d7);
+}
+:root[data-theme="dark"] .ds-switch.checked .ds-switch-track,
+[data-theme="dark"] .ds-switch.checked .ds-switch-track {
+  background: var(--sys-highlight-bg, #0078d7);
+  border-color: var(--sys-highlight-bg, #0078d7);
+}
+:root[data-theme="dark"] .ds-switch.checked:hover:not([disabled]) .ds-switch-track,
+[data-theme="dark"] .ds-switch.checked:hover:not([disabled]) .ds-switch-track {
+  background: #1084e3;
+  border-color: #1084e3;
+}
+:root[data-theme="dark"] .ds-switch-thumb,
+[data-theme="dark"] .ds-switch-thumb {
+  background: #d4d4d4;
+  border-color: #666666;
+}
+:root[data-theme="dark"] .ds-switch.checked .ds-switch-thumb,
+[data-theme="dark"] .ds-switch.checked .ds-switch-thumb {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
 #ds-title {
   font-size: 13px;
   font-weight: 600;
@@ -1363,6 +1471,22 @@ code,
     gap: 6px !important;
     padding: 6px 0 !important;
   }
+  .ds-settings-row:has(.ds-switch) {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+  .ds-settings-row:has(.ds-switch) .ds-settings-row-label {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+  .ds-settings-row:has(.ds-switch) .ds-settings-row-control {
+    width: auto !important;
+    flex: 0 0 auto !important;
+    justify-content: flex-end !important;
+  }
 
   .ds-settings-row-label {
     min-width: 0 !important;
@@ -1574,4 +1698,5 @@ code,
   .ds-settings-storage-grid span {
     margin-top: 4px;
   }
+}
 }

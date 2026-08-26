@@ -27,8 +27,8 @@ import {
 } from "../../reader/settings";
 import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
-import { DoublePageIcon, CloudDownloadIcon, Icon } from "../Icon";
-import { DsSelect, IconText, IconButton, SegmentedSwitch, ToggleButton } from "../Button";
+import { DoublePageIcon, Icon } from "../Icon";
+import { DsSelect, IconText, IconButton, SegmentedSwitch, DsSwitch } from "../Button";
 import { SettingsRow } from "../SettingsRow";
 
 export function ReaderSettings() {
@@ -91,46 +91,31 @@ export function ReaderSettings() {
 
         {/* Long Strip Spread Override */}
         <SettingsRow divider label={<>{t("settings.reader.longStripOverride")}:</>} desc={t("settings.reader.longStripOverrideDesc")}>
-          <ToggleButton
+          <DsSwitch
             id="ds-settings-longstrip-toggle"
-            className="ds-toggle-btn ds-toggle--w105"
-            value={longStripOverride()}
-            icon={<Icon name="slash-circle" />}
-            activeIcon={<Icon name="check-circle" />}
-            text={t("settings.reader.longStripOverrideDisabled")}
-            activeText={t("settings.reader.longStripOverrideEnabled")}
+            checked={longStripOverride()}
             title={t("settings.reader.longStripOverrideTooltip")}
-            onToggle={(next) => { setLongStripSpreadOverrideEnabled(next); setLongStripOverride(next); }}
+            onChange={(next) => { setLongStripSpreadOverrideEnabled(next); setLongStripOverride(next); }}
           />
         </SettingsRow>
 
         {/* Long Strip Auto Fit Width */}
         <SettingsRow divider label={<>{t("settings.reader.longStripFitWidth")}:</>} desc={t("settings.reader.longStripFitWidthDesc")}>
-          <ToggleButton
+          <DsSwitch
             id="ds-settings-longstrip-fit-toggle"
-            className="ds-toggle-btn ds-toggle--w105"
-            value={longStripFitWidth()}
-            icon={<Icon name="slash-circle" />}
-            activeIcon={<Icon name="check-circle" />}
-            text={t("settings.reader.longStripFitWidthDisabled")}
-            activeText={t("settings.reader.longStripFitWidthEnabled")}
+            checked={longStripFitWidth()}
             title={t("settings.reader.longStripFitWidthTooltip")}
-            onToggle={(next) => { setLongStripFitWidthEnabled(next); setLongStripFitWidth(next); }}
+            onChange={(next) => { setLongStripFitWidthEnabled(next); setLongStripFitWidth(next); }}
           />
         </SettingsRow>
 
         {/* Spread Standalone Cover */}
         <SettingsRow divider label={<>{t("settings.reader.coverOffset")}:</>} desc={t("settings.reader.coverOffsetDesc")}>
-          <ToggleButton
+          <DsSwitch
             id="ds-settings-cover-offset-toggle"
-            className="ds-toggle-btn ds-toggle--w95"
-            value={coverOffsetPref()}
-            icon={<Icon name="dash-circle" />}
-            activeIcon={<Icon name="book-half" />}
-            text={t("settings.reader.coverOffsetOff")}
-            activeText={t("settings.reader.coverOffsetOn")}
+            checked={coverOffsetPref()}
             title={t("settings.reader.coverOffsetTooltip")}
-            onToggle={(next) => { setCoverOffsetDefaultEnabled(next); setCoverOffsetPref(next); }}
+            onChange={(next) => { setCoverOffsetDefaultEnabled(next); setCoverOffsetPref(next); }}
           />
         </SettingsRow>
         {/* Previous Chapter Landing Page */}
@@ -169,16 +154,11 @@ export function ReaderSettings() {
 
         {/* Auto Cache Entire Chapter */}
         <SettingsRow divider label={<>{t("settings.reader.autoCache")}:</>} desc={t("settings.reader.autoCacheDesc")}>
-          <ToggleButton
+          <DsSwitch
             id="ds-settings-autocache-toggle"
-            className="ds-toggle-btn ds-toggle--w70"
-            value={autoCacheEnabled()}
-            icon={<Icon name="cloud-slash" />}
-            activeIcon={<CloudDownloadIcon />}
-            text={t("settings.reader.autoCacheOff")}
-            activeText={t("settings.reader.autoCacheOn")}
+            checked={autoCacheEnabled()}
             title={autoCacheEnabled() ? t("settings.reader.autoCacheTooltipOn") : t("settings.reader.autoCacheTooltipOff")}
-            onToggle={(next) => { setAutoCacheChapterEnabled(next); setAutoCacheEnabled(next); }}
+            onChange={(next) => { setAutoCacheChapterEnabled(next); setAutoCacheEnabled(next); }}
           />
         </SettingsRow>
 

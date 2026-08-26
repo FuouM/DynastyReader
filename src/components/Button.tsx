@@ -275,3 +275,57 @@ export function ToggleButton(props: ToggleButtonProps) {
     />
   );
 }
+
+export interface DsSwitchProps {
+  id?: string;
+  className?: string;
+  style?: string;
+  disabled?: boolean;
+  checked: boolean;
+  onChange?: (next: boolean) => void;
+  title?: string;
+  label?: JSX.Element;
+  name?: string;
+}
+
+/**
+ * WinForms-styled mobile-friendly toggle switch with rectangular track & thumb.
+ */
+export function DsSwitch(props: DsSwitchProps) {
+  const handleClick = (e: MouseEvent) => {
+    e.preventDefault();
+    if (props.disabled) return;
+    props.onChange?.(!props.checked);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (props.disabled) return;
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      props.onChange?.(!props.checked);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      id={props.id}
+      class={`ds-switch ${props.checked ? "checked" : ""} ${props.className ?? ""}`.trim()}
+      style={props.style}
+      role="switch"
+      aria-checked={props.checked}
+      aria-disabled={props.disabled}
+      disabled={props.disabled}
+      title={props.title}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      <span class="ds-switch-track">
+        <span class="ds-switch-thumb" />
+      </span>
+      {props.label && <span class="ds-switch-label">{props.label}</span>}
+    </button>
+  );
+}
+
+export const ToggleSwitch = DsSwitch;

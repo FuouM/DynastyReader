@@ -2,8 +2,8 @@ import { createMemo, createSignal, For, Show } from "solid-js";
 import { theme, setTheme, uiScale, applyUiScale, uiMode, setUiMode, type UiMode } from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
-import { Icon, SunIcon, MoonIcon, ImageIcon, AddIcon } from "../Icon";
-import { DsSelect, IconText, IconButton, SegmentedSwitch, ToggleButton } from "../Button";
+import { Icon, SunIcon, MoonIcon, AddIcon } from "../Icon";
+import { DsSelect, IconText, IconButton, SegmentedSwitch, DsSwitch } from "../Button";
 import { SettingsRow } from "../SettingsRow";
 import { GroupBox } from "../GroupBox";
 import { SCALE_PRESETS } from "./types";
@@ -101,15 +101,11 @@ export function DisplaySettings() {
           desc={t("settings.display.feedCoversDesc")}
           divider
         >
-          <ToggleButton
+          <DsSwitch
             id="ds-settings-covers-toggle"
-            className="ds-toggle-btn ds-toggle--w90"
-            value={coversEnabled()}
-            icon={<Icon name="eye-slash" />}
-            activeIcon={<ImageIcon />}
-            text={t("settings.display.coversOff")}
-            activeText={t("settings.display.coversOn")}
-            onToggle={(next) => { browseCovers.setCoversEnabled(next); setCoversEnabledLocal(next); }}
+            checked={coversEnabled()}
+            title={coversEnabled() ? t("settings.display.coversOn") : t("settings.display.coversOff")}
+            onChange={(next) => { browseCovers.setCoversEnabled(next); setCoversEnabledLocal(next); }}
           />
         </SettingsRow>
 
