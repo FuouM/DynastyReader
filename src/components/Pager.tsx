@@ -80,7 +80,7 @@ export function Pager(props: PagerProps) {
           {t("dialogs.pager.ofTotal", { total: props.totalPages })}
         </span>
         <Button
-          className="ds-btn-sm"
+          className="ds-btn-sm ds-pager-go-btn"
           title={t("dialogs.pager.jumpButton")}
           onClick={doJump}
         >

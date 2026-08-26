@@ -469,18 +469,50 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   gap: 4px !important;
 }
 
-#ds-root[data-mobile] #ds-browse-top-pager .ds-pager-btn-jump,
-#ds-root[data-mobile] #ds-browse-top-pager .ds-pager-go-btn,
-#ds-root[data-mobile] #ds-browse-top-pager .ds-pager-input {
-  display: none !important;
-}
-
 #ds-root[data-mobile] .ds-pager-widget {
   margin: 0 !important;
   gap: 2px !important;
   justify-content: flex-end !important;
+  flex-wrap: nowrap;
 }
 
+#ds-root[data-mobile] .ds-pager-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 2px;
+}
+
+#ds-root[data-mobile] .ds-pager-input {
+  width: 42px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  font-size: 11px !important;
+  padding: 1px 2px !important;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+#ds-root[data-mobile] .ds-pager-label {
+  font-size: 11px !important;
+  white-space: nowrap;
+}
+
+#ds-root[data-mobile] .ds-pager-widget .ds-btn-icon {
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  padding: 0 !important;
+}
+
+#ds-root[data-mobile] .ds-pager-widget .ds-pager-go-btn {
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 0 6px !important;
+  font-size: 11px !important;
+}
 /* Search & Go inputs on mobile */
 #ds-root[data-mobile] #ds-search-btn,
 #ds-root[data-mobile] #ds-url-btn {
