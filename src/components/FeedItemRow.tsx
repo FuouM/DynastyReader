@@ -12,6 +12,7 @@
  */
 
 import { createEffect, createSignal, onMount, Show, type JSX } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import {
   navigate,
   setBanner,
@@ -29,7 +30,7 @@ import {
   type CollectionItemKind,
 } from "../db";
 import { browseCovers } from "../browse/browse-covers";
-import { BookmarkIcon } from "./Icon";
+import { BookmarkIcon, CheckIcon, Icon } from "./Icon";
 import { IconButton } from "./Button";
 import { ListItem } from "./ListItem";
 import { HydratedCover } from "./HydratedCover";
@@ -106,6 +107,24 @@ export function FeedItemRow(props: FeedItemRowProps) {
     if (ch.url) return ch.url;
     const path = isSeriesKind(ch.kind) ? seriesTypeToPath(ch.kind) : "chapters";
     return `${SITE_ROOT}/${path}/${ch.permalink}`;
+  };
+  const [copied, setCopied] = createSignal(false);
+  const resetCopied = debounce(() => setCopied(false), 2000);
+
+  const copyLink = async (ev: MouseEvent): Promise<void> => {
+    ev.stopPropagation();
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(externalUrl());
+        setCopied(true);
+        setBanner(t("reader.toolbar.copiedLinkBanner"));
+        resetCopied();
+      }
+    } catch (err) {
+      console.warn("[FeedItemRow] copy link failed:", err);
+      const msg = errorMessage(err);
+      setBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
+    }
   };
 
   const isDirectSeries = isSeriesKind(ch.kind);
@@ -289,6 +308,12 @@ export function FeedItemRow(props: FeedItemRowProps) {
                 ev.stopPropagation();
                 void toggleBookmark();
               }}
+            />
+            <IconButton
+              className="ds-btn-icon"
+              icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
+              title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
+              onClick={copyLink}
             />
             <AddToCollectionButton
               cssText="flex-shrink:0;"
