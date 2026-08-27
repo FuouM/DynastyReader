@@ -29,13 +29,18 @@ import { t } from "../i18n";
 
 const OVERSCROLL_ENGAGE_THRESHOLD_PX = 35;
 const OVERSCROLL_MAX_PULL_PX = 70;
-const OVERSCROLL_COLLISION_RADIUS_PX = 56;
 const SWIPE_MIN_DIST_TOUCH_PX = 35;
 const SWIPE_MIN_DIST_MOUSE_PX = 45;
 
-const isOverscrollReady = (clientX: number, clientY: number): boolean => {
-  const distToCenter = Math.hypot(clientX - window.innerWidth / 2, clientY - window.innerHeight / 2);
-  return distToCenter <= OVERSCROLL_COLLISION_RADIUS_PX;
+// Adaptive one-handed unlock: wide band instead of tiny center circle
+const isOverscrollReady = (clientX: number, clientY: number, direction: "prev" | "next", isHorizontal: boolean): boolean => {
+  if (isHorizontal) {
+    if (direction === "prev") return clientX > window.innerWidth * 0.32;
+    return clientX < window.innerWidth * 0.68;
+  } else {
+    if (direction === "prev") return clientY > window.innerHeight * 0.30;
+    return clientY < window.innerHeight * 0.70;
+  }
 };
 export function ReaderViewport(props: { session: ReaderSession; children?: JSX.Element }) {
   const s = props.session;
@@ -212,6 +217,8 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
 
     const onTouchStart = (ev: TouchEvent): void => {
       if (ev.touches.length !== 1) return;
+      // If any modal/sheet is open, don't capture touch for reader gestures
+      if (document.querySelector(".ds-modal-backdrop, .ds-reader-sheet-backdrop, .ds-overlay")) return;
       s.cancelScrollAnimation();
       const t = ev.touches[0];
       touchStartX = t.clientX;
@@ -257,8 +264,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       }
       // If overscroll gesture is already engaged, update finger tracking and check center collision
       if (activeOverscroll) {
-        const ready = isOverscrollReady(t.clientX, t.clientY);
-        activeOverscroll.ready = ready;
+        const ready = isOverscrollReady(t.clientX, t.clientY, activeOverscroll.direction, s.isHorizontal());
         if (ready && !hasVibrated) {
           if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(35);
           hasVibrated = true;
@@ -292,7 +298,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           absX > absY * 1.1;
 
         if (isPullingPrev) {
-          const ready = isOverscrollReady(t.clientX, t.clientY);
+          const ready = isOverscrollReady(t.clientX, t.clientY, "prev", true);
           activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist: absX };
           setOverscrollGesture({
             fingerX: t.clientX,
@@ -311,7 +317,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         }
 
         if (isPullingNext) {
-          const ready = isOverscrollReady(t.clientX, t.clientY);
+          const ready = isOverscrollReady(t.clientX, t.clientY, "next", true);
           activeOverscroll = { direction: "next", chapter: nextCh, ready, dist: absX };
           setOverscrollGesture({
             fingerX: t.clientX,
@@ -336,7 +342,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 5;
 
           if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
-            const ready = isOverscrollReady(t.clientX, t.clientY);
+            const ready = isOverscrollReady(t.clientX, t.clientY, "prev", false);
             activeOverscroll = { direction: "prev", chapter: prevCh, ready, dist: dy };
             setOverscrollGesture({
               fingerX: t.clientX,
@@ -353,7 +359,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           }
 
           if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
-            const ready = isOverscrollReady(t.clientX, t.clientY);
+            const ready = isOverscrollReady(t.clientX, t.clientY, "next", false);
             activeOverscroll = { direction: "next", chapter: nextCh, ready, dist: -dy };
             setOverscrollGesture({
               fingerX: t.clientX,
@@ -399,6 +405,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         setOverscrollGesture(null);
         resetStripTransform(true);
         if (over.ready && over.chapter) {
+          if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(50);
           if (over.direction === "prev") {
             s.gotoPrevChapter();
           } else {

@@ -669,16 +669,48 @@ export class ReaderSession implements ReaderQueueHost {
     });
   }
 
-  gotoPrevChapter(): void {
-    const { prevCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
+  async gotoPrevChapter(): Promise<void> {
+    let { prevCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
+    if (!prevCh && this.chapterList().length === 0 && this.seriesPermalink()) {
+      try {
+        const s = await fetchSeries(this.seriesPermalink()!, false, undefined);
+        const cl: ChapterRef[] = [];
+        for (const t of s.taggings ?? []) {
+          if (t.header) continue;
+          if (t.permalink) cl.push({ title: t.title || t.permalink, permalink: t.permalink, released_on: t.released_on ?? undefined });
+        }
+        if (cl.length > 0) {
+          this.setChapterList(cl);
+          ({ prevCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle()));
+        }
+      } catch (err) {
+        console.warn("[reader-session] gotoPrevChapter rehydrate failed:", err);
+      }
+    }
     if (prevCh) {
       const target = getPrevChapterStartPage() === "last" ? "last" : 0;
       this.gotoChapter(prevCh, target);
     }
   }
 
-  gotoNextChapter(): void {
-    const { nextCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
+  async gotoNextChapter(): Promise<void> {
+    let { nextCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
+    if (!nextCh && this.chapterList().length === 0 && this.seriesPermalink()) {
+      try {
+        const s = await fetchSeries(this.seriesPermalink()!, false, undefined);
+        const cl: ChapterRef[] = [];
+        for (const t of s.taggings ?? []) {
+          if (t.header) continue;
+          if (t.permalink) cl.push({ title: t.title || t.permalink, permalink: t.permalink, released_on: t.released_on ?? undefined });
+        }
+        if (cl.length > 0) {
+          this.setChapterList(cl);
+          ({ nextCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle()));
+        }
+      } catch (err) {
+        console.warn("[reader-session] gotoNextChapter rehydrate failed:", err);
+      }
+    }
     if (nextCh) {
       this.gotoChapter(nextCh, 0);
     }
