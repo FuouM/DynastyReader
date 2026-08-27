@@ -1,12 +1,11 @@
-# DynastyReader: Unofficial Dynasty Scans Desktop Client
+# DynastyReader: Unofficial Dynasty Scans Client (Desktop & Android)
 
-DynastyReader is an unofficial desktop reader for [Dynasty Scans](https://dynasty-scans.com/), built with Rust, Tauri v2, and SolidJS. It stores metadata, reading progress, custom collections, and downloaded chapters locally in SQLite, using conditional ETag caching to keep upstream server requests minimal.
+DynastyReader is a fast, lightweight, unofficial reader for [Dynasty Scans](https://dynasty-scans.com/), built with Rust, Tauri v2, and SolidJS. It runs natively across **Windows**, **Linux**, and **Android**. It stores metadata, reading progress, custom collections, and downloaded chapters locally in SQLite, using conditional ETag caching to keep upstream server requests minimal.
 
-- [DynastyReader: Unofficial Dynasty Scans Desktop Client](#dynastyreader-unofficial-dynasty-scans-desktop-client)
+- [DynastyReader: Unofficial Dynasty Scans Client (Desktop \& Android)](#dynastyreader-unofficial-dynasty-scans-client-desktop--android)
   - [1. Overview \& Design Goals](#1-overview--design-goals)
   - [2. Tech Stack](#2-tech-stack)
   - [3. Features](#3-features)
-  - [4. Roadmap](#4-roadmap)
   - [5. Data Storage \& Layout](#5-data-storage--layout)
   - [6. Build \& Setup](#6-build--setup)
   - [7. LLM Attribution](#7-llm-attribution)
@@ -72,11 +71,8 @@ DynastyReader was extracted from [Project Curator](https://github.com/FuouM/Proj
 - **Theming & Scaling**: Full Dark, Light, and System themes with dynamic UI scaling from 50% to 200%.
 - **Custom Keyboard Shortcuts**: Interactive shortcut manager with key combination recording and conflict detection.
 - **Responsive Mobile Shell**: Adaptive layout with compact topbar, segmented bottom navigation bar, mobile 4px overlay scrollbars, touch overscroll containment, and collapsible reader controls drawer.
+- **Touch & Gesture Navigation**: Seamless swipe overscroll with haptic feedback for previous/next chapter transitions, customizable tap zones, and edge swipe boundary safety.
 - **In-App Updates & Logs**: Automated GitHub release SemVer update checker with direct binary replacement on Windows, plus one-click access to application logs.
-
-## 4. Roadmap
-
-- [ ] **Android Port**: Mobile touch-optimized UI and build targets using Tauri Mobile.
 
 ## 5. Data Storage & Layout
 
@@ -122,9 +118,9 @@ To bootstrap a local, portable Rust environment inside the project folder withou
 .\dev.ps1
 ```
 
-### 6.4. Release Build
+### 6.4. Desktop Release Build
 
-To build and assemble the standalone portable distribution:
+To build and assemble the standalone portable distribution for Windows:
 
 ```powershell
 # Build and stage to portable/ directory
@@ -134,18 +130,33 @@ To build and assemble the standalone portable distribution:
 .\build_release_portable.ps1 -Zip
 ```
 
-The output standalone folder will be staged at:
+The output standalone folder will be staged at `portable/DynastyReader.exe`. Copy `DynastyReader.exe` to any folder; it will initialize the `.data/` directory automatically on launch.
 
-```text
-portable/
-├── DynastyReader.exe
-├── README.md
-└── LICENSE
+### 6.5. Android Build
+
+To build the Android APK locally:
+
+```powershell
+# Build and stage release APK (Target: aarch64)
+.\build_android.ps1 -Release
+
+# Start interactive Android dev mode with live reload
+.\build_android.ps1 -Dev
 ```
 
-Copy `DynastyReader.exe` to any folder; it will initialize the `.data/` directory automatically on launch.
+Generated APKs will be located at:
 
----
+```text
+src-tauri/gen/android/app/build/outputs/apk/
+```
+
+### 6.6. Automated CI/CD Releases
+
+GitHub Actions automatically builds and publishes release binaries for all supported platforms whenever a version tag (`v*`) is pushed:
+
+- **Windows**: Portable standalone executable (`DynastyReader.exe`)
+- **Linux**: Universal AppImage (`DynastyReader-x86_64.AppImage`) and Debian package (`.deb`)
+- **Android**: Native ARM64 APK (`DynastyReader-arm64-v8a-release.apk`), Universal APK (`DynastyReader-universal-release.apk`), and Google Play Bundle (`.aab`)
 
 ## 7. LLM Attribution
 
