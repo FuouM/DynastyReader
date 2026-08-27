@@ -27,8 +27,8 @@ import {
   TrashIcon,
 } from "../components/Icon";
 import { Loading } from "../components/Loading";
-import { Button, IconText } from "../components/Button";
-
+import { Button, IconText, SegmentedSwitch } from "../components/Button";
+import { Icon } from "../components/Icon";
 export function BlacklistView() {
   const [data, { refetch }] = createResource<BlacklistedSeries[]>(() =>
     getBlacklistedSeries(),
@@ -103,38 +103,16 @@ export function BlacklistView() {
               <div class="ds-bl-mode-label">
                 {t("blacklist.modeHeader")}:
               </div>
-              <div class="ds-radio-group ds-bl-mode-options">
-                <label class="ds-bl-mode-option">
-                  <input
-                    type="radio"
-                    name="ds-bl-mode"
-                    value="hide"
-                    checked={mode() === "hide"}
-                    onChange={() => changeMode("hide")}
-                  />{" "}
-                  {t("blacklist.modeHide")}
-                </label>
-                <label class="ds-bl-mode-option">
-                  <input
-                    type="radio"
-                    name="ds-bl-mode"
-                    value="warn"
-                    checked={mode() === "warn"}
-                    onChange={() => changeMode("warn")}
-                  />{" "}
-                  {t("blacklist.modeWarn")}
-                </label>
-                <label class="ds-bl-mode-option">
-                  <input
-                    type="radio"
-                    name="ds-bl-mode"
-                    value="ghost"
-                    checked={mode() === "ghost"}
-                    onChange={() => changeMode("ghost")}
-                  />{" "}
-                  {t("blacklist.modeGhost")}
-                </label>
-              </div>
+              <SegmentedSwitch
+                id="ds-bl-mode-switch-view"
+                value={mode()}
+                onChange={(val) => changeMode(val as BlacklistMode)}
+                options={[
+                  { id: "ds-bl-view-mode-hide", value: "hide", icon: <Icon name="eye-slash" />, text: t("blacklist.modeHide") },
+                  { id: "ds-bl-view-mode-ghost", value: "ghost", icon: <Icon name="eye-slash-fill" />, text: t("blacklist.modeGhost") },
+                  { id: "ds-bl-view-mode-warn", value: "warn", icon: <Icon name="exclamation-triangle" />, text: t("blacklist.modeWarn") },
+                ]}
+              />
             </div>
           </div>
         </div>

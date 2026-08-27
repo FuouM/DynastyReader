@@ -12,7 +12,8 @@ import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { GroupBox } from "../GroupBox";
 import { BlacklistIcon, AddIcon, CloseIcon } from "../Icon";
-import { IconText, Button } from "../Button";
+import { Icon } from "../Icon";
+import { IconText, Button, SegmentedSwitch } from "../Button";
 export function BlacklistSettings() {
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
@@ -50,45 +51,21 @@ export function BlacklistSettings() {
         <div class="ds-muted">
           {t("blacklist.settingsDescription")}
         </div>
-
         {/* Mode Selector */}
         <div class="ds-bl-mode-bar">
           <span class="ds-bl-mode-label">
             {t("blacklist.modeHeader")}:
           </span>
-          <label class="ds-bl-mode-option">
-            <input
-              type="radio"
-              name="ds-bl-mode"
-              value="hide"
-              id="ds-bl-mode-hide"
-              checked={blMode() === "hide"}
-              onChange={() => setMode("hide")}
-            />
-            <span>{t("blacklist.modeHide")}</span>
-          </label>
-          <label class="ds-bl-mode-option">
-            <input
-              type="radio"
-              name="ds-bl-mode"
-              value="warn"
-              id="ds-bl-mode-warn"
-              checked={blMode() === "warn"}
-              onChange={() => setMode("warn")}
-            />
-            <span>{t("blacklist.modeWarn")}</span>
-          </label>
-          <label class="ds-bl-mode-option">
-            <input
-              type="radio"
-              name="ds-bl-mode"
-              value="ghost"
-              id="ds-bl-mode-ghost"
-              checked={blMode() === "ghost"}
-              onChange={() => setMode("ghost")}
-            />
-            <span>{t("blacklist.modeGhost")}</span>
-          </label>
+          <SegmentedSwitch
+            id="ds-bl-mode-switch"
+            value={blMode()}
+            onChange={(val) => setMode(val as "hide" | "warn" | "ghost")}
+            options={[
+              { id: "ds-bl-mode-hide", value: "hide", icon: <Icon name="eye-slash" />, text: t("blacklist.modeHide") },
+              { id: "ds-bl-mode-ghost", value: "ghost", icon: <Icon name="eye-slash-fill" />, text: t("blacklist.modeGhost") },
+              { id: "ds-bl-mode-warn", value: "warn", icon: <Icon name="exclamation-triangle" />, text: t("blacklist.modeWarn") },
+            ]}
+          />
         </div>
 
         {/* Add Tag Input */}
