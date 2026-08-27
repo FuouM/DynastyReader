@@ -1231,4 +1231,17 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   height: 28px !important;
   min-width: 28px !important;
 }
+#ds-root[data-mobile] .ds-bl-mode-bar {
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+#ds-root[data-mobile] .ds-bl-mode-bar .ds-segmented-switch {
+  width: 100% !important;
+  display: flex !important;
+}
+#ds-root[data-mobile] .ds-bl-mode-bar .ds-segmented-switch .ds-segmented-btn {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+}
 }

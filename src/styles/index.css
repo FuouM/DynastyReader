@@ -1708,9 +1708,18 @@ code,
   }
   .ds-bl-mode-bar {
     flex-direction: column !important;
-    align-items: flex-start !important;
+    align-items: stretch !important;
     gap: 8px !important;
     padding: 8px 10px !important;
+  }
+  .ds-bl-mode-bar .ds-segmented-switch {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .ds-bl-mode-bar .ds-segmented-switch .ds-segmented-btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    justify-content: center !important;
   }
 
   .ds-settings-subpage {
