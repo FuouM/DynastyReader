@@ -47,3 +47,7 @@ target
 .DS_Store
 Thumbs.db
 
+# Signing keys & keystores
+*.keystore
+*.jks
+
