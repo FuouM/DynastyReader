@@ -201,6 +201,7 @@ jobs:
       - name: Build Android APK & App Bundle
         run: |
           npm run tauri android build -- --apk
+          npm run tauri android build -- --target aarch64 --apk
           npm run tauri android build -- --aab
 
       - name: Stage Android Artifacts

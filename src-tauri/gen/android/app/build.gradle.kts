@@ -14,13 +14,13 @@ val tauriProperties = Properties().apply {
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 35
     namespace = "com.dynasty_scans_reader"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "true"
         applicationId = "com.dynasty_scans_reader"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
@@ -30,6 +30,9 @@ android {
             val keyPasswordProp = tauriProperties.getProperty("tauri.android.keyPassword") ?: System.getenv("TAURI_KEY_PASSWORD")
             val storeFileProp = tauriProperties.getProperty("tauri.android.storeFile") ?: System.getenv("TAURI_STORE_FILE")
             val storePasswordProp = tauriProperties.getProperty("tauri.android.storePassword") ?: System.getenv("TAURI_STORE_PASSWORD")
+
+            enableV1Signing = true
+            enableV2Signing = true
 
             if (storeFileProp != null && file(storeFileProp).exists()) {
                 keyAlias = keyAliasProp
