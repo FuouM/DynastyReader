@@ -66,6 +66,11 @@ function applyThemeToDom(t: AppTheme): void {
   if (meta) {
     meta.setAttribute("content", THEME_META[t] ?? "#f5f5f5");
   }
+  if (typeof window !== "undefined" && (window as any).AndroidThemeBridge?.updateTheme) {
+    try {
+      (window as any).AndroidThemeBridge.updateTheme(t !== "light", THEME_META[t] ?? "#f5f5f5");
+    } catch {}
+  }
 }
 
 const [themeSignal, setThemeSignal] = persistedSignal<AppTheme>("light", {

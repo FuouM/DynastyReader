@@ -53,7 +53,12 @@
           if (meta) {
             meta.setAttribute("content", metaColors[theme] || "#f5f5f5");
           }
-        } catch (_) {}
+          if (window.AndroidThemeBridge && window.AndroidThemeBridge.updateTheme) {
+            try {
+              window.AndroidThemeBridge.updateTheme(theme !== "light", metaColors[theme] || "#f5f5f5");
+            } catch {}
+          }
+        } catch {}
       })();
     </script>
     <style>
