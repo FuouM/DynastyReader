@@ -158,11 +158,11 @@ body.ds-high-contrast #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollb
 #ds-root[data-mobile] #ds-topbar {
   flex-direction: row;
   align-items: center;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
-  padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px));
-  box-sizing: border-box;
+  height: calc(32px + env(safe-area-inset-top, 0px)) !important;
+  min-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
+  max-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
+  padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
+  box-sizing: border-box !important;
 }
 
 #ds-root[data-mobile] #ds-topbar-main {
@@ -274,9 +274,9 @@ body.ds-high-contrast #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollb
   /* landscape OR tablet-wide (≥600px): restore desktop-style inline layout */
   #ds-root[data-mobile] #ds-topbar {
     padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
-    height: 32px !important;
-    min-height: 32px !important;
-    max-height: 32px !important;
+    height: calc(32px + env(safe-area-inset-top, 0px)) !important;
+    min-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
+    max-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
   }
   #ds-root[data-mobile] #ds-topbar-main {
     height: 24px !important;
@@ -651,7 +651,11 @@ body.ds-high-contrast #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollb
   left: 0 !important;
   right: 0 !important;
   z-index: 1100 !important;
+  height: calc(32px + env(safe-area-inset-top, 0px)) !important;
+  min-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
+  max-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
   padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
+  box-sizing: border-box !important;
   background: var(--ds-reader-bg, var(--sys-window-bg, #f5f5f5)) !important;
   border-bottom: 1px solid var(--sys-border-light, #ccc) !important;
   color: var(--sys-window-text, #000000);
