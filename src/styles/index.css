@@ -317,14 +317,13 @@ body {
 #ds-topbar-tools {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
   margin-left: auto;
 }
 #ds-actions:not(:empty) + #ds-topbar-tools {
   margin-left: 4px;
 }
-
 /* Compact action buttons (hide text labels when window < 760px) */
 #ds-topbar.ds-compact #ds-actions .ds-btn-text {
   display: none;

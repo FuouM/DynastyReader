@@ -202,10 +202,9 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   display: inline-flex;
   align-items: center;
   margin-left: auto !important;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
 }
-
 #ds-root[data-mobile] #ds-topbar-tools .win-button {
   width: 26px;
   height: 26px;
