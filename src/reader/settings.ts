@@ -62,10 +62,10 @@ const [getMobileLandscapePagedLayout, setMobileLandscapePagedLayout] = persisted
 });
 export { getMobileLandscapePagedLayout, setMobileLandscapePagedLayout };
 
-// Mobile landscape fit mode (default: no override)
-const [getMobileLandscapeFitMode, setMobileLandscapeFitMode] = persistedSignal<MobileLandscapeFitModeSetting>("default", {
+// Mobile landscape fit mode (default: fit-height)
+const [getMobileLandscapeFitMode, setMobileLandscapeFitMode] = persistedSignal<MobileLandscapeFitModeSetting>("height", {
   name: "ds-reader-mobile-landscape-fit",
-  deserialize: (v) => (v === "height" || v === "default") ? v : "default",
+  deserialize: (v) => (v === "height" || v === "default") ? v : "height",
 });
 export { getMobileLandscapeFitMode, setMobileLandscapeFitMode };
 
