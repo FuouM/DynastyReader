@@ -1083,7 +1083,7 @@
 
 /* Warning-colored icon (star / blacklist) */
 .ds-icon-warning {
-  color: #d97706;
+  color: var(--ds-status-stale-text, #d97706);
   font-size: 13px;
 }
 

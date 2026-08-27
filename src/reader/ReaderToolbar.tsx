@@ -39,6 +39,7 @@ import {
   BookHalfIcon,
   SunIcon,
   MoonIcon,
+  OledIcon,
   ArrowsFullscreenIcon,
   FullscreenExitIcon,
   DashIcon,
@@ -223,7 +224,7 @@ export function ReaderControlsRow(props: NavRowProps) {
       />
       <IconButton
         className="ds-ctrl-btn ds-btn-icon"
-        icon={theme() === "dark" ? <MoonIcon /> : <SunIcon />}
+        icon={theme() === "dark" ? <MoonIcon /> : theme() === "high-contrast" ? <OledIcon /> : <SunIcon />}
         title={t("reader.toolbar.themeToggle")}
         onClick={() => s.toggleTheme()}
       />

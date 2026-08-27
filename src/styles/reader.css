@@ -62,15 +62,15 @@
   background: var(--ds-reader-bg) !important;
   color: var(--sys-window-text, #ffffff) !important;
   /* reader nav border — intentionally darker than sys-border-dark */
-  border-color: #383838 !important;
+  border-color: var(--sys-border-dark) !important;
 }
 [data-theme="dark"] #ds-reader-container .ds-reader-nav.ds-reader-nav-top {
   /* reader nav border — intentionally darker than sys-border-dark */
-  border-bottom: 1px solid #383838 !important;
+  border-bottom: 1px solid var(--sys-border-dark) !important;
 }
 [data-theme="dark"] #ds-reader-container .ds-reader-nav.ds-reader-nav-bottom {
   /* reader nav border — intentionally darker than sys-border-dark */
-  border-top: 1px solid #383838 !important;
+  border-top: 1px solid var(--sys-border-dark) !important;
 }
 [data-theme="dark"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
   border-top-color: rgba(255, 255, 255, 0.08);
@@ -91,7 +91,7 @@
   color: var(--sys-text-secondary, #cccccc);
 }
 [data-theme="dark"] #ds-reader-container .ds-slot-state {
-  color: #aaa;
+  color: var(--sys-text-muted);
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.15);
 }
@@ -107,13 +107,13 @@
 [data-theme="high-contrast"] #ds-reader-container .ds-reader-nav {
   background: var(--ds-reader-bg) !important;
   color: var(--sys-window-text, #ffffff) !important;
-  border-color: #2a2a2a !important;
+  border-color: var(--sys-border-medium) !important;
 }
 [data-theme="high-contrast"] #ds-reader-container .ds-reader-nav.ds-reader-nav-top {
-  border-bottom: 1px solid #2a2a2a !important;
+  border-bottom: 1px solid var(--sys-border-medium) !important;
 }
 [data-theme="high-contrast"] #ds-reader-container .ds-reader-nav.ds-reader-nav-bottom {
-  border-top: 1px solid #2a2a2a !important;
+  border-top: 1px solid var(--sys-border-medium) !important;
 }
 [data-theme="high-contrast"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
   border-top-color: rgba(255, 255, 255, 0.1);
@@ -157,7 +157,7 @@
   border-color: #444444;
 }
 [data-theme="high-contrast"] #ds-reader-container .ds-overscroll-target-hint {
-  color: #aaaaaa;
+  color: var(--sys-text-muted, #aaaaaa);
 }
 
 .ds-reader-nav {

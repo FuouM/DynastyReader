@@ -63,7 +63,7 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
           class={`fit-${session.fitMode()}`}
           classList={{
             "ds-fullscreen": session.isFullscreen(),
-            "ds-dark": theme() === "dark",
+            "ds-dark": theme() !== "light",
             "ds-restoring": session.restoring(),
             "ds-hud-visible": session.toolbarVisible(),
             "is-scroll-locked": session.scrollLock(),

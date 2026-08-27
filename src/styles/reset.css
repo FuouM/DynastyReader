@@ -38,38 +38,26 @@ body {
   display: none;
 }
 
-:root[data-theme="dark"] ::-webkit-scrollbar-track,
-[data-theme="dark"] ::-webkit-scrollbar-track,
-body.ds-dark ::-webkit-scrollbar-track {
+[data-theme="dark"] ::-webkit-scrollbar-track {
   background: #2b2b2b;
   border-color: #3a3a3a;
 }
-:root[data-theme="dark"] ::-webkit-scrollbar-thumb,
-[data-theme="dark"] ::-webkit-scrollbar-thumb,
-body.ds-dark ::-webkit-scrollbar-thumb {
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
   background: #555555;
   border-color: #2b2b2b;
 }
-:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
-body.ds-dark ::-webkit-scrollbar-thumb:hover {
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
   background: #6e6e6e;
 }
-:root[data-theme="high-contrast"] ::-webkit-scrollbar-track,
-[data-theme="high-contrast"] ::-webkit-scrollbar-track,
-body.ds-high-contrast ::-webkit-scrollbar-track {
+[data-theme="high-contrast"] ::-webkit-scrollbar-track {
   background: #111111;
   border-color: #2a2a2a;
 }
-:root[data-theme="high-contrast"] ::-webkit-scrollbar-thumb,
-[data-theme="high-contrast"] ::-webkit-scrollbar-thumb,
-body.ds-high-contrast ::-webkit-scrollbar-thumb {
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb {
   background: #444444;
   border-color: #111111;
 }
-:root[data-theme="high-contrast"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="high-contrast"] ::-webkit-scrollbar-thumb:hover,
-body.ds-high-contrast ::-webkit-scrollbar-thumb:hover {
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb:hover {
   background: #666666;
 }
 
@@ -98,12 +86,8 @@ body.ds-high-contrast ::-webkit-scrollbar-thumb:hover {
   transform: translateX(-100%);
   animation: ds-skeleton-slide 1.5s ease-in-out infinite;
 }
-:root[data-theme="dark"] .skeleton::after,
-:root[data-theme="dark"] .skeleton-pulse::after,
 [data-theme="dark"] .skeleton::after,
-[data-theme="dark"] .skeleton-pulse::after,
-body.ds-dark .skeleton::after,
-body.ds-dark .skeleton-pulse::after {
+[data-theme="dark"] .skeleton-pulse::after {
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -111,12 +95,8 @@ body.ds-dark .skeleton-pulse::after {
     transparent 100%
   );
 }
-:root[data-theme="high-contrast"] .skeleton::after,
-:root[data-theme="high-contrast"] .skeleton-pulse::after,
 [data-theme="high-contrast"] .skeleton::after,
-[data-theme="high-contrast"] .skeleton-pulse::after,
-body.ds-high-contrast .skeleton::after,
-body.ds-high-contrast .skeleton-pulse::after {
+[data-theme="high-contrast"] .skeleton-pulse::after {
   background: linear-gradient(
     90deg,
     transparent 0%,
