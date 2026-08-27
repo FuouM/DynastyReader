@@ -110,6 +110,8 @@
 .ds-offline-icon {
   margin-left: 2px;
   vertical-align: middle;
+  color: var(--sys-primary, #0078d4);
+  font-size: 11px;
 }
 .ds-cover-xs {
   width: 36px;
@@ -1045,5 +1047,69 @@
 .ds-row-gap-2 {
   gap: 4px;
   flex-shrink: 0;
+}
+
+/* ── Inline-sweep phase 1: extracted static recipes ──────────────────── */
+
+/* Blacklist dimming modifier for ListItem rows */
+.ds-item-blacklisted {
+  opacity: 0.8;
+  background: var(--sys-bg-active, #fcf8f8);
+}
+
+/* Collapsible group-box title cursor hint */
+.group-box-title--collapsible {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Chip remove (x) icon in BrowseSearch tag chips */
+.ds-chip-remove-icon {
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* Icon in series taggable cards */
+.ds-taggable-icon {
+  color: var(--sys-primary, #0078d4);
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+/* Medium icon size (collection headers) */
+.ds-icon-md {
+  font-size: 13px;
+}
+
+/* Warning-colored icon (star / blacklist) */
+.ds-icon-warning {
+  color: #d97706;
+  font-size: 13px;
+}
+
+/* Hydrated cover — cache variant (36x50) */
+.ds-feed-cover-wrap--cache {
+  width: 36px;
+  height: 50px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ds-feed-cover-placeholder--cache {
+  width: 36px;
+  height: 50px;
+  font-size: 12px;
+}
+.ds-feed-cover--cache {
+  width: 36px;
+  height: 50px;
+}
+
+/* Library item row base layout */
+.ds-library-item {
+  padding: 6px 8px;
+  border-radius: 2px;
+  gap: 8px;
+  cursor: pointer;
+  align-items: flex-start;
 }
 }

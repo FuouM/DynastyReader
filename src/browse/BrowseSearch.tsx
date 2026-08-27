@@ -456,7 +456,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                       class="ds-row ds-chip ds-chip-primary"
                     >
                       <span>+ {decodeEntities(t)}</span>
-                      <Icon name="x" style={{ cursor: "pointer", "font-size": "12px" }} onClick={() => removeWithTag(t)} />
+                      <Icon name="x" class="ds-chip-remove-icon" onClick={() => removeWithTag(t)} />
                     </span>
                   )}
                 </For>
@@ -486,7 +486,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                       class="ds-row ds-chip ds-chip-danger"
                     >
                       <span>- {decodeEntities(t)}</span>
-                      <Icon name="x" style={{ cursor: "pointer", "font-size": "12px" }} onClick={() => removeWithoutTag(t)} />
+                      <Icon name="x" class="ds-chip-remove-icon" onClick={() => removeWithoutTag(t)} />
                     </span>
                   )}
                 </For>
@@ -557,7 +557,6 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 noun="result"
                 showHidden={showHidden()}
                 onToggle={() => setShowHidden(!showHidden())}
-                cssText="margin-bottom:8px;"
               />
               <Show when={showHidden()}>
                 <div class="ds-stack-6 ds-mb-8">

@@ -392,11 +392,7 @@ function SeriesBody(props: {
         <div class="ds-row ds-blacklist-notice">
           <BlacklistIcon
             filled={true}
-            style={{
-              "font-size": "14px",
-              color: "var(--ds-warn-text,#d97706)",
-              "flex-shrink": 0,
-            }}
+            class="ds-bl-series-icon"
           />
           <span>
             {t("series.blacklistNotice")}

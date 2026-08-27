@@ -774,6 +774,8 @@ body.ds-high-contrast .tag-pill:hover {
 
 /* Library & Browse item rows */
 .ds-item {
+  display: flex;
+  align-items: flex-start;
   border: 1px solid var(--sys-border-light, #e0e0e0);
   background: var(--sys-window-bg, #fff);
   padding: 6px 8px;

@@ -38,11 +38,7 @@ export function SeriesTaggables(props: SeriesTaggablesProps) {
                 }
               >
                 <BookIcon
-                  style={{
-                    color: "var(--sys-primary,#0078d4)",
-                    "margin-top": "1px",
-                    "flex-shrink": 0,
-                  }}
+                  class="ds-taggable-icon"
                 />
                 <span class="ds-taggable-title">
                   {decodeEntities(tg.name)}

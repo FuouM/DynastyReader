@@ -42,7 +42,7 @@ export function Button(props: ButtonProps) {
   };
 
   const iconSpan = () => (props.icon ? (
-    <span class="ds-btn-icon-wrap" style="display:inline-flex; align-items:center; line-height:1;">
+    <span class="ds-btn-icon-wrap">
       {props.icon}
     </span>
   ) : null);

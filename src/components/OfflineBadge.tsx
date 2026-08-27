@@ -19,10 +19,6 @@ export function OfflineBadge(props: OfflineBadgeProps) {
       <Icon
         name="cloud-check-fill"
         class="ds-offline-icon"
-        style={{
-          color: "var(--sys-primary,#0078d4)",
-          "font-size": "11px",
-        }}
         title={t("dialogs.offlineBadge.tooltip")}
       />
     </Show>

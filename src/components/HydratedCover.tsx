@@ -31,20 +31,18 @@ export interface HydratedCoverProps {
   /** Sizing preset: `feed` = 42×58, `cache` = 36×50. */
   size?: "feed" | "cache";
   onClick?: (ev: MouseEvent) => void;
-  /** Extra inline styles appended to the cover wrap. */
-  cssText?: string;
 }
 
 const SIZES = {
   feed: {
-    wrap: "flex-shrink:0;cursor:pointer;",
-    img: "",
-    placeholder: "",
+    wrapClass: "",
+    imgClass: "",
+    placeholderClass: "",
   },
   cache: {
-    wrap: "width:36px;height:50px;cursor:pointer;flex-shrink:0;",
-    img: "width:36px;height:50px;",
-    placeholder: "width:36px;height:50px;font-size:12px;",
+    wrapClass: "ds-feed-cover-wrap--cache",
+    imgClass: "ds-feed-cover--cache",
+    placeholderClass: "ds-feed-cover-placeholder--cache",
   },
 } as const;
 
@@ -104,8 +102,7 @@ export function HydratedCover(props: HydratedCoverProps) {
         wrapEl = el;
         if (!resolvedPath() && el) browseCovers.observe(el);
       }}
-      class="ds-feed-cover-wrap"
-      style={`${size().wrap}${props.cssText ?? ""}`}
+      class={`ds-feed-cover-wrap${size().wrapClass ? ` ${size().wrapClass}` : ""}`}
       data-feed-cover={props.coverKey}
       data-chapter-permalink={props.chapterPermalink}
       data-series-permalink={props.seriesPermalink}
@@ -116,14 +113,13 @@ export function HydratedCover(props: HydratedCoverProps) {
       <Show
         when={isLoaded()}
         fallback={
-          <div class="ds-feed-cover-placeholder" style={size().placeholder}>
+          <div class={`ds-feed-cover-placeholder${size().placeholderClass ? ` ${size().placeholderClass}` : ""}`}>
             <BookIcon />
           </div>
         }
       >
         <img
-          class="ds-feed-cover"
-          style={size().img}
+          class={`ds-feed-cover${size().imgClass ? ` ${size().imgClass}` : ""}`}
           alt={props.coverKey}
           width={isCache() ? 36 : 42}
           height={isCache() ? 50 : 58}

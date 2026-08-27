@@ -134,9 +134,9 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
           <div class="ds-collection-stats">
             <Show
               when={collection()?.is_default}
-              fallback={<FolderIcon color="var(--sys-primary,#0078d4)" style={{ "font-size": "13px" }} />}
+              fallback={<FolderIcon color="var(--sys-primary,#0078d4)" class="ds-icon-md" />}
             >
-              <StarIcon filled={true} style={{ color: "#d97706", "font-size": "13px" }} />
+              <StarIcon filled={true} class="ds-icon-warning" />
             </Show>
             <span>
               <b>{decodeEntities(collection()?.name ?? "")}</b> — <b>{totalItems()}</b> {totalItems() === 1 ? t("library.nounItem") : t("library.nounItems")}

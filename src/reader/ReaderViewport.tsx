@@ -1036,7 +1036,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
                         ? t("reader.overscrollLock.endOfSeriesTitle")
                         : t("reader.overscrollLock.firstChapterTitle")}
                     </span>
-                    <div class="ds-overscroll-target-hint" style={{ "margin-top": "2px" }}>
+                    <div class="ds-overscroll-target-hint ds-mt-2">
                       {isNext()
                         ? t("reader.overscrollLock.endOfSeriesDesc")
                         : t("reader.overscrollLock.firstChapterDesc")}

@@ -151,7 +151,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
           <Icon name="exclamation-triangle" size="20px" />
           <span>{state()?.message}</span>
           <DsButton
-            cssText="font-size:10px;padding:1px 8px;"
+            className="ds-btn-xs"
             onClick={() => s.retrySlot(props.index)}
           >
             {t("common.retry")}

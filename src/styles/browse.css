@@ -9,6 +9,7 @@
   overflow: hidden;
   contain: strict;
   border-radius: 2px;
+  cursor: pointer;
 }
 
 /* Feed rows are a long, image-heavy list. Skip rendering of off-screen items so

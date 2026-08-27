@@ -39,11 +39,12 @@ export function ListItem(props: ListItemProps) {
   return (
     <div
       class={`ds-item${props.read ? " ds-item-read" : ""}${props.class ? ` ${props.class}` : ""}`}
-      style={`display:flex;${props.blacklisted ? "opacity:0.8;background:var(--sys-bg-active,#fcf8f8);" : ""}${props.cssText ?? ""}`}
+      classList={{ "ds-item-blacklisted": !!props.blacklisted }}
+      style={props.cssText}
       onClick={props.onClick}
     >
       {props.leading}
-      <div class="ds-fill" style={`min-width:0;${props.fillCssText ?? ""}`}>
+      <div class="ds-fill" style={props.fillCssText}>
         {props.title}
         {props.body}
       </div>

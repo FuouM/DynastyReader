@@ -38,7 +38,6 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
   return (
     <ListItem
       class="ds-flex-row ds-clickable ds-library-item"
-      cssText="padding:6px 8px;border-radius:2px;gap:8px;cursor:pointer;align-items:flex-start;"
       onClick={props.onOpen}
       leading={
         <>
