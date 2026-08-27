@@ -309,6 +309,43 @@ body.ds-dark .ds-switch.checked .ds-switch-thumb {
   background: #ffffff;
   border-color: rgba(0, 0, 0, 0.35);
 }
+/* High-Contrast switch overrides */
+:root[data-theme="high-contrast"] .ds-switch-track,
+[data-theme="high-contrast"] .ds-switch-track,
+body.ds-high-contrast .ds-switch-track {
+  background: var(--sys-button-bg, #111111);
+  border-color: var(--sys-border-dark, #555555);
+}
+:root[data-theme="high-contrast"] .ds-switch:hover:not([disabled]) .ds-switch-track,
+[data-theme="high-contrast"] .ds-switch:hover:not([disabled]) .ds-switch-track,
+body.ds-high-contrast .ds-switch:hover:not([disabled]) .ds-switch-track {
+  background: var(--sys-button-hover, #1a1a1a);
+  border-color: var(--sys-border-focus, #66b8ff);
+}
+:root[data-theme="high-contrast"] .ds-switch.checked .ds-switch-track,
+[data-theme="high-contrast"] .ds-switch.checked .ds-switch-track,
+body.ds-high-contrast .ds-switch.checked .ds-switch-track {
+  background: var(--sys-highlight-bg, #0064d4);
+  border-color: var(--sys-highlight-bg, #0064d4);
+}
+:root[data-theme="high-contrast"] .ds-switch.checked:hover:not([disabled]) .ds-switch-track,
+[data-theme="high-contrast"] .ds-switch.checked:hover:not([disabled]) .ds-switch-track,
+body.ds-high-contrast .ds-switch.checked:hover:not([disabled]) .ds-switch-track {
+  background: var(--sys-primary-hover, #88ccff);
+  border-color: var(--sys-primary-hover, #88ccff);
+}
+:root[data-theme="high-contrast"] .ds-switch-thumb,
+[data-theme="high-contrast"] .ds-switch-thumb,
+body.ds-high-contrast .ds-switch-thumb {
+  background: #cccccc;
+  border-color: #555555;
+}
+:root[data-theme="high-contrast"] .ds-switch.checked .ds-switch-thumb,
+[data-theme="high-contrast"] .ds-switch.checked .ds-switch-thumb,
+body.ds-high-contrast .ds-switch.checked .ds-switch-thumb {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.5);
+}
 
 #ds-title {
   font-size: 13px;
@@ -702,6 +739,16 @@ body.ds-dark .ds-series-link {
 body.ds-dark .ds-series-link:hover {
   color: #7dd3fc;
 }
+:root[data-theme="high-contrast"] .ds-series-link,
+[data-theme="high-contrast"] .ds-series-link,
+body.ds-high-contrast .ds-series-link {
+  color: #66b8ff;
+}
+:root[data-theme="high-contrast"] .ds-series-link:hover,
+[data-theme="high-contrast"] .ds-series-link:hover,
+body.ds-high-contrast .ds-series-link:hover {
+  color: #99d0ff;
+}
 [data-theme="light"] .tag-pill:hover,
 :root:not([data-theme]) .tag-pill:hover {
   filter: brightness(0.92);
@@ -710,6 +757,11 @@ body.ds-dark .ds-series-link:hover {
 :root[data-theme="dark"] .tag-pill:hover,
 [data-theme="dark"] .tag-pill:hover,
 body.ds-dark .tag-pill:hover {
+  opacity: 1;
+}
+:root[data-theme="high-contrast"] .tag-pill:hover,
+[data-theme="high-contrast"] .tag-pill:hover,
+body.ds-high-contrast .tag-pill:hover {
   opacity: 1;
 }
 

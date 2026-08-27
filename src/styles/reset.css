@@ -55,6 +55,23 @@ body.ds-dark ::-webkit-scrollbar-thumb {
 body.ds-dark ::-webkit-scrollbar-thumb:hover {
   background: #6e6e6e;
 }
+:root[data-theme="high-contrast"] ::-webkit-scrollbar-track,
+[data-theme="high-contrast"] ::-webkit-scrollbar-track,
+body.ds-high-contrast ::-webkit-scrollbar-track {
+  background: #111111;
+  border-color: #2a2a2a;
+}
+:root[data-theme="high-contrast"] ::-webkit-scrollbar-thumb,
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb,
+body.ds-high-contrast ::-webkit-scrollbar-thumb {
+  background: #444444;
+  border-color: #111111;
+}
+:root[data-theme="high-contrast"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb:hover,
+body.ds-high-contrast ::-webkit-scrollbar-thumb:hover {
+  background: #666666;
+}
 
 .skeleton {
   position: relative;
@@ -91,6 +108,19 @@ body.ds-dark .skeleton-pulse::after {
     90deg,
     transparent 0%,
     rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+}
+:root[data-theme="high-contrast"] .skeleton::after,
+:root[data-theme="high-contrast"] .skeleton-pulse::after,
+[data-theme="high-contrast"] .skeleton::after,
+[data-theme="high-contrast"] .skeleton-pulse::after,
+body.ds-high-contrast .skeleton::after,
+body.ds-high-contrast .skeleton-pulse::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
     transparent 100%
   );
 }

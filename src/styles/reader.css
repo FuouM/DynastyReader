@@ -99,6 +99,67 @@
   --ds-reader-viewport-bg: #121212;
 }
 
+/* High-Contrast (OLED) reader overrides — true black, razor borders. */
+[data-theme="high-contrast"] #ds-reader-container {
+  --ds-reader-bg: #000000;
+  --ds-reader-viewport-bg: #000000;
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav {
+  background: var(--ds-reader-bg) !important;
+  color: var(--sys-window-text, #ffffff) !important;
+  border-color: #2a2a2a !important;
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav.ds-reader-nav-top {
+  border-bottom: 1px solid #2a2a2a !important;
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav.ds-reader-nav-bottom {
+  border-top: 1px solid #2a2a2a !important;
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-reader-progress-pill {
+  background: #111111;
+  border-color: #444444;
+  color: #ffffff;
+  box-shadow: none;
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-reader-progress-track {
+  background: #222222;
+}
+[data-theme="high-contrast"] #ds-reader-container #ds-reader-viewport {
+  background: var(--ds-reader-viewport-bg) !important;
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-progress-text {
+  color: #ffffff;
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-slot-state {
+  color: #cccccc;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+[data-theme="high-contrast"] #ds-reader-container.ds-fullscreen {
+  --ds-reader-viewport-bg: #000000;
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-overscroll-finger-circle {
+  background: #111111;
+  color: #ffffff;
+  border-color: var(--sys-primary, #66b8ff);
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-overscroll-target-ring {
+  background: #111111;
+  color: var(--sys-primary, #66b8ff);
+  border-color: var(--sys-primary, #66b8ff);
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-overscroll-target-card {
+  background: #0d0d0d;
+  color: #ffffff;
+  border-color: #444444;
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-overscroll-target-hint {
+  color: #aaaaaa;
+}
+
 .ds-reader-nav {
   display: flex;
   flex-direction: column;
@@ -159,6 +220,9 @@
 }
 [data-theme="dark"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
   border-top-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
+  border-top-color: rgba(255, 255, 255, 0.1);
 }
 
 .ds-ctrl-zoom-group {

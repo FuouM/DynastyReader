@@ -131,3 +131,59 @@ body.ds-dark {
   --ds-warn-border: #5c3034;
 }
 }
+
+/* ── High-Contrast (OLED) theme palette ────────────────────────────────────── */
+:root[data-theme="high-contrast"],
+[data-theme="high-contrast"],
+body.ds-high-contrast {
+  --sys-control-bg: #000000;
+  --sys-control-text: #ffffff;
+  --sys-window-bg: #000000;
+  --sys-window-text: #ffffff;
+  --sys-border-light: #333333;
+  --sys-border-dark: #555555;
+  --sys-border-medium: #3a3a3a;
+  --sys-border-focus: #66b8ff;
+  --sys-highlight-bg: #0064d4;
+  --sys-highlight-text: #ffffff;
+  --sys-button-bg: #111111;
+  --sys-button-border: #555555;
+  --sys-button-hover: #1a1a1a;
+  --sys-button-active: #222222;
+  --sys-status-bg: #0a0a0a;
+  --sys-status-text: #ffffff;
+  --sys-menu-bg: #0d0d0d;
+  --sys-menu-border: #444444;
+  --sys-text-primary: #ffffff;
+  --sys-text-secondary: #cccccc;
+  --sys-text-muted: #aaaaaa;
+  --sys-text-subtle: #999999;
+  --sys-text-color: #ffffff;
+  --sys-hover-bg: #181818;
+  --sys-bg-active: #0d1a2b;
+  --sys-card-bg: #0d0d0d;
+  --sys-primary: #66b8ff;
+  --sys-primary-border: #0059cc;
+  --sys-primary-hover: #88ccff;
+  --sys-primary-active: #4499ee;
+  --sys-button-disabled-bg: #111111;
+  --sys-button-disabled-text: #555555;
+  --sys-button-disabled-border: #333333;
+  --sys-success-accent: #22dd88;
+  --sys-error-text: #ff6b6b;
+  --sys-reader-viewport-bg: #000000;
+  --sys-scrollbar-thumb: rgba(255, 255, 255, 0.3);
+  --sys-scrollbar-thumb-hover: rgba(255, 255, 255, 0.6);
+  --ds-status-fresh-bg: rgba(34, 221, 136, 0.15);
+  --ds-status-fresh-text: #22dd88;
+  --ds-status-fresh-border: rgba(34, 221, 136, 0.4);
+  --ds-status-stale-bg: #1a1400;
+  --ds-status-stale-text: #ffdd55;
+  --ds-status-stale-border: #3d3300;
+  --ds-danger-bg: #1a0000;
+  --ds-danger-text: #ff8080;
+  --ds-danger-border: #cc0000;
+  --ds-warn-bg: #1a0a00;
+  --ds-warn-text: #ffaa80;
+  --ds-warn-border: #883300;
+}

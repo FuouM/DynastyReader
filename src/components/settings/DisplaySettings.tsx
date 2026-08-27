@@ -2,7 +2,7 @@ import { createMemo, createSignal, For, Show } from "solid-js";
 import { theme, setTheme, uiScale, applyUiScale, uiMode, setUiMode, type UiMode } from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
-import { Icon, SunIcon, MoonIcon, AddIcon } from "../Icon";
+import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";
 import { DsSelect, IconText, IconButton, SegmentedSwitch, DsSwitch } from "../Button";
 import { SettingsRow } from "../SettingsRow";
 import { GroupBox } from "../GroupBox";
@@ -84,15 +84,16 @@ export function DisplaySettings() {
           label={t("settings.display.theme")}
           divider
         >
-          <SegmentedSwitch
-            id="ds-settings-theme-switch"
-            value={theme()}
-            onChange={(val) => setTheme(val as "light" | "dark")}
-            options={[
-              { id: "ds-settings-theme-light", value: "light", icon: <SunIcon />, text: t("settings.display.themeLight").split(" ")[0], title: t("settings.display.themeLight") },
-              { id: "ds-settings-theme-dark", value: "dark", icon: <MoonIcon />, text: t("settings.display.themeDark").split(" ")[0], title: t("settings.display.themeDark") },
-            ]}
-          />
+        <SegmentedSwitch
+          id="ds-settings-theme-switch"
+          value={theme()}
+          onChange={(val) => setTheme(val as "light" | "dark" | "high-contrast")}
+          options={[
+            { id: "ds-settings-theme-light", value: "light", icon: <SunIcon />, text: t("settings.display.themeLight").split(" ")[0], title: t("settings.display.themeLight") },
+            { id: "ds-settings-theme-dark", value: "dark", icon: <MoonIcon />, text: t("settings.display.themeDark").split(" ")[0], title: t("settings.display.themeDark") },
+            { id: "ds-settings-theme-hc", value: "high-contrast", icon: <OledIcon />, text: t("settings.display.themeHighContrast").split(" ")[0], title: t("settings.display.themeHighContrast") },
+          ]}
+        />
         </SettingsRow>
 
         {/* Feed Covers Toggle */}

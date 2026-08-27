@@ -108,6 +108,7 @@ export const BookIcon = (props: BaseIconProps) => <Icon name="book" {...props} /
 export const DoublePageIcon = (props: BaseIconProps) => <Icon name="book-half" {...props} />;
 export const SunIcon = (props: BaseIconProps) => <Icon name="sun" {...props} />;
 export const MoonIcon = (props: BaseIconProps) => <Icon name="moon-fill" {...props} />;
+export const OledIcon = (props: BaseIconProps) => <Icon name="circle-half" {...props} />;
 export const ToolIcon = (props: BaseIconProps) => <Icon name="tools" {...props} />;
 export const ChartIcon = (props: BaseIconProps) => <Icon name="pie-chart" {...props} />;
 export const StorageIcon = (props: BaseIconProps) => <Icon name="hdd-stack" {...props} />;

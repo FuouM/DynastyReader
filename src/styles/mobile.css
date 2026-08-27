@@ -89,6 +89,44 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   background: rgba(255, 255, 255, 0.5);
 }
 
+:root[data-theme="high-contrast"] #ds-root[data-mobile] ::-webkit-scrollbar-track,
+[data-theme="high-contrast"] #ds-root[data-mobile] ::-webkit-scrollbar-track,
+body.ds-high-contrast #ds-root[data-mobile] ::-webkit-scrollbar-track,
+:root[data-theme="high-contrast"] #ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-track,
+[data-theme="high-contrast"] #ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-track,
+body.ds-high-contrast #ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-track,
+:root[data-theme="high-contrast"] #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-track,
+[data-theme="high-contrast"] #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-track,
+body.ds-high-contrast #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-track {
+  background: transparent;
+  border: none;
+}
+
+:root[data-theme="high-contrast"] #ds-root[data-mobile] ::-webkit-scrollbar-thumb,
+[data-theme="high-contrast"] #ds-root[data-mobile] ::-webkit-scrollbar-thumb,
+body.ds-high-contrast #ds-root[data-mobile] ::-webkit-scrollbar-thumb,
+:root[data-theme="high-contrast"] #ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-thumb,
+[data-theme="high-contrast"] #ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-thumb,
+body.ds-high-contrast #ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-thumb,
+:root[data-theme="high-contrast"] #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb,
+[data-theme="high-contrast"] #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb,
+body.ds-high-contrast #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border: none;
+}
+
+:root[data-theme="high-contrast"] #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover,
+[data-theme="high-contrast"] #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover,
+body.ds-high-contrast #ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover,
+:root[data-theme="high-contrast"] #ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-thumb:hover,
+[data-theme="high-contrast"] #ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-thumb:hover,
+body.ds-high-contrast #ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-thumb:hover,
+:root[data-theme="high-contrast"] #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:hover,
+[data-theme="high-contrast"] #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:hover,
+body.ds-high-contrast #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
 /* Root viewport sizing */
 #ds-root[data-mobile] {
   height: 100dvh;

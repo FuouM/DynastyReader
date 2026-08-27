@@ -12,15 +12,16 @@
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { persistedSignal } from "../lib/persisted-signal";
 
-export type AppTheme = "light" | "dark";
+export type AppTheme = "light" | "dark" | "high-contrast";
 
 /** All valid theme ids — single source of truth for validation and cycling. */
-const VALID_THEMES: readonly AppTheme[] = ["light", "dark"];
+const VALID_THEMES: readonly AppTheme[] = ["light", "dark", "high-contrast"];
 
 /** Theme-color meta tag values (Android status bar / PWA chrome). */
 const THEME_META: Record<AppTheme, string> = {
   light: "#f5f5f5",
   dark: "#181818",
+  "high-contrast": "#000000",
 };
 
 const STORAGE_KEY = "ds-theme";
@@ -55,8 +56,8 @@ function applyThemeToDom(t: AppTheme): void {
   body?.classList.add(`ds-${t}`);
   dsRoot?.classList.add(`ds-${t}`);
   // Keep legacy ds-dark in sync so any residual ds-dark CSS still fires.
-  body?.classList.toggle("ds-dark", t === "dark");
-  dsRoot?.classList.toggle("ds-dark", t === "dark");
+  body?.classList.toggle("ds-dark", t === "dark" || t === "high-contrast");
+  dsRoot?.classList.toggle("ds-dark", t === "dark" || t === "high-contrast");
   const meta = document.getElementById("ds-theme-color-meta") as HTMLMetaElement | null;
   if (meta) {
     meta.setAttribute("content", THEME_META[t] ?? "#f5f5f5");
