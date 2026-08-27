@@ -26,6 +26,7 @@ import { createResizeObserver } from "@solid-primitives/resize-observer";
 import { getAdjacentChapters } from "./reader-spread";
 import { ChevronLeftIcon, ChevronRightIcon, Icon } from "../components/Icon";
 import { t } from "../i18n";
+import { triggerHaptic } from "../utils/haptics";
 
 const OVERSCROLL_ENGAGE_THRESHOLD_PX = 35;
 const OVERSCROLL_MAX_PULL_PX = 70;
@@ -344,7 +345,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         touchLongPressTimer = window.setTimeout(() => {
           if (!touchMoved && s.isHorizontal()) {
             didTouchLongPress = true;
-            if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+            triggerHaptic("tap");
             setTapZoneGuide({ activeZone: getTapZone(t.clientX) });
           }
         }, 350);
@@ -376,7 +377,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         const ready = isOverscrollReady(t.clientX, t.clientY, activeOverscroll.targetX, activeOverscroll.targetY);
         activeOverscroll.ready = ready;
         if (ready && !hasVibrated) {
-          if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(35);
+          triggerHaptic("snap");
           hasVibrated = true;
         } else if (!ready) {
           hasVibrated = false;
@@ -412,6 +413,10 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         if (isPullingPrev) {
           const { targetX, targetY } = getOverscrollTarget(touchStartX, touchStartY, "prev", true, isRtl);
           const ready = isOverscrollReady(t.clientX, t.clientY, targetX, targetY);
+          if (ready && !hasVibrated) {
+            triggerHaptic("snap");
+            hasVibrated = true;
+          }
           activeOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: absX };
           setOverscrollGesture({
             fingerX: t.clientX,
@@ -434,6 +439,10 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         if (isPullingNext) {
           const { targetX, targetY } = getOverscrollTarget(touchStartX, touchStartY, "next", true, isRtl);
           const ready = isOverscrollReady(t.clientX, t.clientY, targetX, targetY);
+          if (ready && !hasVibrated) {
+            triggerHaptic("snap");
+            hasVibrated = true;
+          }
           activeOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: absX };
           setOverscrollGesture({
             fingerX: t.clientX,
@@ -462,6 +471,10 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
             const { targetX, targetY } = getOverscrollTarget(touchStartX, touchStartY, "prev", false);
             const ready = isOverscrollReady(t.clientX, t.clientY, targetX, targetY);
+            if (ready && !hasVibrated) {
+              triggerHaptic("snap");
+              hasVibrated = true;
+            }
             activeOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: dy };
             setOverscrollGesture({
               fingerX: t.clientX,
@@ -482,6 +495,10 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
             const { targetX, targetY } = getOverscrollTarget(touchStartX, touchStartY, "next", false);
             const ready = isOverscrollReady(t.clientX, t.clientY, targetX, targetY);
+            if (ready && !hasVibrated) {
+              triggerHaptic("snap");
+              hasVibrated = true;
+            }
             activeOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: -dy };
             setOverscrollGesture({
               fingerX: t.clientX,
@@ -529,7 +546,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         setOverscrollGesture(null);
         resetStripTransform(true);
         if (over.ready && over.chapter) {
-          if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(50);
+          triggerHaptic("confirm");
           if (over.direction === "prev") {
             s.gotoPrevChapter();
           } else {
@@ -682,7 +699,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
         const ready = isOverscrollReady(ev.clientX, ev.clientY, activeMouseOverscroll.targetX, activeMouseOverscroll.targetY);
         activeMouseOverscroll.ready = ready;
         if (ready && !hasVibrated) {
-          if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(35);
+          triggerHaptic("snap");
           hasVibrated = true;
         } else if (!ready) {
           hasVibrated = false;

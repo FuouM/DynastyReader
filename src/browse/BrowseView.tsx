@@ -16,6 +16,7 @@ import { createEffect, createSignal, onCleanup, onMount, Show, untrack, type JSX
 import { persistedSignal } from "../lib/persisted-signal";
 import { isMobile, navigate, route, setRoute, showBanner } from "../stores";
 import { t } from "../i18n";
+import { triggerHaptic } from "../utils/haptics";
 import { parseDynastyUrl, suggest } from "../api";
 import { Pager } from "../components/Pager";
 import { SubTabs } from "../components/SubTabs";
@@ -233,7 +234,7 @@ export function BrowseView() {
     };
     const onTouchEnd = (): void => {
       if (pulling && pullReady() && pullOffset() > PULL_THRESHOLD_PX) {
-        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+        triggerHaptic("confirm");
         void checkUpdates();
       }
       pulling = false;
