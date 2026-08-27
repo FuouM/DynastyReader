@@ -12,8 +12,7 @@ const CHECK_UPDATES_POLL_DEADLINE_MS = 15_000;
 const CHECK_UPDATES_POLL_INTERVAL_MS = 50;
 const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
-import { createEffect, createSignal, onCleanup, Show, untrack, type JSX } from "solid-js";
-import { createMediaQuery } from "@solid-primitives/media";
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, type JSX } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
 import { isMobile, navigate, route, setRoute, showBanner } from "../stores";
 import { t } from "../i18n";
@@ -196,6 +195,63 @@ export function BrowseView() {
 
   const topCfg = () => getTopPagerFor(activeTab());
 
+  // ── Pull-to-refresh (mobile swipe-down) ──
+  const [pullOffset, setPullOffset] = createSignal(0);
+  const [pullReady, setPullReady] = createSignal(false);
+  let pullStartY = 0;
+  let pulling = false;
+  const PULL_THRESHOLD_PX = 48;
+
+  onMount(() => {
+    const paneEl = document.getElementById("ds-pane-browse") as HTMLElement | null;
+    if (!paneEl) return;
+    const onTouchStart = (ev: TouchEvent): void => {
+      if (!isMobile()) return;
+      if (checkBtn() === "checking") return;
+      if (paneEl.scrollTop > 2) return;
+      if (ev.touches.length !== 1) return;
+      pullStartY = ev.touches[0].clientY;
+      pulling = false;
+      setPullReady(false);
+    };
+    const onTouchMove = (ev: TouchEvent): void => {
+      if (!isMobile()) return;
+      if (ev.touches.length !== 1) return;
+      const dy = ev.touches[0].clientY - pullStartY;
+      if (!pulling && dy > 10 && paneEl.scrollTop <= 2) {
+        pulling = true;
+      }
+      if (pulling) {
+        if (dy > 0 && paneEl.scrollTop <= 2) {
+          const damped = Math.min(64, Math.pow(dy, 0.85));
+          setPullOffset(damped);
+          setPullReady(damped > PULL_THRESHOLD_PX);
+          if (damped > 12) ev.preventDefault();
+        } else {
+          setPullOffset(0);
+          setPullReady(false);
+        }
+      }
+    };
+    const onTouchEnd = (): void => {
+      if (pulling && pullReady() && pullOffset() > PULL_THRESHOLD_PX) {
+        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+        void checkUpdates();
+      }
+      pulling = false;
+      setPullOffset(0);
+      setPullReady(false);
+    };
+    paneEl.addEventListener("touchstart", onTouchStart, { passive: true });
+    paneEl.addEventListener("touchmove", onTouchMove, { passive: false });
+    paneEl.addEventListener("touchend", onTouchEnd, { passive: true });
+    onCleanup(() => {
+      paneEl.removeEventListener("touchstart", onTouchStart);
+      paneEl.removeEventListener("touchmove", onTouchMove);
+      paneEl.removeEventListener("touchend", onTouchEnd);
+    });
+  });
+
   const checkBtnIcon = (): JSX.Element => {
     if (checkBtn() === "checking") return <RefreshIcon spin={true} />;
     if (checkBtn() === "updated") return <CheckIcon />;
@@ -212,6 +268,16 @@ export function BrowseView() {
 
   return (
     <>
+      <Show when={isMobile() && pullOffset() > 0}>
+        <div
+          class="ds-pull-refresh-indicator"
+          classList={{ ready: pullReady() }}
+          style={`transform: translateY(${pullOffset() - 44}px); opacity: ${Math.min(1, pullOffset() / 32)};`}
+        >
+          <RefreshIcon spin={checkBtn() === "checking"} />
+          <span>{pullReady() ? t("browse.feed.pullReady") : t("browse.feed.pullHint")}</span>
+        </div>
+      </Show>
       <GroupBox
         class="ds-mb-8"
         collapsible
@@ -223,7 +289,6 @@ export function BrowseView() {
             <div class="ds-search-wrap ds-flex-1">
               <Typeahead
                 fetcher={suggest}
-                onSelect={(item) => runSearch(item.name)}
                 onEnter={(value) => runSearch(value)}
                 onInputValue={(value) => setSearchBoxValue(value)}
                 placeholder={t("browse.searchAndGo.inputPlaceholder")}

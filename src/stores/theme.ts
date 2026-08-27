@@ -40,6 +40,10 @@ function applyThemeToDom(t: AppTheme): void {
     document.body?.classList.remove("ds-dark");
     document.getElementById("ds-root")?.classList.remove("ds-dark");
   }
+  const meta = document.getElementById("ds-theme-color-meta") as HTMLMetaElement | null;
+  if (meta) {
+    meta.setAttribute("content", t === "dark" ? "#181818" : "#f5f5f5");
+  }
 }
 
 const [themeSignal, setThemeSignal] = persistedSignal<AppTheme>("light", {

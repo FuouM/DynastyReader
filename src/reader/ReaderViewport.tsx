@@ -18,6 +18,8 @@ import {
   getDefaultPagedLayout,
   getEffectiveDefaultReaderMode,
   getEffectiveDefaultPagedLayout,
+  getDefaultFitMode,
+  getEffectiveFitMode,
 } from "./settings";
 import { decodeEntities } from "../utils/html";
 import { createResizeObserver } from "@solid-primitives/resize-observer";
@@ -78,6 +80,9 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
             const targetLayout = currentIsLandscape
               ? getEffectiveDefaultPagedLayout(s.pagedLayout())
               : getDefaultPagedLayout();
+            const targetFit = currentIsLandscape
+              ? getEffectiveFitMode(s.fitMode())
+              : getDefaultFitMode();
             let changed = false;
             if (targetMode !== s.mode()) {
               s.setModeSignal(targetMode);
@@ -85,6 +90,10 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
             }
             if (targetLayout !== s.pagedLayout()) {
               s.setPagedLayoutSignal(targetLayout);
+              changed = true;
+            }
+            if (targetFit !== s.fitMode()) {
+              s.setFitModeSignal(targetFit);
               changed = true;
             }
             if (changed) {

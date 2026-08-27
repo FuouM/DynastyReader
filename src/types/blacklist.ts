@@ -15,4 +15,4 @@ export interface BlacklistCheckResult {
   matchedTags: string[];
 }
 
-export type BlacklistMode = "hide" | "warn";
+export type BlacklistMode = "hide" | "warn" | "ghost";

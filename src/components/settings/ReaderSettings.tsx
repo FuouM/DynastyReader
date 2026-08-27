@@ -14,6 +14,8 @@ import {
   setMobileLandscapeReaderMode,
   getMobileLandscapePagedLayout,
   setMobileLandscapePagedLayout,
+  getMobileLandscapeFitMode,
+  setMobileLandscapeFitMode,
   isLongStripSpreadOverrideEnabled,
   setLongStripSpreadOverrideEnabled,
   isLongStripFitWidthEnabled,
@@ -34,8 +36,8 @@ import {
   type ReadingDirectionSetting,
   type MobileLandscapeReaderModeSetting,
   type MobileLandscapePagedLayoutSetting,
+  type MobileLandscapeFitModeSetting,
 } from "../../reader/settings";
-import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, Icon } from "../Icon";
 import { DsSelect, IconText, IconButton, SegmentedSwitch, DsSwitch } from "../Button";
@@ -49,6 +51,7 @@ export function ReaderSettings() {
   const [pagedLayoutPref, setPagedLayoutPref] = createSignal<PagedLayout>(getDefaultPagedLayout());
   const [mobileLandscapeModePref, setMobileLandscapeModePref] = createSignal<MobileLandscapeReaderModeSetting>(getMobileLandscapeReaderMode());
   const [mobileLandscapeLayoutPref, setMobileLandscapeLayoutPref] = createSignal<MobileLandscapePagedLayoutSetting>(getMobileLandscapePagedLayout());
+  const [mobileLandscapeFitPref, setMobileLandscapeFitPref] = createSignal<MobileLandscapeFitModeSetting>(getMobileLandscapeFitMode());
   const [longStripOverride, setLongStripOverride] = createSignal<boolean>(isLongStripSpreadOverrideEnabled());
   const [longStripFitWidth, setLongStripFitWidth] = createSignal<boolean>(isLongStripFitWidthEnabled());
   const [directionPref, setDirectionPref] = createSignal<ReadingDirectionSetting>(getDefaultReadingDirection());
@@ -103,41 +106,62 @@ export function ReaderSettings() {
           />
         </SettingsRow>
 
-        {/* Mobile Landscape Default Mode */}
-        <SettingsRow stacked divider label={<>{t("settings.reader.mobileLandscapeMode")}:</>} desc={t("settings.reader.mobileLandscapeModeDesc")}>
-          <SegmentedSwitch
-            id="ds-settings-mobile-landscape-mode-switch"
-            value={mobileLandscapeModePref()}
-            onChange={(val) => {
-              const next = val as MobileLandscapeReaderModeSetting;
-              setMobileLandscapeReaderMode(next);
-              setMobileLandscapeModePref(next);
-            }}
-            options={[
-              { id: "ds-settings-ml-mode-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeModeDefault"), title: t("settings.reader.mobileLandscapeModeDefaultTooltip") },
-              { id: "ds-settings-ml-mode-scroll", value: "scroll", icon: <Icon name="view-stacked" />, text: t("settings.reader.mobileLandscapeModeScroll"), title: t("settings.reader.mobileLandscapeModeScrollTooltip") },
-              { id: "ds-settings-ml-mode-paged", value: "paged", icon: <Icon name="book" />, text: t("settings.reader.mobileLandscapeModePaged"), title: t("settings.reader.mobileLandscapeModePagedTooltip") },
-            ]}
-          />
-        </SettingsRow>
-
-        {/* Mobile Landscape Paged Layout */}
-        <SettingsRow stacked divider label={<>{t("settings.reader.mobileLandscapeLayout")}:</>} desc={t("settings.reader.mobileLandscapeLayoutDesc")}>
-          <SegmentedSwitch
-            id="ds-settings-mobile-landscape-layout-switch"
-            value={mobileLandscapeLayoutPref()}
-            onChange={(val) => {
-              const next = val as MobileLandscapePagedLayoutSetting;
-              setMobileLandscapePagedLayout(next);
-              setMobileLandscapeLayoutPref(next);
-            }}
-            options={[
-              { id: "ds-settings-ml-layout-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeLayoutDefault"), title: t("settings.reader.mobileLandscapeLayoutDefaultTooltip") },
-              { id: "ds-settings-ml-layout-single", value: "single", icon: <Icon name="file-earmark" />, text: t("settings.reader.mobileLandscapeLayoutSingle"), title: t("settings.reader.mobileLandscapeLayoutSingleTooltip") },
-              { id: "ds-settings-ml-layout-spread", value: "spread", icon: <Icon name="columns-gap" />, text: t("settings.reader.mobileLandscapeLayoutSpread"), title: t("settings.reader.mobileLandscapeLayoutSpreadTooltip") },
-            ]}
-          />
-        </SettingsRow>
+        {/* Mobile Landscape Overrides — 3-column grid (mode / layout / fit) */}
+        <fieldset class="group-box ds-landscape-override-group" style="margin-top:8px;">
+          <legend class="group-box-title"><IconText icon={<Icon name="phone-landscape" />}>{t("settings.reader.mobileLandscapeGroupTitle")}</IconText></legend>
+          <div class="ds-landscape-override-grid">
+            <div class="ds-landscape-cell">
+              <span class="ds-landscape-cell-label">{t("settings.reader.mobileLandscapeMode")}</span>
+              <SegmentedSwitch
+                id="ds-settings-mobile-landscape-mode-switch"
+                value={mobileLandscapeModePref()}
+                onChange={(val) => {
+                  const next = val as MobileLandscapeReaderModeSetting;
+                  setMobileLandscapeReaderMode(next);
+                  setMobileLandscapeModePref(next);
+                }}
+                options={[
+                  { id: "ds-settings-ml-mode-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeModeDefault"), title: t("settings.reader.mobileLandscapeModeDefaultTooltip") },
+                  { id: "ds-settings-ml-mode-scroll", value: "scroll", icon: <Icon name="view-stacked" />, text: t("settings.reader.mobileLandscapeModeScroll"), title: t("settings.reader.mobileLandscapeModeScrollTooltip") },
+                  { id: "ds-settings-ml-mode-paged", value: "paged", icon: <Icon name="book" />, text: t("settings.reader.mobileLandscapeModePaged"), title: t("settings.reader.mobileLandscapeModePagedTooltip") },
+                ]}
+              />
+            </div>
+            <div class="ds-landscape-cell">
+              <span class="ds-landscape-cell-label">{t("settings.reader.mobileLandscapeLayout")}</span>
+              <SegmentedSwitch
+                id="ds-settings-mobile-landscape-layout-switch"
+                value={mobileLandscapeLayoutPref()}
+                onChange={(val) => {
+                  const next = val as MobileLandscapePagedLayoutSetting;
+                  setMobileLandscapePagedLayout(next);
+                  setMobileLandscapeLayoutPref(next);
+                }}
+                options={[
+                  { id: "ds-settings-ml-layout-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeLayoutDefault"), title: t("settings.reader.mobileLandscapeLayoutDefaultTooltip") },
+                  { id: "ds-settings-ml-layout-single", value: "single", icon: <Icon name="file-earmark" />, text: t("settings.reader.mobileLandscapeLayoutSingle"), title: t("settings.reader.mobileLandscapeLayoutSingleTooltip") },
+                  { id: "ds-settings-ml-layout-spread", value: "spread", icon: <Icon name="columns-gap" />, text: t("settings.reader.mobileLandscapeLayoutSpread"), title: t("settings.reader.mobileLandscapeLayoutSpreadTooltip") },
+                ]}
+              />
+            </div>
+            <div class="ds-landscape-cell">
+              <span class="ds-landscape-cell-label">{t("settings.reader.mobileLandscapeFitMode")}</span>
+              <SegmentedSwitch
+                id="ds-settings-mobile-landscape-fit-switch"
+                value={mobileLandscapeFitPref()}
+                onChange={(val) => {
+                  const next = val as MobileLandscapeFitModeSetting;
+                  setMobileLandscapeFitMode(next);
+                  setMobileLandscapeFitPref(next);
+                }}
+                options={[
+                  { id: "ds-settings-ml-fit-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeFitDefault"), title: t("settings.reader.mobileLandscapeFitDefaultTooltip") },
+                  { id: "ds-settings-ml-fit-height", value: "height", icon: <Icon name="arrows-expand" />, text: t("settings.reader.mobileLandscapeFitHeight"), title: t("settings.reader.mobileLandscapeFitHeightTooltip") },
+                ]}
+              />
+            </div>
+          </div>
+        </fieldset>
         {/* Long Strip Spread Override */}
         <SettingsRow divider label={<>{t("settings.reader.longStripOverride")}:</>} desc={t("settings.reader.longStripOverrideDesc")}>
           <DsSwitch

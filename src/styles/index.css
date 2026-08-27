@@ -461,6 +461,28 @@ body {
   padding: 8px;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+.ds-pull-refresh-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--sys-window-bg, #f5f5f5);
+  border-bottom: 1px solid var(--sys-border-light, #ccc);
+  font-size: 11px;
+  color: var(--sys-window-text, #333);
+  z-index: 5;
+  pointer-events: none;
+}
+.ds-pull-refresh-indicator.ready {
+  color: var(--sys-highlight-bg, #0078d4);
+  font-weight: 600;
 }
 #ds-pane-library {
   flex: 1;
@@ -1175,6 +1197,45 @@ code,
   align-items: center;
   line-height: 1;
   font-size: 13px;
+}
+/* Mobile Landscape Overrides — 3-column grid (WinForms fieldset) */
+.ds-landscape-override-group {
+  margin-top: 8px;
+}
+.ds-landscape-override-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 4px 0;
+}
+.ds-landscape-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ds-landscape-cell-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sys-window-text, #333);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ds-landscape-cell .ds-segmented-switch {
+  width: 100%;
+  display: flex;
+}
+.ds-landscape-cell .ds-segmented-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  padding: 0 6px;
+}
+@media (max-width: 680px) {
+  .ds-landscape-override-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 .ds-settings-scale-controls {
   display: flex;

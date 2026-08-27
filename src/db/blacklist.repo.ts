@@ -12,7 +12,7 @@ const notifyBlacklistChanged = blacklistNotifier.notifyChanged;
 
 const [blacklistModeSignal, setBlacklistModeRaw] = persistedSignal<BlacklistMode>("hide", {
   name: "ds-blacklist-mode",
-  deserialize: (v) => (v === "hide" || v === "warn") ? v : "hide",
+  deserialize: (v) => (v === "hide" || v === "warn" || v === "ghost") ? v : "hide",
 });
 
 export const getBlacklistMode = blacklistModeSignal;

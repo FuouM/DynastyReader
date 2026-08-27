@@ -14,7 +14,7 @@ export type ReadingDirectionSetting = "auto" | "rtl" | "ltr";
 export type PrevChapterStartPage = "first" | "last";
 export type MobileLandscapeReaderModeSetting = "default" | "scroll" | "paged";
 export type MobileLandscapePagedLayoutSetting = "default" | "single" | "spread";
-const boolDeserialize = (v: string) => v === "true" || v === "1";
+export type MobileLandscapeFitModeSetting = "default" | "height";
 
 // Auto-cache chapter
 const [isAutoCacheChapterEnabled, setAutoCache] = persistedSignal(!isMobile(), {
@@ -61,6 +61,13 @@ const [getMobileLandscapePagedLayout, setMobileLandscapePagedLayout] = persisted
 });
 export { getMobileLandscapePagedLayout, setMobileLandscapePagedLayout };
 
+// Mobile landscape fit mode (default: no override)
+const [getMobileLandscapeFitMode, setMobileLandscapeFitMode] = persistedSignal<MobileLandscapeFitModeSetting>("default", {
+  name: "ds-reader-mobile-landscape-fit",
+  deserialize: (v) => (v === "height" || v === "default") ? v : "default",
+});
+export { getMobileLandscapeFitMode, setMobileLandscapeFitMode };
+
 export function isMobileLandscape(): boolean {
   if (!isMobile()) return false;
   if (typeof window === "undefined") return false;
@@ -85,6 +92,14 @@ export function getEffectiveDefaultPagedLayout(currentLayout?: PagedLayout): Pag
     return "spread";
   }
   return currentLayout ?? getDefaultPagedLayout();
+}
+export function getEffectiveFitMode(currentFit?: FitMode): FitMode {
+  if (isMobileLandscape()) {
+    const pref = getMobileLandscapeFitMode();
+    if (pref === "height") return "height";
+    if (pref === "default") return currentFit ?? getDefaultFitMode();
+  }
+  return currentFit ?? getDefaultFitMode();
 }
 // Long strip spread override
 const [isLongStripSpreadOverrideEnabled, setLongStripSpreadOverrideEnabled] = persistedSignal(true, {

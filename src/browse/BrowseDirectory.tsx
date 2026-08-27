@@ -159,20 +159,27 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
 
   const displayGroups = createMemo<DirectoryGroup[]>(() => {
     const q = query().trim().toLowerCase();
+    let groups: DirectoryGroup[];
     if (!q) {
       const m = model();
-      return m ? m.groups : [];
+      groups = m ? m.groups : [];
+    } else {
+      const sqlRes = sqlSearchResults();
+      if (sqlRes !== null && sqlRes !== undefined) {
+        groups = sqlRes;
+      } else {
+        return [];
+      }
     }
-
-    // Direct SQL search result
-    const sqlRes = sqlSearchResults();
-    if (sqlRes !== null && sqlRes !== undefined) {
-      return sqlRes;
+    const blMode = model()?.blMode;
+    if (props.kind === "series" && (blMode === "hide" || blMode === "ghost")) {
+      const filtered = groups
+        .map((g) => ({ ...g, entries: g.entries.filter((e) => !isSeriesBlacklisted(e.permalink, e.name)) }))
+        .filter((g) => g.entries.length > 0);
+      return filtered;
     }
-
-    return [];
+    return groups;
   });
-
   const totalFilteredEntries = createMemo<number>(() =>
     displayGroups().reduce((acc, g) => acc + g.entries.length, 0),
   );

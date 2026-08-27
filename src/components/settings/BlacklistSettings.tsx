@@ -18,7 +18,7 @@ export function BlacklistSettings() {
   const [blInput, setBlInput] = createSignal("");
   const [blacklist, { refetch }] = createResource(() => getBlacklistedTags());
 
-  const setMode = (mode: "hide" | "warn"): void => {
+  const setMode = (mode: "hide" | "warn" | "ghost"): void => {
     setBlMode(mode);
     setBlacklistMode(mode);
   };
@@ -78,7 +78,17 @@ export function BlacklistSettings() {
             />
             <span>{t("blacklist.modeWarn")}</span>
           </label>
-        </div>
+          <label class="ds-bl-mode-option">
+            <input
+              type="radio"
+              name="ds-bl-mode"
+              value="ghost"
+              id="ds-bl-mode-ghost"
+              checked={blMode() === "ghost"}
+              onChange={() => setMode("ghost")}
+            />
+            <span>{t("blacklist.modeGhost")}</span>
+          </label>
 
         {/* Add Tag Input */}
         <div class="ds-bl-input-row">

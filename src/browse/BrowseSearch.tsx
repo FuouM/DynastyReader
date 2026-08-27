@@ -567,14 +567,14 @@ export function BrowseSearch(props: BrowseSearchProps) {
             </Show>
 
             <Show
-              when={model()!.blMode === "hide" && normalRows().length === 0 && blacklistedRows().length > 0}
+              when={(model()!.blMode === "hide" || model()!.blMode === "ghost") && normalRows().length === 0 && blacklistedRows().length > 0}
             >
               <div class="ds-muted ds-empty-muted">
                 {t("browse.search.emptyBlacklist")}
               </div>
             </Show>
 
-            <Show when={model()!.blMode === "hide" && normalRows().length > 0}>
+            <Show when={(model()!.blMode === "hide" || model()!.blMode === "ghost") && normalRows().length > 0}>
               <For each={normalRows()}>{renderResultRow}</For>
             </Show>
 

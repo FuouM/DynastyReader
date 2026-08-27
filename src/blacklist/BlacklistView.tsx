@@ -39,9 +39,10 @@ export function BlacklistView() {
   const changeMode = (next: BlacklistMode): void => {
     setMode(next);
     setBlacklistMode(next);
+    const modeLabel = next === "hide" ? t("blacklist.modeChangedHide") : next === "ghost" ? t("blacklist.modeChangedGhost") : t("blacklist.modeChangedWarn");
     showBanner(
       t("blacklist.modeChangedBanner", {
-        mode: next === "hide" ? t("blacklist.modeChangedHide") : t("blacklist.modeChangedWarn"),
+        mode: modeLabel,
       }),
     );
   };
@@ -122,6 +123,16 @@ export function BlacklistView() {
                     onChange={() => changeMode("warn")}
                   />{" "}
                   {t("blacklist.modeWarn")}
+                </label>
+                <label class="ds-bl-mode-option">
+                  <input
+                    type="radio"
+                    name="ds-bl-mode"
+                    value="ghost"
+                    checked={mode() === "ghost"}
+                    onChange={() => changeMode("ghost")}
+                  />{" "}
+                  {t("blacklist.modeGhost")}
                 </label>
               </div>
             </div>

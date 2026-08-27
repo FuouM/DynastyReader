@@ -535,10 +535,9 @@ export function BrowseFeed(props: BrowseFeedProps) {
   const normalRows = (): FeedRowData[] => {
     const m = model();
     if (!m) return [];
-    if (m.blMode === "hide") return m.rows.filter((r) => !r.isBlacklisted);
+    if (m.blMode === "hide" || m.blMode === "ghost") return m.rows.filter((r) => !r.isBlacklisted);
     return m.rows;
   };
-
   const renderRow = (row: FeedRowData): JSX.Element => (
     <FeedItemRow
       item={row.ch}
