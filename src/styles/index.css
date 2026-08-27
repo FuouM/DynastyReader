@@ -457,21 +457,28 @@ body.ds-high-contrast .ds-switch.checked .ds-switch-thumb {
   flex-direction: column;
   position: relative;
 }
+.ds-browse-pull-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 100%;
+}
 .ds-pull-refresh-indicator {
   position: absolute;
-  top: 0;
+  top: -34px;
   left: 0;
   right: 0;
-  height: 44px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: var(--sys-window-bg, #f5f5f5);
-  border-bottom: 1px solid var(--sys-border-light, #ccc);
+  background: transparent;
   font-size: 11px;
-  color: var(--sys-window-text, #333);
-  z-index: 5;
+  color: var(--sys-text-muted, #777);
+  z-index: 2;
   pointer-events: none;
 }
 .ds-pull-refresh-indicator.ready {

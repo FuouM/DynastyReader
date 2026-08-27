@@ -197,6 +197,7 @@ export function BrowseView() {
   // ── Pull-to-refresh (mobile swipe-down) ──
   const [pullOffset, setPullOffset] = createSignal(0);
   const [pullReady, setPullReady] = createSignal(false);
+  const [isPulling, setIsPulling] = createSignal(false);
   let pullStartY = 0;
   let pulling = false;
   const PULL_THRESHOLD_PX = 48;
@@ -211,6 +212,7 @@ export function BrowseView() {
       if (ev.touches.length !== 1) return;
       pullStartY = ev.touches[0].clientY;
       pulling = false;
+      setIsPulling(false);
       setPullReady(false);
     };
     const onTouchMove = (ev: TouchEvent): void => {
@@ -219,13 +221,18 @@ export function BrowseView() {
       const dy = ev.touches[0].clientY - pullStartY;
       if (!pulling && dy > 10 && paneEl.scrollTop <= 2) {
         pulling = true;
+        setIsPulling(true);
       }
       if (pulling) {
         if (dy > 0 && paneEl.scrollTop <= 2) {
-          const damped = Math.min(64, Math.pow(dy, 0.85));
+          const damped = Math.min(56, Math.pow(dy, 0.82));
           setPullOffset(damped);
-          setPullReady(damped > PULL_THRESHOLD_PX);
-          if (damped > 12) ev.preventDefault();
+          const ready = damped >= PULL_THRESHOLD_PX;
+          if (ready && !pullReady()) {
+            triggerHaptic("snap");
+          }
+          setPullReady(ready);
+          if (damped > 10) ev.preventDefault();
         } else {
           setPullOffset(0);
           setPullReady(false);
@@ -233,21 +240,30 @@ export function BrowseView() {
       }
     };
     const onTouchEnd = (): void => {
-      if (pulling && pullReady() && pullOffset() > PULL_THRESHOLD_PX) {
+      if (pulling && pullReady() && pullOffset() >= PULL_THRESHOLD_PX) {
         triggerHaptic("confirm");
         void checkUpdates();
       }
       pulling = false;
+      setIsPulling(false);
+      setPullOffset(0);
+      setPullReady(false);
+    };
+    const onTouchCancel = (): void => {
+      pulling = false;
+      setIsPulling(false);
       setPullOffset(0);
       setPullReady(false);
     };
     paneEl.addEventListener("touchstart", onTouchStart, { passive: true });
     paneEl.addEventListener("touchmove", onTouchMove, { passive: false });
     paneEl.addEventListener("touchend", onTouchEnd, { passive: true });
+    paneEl.addEventListener("touchcancel", onTouchCancel, { passive: true });
     onCleanup(() => {
       paneEl.removeEventListener("touchstart", onTouchStart);
       paneEl.removeEventListener("touchmove", onTouchMove);
       paneEl.removeEventListener("touchend", onTouchEnd);
+      paneEl.removeEventListener("touchcancel", onTouchCancel);
     });
   });
 
@@ -266,12 +282,20 @@ export function BrowseView() {
   };
 
   return (
-    <>
+    <div
+      class="ds-browse-pull-container"
+      style={{
+        transform: pullOffset() > 0 ? `translateY(${pullOffset()}px)` : undefined,
+        transition: isPulling() ? "none" : "transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1)",
+      }}
+    >
       <Show when={isMobile() && pullOffset() > 0}>
         <div
           class="ds-pull-refresh-indicator"
           classList={{ ready: pullReady() }}
-          style={`transform: translateY(${pullOffset() - 44}px); opacity: ${Math.min(1, pullOffset() / 32)};`}
+          style={{
+            opacity: String(Math.min(1, pullOffset() / 24)),
+          }}
         >
           <RefreshIcon spin={checkBtn() === "checking"} />
           <span>{pullReady() ? t("browse.feed.pullReady") : t("browse.feed.pullHint")}</span>
@@ -447,6 +471,6 @@ export function BrowseView() {
           />
         </div>
       </div>
-    </>
+    </div>
   );
 }
