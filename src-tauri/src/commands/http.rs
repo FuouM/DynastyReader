@@ -12,7 +12,7 @@ use tauri::State;
 use tokio::io::AsyncWriteExt;
 use tokio_stream::StreamExt;
 
-const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DynastyReader/0.2.1";
+const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DynastyReader/0.3.0";
 const MAX_GET_BODY: usize = 8 * 1024 * 1024;
 const MAX_DOWNLOAD_BYTES: u64 = 256 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS: u64 = 30_000;

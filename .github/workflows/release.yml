@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-release:
+  build-desktop:
     name: Build (${{ matrix.platform }})
     permissions:
       contents: write
@@ -89,6 +89,107 @@ jobs:
           mkdir -p staging
           find src-tauri/target/release/bundle/appimage -name "*.AppImage" -exec cp {} staging/DynastyReader-x86_64.AppImage \;
           find src-tauri/target/release/bundle/deb -name "*.deb" -exec cp {} staging/ \;
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          name: 'DynastyReader ${{ github.ref_name }}'
+          draft: false
+          prerelease: false
+          files: staging/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-android:
+    name: Build (android)
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r27c
+          add-to-path: true
+
+      - name: Set Android Environment Variables
+        run: |
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+          echo "NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: |
+            aarch64-linux-android
+            armv7-linux-androideabi
+            x86_64-linux-android
+            i686-linux-android
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Setup Android Keystore (Release Signing)
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > src-tauri/gen/android/app/release.keystore
+          echo "TAURI_STORE_FILE=release.keystore" >> $GITHUB_ENV
+          echo "TAURI_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> $GITHUB_ENV
+          echo "TAURI_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> $GITHUB_ENV
+          echo "TAURI_STORE_PASSWORD=$ANDROID_STORE_PASSWORD" >> $GITHUB_ENV
+
+      - name: Build Android APK & App Bundle
+        run: |
+          npm run tauri android build -- --apk
+          npm run tauri android build -- --aab
+
+      - name: Stage Android Artifacts
+        shell: bash
+        run: |
+          mkdir -p staging
+          if [ -d "src-tauri/gen/android/app/build/outputs/apk" ]; then
+            find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" | while read -r apk; do
+              filename=$(basename "$apk")
+              clean_name=$(echo "$filename" | sed -e 's/app-//g' -e 's/-unsigned//g' -e 's/-signed//g')
+              cp "$apk" "staging/DynastyReader-${clean_name}"
+            done
+          fi
+          if [ -d "src-tauri/gen/android/app/build/outputs/bundle" ]; then
+            find src-tauri/gen/android/app/build/outputs/bundle -name "*.aab" | while read -r aab; do
+              filename=$(basename "$aab")
+              clean_name=$(echo "$filename" | sed -e 's/app-//g' -e 's/-unsigned//g' -e 's/-signed//g')
+              cp "$aab" "staging/DynastyReader-${clean_name}"
+            done
+          fi
+          ls -la staging/
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
