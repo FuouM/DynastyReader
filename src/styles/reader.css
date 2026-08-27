@@ -1097,11 +1097,9 @@
   color: #ffffff !important;
 }
 
-/* Center Lock Target Ring (Exact Screen Center) */
+/* Center Lock Target Ring (Adaptive Position) */
 .ds-overscroll-target-ring {
   position: fixed;
-  top: 50%;
-  left: 50%;
   transform: translate(-50%, -50%);
   width: 64px;
   height: 64px;
@@ -1130,12 +1128,12 @@
   color: #ffffff !important;
 }
 
-/* Floating Info Card (Positioned Above the Lock Ring) */
+/* Floating Info Card (Always Centered) */
 .ds-overscroll-target-card {
   position: fixed;
-  bottom: calc(50% + 44px);
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   background: var(--sys-control-bg, #ececec);
   color: var(--sys-window-text, #000000);
   border: 1px solid var(--sys-border-dark, #707070);
