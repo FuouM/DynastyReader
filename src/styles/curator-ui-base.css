@@ -45,88 +45,87 @@
 }
 .win-button:hover {
   background-color: var(--sys-button-hover);
-  border-color: #3b78d7;
+  border-color: var(--sys-primary-hover, #3b78d7);
 }
 .win-button:active {
   background-color: var(--sys-button-active);
-  border-color: #005499;
+  border-color: var(--sys-primary-border, #005499);
 }
 .win-button:disabled {
-  background-color: #e1e1e1;
-  color: #838383;
-  border-color: #adadad;
+  background-color: var(--sys-button-disabled-bg, #e1e1e1);
+  color: var(--sys-button-disabled-text, #838383);
+  border-color: var(--sys-button-disabled-border, #adadad);
   cursor: not-allowed;
 }
-:root[data-theme="dark"] .win-button:disabled,
+::root[data-theme="dark"] .win-button:disabled,
 [data-theme="dark"] .win-button:disabled,
 body.ds-dark .win-button:disabled {
-  background-color: #2a2a2a;
-  color: #6e6e6e;
-  border-color: #3a3a3a;
+  background-color: var(--sys-button-disabled-bg, #2a2a2a);
+  color: var(--sys-button-disabled-text, #6e6e6e);
+  border-color: var(--sys-button-disabled-border, #3a3a3a);
 }
 .win-button.primary {
   background-color: var(--sys-highlight-bg, #0078d4);
   color: var(--sys-highlight-text, #ffffff);
-  border-color: #005a9e;
+  border-color: var(--sys-primary-border, #005a9e);
 }
 .win-button.primary:hover {
-  background-color: #106ebe;
+  background-color: var(--sys-primary-hover, #106ebe);
   border-color: #004578;
 }
 .win-button.primary:active {
-  background-color: #005a9e;
+  background-color: var(--sys-primary-active, #005a9e);
   border-color: #003f7f;
 }
-:root[data-theme="dark"] .win-button.primary,
+::root[data-theme="dark"] .win-button.primary,
 [data-theme="dark"] .win-button.primary,
 body.ds-dark .win-button.primary {
-  background-color: #0067c0;
-  border-color: #005a9e;
+  background-color: var(--sys-primary-active, #0067c0);
+  border-color: var(--sys-primary-border, #005a9e);
   color: #ffffff;
 }
-:root[data-theme="dark"] .win-button.primary:hover,
+::root[data-theme="dark"] .win-button.primary:hover,
 [data-theme="dark"] .win-button.primary:hover,
 body.ds-dark .win-button.primary:hover {
-  background-color: #1879cd;
+  background-color: var(--sys-primary-hover, #1879cd);
   border-color: #2b88d8;
   color: #ffffff;
 }
-:root[data-theme="dark"] .win-button.primary:active,
+::root[data-theme="dark"] .win-button.primary:active,
 [data-theme="dark"] .win-button.primary:active,
 body.ds-dark .win-button.primary:active {
-  background-color: #005a9e;
+  background-color: var(--sys-primary-active, #005a9e);
   border-color: #004578;
   color: #ffffff;
 }
-
 .win-button.active {
   background-color: var(--sys-highlight-bg, #0078d4);
   color: var(--sys-highlight-text, #ffffff);
-  border-color: #005a9e;
+  border-color: var(--sys-primary-border, #005a9e);
   font-weight: 600;
 }
 .win-button.active:hover {
-  background-color: #106ebe;
+  background-color: var(--sys-primary-hover, #106ebe);
   border-color: #004578;
 }
-:root[data-theme="dark"] .win-button.active,
+::root[data-theme="dark"] .win-button.active,
 [data-theme="dark"] .win-button.active,
 body.ds-dark .win-button.active {
-  background-color: #0067c0;
-  border-color: #005a9e;
+  background-color: var(--sys-primary-active, #0067c0);
+  border-color: var(--sys-primary-border, #005a9e);
   color: #ffffff;
 }
-:root[data-theme="dark"] .win-button.active:hover,
+::root[data-theme="dark"] .win-button.active:hover,
 [data-theme="dark"] .win-button.active:hover,
 body.ds-dark .win-button.active:hover {
-  background-color: #1879cd;
+  background-color: var(--sys-primary-hover, #1879cd);
   border-color: #2b88d8;
 }
 
 .input-field {
   background-color: var(--sys-window-bg);
   color: var(--sys-window-text);
-  border: 1px solid #7a7a7a;
+  border: 1px solid var(--sys-button-border, #7a7a7a);
   padding: 0 8px;
   height: 24px;
   line-height: 24px;
@@ -162,7 +161,7 @@ body.ds-dark .win-button.active:hover {
   display: none;
   align-items: center;
   justify-content: center;
-  color: #888;
+  color: var(--sys-text-muted, #888);
   font-size: 10px;
   width: 18px;
   height: 18px;
@@ -173,23 +172,24 @@ body.ds-dark .win-button.active:hover {
   box-sizing: border-box;
 }
 .input-clear-btn:hover {
-  background-color: #d0d0d0;
-  color: #333;
+  background-color: var(--sys-hover-bg, #d0d0d0);
+  color: var(--sys-window-text, #333);
 }
 .input-clear-btn:active {
-  background-color: #b0b0b0;
+  background-color: var(--sys-border-dark, #b0b0b0);
 }
-:root[data-theme="dark"] .input-clear-btn:hover,
+::root[data-theme="dark"] .input-clear-btn:hover,
 [data-theme="dark"] .input-clear-btn:hover,
 body.ds-dark .input-clear-btn:hover {
-  background-color: #3b3b3b;
-  color: #e0e0e0;
+  background-color: var(--sys-hover-bg, #3b3b3b);
+  color: var(--sys-window-text, #e0e0e0);
 }
-:root[data-theme="dark"] .input-clear-btn:active,
+::root[data-theme="dark"] .input-clear-btn:active,
 [data-theme="dark"] .input-clear-btn:active,
 body.ds-dark .input-clear-btn:active {
-  background-color: #4a4a4a;
+  background-color: var(--sys-button-active, #4a4a4a);
 }
+
 .input-wrapper.has-value .input-clear-btn {
   display: inline-flex;
 }
@@ -212,12 +212,12 @@ body.ds-dark .input-clear-btn:active {
   color: var(--sys-text-secondary, #333333);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .ds-icon-text {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .group-box-collapse-btn {
   background: none;
@@ -265,7 +265,7 @@ body.ds-dark .input-clear-btn:active {
 .group-box-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .tag-pill {

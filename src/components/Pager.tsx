@@ -39,7 +39,7 @@ export function Pager(props: PagerProps) {
 
   return (
     <div
-      class="ds-row ds-pager-widget"
+      class="ds-pager-widget"
       style={props.cssText}
     >
       <Button
@@ -57,7 +57,7 @@ export function Pager(props: PagerProps) {
         icon={<ChevronLeftIcon />}
       />
 
-      <div class="ds-row ds-pager-row">
+      <div class="ds-pager-row">
         <span class="ds-progress-text ds-pager-label">
           {t("dialogs.pager.pageLabel")}
         </span>

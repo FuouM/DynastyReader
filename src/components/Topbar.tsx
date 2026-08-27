@@ -1,6 +1,5 @@
 import { createSignal, onCleanup, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import { createElementSize } from "@solid-primitives/resize-observer";
 import {
   route,
   navigate,
@@ -62,29 +61,33 @@ export function Topbar() {
   };
 
   onCleanup(() => cancelHold());
-
-  let topbarEl: HTMLDivElement | undefined;
-  const size = createElementSize(() => topbarEl);
-  const isNarrow = () => (size.width ?? 0) < 620;
-  const isCompact = () => (size.width ?? 0) < 760;
-
   makeEventListener(window, "ds-open-settings", () => setSettingsOpen(true));
 
   return (
     <>
-      <div id="ds-topbar" ref={topbarEl} classList={{ "ds-narrow": isNarrow(), "ds-compact": isCompact() }}>
+      <div id="ds-topbar">
         <div id="ds-topbar-main">
-          <Show when={route().view !== "reader"}>
-            <SegmentedSwitch
-              id="ds-view-switch"
-              value={route().view}
-              onChange={(val) => navigate({ view: val as "browse" | "library" })}
-              options={[
-                { id: "ds-tab-browse", value: "browse", icon: <Icon name="compass" />, text: isNarrow() ? t("topbar.browse") : t("topbar.browseRecent"), title: t("topbar.browseRecent") },
-                { id: "ds-tab-library", value: "library", icon: <StorageIcon />, text: t("topbar.library"), title: t("topbar.library") },
-              ]}
-            />
-          </Show>
+          <SegmentedSwitch
+            id="ds-view-switch"
+            value={route().view}
+            onChange={(val) => navigate({ view: val as "browse" | "library" })}
+            options={[
+              {
+                id: "ds-tab-browse",
+                value: "browse",
+                icon: <Icon name="compass" />,
+                text: route().view === "reader" ? undefined : t("topbar.browse"),
+                title: t("topbar.browseRecent"),
+              },
+              {
+                id: "ds-tab-library",
+                value: "library",
+                icon: <StorageIcon />,
+                text: route().view === "reader" ? undefined : t("topbar.library"),
+                title: t("topbar.library"),
+              },
+            ]}
+          />
           <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
             <button
               type="button"
@@ -180,24 +183,28 @@ export function Topbar() {
           <Show when={banner() !== null}>
             <div id="ds-banner">{banner()}</div>
           </Show>
-          <div id="ds-actions">{actions()}</div>
-          <div id="ds-topbar-tools">
-            <Show when={route().view !== "reader"}>
+          <div id="ds-topbar-right">
+            <Show when={actions() !== null}>
+              <div id="ds-actions">{actions()}</div>
+            </Show>
+            <div id="ds-topbar-tools">
+              <Show when={route().view !== "reader"}>
+                <IconButton
+                  className="ds-btn-icon"
+                  id="ds-page-refresh-btn"
+                  icon={<RefreshIcon />}
+                  title={t("topbar.refreshPageTooltip")}
+                  onClick={() => window.location.reload()}
+                />
+              </Show>
               <IconButton
                 className="ds-btn-icon"
-                id="ds-page-refresh-btn"
-                icon={<RefreshIcon />}
-                title={t("topbar.refreshPageTooltip")}
-                onClick={() => window.location.reload()}
+                id="ds-settings-btn"
+                icon={<SettingsIcon />}
+                title={t("topbar.settingsTooltip")}
+                onClick={() => setSettingsOpen(true)}
               />
-            </Show>
-            <IconButton
-              className="ds-btn-icon"
-              id="ds-settings-btn"
-              icon={<SettingsIcon />}
-              title={t("topbar.settingsTooltip")}
-              onClick={() => setSettingsOpen(true)}
-            />
+            </div>
           </div>
         </div>
       </div>

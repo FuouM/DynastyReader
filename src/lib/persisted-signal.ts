@@ -1,32 +1,65 @@
 /**
- * Typed wrapper around `makePersisted` from `@solid-primitives/storage`.
- *
- * The upstream `makePersisted<T, S>` has two required type parameters, and its
- * `PersistedState<S>` return type (an intersection `S & { 2: ... }`) can break
- * destructuring when `S` is not narrowed.  This helper locks `S = Signal<T>`,
- * so the return type is always `Signal<T>` — safe to destructure as
- * `[getter, setter]`.
+ * Synchronously persisted SolidJS signal wrapper.
+ * Directly binds signal updates to localStorage with zero unrooted effect race conditions.
  */
-import { createSignal, type Signal } from "solid-js";
-import { makePersisted } from "@solid-primitives/storage";
+import { createSignal, type Signal, type Setter } from "solid-js";
 
 export interface PersistedSignalOptions<T> {
   name?: string;
   serialize?: (data: T) => string;
   deserialize?: (data: string) => T;
-  sync?: any;
+  sync?: boolean;
 }
 
 /**
- * Creates a `createSignal` and persists it to storage in one call.
+ * Creates a `createSignal` and persists it directly to localStorage.
  * Returns a plain `Signal<T>` (destructured as `[getter, setter]`).
  */
 export function persistedSignal<T>(
   defaultValue: T,
   options: PersistedSignalOptions<T>,
 ): Signal<T> {
-  return makePersisted<T, Signal<T>>(
-    createSignal<T>(defaultValue),
-    options as any,
-  ) as Signal<T>;
+  const key = options.name;
+  const serialize = options.serialize ?? ((v: T) => {
+    if (typeof v === "string") return v;
+    if (typeof v === "boolean" || typeof v === "number") return String(v);
+    return JSON.stringify(v);
+  });
+  const deserialize = options.deserialize ?? ((v: string) => {
+    try {
+      return JSON.parse(v);
+    } catch {
+      return v as unknown as T;
+    }
+  });
+
+  let initial = defaultValue;
+  if (key && typeof window !== "undefined" && window.localStorage) {
+    try {
+      const stored = window.localStorage.getItem(key);
+      if (stored !== null) {
+        initial = deserialize(stored);
+      }
+    } catch (err) {
+      console.warn(`[persistedSignal] failed to read ${key}:`, err);
+    }
+  }
+
+  const [signal, setSignal] = createSignal<T>(initial);
+
+  const setPersisted: Setter<T> = ((value?: unknown) => {
+    return setSignal((prev: T) => {
+      const next = typeof value === "function" ? (value as (prev: T) => T)(prev) : (value as T);
+      if (key && typeof window !== "undefined" && window.localStorage) {
+        try {
+          window.localStorage.setItem(key, serialize(next));
+        } catch (err) {
+          console.warn(`[persistedSignal] failed to write ${key}:`, err);
+        }
+      }
+      return next;
+    });
+  }) as unknown as Setter<T>;
+
+  return [signal, setPersisted];
 }

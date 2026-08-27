@@ -13,7 +13,7 @@
   padding: 2px 4px;
 }
 
-/* Reader View (tinted via .ds-dark on the container) */
+/* Reader View */
 #ds-reader-container {
   --ds-reader-bg: var(--sys-window-bg, #ffffff);
   --ds-reader-viewport-bg: #eaeaea;
@@ -41,11 +41,11 @@
   color: var(--sys-window-text, #333) !important;
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-top {
-  padding: calc(6px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 6px calc(12px + env(safe-area-inset-left, 0px)) !important;
+  padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
   border-bottom: 1px solid var(--sys-border-light, #ccc) !important;
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-bottom {
-  padding: 6px calc(12px + env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px)) !important;
+  padding: 4px calc(8px + env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px)) !important;
   border-top: 1px solid var(--sys-border-light, #ccc) !important;
 }
 #ds-reader-container.ds-fullscreen #ds-reader-viewport {
@@ -54,45 +54,48 @@
 
 /* Dark reader tint — windowed + fullscreen. `.win-button` / `.win-input` dark
    styling is already handled globally by the base [data-theme] palette. */
-#ds-reader-container.ds-dark {
+[data-theme="dark"] #ds-reader-container {
   --ds-reader-bg: #181818;
   --ds-reader-viewport-bg: #1e1e1e;
 }
-#ds-reader-container.ds-dark .ds-reader-nav {
+[data-theme="dark"] #ds-reader-container .ds-reader-nav {
   background: var(--ds-reader-bg) !important;
-  color: #ffffff !important;
+  color: var(--sys-window-text, #ffffff) !important;
+  /* reader nav border — intentionally darker than sys-border-dark */
   border-color: #383838 !important;
 }
-#ds-reader-container.ds-dark .ds-reader-nav.ds-reader-nav-top {
+[data-theme="dark"] #ds-reader-container .ds-reader-nav.ds-reader-nav-top {
+  /* reader nav border — intentionally darker than sys-border-dark */
   border-bottom: 1px solid #383838 !important;
 }
-#ds-reader-container.ds-dark .ds-reader-nav.ds-reader-nav-bottom {
+[data-theme="dark"] #ds-reader-container .ds-reader-nav.ds-reader-nav-bottom {
+  /* reader nav border — intentionally darker than sys-border-dark */
   border-top: 1px solid #383838 !important;
 }
-#ds-reader-container.ds-dark .ds-reader-nav-top > .nav-controls:not(:first-child) {
+[data-theme="dark"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
   border-top-color: rgba(255, 255, 255, 0.08);
 }
-#ds-reader-container.ds-dark .ds-reader-progress-pill {
-  background: #282828;
-  border-color: #444444;
-  color: #e0e0e0;
+[data-theme="dark"] #ds-reader-container .ds-reader-progress-pill {
+  background: var(--sys-control-bg, #282828);
+  border-color: var(--sys-border-dark, #444444);
+  color: var(--sys-window-text, #e0e0e0);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-#ds-reader-container.ds-dark .ds-reader-progress-track {
-  background: #333333;
+[data-theme="dark"] #ds-reader-container .ds-reader-progress-track {
+  background: var(--sys-border-medium, #333333);
 }
-#ds-reader-container.ds-dark #ds-reader-viewport {
+[data-theme="dark"] #ds-reader-container #ds-reader-viewport {
   background: var(--ds-reader-viewport-bg) !important;
 }
-#ds-reader-container.ds-dark .ds-progress-text {
-  color: #cccccc;
+[data-theme="dark"] #ds-reader-container .ds-progress-text {
+  color: var(--sys-text-secondary, #cccccc);
 }
-#ds-reader-container.ds-dark .ds-slot-state {
+[data-theme="dark"] #ds-reader-container .ds-slot-state {
   color: #aaa;
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.15);
 }
-#ds-reader-container.ds-dark.ds-fullscreen {
+[data-theme="dark"] #ds-reader-container.ds-fullscreen {
   --ds-reader-viewport-bg: #121212;
 }
 
@@ -101,26 +104,30 @@
   flex-direction: column;
   gap: 4px;
   font-size: 11px;
-  color: #666;
+  color: var(--sys-text-muted, #666);
   width: 100%;
   max-width: 100vw;
   box-sizing: border-box;
   background: var(--sys-window-bg, #fafafa);
   flex-shrink: 0;
   z-index: 20;
-  overflow-x: hidden;
+  overflow: visible;
 }
 .ds-reader-nav.ds-reader-nav-top {
+  min-height: 32px;
   padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px));
   border-bottom: 1px solid var(--sys-border-light, #ccc);
   position: sticky;
   top: 0;
+  box-sizing: border-box;
 }
 .ds-reader-nav.ds-reader-nav-bottom {
+  min-height: 32px;
   padding: 4px calc(8px + env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px));
   border-top: 1px solid var(--sys-border-light, #ccc);
   position: sticky;
   bottom: 0;
+  box-sizing: border-box;
 }
 .ds-reader-nav-row {
   display: flex;
@@ -129,11 +136,17 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
   box-sizing: border-box;
 }
 .ds-reader-nav-row.nav-main {
   justify-content: space-between;
   width: 100%;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
 }
 .ds-reader-nav-row.nav-controls {
   justify-content: center;
@@ -141,17 +154,17 @@
   gap: 4px;
 }
 .ds-reader-nav-top > .nav-controls:not(:first-child) {
-  padding-top: 2px;
+  padding-top: 4px;
   border-top: 1px solid var(--sys-border-light, rgba(0, 0, 0, 0.06));
 }
-#ds-reader-container.ds-dark .ds-reader-nav-top > .nav-controls:not(:first-child) {
+[data-theme="dark"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
   border-top-color: rgba(255, 255, 255, 0.08);
 }
 
 .ds-ctrl-zoom-group {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex-shrink: 0;
 }
 .ds-ctrl-zoom-group.ds-zoom-disabled {
@@ -162,6 +175,9 @@
   max-width: 90px;
   flex-shrink: 0;
 }
+.ds-ctrl-text {
+  display: none;
+}
 
 /* Widescreen 1-row reader toolbar */
 @media (min-width: 1100px) {
@@ -169,8 +185,12 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 3px 8px;
+    gap: 4px;
+    height: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
   }
   .ds-reader-nav.ds-reader-nav-top .ds-reader-nav-row.nav-main {
     width: auto;
@@ -185,53 +205,35 @@
     border-top: none !important;
     padding-top: 0 !important;
   }
-  /* In 1-row mode between 1100px and 1380px, keep control buttons icon-only so they never overflow */
-  .ds-reader-nav.ds-reader-nav-top .ds-ctrl-text {
-    display: none;
-  }
 }
 
 @media (min-width: 1380px) {
-  .ds-reader-nav.ds-reader-nav-top .ds-ctrl-text {
+  .ds-ctrl-text {
     display: inline;
   }
 }
 
-/* 2-row compact mode */
-@media (max-width: 1099px) {
-  .ds-reader-nav-row.nav-controls .ds-ctrl-text {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .ds-reader-nav-row.nav-controls {
-    justify-content: center;
-    gap: 3px;
-  }
-  .ds-ctrl-fit-select {
-    width: 82px;
-    max-width: 82px;
-  }
-  .ds-reader-nav .win-button {
-    padding: 2px 5px;
-  }
-}
-
 @media (max-width: 500px) {
+  /* Narrow phone: compress toolbar, drop non-essential labels and controls */
   .ds-nav-btn-ch .ds-ch-btn-text {
     display: none;
   }
   .ds-reader-nav {
     padding: 2px 4px;
-    gap: 2px;
+    gap: 4px;
   }
   .ds-reader-nav-row {
-    gap: 2px;
+    gap: 4px;
   }
-}
-
-@media (max-width: 460px) {
+  .ds-reader-nav-row.nav-controls {
+    justify-content: center;
+  }
+  .ds-ctrl-fit-select {
+    width: 74px;
+    max-width: 74px;
+    font-size: 10px;
+    padding: 1px 2px;
+  }
   .ds-reader-progress-label .ds-prog-cached-dot,
   .ds-reader-progress-label .ds-prog-cached {
     display: none !important;
@@ -241,17 +243,6 @@
   }
   .ds-ctrl-zoom-group.ds-zoom-disabled {
     display: none;
-  }
-  .ds-ctrl-fit-select {
-    width: 74px;
-    max-width: 74px;
-    font-size: 10px;
-    padding: 1px 2px;
-  }
-  .ds-reader-nav .win-button {
-    font-size: 10px;
-    padding: 2px 4px;
-    min-width: 20px;
   }
 }
 
@@ -267,11 +258,6 @@
   }
 }
 
-@media (max-width: 300px) {
-  .ds-reader-progress-label .ds-prog-pct {
-    display: none !important;
-  }
-}
 .ds-nav-btn-ch {
   flex-shrink: 0;
 }
@@ -298,7 +284,9 @@
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
-  gap: 3px;
+  height: 24px;
+  max-height: 24px;
+  gap: 2px;
   padding: 0 6px;
   box-sizing: border-box;
 }
@@ -307,12 +295,13 @@
   align-self: center;
   align-items: center;
   justify-content: center;
-  height: 22px;
-  min-height: 22px;
-  padding: 0 8px;
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  padding: 0 6px;
   background: var(--sys-control-bg, #ececec);
   border: 1px solid var(--sys-border-light, #bbb);
-  border-radius: 3px;
+  border-radius: 2px;
   font-size: 11px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -321,6 +310,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   max-width: 100%;
   box-sizing: border-box;
+  line-height: 18px;
 }
 .ds-reader-progress-label {
   display: inline-flex;
@@ -335,7 +325,7 @@
 .ds-prog-page-slot {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   font-variant-numeric: tabular-nums;
   line-height: normal;
 }
@@ -383,16 +373,16 @@
 
 .ds-reader-progress-track {
   width: 100%;
-  height: 4px;
+  height: 2px;
   background: var(--sys-border-light, #d8d8d8);
-  border-radius: 2px;
+  border-radius: 1px;
   overflow: hidden;
 }
 .ds-reader-progress-fill {
   height: 100%;
   width: 0%;
   background: var(--sys-primary, #0078d4);
-  border-radius: 2px;
+  border-radius: 1px;
   transition: width 0.25s ease;
 }
 #ds-reader-viewport {
@@ -432,7 +422,7 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -538,9 +528,8 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   pointer-events: none;
-  z-index: 100;
   opacity: 0;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
@@ -558,7 +547,7 @@
 }
 .ds-slot-loading {
   min-height: 200px;
-  background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  background: linear-gradient(90deg, var(--sys-control-bg, #e0e0e0) 25%, var(--sys-hover-bg, #d0d0d0) 50%, var(--sys-control-bg, #e0e0e0) 75%);
   background-size: 200% 100%;
   animation: ds-shimmer 1.2s ease-in-out infinite;
 }
@@ -952,9 +941,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 11px;
-  color: #888;
+  color: var(--sys-text-muted, #888);
   padding: 40px 20px;
   min-height: 240px;
   width: 100%;
@@ -1000,7 +989,7 @@
 .ds-progress-text {
   font-size: 11px;
   font-weight: 500;
-  color: #333;
+  color: var(--sys-window-text, #333);
 }
 
 /* In-Gesture Finger-Tracking Circle-to-Circle Unlock (WinForms Desktop Aesthetic) */
@@ -1032,10 +1021,10 @@
   box-sizing: border-box;
 }
 
-#ds-reader-container.ds-dark .ds-overscroll-finger-circle {
-  background: #2d2d2d;
-  color: #ffffff;
-  border-color: #0078d4;
+[data-theme="dark"] #ds-reader-container .ds-overscroll-finger-circle {
+  background: var(--sys-control-bg, #2d2d2d);
+  color: var(--sys-window-text, #ffffff);
+  border-color: var(--sys-highlight-bg, #0078d4);
 }
 
 .ds-overscroll-finger-circle.ds-snap-ready {
@@ -1065,10 +1054,10 @@
   z-index: 2010;
 }
 
-#ds-reader-container.ds-dark .ds-overscroll-target-ring {
-  background: #2d2d2d;
-  color: #60a5fa;
-  border-color: #0078d4;
+[data-theme="dark"] #ds-reader-container .ds-overscroll-target-ring {
+  background: var(--sys-control-bg, #2d2d2d);
+  color: var(--sys-primary, #60a5fa);
+  border-color: var(--sys-highlight-bg, #0078d4);
 }
 
 .ds-overscroll-target-ring.ds-snap-ready {
@@ -1091,7 +1080,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   width: 260px;
   min-width: 260px;
   max-width: 260px;
@@ -1101,10 +1090,10 @@
   z-index: 2010;
 }
 
-#ds-reader-container.ds-dark .ds-overscroll-target-card {
-  background: #2d2d2d;
-  color: #f0f0f0;
-  border-color: #555555;
+[data-theme="dark"] #ds-reader-container .ds-overscroll-target-card {
+  background: var(--sys-control-bg, #2d2d2d);
+  color: var(--sys-window-text, #f0f0f0);
+  border-color: var(--sys-border-dark, #555555);
 }
 
 .ds-overscroll-target-badge {
@@ -1131,11 +1120,11 @@
   font-weight: 500;
 }
 
-#ds-reader-container.ds-dark .ds-overscroll-target-hint {
-  color: #a0a0a0;
+[data-theme="dark"] #ds-reader-container .ds-overscroll-target-hint {
+  color: var(--sys-text-muted, #a0a0a0);
 }
 
-/* Tap Zone Visual Guide Overlay — WinForms flat */
+/* Tap Zone Visual Guide Overlay — Clean Flat Translucent Guide */
 .ds-tap-zone-guide {
   position: fixed;
   inset: 0;
@@ -1144,7 +1133,7 @@
   z-index: 1500;
   pointer-events: none;
   user-select: none;
-  animation: ds-modal-fade 0.18s ease forwards;
+  background: rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
 }
 
@@ -1153,39 +1142,39 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
   box-sizing: border-box;
-  background: var(--sys-control-bg, #ececec);
-  border: 1px solid var(--sys-border-dark, #707070);
+  background: transparent;
+  border-right: 1px dashed rgba(255, 255, 255, 0.3);
+}
+
+.ds-tap-zone:last-child {
+  border-right: none;
 }
 
 .ds-tap-zone-side {
   width: 22%;
-  color: var(--sys-window-text, #000);
+  color: #ffffff;
 }
 
 .ds-tap-zone-center {
   width: 56%;
-  border-left: none;
-  border-right: none;
-  color: var(--sys-window-text, #000);
+  color: #ffffff;
 }
 
 .ds-tap-zone.is-active {
-  background: var(--sys-highlight-bg, #0078d7) !important;
-  border-color: #005499 !important;
-  color: #ffffff !important;
+  background: rgba(0, 120, 215, 0.25) !important;
 }
 
 .ds-tap-zone-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  border: 1px solid var(--sys-border-dark, #707070);
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid #505050;
   border-radius: 2px;
-  background: var(--sys-window-bg, #ffffff);
-  color: var(--sys-window-text, #000);
+  background: #202020;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
@@ -1193,8 +1182,8 @@
 }
 
 .ds-tap-zone.is-active .ds-tap-zone-pill {
-  background: var(--sys-window-bg, #ffffff);
-  color: var(--sys-highlight-bg, #0078d7);
-  border-color: var(--sys-highlight-bg, #0078d7);
+  background: var(--sys-highlight-bg, #0078d7) !important;
+  border-color: var(--sys-primary-border, #005a9e) !important;
+  color: #ffffff !important;
 }
 }

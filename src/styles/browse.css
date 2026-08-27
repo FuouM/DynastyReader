@@ -17,7 +17,7 @@
 .ds-feed-item {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
   padding: 6px 8px;
   content-visibility: auto;
   contain-intrinsic-block-size: auto 70px;
@@ -78,7 +78,7 @@
 .ds-tag-row {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 4px;
   font-size: 11px;
   margin-top: 1px;
 }
@@ -96,43 +96,9 @@
 .ds-tag-row-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 4px;
   flex: 1 1 auto;
   min-width: 0;
-}
-@media (max-width: 680px) {
-  .ds-action-btn-text {
-    display: none !important;
-  }
-
-  .ds-item-actions .win-button,
-  .ds-item-actions .ds-btn-compact,
-  .ds-feed-actions .win-button,
-  .ds-feed-actions .ds-btn-compact,
-  .ds-feed-actions .ds-btn-icon,
-  .ds-feed-actions .ds-btn-icon-sm {
-    width: 24px !important;
-    height: 24px !important;
-    min-width: 24px !important;
-    max-width: 24px !important;
-    aspect-ratio: 1 / 1;
-    padding: 0 !important;
-    font-size: 11.5px;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-sizing: border-box;
-  }
-
-  .ds-tag-row {
-    gap: 4px;
-  }
-
-  .ds-tag-row-label {
-    width: 48px;
-    min-width: 48px;
-    font-size: 9.5px;
-  }
 }
 .ds-feed-cover {
   width: 42px;
@@ -171,7 +137,7 @@
   padding: 3px 12px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   cursor: pointer;
 }
@@ -204,7 +170,7 @@
 .ds-status-item {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 .ds-status-item b {
   color: var(--sys-window-text, #333);
@@ -258,14 +224,16 @@
 .ds-feed-status-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: wrap;
   justify-content: flex-end;
   margin-left: auto;
 }
+#ds-browse-top-pager,
 .ds-feed-status-pager-wrap {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
 }
 .ds-scroll-top-btn,
 .win-button.ds-scroll-top-btn {
@@ -276,8 +244,7 @@
   max-height: 24px;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  box-sizing: border-box;
+  gap: 4px;
   flex-shrink: 0;
   line-height: normal;
 }
@@ -323,5 +290,15 @@
 .ds-typeahead-type {
   font-size: 10px;
   color: var(--sys-text-muted, #888);
+}
+
+#ds-search-btn,
+#ds-url-btn {
+  width: 76px;
+  min-width: 76px;
+  max-width: 76px;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 }

@@ -13,7 +13,6 @@ const CHECK_UPDATES_POLL_INTERVAL_MS = 50;
 const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, type JSX } from "solid-js";
-import { createMediaQuery } from "@solid-primitives/media";
 import { persistedSignal } from "../lib/persisted-signal";
 import { isMobile, navigate, route, setRoute, showBanner } from "../stores";
 import { t } from "../i18n";
@@ -87,8 +86,6 @@ export function BrowseView() {
     if (pollTimer !== null) window.clearTimeout(pollTimer);
   });
   const revision = useBlacklistRevision();
-  const isCompact = createMediaQuery("(max-width: 680px)");
-
   const [pendingSearch, setPendingSearch] = createSignal<{
     searchQuery?: string;
     withTag?: string;
@@ -302,7 +299,6 @@ export function BrowseView() {
               id="ds-search-btn"
               icon={<SearchIcon />}
               text={t("browse.searchAndGo.searchButton")}
-              cssText="width:86px;justify-content:center;flex-shrink:0;"
               onClick={() => runSearch(searchBoxValue())}
             />
           </div>
@@ -326,7 +322,6 @@ export function BrowseView() {
               id="ds-url-btn"
               icon={<ExternalLinkIcon />}
               text={t("browse.searchAndGo.openButton")}
-              cssText="width:86px;justify-content:center;flex-shrink:0;"
               onClick={openByUrl}
             />
           </div>
@@ -340,7 +335,7 @@ export function BrowseView() {
         tabs={getBrowseTabs()}
         activeTab={activeTab()}
         onSwitch={(id) => switchTab(id as BrowseTabId)}
-        compact={isCompact() || isMobile()}
+        compact={isMobile()}
         right={
           <>
             <IconButton
@@ -352,7 +347,7 @@ export function BrowseView() {
               icon={checkBtnIcon()}
               text={checkBtnText()}
             />
-            <div id="ds-browse-top-pager" class="ds-row ds-ml-auto">
+            <div id="ds-browse-top-pager" class="ds-ml-auto">
               <Show when={topCfg() && topCfg()!.totalPages > 1}>
                 <Pager
                   totalPages={topCfg()!.totalPages}

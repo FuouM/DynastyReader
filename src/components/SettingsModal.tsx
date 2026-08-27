@@ -131,7 +131,7 @@ export function SettingsModal(props: SettingsModalProps) {
                   <IconButton
                     className=""
                     id="ds-settings-open-hotkeys"
-                    cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;"
+                    cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
                     icon={<Icon name="keyboard" />}
                     text={t("settings.openHotkeysModal")}
                     onClick={() => setCurrentPage("hotkeys")}
@@ -149,7 +149,7 @@ export function SettingsModal(props: SettingsModalProps) {
           <div class="ds-settings-subpage-header">
             <IconButton
               className="ds-btn-sm"
-              cssText="display:inline-flex;align-items:center;gap:5px;font-weight:600;"
+              cssText="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
               icon={<Icon name="arrow-left" />}
               text={t("settings.backToSettings")}
               onClick={() => setCurrentPage("main")}

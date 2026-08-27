@@ -224,6 +224,10 @@ export function routeLabel(r: Route): RouteLabel {
 
 /** Site title shown in the plugin top bar. */
 export function routeTitle(r: Route): string {
-  if (r.view === "browse") return t("routes.browse");
+  // Root browse, library, and reader views are represented by the view switch or HUD;
+  // omitting duplicate strings prevents title collision next to the history buttons.
+  if (r.view === "browse") return "";
+  if (r.view === "library" && r.collectionId === undefined) return "";
+  if (r.view === "reader") return "";
   return routeLabel(r).title;
 }

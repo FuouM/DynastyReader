@@ -118,8 +118,8 @@ export function ReaderActions(props: ReaderActionsProps) {
     <>
       <Show when={getSeriesPermalink()}>
         <Button
+          className="ds-btn-icon"
           icon={<StorageIcon />}
-          text={t("reader.toolbar.seriesButton")}
           title={t("reader.toolbar.viewSeries")}
           onClick={() =>
             navigate({
@@ -138,15 +138,14 @@ export function ReaderActions(props: ReaderActionsProps) {
         onClick={() => void toggleBookmark()}
       />
       <Button
+        className="ds-btn-icon"
         icon={<CloudDownloadIcon />}
-        text={t("reader.toolbar.cacheChapter")}
         title={t("reader.toolbar.cacheChapterTooltip")}
         onClick={cacheChapter}
       />
       <Button
         className="ds-btn-icon"
         icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
-        title={t("reader.toolbar.copyLink")}
         onClick={() => void copyLink()}
       />
       <Button

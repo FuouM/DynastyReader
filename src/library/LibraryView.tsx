@@ -29,7 +29,7 @@ import {
   clearHistory,
   createCollection,
 } from "../db";
-import { ConfirmDeleteButton, IconText, IconButton } from "../components/Button";
+import { Button, ConfirmDeleteButton, IconText, IconButton } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import { SubTabs } from "../components/SubTabs";
@@ -248,7 +248,7 @@ function LibraryGrid() {
           tabs={getLibraryTabs()}
           activeTab={activeTab()}
           onSwitch={(id) => switchTab(id as LibraryTabId)}
-          compact={isNarrowOrMobile()}
+          compact={false}
           right={
             <>
               <Show when={activeTab() === "collections"}>
@@ -421,7 +421,7 @@ function LibraryActions(props: {
 }) {
   return (
     <>
-      <IconButton
+      <Button
         id="ds-library-refresh-btn"
         icon={
           <Show
@@ -436,33 +436,25 @@ function LibraryActions(props: {
           </Show>
         }
         text={
-          <Show
-            when={props.refreshing()}
-            fallback={
-              <Show when={props.justUpdated()} fallback={t("library.refreshLibraryButton")}>
-                {t("library.refreshUpdated")}
-              </Show>
-            }
-          >
-            {t("library.refreshRefreshing")}
-          </Show>
+          props.refreshing()
+            ? t("library.refreshRefreshing")
+            : props.justUpdated()
+              ? t("library.refreshUpdated")
+              : t("library.refreshLibraryButton")
         }
-        className="ds-btn-sm"
         title={t("library.refreshLibraryTooltip")}
         disabled={props.refreshing() || props.justUpdated()}
         onClick={props.onRefresh}
       />
-      <IconButton
+      <Button
         icon={<StorageIcon />}
         text={t("library.cacheManagementButton")}
-        className="ds-btn-compact"
         title={t("library.cacheManagementTooltip")}
         onClick={() => navigate({ view: "cache" })}
       />
-      <IconButton
+      <Button
         icon={<BlacklistIcon />}
         text={t("library.seriesBlacklistButton")}
-        className="ds-btn-compact"
         title={t("library.seriesBlacklistTooltip")}
         onClick={() => navigate({ view: "blacklist" })}
       />

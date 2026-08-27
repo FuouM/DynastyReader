@@ -5,13 +5,13 @@
  * writes back through session control methods.
  */
 
-import { createEffect, createSignal, onCleanup, Show, type Accessor } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show, on, type Accessor } from "solid-js";
 import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { debounce } from "@solid-primitives/scheduled";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode, ReaderMode, PagedLayout, ReadingDirection } from "../types/reader";
-import { theme, setTheme, isMobile, goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, showBanner, SITE_ROOT } from "../stores";
+import { theme, setTheme, isMobile, goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, showBanner, SITE_ROOT, navigate } from "../stores";
 import { HistoryDropdown } from "../components/HistoryDropdown";
 import { decodeEntities } from "../utils/html";
 import { addBookmark, removeBookmark } from "../db";
@@ -284,7 +284,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   let closeTimer: number | null = null;
 
   createEffect(() => {
-    const open = s.controlsOpen();
+    const open = s.controlsOpen() && isMobile();
     if (open) {
       if (closeTimer !== null) {
         clearTimeout(closeTimer);
@@ -460,6 +460,24 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
 
               {/* Chapter Actions */}
               <div class="ds-reader-toolbar-grid">
+                <Button
+                  icon={<Icon name="compass" />}
+                  text={t("bottomNav.browse")}
+                  cssText="height:32px;font-size:11.5px;justify-content:center;"
+                  onClick={() => {
+                    requestClose();
+                    navigate({ view: "browse" });
+                  }}
+                />
+                <Button
+                  icon={<StorageIcon />}
+                  text={t("bottomNav.library")}
+                  cssText="height:32px;font-size:11.5px;justify-content:center;"
+                  onClick={() => {
+                    requestClose();
+                    navigate({ view: "library" });
+                  }}
+                />
                 <Show when={s.seriesPermalink()}>
                   <Button
                     icon={<StorageIcon />}
@@ -588,6 +606,17 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
   };
 
   onCleanup(() => cancelHold());
+
+  // When resizing across mobile/desktop boundary, close controls so desktop row doesn't open mobile sheet
+  createEffect(
+    on(
+      isMobile,
+      () => {
+        s.setControlsOpen(false);
+      },
+      { defer: true }
+    )
+  );
   const handleOpenSeries = () => {
     s.gotoSeries();
   };
@@ -622,6 +651,26 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
       >
         <Show when={isMobile()}>
           <div class="ds-reader-nav-row nav-main ds-reader-mobile-row--full">
+            <div class="ds-segmented-switch ds-nav-history-switch ds-reader-view-switch">
+              <button
+                type="button"
+                class="ds-segmented-btn"
+                id="ds-reader-nav-browse"
+                title={t("topbar.browseRecent")}
+                onClick={() => navigate({ view: "browse" })}
+              >
+                <span class="ds-btn-icon-wrap"><Icon name="compass" /></span>
+              </button>
+              <button
+                type="button"
+                class="ds-segmented-btn"
+                id="ds-reader-nav-library"
+                title={t("topbar.library")}
+                onClick={() => navigate({ view: "library" })}
+              >
+                <span class="ds-btn-icon-wrap"><StorageIcon /></span>
+              </button>
+            </div>
             <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
               <button
                 type="button"
