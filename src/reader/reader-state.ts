@@ -31,6 +31,8 @@ export interface ReaderState {
   // Loaded data
   seriesPermalink: () => string | null;
   setSeriesPermalink: (v: string | null) => void;
+  seriesType: () => string | null;
+  setSeriesType: (v: string | null) => void;
   seriesName: () => string;
   setSeriesName: (v: string) => void;
   chapterPermalink: () => string;
@@ -113,6 +115,7 @@ export interface ReaderState {
 
 export function createReaderState(): ReaderState {
   const [seriesPermalink, setSeriesPermalink] = createSignal<string | null>(null);
+  const [seriesType, setSeriesType] = createSignal<string | null>(null);
   const [seriesName, setSeriesName] = createSignal("");
   const [chapterPermalink, setChapterPermalink] = createSignal("");
   const [chapterTitle, setChapterTitle] = createSignal("");
@@ -214,6 +217,8 @@ export function createReaderState(): ReaderState {
     setSeriesName,
     chapterPermalink,
     setChapterPermalink,
+    seriesType,
+    setSeriesType,
     chapterTitle,
     setChapterTitle,
     chapterList,

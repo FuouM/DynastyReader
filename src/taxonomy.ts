@@ -99,10 +99,9 @@ export function isContentKind(kind?: string | null): boolean {
 /**
  * Canonical chapter container kinds (ordered by priority when selecting a parent container for a chapter).
  * Series, Anthology, and Issue are structured sequential chapter containers.
- * Doujin tags are copyright/parody tags rather than sequential chapter containers.
+ * Doujin acts as a container for doujinshi/doujin works when no higher-level container exists.
  */
-export const CHAPTER_CONTAINER_KINDS = ["series", "anthology", "issue"] as const;
-
+export const CHAPTER_CONTAINER_KINDS = ["series", "anthology", "issue", "doujin"] as const;
 /** Checks whether a tag type represents a chapter container (Series, Anthology, Issue). */
 export function isContainerKind(type?: string | null): boolean {
   if (!type) return false;

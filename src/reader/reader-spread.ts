@@ -1,3 +1,4 @@
+import { decodeEntities } from "../utils/html";
 import type { ChapterTag, SeriesTag } from "../types/api";
 import type { ReadingDirection, SpreadGroup } from "../types/reader";
 import type { ChapterRef } from "../types/routes";
@@ -150,22 +151,46 @@ export function getAdjacentChapters(
 ): { prevCh: ChapterRef | null; nextCh: ChapterRef | null } {
   if (!chapterList || chapterList.length === 0) return { prevCh: null, nextCh: null };
 
-  const clean = (p: string) => p.toLowerCase().replace(/^\/+|\/+$/g, "").trim();
-  const curPermalink = clean(permalink);
-  const curTitle = (chapterTitle || "").trim().toLowerCase();
+  const normalize = (p: string): string => {
+    let s = (p || "").toLowerCase().replace(/^\/+|\/+$/g, "").trim();
+    try {
+      s = decodeURIComponent(s);
+    } catch {
+      // ignore malformed URI component
+    }
+    return s.replace(/\.json$/i, "").trim();
+  };
+
+  const curPermalink = normalize(permalink);
+  const curTitle = decodeEntities(chapterTitle || "").trim().toLowerCase();
 
   let curIdx = chapterList.findIndex((x) => {
-    const p = clean(x.permalink);
-    return (
-      (curPermalink.length > 0 && (p === curPermalink || p.endsWith(`/${curPermalink}`) || curPermalink.endsWith(`/${p}`))) ||
-      (curTitle.length > 0 && Boolean(x.title && x.title.trim().toLowerCase() === curTitle))
-    );
+    const p = normalize(x.permalink);
+    if (curPermalink.length > 0) {
+      if (p === curPermalink || p.endsWith(`/${curPermalink}`) || curPermalink.endsWith(`/${p}`)) {
+        return true;
+      }
+      const pNorm = p.replace(/[-_]+/g, "_");
+      const curNorm = curPermalink.replace(/[-_]+/g, "_");
+      if (pNorm === curNorm || pNorm.endsWith(`/${curNorm}`) || curNorm.endsWith(`/${pNorm}`)) {
+        return true;
+      }
+    }
+    if (curTitle.length > 0 && x.title) {
+      const xTitle = decodeEntities(x.title).trim().toLowerCase();
+      if (xTitle === curTitle) return true;
+    }
+    return false;
   });
 
   if (curIdx < 0 && curPermalink.length > 0) {
     const baseSlug = curPermalink.split("/").pop();
     if (baseSlug) {
-      curIdx = chapterList.findIndex((x) => clean(x.permalink).endsWith(baseSlug));
+      const baseNorm = baseSlug.replace(/[-_]+/g, "_");
+      curIdx = chapterList.findIndex((x) => {
+        const xNorm = normalize(x.permalink).replace(/[-_]+/g, "_");
+        return xNorm === baseNorm || xNorm.endsWith(`/${baseNorm}`) || xNorm.endsWith(baseNorm);
+      });
     }
   }
 

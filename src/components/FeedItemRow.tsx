@@ -138,12 +138,13 @@ export function FeedItemRow(props: FeedItemRowProps) {
   };
 
   const openChapter = (): void => {
+    const containerTag = getChapterContainerTag(rawTags);
     navigate({
       view: "reader",
       chapterPermalink: ch.permalink,
       chapterTitle: ch.title,
-      seriesPermalink: coverInfo.seriesPermalink || (ch.series ? ch.series.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") : undefined),
-      seriesName: coverInfo.seriesName || ch.series || undefined,
+      seriesPermalink: coverInfo.seriesPermalink || containerTag?.permalink || undefined,
+      seriesName: coverInfo.seriesName || containerTag?.name || ch.series || undefined,
     });
   };
 

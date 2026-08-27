@@ -71,9 +71,9 @@ function collectChapters(series: Series): ChapterMeta[] {
       volumeHeader = t.header;
       continue;
     }
-    if (t.title && t.permalink) {
+    if (t.permalink) {
       out.push({
-        title: t.title,
+        title: t.title || t.permalink,
         permalink: t.permalink,
         released_on: t.released_on ?? undefined,
         volumeHeader,

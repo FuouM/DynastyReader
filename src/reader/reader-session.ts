@@ -32,7 +32,7 @@ import {
   getCachedPages,
   getReadingProgress,
 } from "../db";
-import type { Chapter, ChapterPage } from "../types/api";
+import type { Chapter, ChapterPage, Series } from "../types/api";
 import type { ChapterRef, Route } from "../types/routes";
 import { getPrevChapterStartPage } from "./settings";
 import type {
@@ -102,6 +102,9 @@ export class ReaderSession implements ReaderQueueHost {
   // Loaded data ------------------------------------------------------------
   readonly seriesPermalink: () => string | null;
   readonly setSeriesPermalink: (val: string | null) => void;
+
+  readonly seriesType: () => string | null;
+  readonly setSeriesType: (val: string | null) => void;
 
   readonly seriesName: () => string;
   readonly setSeriesName: (val: string) => void;
@@ -205,6 +208,9 @@ export class ReaderSession implements ReaderQueueHost {
   scrollRaf: number | null = null;
   scrollAnimRaf: number | null = null;
   private readonly cleanupFns: (() => void)[] = [];
+  private containerTagPermalink: string | null = null;
+  private containerTagType: string | null = null;
+  private chapterListPromise: Promise<ChapterRef[]> | null = null;
   private actionsDispose: (() => void) | null = null;
   private readonly sessionOwner = getOwner();
   // Derived state -----------------------------------------------------------
@@ -236,6 +242,8 @@ export class ReaderSession implements ReaderQueueHost {
     this.state = createReaderState();
     this.seriesPermalink = this.state.seriesPermalink;
     this.setSeriesPermalink = this.state.setSeriesPermalink;
+    this.seriesType = this.state.seriesType;
+    this.setSeriesType = this.state.setSeriesType;
     this.seriesName = this.state.seriesName;
     this.setSeriesName = this.state.setSeriesName;
     this.chapterPermalink = this.state.chapterPermalink;
@@ -669,50 +677,84 @@ export class ReaderSession implements ReaderQueueHost {
     });
   }
 
-  async gotoPrevChapter(): Promise<void> {
-    let { prevCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
-    if (!prevCh && this.chapterList().length === 0 && this.seriesPermalink()) {
+  async loadChapterList(force = false): Promise<ChapterRef[]> {
+    const permalink = this.seriesPermalink();
+    if (!permalink) return [];
+    try {
+      let s: Series | null = null;
       try {
-        const s = await fetchSeries(this.seriesPermalink()!, false, undefined);
-        const cl: ChapterRef[] = [];
-        for (const t of s.taggings ?? []) {
-          if (t.header) continue;
-          if (t.permalink) cl.push({ title: t.title || t.permalink, permalink: t.permalink, released_on: t.released_on ?? undefined });
-        }
-        if (cl.length > 0) {
-          this.setChapterList(cl);
-          ({ prevCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle()));
-        }
+        s = await fetchSeries(permalink, force, this.seriesType() ?? undefined);
       } catch (err) {
-        console.warn("[reader-session] gotoPrevChapter rehydrate failed:", err);
+        if (this.containerTagPermalink && this.containerTagPermalink !== permalink) {
+          try {
+            s = await fetchSeries(this.containerTagPermalink, force, this.containerTagType ?? undefined);
+            if (s) {
+              this.setSeriesPermalink(this.containerTagPermalink);
+              if (this.containerTagType) this.setSeriesType(this.containerTagType);
+            }
+          } catch {
+            // fallback error ignored, throw original below if s is null
+          }
+        }
+        if (!s) throw err;
+      }
+      if (this.disposedFlag || !s) return [];
+
+      const cl: ChapterRef[] = [];
+      for (const t of s.taggings ?? []) {
+        if (t.header) continue;
+        if (t.permalink) {
+          cl.push({
+            title: t.title || t.permalink,
+            permalink: t.permalink,
+            released_on: t.released_on ?? undefined,
+          });
+        }
+      }
+      if (cl.length > 0) {
+        this.setChapterList(cl);
+      }
+      return cl;
+    } catch (err) {
+      console.warn("[reader-session] loadChapterList failed:", err);
+      return [];
+    }
+  }
+
+  async gotoPrevChapter(): Promise<void> {
+    if (this.chapterList().length === 0 && this.chapterListPromise) {
+      await this.chapterListPromise;
+    }
+    let { prevCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
+    if (!prevCh && this.seriesPermalink()) {
+      const cl = await this.loadChapterList(this.chapterList().length === 0);
+      if (cl.length > 0) {
+        ({ prevCh } = getAdjacentChapters(cl, this.permalink, this.chapterTitle()));
       }
     }
     if (prevCh) {
       const target = getPrevChapterStartPage() === "last" ? "last" : 0;
       this.gotoChapter(prevCh, target);
+    } else {
+      showBanner(t("reader.overscrollLock.firstChapterDesc") || "No previous chapter.");
     }
   }
 
   async gotoNextChapter(): Promise<void> {
+    if (this.chapterList().length === 0 && this.chapterListPromise) {
+      await this.chapterListPromise;
+    }
     let { nextCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
-    if (!nextCh && this.chapterList().length === 0 && this.seriesPermalink()) {
-      try {
-        const s = await fetchSeries(this.seriesPermalink()!, false, undefined);
-        const cl: ChapterRef[] = [];
-        for (const t of s.taggings ?? []) {
-          if (t.header) continue;
-          if (t.permalink) cl.push({ title: t.title || t.permalink, permalink: t.permalink, released_on: t.released_on ?? undefined });
-        }
-        if (cl.length > 0) {
-          this.setChapterList(cl);
-          ({ nextCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle()));
-        }
-      } catch (err) {
-        console.warn("[reader-session] gotoNextChapter rehydrate failed:", err);
+    if (!nextCh && this.seriesPermalink()) {
+      const cl = await this.loadChapterList(this.chapterList().length === 0);
+      if (cl.length > 0) {
+        ({ nextCh } = getAdjacentChapters(cl, this.permalink, this.chapterTitle()));
       }
     }
     if (nextCh) {
       this.gotoChapter(nextCh, 0);
+    } else {
+      showBanner(t("reader.overscrollLock.endOfSeriesDesc") || "No next chapter.");
     }
   }
 
@@ -1011,16 +1053,23 @@ export class ReaderSession implements ReaderQueueHost {
     if (this.disposedFlag) return;
 
     const containerTag = getChapterContainerTag(chapter.tags);
-    const seriesPermalink = route.seriesPermalink || containerTag?.permalink || null;
-    const seriesName = route.seriesName || containerTag?.name || chapter.title;
+    this.containerTagPermalink = containerTag?.permalink || null;
+    this.containerTagType = containerTag?.type || null;
+
+    const hasRouteChapterList = Boolean(route.chapterList && route.chapterList.length > 0);
+    const seriesPermalink = hasRouteChapterList
+      ? (route.seriesPermalink || containerTag?.permalink || null)
+      : (containerTag?.permalink || route.seriesPermalink || null);
+    const seriesName = containerTag?.name || route.seriesName || chapter.title;
     const preferredType = containerTag?.type || (route.seriesPermalink ? "series" : undefined);
 
     this.setSeriesPermalink(seriesPermalink);
+    this.setSeriesType(preferredType ?? null);
     this.setSeriesName(seriesName);
     this.setChapterTitle(chapter.title || route.chapterTitle || "Chapter");
     this.setChapterPermalink(this.permalink);
-    if (route.chapterList && route.chapterList.length > 0) {
-      this.setChapterList(route.chapterList);
+    if (hasRouteChapterList) {
+      this.setChapterList(route.chapterList!);
     } else {
       this.setChapterList([]);
     }
@@ -1050,48 +1099,50 @@ export class ReaderSession implements ReaderQueueHost {
 
     // Fetch latest series / anthology chapterList and auto-detect layout
     if (this.seriesPermalink()) {
-      void fetchSeries(this.seriesPermalink()!, false, preferredType).then((s) => {
+      const p = this.loadChapterList(false);
+      this.chapterListPromise = p;
+
+      void p.then(async () => {
         if (this.disposedFlag) return;
-        const cl: ChapterRef[] = [];
-        for (const t of s.taggings ?? []) {
-          if (t.header) continue;
-          if (t.permalink) {
-            cl.push({
-              title: t.title || t.permalink,
-              permalink: t.permalink,
-              released_on: t.released_on ?? undefined,
-            });
-          }
-        }
-        if (cl.length > 0) {
-          this.setChapterList(cl);
-        }
-        if (this.directionAutoDetected() && getDefaultReadingDirection() === "auto") {
-          const newDir = detectReadingDirection(chapter.tags ?? [], s.tags ?? []);
-          if (newDir !== this.direction()) {
-            this.setDirectionSignal(newDir);
-            if (this.isSpread()) {
-              this.resetToCurrentPage(true);
+        try {
+          const s = await fetchSeries(this.seriesPermalink()!, false, this.seriesType() ?? undefined);
+          if (this.disposedFlag || !s) return;
+          if (this.directionAutoDetected() && getDefaultReadingDirection() === "auto") {
+            const newDir = detectReadingDirection(chapter.tags ?? [], s.tags ?? []);
+            if (newDir !== this.direction()) {
+              this.setDirectionSignal(newDir);
+              if (this.isSpread()) {
+                this.resetToCurrentPage(true);
+              }
             }
           }
-        }
-        if (this.layoutAutoDetected() && isLongStripSpreadOverrideEnabled()) {
-          const isLong = detectIsLongStrip(chapter.tags ?? [], s.tags ?? []);
-          this.setIsLongStrip(isLong);
-          if (isLong && this.pagedLayout() === "spread") {
-            this.setPagedLayoutSignal("single");
-            if (this.isSpread()) {
-              this.resetToCurrentPage(true);
+          if (this.layoutAutoDetected() && isLongStripSpreadOverrideEnabled()) {
+            const isLong = detectIsLongStrip(chapter.tags ?? [], s.tags ?? []);
+            this.setIsLongStrip(isLong);
+            if (isLong && this.pagedLayout() === "spread") {
+              this.setPagedLayoutSignal("single");
+              if (this.isSpread()) {
+                this.resetToCurrentPage(true);
+              }
             }
           }
-        }
-        if (isLongStripFitWidthEnabled()) {
-          const isLong = detectIsLongStrip(chapter.tags ?? [], s.tags ?? []);
-          if (isLong && this.fitMode() !== "width") {
-            this.setFitMode("width");
+          if (isLongStripFitWidthEnabled()) {
+            const isLong = detectIsLongStrip(chapter.tags ?? [], s.tags ?? []);
+            if (isLong && this.fitMode() !== "width") {
+              this.setFitMode("width");
+            }
           }
+        } catch {
+          // ignore layout metadata detection error
         }
       });
+
+      if (this.chapterList().length === 0) {
+        await Promise.race([
+          p,
+          new Promise<void>((resolve) => setTimeout(resolve, 300)),
+        ]);
+      }
     }
 
     // Display-mode preferences
