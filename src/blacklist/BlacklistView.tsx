@@ -5,10 +5,11 @@
  */
 
 import { createEffect, createResource, createSignal, For, Show } from "solid-js";
-import { navigate, setActions, showBanner, SITE_ROOT } from "../stores";
+import { navigate, setActions, showBanner } from "../stores";
 import { decodeEntities, safeHtml } from "../utils/html";
-import { formatDate } from "../utils/formatting";
+import { formatDate, dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
+import { errorMessage } from "../utils/errors";
 import {
   getBlacklistMode,
   getBlacklistedSeries,
@@ -27,8 +28,8 @@ import {
   TrashIcon,
 } from "../components/Icon";
 import { Loading } from "../components/Loading";
-import { Button, IconText, SegmentedSwitch } from "../components/Button";
-import { Icon } from "../components/Icon";
+import { Button, IconText } from "../components/Button";
+import { BlacklistModeSwitch } from "../components/BlacklistModeSwitch";
 export function BlacklistView() {
   const [data, { refetch }] = createResource<BlacklistedSeries[]>(() =>
     getBlacklistedSeries(),
@@ -64,11 +65,7 @@ export function BlacklistView() {
     );
   });
 
-  const errorMessage = (): string => {
-    const e = data.error;
-    if (e instanceof Error) return e.message;
-    return String(e);
-  };
+  const errorText = (): string => errorMessage(data.error);
 
   return (
     <div
@@ -84,7 +81,7 @@ export function BlacklistView() {
             </Show>
             <Show when={data.error !== undefined && data() === undefined}>
               <div class="ds-row ds-bl-error-row">
-                <span class="ds-muted">{t("blacklist.loadError", { msg: errorMessage() })}</span>
+                <span class="ds-muted">{t("blacklist.loadError", { msg: errorText() })}</span>
                 <Button icon={<RefreshIcon />} text={t("common.retry")} onClick={() => void refetch()} />
               </div>
             </Show>
@@ -95,25 +92,15 @@ export function BlacklistView() {
           <div class="group-box-title">
             <IconText icon={<BlacklistIcon filled={false} />}>{t("blacklist.title")}</IconText>
           </div>
-          <div class="ds-stack-8">
+            <div class="ds-stack-8">
             <div class="ds-muted">
               {t("blacklist.description")}
             </div>
-            <div class="ds-bl-mode-bar">
-              <div class="ds-bl-mode-label">
-                {t("blacklist.modeHeader")}:
-              </div>
-              <SegmentedSwitch
-                id="ds-bl-mode-switch-view"
-                value={mode()}
-                onChange={(val) => changeMode(val as BlacklistMode)}
-                options={[
-                  { id: "ds-bl-view-mode-hide", value: "hide", icon: <Icon name="eye-slash" />, text: t("blacklist.modeHide") },
-                  { id: "ds-bl-view-mode-ghost", value: "ghost", icon: <Icon name="eye-slash-fill" />, text: t("blacklist.modeGhost") },
-                  { id: "ds-bl-view-mode-warn", value: "warn", icon: <Icon name="exclamation-triangle" />, text: t("blacklist.modeWarn") },
-                ]}
-              />
-            </div>
+            <BlacklistModeSwitch
+              id="ds-bl-mode-switch-view"
+              value={mode}
+              onChange={changeMode}
+            />
           </div>
         </div>
 
@@ -170,7 +157,7 @@ export function BlacklistView() {
                       <ExternalLinkButton
                         className="ds-btn-icon"
                         title={t("blacklist.openOnDynastyTooltip")}
-                        url={`${SITE_ROOT}/series/${item.series_permalink}`}
+                        url={dynastyUrl("series", item.series_permalink)}
                       />
                       <Button
                         icon={<TrashIcon />}

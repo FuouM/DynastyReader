@@ -69,7 +69,7 @@ import {
   setScrollLock as setScrollLockPersisted,
 } from "./settings";
 import { standardizeCachePaths } from "./path-migration";
-import { createReaderState, type ReaderState } from "./reader-state";
+import { createReaderState, type ReaderState, type SlotStateRecord } from "./reader-state";
 import { createReaderPersistence, type ReaderPersistence } from "./reader-persistence";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
 
@@ -85,11 +85,6 @@ export {
   getPrefetchBuffer,
   setPrefetchBuffer,
 } from "./settings";
-
-export interface SlotStateRecord {
-  kind: SlotStateKind;
-  message: string;
-}
 
 export function createReaderSession(route: Route): ReaderSession {
   return new ReaderSession(route);
@@ -462,8 +457,8 @@ export class ReaderSession implements ReaderQueueHost {
     return this.persistence.persistNow();
   }
 
-  setPage(index: number, instant = false, scrollToBottom = false): void {
-    if (index < 0 || index >= this.pages().length) return;
+  /** Update the page index and show an end-of-chapter banner if we just crossed the boundary. */
+  private updateIndexAndNotifyEnd(index: number): void {
     batch(() => {
       const wasAtEnd = this.atEnd();
       const isNowAtEnd = index >= this.pages().length - 1;
@@ -480,6 +475,11 @@ export class ReaderSession implements ReaderQueueHost {
         }
       }
     });
+  }
+
+  setPage(index: number, instant = false, scrollToBottom = false): void {
+    if (index < 0 || index >= this.pages().length) return;
+    this.updateIndexAndNotifyEnd(index);
     this.schedulePersist();
     if (this.atEnd()) void this.persistNow();
     if (this.isSpread()) {
@@ -503,22 +503,7 @@ export class ReaderSession implements ReaderQueueHost {
   }
 
   setPageFromScroll(index: number): void {
-    batch(() => {
-      const wasAtEnd = this.atEnd();
-      const isNowAtEnd = index >= this.pages().length - 1;
-      this.setCurrentIndex(index);
-      this.setAtEnd(isNowAtEnd);
-      if (!wasAtEnd && isNowAtEnd && this.pages().length > 1 && !this.loading()) {
-        const list = this.chapterList();
-        const curIdx = list.findIndex((c) => c.permalink === this.permalink);
-        const nextCh = curIdx >= 0 && curIdx < list.length - 1 ? list[curIdx + 1] : null;
-        if (nextCh) {
-          showBanner(t("reader.session.endOfChapterNext", { title: nextCh.title }));
-        } else {
-          showBanner(t("reader.session.endOfChapter"));
-        }
-      }
-    });
+    this.updateIndexAndNotifyEnd(index);
     this.schedulePersist();
     if (this.atEnd()) void this.persistNow();
   }
@@ -721,41 +706,37 @@ export class ReaderSession implements ReaderQueueHost {
     }
   }
 
-  async gotoPrevChapter(): Promise<void> {
+  private async gotoAdjacent(direction: "prev" | "next"): Promise<void> {
     if (this.chapterList().length === 0 && this.chapterListPromise) {
       await this.chapterListPromise;
     }
-    let { prevCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
-    if (!prevCh && this.seriesPermalink()) {
+    const adj = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
+    let chapter = direction === "prev" ? adj.prevCh : adj.nextCh;
+    if (!chapter && this.seriesPermalink()) {
       const cl = await this.loadChapterList(this.chapterList().length === 0);
       if (cl.length > 0) {
-        ({ prevCh } = getAdjacentChapters(cl, this.permalink, this.chapterTitle()));
+        const reloaded = getAdjacentChapters(cl, this.permalink, this.chapterTitle());
+        chapter = direction === "prev" ? reloaded.prevCh : reloaded.nextCh;
       }
     }
-    if (prevCh) {
-      const target = getPrevChapterStartPage() === "last" ? "last" : 0;
-      this.gotoChapter(prevCh, target);
+    if (chapter) {
+      const target = direction === "prev" && getPrevChapterStartPage() === "last" ? "last" : 0;
+      this.gotoChapter(chapter, target);
     } else {
-      showBanner(t("reader.overscrollLock.firstChapterDesc") || "No previous chapter.");
+      showBanner(
+        direction === "prev"
+          ? t("reader.overscrollLock.firstChapterDesc") || "No previous chapter."
+          : t("reader.overscrollLock.endOfSeriesDesc") || "No next chapter.",
+      );
     }
   }
 
+  async gotoPrevChapter(): Promise<void> {
+    return this.gotoAdjacent("prev");
+  }
+
   async gotoNextChapter(): Promise<void> {
-    if (this.chapterList().length === 0 && this.chapterListPromise) {
-      await this.chapterListPromise;
-    }
-    let { nextCh } = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
-    if (!nextCh && this.seriesPermalink()) {
-      const cl = await this.loadChapterList(this.chapterList().length === 0);
-      if (cl.length > 0) {
-        ({ nextCh } = getAdjacentChapters(cl, this.permalink, this.chapterTitle()));
-      }
-    }
-    if (nextCh) {
-      this.gotoChapter(nextCh, 0);
-    } else {
-      showBanner(t("reader.overscrollLock.endOfSeriesDesc") || "No next chapter.");
-    }
+    return this.gotoAdjacent("next");
   }
 
   gotoSeries(): void {
@@ -1015,21 +996,19 @@ export class ReaderSession implements ReaderQueueHost {
     const create = () =>
       createComponent(ReaderActions, {
         ctrl: this as unknown as ReaderActionsController,
-        bookmarked: () => this.bookmarked(),
+        bookmarked: this.bookmarked(),
       }) as unknown as JSX.Element;
     const owner = this.sessionOwner;
-    if (owner) {
-      runWithOwner(owner, () => {
-        this.actionsDispose = createRoot((dispose) => {
-          setActions(create());
-          return dispose;
-        });
-      });
-    } else {
+    const attach = () => {
       this.actionsDispose = createRoot((dispose) => {
         setActions(create());
         return dispose;
       });
+    };
+    if (owner) {
+      runWithOwner(owner, attach);
+    } else {
+      attach();
     }
   }
 

@@ -7,6 +7,7 @@
 import { createEffect, createMemo, createResource, createSignal, For, Show, type Accessor } from "solid-js";
 import { navigate, SITE_ROOT } from "../stores";
 import { decodeEntities } from "../utils/html";
+import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages } from "../api";
 import { directoryGroups } from "../utils/directory";
@@ -86,7 +87,7 @@ function DirectoryRow(props: {
           title={props.kind === "series" ? t("browse.directory.openSeriesTooltip") : t("browse.directory.searchTagTooltip")}
           url={
             props.kind === "series"
-              ? `${SITE_ROOT}/series/${props.entry.permalink}`
+              ? dynastyUrl("series", props.entry.permalink)
               : `${SITE_ROOT}/search?q=${encodeURIComponent(props.entry.name)}`
           }
         />

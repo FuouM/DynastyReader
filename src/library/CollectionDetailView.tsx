@@ -18,10 +18,9 @@ import {
   setActions,
   setTitle,
   showBanner,
-  SITE_ROOT,
 } from "../stores";
 import { decodeEntities } from "../utils/html";
-import { formatDate } from "../utils/formatting";
+import { formatDate, dynastyUrl } from "../utils/formatting";
 import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api";
@@ -260,7 +259,7 @@ function CollectionItemCard(props: {
       onOpen={onOpen}
       actionLabel={isChapterLike() ? t("common.read") : t("common.open")}
       actionIcon={isChapterLike() ? "bi-book" : "bi-folder2-open"}
-      externalUrl={`${SITE_ROOT}/${endpoint()}/${props.it.item_permalink}`}
+      externalUrl={dynastyUrl(endpoint(), props.it.item_permalink)}
       deleteTitle={t("library.removeFromCollectionTooltip")}
       onDelete={async () => {
         await removeItemFromCollection(props.collectionId, props.it.item_permalink);

@@ -16,12 +16,12 @@ import { debounce } from "@solid-primitives/scheduled";
 import {
   navigate,
   setBanner,
-  SITE_ROOT,
 } from "../stores";
 import { decodeEntities } from "../utils/html";
 import { categorizeChapterTags, isSeriesKind, seriesTypeToPath, getChapterContainerTag, isDoujinTag } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
+import { slugify, dynastyUrl } from "../utils/formatting";
 import {
   addBookmark,
   getBlacklistMode,
@@ -106,7 +106,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
   const externalUrl = (): string => {
     if (ch.url) return ch.url;
     const path = isSeriesKind(ch.kind) ? seriesTypeToPath(ch.kind) : "chapters";
-    return `${SITE_ROOT}/${path}/${ch.permalink}`;
+    return dynastyUrl(path, ch.permalink);
   };
   const [copied, setCopied] = createSignal(false);
   const resetCopied = debounce(() => setCopied(false), 2000);
@@ -191,7 +191,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
     if (!coverInfo.isStandalone) {
       const sPermalink =
         coverInfo.seriesPermalink ||
-        (ch.series ? ch.series.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") : ch.permalink);
+        (ch.series ? slugify(ch.series) : ch.permalink);
       props.onAddToCol(
         {
           permalink: sPermalink,

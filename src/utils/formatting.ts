@@ -32,3 +32,19 @@ export function formatDateTime(ms?: number | null): string {
   if (!ms) return t("common.never");
   return fullDateTimeFormatter.format(new Date(ms)).replace(",", "");
 }
+
+/** Converts a string to a URL-safe slug: lowercase, non-alphanumeric → underscore, trimmed. */
+export function slugify(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+import { SITE_ROOT } from "../stores";
+
+/** Constructs a full Dynasty Scans URL for the given path and permalink. */
+export function dynastyUrl(path: string, permalink: string): string {
+  return `${SITE_ROOT}/${path}/${permalink}`;
+}

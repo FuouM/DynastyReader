@@ -25,9 +25,9 @@ import {
   setSessionTab,
   setTitle,
   showBanner,
-  SITE_ROOT,
 } from "../stores";
 import { decodeEntities } from "../utils/html";
+import { dynastyUrl } from "../utils/formatting";
 import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
@@ -157,11 +157,10 @@ export function SeriesView() {
   createEffect(() => {
     const d = data();
     if (!d) return;
-    const { series, coverPath, followed, blacklisted, chapters } = d;
+    const { series, coverPath } = d;
     const seriesPermalink = series.permalink;
     const seriesName = series.name;
-    const latest = chapters[chapters.length - 1];
-    const openUrl = `${SITE_ROOT}/${seriesTypeToPath(series.type)}/${encodeURIComponent(seriesPermalink)}`;
+    const openUrl = dynastyUrl(seriesTypeToPath(series.type), encodeURIComponent(seriesPermalink));
 
     setTitle(decodeEntities(seriesName));
     setSessionTab((current) => {
@@ -173,60 +172,18 @@ export function SeriesView() {
       };
     });
 
-    const toggleFollow = async (): Promise<void> => {
-      setBusyFollow(true);
-      try {
-        if (followed) {
-          await unfollowSeries(seriesPermalink);
-          showBanner(t("series.unfollowedBanner", { name: seriesName }));
-        } else {
-          await followSeries({
-            permalink: seriesPermalink,
-            name: seriesName,
-            cover: coverPath,
-            latestChapterPermalink: latest?.permalink ?? null,
-            latestChapterTitle: latest?.title ?? null,
-          });
-          showBanner(t("series.followingBanner", { name: seriesName }));
-        }
-        await refetch();
-      } catch (err) {
-        const msg = errorMessage(err);
-        showBanner(t("series.followErrorBanner", { msg }));
-        setBusyFollow(false);
-      }
-    };
-
-    const toggleBlacklist = async (): Promise<void> => {
-      setBusyBlacklist(true);
-      try {
-        if (blacklisted) {
-          await removeBlacklistedSeries(seriesPermalink);
-          showBanner(t("series.unblacklistedBanner", { name: seriesName }));
-        } else {
-          await addBlacklistedSeries(seriesPermalink, seriesName);
-          showBanner(t("series.blacklistedBanner", { name: seriesName }));
-        }
-        await refetch();
-      } catch (err) {
-        const msg = errorMessage(err);
-        showBanner(t("series.blacklistErrorBanner", { msg }));
-        setBusyBlacklist(false);
-      }
-    };
-
     if (isMobile()) {
       setActions(null);
       return;
     }
     setActions(
       <SeriesActions
-        followed={() => followed}
+        followed={() => data()?.followed ?? false}
         busyFollow={busyFollow}
-        onToggleFollow={() => void toggleFollow()}
-        blacklisted={() => blacklisted}
+        onToggleFollow={() => void handleToggleFollow()}
+        blacklisted={() => data()?.blacklisted ?? false}
         busyBlacklist={busyBlacklist}
-        onToggleBlacklist={() => void toggleBlacklist()}
+        onToggleBlacklist={() => void handleToggleBlacklist()}
         onRefresh={() => setForceTick((t) => t + 1)}
         onOpenAddToCol={(anchorEl) =>
           addToCol.open(
@@ -316,11 +273,7 @@ export function SeriesView() {
 
   const isRedirected = (): boolean =>
     data.error !== undefined && data.error instanceof SeriesRedirected;
-  const dataErrorText = (): string => {
-    const e = data.error;
-    if (e instanceof Error) return e.message;
-    return String(e);
-  };
+  const dataErrorText = (): string => errorMessage(data.error);
 
   const ordered = createMemo<ChapterMeta[]>(() => {
     const chs = data()?.chapters ?? [];
@@ -358,7 +311,7 @@ export function SeriesView() {
               onToggleBlacklist={() => void handleToggleBlacklist()}
               onRefresh={() => setForceTick((t) => t + 1)}
               onOpenAddToCol={handleOpenAddToCol}
-              openUrl={`${SITE_ROOT}/${seriesTypeToPath(data()!.series.type)}/${encodeURIComponent(data()!.series.permalink)}`}
+              openUrl={dynastyUrl(seriesTypeToPath(data()!.series.type), encodeURIComponent(data()!.series.permalink))}
               seriesType={data()!.series.type}
             />
           }

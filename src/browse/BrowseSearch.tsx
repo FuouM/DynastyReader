@@ -19,11 +19,12 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import { navigate, setBanner, SITE_ROOT } from "../stores";
+import { navigate, setBanner } from "../stores";
 import { decodeEntities } from "../utils/html";
 import { isContentKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
+import { dynastyUrl } from "../utils/formatting";
 import { searchDynasty, suggest } from "../api";
 import {
   getBlacklistMode,
@@ -204,7 +205,7 @@ function SearchResultRow(props: {
         <ExternalLinkButton
           className="ds-btn-icon"
           title={t("browse.search.openExternalTooltip", { kind: item().kind, title: decodeEntities(item().title) })}
-          url={`${SITE_ROOT}/${seriesTypeToPath(item().kind)}/${item().permalink}`}
+          url={dynastyUrl(seriesTypeToPath(item().kind), item().permalink)}
         />
       }
     />
@@ -346,11 +347,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
   const normalRows = createMemo<SearchRow[]>(() => resultRows().filter((r) => !r.isBlacklisted));
   const blacklistedRows = createMemo<SearchRow[]>(() => resultRows().filter((r) => r.isBlacklisted));
 
-  const paneErrorText = (): string => {
-    const e = pane.error();
-    if (e instanceof Error) return e.message;
-    return String(e);
-  };
+  const paneErrorText = (): string => errorMessage(pane.error());
 
   const renderResultRow = (row: SearchRow): JSX.Element => (
     <SearchResultRow

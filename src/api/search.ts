@@ -6,16 +6,13 @@ import { fetchSeries } from "./series";
 import { getCached, setCached } from "../db";
 import { recordCacheHit } from "./traffic";
 import { persistSuggestEntries } from "./cache-persist";
+import { slugify } from "../utils/formatting";
 import type { SearchParams, SearchResultItem, SearchResultPage, ChapterTag } from "../types/api";
 
 const SEARCH_CACHE_PREFIX = "search_v2:";
 
 function normalizeTagPermalink(tagName: string): string {
-  return tagName
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+  return slugify(tagName);
 }
 
 /**

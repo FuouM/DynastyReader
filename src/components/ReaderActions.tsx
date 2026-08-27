@@ -6,9 +6,10 @@
 
 import { createEffect, createSignal, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
-import { navigate, setBanner, closeSessionMangaTab, SITE_ROOT } from "../stores";
+import { navigate, setBanner, closeSessionMangaTab } from "../stores";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
+import { dynastyUrl } from "../utils/formatting";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
 import type { ChapterPage } from "../types/api";
@@ -67,7 +68,7 @@ export function ReaderActions(props: ReaderActionsProps) {
 
   const resetCopied = debounce(() => setCopied(false), 2000);
 
-  const chapterUrl = () => `${SITE_ROOT}/chapters/${props.ctrl.permalink}`;
+  const chapterUrl = () => dynastyUrl("chapters", props.ctrl.permalink);
 
   const toggleBookmark = async () => {
     if (pending()) return;

@@ -11,12 +11,13 @@ import { makeEventListener } from "@solid-primitives/event-listener";
 import { debounce } from "@solid-primitives/scheduled";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode, ReaderMode, PagedLayout, ReadingDirection } from "../types/reader";
-import { theme, setTheme, isMobile, goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, showBanner, SITE_ROOT, navigate } from "../stores";
+import { theme, setTheme, isMobile, goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, showBanner, navigate } from "../stores";
 import { HistoryDropdown } from "../components/HistoryDropdown";
 import { decodeEntities } from "../utils/html";
 import { addBookmark, removeBookmark } from "../db";
 import { openExternal } from "../api";
 import { errorMessage } from "../utils/errors";
+import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import { getReaderNavPosition, getPrevChapterStartPage, setPrevChapterStartPage, type ReaderNavPosition, type PrevChapterStartPage } from "./settings";
 import { DsButton, DsSelect, IconButton, Button, IconText, SegmentedSwitch } from "../components/Button";
@@ -503,7 +504,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   onClick={async () => {
                     try {
                       if (typeof navigator !== "undefined" && navigator.clipboard) {
-                        await navigator.clipboard.writeText(`${SITE_ROOT}/chapters/${s.permalink}`);
+                        await navigator.clipboard.writeText(dynastyUrl("chapters", s.permalink));
                         setCopied(true);
                         resetCopied();
                       }
@@ -516,7 +517,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   icon={<ExternalLinkIcon />}
                   text={t("reader.toolbar.openInBrowserShort")}
                   cssText="height:32px;font-size:11.5px;justify-content:center;"
-                  onClick={() => void openExternal(`${SITE_ROOT}/chapters/${s.permalink}`)}
+                  onClick={() => void openExternal(dynastyUrl("chapters", s.permalink))}
                 />
               </div>
             </div>
@@ -545,7 +546,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
   const handleCopyLink = async () => {
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(`${SITE_ROOT}/chapters/${s.permalink}`);
+        await navigator.clipboard.writeText(dynastyUrl("chapters", s.permalink));
         setCopied(true);
         showBanner(t("reader.toolbar.copiedLinkBanner"));
         resetCopied();
