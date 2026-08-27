@@ -33,16 +33,20 @@ const SWIPE_MIN_DIST_TOUCH_PX = 35;
 const SWIPE_MIN_DIST_MOUSE_PX = 45;
 
 const OVERSCROLL_COLLISION_RADIUS_PX = 48;
+const OVERSCROLL_MIN_SEPARATION_PX = 130;
+const OVERSCROLL_CARD_AVOID_H_PX = 82; // 50px card half-height + 32px ring radius
+const OVERSCROLL_CARD_AVOID_W_PX = 167; // 135px card half-width + 32px ring radius
 
 /**
  * Adaptive overscroll lock positioning:
- * - The info card is always anchored at the exact viewport center (cx, cy).
- * - In horizontal scroll mode: lock Y adapts to user's triggering Y height (with vertical card avoidance).
- *   Lock X is offset past center into the pull destination half (left of center for pull-left,
- *   right of center for pull-right) so speed-swiping across center does not accidentally trigger it.
- * - In vertical scroll mode: lock X adapts to user's triggering X column.
- *   Lock Y is offset past center into the pull destination half (above center for pull-up / next chapter,
- *   below center for pull-down / prev chapter) preventing accidental triggers during quick scrolls.
+ * - The info card is anchored at the exact viewport center (cx, cy).
+ * - The lock target ring is positioned along the user's pull direction with guaranteed
+ *   separation (>= 130px) from the starting touch point (startX, startY), ensuring it never
+ *   spawns adjacent to or beneath the user's finger.
+ * - In horizontal mode: lock X is placed along the pull vector, lock Y tracks thumb height with center card avoidance.
+ * - In vertical mode: lock Y is placed along the pull vector with center card clearance, lock X tracks thumb column.
+ * - Edge fallback: when a gesture starts near a screen boundary in the pull direction, an orthogonal offset
+ *   is dynamically added to maintain the required Euclidean separation without overflowing viewport margins.
  */
 const getOverscrollTarget = (
   startX: number,
@@ -51,32 +55,95 @@ const getOverscrollTarget = (
   isHorizontal: boolean,
   isRtl = false,
 ): { targetX: number; targetY: number } => {
-  const cx = typeof window !== "undefined" ? window.innerWidth / 2 : 200;
-  const cy = typeof window !== "undefined" ? window.innerHeight / 2 : 300;
+  const winW = typeof window !== "undefined" ? window.innerWidth : 400;
+  const winH = typeof window !== "undefined" ? window.innerHeight : 600;
+  const cx = winW / 2;
+  const cy = winH / 2;
 
   if (isHorizontal) {
-    let targetY = startY;
-    if (Math.abs(startY - cy) < 75) {
-      targetY = startY < cy ? cy - 75 : cy + 75;
-    }
-    const clampedY = typeof window !== "undefined" ? Math.max(48, Math.min(window.innerHeight - 48, targetY)) : targetY;
-
-    // Pull direction: LTR next = left (-X), LTR prev = right (+X); RTL next = right (+X), RTL prev = left (-X)
     const isPullingLeft = isRtl ? direction === "prev" : direction === "next";
-    const xOffset = typeof window !== "undefined" ? Math.min(cx * 0.35, 90) : 80;
-    const targetX = isPullingLeft ? cx - xOffset : cx + xOffset;
 
-    return { targetX, targetY: clampedY };
+    // Target is placed on the destination side of the screen
+    // For pull-left: left side (e.g. ~22% of width, or at least 64px from left edge)
+    // For pull-right: right side (e.g. ~78% of width, or at least 64px from right edge)
+    const destX = isPullingLeft
+      ? Math.max(64, Math.min(cx - 75, winW * 0.22))
+      : Math.min(winW - 64, Math.max(cx + 75, winW * 0.78));
+
+    // Ensure target is on destination side or at least OVERSCROLL_MIN_SEPARATION_PX ahead of startX
+    const targetX = isPullingLeft
+      ? Math.min(destX, startX - OVERSCROLL_MIN_SEPARATION_PX)
+      : Math.max(destX, startX + OVERSCROLL_MIN_SEPARATION_PX);
+    const clampedX = Math.max(48, Math.min(winW - 48, targetX));
+    const availableX = Math.abs(clampedX - startX);
+
+    // Along Y: adapt to thumb's startY, avoiding the center card
+    let targetY = startY;
+    if (Math.abs(startY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
+      targetY = startY < cy ? cy - OVERSCROLL_CARD_AVOID_H_PX : cy + OVERSCROLL_CARD_AVOID_H_PX;
+    }
+
+    // If starting near the destination edge leaves insufficient horizontal travel,
+    // add orthogonal (Y) offset to guarantee Euclidean distance >= OVERSCROLL_MIN_SEPARATION_PX
+    if (availableX < OVERSCROLL_MIN_SEPARATION_PX) {
+      const neededY = Math.sqrt(
+        Math.max(0, OVERSCROLL_MIN_SEPARATION_PX * OVERSCROLL_MIN_SEPARATION_PX - availableX * availableX),
+      );
+      if (targetY < cy) {
+        targetY = Math.max(48, targetY - neededY);
+        if (targetY <= 50) targetY = Math.min(winH - 48, cy + OVERSCROLL_CARD_AVOID_H_PX + neededY);
+      } else {
+        targetY = Math.min(winH - 48, targetY + neededY);
+        if (targetY >= winH - 50) targetY = Math.max(48, cy - OVERSCROLL_CARD_AVOID_H_PX - neededY);
+      }
+    }
+
+    const clampedY = Math.max(48, Math.min(winH - 48, targetY));
+    return { targetX: clampedX, targetY: clampedY };
   } else {
-    const clampedX = typeof window !== "undefined" ? Math.max(48, Math.min(window.innerWidth - 48, startX)) : startX;
-    const yOffset = typeof window !== "undefined" ? Math.min(cy * 0.25, 95) : 90;
-    // prev (pulling down from top) -> target is below center (cy + yOffset)
-    // next (pulling up from bottom) -> target is above center (cy - yOffset)
-    const targetY = direction === "prev" ? cy + yOffset : cy - yOffset;
-    return { targetX: clampedX, targetY };
+    // Vertical continuous scroll mode
+    // Pull-up (next) -> destination is top (~22% of height)
+    // Pull-down (prev) -> destination is bottom (~78% of height)
+    const destY = direction === "prev"
+      ? Math.min(winH - 64, Math.max(cy + 75, winH * 0.78))
+      : Math.max(64, Math.min(cy - 75, winH * 0.22));
+
+    let targetY = direction === "prev"
+      ? Math.max(destY, startY + OVERSCROLL_MIN_SEPARATION_PX)
+      : Math.min(destY, startY - OVERSCROLL_MIN_SEPARATION_PX);
+
+    // If target lands inside center card, push it past the card along pull direction
+    if (Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
+      targetY = direction === "prev"
+        ? cy + OVERSCROLL_CARD_AVOID_H_PX
+        : cy - OVERSCROLL_CARD_AVOID_H_PX;
+    }
+
+    const clampedY = Math.max(48, Math.min(winH - 48, targetY));
+    const availableY = Math.abs(clampedY - startY);
+
+    // Along X: adapt to thumb's startX column
+    let targetX = startX;
+
+    // If vertical travel is constrained near screen top/bottom,
+    // add orthogonal (X) offset to guarantee Euclidean distance >= OVERSCROLL_MIN_SEPARATION_PX
+    if (availableY < OVERSCROLL_MIN_SEPARATION_PX) {
+      const neededX = Math.sqrt(
+        Math.max(0, OVERSCROLL_MIN_SEPARATION_PX * OVERSCROLL_MIN_SEPARATION_PX - availableY * availableY),
+      );
+      if (targetX < cx) {
+        targetX = Math.max(48, targetX - neededX);
+        if (targetX <= 50) targetX = Math.min(winW - 48, cx + OVERSCROLL_CARD_AVOID_W_PX + neededX);
+      } else {
+        targetX = Math.min(winW - 48, targetX + neededX);
+        if (targetX >= winW - 50) targetX = Math.max(48, cx - OVERSCROLL_CARD_AVOID_W_PX - neededX);
+      }
+    }
+
+    const clampedX = Math.max(48, Math.min(winW - 48, targetX));
+    return { targetX: clampedX, targetY: clampedY };
   }
 };
-
 const isOverscrollReady = (fingerX: number, fingerY: number, targetX: number, targetY: number): boolean => {
   return Math.hypot(fingerX - targetX, fingerY - targetY) <= OVERSCROLL_COLLISION_RADIUS_PX;
 };
@@ -964,7 +1031,19 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
                     top: `${g().fingerY}px`,
                   }}
                 >
-                  <i class={g().ready ? "bi bi-check-lg" : isNext() ? "bi bi-chevron-up" : "bi bi-chevron-down"} />
+                  <i
+                    class={
+                      g().ready
+                        ? "bi bi-check-lg"
+                        : s.isHorizontal()
+                          ? (s.direction() === "rtl" ? g().direction === "prev" : g().direction === "next")
+                            ? "bi bi-chevron-left"
+                            : "bi bi-chevron-right"
+                          : isNext()
+                            ? "bi bi-chevron-up"
+                            : "bi bi-chevron-down"
+                    }
+                  />
                 </div>
 
                 {/* Center Lock Target Circle (Exact Center) */}
