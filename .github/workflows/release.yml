@@ -171,20 +171,27 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > src-tauri/gen/android/app/release.keystore
+          # Cleanly decode base64 keystore using Python to avoid any Windows CRLF / newline corruption
+          python3 -c "import os, base64; open('src-tauri/gen/android/app/release.keystore', 'wb').write(base64.b64decode(os.environ['ANDROID_KEYSTORE_BASE64'].strip()))"
 
-          # Auto-discover alias from keystore if ANDROID_KEY_ALIAS is unset or not found
-          KEYSTORE_ALIAS="$ANDROID_KEY_ALIAS"
+          # Auto-discover alias from keystore
           DISCOVERED_ALIAS=$(keytool -list -keystore src-tauri/gen/android/app/release.keystore -storepass "$ANDROID_STORE_PASSWORD" 2>/dev/null | grep -E "PrivateKeyEntry|keyEntry" | head -n 1 | awk -F',' '{print $1}' | xargs)
 
-          if [ -n "$DISCOVERED_ALIAS" ]; then
-            if [ -z "$KEYSTORE_ALIAS" ]; then
-              echo "Auto-detected keystore alias: $DISCOVERED_ALIAS"
-              KEYSTORE_ALIAS="$DISCOVERED_ALIAS"
-            fi
+          KEYSTORE_ALIAS="${ANDROID_KEY_ALIAS:-$DISCOVERED_ALIAS}"
+          if [ -n "$DISCOVERED_ALIAS" ] && [ -z "$ANDROID_KEY_ALIAS" ]; then
+            echo "Auto-detected keystore alias: $DISCOVERED_ALIAS"
+          elif [ -n "$ANDROID_KEY_ALIAS" ]; then
+            echo "Using configured keystore alias: $ANDROID_KEY_ALIAS"
           fi
 
           KEY_PASS="${ANDROID_KEY_PASSWORD:-$ANDROID_STORE_PASSWORD}"
+
+          # Validate keystore can be read
+          echo "Validating keystore integrity and alias..."
+          keytool -list -v -keystore src-tauri/gen/android/app/release.keystore -alias "$KEYSTORE_ALIAS" -storepass "$ANDROID_STORE_PASSWORD" || {
+            echo "WARNING: Could not verify alias '$KEYSTORE_ALIAS' with the provided store password. Listing all entries:"
+            keytool -list -v -keystore src-tauri/gen/android/app/release.keystore -storepass "$ANDROID_STORE_PASSWORD" || true
+          }
 
           echo "TAURI_STORE_FILE=release.keystore" >> $GITHUB_ENV
           echo "TAURI_KEY_ALIAS=$KEYSTORE_ALIAS" >> $GITHUB_ENV
