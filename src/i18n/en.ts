@@ -619,6 +619,7 @@ export const en = {
       mobileLandscapeFitHeightTooltip: "Force fit-height sizing in mobile landscape",
       longStripOverride: "Long Strip Spread Override",
       longStripOverrideDesc: "Soft-disable Spread mode on Long Strip / Webtoon tags to display continuous vertical art.",
+      longStripOverrideTooltip: "When ON, automatically soft-disables spread mode for Long Strip / Webtoon chapters",
       longStripOverrideDisabled: "Disabled",
       longStripOverrideEnabled: "Auto-Disable: ON",
       longStripFitWidth: "Long Strip Fit Width",

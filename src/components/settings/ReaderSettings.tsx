@@ -38,6 +38,7 @@ import {
   type MobileLandscapePagedLayoutSetting,
   type MobileLandscapeFitModeSetting,
 } from "../../reader/settings";
+import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, Icon } from "../Icon";
 import { DsSelect, IconText, IconButton, SegmentedSwitch, DsSwitch } from "../Button";

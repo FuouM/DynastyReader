@@ -13,6 +13,7 @@ const CHECK_UPDATES_POLL_INTERVAL_MS = 50;
 const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, type JSX } from "solid-js";
+import { createMediaQuery } from "@solid-primitives/media";
 import { persistedSignal } from "../lib/persisted-signal";
 import { isMobile, navigate, route, setRoute, showBanner } from "../stores";
 import { t } from "../i18n";
@@ -289,6 +290,7 @@ export function BrowseView() {
             <div class="ds-search-wrap ds-flex-1">
               <Typeahead
                 fetcher={suggest}
+                onSelect={(item) => runSearch(item.name)}
                 onEnter={(value) => runSearch(value)}
                 onInputValue={(value) => setSearchBoxValue(value)}
                 placeholder={t("browse.searchAndGo.inputPlaceholder")}

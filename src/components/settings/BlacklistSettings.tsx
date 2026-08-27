@@ -89,6 +89,7 @@ export function BlacklistSettings() {
             />
             <span>{t("blacklist.modeGhost")}</span>
           </label>
+        </div>
 
         {/* Add Tag Input */}
         <div class="ds-bl-input-row">

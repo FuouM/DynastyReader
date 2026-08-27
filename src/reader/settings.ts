@@ -15,6 +15,7 @@ export type PrevChapterStartPage = "first" | "last";
 export type MobileLandscapeReaderModeSetting = "default" | "scroll" | "paged";
 export type MobileLandscapePagedLayoutSetting = "default" | "single" | "spread";
 export type MobileLandscapeFitModeSetting = "default" | "height";
+const boolDeserialize = (v: string) => v === "true" || v === "1";
 
 // Auto-cache chapter
 const [isAutoCacheChapterEnabled, setAutoCache] = persistedSignal(!isMobile(), {
