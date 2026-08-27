@@ -27,24 +27,30 @@ export function setActions(content: ActionsContent): void {
   _setActions(content);
 }
 
-/** Sets the banner message with auto-dismiss matching legacy behavior. */
-export function setBanner(message: string | null): void {
+/** Shows a transient error/info banner in the top navigation bar. */
+export function showBanner(message: string): void {
   dismissBanner.clear();
   _setBanner(message);
-  if (message) {
-    dismissBanner();
-  }
-}
-
-/** Shows a transient error/info banner in the top navigation bar (alias for setBanner). */
-export function showBanner(message: string): void {
-  setBanner(message);
+  dismissBanner();
 }
 
 /** Hides the transient banner immediately. */
-export function clearBanner(): void {
-  setBanner(null);
+export function hideBanner(): void {
+  dismissBanner.clear();
+  _setBanner(null);
 }
+
+/** @deprecated Use `showBanner(msg)` and `hideBanner()`. Kept for backward compat. */
+export function setBanner(message: string | null): void {
+  if (message) {
+    showBanner(message);
+  } else {
+    hideBanner();
+  }
+}
+
+/** @deprecated Use `hideBanner()`. */
+export const clearBanner = hideBanner;
 
 /** Empties the top-bar action host. */
 export function clearActions(): void {

@@ -32,18 +32,6 @@ export async function httpGetText(
 }
 
 /**
- * Downloads a binary payload to the plugin's on-disk cache and returns the
- * resolved absolute path (suitable for `ipc.convertFileSrc`).
- */
-export async function httpDownload(
-  url: string,
-  outputPath: string,
-  timeoutMs = 30000,
-): Promise<string> {
-  return (await httpDownloadFull(url, outputPath, timeoutMs)).absolutePath;
-}
-
-/**
  * Downloads a binary payload to the plugin's on-disk cache and returns both the
  * resolved absolute path and the exact written size in bytes.
  */

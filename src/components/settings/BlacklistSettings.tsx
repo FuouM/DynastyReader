@@ -12,8 +12,8 @@ import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { GroupBox } from "../GroupBox";
 import { BlacklistIcon, AddIcon, CloseIcon } from "../Icon";
-import { Icon } from "../Icon";
-import { IconText, Button, SegmentedSwitch } from "../Button";
+import { IconText, Button } from "../Button";
+import { BlacklistModeSwitch } from "../BlacklistModeSwitch";
 export function BlacklistSettings() {
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
@@ -52,21 +52,11 @@ export function BlacklistSettings() {
           {t("blacklist.settingsDescription")}
         </div>
         {/* Mode Selector */}
-        <div class="ds-bl-mode-bar">
-          <span class="ds-bl-mode-label">
-            {t("blacklist.modeHeader")}:
-          </span>
-          <SegmentedSwitch
-            id="ds-bl-mode-switch"
-            value={blMode()}
-            onChange={(val) => setMode(val as "hide" | "warn" | "ghost")}
-            options={[
-              { id: "ds-bl-mode-hide", value: "hide", icon: <Icon name="eye-slash" />, text: t("blacklist.modeHide") },
-              { id: "ds-bl-mode-ghost", value: "ghost", icon: <Icon name="eye-slash-fill" />, text: t("blacklist.modeGhost") },
-              { id: "ds-bl-mode-warn", value: "warn", icon: <Icon name="exclamation-triangle" />, text: t("blacklist.modeWarn") },
-            ]}
-          />
-        </div>
+        <BlacklistModeSwitch
+          id="ds-bl-mode-switch"
+          value={blMode}
+          onChange={setMode}
+        />
 
         {/* Add Tag Input */}
         <div class="ds-bl-input-row">

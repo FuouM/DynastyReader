@@ -47,6 +47,7 @@ export {
   actions,
   setActions,
   showBanner,
+  hideBanner,
   clearBanner,
   clearActions,
 } from "./topbar";

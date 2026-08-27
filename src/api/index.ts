@@ -1,4 +1,4 @@
-export { httpGetText, httpDownload, httpDownloadFull, cachedJson } from "./http";
+export { httpGetText, httpDownloadFull, cachedJson } from "./http";
 export { fileResolve, fileExists, fileMove, fileDelete } from "./fs";
 export { checkFeedOnline, fetchFeedWithRevalidation } from "./feed";
 export { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages, suggest } from "./directory";

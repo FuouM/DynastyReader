@@ -75,12 +75,20 @@ export const KIND_BY_PATH_SEGMENT: Record<string, EntityKind> = {
  * Returns the plural API / URL path segment for any series-style entity type string.
  */
 export function seriesTypeToPath(type?: string | null): string {
-  const t = (type ?? "").toLowerCase().trim();
-  const kind = KIND_BY_PATH_SEGMENT[t] ?? KIND_BY_PATH_SEGMENT[`${t}s`];
+  const kind = resolveKind(type);
   if (kind && ENTITY_TAXONOMY[kind]) {
     return ENTITY_TAXONOMY[kind].path;
   }
   return "series";
+}
+
+/**
+ * Resolves a type string to its canonical EntityKind via path segment lookup.
+ * Returns `undefined` if the type doesn't match any known entity.
+ */
+function resolveKind(type?: string | null): EntityKind | undefined {
+  const clean = (type ?? "").toLowerCase().trim();
+  return KIND_BY_PATH_SEGMENT[clean] ?? KIND_BY_PATH_SEGMENT[`${clean}s`];
 }
 
 /** Checks whether an entity kind is a collection/series container (not a bare chapter). */
@@ -104,10 +112,8 @@ export function isContentKind(kind?: string | null): boolean {
 export const CHAPTER_CONTAINER_KINDS = ["series", "anthology", "issue", "doujin"] as const;
 /** Checks whether a tag type represents a chapter container (Series, Anthology, Issue). */
 export function isContainerKind(type?: string | null): boolean {
-  if (!type) return false;
-  const clean = type.toLowerCase().trim();
-  const kind = KIND_BY_PATH_SEGMENT[clean] ?? KIND_BY_PATH_SEGMENT[`${clean}s`] ?? clean;
-  return (CHAPTER_CONTAINER_KINDS as readonly string[]).includes(kind);
+  const kind = resolveKind(type);
+  return kind !== undefined && (CHAPTER_CONTAINER_KINDS as readonly string[]).includes(kind);
 }
 
 /**
@@ -123,15 +129,9 @@ export function getChapterContainerTag(
 ): { type: string; name: string; permalink: string } | null {
   if (!tags || tags.length === 0) return null;
 
-  const normalizeType = (t?: string): string => {
-    if (!t) return "";
-    const clean = t.toLowerCase().trim();
-    return KIND_BY_PATH_SEGMENT[clean] ?? KIND_BY_PATH_SEGMENT[`${clean}s`] ?? clean;
-  };
-
   for (const priority of CHAPTER_CONTAINER_KINDS) {
     const found = tags.find(
-      (t) => normalizeType(t.type) === priority && Boolean(t.permalink && t.permalink.trim().length > 0),
+      (t) => resolveKind(t.type) === priority && Boolean(t.permalink && t.permalink.trim().length > 0),
     );
     if (found && found.permalink) {
       return {

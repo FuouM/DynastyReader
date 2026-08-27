@@ -13,6 +13,7 @@ import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Modal } from "./Modal";
 import { Icon } from "./Icon";
 import { IconText, IconButton } from "./Button";
+import { GroupBox } from "./GroupBox";
 import { t } from "../i18n";
 import {
   SETTINGS_SECTIONS,
@@ -120,10 +121,7 @@ export function SettingsModal(props: SettingsModalProps) {
               <ReaderSettings />
 
               {/* Hotkeys Section trigger banner */}
-              <div class="group-box" id="ds-settings-sec-hotkeys">
-                <div class="group-box-title">
-                  <IconText icon={<Icon name="keyboard" />}>{t("settings.sections.hotkeys")}</IconText>
-                </div>
+              <GroupBox id="ds-settings-sec-hotkeys" title={<IconText icon={<Icon name="keyboard" />}>{t("settings.sections.hotkeys")}</IconText>}>
                 <div class="ds-row-between" style="padding:2px 0;">
                   <div class="ds-label">
                     {t("settings.hotkeys.bannerTitle")}
@@ -137,7 +135,7 @@ export function SettingsModal(props: SettingsModalProps) {
                     onClick={() => setCurrentPage("hotkeys")}
                   />
                 </div>
-              </div>
+              </GroupBox>
 
               <StorageSettings onClose={props.onClose} />
               <AboutSettings />

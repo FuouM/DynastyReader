@@ -43,6 +43,7 @@ import { t } from "../../i18n";
 import { DoublePageIcon, Icon } from "../Icon";
 import { DsSelect, IconText, IconButton, SegmentedSwitch, DsSwitch } from "../Button";
 import { SettingsRow } from "../SettingsRow";
+import { GroupBox } from "../GroupBox";
 
 export function ReaderSettings() {
   const [autoCacheEnabled, setAutoCacheEnabled] = createSignal(isAutoCacheChapterEnabled());
@@ -62,10 +63,7 @@ export function ReaderSettings() {
   const [prevChapterPagePref, setPrevChapterPagePref] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
   const [scrollLockPref, setScrollLockPref] = createSignal<boolean>(getScrollLock());
   return (
-    <div class="group-box" id="ds-settings-sec-reading">
-      <div class="group-box-title">
-        <IconText icon={<DoublePageIcon />}>{t("settings.reader.title")}</IconText>
-      </div>
+    <GroupBox id="ds-settings-sec-reading" title={<IconText icon={<DoublePageIcon />}>{t("settings.reader.title")}</IconText>}>
       <div class="ds-col">
         {/* Reading Direction */}
         <SettingsRow label={<>{t("settings.reader.readingDirection")}:</>} desc={t("settings.reader.readingDirectionDesc")}>
@@ -316,6 +314,6 @@ export function ReaderSettings() {
           />
         </SettingsRow>
       </div>
-    </div>
+    </GroupBox>
   );
 }

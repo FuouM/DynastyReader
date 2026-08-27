@@ -2,35 +2,20 @@
  * Series header: metadata, categorized tag rows, sanitized description, and cover image.
  */
 
-import { createMemo, For, Show } from "solid-js";
+import { createMemo, Show } from "solid-js";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { openExternal } from "../api";
 import { groupSeriesTags } from "../taxonomy";
 import type { GroupedSeriesTags } from "../types/taxonomy";
-import type { Series, SeriesTag } from "../types/api";
-import { TagPill } from "../components/TagPill";
+import type { Series } from "../types/api";
+import { TagRow } from "../components/TagRow";
 import { Cover } from "../components/Cover";
 import { SanitizedDescription } from "../lib/sanitize";
 export function groupTags(series: Series): GroupedSeriesTags {
   return groupSeriesTags(series.tags, series.taggings);
 }
 
-
-export function MetaRow(props: { label: string; tags: SeriesTag[] }) {
-  return (
-    <Show when={props.tags.length > 0}>
-      <div class="ds-meta-row">
-        <span class="ds-meta-label">{props.label}</span>
-        <div class="ds-meta-pills">
-          <For each={props.tags}>
-            {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} compact={false} />}
-          </For>
-        </div>
-      </div>
-    </Show>
-  );
-}
 
 export interface SeriesHeaderProps {
   series: Series;
@@ -83,13 +68,13 @@ export function SeriesHeader(props: SeriesHeaderProps) {
         </Show>
         <Show when={hasMetaRows()}>
           <div class="ds-meta-rows">
-            <MetaRow label={`${t("series.authorsLabel")}:`} tags={tags().authorTags} />
-            <MetaRow label={`${t("series.scanlatorsLabel")}:`} tags={tags().groupTags} />
-            <MetaRow label={`${t("series.doujinLabel")}:`} tags={tags().doujinTags} />
-            <MetaRow label={`${t("series.pairingLabel")}:`} tags={tags().pairingTags} />
-            <MetaRow label={`${t("series.charactersLabel")}:`} tags={tags().characterTags} />
-            <MetaRow label={`${t("series.statusLabel")}:`} tags={tags().statusTags} />
-            <MetaRow label={`${t("series.tagsLabel")}:`} tags={tags().otherTags} />
+            <TagRow variant="meta" label={`${t("series.authorsLabel")}:`} tags={tags().authorTags} />
+            <TagRow variant="meta" label={`${t("series.scanlatorsLabel")}:`} tags={tags().groupTags} />
+            <TagRow variant="meta" label={`${t("series.doujinLabel")}:`} tags={tags().doujinTags} />
+            <TagRow variant="meta" label={`${t("series.pairingLabel")}:`} tags={tags().pairingTags} />
+            <TagRow variant="meta" label={`${t("series.charactersLabel")}:`} tags={tags().characterTags} />
+            <TagRow variant="meta" label={`${t("series.statusLabel")}:`} tags={tags().statusTags} />
+            <TagRow variant="meta" label={`${t("series.tagsLabel")}:`} tags={tags().otherTags} />
           </div>
         </Show>
       </div>

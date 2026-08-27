@@ -9,6 +9,7 @@ import { t } from "../i18n";
 import type { Series } from "../types/api";
 import { StorageIcon, BookIcon } from "../components/Icon";
 import { IconText } from "../components/Button";
+import { GroupBox } from "../components/GroupBox";
 
 export interface SeriesTaggablesProps {
   series: Series;
@@ -19,10 +20,7 @@ export function SeriesTaggables(props: SeriesTaggablesProps) {
 
   return (
     <Show when={taggables() && taggables()!.length > 0}>
-      <div class="group-box ds-mt-10">
-        <div class="group-box-title">
-          <IconText icon={<StorageIcon />}>{t("series.relatedAnthologies", { count: taggables()!.length })}</IconText>
-        </div>
+      <GroupBox class="ds-mt-10" title={<IconText icon={<StorageIcon />}>{t("series.relatedAnthologies", { count: taggables()!.length })}</IconText>}>
         <div class="ds-taggables-grid">
           <For each={taggables()}>
             {(tg) => (
@@ -50,7 +48,7 @@ export function SeriesTaggables(props: SeriesTaggablesProps) {
             )}
           </For>
         </div>
-      </div>
+      </GroupBox>
     </Show>
   );
 }
