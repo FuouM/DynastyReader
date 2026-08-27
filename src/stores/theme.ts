@@ -44,6 +44,10 @@ function deserializeTheme(raw: string): AppTheme {
 
 function applyThemeToDom(t: AppTheme): void {
   const root = document.documentElement;
+  // Clear temporary inline styles from index.html bootstrap script so tokens.css controls it
+  root.style.removeProperty("background-color");
+  root.style.removeProperty("color");
+  root.style.colorScheme = t === "light" ? "light" : "dark";
   // Always set data-theme explicitly so CSS [data-theme="light"] selectors work.
   root.setAttribute("data-theme", t);
   // Swap ds-<theme> class: remove any prior theme class, add the current one.

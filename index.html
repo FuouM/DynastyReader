@@ -6,11 +6,92 @@
     <meta name="theme-color" content="#f5f5f5" id="ds-theme-color-meta" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <title>DynastyReader</title>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem("ds-theme");
+          var theme = "light";
+          if (raw) {
+            try {
+              theme = JSON.parse(raw);
+            } catch (_) {
+              theme = raw.replace(/^["']|["']$/g, "").trim().toLowerCase();
+            }
+          } else {
+            var legacy = localStorage.getItem("ds-reader-theme");
+            if (legacy === "dark" || legacy === "high-contrast" || legacy === "light") {
+              theme = legacy;
+            } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+              theme = "dark";
+            }
+          }
+          if (theme !== "dark" && theme !== "high-contrast" && theme !== "light") {
+            theme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+          }
+          var metaColors = {
+            light: "#f5f5f5",
+            dark: "#181818",
+            "high-contrast": "#000000"
+          };
+          var bgColors = {
+            light: "#ececec",
+            dark: "#1e1e1e",
+            "high-contrast": "#000000"
+          };
+          var textColors = {
+            light: "#000000",
+            dark: "#e0e0e0",
+            "high-contrast": "#ffffff"
+          };
+          var root = document.documentElement;
+          root.setAttribute("data-theme", theme);
+          root.style.backgroundColor = bgColors[theme] || "#ececec";
+          root.style.color = textColors[theme] || "#000000";
+          root.style.colorScheme = theme === "light" ? "light" : "dark";
+
+          var meta = document.getElementById("ds-theme-color-meta");
+          if (meta) {
+            meta.setAttribute("content", metaColors[theme] || "#f5f5f5");
+          }
+        } catch (_) {}
+      })();
+    </script>
     <style>
+      :root[data-theme="dark"] {
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+        color-scheme: dark;
+      }
+      :root[data-theme="high-contrast"] {
+        background-color: #000000;
+        color: #ffffff;
+        color-scheme: dark;
+      }
+      :root[data-theme="light"] {
+        background-color: #ececec;
+        color: #000000;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) {
+          background-color: #1e1e1e;
+          color: #e0e0e0;
+          color-scheme: dark;
+        }
+      }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-theme]) {
+          background-color: #ececec;
+          color: #000000;
+          color-scheme: light;
+        }
+      }
       html,
       body {
         height: 100%;
         margin: 0;
+        background-color: inherit;
+        color: inherit;
       }
     </style>
   </head>
