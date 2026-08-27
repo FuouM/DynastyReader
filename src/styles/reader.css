@@ -43,12 +43,10 @@
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-top {
   padding: calc(6px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 6px calc(12px + env(safe-area-inset-left, 0px)) !important;
   border-bottom: 1px solid var(--sys-border-light, #ccc) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-bottom {
   padding: 6px calc(12px + env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px)) !important;
   border-top: 1px solid var(--sys-border-light, #ccc) !important;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
 }
 #ds-reader-container.ds-fullscreen #ds-reader-viewport {
   background: var(--ds-reader-viewport-bg) !important;
@@ -1137,7 +1135,7 @@
   color: #a0a0a0;
 }
 
-/* Tap Zone Visual Guide Overlay (revealed on long-press / hold) */
+/* Tap Zone Visual Guide Overlay — WinForms flat */
 .ds-tap-zone-guide {
   position: fixed;
   inset: 0;
@@ -1157,29 +1155,25 @@
   justify-content: center;
   gap: 8px;
   box-sizing: border-box;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  background: var(--sys-control-bg, #ececec);
+  border: 1px solid var(--sys-border-dark, #707070);
 }
 
 .ds-tap-zone-side {
   width: 22%;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1.5px dashed rgba(255, 255, 255, 0.35);
-  color: #ffffff;
+  color: var(--sys-window-text, #000);
 }
 
 .ds-tap-zone-center {
   width: 56%;
-  background: rgba(0, 0, 0, 0.14);
-  border-top: 1.5px dashed rgba(255, 255, 255, 0.2);
-  border-bottom: 1.5px dashed rgba(255, 255, 255, 0.2);
   border-left: none;
   border-right: none;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--sys-window-text, #000);
 }
 
 .ds-tap-zone.is-active {
-  background: rgba(0, 120, 212, 0.45) !important;
-  border-color: rgba(255, 255, 255, 0.9) !important;
+  background: var(--sys-highlight-bg, #0078d7) !important;
+  border-color: #005499 !important;
   color: #ffffff !important;
 }
 
@@ -1187,20 +1181,20 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: 16px;
-  background: rgba(0, 0, 0, 0.72);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  font-size: 11.5px;
+  padding: 3px 8px;
+  border: 1px solid var(--sys-border-dark, #707070);
+  border-radius: 2px;
+  background: var(--sys-window-bg, #ffffff);
+  color: var(--sys-window-text, #000);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.2px;
   line-height: 1;
-  color: #ffffff;
   pointer-events: none;
 }
 
 .ds-tap-zone.is-active .ds-tap-zone-pill {
-  background: var(--sys-primary, #0078d4);
-  box-shadow: 0 3px 12px rgba(0, 120, 212, 0.65);
+  background: var(--sys-window-bg, #ffffff);
+  color: var(--sys-highlight-bg, #0078d7);
+  border-color: var(--sys-highlight-bg, #0078d7);
 }
 }

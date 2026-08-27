@@ -873,21 +873,24 @@ body.ds-dark .tag-pill:hover {
   gap: 6px;
 }
 .ds-modal-close {
-  font-size: 10px;
+  font-size: 11px;
   padding: 0;
-  width: 20px;
-  min-width: 20px;
-  height: 20px;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 2px;
+  box-sizing: border-box;
 }
 .ds-modal-body {
-  padding: 4px 2px 4px 0;
+  padding: 8px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-y: overlay;
+  box-sizing: border-box;
 }
 .ds-modal-footer {
   border-top: 1px solid var(--sys-border-dark, #b0b0b0);
@@ -1080,7 +1083,7 @@ code,
   flex: 1;
   min-width: 0;
   overflow-y: scroll;
-  padding: 12px 8px 12px 2px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1393,11 +1396,11 @@ code,
   }
 
   #ds-settings-modal-backdrop .ds-modal-close {
-    min-width: 32px !important;
-    width: 32px !important;
-    height: 32px !important;
+    min-width: 22px !important;
+    width: 22px !important;
+    height: 22px !important;
     padding: 0 !important;
-    font-size: 14px !important;
+    font-size: 11px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -1445,10 +1448,10 @@ code,
     border-radius: 4px !important;
   }
   .ds-modal-backdrop:not(#ds-settings-modal-backdrop) .ds-modal-close {
-    width: 28px !important;
-    min-width: 28px !important;
-    height: 28px !important;
-    font-size: 13px !important;
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 22px !important;
+    font-size: 11px !important;
   }
 
   .ds-settings-layout {

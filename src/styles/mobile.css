@@ -666,12 +666,9 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   left: 0 !important;
   right: 0 !important;
   z-index: 1100 !important;
-  padding: calc(4px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 6px max(12px, env(safe-area-inset-left, 0px)) !important;
-  background: rgba(248, 248, 248, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
+  background: var(--sys-window-bg, #f5f5f5) !important;
+  border-bottom: 1px solid var(--sys-border-light, #ccc) !important;
   color: var(--sys-window-text, #000000);
 }
 
@@ -681,27 +678,22 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
   left: 0 !important;
   right: 0 !important;
   z-index: 1100 !important;
-  padding: 6px max(12px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)) !important;
-  background: rgba(248, 248, 248, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+  padding: 4px calc(8px + env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px)) !important;
+  background: var(--sys-window-bg, #f5f5f5) !important;
+  border-top: 1px solid var(--sys-border-light, #ccc) !important;
   color: var(--sys-window-text, #000000);
 }
 
-/* Dark Theme Mobile Reader HUD */
+/* Dark Theme Mobile Reader HUD — solid, no translucency */
 #ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-nav-top {
-  background: rgba(22, 22, 22, 0.96) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  background: #181818 !important;
+  border-bottom: 1px solid #383838 !important;
   color: #ffffff !important;
 }
 
 #ds-root[data-mobile] #ds-reader-container.ds-dark .ds-reader-nav-bottom {
-  background: rgba(22, 22, 22, 0.96) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.5) !important;
+  background: #181818 !important;
+  border-top: 1px solid #383838 !important;
   color: #ffffff !important;
 }
 
@@ -990,15 +982,16 @@ body.ds-dark #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:
 }
 
 #ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-close {
-  min-width: 26px !important;
-  width: 26px !important;
-  height: 26px !important;
+  min-width: 22px !important;
+  width: 22px !important;
+  height: 22px !important;
   padding: 0 !important;
-  font-size: 13px !important;
+  font-size: 11px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
 }
+
 
 #ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-body {
   flex: 1 1 auto !important;
