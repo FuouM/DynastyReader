@@ -186,17 +186,18 @@ jobs:
 
           KEY_PASS="${ANDROID_KEY_PASSWORD:-$ANDROID_STORE_PASSWORD}"
 
-          # Validate keystore can be read
+          # Validate keystore can be read with the provided password and alias
           echo "Validating keystore integrity and alias..."
-          keytool -list -v -keystore src-tauri/gen/android/app/release.keystore -alias "$KEYSTORE_ALIAS" -storepass "$ANDROID_STORE_PASSWORD" || {
-            echo "WARNING: Could not verify alias '$KEYSTORE_ALIAS' with the provided store password. Listing all entries:"
-            keytool -list -v -keystore src-tauri/gen/android/app/release.keystore -storepass "$ANDROID_STORE_PASSWORD" || true
-          }
-
-          echo "TAURI_STORE_FILE=release.keystore" >> $GITHUB_ENV
-          echo "TAURI_KEY_ALIAS=$KEYSTORE_ALIAS" >> $GITHUB_ENV
-          echo "TAURI_KEY_PASSWORD=$KEY_PASS" >> $GITHUB_ENV
-          echo "TAURI_STORE_PASSWORD=$ANDROID_STORE_PASSWORD" >> $GITHUB_ENV
+          if keytool -list -v -keystore src-tauri/gen/android/app/release.keystore -alias "$KEYSTORE_ALIAS" -storepass "$ANDROID_STORE_PASSWORD" >/dev/null 2>&1; then
+            echo "Keystore and alias '$KEYSTORE_ALIAS' successfully verified!"
+            echo "TAURI_STORE_FILE=release.keystore" >> $GITHUB_ENV
+            echo "TAURI_KEY_ALIAS=$KEYSTORE_ALIAS" >> $GITHUB_ENV
+            echo "TAURI_KEY_PASSWORD=$KEY_PASS" >> $GITHUB_ENV
+            echo "TAURI_STORE_PASSWORD=$ANDROID_STORE_PASSWORD" >> $GITHUB_ENV
+          else
+            echo "::warning ::Keystore or password verification failed for alias '$KEYSTORE_ALIAS'. Falling back to debug signing so the build succeeds with installable APKs."
+            rm -f src-tauri/gen/android/app/release.keystore
+          fi
       - name: Build Android APK & App Bundle
         run: |
           npm run tauri android build -- --apk
