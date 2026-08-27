@@ -5,7 +5,16 @@ on:
     tags:
       - 'v*' # Trigger only on version tags (e.g. v0.1.0)
   workflow_dispatch: # Allows manual triggering from GitHub UI
-
+    inputs:
+      platform:
+        description: 'Platform(s) to build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'desktop'
+          - 'android'
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
@@ -13,6 +22,7 @@ concurrency:
 jobs:
   build-desktop:
     name: Build (${{ matrix.platform }})
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'desktop'
     permissions:
       contents: write
     strategy:
@@ -102,6 +112,7 @@ jobs:
 
   build-android:
     name: Build (android)
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'android'
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -161,11 +172,24 @@ jobs:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > src-tauri/gen/android/app/release.keystore
-          echo "TAURI_STORE_FILE=release.keystore" >> $GITHUB_ENV
-          echo "TAURI_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> $GITHUB_ENV
-          echo "TAURI_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> $GITHUB_ENV
-          echo "TAURI_STORE_PASSWORD=$ANDROID_STORE_PASSWORD" >> $GITHUB_ENV
 
+          # Auto-discover alias from keystore if ANDROID_KEY_ALIAS is unset or not found
+          KEYSTORE_ALIAS="$ANDROID_KEY_ALIAS"
+          DISCOVERED_ALIAS=$(keytool -list -keystore src-tauri/gen/android/app/release.keystore -storepass "$ANDROID_STORE_PASSWORD" 2>/dev/null | grep -E "PrivateKeyEntry|keyEntry" | head -n 1 | awk -F',' '{print $1}' | xargs)
+
+          if [ -n "$DISCOVERED_ALIAS" ]; then
+            if [ -z "$KEYSTORE_ALIAS" ]; then
+              echo "Auto-detected keystore alias: $DISCOVERED_ALIAS"
+              KEYSTORE_ALIAS="$DISCOVERED_ALIAS"
+            fi
+          fi
+
+          KEY_PASS="${ANDROID_KEY_PASSWORD:-$ANDROID_STORE_PASSWORD}"
+
+          echo "TAURI_STORE_FILE=release.keystore" >> $GITHUB_ENV
+          echo "TAURI_KEY_ALIAS=$KEYSTORE_ALIAS" >> $GITHUB_ENV
+          echo "TAURI_KEY_PASSWORD=$KEY_PASS" >> $GITHUB_ENV
+          echo "TAURI_STORE_PASSWORD=$ANDROID_STORE_PASSWORD" >> $GITHUB_ENV
       - name: Build Android APK & App Bundle
         run: |
           npm run tauri android build -- --apk
