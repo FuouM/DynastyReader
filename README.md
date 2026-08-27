@@ -6,6 +6,7 @@ DynastyReader is a fast, lightweight, unofficial reader for [Dynasty Scans](http
   - [1. Overview \& Design Goals](#1-overview--design-goals)
   - [2. Tech Stack](#2-tech-stack)
   - [3. Features](#3-features)
+  - [4. Roadmap](#4-roadmap)
   - [5. Data Storage \& Layout](#5-data-storage--layout)
   - [6. Build \& Setup](#6-build--setup)
   - [7. LLM Attribution](#7-llm-attribution)
@@ -73,6 +74,10 @@ DynastyReader was extracted from [Project Curator](https://github.com/FuouM/Proj
 - **Responsive Mobile Shell**: Adaptive layout with compact topbar, segmented bottom navigation bar, mobile 4px overlay scrollbars, touch overscroll containment, and collapsible reader controls drawer.
 - **Touch & Gesture Navigation**: Seamless swipe overscroll with haptic feedback for previous/next chapter transitions, customizable tap zones, and edge swipe boundary safety.
 - **In-App Updates & Logs**: Automated GitHub release SemVer update checker with direct binary replacement on Windows, plus one-click access to application logs.
+
+## 4. Roadmap
+
+- Better UI and UX for the best manga reading experience cross-platform
 
 ## 5. Data Storage & Layout
 
