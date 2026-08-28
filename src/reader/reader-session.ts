@@ -9,28 +9,11 @@
 
 import { batch, createComponent, createRoot, getOwner, runWithOwner } from "solid-js";
 import { createStore } from "solid-js/store";
-import {
-  navigate,
-  setBanner,
-  showBanner,
-  setActions,
-  clearActions,
-  isOnline,
-} from "../stores";
-import { getChapterContainerTag } from "../taxonomy";
+import { showBanner, setActions, clearActions } from "../stores";
 import { t } from "../i18n";
-import { errorMessage } from "../utils/errors";
 import { toggleAppTheme } from "../stores/theme";
-import { fetchChapter, fetchSeries } from "../api";
-import {
-  addHistory,
-  getBookmark,
-  getCachedPages,
-  getReadingProgress,
-} from "../db";
-import type { Chapter, ChapterPage, Series } from "../types/api";
+import type { ChapterPage } from "../types/api";
 import type { ChapterRef, Route } from "../types/routes";
-import { getPrevChapterStartPage } from "./settings";
 import type {
   FitMode,
   PagedLayout,
@@ -38,42 +21,27 @@ import type {
   ReadingDirection,
   SpreadGroup,
 } from "../types/reader";
-import {
-  anchorPageOf,
-  detectIsLongStrip,
-  detectReadingDirection,
-  spreadIndexOf,
-  getAdjacentChapters,
-} from "./reader-spread";
+import { anchorPageOf, spreadIndexOf } from "./reader-spread";
 import { ReaderQueue, type ReaderQueueHost, type SlotStateKind } from "./reader-queue";
 import {
-  getDefaultFitMode,
-  getEffectiveDefaultReaderMode,
-  getEffectiveDefaultPagedLayout,
-  getDefaultReadingDirection,
   getPrefetchBuffer,
   isAutoCacheChapterEnabled,
-  isCoverOffsetDefaultEnabled,
-  isLongStripFitWidthEnabled,
-  isLongStripSpreadOverrideEnabled,
   setCoverOffsetDefaultEnabled,
   setDefaultFitMode,
   setDefaultPagedLayout,
   setDefaultReaderMode,
   setDefaultReadingDirection,
-  getScrollLock,
   setScrollLock as setScrollLockPersisted,
 } from "./settings";
-import { standardizeCachePaths } from "./path-migration";
 import * as vp from "./reader-viewport";
+import * as nav from "./reader-chapter-nav";
+import * as boot from "./reader-bootstrap";
 import { createReaderState, type ReaderState, type SlotStateRecord } from "./reader-state";
 import { createReaderPersistence, type ReaderPersistence } from "./reader-persistence";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
 
-const RESTORE_REVEAL_DEADLINE_MS = 1200;
 const FULLSCREEN_RELAYOUT_FIRST_MS = 60;
 const FULLSCREEN_RELAYOUT_SECOND_MS = 180;
-
 export {
   isAutoCacheChapterEnabled,
   setAutoCacheChapterEnabled,
@@ -192,15 +160,15 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   readonly retrying = new Set<number>();
   readonly imgErrorCount = new Map<number, number>();
   private persistence!: ReaderPersistence;
-  private disposedFlag = false;
+  disposedFlag = false;
   isProgrammaticScroll = false;
   programmaticScrollTimer: number | null = null;
   scrollRaf: number | null = null;
   scrollAnimRaf: number | null = null;
   private readonly cleanupFns: (() => void)[] = [];
-  private containerTagPermalink: string | null = null;
-  private containerTagType: string | null = null;
-  private chapterListPromise: Promise<ChapterRef[]> | null = null;
+  containerTagPermalink: string | null = null;
+  containerTagType: string | null = null;
+  chapterListPromise: Promise<ChapterRef[]> | null = null;
   private actionsDispose: (() => void) | null = null;
   private readonly sessionOwner = getOwner();
   // Derived state -----------------------------------------------------------
@@ -644,104 +612,26 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     setTimeout(() => this.resetToCurrentPage(false), FULLSCREEN_RELAYOUT_SECOND_MS);
   }
 
-  // Chapter navigation ------------------------------------------------------
+  // Chapter navigation — delegates to reader-chapter-nav.ts -----------------
   gotoChapter(c: ChapterRef, targetPage?: number | "last"): void {
-    navigate({
-      view: "reader",
-      seriesPermalink: this.seriesPermalink() ?? undefined,
-      seriesName: this.seriesName(),
-      chapterPermalink: c.permalink,
-      chapterTitle: c.title,
-      chapterList: this.chapterList(),
-      startPage: targetPage === "last" ? -1 : targetPage,
-    });
+    nav.gotoChapter(this, c, targetPage);
   }
 
   async loadChapterList(force = false): Promise<ChapterRef[]> {
-    const permalink = this.seriesPermalink();
-    if (!permalink) return [];
-    try {
-      let s: Series | null = null;
-      try {
-        s = await fetchSeries(permalink, force, this.seriesType() ?? undefined);
-      } catch (err) {
-        if (this.containerTagPermalink && this.containerTagPermalink !== permalink) {
-          try {
-            s = await fetchSeries(this.containerTagPermalink, force, this.containerTagType ?? undefined);
-            if (s) {
-              this.setSeriesPermalink(this.containerTagPermalink);
-              if (this.containerTagType) this.setSeriesType(this.containerTagType);
-            }
-          } catch {
-            // fallback error ignored, throw original below if s is null
-          }
-        }
-        if (!s) throw err;
-      }
-      if (this.disposedFlag || !s) return [];
-
-      const cl: ChapterRef[] = [];
-      for (const t of s.taggings ?? []) {
-        if (t.header) continue;
-        if (t.permalink) {
-          cl.push({
-            title: t.title || t.permalink,
-            permalink: t.permalink,
-            released_on: t.released_on ?? undefined,
-          });
-        }
-      }
-      if (cl.length > 0) {
-        this.setChapterList(cl);
-      }
-      return cl;
-    } catch (err) {
-      console.warn("[reader-session] loadChapterList failed:", err);
-      return [];
-    }
-  }
-
-  private async gotoAdjacent(direction: "prev" | "next"): Promise<void> {
-    if (this.chapterList().length === 0 && this.chapterListPromise) {
-      await this.chapterListPromise;
-    }
-    const adj = getAdjacentChapters(this.chapterList(), this.permalink, this.chapterTitle());
-    let chapter = direction === "prev" ? adj.prevCh : adj.nextCh;
-    if (!chapter && this.seriesPermalink()) {
-      const cl = await this.loadChapterList(this.chapterList().length === 0);
-      if (cl.length > 0) {
-        const reloaded = getAdjacentChapters(cl, this.permalink, this.chapterTitle());
-        chapter = direction === "prev" ? reloaded.prevCh : reloaded.nextCh;
-      }
-    }
-    if (chapter) {
-      const target = direction === "prev" && getPrevChapterStartPage() === "last" ? "last" : 0;
-      this.gotoChapter(chapter, target);
-    } else {
-      showBanner(
-        direction === "prev"
-          ? t("reader.overscrollLock.firstChapterDesc") || "No previous chapter."
-          : t("reader.overscrollLock.endOfSeriesDesc") || "No next chapter.",
-      );
-    }
+    return nav.loadChapterList(this, force);
   }
 
   async gotoPrevChapter(): Promise<void> {
-    return this.gotoAdjacent("prev");
+    return nav.gotoPrevChapter(this);
   }
 
   async gotoNextChapter(): Promise<void> {
-    return this.gotoAdjacent("next");
+    return nav.gotoNextChapter(this);
   }
 
   gotoSeries(): void {
-    navigate({
-      view: "series",
-      seriesPermalink: this.seriesPermalink() ?? undefined,
-      seriesName: this.seriesName() ?? this.chapterTitle(),
-    });
+    nav.gotoSeries(this);
   }
-
   // Viewport imperative engine — delegates to reader-viewport.ts ------------
   updateViewportHeight(): void { vp.updateViewportHeight(this); }
   updateFirstSlotHeight(): void { vp.updateFirstSlotHeight(this); }
@@ -796,274 +686,13 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     }
   }
 
-  // Bootstrap ----------------------------------------------------------------
+  // Bootstrap — delegates to reader-bootstrap.ts ----------------------------
   async init(): Promise<void> {
-    const route = this.route;
-    const permalink = route.chapterPermalink;
-    if (!permalink) return;
-
-    let chapter: Chapter;
-    try {
-      chapter = await fetchChapter(permalink);
-    } catch (err) {
-      if (this.disposedFlag) return;
-      const msg = errorMessage(err);
-      setBanner(t("reader.session.loadChapterError", { msg }));
-      this.setError(msg);
-      this.setLoading(false);
-      return;
-    }
-    if (this.disposedFlag) return;
-
-    const containerTag = getChapterContainerTag(chapter.tags);
-    this.containerTagPermalink = containerTag?.permalink || null;
-    this.containerTagType = containerTag?.type || null;
-
-    const hasRouteChapterList = Boolean(route.chapterList && route.chapterList.length > 0);
-    const seriesPermalink = hasRouteChapterList
-      ? (route.seriesPermalink || containerTag?.permalink || null)
-      : (containerTag?.permalink || route.seriesPermalink || null);
-    const seriesName = containerTag?.name || route.seriesName || chapter.title;
-    const preferredType = containerTag?.type || (route.seriesPermalink ? "series" : undefined);
-
-    this.setSeriesPermalink(seriesPermalink);
-    this.setSeriesType(preferredType ?? null);
-    this.setSeriesName(seriesName);
-    this.setChapterTitle(chapter.title || route.chapterTitle || "Chapter");
-    this.setChapterPermalink(this.permalink);
-    if (hasRouteChapterList) {
-      this.setChapterList(route.chapterList!);
-    } else {
-      this.setChapterList([]);
-    }
-    this.setPages(chapter.pages ?? []);
-
-    const pageCount = this.pages().length;
-    if (pageCount === 0) {
-      this.setEmpty(true);
-      this.setLoading(false);
-      return;
-    }
-
-    let startPage = route.startPage ?? 0;
-    if (startPage === -1) {
-      startPage = Math.max(0, pageCount - 1);
-    } else if (startPage <= 0) {
-      try {
-        const prog = await getReadingProgress(permalink);
-        if (prog && prog.completed !== 1 && prog.page_index > 0) {
-          startPage = prog.page_index;
-        }
-      } catch (err) {
-        console.error("[dynasty-reader] failed to load reading progress:", err);
-      }
-    }
-    this.setCurrentIndex(Math.min(startPage, Math.max(0, pageCount - 1)));
-
-    // Fetch latest series / anthology chapterList and auto-detect layout
-    if (this.seriesPermalink()) {
-      const p = this.loadChapterList(false);
-      this.chapterListPromise = p;
-
-      void p.then(async () => {
-        if (this.disposedFlag) return;
-        try {
-          const s = await fetchSeries(this.seriesPermalink()!, false, this.seriesType() ?? undefined);
-          if (this.disposedFlag || !s) return;
-          if (this.directionAutoDetected() && getDefaultReadingDirection() === "auto") {
-            const newDir = detectReadingDirection(chapter.tags ?? [], s.tags ?? []);
-            if (newDir !== this.direction()) {
-              this.setDirectionSignal(newDir);
-              if (this.isSpread()) {
-                this.resetToCurrentPage(true);
-              }
-            }
-          }
-          if (this.layoutAutoDetected() && isLongStripSpreadOverrideEnabled()) {
-            const isLong = detectIsLongStrip(chapter.tags ?? [], s.tags ?? []);
-            this.setIsLongStrip(isLong);
-            if (isLong && this.pagedLayout() === "spread") {
-              this.setPagedLayoutSignal("single");
-              if (this.isSpread()) {
-                this.resetToCurrentPage(true);
-              }
-            }
-          }
-          if (isLongStripFitWidthEnabled()) {
-            const isLong = detectIsLongStrip(chapter.tags ?? [], s.tags ?? []);
-            if (isLong && this.fitMode() !== "width") {
-              this.setFitMode("width");
-            }
-          }
-        } catch (err) {
-          console.debug("[dynasty-reader] layout metadata detection failed (non-fatal):", err);
-        }
-      });
-
-      if (this.chapterList().length === 0) {
-        await Promise.race([
-          p,
-          new Promise<void>((resolve) => setTimeout(resolve, 300)),
-        ]);
-      }
-    }
-
-    // Display-mode preferences
-    this.setModeSignal(getEffectiveDefaultReaderMode());
-
-    const isLong = detectIsLongStrip(chapter.tags ?? []);
-    this.setIsLongStrip(isLong);
-
-    if (isLong && isLongStripSpreadOverrideEnabled()) {
-      // Soft disable spread mode for long strip chapters
-      this.setPagedLayoutSignal("single");
-      this.setLayoutAutoDetected(true);
-    } else {
-      this.setPagedLayoutSignal(getEffectiveDefaultPagedLayout());
-      this.setLayoutAutoDetected(false);
-    }
-
-    this.setCoverOffsetSignal(isCoverOffsetDefaultEnabled());
-    
-    const dirPref = getDefaultReadingDirection();
-    if (dirPref === "auto") {
-      const tagDir = detectReadingDirection(chapter.tags ?? []);
-      this.setDirectionSignal(tagDir);
-      this.setDirectionAutoDetected(true);
-    } else {
-      this.setDirectionSignal(dirPref);
-      this.setDirectionAutoDetected(false);
-    }
-    if (isLong && isLongStripFitWidthEnabled()) {
-      this.setFitModeSignal("width");
-    } else {
-      this.setFitModeSignal(getDefaultFitMode());
-    }
-    this.setScrollLockSignal(getScrollLock());
-
-    // Restore cached page paths from SQLite
-    let cachedRows: Awaited<ReturnType<typeof getCachedPages>> = [];
-    try {
-      cachedRows = await getCachedPages(permalink);
-    } catch (err) {
-      cachedRows = [];
-      setBanner(
-        t("reader.session.cacheLookupError", { msg: errorMessage(err) }),
-      );
-    }
-    for (const row of cachedRows) {
-      if (row.page_index >= 0 && row.page_index < pageCount && row.file_path) {
-        this.cachedPages[1](row.page_index, row.file_path);
-      }
-    }
-    this.recountCached();
-
-    // Initial slot states (uncached pages)
-    const autoCacheAll = isAutoCacheChapterEnabled();
-    for (let i = 0; i < pageCount; i++) {
-      if (this.getCachedPath(i) !== undefined) continue;
-      if (!isOnline()) {
-        this.setSlotState(i, "offline", t("reader.session.slotState.offline"));
-      } else if (autoCacheAll) {
-        this.setSlotState(i, "spinner", t("reader.session.slotState.queued"));
-        this.enqueue(i);
-      } else {
-        this.setSlotState(i, "idle", t("reader.session.slotState.waiting"));
-      }
-    }
-
-    // Trigger priority download for uncached start/nearby pages
-    const cur = this.currentIndex();
-    if (this.getCachedPath(cur) === undefined) this.enqueue(cur, true);
-    if (autoCacheAll) {
-      if (this.getCachedPath(cur + 1) === undefined) this.enqueue(cur + 1, true);
-      if (this.getCachedPath(cur + 2) === undefined) this.enqueue(cur + 2, true);
-    } else {
-      const prefetchCount = getPrefetchBuffer();
-      for (let offset = 1; offset <= prefetchCount; offset++) {
-        const nextIdx = cur + offset;
-        if (nextIdx < pageCount && this.getCachedPath(nextIdx) === undefined) {
-          this.enqueue(nextIdx, true);
-        }
-      }
-    }
-
-    if (startPage > 0) {
-      this.setRestoring(true);
-    }
-
-    this.setLoading(false);
-    standardizeCachePaths(this);
-
-    // History + bookmarked state
-    try {
-      await addHistory({
-        chapterPermalink: permalink,
-        seriesPermalink: this.seriesPermalink() ?? "",
-        seriesName: this.seriesName() ?? "",
-        chapterTitle: this.chapterTitle(),
-      });
-    } catch (err) {
-      console.error("[dynasty-reader] failed to record history:", err);
-    }
-
-    let bookmarked = false;
-    try {
-      bookmarked = (await getBookmark(permalink)) !== null;
-    } catch {
-      bookmarked = false;
-    }
-    this.setBookmarked(bookmarked);
-
-    this.publishActions();
-
-    requestAnimationFrame(() => {
-      if (this.disposedFlag) return;
-      this.setPage(startPage, true);
-      if (startPage > 0) {
-        this.revealAfterRestore();
-      }
-    });
+    return boot.initReaderSession(this);
   }
 
   retry(): void {
-    this.disposedFlag = false;
-    this.setError(null);
-    this.setEmpty(false);
-    this.setLoading(true);
-    this.setPages([]);
-    this.setChapterList([]);
-    this.setCurrentIndex(0);
-    this.setAtEnd(false);
-    this.cachedPages[1](() => ({}));
-    this.slotStates[1](() => ({}));
-    this.recountCached();
-    void this.init();
-  }
-
-  private revealAfterRestore(): void {
-    const deadline = window.performance.now() + RESTORE_REVEAL_DEADLINE_MS;
-    const poll = (): void => {
-      if (this.disposedFlag) return;
-      let ready = true;
-      const cur = this.currentIndex();
-      const start = Math.max(0, cur - 1);
-      const end = Math.min(this.pages().length - 1, cur + 1);
-      for (let i = start; i <= end; i++) {
-        const img = this.slotEls[i]?.querySelector<HTMLImageElement>("img.ds-page-img");
-        if (img && !img.complete) {
-          ready = false;
-          break;
-        }
-      }
-      if (!ready && window.performance.now() < deadline) {
-        window.setTimeout(poll, 30);
-        return;
-      }
-      this.slideTo(this.currentIndex(), true);
-      this.setRestoring(false);
-    };
-    window.setTimeout(poll, 0);
+    boot.retryReaderSession(this);
   }
 
   private wideResetScheduled = false;
