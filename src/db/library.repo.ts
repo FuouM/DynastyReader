@@ -31,10 +31,6 @@ export const getProgressRevision = progressNotifier.getRevision;
 export const onProgressChanged = progressNotifier.onChanged;
 export const notifyProgressChanged = progressNotifier.notifyChanged;
 
-export async function getFollowedSeriesCount(): Promise<number> {
-  const rows = await query<{ count: number }>(`SELECT COUNT(*) as count FROM followed_series`);
-  return rows[0]?.count ?? 0;
-}
 
 export async function getFollowedSeriesPage(
   page = 1,
@@ -206,10 +202,6 @@ export async function getHistory(limit = 100): Promise<HistoryRow[]> {
   );
 }
 
-export async function getHistoryCount(): Promise<number> {
-  const rows = await query<{ count: number }>(`SELECT COUNT(*) as count FROM reading_history`);
-  return rows[0]?.count ?? 0;
-}
 
 export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
   return queryPaged<HistoryRow>(
@@ -232,10 +224,6 @@ export async function getHistoryPermalinks(permalinks: string[]): Promise<Set<st
   return new Set(rows.map((r) => r.chapter_permalink));
 }
 
-export async function getBookmarkCount(): Promise<number> {
-  const rows = await query<{ count: number }>(`SELECT COUNT(*) as count FROM bookmarks`);
-  return rows[0]?.count ?? 0;
-}
 
 export async function getBookmarksPage(page = 1, pageSize = 15): Promise<BookmarkPageResult> {
   return queryPaged<BookmarkRow>(

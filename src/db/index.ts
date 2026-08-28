@@ -3,7 +3,6 @@ export type { Row } from "./client";
 export { initDb } from "./schema";
 export { getCached, getCachedByPrefix, getBatchCached, setCached, touchCached, deleteCached } from "./metadata.repo";
 export {
-  getFollowedSeriesCount,
   getFollowedSeriesPage,
   getFollowedSeriesRow,
   getFollowedRevision,
@@ -22,13 +21,11 @@ export {
   removeHistory,
   clearHistory,
   getHistory,
-  getHistoryCount,
   getHistoryPage,
   getHistoryPermalinks,
   getHistoryRevision,
   onHistoryChanged,
   notifyHistoryChanged,
-  getBookmarkCount,
   getBookmarksPage,
   getBookmark,
   getBookmarkPermalinks,

@@ -42,6 +42,7 @@ fn is_version_newer(latest: &str, current: &str) -> bool {
 
 const OFFICIAL_RELEASE_PREFIX: &str = "https://github.com/FuouM/DynastyReader/releases/download/";
 const MAX_UPDATE_DOWNLOAD_BYTES: u64 = 256 * 1024 * 1024;
+const MAX_RELEASE_API_BODY: usize = 2 * 1024 * 1024;
 
 fn get_target_extension() -> &'static str {
     #[cfg(target_os = "windows")]
@@ -57,6 +58,12 @@ fn get_target_extension() -> &'static str {
         ""
     }
 }
+
+fn matches_target_extension(filename: &str) -> bool {
+    let ext = get_target_extension();
+    !ext.is_empty() && filename.ends_with(ext)
+}
+
 pub fn validate_update_download_url(url: &str) -> Result<(), String> {
     if url.is_empty() {
         return Err("Download URL cannot be empty".to_string());
@@ -68,8 +75,8 @@ pub fn validate_update_download_url(url: &str) -> Result<(), String> {
         return Err("Update download URL must originate from the official DynastyReader repository releases".to_string());
     }
 
-    let target_ext = get_target_extension();
-    if !target_ext.is_empty() && !url.ends_with(target_ext) {
+    if !matches_target_extension(url) {
+        let target_ext = get_target_extension();
         return Err(format!("Update asset must have the expected extension ({target_ext})"));
     }
 
@@ -93,10 +100,19 @@ pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>)
         return Err(format!("GitHub API returned HTTP {}", resp.status()));
     }
 
+    if let Some(cl) = resp.content_length() {
+        if cl > MAX_RELEASE_API_BODY as u64 {
+            return Err(format!("GitHub API response exceeds maximum permitted size ({cl} > {MAX_RELEASE_API_BODY})"));
+        }
+    }
+
     let bytes = resp
         .bytes()
         .await
         .map_err(|e| format!("Failed to read response body: {e}"))?;
+    if bytes.len() > MAX_RELEASE_API_BODY {
+        return Err(format!("GitHub API response body too large ({} bytes)", bytes.len()));
+    }
     let json: serde_json::Value = serde_json::from_slice(&bytes)
         .map_err(|e| format!("Failed to parse GitHub release response: {e}"))?;
     let tag_name = json["tag_name"]
@@ -110,11 +126,10 @@ pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>)
     let mut download_url = String::new();
     let mut asset_size = 0u64;
 
-    let target_ext = get_target_extension();
     if let Some(assets) = json["assets"].as_array() {
         for asset in assets {
             let name = asset["name"].as_str().unwrap_or("");
-            if !target_ext.is_empty() && name.ends_with(target_ext) {
+            if matches_target_extension(name) {
                 download_url = asset["browser_download_url"].as_str().unwrap_or("").to_string();
                 asset_size = asset["size"].as_u64().unwrap_or(0);
                 break;
