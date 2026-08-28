@@ -291,6 +291,7 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
 }
 
 /// Cleans up any `.old` and `.new` leftover binary files in the executable directory on startup.
+#[cfg(desktop)]
 pub fn cleanup_old_executables() {
     if let Ok(current_exe) = env::current_exe() {
         if let Some(dir) = current_exe.parent() {

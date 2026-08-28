@@ -17,7 +17,7 @@ android {
     compileSdk = 35
     namespace = "com.dynasty_scans_reader"
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "true"
+        manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "com.dynasty_scans_reader"
         minSdk = 24
         targetSdk = 35
@@ -34,7 +34,13 @@ android {
             enableV1Signing = true
             enableV2Signing = true
 
-            if (storeFileProp != null && file(storeFileProp).exists()) {
+            val isReleaseKeystoreConfigured = !storeFileProp.isNullOrBlank() &&
+                file(storeFileProp).exists() &&
+                !storePasswordProp.isNullOrBlank() &&
+                !keyPasswordProp.isNullOrBlank() &&
+                !keyAliasProp.isNullOrBlank()
+
+            if (isReleaseKeystoreConfigured) {
                 keyAlias = keyAliasProp
                 keyPassword = keyPasswordProp
                 storeFile = file(storeFileProp)
@@ -62,7 +68,7 @@ android {
             }
         }
         getByName("release") {
-            manifestPlaceholders["usesCleartextTraffic"] = "true"
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(

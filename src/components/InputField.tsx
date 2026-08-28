@@ -21,6 +21,7 @@ export interface InputFieldProps {
   wrapperStyle?: string;
   title?: string;
   autocomplete?: string;
+  autofocus?: boolean;
   inputmode?: "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
   enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
   onInput?: (value: string) => void;
@@ -52,6 +53,7 @@ export function InputField(props: InputFieldProps) {
         placeholder={props.placeholder}
         title={props.title}
         autocomplete={props.autocomplete}
+        autofocus={props.autofocus}
         inputmode={props.inputmode}
         enterkeyhint={props.enterkeyhint}
         value={value()}

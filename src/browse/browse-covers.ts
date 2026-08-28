@@ -56,6 +56,16 @@ export class BrowseCovers {
   private readonly queuedKeys = new Set<string>();
   private readonly MAX_CONCURRENCY = 4;
 
+  constructor() {
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && !this.isScrolling) {
+          this.pumpCoverHydration();
+        }
+      });
+    }
+  }
+
   private setMemoryCache(key: string, val: string): void {
     if (this.memoryCache.size >= MAX_MEMORY_CACHE) {
       const oldest = this.memoryCache.keys().next().value;
@@ -437,9 +447,18 @@ export class BrowseCovers {
     return this.lazyObserver;
   }
   private pumpCoverHydration(): void {
-    if (!this.coversEnabled || this.isScrolling || !this.hydrationHost || this.queue.length === 0) return;
+    if (
+      !this.coversEnabled ||
+      this.isScrolling ||
+      !this.hydrationHost ||
+      this.queue.length === 0 ||
+      (typeof document !== "undefined" && document.hidden)
+    ) {
+      return;
+    }
     while (
       !this.isScrolling &&
+      !(typeof document !== "undefined" && document.hidden) &&
       this.activeWorkers < this.MAX_CONCURRENCY &&
       this.queue.length > 0
     ) {

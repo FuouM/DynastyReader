@@ -10,7 +10,6 @@
 import {
   createEffect,
   createSignal,
-  onCleanup,
   Show,
   type Accessor,
 } from "solid-js";
@@ -331,21 +330,8 @@ function CreateCollectionModal(props: {
 }) {
   const [name, setName] = createSignal("");
   const [creating, setCreating] = createSignal(false);
-  let inputEl: HTMLInputElement | undefined;
-  let focusTimer: number | null = null;
-
-  onCleanup(() => {
-    if (focusTimer !== null) window.clearTimeout(focusTimer);
-  });
-
   createEffect(() => {
-    if (props.open()) {
-      if (focusTimer !== null) window.clearTimeout(focusTimer);
-      focusTimer = window.setTimeout(() => {
-        focusTimer = null;
-        inputEl?.focus();
-      }, 50);
-    } else {
+    if (!props.open()) {
       setName("");
       setCreating(false);
     }
@@ -385,7 +371,7 @@ function CreateCollectionModal(props: {
             {t("library.createCollectionNameLabel")}
           </label>
           <InputField
-            ref={(el) => { inputEl = el; }}
+            autofocus={true}
             placeholder={t("library.createCollectionNamePlaceholder")}
             value={name()}
             onInput={(val) => setName(val)}

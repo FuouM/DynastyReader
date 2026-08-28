@@ -8,6 +8,23 @@ param(
 $PSScriptRoot_Local = $PSScriptRoot
 . "$PSScriptRoot_Local\env.ps1"
 
+# Load .env configuration if present
+$envFile = "$PSScriptRoot_Local\.env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith("#") -and $line.Contains("=")) {
+            $parts = $line -split '=', 2
+            $key = $parts[0].Trim()
+            $val = $parts[1].Trim().Trim('"').Trim("'")
+            if (-not (Get-Item "env:$key" -ErrorAction SilentlyContinue)) {
+                [System.Environment]::SetEnvironmentVariable($key, $val, "Process")
+                Set-Item "env:$key" $val
+            }
+        }
+    }
+}
+
 # Read SDK directory from local.properties if present and ANDROID_HOME isn't explicitly set
 if (-not $env:ANDROID_HOME) {
     $localProp = "$PSScriptRoot_Local\src-tauri\gen\android\local.properties"
@@ -35,6 +52,16 @@ if ($env:ANDROID_HOME -and (Test-Path "$env:ANDROID_HOME\platform-tools")) {
     if ($env:PATH -notlike "*$env:ANDROID_HOME\platform-tools*") {
         $env:PATH = "$env:ANDROID_HOME\platform-tools;$env:PATH"
     }
+}
+
+# Precheck: Validate Android SDK and NDK paths before building
+if (-not $env:ANDROID_HOME -or -not (Test-Path $env:ANDROID_HOME)) {
+    Write-Host "`n[ERROR] ANDROID_HOME is not set or valid. Please install the Android SDK or configure local.properties." -ForegroundColor Red
+    exit 1
+}
+if (-not $env:NDK_HOME -or -not (Test-Path $env:NDK_HOME)) {
+    Write-Host "`n[ERROR] NDK_HOME is not set or valid. Please install the NDK under `$env:ANDROID_HOME\ndk\`." -ForegroundColor Red
+    exit 1
 }
 
 # Sync custom app launcher icons from src-tauri/icons/android into Android project res
@@ -76,6 +103,22 @@ if ($Release) {
     }
     if (-not $env:TAURI_KEY_PASSWORD -and $env:TAURI_STORE_PASSWORD) {
         $env:TAURI_KEY_PASSWORD = $env:TAURI_STORE_PASSWORD
+    }
+
+    # Immediate precheck: Keystore file existence
+    $keystoreCandidate1 = "$PSScriptRoot_Local\$($env:TAURI_STORE_FILE)"
+    $keystoreCandidate2 = "$PSScriptRoot_Local\src-tauri\gen\android\app\$($env:TAURI_STORE_FILE)"
+    if (-not (Test-Path $keystoreCandidate1) -and -not (Test-Path $keystoreCandidate2)) {
+        Write-Host "`n[ERROR] Release build requested but keystore file '$($env:TAURI_STORE_FILE)' was not found." -ForegroundColor Red
+        Write-Host "Place 'release.keystore' in the project root or specify `$env:TAURI_STORE_FILE." -ForegroundColor Yellow
+        exit 1
+    }
+
+    # Immediate precheck: Keystore password presence
+    if ([string]::IsNullOrWhiteSpace($env:TAURI_STORE_PASSWORD)) {
+        Write-Host "`n[ERROR] Release build requested but signing password is missing." -ForegroundColor Red
+        Write-Host "Set `$env:TAURI_STORE_PASSWORD (or `$env:ANDROID_STORE_PASSWORD, or specify in tauri.properties) before building --Release." -ForegroundColor Yellow
+        exit 1
     }
 }
 

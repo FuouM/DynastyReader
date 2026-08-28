@@ -25,7 +25,7 @@ import {
   toggleItemInCollection,
   type CollectionItemKind,
 } from "../db";
-import { showBanner, uiScale } from "../stores";
+import { isMobile, showBanner, uiScale } from "../stores";
 
 export interface AddToCollectionItem {
   permalink: string;
@@ -72,6 +72,9 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
     };
 
     const onScroll = (ev: Event): void => {
+      if (dropdownRef && document.activeElement && dropdownRef.contains(document.activeElement)) {
+        return;
+      }
       const target = ev.target as Node | null;
       if (target && dropdownRef && dropdownRef.contains(target)) {
         return;
@@ -96,8 +99,8 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
     const baseStyle = `width:290px;max-width:94vw;zoom:${scale};`;
 
     const anchor = props.anchorEl;
-    if (!anchor) {
-      setPositionStyle(`${baseStyle}top:20%;left:50%;transform:translateX(-50%);`);
+    if (!anchor || isMobile()) {
+      setPositionStyle(`${baseStyle}top:15%;left:50%;transform:translateX(-50%);`);
       return;
     }
 

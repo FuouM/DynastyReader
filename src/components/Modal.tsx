@@ -86,7 +86,15 @@ export function Modal(props: ModalProps) {
 
   createEffect(() => {
     if (!props.open || !windowEl) return;
-    windowEl.focus();
+    if (document.activeElement && windowEl.contains(document.activeElement)) {
+      return;
+    }
+    const autoFocusEl = windowEl.querySelector<HTMLElement>("[autofocus]");
+    if (autoFocusEl) {
+      autoFocusEl.focus();
+    } else {
+      windowEl.focus();
+    }
   });
 
   return (

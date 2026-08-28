@@ -82,11 +82,16 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
 
     let settled = false;
     let topTimer: number | null = null;
+    let maxSafetyTimer: number | null = null;
     cleanupScrollTop?.();
 
     const settle = (): void => {
       if (settled) return;
       settled = true;
+      if (maxSafetyTimer !== null) {
+        window.clearTimeout(maxSafetyTimer);
+        maxSafetyTimer = null;
+      }
       cleanupScrollTop = null;
       dsView.removeEventListener("scroll", checkArrival);
       dsView.removeEventListener("scrollend", settle);
@@ -103,6 +108,10 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
       if (dsView.scrollTop <= 0) settle();
     };
     cleanupScrollTop = () => {
+      if (maxSafetyTimer !== null) {
+        window.clearTimeout(maxSafetyTimer);
+        maxSafetyTimer = null;
+      }
       dsView.removeEventListener("scroll", checkArrival);
       dsView.removeEventListener("scrollend", settle);
       if (topTimer !== null) {
@@ -110,6 +119,7 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
         topTimer = null;
       }
     };
+    maxSafetyTimer = window.setTimeout(settle, 2500);
     dsView.addEventListener("scrollend", settle, { passive: true });
     dsView.addEventListener("scroll", checkArrival, { passive: true });
     topTimer = window.setInterval(() => {
