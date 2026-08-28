@@ -18,7 +18,7 @@ export type MobileLandscapeFitModeSetting = "default" | "height";
 const boolDeserialize = (v: string) => v === "true" || v === "1";
 
 // Auto-cache chapter
-const [isAutoCacheChapterEnabled, setAutoCache] = persistedSignal(!isMobile(), {
+const [isAutoCacheChapterEnabled, setAutoCache] = persistedSignal(true, {
   name: "ds-auto-cache-chapter",
   serialize: String,
   deserialize: boolDeserialize,

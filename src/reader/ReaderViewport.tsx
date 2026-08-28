@@ -13,10 +13,10 @@ import { getPrefetchBuffer, isAutoCacheChapterEnabled } from "./settings";
 import { useReaderGestures } from "./useReaderGestures";
 import { ReaderOverscrollOverlay } from "./ReaderOverscrollOverlay";
 import { ReaderTapZoneGuide } from "./ReaderTapZoneGuide";
-
+import { ReaderDirectionHint } from "./ReaderDirectionHint";
 export function ReaderViewport(props: { session: ReaderSession; children?: JSX.Element }) {
   const s = props.session;
-  const { tapZoneGuide, overscrollGesture } = useReaderGestures(s);
+  const { tapZoneGuide, overscrollGesture, directionHintTick } = useReaderGestures(s);
 
   // Pre-fetch pages as they near the viewport boundary across strip changes
   // (initial mount, layout toggles that rebuild the strip).
@@ -87,6 +87,14 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           />
         )}
       </Show>
+
+      <ReaderDirectionHint
+        isHorizontal={s.isHorizontal()}
+        readingDirection={s.direction()}
+        pageIndex={s.currentIndex()}
+        permalink={s.permalink}
+        triggerTick={directionHintTick()}
+      />
     </div>
   );
 }

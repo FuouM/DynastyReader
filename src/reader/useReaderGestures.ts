@@ -33,7 +33,26 @@ import type { TapZoneGuideState } from "./ReaderTapZoneGuide";
 export function useReaderGestures(s: ReaderSession) {
   const [tapZoneGuide, setTapZoneGuide] = createSignal<TapZoneGuideState | null>(null);
   const [overscrollGesture, setOverscrollGesture] = createSignal<OverscrollGestureState | null>(null);
+  const [directionHintTick, setDirectionHintTick] = createSignal(0);
+  const triggerDirectionHint = () => setDirectionHintTick((c) => c + 1);
 
+  let overscrollRaf: number | null = null;
+  const dispatchOverscroll = (state: OverscrollGestureState | null) => {
+    if (state === null) {
+      if (overscrollRaf !== null) {
+        cancelAnimationFrame(overscrollRaf);
+        overscrollRaf = null;
+      }
+      setOverscrollGesture(null);
+      return;
+    }
+    if (overscrollRaf === null) {
+      overscrollRaf = requestAnimationFrame(() => {
+        setOverscrollGesture(state);
+        overscrollRaf = null;
+      });
+    }
+  };
   const getTapZone = (clientX: number): "left" | "center" | "right" => {
     const vpEl = s.viewportEl;
     if (!vpEl) return "center";
@@ -214,7 +233,7 @@ export function useReaderGestures(s: ReaderSession) {
       didTouchLongPress = false;
       hasVibrated = false;
       activeOverscroll = null;
-      setOverscrollGesture(null);
+      dispatchOverscroll(null);
 
       if (touchLongPressTimer !== null) clearTimeout(touchLongPressTimer);
       if (s.isHorizontal()) {
@@ -258,7 +277,7 @@ export function useReaderGestures(s: ReaderSession) {
         } else if (!ready) {
           hasVibrated = false;
         }
-        setOverscrollGesture({
+        dispatchOverscroll({
           fingerX: t.clientX,
           fingerY: t.clientY,
           targetX: activeOverscroll.targetX,
@@ -294,7 +313,7 @@ export function useReaderGestures(s: ReaderSession) {
             hasVibrated = true;
           }
           activeOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: absX };
-          setOverscrollGesture({
+          dispatchOverscroll({
             fingerX: t.clientX,
             fingerY: t.clientY,
             targetX,
@@ -320,7 +339,7 @@ export function useReaderGestures(s: ReaderSession) {
             hasVibrated = true;
           }
           activeOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: absX };
-          setOverscrollGesture({
+          dispatchOverscroll({
             fingerX: t.clientX,
             fingerY: t.clientY,
             targetX,
@@ -352,7 +371,7 @@ export function useReaderGestures(s: ReaderSession) {
               hasVibrated = true;
             }
             activeOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: dy };
-            setOverscrollGesture({
+            dispatchOverscroll({
               fingerX: t.clientX,
               fingerY: t.clientY,
               targetX,
@@ -376,7 +395,7 @@ export function useReaderGestures(s: ReaderSession) {
               hasVibrated = true;
             }
             activeOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: -dy };
-            setOverscrollGesture({
+            dispatchOverscroll({
               fingerX: t.clientX,
               fingerY: t.clientY,
               targetX,
@@ -419,7 +438,7 @@ export function useReaderGestures(s: ReaderSession) {
       if (activeOverscroll) {
         const over = activeOverscroll;
         activeOverscroll = null;
-        setOverscrollGesture(null);
+        dispatchOverscroll(null);
         resetStripTransform(true);
         if (over.ready && over.chapter) {
           triggerHaptic("confirm");
@@ -452,6 +471,8 @@ export function useReaderGestures(s: ReaderSession) {
           } else {
             s.setPage(targetPage, false);
           }
+        } else if (cur === 0 && step === -1) {
+          triggerDirectionHint();
         }
         return;
       }
@@ -518,7 +539,7 @@ export function useReaderGestures(s: ReaderSession) {
       mouseMoved = false;
       didMouseLongPress = false;
       activeMouseOverscroll = null;
-      setOverscrollGesture(null);
+      dispatchOverscroll(null);
 
       if (mouseLongPressTimer !== null) clearTimeout(mouseLongPressTimer);
       if (isMobileGesturesOnDesktopEnabled() && s.isHorizontal()) {
@@ -581,7 +602,7 @@ export function useReaderGestures(s: ReaderSession) {
         } else if (!ready) {
           hasVibrated = false;
         }
-        setOverscrollGesture({
+        dispatchOverscroll({
           fingerX: ev.clientX,
           fingerY: ev.clientY,
           targetX: activeMouseOverscroll.targetX,
@@ -615,7 +636,7 @@ export function useReaderGestures(s: ReaderSession) {
             const { targetX, targetY } = getOverscrollTarget(mouseStartX, mouseStartY, "prev", true, isRtl);
             const ready = isOverscrollReady(ev.clientX, ev.clientY, targetX, targetY);
             activeMouseOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: absX };
-            setOverscrollGesture({
+            dispatchOverscroll({
               fingerX: ev.clientX,
               fingerY: ev.clientY,
               targetX,
@@ -637,7 +658,7 @@ export function useReaderGestures(s: ReaderSession) {
             const { targetX, targetY } = getOverscrollTarget(mouseStartX, mouseStartY, "next", true, isRtl);
             const ready = isOverscrollReady(ev.clientX, ev.clientY, targetX, targetY);
             activeMouseOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: absX };
-            setOverscrollGesture({
+            dispatchOverscroll({
               fingerX: ev.clientX,
               fingerY: ev.clientY,
               targetX,
@@ -666,7 +687,7 @@ export function useReaderGestures(s: ReaderSession) {
             const { targetX, targetY } = getOverscrollTarget(mouseStartX, mouseStartY, "prev", false);
             const ready = isOverscrollReady(ev.clientX, ev.clientY, targetX, targetY);
             activeMouseOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: dy };
-            setOverscrollGesture({
+            dispatchOverscroll({
               fingerX: ev.clientX,
               fingerY: ev.clientY,
               targetX,
@@ -686,7 +707,7 @@ export function useReaderGestures(s: ReaderSession) {
             const { targetX, targetY } = getOverscrollTarget(mouseStartX, mouseStartY, "next", false);
             const ready = isOverscrollReady(ev.clientX, ev.clientY, targetX, targetY);
             activeMouseOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: -dy };
-            setOverscrollGesture({
+            dispatchOverscroll({
               fingerX: ev.clientX,
               fingerY: ev.clientY,
               targetX,
@@ -739,7 +760,7 @@ export function useReaderGestures(s: ReaderSession) {
       if (activeMouseOverscroll) {
         const over = activeMouseOverscroll;
         activeMouseOverscroll = null;
-        setOverscrollGesture(null);
+        dispatchOverscroll(null);
         resetStripTransform(true);
         if (over.ready && over.chapter) {
           if (over.direction === "prev") {
@@ -772,6 +793,8 @@ export function useReaderGestures(s: ReaderSession) {
           } else {
             s.setPage(targetPage, false);
           }
+        } else if (cur === 0 && step === -1) {
+          triggerDirectionHint();
         }
         return;
       }
@@ -833,5 +856,6 @@ export function useReaderGestures(s: ReaderSession) {
   return {
     tapZoneGuide,
     overscrollGesture,
+    directionHintTick,
   };
 }

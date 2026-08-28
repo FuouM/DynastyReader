@@ -71,8 +71,7 @@ export function ReaderOverscrollOverlay(props: ReaderOverscrollOverlayProps) {
           class="ds-overscroll-finger-circle"
           classList={{ "ds-snap-ready": g().ready }}
           style={{
-            left: `${g().fingerX}px`,
-            top: `${g().fingerY}px`,
+            transform: `translate3d(calc(${g().fingerX}px - 50%), calc(${g().fingerY}px - 50%), 0)`,
           }}
         >
           <i
@@ -95,8 +94,7 @@ export function ReaderOverscrollOverlay(props: ReaderOverscrollOverlayProps) {
           class="ds-overscroll-target-ring"
           classList={{ "ds-snap-ready": g().ready }}
           style={{
-            left: `${g().targetX}px`,
-            top: `${g().targetY}px`,
+            transform: `translate3d(calc(${g().targetX}px - 50%), calc(${g().targetY}px - 50%), 0)`,
           }}
         >
           <i class={g().ready ? "bi bi-unlock-fill" : "bi bi-lock-fill"} />

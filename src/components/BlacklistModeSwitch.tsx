@@ -21,9 +21,9 @@ export function BlacklistModeSwitch(props: BlacklistModeSwitchProps) {
         value={props.value()}
         onChange={(val) => props.onChange(val as BlacklistMode)}
         options={[
-          { id: `${props.id}-hide`, value: "hide", icon: <Icon name="eye-slash" />, text: t("blacklist.modeHide") },
-          { id: `${props.id}-ghost`, value: "ghost", icon: <Icon name="eye-slash-fill" />, text: t("blacklist.modeGhost") },
-          { id: `${props.id}-warn`, value: "warn", icon: <Icon name="exclamation-triangle" />, text: t("blacklist.modeWarn") },
+          { id: `${props.id}-hide`, value: "hide", icon: <Icon name="eye-slash" />, text: t("blacklist.modeHide"), title: t("blacklist.modeHideTooltip") },
+          { id: `${props.id}-ghost`, value: "ghost", icon: <Icon name="eye-slash-fill" />, text: t("blacklist.modeGhost"), title: t("blacklist.modeGhostTooltip") },
+          { id: `${props.id}-warn`, value: "warn", icon: <Icon name="exclamation-triangle" />, text: t("blacklist.modeWarn"), title: t("blacklist.modeWarnTooltip") },
         ]}
       />
     </div>

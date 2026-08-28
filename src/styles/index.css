@@ -1185,39 +1185,16 @@ code,
   line-height: 1;
   font-size: 13px;
 }
-/* Mobile Landscape Overrides — 3-column grid (WinForms fieldset) */
+/* Mobile Landscape Overrides — stacked SettingsRows (WinForms fieldset) */
 .ds-landscape-override-group {
   margin-top: 8px;
 }
-.ds-landscape-override-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding: 4px 0;
-}
-.ds-landscape-cell {
+.ds-landscape-override-stack {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 0;
 }
-.ds-landscape-cell-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--sys-window-text, #333);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ds-landscape-cell .ds-segmented-switch {
-  width: 100%;
-  display: flex;
-}
-.ds-landscape-cell .ds-segmented-btn {
-  flex: 1 1 0;
-  min-width: 0;
-  justify-content: center;
-  padding: 0 6px;
+.ds-landscape-override-stack .ds-settings-row {
+  padding: 6px 0;
 }
 .ds-settings-scale-controls {
   display: flex;
@@ -1308,6 +1285,15 @@ code,
   border-radius: 3px;
   flex-wrap: wrap;
 }
+.ds-bl-mode-bar .ds-segmented-switch {
+  display: inline-flex;
+  flex: 0 1 auto;
+}
+.ds-bl-mode-bar .ds-segmented-btn {
+  padding: 0 10px;
+  font-size: 11px;
+  white-space: nowrap;
+}
 .ds-bl-mode-options {
   display: flex;
   gap: 12px;
@@ -1378,9 +1364,6 @@ code,
 }
 
 @media (max-width: 680px) {
-  .ds-landscape-override-grid {
-    grid-template-columns: 1fr !important;
-  }
   .ds-modal-backdrop {
     padding: 12px;
   }

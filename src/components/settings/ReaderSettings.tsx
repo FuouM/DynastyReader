@@ -105,12 +105,11 @@ export function ReaderSettings() {
           />
         </SettingsRow>
 
-        {/* Mobile Landscape Overrides — 3-column grid (mode / layout / fit) */}
+        {/* Mobile Landscape Overrides */}
         <fieldset class="group-box ds-landscape-override-group" style="margin-top:8px;">
           <legend class="group-box-title"><IconText icon={<Icon name="phone-landscape" />}>{t("settings.reader.mobileLandscapeGroupTitle")}</IconText></legend>
-          <div class="ds-landscape-override-grid">
-            <div class="ds-landscape-cell">
-              <span class="ds-landscape-cell-label">{t("settings.reader.mobileLandscapeMode")}</span>
+          <div class="ds-landscape-override-stack">
+            <SettingsRow divider label={<>{t("settings.reader.mobileLandscapeMode")}:</>} desc={t("settings.reader.mobileLandscapeModeDesc")}>
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-mode-switch"
                 value={mobileLandscapeModePref()}
@@ -125,9 +124,8 @@ export function ReaderSettings() {
                   { id: "ds-settings-ml-mode-paged", value: "paged", icon: <Icon name="book" />, text: t("settings.reader.mobileLandscapeModePaged"), title: t("settings.reader.mobileLandscapeModePagedTooltip") },
                 ]}
               />
-            </div>
-            <div class="ds-landscape-cell">
-              <span class="ds-landscape-cell-label">{t("settings.reader.mobileLandscapeLayout")}</span>
+            </SettingsRow>
+            <SettingsRow divider label={<>{t("settings.reader.mobileLandscapeLayout")}:</>} desc={t("settings.reader.mobileLandscapeLayoutDesc")}>
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-layout-switch"
                 value={mobileLandscapeLayoutPref()}
@@ -142,9 +140,8 @@ export function ReaderSettings() {
                   { id: "ds-settings-ml-layout-spread", value: "spread", icon: <Icon name="columns-gap" />, text: t("settings.reader.mobileLandscapeLayoutSpread"), title: t("settings.reader.mobileLandscapeLayoutSpreadTooltip") },
                 ]}
               />
-            </div>
-            <div class="ds-landscape-cell">
-              <span class="ds-landscape-cell-label">{t("settings.reader.mobileLandscapeFitMode")}</span>
+            </SettingsRow>
+            <SettingsRow label={<>{t("settings.reader.mobileLandscapeFitMode")}:</>} desc={t("settings.reader.mobileLandscapeFitModeDesc")}>
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-fit-switch"
                 value={mobileLandscapeFitPref()}
@@ -158,7 +155,7 @@ export function ReaderSettings() {
                   { id: "ds-settings-ml-fit-height", value: "height", icon: <Icon name="arrows-expand" />, text: t("settings.reader.mobileLandscapeFitHeight"), title: t("settings.reader.mobileLandscapeFitHeightTooltip") },
                 ]}
               />
-            </div>
+            </SettingsRow>
           </div>
         </fieldset>
         {/* Long Strip Spread Override */}
