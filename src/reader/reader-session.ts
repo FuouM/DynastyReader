@@ -1,12 +1,10 @@
 /**
  * Reactive reader session for the Solid reader.
  *
- * Coordinates one chapter-reading session: owns every piece of
- * chapter-reading state as signals/stores and the imperative machinery (page
- * download queue, reading-progress persistence, chapter navigation, viewport
- * slide/reset/layout) that the toolbar, viewport, shortcuts, wheel, and actions
- * components operate on. DOM writes from the legacy controller are replaced by
- * reactive state that the JSX components render.
+ * Coordinates one chapter-reading session: owns every piece of reactive
+ * state and orchestrates the download queue, persistence, chapter navigation,
+ * and topbar actions. DOM viewport operations (slide/reset/layout) are
+ * delegated to reader-viewport.ts.
  */
 
 import { batch, createComponent, createRoot, getOwner, runWithOwner } from "solid-js";
@@ -18,7 +16,6 @@ import {
   setActions,
   clearActions,
   isOnline,
-  isMobile,
 } from "../stores";
 import { getChapterContainerTag } from "../taxonomy";
 import { t } from "../i18n";
@@ -68,12 +65,11 @@ import {
   setScrollLock as setScrollLockPersisted,
 } from "./settings";
 import { standardizeCachePaths } from "./path-migration";
+import * as vp from "./reader-viewport";
 import { createReaderState, type ReaderState, type SlotStateRecord } from "./reader-state";
 import { createReaderPersistence, type ReaderPersistence } from "./reader-persistence";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
 
-const SCROLL_ANIMATION_DURATION_MS = 280;
-const PROGRAMMATIC_SCROLL_LOCK_MS = 350;
 const RESTORE_REVEAL_DEADLINE_MS = 1200;
 const FULLSCREEN_RELAYOUT_FIRST_MS = 60;
 const FULLSCREEN_RELAYOUT_SECOND_MS = 180;
@@ -746,225 +742,14 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     });
   }
 
-  // Viewport imperative engine ----------------------------------------------
-  updateViewportHeight(): void {
-    const h = this.viewportEl?.clientHeight;
-    if (h && h > 50 && this.containerEl) {
-      this.containerEl.style.setProperty("--ds-viewport-full", `${h}px`);
-      this.containerEl.style.setProperty("--ds-viewport-height", `${h - 20}px`);
-      this.updateSlotClearances();
-    }
-  }
-
-  updateFirstSlotHeight(): void {
-    if (!this.containerEl || this.isHorizontal()) return;
-    const firstSlot = this.slotEls[0];
-    if (firstSlot) {
-      const h = firstSlot.offsetHeight;
-      if (h > 0) {
-        this.containerEl.style.setProperty("--ds-first-slot-height", `${h}px`);
-      }
-    }
-  }
-
-  updateLastSlotHeight(): void {
-    if (!this.containerEl || this.isHorizontal()) return;
-    const lastIdx = this.pages().length - 1;
-    if (lastIdx < 0) return;
-    const lastSlot = this.slotEls[lastIdx];
-    if (lastSlot) {
-      const h = lastSlot.offsetHeight;
-      if (h > 0) {
-        this.containerEl.style.setProperty("--ds-last-slot-height", `${h}px`);
-      }
-    }
-  }
-
-  updateSlotClearances(): void {
-    this.updateFirstSlotHeight();
-    this.updateLastSlotHeight();
-  }
-
-  slideTo(index: number, instant = false, scrollToBottom = false): void {
-    if (this.isHorizontal()) {
-      const slideIndex = this.isSpread() ? spreadIndexOf(this.spreads(), index) : index;
-      const targetSlide = this.isSpread() ? this.spreadSlotEls[slideIndex] : this.slotEls[index];
-      if (targetSlide) {
-        if (scrollToBottom) {
-          targetSlide.scrollTop = Math.max(0, targetSlide.scrollHeight - targetSlide.clientHeight);
-        } else {
-          targetSlide.scrollTop = 0;
-        }
-        if (
-          this.isSpread() &&
-          this.direction() === "rtl" &&
-          targetSlide.scrollWidth > targetSlide.clientWidth
-        ) {
-          targetSlide.scrollLeft = targetSlide.scrollWidth - targetSlide.clientWidth;
-        } else {
-          targetSlide.scrollLeft = 0;
-        }
-      }
-      const sign = this.direction() === "rtl" ? 1 : -1;
-      const transformValue = `translateX(${sign * slideIndex * 100}%)`;
-      if (this.stripEl) {
-        if (!this.scrollLock() || instant) {
-          // Force layout commit so transition:none takes effect before transform
-          this.stripEl.style.transition = "none";
-          void this.stripEl.offsetWidth;
-          this.stripEl.style.transform = transformValue;
-        } else {
-          // Scope will-change to the animation window — saves ~10 MB VRAM between page turns
-          if (isMobile()) {
-            this.stripEl.style.willChange = "transform";
-            const el = this.stripEl;
-            el.addEventListener(
-              "transitionend",
-              () => {
-                el.style.willChange = "auto";
-              },
-              { once: true },
-            );
-          }
-          this.stripEl.style.transition = "";
-          this.stripEl.style.transform = transformValue;
-        }
-      }
-    } else {
-      this.isProgrammaticScroll = true;
-      if (this.programmaticScrollTimer !== null) {
-        clearTimeout(this.programmaticScrollTimer);
-        this.programmaticScrollTimer = null;
-      }
-      if (this.scrollAnimRaf !== null) {
-        cancelAnimationFrame(this.scrollAnimRaf);
-        this.scrollAnimRaf = null;
-      }
-
-      const target = this.slotEls[index];
-      if (target && this.viewportEl) {
-        const vp = this.viewportEl;
-        const vpRect = vp.getBoundingClientRect();
-        const targetRect = target.getBoundingClientRect();
-        const startScrollTop = vp.scrollTop;
-        const centerOffset = this.isLongStrip() ? 0 : Math.max(0, (vpRect.height - targetRect.height) / 2);
-        const targetScrollTop = index === 0 ? 0 : Math.max(0, startScrollTop + (targetRect.top - vpRect.top) - centerOffset);
-
-        if (instant || !this.scrollLock()) {
-          vp.scrollTop = targetScrollTop;
-          this.isProgrammaticScroll = false;
-        } else {
-          const distance = targetScrollTop - startScrollTop;
-          if (Math.abs(distance) < 2) {
-            vp.scrollTop = targetScrollTop;
-            this.isProgrammaticScroll = false;
-            return;
-          }
-
-          const startTime = performance.now();
-          const fullSpan = Math.max(1, vpRect.height);
-          const normalizedDist = Math.min(1, Math.abs(distance) / fullSpan);
-          const duration = Math.max(90, Math.round(SCROLL_ANIMATION_DURATION_MS * Math.sqrt(normalizedDist)));
-
-          const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
-
-          const step = (currentTime: number) => {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(1, elapsed / duration);
-            vp.scrollTop = startScrollTop + distance * easeOutCubic(progress);
-
-            if (progress < 1) {
-              this.scrollAnimRaf = requestAnimationFrame(step);
-            } else {
-              vp.scrollTop = targetScrollTop;
-              this.scrollAnimRaf = null;
-              this.isProgrammaticScroll = false;
-            }
-          };
-
-          this.scrollAnimRaf = requestAnimationFrame(step);
-        }
-      }
-    }
-  }
-
-  resetToCurrentPage(smooth = false): void {
-    this.updateViewportHeight();
-    if (this.isHorizontal()) {
-      const slideIndex = this.isSpread() ? spreadIndexOf(this.spreads(), this.currentIndex()) : this.currentIndex();
-      const sign = this.direction() === "rtl" ? 1 : -1;
-      const transformValue = `translateX(${sign * slideIndex * 100}%)`;
-      if (this.stripEl) {
-        if (!smooth) {
-          this.stripEl.style.transition = "none";
-          void this.stripEl.offsetWidth;
-          this.stripEl.style.transform = transformValue;
-          requestAnimationFrame(() => {
-            if (this.stripEl) this.stripEl.style.transition = "";
-          });
-        } else {
-          this.stripEl.style.transform = transformValue;
-        }
-      }
-    } else {
-      this.isProgrammaticScroll = true;
-      if (this.programmaticScrollTimer !== null) {
-        clearTimeout(this.programmaticScrollTimer);
-        this.programmaticScrollTimer = null;
-      }
-      this.programmaticScrollTimer = window.setTimeout(() => {
-        this.isProgrammaticScroll = false;
-        this.programmaticScrollTimer = null;
-      }, PROGRAMMATIC_SCROLL_LOCK_MS);
-
-      const target = this.slotEls[this.currentIndex()];
-      if (target && this.viewportEl) {
-        if (this.currentIndex() === 0) {
-          this.viewportEl.scrollTop = 0;
-        } else {
-          const vpRect = this.viewportEl.getBoundingClientRect();
-          const targetRect = target.getBoundingClientRect();
-          const centerOffset = this.isLongStrip() ? 0 : Math.max(0, (vpRect.height - targetRect.height) / 2);
-          const targetTop = Math.max(0, this.viewportEl.scrollTop + (targetRect.top - vpRect.top) - centerOffset);
-          if (!smooth) {
-            this.viewportEl.scrollTop = targetTop;
-          } else {
-            this.viewportEl.scrollTo({ top: targetTop, behavior: "smooth" });
-          }
-        }
-      } else if (this.viewportEl && this.currentIndex() === 0) {
-        this.viewportEl.scrollTop = 0;
-      }
-    }
-  }
-  applyLayoutMode(): void {
-    if (!this.viewportEl || !this.stripEl) return;
-    if (this.isHorizontal()) {
-      this.viewportEl.classList.add("horizontal");
-      this.viewportEl.classList.toggle("rtl", this.direction() === "rtl");
-      this.viewportEl.classList.toggle("ltr", this.direction() === "ltr");
-      this.stripEl.classList.toggle("rtl", this.direction() === "rtl");
-      this.stripEl.classList.toggle("ltr", this.direction() === "ltr");
-
-      this.stripEl.style.transition = "none";
-      const slideIndex = this.isSpread() ? spreadIndexOf(this.spreads(), this.currentIndex()) : this.currentIndex();
-      const sign = this.direction() === "rtl" ? 1 : -1;
-      this.stripEl.style.transform = `translateX(${sign * slideIndex * 100}%)`;
-      requestAnimationFrame(() => {
-        if (this.stripEl) this.stripEl.style.transition = "";
-      });
-    } else {
-      this.viewportEl.classList.remove("horizontal", "rtl", "ltr");
-      this.stripEl.classList.remove("rtl", "ltr");
-      this.stripEl.style.transform = "";
-      const target = this.slotEls[this.currentIndex()];
-      if (target) {
-        target.scrollIntoView({ behavior: "auto", block: "center" });
-      } else if (this.viewportEl && this.currentIndex() === 0) {
-        this.viewportEl.scrollTop = 0;
-      }
-    }
-  }
+  // Viewport imperative engine — delegates to reader-viewport.ts ------------
+  updateViewportHeight(): void { vp.updateViewportHeight(this); }
+  updateFirstSlotHeight(): void { vp.updateFirstSlotHeight(this); }
+  updateLastSlotHeight(): void { vp.updateLastSlotHeight(this); }
+  updateSlotClearances(): void { vp.updateSlotClearances(this); }
+  slideTo(index: number, instant = false, scrollToBottom = false): void { vp.slideTo(this, index, instant, scrollToBottom); }
+  resetToCurrentPage(smooth = false): void { vp.resetToCurrentPage(this, smooth); }
+  applyLayoutMode(): void { vp.applyLayoutMode(this); }
 
   // Toolbar visibility (toggled on tap outside) -----------------------------
   scheduleToolbarAutoHide(): void {
