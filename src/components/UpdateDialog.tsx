@@ -42,7 +42,7 @@ export async function checkUpdates(manual = false): Promise<UpdateInfo | null> {
     }
     return info;
   } catch (err) {
-    console.error("dynasty-scans-reader: update check failed:", err);
+    console.error("[dynasty-reader] update check failed:", err);
     setUpdateError(errorMessage(err));
     return null;
   } finally {

@@ -132,7 +132,7 @@ export async function fetchSeries(
             }
           }
         } catch (err) {
-          console.warn("dynasty-scans: background series revalidation failed:", err);
+          console.warn("[dynasty-reader] background series revalidation failed:", err);
         }
       })();
       return parsed;

@@ -46,7 +46,7 @@ export function StorageSettings(props: StorageSettingsProps) {
             text={t("settings.storage.openLogsButton")}
             onClick={() => {
               void ipc.openLogsDir().catch((err) => {
-                console.error("dynasty-scans-reader: open logs folder failed:", err);
+                console.error("[dynasty-reader] open logs folder failed:", err);
               });
             }}
           />

@@ -18,7 +18,9 @@ export function useCacheActions(refetch: () => void) {
     await action();
     try {
       browseCovers.clearMemoryCache();
-    } catch {}
+    } catch (e) {
+      console.debug("[dynasty-reader] clearMemoryCache failed (non-fatal):", e);
+    }
     showBanner(t(successKey));
     void refetch();
   };
@@ -48,7 +50,7 @@ export function useCacheActions(refetch: () => void) {
           title: t("cache.dbRestorePickerTitle"),
         });
       } catch (dlgErr) {
-        console.error("dynasty-reader: openDialog failed:", dlgErr);
+        console.error("[dynasty-reader] openDialog failed:", dlgErr);
         showBanner(t("cache.dbRestorePickerError", { msg: errorMessage(dlgErr) }));
         return;
       }
@@ -56,20 +58,20 @@ export function useCacheActions(refetch: () => void) {
       try {
         await restoreDatabaseFromPath(picked);
       } catch (e) {
-        console.error("dynasty-reader: restoreDatabaseFromPath failed:", e);
+        console.error("[dynasty-reader] restoreDatabaseFromPath failed:", e);
         throw e;
       }
       try {
         browseCovers.clearMemoryCache();
       } catch (e) {
-        console.warn("dynasty-reader: clearMemoryCache failed (non-fatal):", e);
+        console.warn("[dynasty-reader] clearMemoryCache failed (non-fatal):", e);
       }
       showBanner(t("cache.dbRestoreSuccess", { path: picked as string }));
       void refetch();
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       const msg = errorMessage(err);
-      console.error("dynasty-reader: restoreFromPicker failed:", err);
+      console.error("[dynasty-reader] restoreFromPicker failed:", err);
       showBanner(t("cache.dbRestoreError", { msg }));
     }
   };

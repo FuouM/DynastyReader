@@ -10,7 +10,6 @@
  */
 
 import { batch, createComponent, createRoot, getOwner, runWithOwner } from "solid-js";
-import type { JSX } from "solid-js";
 import { createStore } from "solid-js/store";
 import {
   navigate,
@@ -89,7 +88,7 @@ export {
 export function createReaderSession(route: Route): ReaderSession {
   return new ReaderSession(route);
 }
-export class ReaderSession implements ReaderQueueHost {
+export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   readonly permalink: string;
   readonly route: Route;
   private state: ReaderState;
@@ -995,9 +994,9 @@ export class ReaderSession implements ReaderQueueHost {
     }
     const create = () =>
       createComponent(ReaderActions, {
-        ctrl: this as unknown as ReaderActionsController,
+        ctrl: this,
         bookmarked: this.bookmarked(),
-      }) as unknown as JSX.Element;
+      });
     const owner = this.sessionOwner;
     const attach = () => {
       this.actionsDispose = createRoot((dispose) => {
@@ -1071,7 +1070,7 @@ export class ReaderSession implements ReaderQueueHost {
           startPage = prog.page_index;
         }
       } catch (err) {
-        console.error("dynasty-scans: failed to load reading progress:", err);
+        console.error("[dynasty-reader] failed to load reading progress:", err);
       }
     }
     this.setCurrentIndex(Math.min(startPage, Math.max(0, pageCount - 1)));
@@ -1111,8 +1110,8 @@ export class ReaderSession implements ReaderQueueHost {
               this.setFitMode("width");
             }
           }
-        } catch {
-          // ignore layout metadata detection error
+        } catch (err) {
+          console.debug("[dynasty-reader] layout metadata detection failed (non-fatal):", err);
         }
       });
 
@@ -1209,7 +1208,7 @@ export class ReaderSession implements ReaderQueueHost {
     }
 
     this.setLoading(false);
-    standardizeCachePaths(this as any);
+    standardizeCachePaths(this);
 
     // History + bookmarked state
     try {
@@ -1220,7 +1219,7 @@ export class ReaderSession implements ReaderQueueHost {
         chapterTitle: this.chapterTitle(),
       });
     } catch (err) {
-      console.error("dynasty-scans: failed to record history:", err);
+      console.error("[dynasty-reader] failed to record history:", err);
     }
 
     let bookmarked = false;

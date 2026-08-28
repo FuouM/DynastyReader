@@ -5,19 +5,13 @@
 
 import { decode as heDecode, encode as heEncode } from "html-entities";
 
-/** Escapes a string for safe use inside HTML text or attribute values. */
-export function esc(s: string): string {
-  if (!s) return "";
-  return heEncode(String(s), { mode: "specialChars", level: "html5" });
-}
-
 /**
  * Decodes HTML entities and then re-escapes the result so the decoded text can be
  * safely interpolated into innerHTML or attribute templates without markup injection.
  * Use for any server-provided (entity-encoded) string that is rendered as HTML.
  */
 export function safeHtml(s: string | null | undefined): string {
-  return esc(decodeEntities(s));
+  return heEncode(decodeEntities(s ?? ""), { mode: "specialChars", level: "html5" });
 }
 
 /**

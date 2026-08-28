@@ -33,7 +33,7 @@ export function createReaderPersistence(state: ReaderState, permalink: string): 
         completed: state.atEnd(),
       });
     } catch (err) {
-      console.error("dynasty-scans: failed to persist reading progress:", err);
+      console.error("[dynasty-reader] failed to persist reading progress:", err);
     }
   };
 

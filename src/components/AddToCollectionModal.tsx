@@ -145,7 +145,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
       );
       setLoadError(false);
     } catch (err) {
-      console.error("dynasty-scans-reader: failed to load collections:", err);
+      console.error("[dynasty-reader] failed to load collections:", err);
       setLoadError(true);
     } finally {
       setLoading(false);

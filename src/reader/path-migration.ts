@@ -61,7 +61,7 @@ export function standardizeCachePaths(session: ReaderSession): void {
           await setCachedPage(session.permalink, i, newAbsPath, 0);
           session.setCachedPage(i, newAbsPath);
         } catch (e) {
-          console.warn(`dynasty-scans: could not move page ${i + 1} to canonical path:`, e);
+          console.warn(`[dynasty-reader] could not move page ${i + 1} to canonical path:`, e);
         }
       }
       // If nothing found: downloadPage already handles this via the queue
