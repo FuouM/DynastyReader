@@ -53,6 +53,32 @@ if ((Test-Path $iconsAndroidDir) -and (Test-Path $androidResDir)) {
     }
 }
 
+# Sync release.keystore into Android app directory if present at root
+$rootKeystore = "$PSScriptRoot_Local\release.keystore"
+$appKeystore = "$PSScriptRoot_Local\src-tauri\gen\android\app\release.keystore"
+if (Test-Path $rootKeystore) {
+    Copy-Item $rootKeystore $appKeystore -Force
+}
+
+if ($Release) {
+    if (-not $env:TAURI_STORE_FILE) { $env:TAURI_STORE_FILE = "release.keystore" }
+    if (-not $env:TAURI_KEY_ALIAS) { $env:TAURI_KEY_ALIAS = "dynasty" }
+    if (-not $env:TAURI_STORE_PASSWORD -and $env:ANDROID_STORE_PASSWORD) { $env:TAURI_STORE_PASSWORD = $env:ANDROID_STORE_PASSWORD }
+    if (-not $env:TAURI_KEY_PASSWORD -and $env:ANDROID_KEY_PASSWORD) { $env:TAURI_KEY_PASSWORD = $env:ANDROID_KEY_PASSWORD }
+    if (-not $env:TAURI_STORE_PASSWORD) {
+        $localTauriProp = "$PSScriptRoot_Local\src-tauri\gen\android\app\tauri.properties"
+        if (Test-Path $localTauriProp) {
+            $passLine = Get-Content $localTauriProp | Where-Object { $_ -match '^tauri\.android\.storePassword\s*=' } | Select-Object -First 1
+            if ($passLine) {
+                $env:TAURI_STORE_PASSWORD = ($passLine -split '=', 2)[1].Trim()
+            }
+        }
+    }
+    if (-not $env:TAURI_KEY_PASSWORD -and $env:TAURI_STORE_PASSWORD) {
+        $env:TAURI_KEY_PASSWORD = $env:TAURI_STORE_PASSWORD
+    }
+}
+
 if ($Dev) {
     npx tauri android dev
 } else {

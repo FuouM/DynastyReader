@@ -47,7 +47,9 @@ target
 .DS_Store
 Thumbs.db
 
-# Signing keys & keystores
+# Signing keys, keystores & secrets
 *.keystore
 *.jks
-
+*.properties
+!gradle.properties
+!gradle-wrapper.properties
