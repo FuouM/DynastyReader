@@ -433,10 +433,10 @@ export const en = {
       cancel: "Cancel",
     },
     directionHint: {
-      nextPageRtl: "Swipe left for next page",
-      nextPageLtr: "Swipe right for next page",
-      rtlTag: "RTL",
-      ltrTag: "LTR",
+      nextPageRtl: "Swipe right for next page",
+      nextPageLtr: "Swipe left for next page",
+      rtlTag: "Manga (RTL)",
+      ltrTag: "Western (LTR)",
     },
   },
   cache: {

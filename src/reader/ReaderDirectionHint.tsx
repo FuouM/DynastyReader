@@ -96,15 +96,15 @@ export function ReaderDirectionHint(props: ReaderDirectionHintProps) {
             when={isRtl()}
             fallback={
               <>
-                <span>{t("reader.directionHint.nextPageLtr")}</span>
-                <Icon name="chevron-right" />
                 <span class="ds-hint-tag">{t("reader.directionHint.ltrTag")}</span>
+                <span>{t("reader.directionHint.nextPageLtr")}</span>
+                <Icon name="arrow-left" />
               </>
             }
           >
-            <Icon name="chevron-left" />
-            <span>{t("reader.directionHint.nextPageRtl")}</span>
             <span class="ds-hint-tag">{t("reader.directionHint.rtlTag")}</span>
+            <span>{t("reader.directionHint.nextPageRtl")}</span>
+            <Icon name="arrow-right" />
           </Show>
         </div>
       </div>
