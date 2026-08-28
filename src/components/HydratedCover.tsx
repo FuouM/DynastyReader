@@ -11,7 +11,7 @@
  * - `size` maps to the 42×58 feed or 36×50 cache dimensions.
  */
 
-import { createEffect, createSignal, on, Show } from "solid-js";
+import { createEffect, on, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { browseCovers, coversEnabledSignal, type CoverState } from "../browse/browse-covers";
 import { BookIcon, Icon, ImageIcon } from "./Icon";
@@ -49,18 +49,16 @@ const SIZES = {
 
 export function HydratedCover(props: HydratedCoverProps) {
   const { error, handleError, retry, reset, retryNonce } = useImageRetry();
-  const [imgLoaded, setImgLoaded] = createSignal(false);
   let wrapEl: HTMLDivElement | undefined;
 
   const resolvedPath = () => props.path || (props.coverKey ? browseCovers.getCover(props.coverKey) : undefined);
-  const isLoaded = () => Boolean(resolvedPath()) && !error() && coversEnabledSignal() && imgLoaded();
+  const isLoaded = () => Boolean(resolvedPath()) && !error() && coversEnabledSignal();
+
   createEffect(
     on(
       () => [resolvedPath(), retryNonce()] as const,
-      () => {
-        setImgLoaded(false);
-        reset();
-      },
+      () => reset(),
+      { defer: true },
     ),
   );
 
@@ -83,7 +81,6 @@ export function HydratedCover(props: HydratedCoverProps) {
   };
 
   const handleImageError = () => {
-    setImgLoaded(false);
     if (props.coverKey) {
       browseCovers.evict(props.coverKey);
     }
@@ -103,8 +100,7 @@ export function HydratedCover(props: HydratedCoverProps) {
   const currentState = (): CoverState => {
     if (!coversEnabledSignal()) return "no-cover";
     if (error()) return "no-cover";
-    if (imgLoaded() && resolvedPath()) return "loaded";
-    if (resolvedPath()) return "loading";
+    if (resolvedPath()) return "loaded";
     return browseCovers.getCoverState(props.coverKey);
   };
 
@@ -160,7 +156,6 @@ export function HydratedCover(props: HydratedCoverProps) {
           height={isCache() ? 50 : 58}
           decoding="async"
           src={convertFileSrc(resolvedPath()!)}
-          onLoad={() => setImgLoaded(true)}
           onError={handleImageError}
         />
       </Show>
