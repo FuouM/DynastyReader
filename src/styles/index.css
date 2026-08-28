@@ -786,6 +786,42 @@ body {
   align-items: center;
   justify-content: center;
   color: var(--sys-text-muted, #aaa);
+  position: relative;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+/* Dark mode cover states */
+[data-theme="dark"] .ds-cover-placeholder.ds-cover-state--no-cover,
+[data-theme="dark"] .ds-feed-cover-placeholder.ds-cover-state--no-cover {
+  background: var(--sys-control-bg, #222) !important;
+  border-color: var(--sys-border-dark, #444) !important;
+  color: var(--sys-text-muted, #777) !important;
+}
+
+[data-theme="dark"] .ds-cover-placeholder.ds-cover-state--downloading,
+[data-theme="dark"] .ds-feed-cover-placeholder.ds-cover-state--downloading {
+  background: rgba(0, 120, 212, 0.15) !important;
+  border-color: var(--sys-highlight-bg, #0078d4) !important;
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .ds-cover-placeholder.ds-cover-state--processing,
+[data-theme="dark"] .ds-feed-cover-placeholder.ds-cover-state--processing {
+  background: rgba(2, 132, 199, 0.15) !important;
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .ds-cover-placeholder.ds-cover-state--loading,
+[data-theme="dark"] .ds-feed-cover-placeholder.ds-cover-state--loading {
+  background: linear-gradient(
+    90deg,
+    var(--sys-control-bg, #222) 0%,
+    var(--sys-control-hover, #2c2c2c) 50%,
+    var(--sys-control-bg, #222) 100%
+  ) !important;
+  border-color: var(--sys-border-dark, #444) !important;
+  color: var(--sys-text-muted, #777) !important;
 }
 .ds-series-desc {
   font-size: 11px;

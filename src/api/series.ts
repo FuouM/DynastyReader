@@ -185,6 +185,7 @@ export async function fetchSeries(
 export async function getSeriesCover(
   permalink: string,
   coverUrl: string | null,
+  onPhase?: (phase: "downloading" | "processing") => void,
 ): Promise<string | null> {
   if (!coverUrl) return null;
   const key = seriesCoverKey(permalink);
@@ -201,9 +202,10 @@ export async function getSeriesCover(
   const ext = coverExtension(coverUrl);
   const rawOutPath = `${COVERS_PREFIX}/raw_${permalink}.${ext}`;
   const webpOutPath = `${COVERS_PREFIX}/${permalink}.webp`;
-
   // Download the original cover and only transcode to WebP if raw download exceeds 100KB.
+  onPhase?.("downloading");
   const finalPath = await transcodeCover(absUrl(coverUrl), rawOutPath, webpOutPath);
+  onPhase?.("processing");
 
   await setCached(key, "cover", finalPath);
   return finalPath;
@@ -270,6 +272,7 @@ export async function getLocalSeriesCover(permalink: string): Promise<string | n
 export async function getChapterCover(
   permalink: string,
   firstPageUrl: string,
+  onPhase?: (phase: "downloading" | "processing") => void,
 ): Promise<string | null> {
   if (!firstPageUrl) return null;
   const key = chapterCoverKey(permalink);
@@ -288,7 +291,9 @@ export async function getChapterCover(
   const webpOutPath = `${COVERS_PREFIX}/ch_${permalink}.webp`;
 
   // Download the raw first page and only transcode to WebP if raw download exceeds 100KB.
+  onPhase?.("downloading");
   const finalPath = await transcodeCover(absUrl(firstPageUrl), rawOutPath, webpOutPath);
+  onPhase?.("processing");
 
   await setCached(key, "cover", finalPath);
   return finalPath;
@@ -300,6 +305,7 @@ export async function getChapterCover(
 export async function getOrHydrateSeriesCover(
   permalink: string,
   seriesType?: string | null,
+  onPhase?: (phase: "downloading" | "processing") => void,
 ): Promise<string | null> {
   if (!permalink) return null;
   const local = await getLocalSeriesCover(permalink);
@@ -318,6 +324,7 @@ export async function getOrHydrateSeriesCover(
   }
   if (!coverUrl) {
     try {
+      onPhase?.("downloading");
       const s = await fetchSeries(permalink, false, seriesType || undefined);
       coverUrl = s.cover ?? null;
     } catch {
@@ -326,7 +333,7 @@ export async function getOrHydrateSeriesCover(
   }
 
   if (!coverUrl) return null;
-  return getSeriesCover(permalink, coverUrl);
+  return getSeriesCover(permalink, coverUrl, onPhase);
 }
 
 /**
@@ -340,6 +347,7 @@ export async function getOrHydrateItemCover(
   chapterPermalink: string,
   seriesOrGroupPermalink?: string | null,
   seriesType?: string | null,
+  onPhase?: (phase: "downloading" | "processing") => void,
 ): Promise<string | null> {
   if (!coverKey) return null;
   const local = await getLocalCover(coverKey);
@@ -347,8 +355,9 @@ export async function getOrHydrateItemCover(
 
   // 1. If it has a series cover key and series permalink, try fetching series cover
   if (coverKey.startsWith("series:") && seriesOrGroupPermalink) {
-    const seriesCover = await getOrHydrateSeriesCover(seriesOrGroupPermalink, seriesType);
+    const seriesCover = await getOrHydrateSeriesCover(seriesOrGroupPermalink, seriesType, onPhase);
     if (seriesCover) {
+      onPhase?.("processing");
       await setCached(`cover:${coverKey}`, "cover", seriesCover);
       return seriesCover;
     }
@@ -356,10 +365,12 @@ export async function getOrHydrateItemCover(
 
   // 2. Standalone chapter / oneshot fallback: fetch chapter metadata and use Page 1
   try {
+    onPhase?.("downloading");
     const ch = await fetchChapter(chapterPermalink);
     if (ch?.pages && ch.pages.length > 0 && ch.pages[0].url) {
-      const page1Cover = await getChapterCover(chapterPermalink, ch.pages[0].url);
+      const page1Cover = await getChapterCover(chapterPermalink, ch.pages[0].url, onPhase);
       if (page1Cover) {
+        onPhase?.("processing");
         await setCached(`cover:${coverKey}`, "cover", page1Cover);
         return page1Cover;
       }

@@ -16,9 +16,12 @@ const [coversEnabledSignal, setCoversEnabledSignal] = persistedSignal(true, {
   deserialize: (v) => v !== null ? v === "true" : true,
 });
 
-const [coverPathMap, setCoverPathMap] = createSignal<Map<string, string>>(new Map(), { equals: false });
+export type CoverState = "no-cover" | "downloading" | "processing" | "loading" | "loaded";
 
-export { coversEnabledSignal };
+const [coverPathMap, setCoverPathMap] = createSignal<Map<string, string>>(new Map(), { equals: false });
+const [coverStateMap, setCoverStateMap] = createSignal<Map<string, CoverState>>(new Map(), { equals: false });
+
+export { coversEnabledSignal, coverStateMap };
 
 export interface CoverTarget {
   coverKey: string;
@@ -68,9 +71,22 @@ export class BrowseCovers {
     }
     this.failedAttempts.set(key, val);
   }
+  private setCoverState(key: string, state: CoverState): void {
+    setCoverStateMap((prev) => {
+      if (prev.get(key) === state) return prev;
+      const next = new Map(prev);
+      if (next.size >= MAX_MEMORY_CACHE) {
+        const oldest = next.keys().next().value;
+        if (oldest !== undefined) next.delete(oldest);
+      }
+      next.set(key, state);
+      return next;
+    });
+  }
 
   private updateCoverPath(key: string, path: string): void {
     this.setMemoryCache(key, path);
+    this.setCoverState(key, "loading");
     this.failedAttempts.delete(key);
     setCoverPathMap((prev) => {
       if (prev.get(key) === path) return prev;
@@ -97,12 +113,23 @@ export class BrowseCovers {
     return coverPathMap().get(coverKey) || this.memoryCache.get(coverKey) || undefined;
   }
 
+  /** Reactively looks up the current lifecycle state of a cover. */
+  getCoverState(coverKey: string): CoverState {
+    if (!this.coversEnabled) return "no-cover";
+    const path = this.getCover(coverKey);
+    if (path) return "loading";
+    const explicit = coverStateMap().get(coverKey);
+    if (explicit) return explicit;
+    if (this.queuedKeys.has(coverKey)) return "downloading";
+    return "no-cover";
+  }
   clearMemoryCache(): void {
     this.memoryCache.clear();
     this.failedAttempts.clear();
     this.queuedKeys.clear();
     this.queue.length = 0;
     setCoverPathMap(new Map());
+    setCoverStateMap(new Map());
     this.detachScrollTracking();
   }
 
@@ -117,9 +144,14 @@ export class BrowseCovers {
       next.delete(coverKey);
       return next;
     });
+    setCoverStateMap((prev) => {
+      if (!prev.has(coverKey)) return prev;
+      const next = new Map(prev);
+      next.delete(coverKey);
+      return next;
+    });
     void deleteCached(`cover:${coverKey}`);
   }
-
   /** Manually forces a retry for a cover target. */
   retryCover(target: CoverTarget, el?: HTMLElement): void {
     this.evict(target.coverKey);
@@ -385,6 +417,7 @@ export class BrowseCovers {
 
                   if (readyToRetry && !this.queuedKeys.has(coverKey)) {
                     this.queuedKeys.add(coverKey);
+                    this.setCoverState(coverKey, "downloading");
                     this.queue.unshift({
                       coverKey,
                       chapterPermalink,
@@ -419,11 +452,15 @@ export class BrowseCovers {
         try {
           let task = this.inflight.get(target.coverKey);
           if (!task) {
+            this.setCoverState(target.coverKey, "downloading");
             task = getOrHydrateItemCover(
               target.coverKey,
               target.chapterPermalink,
               target.seriesPermalink,
               target.seriesType,
+              (phase) => {
+                this.setCoverState(target.coverKey, phase);
+              },
             );
             this.inflight.set(target.coverKey, task);
           }
@@ -432,6 +469,7 @@ export class BrowseCovers {
           if (coverPath) {
             this.updateCoverPath(target.coverKey, coverPath);
           } else {
+            this.setCoverState(target.coverKey, "no-cover");
             this.memoryCache.delete(target.coverKey);
             const prevFail = this.failedAttempts.get(target.coverKey);
             const count = (prevFail?.count ?? 0) + 1;

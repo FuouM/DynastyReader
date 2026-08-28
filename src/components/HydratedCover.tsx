@@ -11,10 +11,11 @@
  * - `size` maps to the 42×58 feed or 36×50 cache dimensions.
  */
 
-import { createEffect, on, Show } from "solid-js";
+import { createEffect, createSignal, on, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
-import { browseCovers, coversEnabledSignal } from "../browse/browse-covers";
-import { BookIcon } from "./Icon";
+import { browseCovers, coversEnabledSignal, type CoverState } from "../browse/browse-covers";
+import { BookIcon, Icon, ImageIcon } from "./Icon";
+import { t } from "../i18n";
 import { useImageRetry } from "../hooks/useImageRetry";
 
 export interface HydratedCoverProps {
@@ -48,16 +49,18 @@ const SIZES = {
 
 export function HydratedCover(props: HydratedCoverProps) {
   const { error, handleError, retry, reset, retryNonce } = useImageRetry();
+  const [imgLoaded, setImgLoaded] = createSignal(false);
   let wrapEl: HTMLDivElement | undefined;
 
   const resolvedPath = () => props.path || (props.coverKey ? browseCovers.getCover(props.coverKey) : undefined);
-  const isLoaded = () => Boolean(resolvedPath()) && !error() && coversEnabledSignal();
-
+  const isLoaded = () => Boolean(resolvedPath()) && !error() && coversEnabledSignal() && imgLoaded();
   createEffect(
     on(
       () => [resolvedPath(), retryNonce()] as const,
-      () => reset(),
-      { defer: true },
+      () => {
+        setImgLoaded(false);
+        reset();
+      },
     ),
   );
 
@@ -80,6 +83,7 @@ export function HydratedCover(props: HydratedCoverProps) {
   };
 
   const handleImageError = () => {
+    setImgLoaded(false);
     if (props.coverKey) {
       browseCovers.evict(props.coverKey);
     }
@@ -96,6 +100,23 @@ export function HydratedCover(props: HydratedCoverProps) {
   const size = () => SIZES[props.size ?? "feed"];
   const isCache = () => props.size === "cache";
 
+  const currentState = (): CoverState => {
+    if (!coversEnabledSignal()) return "no-cover";
+    if (error()) return "no-cover";
+    if (imgLoaded() && resolvedPath()) return "loaded";
+    if (resolvedPath()) return "loading";
+    return browseCovers.getCoverState(props.coverKey);
+  };
+
+  const stateTitle = (): string => {
+    const st = currentState();
+    if (st === "downloading") return t("cover.downloading");
+    if (st === "processing") return t("cover.processing");
+    if (st === "loading") return t("cover.loading");
+    if (st === "no-cover" && error()) return t("cover.retryTooltip");
+    if (st === "no-cover") return t("cover.noCover");
+    return props.title || props.coverKey;
+  };
   return (
     <div
       ref={(el) => {
@@ -107,14 +128,28 @@ export function HydratedCover(props: HydratedCoverProps) {
       data-chapter-permalink={props.chapterPermalink}
       data-series-permalink={props.seriesPermalink}
       data-series-type={props.seriesType}
-      title={props.title}
+      title={stateTitle()}
       onClick={handleClick}
     >
       <Show
         when={isLoaded()}
         fallback={
-          <div class={`ds-feed-cover-placeholder${size().placeholderClass ? ` ${size().placeholderClass}` : ""}`}>
-            <BookIcon />
+          <div
+            class={`ds-feed-cover-placeholder ds-cover-state--${currentState()}${size().placeholderClass ? ` ${size().placeholderClass}` : ""}`}
+            title={stateTitle()}
+          >
+            <Show when={currentState() === "downloading"}>
+              <Icon name="cloud-arrow-down" class="ds-cover-icon-pulse" />
+            </Show>
+            <Show when={currentState() === "processing"}>
+              <Icon name="gear-wide-connected" class="ds-cover-icon-spin" />
+            </Show>
+            <Show when={currentState() === "loading"}>
+              <ImageIcon />
+            </Show>
+            <Show when={currentState() === "no-cover" || currentState() === "loaded"}>
+              <BookIcon />
+            </Show>
           </div>
         }
       >
@@ -125,6 +160,7 @@ export function HydratedCover(props: HydratedCoverProps) {
           height={isCache() ? 50 : 58}
           decoding="async"
           src={convertFileSrc(resolvedPath()!)}
+          onLoad={() => setImgLoaded(true)}
           onError={handleImageError}
         />
       </Show>

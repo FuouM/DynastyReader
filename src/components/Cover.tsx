@@ -1,8 +1,8 @@
-import { createEffect, on, Show } from "solid-js";
+import { createEffect, createSignal, on, Show, type JSX } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { ImageIcon, Icon, type BootstrapIconName } from "./Icon";
 import { useImageRetry } from "../hooks/useImageRetry";
-
+import { t } from "../i18n";
 export interface CoverProps {
   path?: string | null;
   alt: string;
@@ -16,11 +16,15 @@ export interface CoverProps {
 /** A cover <img> that falls back to a placeholder on load error, with automatic and manual retry. */
 export function Cover(props: CoverProps) {
   const { retryNonce, handleError, retry, reset, showImage } = useImageRetry();
+  const [imgLoaded, setImgLoaded] = createSignal(false);
 
   createEffect(
     on(
       () => [props.path, retryNonce()] as const,
-      () => reset(),
+      () => {
+        setImgLoaded(false);
+        reset();
+      },
       { defer: true },
     ),
   );
@@ -31,8 +35,8 @@ export function Cover(props: CoverProps) {
     !props.path!.startsWith("series:") &&
     !props.path!.startsWith("chapter:");
 
-  const showCover = () => showImage(isValidLocalPath() && props.path !== undefined && props.path !== null);
-
+  const showCover = () => showImage(isValidLocalPath() && props.path !== undefined && props.path !== null) && imgLoaded();
+  const isLoading = () => isValidLocalPath() && !imgLoaded();
   const handlePlaceholderClick = (ev: MouseEvent) => {
     if (props.path) {
       retry();
@@ -48,8 +52,23 @@ export function Cover(props: CoverProps) {
           placeholderClass={props.placeholderClass}
           glyphClass={props.glyphClass}
           iconName={props.iconName}
+          isLoading={isLoading()}
           onClick={handlePlaceholderClick}
-        />
+        >
+          {/* Hidden img to trigger browser load/decode */}
+          <Show when={isValidLocalPath()}>
+            <img
+              style={{ display: "none" }}
+              alt={props.alt}
+              src={convertFileSrc(props.path!)}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => {
+                setImgLoaded(false);
+                handleError();
+              }}
+            />
+          </Show>
+        </CoverPlaceholder>
       }
     >
       <img
@@ -57,7 +76,10 @@ export function Cover(props: CoverProps) {
         title={props.alt}
         alt={props.alt}
         src={convertFileSrc(props.path!)}
-        onError={() => handleError()}
+        onError={() => {
+          setImgLoaded(false);
+          handleError();
+        }}
         onClick={props.onClick}
       />
     </Show>
@@ -69,10 +91,16 @@ export function CoverPlaceholder(props: {
   placeholderClass?: string;
   glyphClass?: string;
   iconName?: BootstrapIconName;
+  isLoading?: boolean;
   onClick?: (ev: MouseEvent) => void;
+  children?: JSX.Element;
 }) {
   return (
-    <div class={props.placeholderClass ?? "ds-cover-placeholder"} onClick={props.onClick}>
+    <div
+      class={`${props.placeholderClass ?? "ds-cover-placeholder"} ds-cover-state--${props.isLoading ? "loading" : "no-cover"}`}
+      title={props.isLoading ? t("cover.loading") : t("cover.noCover")}
+      onClick={props.onClick}
+    >
       {props.iconName ? (
         <Icon name={props.iconName} />
       ) : props.glyphClass ? (
@@ -80,6 +108,7 @@ export function CoverPlaceholder(props: {
       ) : (
         <ImageIcon />
       )}
+      {props.children}
     </div>
   );
 }

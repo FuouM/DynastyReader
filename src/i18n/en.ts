@@ -27,6 +27,13 @@ export const en = {
     in: "in",
     of: "of",
   },
+  cover: {
+    noCover: "No cover available",
+    downloading: "Downloading cover…",
+    processing: "Processing cover…",
+    loading: "Loading cover…",
+    retryTooltip: "Click to retry loading cover",
+  },
   topbar: {
     browse: "Browse",
     browseRecent: "Browse & Recent",
