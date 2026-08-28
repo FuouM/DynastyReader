@@ -8,20 +8,19 @@ export const OVERSCROLL_MAX_PULL_PX = 70;
 export const SWIPE_MIN_DIST_TOUCH_PX = 35;
 export const SWIPE_MIN_DIST_MOUSE_PX = 45;
 
-export const OVERSCROLL_COLLISION_RADIUS_PX = 46;
-export const OVERSCROLL_MIN_SEPARATION_PX = 220;
-export const OVERSCROLL_CARD_AVOID_H_PX = 92; // Card half-height + ring radius + safety margin
-export const OVERSCROLL_CARD_AVOID_W_PX = 180; // Card half-width + ring radius + safety margin
+export const OVERSCROLL_COLLISION_RADIUS_PX = 48;
+export const OVERSCROLL_CARD_AVOID_H_PX = 96; // Card half-height + ring radius + safety margin
+export const OVERSCROLL_CARD_AVOID_W_PX = 185; // Card half-width + ring radius + safety margin
 
 /**
- * Adaptive overscroll lock positioning with Radial Orbit & Edge Deflection:
+ * Adaptive overscroll lock positioning with Guaranteed Radial Orbit & Corner Deflection:
  * - The info card is anchored at the exact viewport center (cx, cy).
- * - Target ring is placed along pull vector with guaranteed Euclidean separation (>= 220px)
- *   from the engaged finger position (accounting for the 35px threshold already moved).
- * - When starting with generous runway across the screen, target is placed on the destination side.
- * - When starting near or on the destination boundary, an inward angular orbit deflection is applied
- *   (deflecting into the open vertical or horizontal quadrant) to guarantee >= 220px travel distance
- *   so the lock NEVER spawns adjacent to or within reach of an initial drag.
+ * - Target ring has guaranteed Euclidean separation (>= 320px on desktop, >= 220px on mobile)
+ *   from the engaged finger position.
+ * - When starting across the screen with ample horizontal runway, the target is placed on the destination margin.
+ * - When starting on the destination half or near borders, the target automatically deflects into the
+ *   opposite vertical quadrant (diagonal orbit), guaranteeing a spacious diagonal trajectory so the lock
+ *   NEVER spawns on the same horizontal line right in front of the finger.
  */
 export const getOverscrollTarget = (
   startX: number,
@@ -35,13 +34,8 @@ export const getOverscrollTarget = (
   const cx = winW / 2;
   const cy = winH / 2;
 
-  // Adaptive separation scaled by screen size (220px to 320px)
-  const minSep = Math.max(
-    OVERSCROLL_MIN_SEPARATION_PX,
-    Math.min(320, (isHorizontal ? winW : winH) * 0.28),
-  );
-
-  const EDGE_MARGIN = 56;
+  const EDGE_MARGIN_X = Math.max(56, Math.min(100, winW * 0.08));
+  const EDGE_MARGIN_Y = Math.max(56, Math.min(100, winH * 0.08));
 
   if (isHorizontal) {
     const isPullingLeft = isRtl ? direction === "prev" : direction === "next";
@@ -50,127 +44,99 @@ export const getOverscrollTarget = (
     const engagedX = isPullingLeft
       ? startX - OVERSCROLL_ENGAGE_THRESHOLD_PX
       : startX + OVERSCROLL_ENGAGE_THRESHOLD_PX;
+    const engagedY = startY;
 
-    // Available horizontal runway in the drag direction
-    const runwayX = isPullingLeft
-      ? engagedX - EDGE_MARGIN
-      : (winW - EDGE_MARGIN) - engagedX;
+    // Is the drag starting on the destination half of the screen?
+    const isStartingOnDestSide = isPullingLeft ? engagedX < cx + 40 : engagedX > cx - 40;
 
     let targetX: number;
     let targetY: number;
 
-    if (runwayX >= minSep + 60) {
-      // Clean runway across screen: place target on destination side
-      targetX = isPullingLeft
-        ? Math.max(EDGE_MARGIN, Math.min(cx - 75, winW * 0.18))
-        : Math.min(winW - EDGE_MARGIN, Math.max(cx + 75, winW * 0.82));
+    if (!isStartingOnDestSide) {
+      // Started on the opposite side: clean cross-screen horizontal runway
+      targetX = isPullingLeft ? EDGE_MARGIN_X : winW - EDGE_MARGIN_X;
 
-      // Keep targetY roughly aligned with finger, avoiding center card
-      targetY = startY;
+      // Keep target roughly aligned with finger Y, avoiding center card
+      targetY = engagedY;
       if (Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
-        targetY = startY < cy
-          ? cy - OVERSCROLL_CARD_AVOID_H_PX
-          : cy + OVERSCROLL_CARD_AVOID_H_PX;
+        targetY = engagedY < cy
+          ? cy - OVERSCROLL_CARD_AVOID_H_PX - 20
+          : cy + OVERSCROLL_CARD_AVOID_H_PX + 20;
       }
     } else {
-      // Starting on the destination side or near edge:
-      // Apply orbital deflection into the open vertical quadrant.
-      const availableX = Math.max(30, runwayX);
-      targetX = isPullingLeft
-        ? Math.max(EDGE_MARGIN, engagedX - availableX)
-        : Math.min(winW - EDGE_MARGIN, engagedX + availableX);
+      // Started on the destination side (or near edge):
+      // Apply diagonal corner deflection into the open vertical quadrant
+      targetX = isPullingLeft ? EDGE_MARGIN_X : winW - EDGE_MARGIN_X;
 
-      const horizDist = Math.abs(targetX - engagedX);
-      const neededY = Math.sqrt(Math.max(0, minSep * minSep - horizDist * horizDist));
-
-      // Orbit towards the open vertical half of the screen
-      if (startY < cy) {
-        // Upper half -> project downward towards lower quadrant
-        targetY = cy + OVERSCROLL_CARD_AVOID_H_PX + (neededY * 0.5);
-        if (targetY > winH - EDGE_MARGIN) {
-          targetY = Math.max(EDGE_MARGIN, cy - OVERSCROLL_CARD_AVOID_H_PX - neededY);
-        }
+      if (engagedY < cy) {
+        // Upper quadrant -> deflect to lower destination corner
+        targetY = Math.min(winH - EDGE_MARGIN_Y, Math.max(cy + OVERSCROLL_CARD_AVOID_H_PX + 20, winH * 0.74));
       } else {
-        // Lower half -> project upward towards upper quadrant
-        targetY = cy - OVERSCROLL_CARD_AVOID_H_PX - (neededY * 0.5);
-        if (targetY < EDGE_MARGIN) {
-          targetY = Math.min(winH - EDGE_MARGIN, cy + OVERSCROLL_CARD_AVOID_H_PX + neededY);
-        }
+        // Lower quadrant -> deflect to upper destination corner
+        targetY = Math.max(EDGE_MARGIN_Y, Math.min(cy - OVERSCROLL_CARD_AVOID_H_PX - 20, winH * 0.26));
       }
     }
 
-    // Final safety card avoidance check
+    // Secondary card avoidance check
     if (Math.abs(targetX - cx) < OVERSCROLL_CARD_AVOID_W_PX && Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
       if (Math.abs(targetY - cy) < Math.abs(targetX - cx)) {
-        targetY = targetY < cy ? cy - OVERSCROLL_CARD_AVOID_H_PX : cy + OVERSCROLL_CARD_AVOID_H_PX;
+        targetY = targetY < cy ? cy - OVERSCROLL_CARD_AVOID_H_PX - 20 : cy + OVERSCROLL_CARD_AVOID_H_PX + 20;
       } else {
-        targetX = targetX < cx ? cx - OVERSCROLL_CARD_AVOID_W_PX : cx + OVERSCROLL_CARD_AVOID_W_PX;
+        targetX = targetX < cx ? cx - OVERSCROLL_CARD_AVOID_W_PX - 20 : cx + OVERSCROLL_CARD_AVOID_W_PX + 20;
       }
     }
 
-    const clampedX = Math.max(EDGE_MARGIN, Math.min(winW - EDGE_MARGIN, targetX));
-    const clampedY = Math.max(EDGE_MARGIN, Math.min(winH - EDGE_MARGIN, targetY));
+    const clampedX = Math.max(48, Math.min(winW - 48, targetX));
+    const clampedY = Math.max(48, Math.min(winH - 48, targetY));
     return { targetX: clampedX, targetY: clampedY };
   } else {
     // Vertical continuous scroll mode
     const isPullingUp = direction === "next";
 
+    const engagedX = startX;
     const engagedY = isPullingUp
       ? startY - OVERSCROLL_ENGAGE_THRESHOLD_PX
       : startY + OVERSCROLL_ENGAGE_THRESHOLD_PX;
 
-    const runwayY = isPullingUp
-      ? engagedY - EDGE_MARGIN
-      : (winH - EDGE_MARGIN) - engagedY;
+    const isStartingOnDestSide = isPullingUp ? engagedY < cy + 40 : engagedY > cy - 40;
 
     let targetX: number;
     let targetY: number;
 
-    if (runwayY >= minSep + 60) {
-      targetY = isPullingUp
-        ? Math.max(EDGE_MARGIN, Math.min(cy - 75, winH * 0.18))
-        : Math.min(winH - EDGE_MARGIN, Math.max(cy + 75, winH * 0.82));
+    if (!isStartingOnDestSide) {
+      // Clean cross-screen vertical runway
+      targetY = isPullingUp ? EDGE_MARGIN_Y : winH - EDGE_MARGIN_Y;
 
-      targetX = startX;
+      targetX = engagedX;
       if (Math.abs(targetX - cx) < OVERSCROLL_CARD_AVOID_W_PX) {
-        targetX = startX < cx
-          ? cx - OVERSCROLL_CARD_AVOID_W_PX
-          : cx + OVERSCROLL_CARD_AVOID_W_PX;
+        targetX = engagedX < cx
+          ? cx - OVERSCROLL_CARD_AVOID_W_PX - 20
+          : cx + OVERSCROLL_CARD_AVOID_W_PX + 20;
       }
     } else {
-      // Starting near top/bottom edge: apply orbital deflection into horizontal quadrant
-      const availableY = Math.max(30, runwayY);
-      targetY = isPullingUp
-        ? Math.max(EDGE_MARGIN, engagedY - availableY)
-        : Math.min(winH - EDGE_MARGIN, engagedY + availableY);
+      // Started near top/bottom destination margin: deflect into opposite horizontal corner
+      targetY = isPullingUp ? EDGE_MARGIN_Y : winH - EDGE_MARGIN_Y;
 
-      const vertDist = Math.abs(targetY - engagedY);
-      const neededX = Math.sqrt(Math.max(0, minSep * minSep - vertDist * vertDist));
-
-      if (startX < cx) {
-        targetX = cx + OVERSCROLL_CARD_AVOID_W_PX + (neededX * 0.5);
-        if (targetX > winW - EDGE_MARGIN) {
-          targetX = Math.max(EDGE_MARGIN, cx - OVERSCROLL_CARD_AVOID_W_PX - neededX);
-        }
+      if (engagedX < cx) {
+        // Left quadrant -> deflect to right destination corner
+        targetX = Math.min(winW - EDGE_MARGIN_X, Math.max(cx + OVERSCROLL_CARD_AVOID_W_PX + 20, winW * 0.76));
       } else {
-        targetX = cx - OVERSCROLL_CARD_AVOID_W_PX - (neededX * 0.5);
-        if (targetX < EDGE_MARGIN) {
-          targetX = Math.min(winW - EDGE_MARGIN, cx + OVERSCROLL_CARD_AVOID_W_PX + neededX);
-        }
+        // Right quadrant -> deflect to left destination corner
+        targetX = Math.max(EDGE_MARGIN_X, Math.min(cx - OVERSCROLL_CARD_AVOID_W_PX - 20, winW * 0.24));
       }
     }
 
-    // Safety card avoidance check
+    // Secondary card avoidance check
     if (Math.abs(targetX - cx) < OVERSCROLL_CARD_AVOID_W_PX && Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
       if (Math.abs(targetX - cx) < Math.abs(targetY - cy)) {
-        targetX = targetX < cx ? cx - OVERSCROLL_CARD_AVOID_W_PX : cx + OVERSCROLL_CARD_AVOID_W_PX;
+        targetX = targetX < cx ? cx - OVERSCROLL_CARD_AVOID_W_PX - 20 : cx + OVERSCROLL_CARD_AVOID_W_PX + 20;
       } else {
-        targetY = targetY < cy ? cy - OVERSCROLL_CARD_AVOID_H_PX : cy + OVERSCROLL_CARD_AVOID_H_PX;
+        targetY = targetY < cy ? cy - OVERSCROLL_CARD_AVOID_H_PX - 20 : cy + OVERSCROLL_CARD_AVOID_H_PX + 20;
       }
     }
 
-    const clampedX = Math.max(EDGE_MARGIN, Math.min(winW - EDGE_MARGIN, targetX));
-    const clampedY = Math.max(EDGE_MARGIN, Math.min(winH - EDGE_MARGIN, targetY));
+    const clampedX = Math.max(48, Math.min(winW - 48, targetX));
+    const clampedY = Math.max(48, Math.min(winH - 48, targetY));
     return { targetX: clampedX, targetY: clampedY };
   }
 };
