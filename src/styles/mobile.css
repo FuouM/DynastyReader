@@ -38,7 +38,7 @@
 #ds-root[data-mobile] ~ .ds-overlay ::-webkit-scrollbar-thumb,
 #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb,
 #ds-root[data-mobile] .ds-overlay ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.22);
+  background: var(--sys-scrollbar-thumb, rgba(0, 0, 0, 0.22));
   border-radius: 4px;
   border: none;
 }
@@ -48,7 +48,7 @@
 #ds-root[data-mobile] ~ .ds-overlay ::-webkit-scrollbar-thumb:hover,
 #ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:hover,
 #ds-root[data-mobile] .ds-overlay ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--sys-scrollbar-thumb-hover, rgba(0, 0, 0, 0.45));
 }
 
 /* scrollbar colors now token-driven via reset.css — no per-theme overrides needed */
