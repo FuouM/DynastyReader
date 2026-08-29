@@ -21,6 +21,7 @@ import {
   route,
   routeTitle,
   setTitle,
+  navigate,
   uiScale,
   isPersistentView,
   isMobile,
@@ -66,26 +67,25 @@ export function App() {
   });
 
   onMount(() => {
-    // Handle Android hardware/system back button and popstate events
-    const handlePopState = (ev: PopStateEvent) => {
+    makeEventListener(window, "popstate", (ev: PopStateEvent) => {
       ev.preventDefault();
-      if (canGoBack()) {
-        goBack();
-      }
-    };
-
-    const handleBackButton = (ev: Event) => {
+      if (canGoBack()) goBack();
+    });
+    makeEventListener(window, "t-back-button", (ev: Event) => {
       ev.preventDefault();
-      if (canGoBack()) {
-        goBack();
+      if (canGoBack()) goBack();
+    });
+    makeEventListener(document, "backbutton", (ev: Event) => {
+      ev.preventDefault();
+      if (canGoBack()) goBack();
+    });
+    makeEventListener(window, "ds-navigate", (ev: Event) => {
+      const customEv = ev as CustomEvent<Route>;
+      if (customEv.detail) {
+        navigate(customEv.detail);
       }
-    };
-
-    makeEventListener(window, "popstate", handlePopState);
-    makeEventListener(window, "t-back-button", handleBackButton);
-    makeEventListener(document, "backbutton", handleBackButton);
+    });
   });
-
   return (
     <div id="ds-root" data-mobile={isMobile() ? "1" : undefined} style={!isMobile() && uiScale() !== 1.0 ? { zoom: String(uiScale()) } : undefined}>
       <GlobalShortcuts />

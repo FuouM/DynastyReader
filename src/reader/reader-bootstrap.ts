@@ -31,7 +31,8 @@ import {
   getScrollLock,
 } from "./settings";
 import { standardizeCachePaths } from "./path-migration";
-import { setBanner, isOnline } from "../stores";
+import { setBanner, isOnline, setTitle, setSessionTab } from "../stores";
+import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { loadChapterList } from "./reader-chapter-nav";
@@ -70,7 +71,16 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   s.setSeriesPermalink(seriesPermalink);
   s.setSeriesType(preferredType ?? null);
   s.setSeriesName(seriesName);
-  s.setChapterTitle(chapter.title || route.chapterTitle || "Chapter");
+  const resolvedChapterTitle = route.chapterTitle || chapter.title || "Chapter";
+  s.setChapterTitle(resolvedChapterTitle);
+  setTitle(decodeEntities(resolvedChapterTitle));
+  setSessionTab((current) => {
+    if (!current || current.route.view !== "reader") return current;
+    return {
+      title: seriesName,
+      route: { ...current.route, seriesName, chapterTitle: resolvedChapterTitle },
+    };
+  });
   s.setChapterPermalink(s.permalink);
   if (hasRouteChapterList) {
     s.setChapterList(route.chapterList!);

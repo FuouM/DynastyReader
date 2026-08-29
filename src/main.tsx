@@ -14,15 +14,19 @@ initAppTheme();
 // Mirror browser console output into the tauri-plugin-log backend so the
 // daemon-style `data/logs/dynasty-reader.log` file captures frontend errors
 // alongside backend tracing output.
-attachConsole();
+if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
+  attachConsole().catch(() => {});
+}
 
 // Restore on open, save on close — handled by the official window-state plugin on desktop
-restoreStateCurrent(StateFlags.ALL).catch((_err) => {
-  // Expected to fail silently on mobile (window-state plugin is desktop-only)
-});
-window.addEventListener("unload", () => {
-  saveWindowState(StateFlags.ALL).catch((_err) => {});
-});
+if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
+  restoreStateCurrent(StateFlags.ALL).catch((_err) => {
+    // Expected to fail silently on mobile (window-state plugin is desktop-only)
+  });
+  window.addEventListener("unload", () => {
+    saveWindowState(StateFlags.ALL).catch((_err) => {});
+  });
+}
 
 import "./styles/tokens.css";
 import "./styles/themes/dark.css";
@@ -41,17 +45,17 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 
 // Initialize database schema and then mount the SolidJS app
 async function bootstrap() {
+  const appEl = document.getElementById("app");
+  if (appEl) {
+    render(() => <App />, appEl);
+  }
+
   try {
     await initDb();
   } catch (err) {
     const msg = errorMessage(err);
     console.error("dynasty-scans: db init failed:", msg);
     showBanner(t("main.dbInitFailedBanner", { msg }));
-  }
-
-  const appEl = document.getElementById("app");
-  if (appEl) {
-    render(() => <App />, appEl);
   }
 }
 
