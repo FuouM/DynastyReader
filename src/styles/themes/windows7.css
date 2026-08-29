@@ -511,6 +511,23 @@
     color: #0f2440 !important;
   }
 
+  /* ── Hover flash fix — Aero gradients cannot animate via background-color ── */
+  /* .ds-item has `transition: background-color 0.12s` in the base layer, but */
+  /* Aero hovers swap `background: #fff` -> `linear-gradient(...)`.            */
+  /* background-color interpolates #fff -> transparent while background-image */
+  /* snaps instantly, producing a white flash for one frame. Disable the     */
+  /* background transition in the Aero theme so hovers are instant (authentic */
+  /* Win7 behaviour) and only border-color would animate if needed.          */
+  [data-theme="windows7"] .ds-item,
+  [data-theme="windows7"] .ds-chapter-row,
+  [data-theme="windows7"] .ds-cache-item,
+  [data-theme="windows7"] .ds-history-item,
+  [data-theme="windows7"] .ds-settings-nav-item,
+  [data-theme="windows7"] .ds-segmented-btn,
+  [data-theme="windows7"] .ds-subtab {
+    transition: none !important;
+  }
+
   /* ── Cards / items — Aero card with soft border ── */
   [data-theme="windows7"] .ds-item,
   [data-theme="windows7"] .ds-chapter-row,

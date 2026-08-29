@@ -50,14 +50,21 @@ function deserializeTheme(raw: string): AppTheme {
 }
 
 function applyThemeToDom(t: AppTheme): void {
-  // Temporarily disable all CSS transitions so theme switching is crisp and instantaneous
-  const disableTransitions = document.createElement("style");
-  disableTransitions.textContent =
-    "*, *::before, *::after { -webkit-transition: none !important; -moz-transition: none !important; -o-transition: none !important; -ms-transition: none !important; transition: none !important; }";
-  document.head.appendChild(disableTransitions);
-
+  // Dual guard: CSS class (earliest layer, !important beats all layers) + injected style fallback.
+  // Release WebView batches differently than Vite dev — rAF alone can remove guard before paint.
   const root = document.documentElement;
+  root.classList.add("ds-disable-transitions");
+  const disableTransitions = document.createElement("style");
+  disableTransitions.setAttribute("data-ds-disable-transitions", "");
+  disableTransitions.textContent =
+    "*, *::before, *::after { -webkit-transition: none !important; -moz-transition: none !important; -o-transition: none !important; -ms-transition: none !important; transition: none !important; animation: none !important; scroll-behavior: auto !important; }";
+  document.head.appendChild(disableTransitions);
+  void disableTransitions.offsetHeight;
+  void window.getComputedStyle(disableTransitions).opacity;
+  void window.getComputedStyle(root).color;
+
   // Clear temporary inline styles from index.html bootstrap script so tokens.css controls it
+
   root.style.removeProperty("background-color");
   root.style.removeProperty("color");
   const cfg = THEME_REGISTRY[t] ?? THEME_REGISTRY.light;
@@ -90,15 +97,21 @@ function applyThemeToDom(t: AppTheme): void {
     }
   }
 
-  // Force synchronous style recalc so new theme colors take effect immediately without transition
-  if (body) {
-    void body.offsetHeight;
-  }
+  // Force synchronous style recalc so new theme colors take effect immediately while guard is active.
+  void root.offsetHeight;
+  if (body) void body.offsetHeight;
+  if (dsRoot) void dsRoot.offsetHeight;
+  void window.getComputedStyle(root).color;
 
-  // Restore normal CSS transitions on the next animation frame
+  // Restore normal CSS transitions after paint + short grace period.
+  // Double rAF ensures we are past the next paint; setTimeout covers WebView batching where
+  // the transition would otherwise start after the guard is removed (release vs dev timing).
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      disableTransitions.remove();
+      window.setTimeout(() => {
+        disableTransitions.remove();
+        root.classList.remove("ds-disable-transitions");
+      }, 150);
     });
   });
 }
