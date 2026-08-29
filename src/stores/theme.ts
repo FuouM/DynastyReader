@@ -6,30 +6,35 @@
  * `ds-<theme>` body/root class), and the legacy `THEME_CHANGE_EVENT`
  * dispatch so non-Solid listeners keep working.
  *
- * Extending to a 3rd theme: add to `AppTheme`, `THEME_META`, `VALID_THEMES`,
- * and add a `[data-theme="<name>"]` block in `tokens.css`.
+ * Adding a new theme (e.g. windows-xp): add one entry to `THEME_REGISTRY`
+ * and one file `src/styles/themes/<name>.css` with `:root[data-theme="<name>"]` vars.
  */
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { persistedSignal } from "../lib/persisted-signal";
 
-export type AppTheme = "light" | "dark" | "high-contrast";
+/** Registry — single source of truth for theme ids, meta colors, and DOM mapping. */
+export const THEME_REGISTRY = {
+  light: { meta: "#f5f5f5", bg: "#ececec", text: "#000000", colorScheme: "light" as const, label: "Light" },
+  dark: { meta: "#181818", bg: "#1e1e1e", text: "#e0e0e0", colorScheme: "dark" as const, label: "Dark" },
+  "high-contrast": { meta: "#000000", bg: "#000000", text: "#ffffff", colorScheme: "dark" as const, label: "High Contrast" },
+} as const;
 
-/** All valid theme ids — single source of truth for validation and cycling. */
-const VALID_THEMES: readonly AppTheme[] = ["light", "dark", "high-contrast"];
+export type AppTheme = keyof typeof THEME_REGISTRY;
+
+/** All valid theme ids — derived from registry. */
+const VALID_THEMES: readonly AppTheme[] = Object.keys(THEME_REGISTRY) as AppTheme[];
 
 /** Theme-color meta tag values (Android status bar / PWA chrome). */
-const THEME_META: Record<AppTheme, string> = {
-  light: "#f5f5f5",
-  dark: "#181818",
-  "high-contrast": "#000000",
-};
+const THEME_META: Record<AppTheme, string> = Object.fromEntries(
+  Object.entries(THEME_REGISTRY).map(([k, v]) => [k, v.meta]),
+) as Record<AppTheme, string>;
 
 const STORAGE_KEY = "ds-theme";
 const LEGACY_STORAGE_KEY = "ds-reader-theme";
 export const THEME_CHANGE_EVENT = "ds-theme-change";
 
 function isAppTheme(value: unknown): value is AppTheme {
-  return VALID_THEMES.includes(value as AppTheme);
+  return (VALID_THEMES as readonly string[]).includes(value as string);
 }
 
 function deserializeTheme(raw: string): AppTheme {
@@ -47,7 +52,8 @@ function applyThemeToDom(t: AppTheme): void {
   // Clear temporary inline styles from index.html bootstrap script so tokens.css controls it
   root.style.removeProperty("background-color");
   root.style.removeProperty("color");
-  root.style.colorScheme = t === "light" ? "light" : "dark";
+  const cfg = THEME_REGISTRY[t] ?? THEME_REGISTRY.light;
+  root.style.colorScheme = cfg.colorScheme;
   // Always set data-theme explicitly so CSS [data-theme="light"] selectors work.
   root.setAttribute("data-theme", t);
   // Swap ds-<theme> class: remove any prior theme class, add the current one.
@@ -60,15 +66,17 @@ function applyThemeToDom(t: AppTheme): void {
   body?.classList.add(`ds-${t}`);
   dsRoot?.classList.add(`ds-${t}`);
   // Keep legacy ds-dark in sync so any residual ds-dark CSS still fires.
-  body?.classList.toggle("ds-dark", t === "dark" || t === "high-contrast");
-  dsRoot?.classList.toggle("ds-dark", t === "dark" || t === "high-contrast");
+  const isDark = cfg.colorScheme === "dark";
+  body?.classList.toggle("ds-dark", isDark);
+  dsRoot?.classList.toggle("ds-dark", isDark);
   const meta = document.getElementById("ds-theme-color-meta") as HTMLMetaElement | null;
   if (meta) {
     meta.setAttribute("content", THEME_META[t] ?? "#f5f5f5");
   }
-  if (typeof window !== "undefined" && (window as any).AndroidThemeBridge?.updateTheme) {
+  const w = window as unknown as { AndroidThemeBridge?: { updateTheme: (isDark: boolean, color: string) => void } };
+  if (typeof window !== "undefined" && w.AndroidThemeBridge?.updateTheme) {
     try {
-      (window as any).AndroidThemeBridge.updateTheme(t !== "light", THEME_META[t] ?? "#f5f5f5");
+      w.AndroidThemeBridge.updateTheme(isDark, THEME_META[t] ?? "#f5f5f5");
     } catch {}
   }
 }

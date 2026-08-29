@@ -52,7 +52,7 @@ export {
   clearActions,
 } from "./topbar";
 
-export { theme, setTheme, toggleTheme, initAppTheme, THEME_CHANGE_EVENT } from "./theme";
+export { theme, setTheme, toggleTheme, initAppTheme, THEME_CHANGE_EVENT, THEME_REGISTRY } from "./theme";
 export type { AppTheme } from "./theme";
 
 export { uiScale, setUiScale, applyUiScale } from "./ui-scale";

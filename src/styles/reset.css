@@ -1,4 +1,4 @@
-@layer tokens, reset, base, layout, components, reader, utilities, mobile;
+@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
 
 /* reset.css — box model, body, scrollbars, skeleton placeholders */
 @layer reset {
@@ -24,42 +24,20 @@ body {
   height: 16px;
 }
 ::-webkit-scrollbar-track {
-  background: #f0f0f0;
-  border: 1px solid #dcdcdc;
+  background: var(--sys-scrollbar-track);
+  border: 1px solid var(--sys-scrollbar-track-border);
 }
 ::-webkit-scrollbar-thumb {
-  background: #cdcdcd;
-  border: 3px solid #f0f0f0;
+  background: var(--sys-scrollbar-thumb);
+  border: 3px solid var(--sys-scrollbar-thumb-border);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a6a6a6;
+  background: var(--sys-scrollbar-thumb-hover);
 }
 ::-webkit-scrollbar-button {
   display: none;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-track {
-  background: #2b2b2b;
-  border-color: #3a3a3a;
-}
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #555555;
-  border-color: #2b2b2b;
-}
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: #6e6e6e;
-}
-[data-theme="high-contrast"] ::-webkit-scrollbar-track {
-  background: #111111;
-  border-color: #2a2a2a;
-}
-[data-theme="high-contrast"] ::-webkit-scrollbar-thumb {
-  background: #444444;
-  border-color: #111111;
-}
-[data-theme="high-contrast"] ::-webkit-scrollbar-thumb:hover {
-  background: #666666;
-}
 
 .skeleton {
   position: relative;
@@ -77,32 +55,9 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.4) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, var(--skeleton-shimmer) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: ds-skeleton-slide 1.5s ease-in-out infinite;
-}
-[data-theme="dark"] .skeleton::after,
-[data-theme="dark"] .skeleton-pulse::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    transparent 100%
-  );
-}
-[data-theme="high-contrast"] .skeleton::after,
-[data-theme="high-contrast"] .skeleton-pulse::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.08) 50%,
-    transparent 100%
-  );
 }
 .skeleton-card {
   height: 80px;

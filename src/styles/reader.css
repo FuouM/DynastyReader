@@ -1,4 +1,4 @@
-@layer tokens, reset, base, layout, components, reader, utilities, mobile;
+@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
 
 @layer reader {
 /* Reader viewport, slots, shimmer, fullscreen, dark theme, fit modes. */
@@ -15,8 +15,8 @@
 
 /* Reader View */
 #ds-reader-container {
-  --ds-reader-bg: var(--sys-window-bg, #ffffff);
-  --ds-reader-viewport-bg: #eaeaea;
+  --ds-reader-bg: var(--sys-window-bg);
+  --ds-reader-viewport-bg: var(--sys-reader-viewport-bg);
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -42,123 +42,16 @@
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-top {
   padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
-  border-bottom: 1px solid var(--sys-border-light, #ccc) !important;
+  border-bottom: 1px solid var(--ds-reader-nav-border) !important;
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-bottom {
   padding: 4px calc(8px + env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px)) !important;
-  border-top: 1px solid var(--sys-border-light, #ccc) !important;
+  border-top: 1px solid var(--ds-reader-nav-border) !important;
 }
 #ds-reader-container.ds-fullscreen #ds-reader-viewport {
   background: var(--ds-reader-viewport-bg) !important;
 }
 
-/* Dark reader tint — windowed + fullscreen. `.win-button` / `.win-input` dark
-   styling is already handled globally by the base [data-theme] palette. */
-[data-theme="dark"] #ds-reader-container {
-  --ds-reader-bg: #181818;
-  --ds-reader-viewport-bg: #1e1e1e;
-}
-[data-theme="dark"] #ds-reader-container .ds-reader-nav {
-  background: var(--ds-reader-bg) !important;
-  color: var(--sys-window-text, #ffffff) !important;
-  /* reader nav border — intentionally darker than sys-border-dark */
-  border-color: var(--sys-border-dark) !important;
-}
-[data-theme="dark"] #ds-reader-container .ds-reader-nav.ds-reader-nav-top {
-  /* reader nav border — intentionally darker than sys-border-dark */
-  border-bottom: 1px solid var(--sys-border-dark) !important;
-}
-[data-theme="dark"] #ds-reader-container .ds-reader-nav.ds-reader-nav-bottom {
-  /* reader nav border — intentionally darker than sys-border-dark */
-  border-top: 1px solid var(--sys-border-dark) !important;
-}
-[data-theme="dark"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
-  border-top-color: rgba(255, 255, 255, 0.08);
-}
-[data-theme="dark"] #ds-reader-container .ds-reader-progress-pill {
-  background: var(--sys-control-bg, #282828);
-  border-color: var(--sys-border-dark, #444444);
-  color: var(--sys-window-text, #e0e0e0);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-[data-theme="dark"] #ds-reader-container .ds-reader-progress-track {
-  background: var(--sys-border-medium, #333333);
-}
-[data-theme="dark"] #ds-reader-container #ds-reader-viewport {
-  background: var(--ds-reader-viewport-bg) !important;
-}
-[data-theme="dark"] #ds-reader-container .ds-progress-text {
-  color: var(--sys-text-secondary, #cccccc);
-}
-[data-theme="dark"] #ds-reader-container .ds-slot-state {
-  color: var(--sys-text-muted);
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-[data-theme="dark"] #ds-reader-container.ds-fullscreen {
-  --ds-reader-viewport-bg: #121212;
-}
-
-/* High-Contrast (OLED) reader overrides — true black, razor borders. */
-[data-theme="high-contrast"] #ds-reader-container {
-  --ds-reader-bg: #000000;
-  --ds-reader-viewport-bg: #000000;
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav {
-  background: var(--ds-reader-bg) !important;
-  color: var(--sys-window-text, #ffffff) !important;
-  border-color: var(--sys-border-medium) !important;
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav.ds-reader-nav-top {
-  border-bottom: 1px solid var(--sys-border-medium) !important;
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav.ds-reader-nav-bottom {
-  border-top: 1px solid var(--sys-border-medium) !important;
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
-  border-top-color: rgba(255, 255, 255, 0.1);
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-reader-progress-pill {
-  background: #111111;
-  border-color: #444444;
-  color: #ffffff;
-  box-shadow: none;
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-reader-progress-track {
-  background: #222222;
-}
-[data-theme="high-contrast"] #ds-reader-container #ds-reader-viewport {
-  background: var(--ds-reader-viewport-bg) !important;
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-progress-text {
-  color: #ffffff;
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-slot-state {
-  color: #cccccc;
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.18);
-}
-[data-theme="high-contrast"] #ds-reader-container.ds-fullscreen {
-  --ds-reader-viewport-bg: #000000;
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-overscroll-finger-circle {
-  background: #111111;
-  color: #ffffff;
-  border-color: var(--sys-primary, #66b8ff);
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-overscroll-target-ring {
-  background: #111111;
-  color: var(--sys-primary, #66b8ff);
-  border-color: var(--sys-primary, #66b8ff);
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-overscroll-target-card {
-  background: #0d0d0d;
-  color: #ffffff;
-  border-color: #444444;
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-overscroll-target-hint {
-  color: var(--sys-text-muted, #aaaaaa);
-}
 
 .ds-reader-nav {
   display: flex;
@@ -169,7 +62,7 @@
   width: 100%;
   max-width: 100vw;
   box-sizing: border-box;
-  background: var(--sys-window-bg, #fafafa);
+  background: var(--ds-reader-bg);
   flex-shrink: 0;
   z-index: 20;
   overflow: visible;
@@ -177,7 +70,7 @@
 .ds-reader-nav.ds-reader-nav-top {
   min-height: calc(32px + env(safe-area-inset-top, 0px));
   padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px));
-  border-bottom: 1px solid var(--sys-border-light, #ccc);
+  border-bottom: 1px solid var(--ds-reader-nav-border);
   position: sticky;
   top: 0;
   box-sizing: border-box;
@@ -185,7 +78,7 @@
 .ds-reader-nav.ds-reader-nav-bottom {
   min-height: 32px;
   padding: 4px calc(8px + env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px));
-  border-top: 1px solid var(--sys-border-light, #ccc);
+  border-top: 1px solid var(--ds-reader-nav-border);
   position: sticky;
   bottom: 0;
   box-sizing: border-box;
@@ -216,14 +109,9 @@
 }
 .ds-reader-nav-top > .nav-controls:not(:first-child) {
   padding-top: 4px;
-  border-top: 1px solid var(--sys-border-light, rgba(0, 0, 0, 0.06));
+  border-top: 1px solid var(--ds-reader-divider);
 }
-[data-theme="dark"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
-  border-top-color: rgba(255, 255, 255, 0.08);
-}
-[data-theme="high-contrast"] #ds-reader-container .ds-reader-nav-top > .nav-controls:not(:first-child) {
-  border-top-color: rgba(255, 255, 255, 0.1);
-}
+
 
 .ds-ctrl-zoom-group {
   display: inline-flex;
@@ -1082,11 +970,6 @@
   pointer-events: auto;
   cursor: pointer;
 }
-[data-theme="dark"] #ds-reader-container .ds-reader-direction-hint-pill {
-  background: var(--sys-control-bg, #2d2d2d);
-  color: var(--sys-window-text, #f0f0f0);
-  border-color: var(--sys-highlight-bg, #0078d4);
-}
 .ds-hint-tag {
   font-size: 10px;
   font-weight: 700;
@@ -1138,12 +1021,6 @@
   box-sizing: border-box;
 }
 
-[data-theme="dark"] #ds-reader-container .ds-overscroll-finger-circle {
-  background: var(--sys-control-bg, #2d2d2d);
-  color: var(--sys-window-text, #ffffff);
-  border-color: var(--sys-highlight-bg, #0078d4);
-}
-
 .ds-overscroll-finger-circle.ds-snap-ready {
   background: #107c41 !important;
   border-color: #0c592e !important;
@@ -1171,11 +1048,6 @@
   will-change: transform;
 }
 
-[data-theme="dark"] #ds-reader-container .ds-overscroll-target-ring {
-  background: var(--sys-control-bg, #2d2d2d);
-  color: var(--sys-primary, #60a5fa);
-  border-color: var(--sys-highlight-bg, #0078d4);
-}
 
 .ds-overscroll-target-ring.ds-snap-ready {
   background: #107c41 !important;
@@ -1207,12 +1079,6 @@
   z-index: 2010;
 }
 
-[data-theme="dark"] #ds-reader-container .ds-overscroll-target-card {
-  background: var(--sys-control-bg, #2d2d2d);
-  color: var(--sys-window-text, #f0f0f0);
-  border-color: var(--sys-border-dark, #555555);
-}
-
 .ds-overscroll-target-badge {
   font-size: 10px;
   font-weight: 700;
@@ -1233,14 +1099,9 @@
 
 .ds-overscroll-target-hint {
   font-size: 11px;
-  color: var(--sys-muted, #666666);
+  color: var(--sys-text-muted, #666666);
   font-weight: 500;
 }
-
-[data-theme="dark"] #ds-reader-container .ds-overscroll-target-hint {
-  color: var(--sys-text-muted, #a0a0a0);
-}
-
 /* Tap Zone Visual Guide Overlay — Clean Flat Translucent Guide */
 .ds-tap-zone-guide {
   position: fixed;

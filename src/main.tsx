@@ -25,6 +25,8 @@ window.addEventListener("unload", () => {
 });
 
 import "./styles/tokens.css";
+import "./styles/themes/dark.css";
+import "./styles/themes/high-contrast.css";
 import "./styles/reset.css";
 import "./styles/curator-ui-base.css";
 import "./styles/index.css";

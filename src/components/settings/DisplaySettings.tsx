@@ -1,5 +1,5 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
-import { theme, setTheme, uiScale, applyUiScale, uiMode, setUiMode, type UiMode } from "../../stores";
+import { theme, setTheme, THEME_REGISTRY, uiScale, applyUiScale, uiMode, setUiMode, type UiMode, type AppTheme } from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";
@@ -80,20 +80,25 @@ export function DisplaySettings() {
         </SettingsRow>
 
         {/* Theme Switcher */}
-        <SettingsRow
-          label={t("settings.display.theme")}
-          divider
-        >
-        <SegmentedSwitch
-          id="ds-settings-theme-switch"
-          value={theme()}
-          onChange={(val) => setTheme(val as "light" | "dark" | "high-contrast")}
-          options={[
-            { id: "ds-settings-theme-light", value: "light", icon: <SunIcon />, text: t("settings.display.themeLight").split(" ")[0], title: t("settings.display.themeLight") },
-            { id: "ds-settings-theme-dark", value: "dark", icon: <MoonIcon />, text: t("settings.display.themeDark").split(" ")[0], title: t("settings.display.themeDark") },
-            { id: "ds-settings-theme-hc", value: "high-contrast", icon: <OledIcon />, text: t("settings.display.themeHighContrast").split(" ")[0], title: t("settings.display.themeHighContrast") },
-          ]}
-        />
+        <SettingsRow label={t("settings.display.theme")} divider>
+          <SegmentedSwitch
+            id="ds-settings-theme-switch"
+            value={theme()}
+            onChange={(val) => setTheme(val as AppTheme)}
+            options={(Object.keys(THEME_REGISTRY) as AppTheme[]).map((value) => {
+              const cfg = THEME_REGISTRY[value];
+              const isLight = value === "light";
+              const isDark = value === "dark";
+              const isHC = value === "high-contrast";
+              return {
+                id: `ds-settings-theme-${value}`,
+                value,
+                icon: isLight ? <SunIcon /> : isDark ? <MoonIcon /> : isHC ? <OledIcon /> : <Icon name="palette" />,
+                text: cfg.label.split(" ")[0],
+                title: cfg.label,
+              };
+            })}
+          />
         </SettingsRow>
 
         {/* Feed Covers Toggle */}
