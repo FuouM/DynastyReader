@@ -33,7 +33,7 @@ export function SubTabs(props: SubTabsProps) {
               title={tab.label}
               onClick={() => props.onSwitch(tab.id)}
             >
-              {tab.icon ? <i class={`bi ${tab.icon}`} style="margin-right: 4px;" /> : undefined}
+              {tab.icon ? <i class={`bi ${tab.icon} ds-mr-4`} /> : undefined}
               {props.compact ? (tab.shortLabel ?? tab.label) : tab.label}
             </DsButton>
           )}

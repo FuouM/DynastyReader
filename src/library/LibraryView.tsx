@@ -247,7 +247,7 @@ function LibraryGrid() {
           tabs={getLibraryTabs()}
           activeTab={activeTab()}
           onSwitch={(id) => switchTab(id as LibraryTabId)}
-          compact={false}
+          compact={isNarrowOrMobile()}
           right={
             <>
               <Show when={activeTab() === "collections"}>

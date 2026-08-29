@@ -56,13 +56,15 @@ export function Typeahead(props: TypeaheadProps) {
   const debouncedFetch = debounce(async (val: string) => {
     let items: TypeaheadItem[];
     try {
-      items = await props.fetcher(val);
+      const raw = await props.fetcher(val);
+      items = Array.isArray(raw) ? raw : [];
     } catch {
       setSuggestions([]);
       setSelectedIndex(-1);
       setOpen(false);
       return;
     }
+    if (!Array.isArray(items)) items = [];
     const sliced = items.slice(0, maxItems);
     setSuggestions(sliced);
     setSelectedIndex(-1);
@@ -127,7 +129,7 @@ export function Typeahead(props: TypeaheadProps) {
 
   const dropdown = (
     <Show when={open()}>
-      <div ref={dropdownRef} class="ds-typeahead" style="max-height:160px;">
+      <div ref={dropdownRef} class="ds-typeahead">
         <For each={suggestions()}>
           {(item, idx) => (
             <div

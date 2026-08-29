@@ -63,6 +63,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
   let dropdownRef: HTMLDivElement | undefined;
   createEffect(() => {
     if (!props.open) return;
+    const openedAt = Date.now();
 
     const onKeyDown = (ev: KeyboardEvent): void => {
       if (ev.key === "Escape") {
@@ -72,6 +73,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
     };
 
     const onScroll = (ev: Event): void => {
+      if (Date.now() - openedAt < 250) return;
       if (dropdownRef && document.activeElement && dropdownRef.contains(document.activeElement)) {
         return;
       }

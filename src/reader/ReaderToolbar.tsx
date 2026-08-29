@@ -351,7 +351,7 @@ export function ReaderBottomNav(props: { session: ReaderSession }) {
         classList={{ "ds-toolbar-hidden": isMobile() && !s.toolbarVisible() }}
       >
         <Show when={isMobile()}>
-          <div class="ds-reader-nav-row nav-main" style="width:100%;justify-content:space-between;">
+          <div class="ds-reader-nav-row nav-main">
             <IconButton
               className="ds-nav-btn-ch"
               icon={<ChevronDoubleLeftIcon />}

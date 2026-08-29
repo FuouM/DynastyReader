@@ -100,7 +100,7 @@ export function SettingsModal(props: SettingsModalProps) {
       onClose={props.onClose}
       footer={
         <div class="ds-modal-footer-end">
-          <button type="button" class="win-button primary ds-modal-done" id="ds-settings-done-btn" style="min-width:70px;" onClick={props.onClose}>
+          <button type="button" class="win-button primary ds-modal-done" id="ds-settings-done-btn" onClick={props.onClose}>
             {t("settings.done")}
           </button>
         </div>
@@ -122,7 +122,7 @@ export function SettingsModal(props: SettingsModalProps) {
 
               {/* Hotkeys Section trigger banner */}
               <GroupBox id="ds-settings-sec-hotkeys" title={<IconText icon={<Icon name="keyboard" />}>{t("settings.sections.hotkeys")}</IconText>}>
-                <div class="ds-row-between" style="padding:2px 0;">
+                <div class="ds-row-between">
                   <div class="ds-label">
                     {t("settings.hotkeys.bannerTitle")}
                   </div>

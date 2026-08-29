@@ -73,8 +73,10 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
         class="ds-page-img"
         alt={t("reader.session.slot.pageAlt", { page: props.index + 1 })}
         src={convertFileSrc(props.path)}
-        decoding="async"
-        onError={() => s.onPageImgError(props.index)}
+        onError={(ev) => {
+          console.error("[ReaderSlot] img onError for slot", props.index, "src:", (ev.currentTarget as HTMLImageElement).src?.slice(0, 100));
+          s.onPageImgError(props.index);
+        }}
         ref={(img) => {
           if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
             setLoaded(true);

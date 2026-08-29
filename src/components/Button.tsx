@@ -15,6 +15,9 @@ export interface ButtonProps {
   cssText?: string;
   style?: string | JSX.CSSProperties;
   title?: string;
+  "aria-label"?: string;
+  "aria-pressed"?: boolean | "true" | "false";
+  "aria-selected"?: boolean | "true" | "false";
   disabled?: boolean;
   icon?: JSX.Element;
   text?: string | JSX.Element;
@@ -61,6 +64,9 @@ export function Button(props: ButtonProps) {
       classList={props.classList}
       style={props.style ?? props.cssText}
       title={props.title}
+      aria-label={props["aria-label"] ?? (typeof props.text === "string" && props.text ? props.text : props.title)}
+      aria-pressed={props["aria-pressed"]}
+      aria-selected={props["aria-selected"]}
       disabled={props.disabled}
       onClick={props.onClick}
     >

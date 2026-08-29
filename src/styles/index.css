@@ -939,6 +939,9 @@ body {
   padding: 8px 12px;
   flex-shrink: 0;
 }
+.ds-modal-done {
+  min-width: 70px;
+}
 
 /* Hotkey Badges & Configuration UI */
 .ds-hotkeys-table {
