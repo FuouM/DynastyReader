@@ -193,8 +193,13 @@ export function getAdjacentChapters(
       });
     }
   }
-
-  if (curIdx < 0) return { prevCh: null, nextCh: null };
+  if (curIdx < 0) {
+    // Fallback for new chapter missing from stale cache: treat as newest so prev navigates to last known chapter
+    if (chapterList.length > 0) {
+      return { prevCh: chapterList[chapterList.length - 1] ?? null, nextCh: null };
+    }
+    return { prevCh: null, nextCh: null };
+  }
   const prevCh = curIdx > 0 ? chapterList[curIdx - 1] : null;
   const nextCh = curIdx < chapterList.length - 1 ? chapterList[curIdx + 1] : null;
   return { prevCh, nextCh };
