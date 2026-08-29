@@ -50,6 +50,12 @@ function deserializeTheme(raw: string): AppTheme {
 }
 
 function applyThemeToDom(t: AppTheme): void {
+  // Temporarily disable all CSS transitions so theme switching is crisp and instantaneous
+  const disableTransitions = document.createElement("style");
+  disableTransitions.textContent =
+    "*, *::before, *::after { -webkit-transition: none !important; -moz-transition: none !important; -o-transition: none !important; -ms-transition: none !important; transition: none !important; }";
+  document.head.appendChild(disableTransitions);
+
   const root = document.documentElement;
   // Clear temporary inline styles from index.html bootstrap script so tokens.css controls it
   root.style.removeProperty("background-color");
@@ -83,6 +89,18 @@ function applyThemeToDom(t: AppTheme): void {
       console.debug("[dynasty-reader/theme] AndroidThemeBridge.updateTheme failed:", err);
     }
   }
+
+  // Force synchronous style recalc so new theme colors take effect immediately without transition
+  if (body) {
+    void body.offsetHeight;
+  }
+
+  // Restore normal CSS transitions on the next animation frame
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      disableTransitions.remove();
+    });
+  });
 }
 
 const [themeSignal, setThemeSignal] = persistedSignal<AppTheme>("light", {
