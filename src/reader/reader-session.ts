@@ -470,11 +470,18 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.schedulePersist();
     if (this.atEnd()) void this.persistNow();
   }
-  /** Enqueues the current and next two spreads so paired pages load together. */
+  /** Enqueues spreads near the current position, respecting auto-cache / prefetch buffer. */
   private enqueueSpreadNeighborhood(): void {
     if (this.spreads().length === 0) return;
     const cur = spreadIndexOf(this.spreads(), this.currentIndex());
-    const end = Math.min(this.spreads().length - 1, cur + 2);
+    let end: number;
+    if (isAutoCacheChapterEnabled()) {
+      end = Math.min(this.spreads().length - 1, cur + 2);
+    } else {
+      const prefetchCount = getPrefetchBuffer();
+      const spreadsAhead = Math.ceil(prefetchCount / 2);
+      end = Math.min(this.spreads().length - 1, cur + spreadsAhead);
+    }
     for (let s = cur; s <= end; s++) {
       for (const pageIndex of this.spreads()[s].pageIndices) {
         this.enqueue(pageIndex);
