@@ -109,7 +109,7 @@ export function ReaderSettings() {
         <fieldset class="group-box ds-landscape-override-group" style="margin-top:8px;">
           <legend class="group-box-title"><IconText icon={<Icon name="phone-landscape" />}>{t("settings.reader.mobileLandscapeGroupTitle")}</IconText></legend>
           <div class="ds-landscape-override-stack">
-            <SettingsRow divider label={<>{t("settings.reader.mobileLandscapeMode")}:</>} desc={t("settings.reader.mobileLandscapeModeDesc")}>
+            <SettingsRow stacked divider label={<>{t("settings.reader.mobileLandscapeMode")}:</>} desc={t("settings.reader.mobileLandscapeModeDesc")}>
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-mode-switch"
                 value={mobileLandscapeModePref()}
@@ -125,7 +125,7 @@ export function ReaderSettings() {
                 ]}
               />
             </SettingsRow>
-            <SettingsRow divider label={<>{t("settings.reader.mobileLandscapeLayout")}:</>} desc={t("settings.reader.mobileLandscapeLayoutDesc")}>
+            <SettingsRow stacked divider label={<>{t("settings.reader.mobileLandscapeLayout")}:</>} desc={t("settings.reader.mobileLandscapeLayoutDesc")}>
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-layout-switch"
                 value={mobileLandscapeLayoutPref()}
@@ -141,7 +141,7 @@ export function ReaderSettings() {
                 ]}
               />
             </SettingsRow>
-            <SettingsRow label={<>{t("settings.reader.mobileLandscapeFitMode")}:</>} desc={t("settings.reader.mobileLandscapeFitModeDesc")}>
+            <SettingsRow stacked label={<>{t("settings.reader.mobileLandscapeFitMode")}:</>} desc={t("settings.reader.mobileLandscapeFitModeDesc")}>
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-fit-switch"
                 value={mobileLandscapeFitPref()}
