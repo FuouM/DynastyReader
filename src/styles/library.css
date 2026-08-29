@@ -91,14 +91,7 @@
   gap: 4px;
 }
 .ds-library-panel .ds-item {
-  border: 1px solid var(--sys-border-light, #e0e0e0);
-  background: var(--sys-window-bg, #ffffff);
   margin-bottom: 2px;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
-}
-.ds-library-panel .ds-item:hover {
-  background: var(--sys-control-bg-hover, #f5f8fc);
-  border-color: var(--sys-primary-border, #0078d4);
 }
 .ds-library-panel .ds-item-title {
   font-size: 12px;
