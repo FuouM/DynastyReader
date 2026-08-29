@@ -252,14 +252,13 @@
   max-height: 20px;
   padding: 0 6px;
   background: var(--sys-control-bg, #ececec);
-  border: 1px solid var(--sys-border-light, #bbb);
+  border: 1px solid var(--sys-button-border, #bbb);
   border-radius: 2px;
   font-size: 11px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--sys-window-text, #333);
   white-space: nowrap;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   max-width: 100%;
   box-sizing: border-box;
   line-height: 18px;

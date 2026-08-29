@@ -555,7 +555,6 @@
 
   /* ── Progress + skeleton — authentic 7.css green glass progress bar ── */
   [data-theme="windows7"] .ds-progress-track,
-  [data-theme="windows7"] .ds-reader-progress-track,
   [data-theme="windows7"] [role="progressbar"] {
     border: 1px solid #8e8f8f;
     border-radius: 3px;
@@ -573,7 +572,6 @@
   }
 
   [data-theme="windows7"] .ds-progress-fill,
-  [data-theme="windows7"] .ds-reader-progress-fill,
   [data-theme="windows7"] [role="progressbar"] > div {
     background:
       linear-gradient(
@@ -586,6 +584,28 @@
       linear-gradient(180deg, transparent 65%, rgba(255, 255, 255, 0.33)),
       linear-gradient(90deg, #0bd82c 0%, #0fdc30 50%, #0bd82c 100%) !important;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  }
+
+  /* ── Reader Navbar Progress Pill & Track ── */
+  [data-theme="windows7"] .ds-reader-progress-pill {
+    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%);
+    border: 1px solid #b8c9dc;
+    border-radius: 2px;
+    color: #1b3555;
+  }
+
+  [data-theme="windows7"] .ds-reader-progress-track {
+    background: #c8d7ea;
+    border-radius: 1px;
+    height: 2px;
+    border: none;
+    box-shadow: none;
+  }
+
+  [data-theme="windows7"] .ds-reader-progress-fill {
+    background: linear-gradient(90deg, #2a6cb6, #3a8be6) !important;
+    border-radius: 1px;
+    box-shadow: none;
   }
   [data-theme="windows7"] .skeleton,
   [data-theme="windows7"] .skeleton-pulse,
