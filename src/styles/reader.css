@@ -700,7 +700,9 @@
   box-shadow: none !important;
 }
 #ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot-state {
-  max-width: 100%;
+  max-width: none;
+  min-width: 280px;
+  width: auto;
 }
 
 /* Fit modes in horizontal spread */
@@ -878,6 +880,10 @@
 }
 #ds-reader-viewport.horizontal .ds-spread-slot.ds-dragging {
   cursor: grabbing !important;
+}
+#ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot:has(.ds-slot-state) {
+  min-width: 280px !important;
+  width: auto !important;
 }
 
 .ds-slot-placeholder {
