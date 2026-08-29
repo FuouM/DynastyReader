@@ -11,8 +11,13 @@ import { SCALE_PRESETS } from "./types";
 export function DisplaySettings() {
   const [scale, setScale] = createSignal(uiScale());
   const [coversEnabled, setCoversEnabledLocal] = createSignal(browseCovers.coversEnabled);
-  makeEventListener(document, "click", () => {
-    document.getElementById("ds-theme-more-menu")?.classList.add("ds-hidden");
+  const [moreOpen, setMoreOpen] = createSignal(false);
+  let moreContainerRef: HTMLDivElement | undefined;
+
+  makeEventListener(document, "click", (ev: MouseEvent) => {
+    if (moreContainerRef && !moreContainerRef.contains(ev.target as Node)) {
+      setMoreOpen(false);
+    }
   });
 
   const syncScale = (val: number): void => {
@@ -89,7 +94,10 @@ export function DisplaySettings() {
             <SegmentedSwitch
               id="ds-settings-theme-switch"
               value={theme()}
-              onChange={(val) => setTheme(val as AppTheme)}
+              onChange={(val) => {
+                setTheme(val as AppTheme);
+                setMoreOpen(false);
+              }}
               options={(["light", "dark", "high-contrast"] as AppTheme[]).map((value) => {
                 const cfg = THEME_REGISTRY[value];
                 const isLight = value === "light";
@@ -104,47 +112,44 @@ export function DisplaySettings() {
               })}
             />
             <Show when={(Object.keys(THEME_REGISTRY) as AppTheme[]).filter((v) => !["light", "dark", "high-contrast"].includes(v)).length > 0}>
-              <div class="ds-flex-row" style="gap: 6px; align-items: center; position: relative;">
+              <div ref={moreContainerRef} class="ds-flex-row" style="gap: 6px; align-items: center; position: relative;">
                 <Button
                   id="ds-settings-theme-more-select"
                   className="ds-select--w115"
                   icon={theme() === "windows7" ? <Icon name="windows" /> : <Icon name="palette" />}
                   text={(["light", "dark", "high-contrast"] as AppTheme[]).includes(theme() as AppTheme) ? "More…" : THEME_REGISTRY[theme() as AppTheme]?.label ?? "More…"}
                   title="More themes"
-                  onClick={(ev: MouseEvent) => {
-                    const menu = document.getElementById("ds-theme-more-menu");
-                    if (menu) menu.classList.toggle("ds-hidden");
-                    ev.stopPropagation();
-                  }}
+                  onClick={() => setMoreOpen(!moreOpen())}
                 />
-                <div
-                  id="ds-theme-more-menu"
-                  class="ds-popup-card ds-hidden"
-                  style="position: absolute; top: 100%; left: 0; margin-top: 4px; min-width: 160px; z-index: 100; padding: 4px; gap: 2px;"
-                  onClick={(e: MouseEvent) => e.stopPropagation()}
-                >
-                  <For each={(Object.keys(THEME_REGISTRY) as AppTheme[]).filter((v) => !["light", "dark", "high-contrast"].includes(v))}>
-                    {(value) => {
-                      const cfg = THEME_REGISTRY[value];
-                      const isWin7 = value === "windows7";
-                      const isActive = theme() === value;
-                      return (
-                        <button
-                          type="button"
-                          class={`ds-settings-nav-item${isActive ? " active" : ""}`}
-                          style="width: 100%; justify-content: flex-start;"
-                          onClick={() => {
-                            setTheme(value);
-                            document.getElementById("ds-theme-more-menu")?.classList.add("ds-hidden");
-                          }}
-                        >
-                          <Icon name={isWin7 ? "windows" : "palette"} />
-                          <span>{cfg.label}</span>
-                        </button>
-                      );
-                    }}
-                  </For>
-                </div>
+                <Show when={moreOpen()}>
+                  <div
+                    id="ds-theme-more-menu"
+                    class="ds-popup-card"
+                    style="position: absolute; top: 100%; left: 0; margin-top: 4px; min-width: 160px; z-index: 100; padding: 4px; gap: 2px;"
+                  >
+                    <For each={(Object.keys(THEME_REGISTRY) as AppTheme[]).filter((v) => !["light", "dark", "high-contrast"].includes(v))}>
+                      {(value) => {
+                        const cfg = THEME_REGISTRY[value];
+                        const isWin7 = value === "windows7";
+                        const isActive = theme() === value;
+                        return (
+                          <button
+                            type="button"
+                            class={`ds-settings-nav-item${isActive ? " active" : ""}`}
+                            style="width: 100%; justify-content: flex-start;"
+                            onClick={() => {
+                              setTheme(value);
+                              setMoreOpen(false);
+                            }}
+                          >
+                            <Icon name={isWin7 ? "windows" : "palette"} />
+                            <span>{cfg.label}</span>
+                          </button>
+                        );
+                      }}
+                    </For>
+                  </div>
+                </Show>
               </div>
             </Show>
           </div>
