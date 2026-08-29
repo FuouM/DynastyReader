@@ -160,9 +160,26 @@
   padding: 0 6px;
   font-weight: 600;
   color: var(--sys-text-secondary, #333333);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
+  max-width: calc(100% - 20px);
+  white-space: nowrap;
+}
+.group-box-actions {
+  position: absolute;
+  top: -10px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+}
+.group-box-actions .win-button {
+  height: 20px;
+  min-height: 20px;
+  font-size: 11px;
+  padding: 1px 6px;
 }
 .ds-icon-text {
   display: inline-flex;

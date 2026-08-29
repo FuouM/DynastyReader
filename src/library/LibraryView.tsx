@@ -32,6 +32,7 @@ import { Button, ConfirmDeleteButton, IconText, IconButton } from "../components
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import { SubTabs } from "../components/SubTabs";
+import { GroupBox } from "../components/GroupBox";
 import {
   RefreshIcon,
   CheckIcon,
@@ -173,31 +174,29 @@ function LibraryGrid() {
         fallback={
           <div class="ds-library-grid">
             {/* 1. Followed Series */}
-            <div class="group-box ds-library-panel">
-              <div class="group-box-title">
-                <span>
-                  <IconText icon={<Icon name="bookmark-heart" />}>{t("library.followed")}</IconText>
-                </span>
-              </div>
+            <GroupBox
+              class="ds-library-panel"
+              title={<IconText icon={<Icon name="bookmark-heart" />}>{t("library.followed")}</IconText>}
+            >
               <div class="ds-library-panel-body">
                 <FollowedPane register={register("followed")} />
               </div>
               <div class="ds-library-panel-footer ds-hidden"></div>
-            </div>
+            </GroupBox>
 
             {/* 2. Collections & Favorites */}
-            <div class="group-box ds-library-panel">
-              <div class="group-box-title group-box-title--between">
-                <span>
-                  <IconText icon={<FolderIcon />}>{t("library.collections")}</IconText>
-                </span>
+            <GroupBox
+              class="ds-library-panel"
+              title={<IconText icon={<FolderIcon />}>{t("library.collections")}</IconText>}
+              actions={
                 <IconButton
                   icon={<AddIcon />}
                   text={t("library.newCollectionButton")}
                   title={t("library.createCollectionTooltip")}
                   onClick={() => setCreating(true)}
                 />
-              </div>
+              }
+            >
               <div class="ds-library-panel-body">
                 <CollectionsPane
                   register={register("collections")}
@@ -206,39 +205,37 @@ function LibraryGrid() {
                 />
               </div>
               <div class="ds-library-panel-footer ds-hidden"></div>
-            </div>
+            </GroupBox>
 
             {/* 3. Bookmarks */}
-            <div class="group-box ds-library-panel">
-              <div class="group-box-title">
-                <span>
-                  <IconText icon={<BookmarkIcon />}>{t("library.bookmarks")}</IconText>
-                </span>
-              </div>
+            <GroupBox
+              class="ds-library-panel"
+              title={<IconText icon={<BookmarkIcon />}>{t("library.bookmarks")}</IconText>}
+            >
               <div class="ds-library-panel-body">
                 <BookmarksPane register={register("bookmarks")} />
               </div>
               <div class="ds-library-panel-footer ds-hidden"></div>
-            </div>
+            </GroupBox>
 
             {/* 4. Reading History */}
-            <div class="group-box ds-library-panel">
-              <div class="group-box-title group-box-title--between">
-                <span>
-                  <IconText icon={<Icon name="clock-history" />}>{t("library.history")}</IconText>
-                </span>
+            <GroupBox
+              class="ds-library-panel"
+              title={<IconText icon={<Icon name="clock-history" />}>{t("library.history")}</IconText>}
+              actions={
                 <ConfirmDeleteButton
                   icon={<TrashIcon />}
                   text={t("library.clearHistoryButton")}
                   title={t("library.clearHistoryTooltip")}
                   onConfirm={clearHistoryAll}
                 />
-              </div>
+              }
+            >
               <div class="ds-library-panel-body">
                 <HistoryPane register={register("history")} />
               </div>
               <div class="ds-library-panel-footer ds-hidden"></div>
-            </div>
+            </GroupBox>
           </div>
         }
       >

@@ -30,6 +30,7 @@ import {
 import { Loading } from "../components/Loading";
 import { Button, IconText } from "../components/Button";
 import { BlacklistModeSwitch } from "../components/BlacklistModeSwitch";
+import { GroupBox } from "../components/GroupBox";
 export function BlacklistView() {
   const [data, { refetch }] = createResource<BlacklistedSeries[]>(() =>
     getBlacklistedSeries(),
@@ -88,11 +89,10 @@ export function BlacklistView() {
           </>
         }
       >
-        <div class="group-box">
-          <div class="group-box-title">
-            <IconText icon={<BlacklistIcon filled={false} />}>{t("blacklist.title")}</IconText>
-          </div>
-            <div class="ds-stack-8">
+        <GroupBox
+          title={<IconText icon={<BlacklistIcon filled={false} />}>{t("blacklist.title")}</IconText>}
+        >
+          <div class="ds-stack-8">
             <div class="ds-muted">
               {t("blacklist.description")}
             </div>
@@ -102,12 +102,11 @@ export function BlacklistView() {
               onChange={changeMode}
             />
           </div>
-        </div>
+        </GroupBox>
 
-        <div class="group-box">
-          <div class="group-box-title group-box-title--between">
-            <IconText icon={<ListCheckIcon />}>{t("blacklist.seriesTitle", { count: data()!.length })}</IconText>
-          </div>
+        <GroupBox
+          title={<IconText icon={<ListCheckIcon />}>{t("blacklist.seriesTitle", { count: data()!.length })}</IconText>}
+        >
 
           <Show
             when={data()!.length > 0}
@@ -171,7 +170,7 @@ export function BlacklistView() {
               </For>
             </div>
           </Show>
-        </div>
+        </GroupBox>
       </Show>
     </div>
   );

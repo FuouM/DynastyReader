@@ -44,6 +44,7 @@ import { Loading } from "../components/Loading";
 import { Typeahead } from "../components/Typeahead";
 import { BlacklistNotice } from "../components/BlacklistNotice";
 import { EmptyState } from "../components/EmptyState";
+import { GroupBox } from "../components/GroupBox";
 import { DsSelect, IconText, IconButton } from "../components/Button";
 import { SearchResultRow, type SearchRow } from "./SearchResultRow";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
@@ -228,10 +229,10 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
   return (
     <div ref={(el) => { hostEl = el; }}>
-      <div class="group-box ds-search-panel">
-        <div class="group-box-title">
-          <IconText icon={<SearchIcon />}>{t("browse.search.panelTitle")}</IconText>
-        </div>
+      <GroupBox
+        class="ds-search-panel"
+        title={<IconText icon={<SearchIcon />}>{t("browse.search.panelTitle")}</IconText>}
+      >
         <div class="ds-col">
           <div class="ds-flex-row">
             <div class="ds-search-wrap ds-flex-1 ds-relative">
@@ -379,7 +380,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
             </div>
           </div>
         </div>
-      </div>
+      </GroupBox>
 
       <div id="ds-search-results-area" class="ds-stack-6">
         <Show when={showSpinner() && pane.loading() && pane.error() === undefined}>

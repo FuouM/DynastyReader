@@ -365,11 +365,6 @@
 .ds-cache-list--auto {
   max-height: none;
 }
-.group-box-title--between {
-  justify-content: space-between;
-  width: calc(100% - 16px);
-  right: 8px;
-}
 .ds-browse-content {
   margin-top: 8px;
 }

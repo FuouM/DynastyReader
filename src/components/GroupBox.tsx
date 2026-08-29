@@ -14,10 +14,12 @@ export interface GroupBoxProps {
   id?: string;
   /** Title line — typically `<IconText>…</IconText>`. Rendered inside `.group-box-title`. */
   title: JSX.Element;
+  /** Optional auxiliary action controls rendered on the top-right header `.group-box-actions`. */
+  actions?: JSX.Element;
   /** Extra classes on the outer `.group-box` (e.g. `ds-mb-8`, `ds-library-panel`). */
   class?: string;
-  /** Spread `between` layout on the title bar (`group-box-title--between`). */
-  between?: boolean;
+  /** Extra classes on the inner `.group-box-body`. */
+  bodyClass?: string;
   /** Collapsible fieldset — adds `.collapsed` and a chevron button. */
   collapsible?: boolean;
   collapsed?: boolean;
@@ -34,7 +36,7 @@ export function GroupBox(props: GroupBoxProps) {
     >
       <div
         class="group-box-title"
-        classList={{ "group-box-title--between": !!props.between, "group-box-title--collapsible": !!props.collapsible }}
+        classList={{ "group-box-title--collapsible": !!props.collapsible }}
         onClick={props.collapsible ? props.onToggle : undefined}
       >
         {props.title}
@@ -51,7 +53,12 @@ export function GroupBox(props: GroupBoxProps) {
           </button>
         </Show>
       </div>
-      <div class="group-box-body">{props.children}</div>
+      <Show when={props.actions}>
+        <div class="group-box-actions">{props.actions}</div>
+      </Show>
+      <div class={`group-box-body${props.bodyClass ? ` ${props.bodyClass}` : ""}`}>
+        {props.children}
+      </div>
     </div>
   );
 }
