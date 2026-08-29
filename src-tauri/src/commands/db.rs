@@ -19,9 +19,11 @@ use tauri::State;
 
 pub struct DbPool(pub Mutex<HashMap<String, Arc<Mutex<Connection>>>>);
 
-const SQLITE_JOURNAL_SIZE_LIMIT: i64 = 4 * 1024 * 1024;
-const SQLITE_CACHE_SIZE_PAGES: i64 = -2000;
-const SQLITE_WAL_AUTOCHECKPOINT_PAGES: i64 = 1000;
+// RAM quick win: 256 pages × 1 KB = 256 KB memory cache per connection (down from 2 MB default),
+// saving ~1.7 MB per DB connection. Queries remain fast and transparently backed by WAL.
+const SQLITE_JOURNAL_SIZE_LIMIT: i64 = 2 * 1024 * 1024;
+const SQLITE_CACHE_SIZE_PAGES: i64 = -256;
+const SQLITE_WAL_AUTOCHECKPOINT_PAGES: i64 = 500;
 const SQLITE_BUSY_TIMEOUT_MS: u64 = 5000;
 const BACKUP_PAGE_STEP: i32 = 100;
 const BACKUP_STEP_SLEEP_MS: u64 = 250;

@@ -39,9 +39,11 @@ export interface ItemCoverInfo {
   isStandalone: boolean;
 }
 
+// RAM quick win: 100 in-memory cover paths (down from 500) covers 5 full 20-item feed pages
+// of smooth scrolling, cutting Map entry overhead without dropping visible cover cache.
 const SCROLL_IDLE_MS = 300;
-const MAX_MEMORY_CACHE = 500;
-const MAX_FAILED_ATTEMPTS = 200;
+const MAX_MEMORY_CACHE = 100;
+const MAX_FAILED_ATTEMPTS = 50;
 
 /**
  * Feed cover-hydration engine. Reactive singleton that drives cover image paths

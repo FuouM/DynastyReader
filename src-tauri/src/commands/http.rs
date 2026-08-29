@@ -13,8 +13,11 @@ use tokio::io::AsyncWriteExt;
 use tokio_stream::StreamExt;
 
 const USER_AGENT: &str = concat!("Mozilla/5.0 (Windows NT 10.0; Win64; x64) DynastyReader/", env!("CARGO_PKG_VERSION"));
-const MAX_GET_BODY: usize = 8 * 1024 * 1024;
-const MAX_DOWNLOAD_BYTES: u64 = 256 * 1024 * 1024;
+// RAM quick wins: GET 2 MB (down from 8 MB) is 8× headroom over max Dynasty payload (~250 KB).
+// Download cap 128 MB (down from 256 MB) prevents unbounded memory streaming buffers while
+// easily holding large releases/CBZ files.
+const MAX_GET_BODY: usize = 2 * 1024 * 1024;
+const MAX_DOWNLOAD_BYTES: u64 = 128 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 
 pub struct HttpState(pub reqwest::Client);

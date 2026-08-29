@@ -30,15 +30,18 @@ const ENCODE_FORMATS: &[&str] = &[
 
 /// Hard ceiling on a source image dimension, applied to the header before any
 /// decode. Legit covers/pages are well under this; decompression bombs are not.
-const MAX_SOURCE_DIMENSION: u32 = 16_384;
+// RAM quick wins: 8192 (down from 16384) bounds decompression bomb allocations to 256 MB.
+// 1 concurrent convert task (down from 2) cuts peak uncompressed pixel memory in half (~12 MB vs 24 MB).
+// 8 KB initial encode buffer (down from 32 KB) cuts initial buffer allocation per encode.
+const MAX_SOURCE_DIMENSION: u32 = 8_192;
 
 /// Headroom on the estimate-then-verify scale — the next encode is inexact.
 const BUDGET_ESTIMATE_HEADROOM: f64 = 0.95;
 const DEFAULT_CONVERT_QUALITY: u8 = 80;
-const MAX_CONCURRENT_CONVERT_TASKS: usize = 2;
+const MAX_CONCURRENT_CONVERT_TASKS: usize = 1;
 const MAX_SHRINK_LOOP_ITERATIONS: usize = 32;
 const MIN_SHRINK_DIMENSION_PX: u32 = 8;
-const INITIAL_ENCODE_BUFFER_BYTES: usize = 32 * 1024;
+const INITIAL_ENCODE_BUFFER_BYTES: usize = 8 * 1024;
 #[tauri::command(rename = "ephemeralConvertImages")]
 pub async fn ephemeral_convert_images(
     conversions: Vec<(String, String)>,

@@ -48,7 +48,9 @@ export async function searchAllDirectoryEntries(
 }
 
 
-const MAX_SUGGEST_CACHE = 100;
+// RAM quick win: 32 in-memory suggest query results (down from 100).
+// Cache misses fall back to local SQLite directory entries instantly.
+const MAX_SUGGEST_CACHE = 32;
 const suggestCache = new Map<string, SuggestResult[]>();
 
 function setSuggestCache(key: string, val: SuggestResult[]): void {
