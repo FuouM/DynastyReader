@@ -42,7 +42,8 @@ function deserializeTheme(raw: string): AppTheme {
   let parsed: unknown = raw;
   try {
     parsed = JSON.parse(raw);
-  } catch {
+  } catch (err) {
+    console.debug("[dynasty-reader/theme] deserialize fallback, raw:", raw, err);
     parsed = raw.replace(/^["']|["']$/g, "").trim().toLowerCase();
   }
   return isAppTheme(parsed) ? parsed : "light";
@@ -78,7 +79,9 @@ function applyThemeToDom(t: AppTheme): void {
   if (typeof window !== "undefined" && w.AndroidThemeBridge?.updateTheme) {
     try {
       w.AndroidThemeBridge.updateTheme(isDark, THEME_META[t] ?? "#f5f5f5");
-    } catch {}
+    } catch (err) {
+      console.debug("[dynasty-reader/theme] AndroidThemeBridge.updateTheme failed:", err);
+    }
   }
 }
 

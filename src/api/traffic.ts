@@ -33,7 +33,8 @@ const [lifetimeMetrics, setLifetimeMetrics] = persistedSignal<TrafficMetrics>({ 
         cacheHits: Math.max(0, Number(p.cacheHits) || 0),
         bytesSaved: Math.max(0, Number(p.bytesSaved) || 0),
       };
-    } catch {
+    } catch (err) {
+      console.debug("[dynasty-reader/api/traffic] lifetime deserialize failed:", err);
       return { ...DEFAULT_METRICS };
     }
   },

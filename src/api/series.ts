@@ -1,66 +1,17 @@
-import { absUrl, COVERS_PREFIX, SITE_ROOT, isMobile } from "../stores";
+import { SITE_ROOT } from "../stores";
 import { seriesTypeToPath } from "../taxonomy";
 import { getCached, setCached, deleteCached, updateFollowedSeriesCover, touchCached } from "../db";
 import { seriesKey, seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
-import { httpGetText, httpDownloadFull } from "./http";
+import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";
-import { fileDelete, fileExists, fileResolve } from "./fs";
+import { fileExists, fileResolve } from "./fs";
 import { fetchChapter } from "./chapter";
-import * as ipc from "../ipc";
 import type { Series } from "../types/api";
 import { SeriesSchema } from "./schemas";
-const COVER_DOWNLOAD_TIMEOUT_MS = 30_000;
-const COVER_SKIP_TRANSCODE_THRESHOLD_BYTES = 100_000;
-const COVER_WEBP_QUALITY = 75;
-const COVER_MAX_DIMENSION_PX = 256;
-const COVER_WEBP_MAX_BYTES = 100_000;
+import { coverPathsForChapter, coverPathsForSeries, fetchAndCacheCover } from "./cover-pipeline";
 const SERIES_PRIMARY_TIMEOUT_MS = 15_000;
 const SERIES_FALLBACK_TIMEOUT_MS = 5_000;
 const SERIES_TTL_MS = 10 * 60 * 1000; // 10 minutes cache freshness
-
-/** Extracts a file extension from a URL (falls back to jpg). */
-function coverExtension(url: string): string {
-  const m = /\.([a-zA-Z0-9]+)(?:\?.*)?$/.exec(url);
-  return m ? m[1] : "jpg";
-}
-
-/**
- * Downloads a cover image and only transcodes it into WebP if its raw size
- * exceeds 100KB (bounded dimension + <=100KB budget via the backend media engine).
- * If the download is already <= 100KB, it keeps the raw image without conversion.
- */
-async function transcodeCover(url: string, rawOutPath: string, webpOutPath: string): Promise<string> {
-  const { absolutePath: absRawPath, sizeBytes } = await httpDownloadFull(url, rawOutPath, COVER_DOWNLOAD_TIMEOUT_MS);
-
-  // If the cover is already small (<= 100KB), keep the original download and do not convert.
-  if (sizeBytes > 0 && sizeBytes <= COVER_SKIP_TRANSCODE_THRESHOLD_BYTES) {
-    return absRawPath;
-  }
-
-  let finalPath = absRawPath;
-  try {
-    const convResp = await ipc.ephemeralConvertImages({
-      quality: COVER_WEBP_QUALITY,
-      maxDimension: isMobile() ? 128 : COVER_MAX_DIMENSION_PX,
-      maxBytes: COVER_WEBP_MAX_BYTES,
-      conversions: [[rawOutPath, webpOutPath]],
-    });
-    const results = convResp.converted;
-    if (results && results.length > 0 && results[0].output_path && !results[0].error) {
-      finalPath = results[0].output_path;
-      // Clean up the bulky raw download.
-      try {
-        await fileDelete(rawOutPath);
-      } catch (delErr) {
-        console.debug(`[api/series] raw cover delete failed for ${rawOutPath}:`, delErr);
-      }
-    }
-  } catch (err) {
-    console.warn("Failed to transcode cover to WebP, keeping raw download:", err);
-  }
-
-  return finalPath;
-}
 
 /** Ordered candidate JSON endpoints for a series-style permalink. */
 export function seriesEndpoints(permalink: string, preferredType?: string): string[] {
@@ -188,27 +139,14 @@ export async function getSeriesCover(
   onPhase?: (phase: "downloading" | "processing") => void,
 ): Promise<string | null> {
   if (!coverUrl) return null;
-  const key = seriesCoverKey(permalink);
-  const cached = await getCached(key);
-  if (cached && cached.json_payload) {
-    // The cached path may point at a file that was purged (e.g. "Clear Cached
-    // Covers"). Verify on disk before trusting it; purge + refetch when stale.
-    try {
-      if (await fileExists(cached.json_payload)) return cached.json_payload;
-    } catch (checkErr) {
-      console.debug(`[api/series] cover file existence check failed for ${cached.json_payload}:`, checkErr);
-    }
-  }
-  const ext = coverExtension(coverUrl);
-  const rawOutPath = `${COVERS_PREFIX}/raw_${permalink}.${ext}`;
-  const webpOutPath = `${COVERS_PREFIX}/${permalink}.webp`;
-  // Download the original cover and only transcode to WebP if raw download exceeds 100KB.
-  onPhase?.("downloading");
-  const finalPath = await transcodeCover(absUrl(coverUrl), rawOutPath, webpOutPath);
-  onPhase?.("processing");
-
-  await setCached(key, "cover", finalPath);
-  return finalPath;
+  const { rawOutPath, webpOutPath } = coverPathsForSeries(permalink, coverUrl);
+  return fetchAndCacheCover({
+    cacheKey: seriesCoverKey(permalink),
+    coverUrl,
+    rawOutPath,
+    webpOutPath,
+    onPhase,
+  });
 }
 
 /**
@@ -275,28 +213,14 @@ export async function getChapterCover(
   onPhase?: (phase: "downloading" | "processing") => void,
 ): Promise<string | null> {
   if (!firstPageUrl) return null;
-  const key = chapterCoverKey(permalink);
-  const cached = await getCached(key);
-  if (cached && cached.json_payload) {
-    try {
-      if (await fileExists(cached.json_payload)) return cached.json_payload;
-    } catch (checkErr) {
-      console.debug(`[api/series] chapter cover fileExists check failed for ${cached.json_payload}:`, checkErr);
-    }
-    await deleteCached(key);
-  }
-
-  const ext = coverExtension(firstPageUrl);
-  const rawOutPath = `${COVERS_PREFIX}/raw_ch_${permalink}.${ext}`;
-  const webpOutPath = `${COVERS_PREFIX}/ch_${permalink}.webp`;
-
-  // Download the raw first page and only transcode to WebP if raw download exceeds 100KB.
-  onPhase?.("downloading");
-  const finalPath = await transcodeCover(absUrl(firstPageUrl), rawOutPath, webpOutPath);
-  onPhase?.("processing");
-
-  await setCached(key, "cover", finalPath);
-  return finalPath;
+  const { rawOutPath, webpOutPath } = coverPathsForChapter(permalink, firstPageUrl);
+  return fetchAndCacheCover({
+    cacheKey: chapterCoverKey(permalink),
+    coverUrl: firstPageUrl,
+    rawOutPath,
+    webpOutPath,
+    onPhase,
+  });
 }
 
 /**
@@ -327,7 +251,8 @@ export async function getOrHydrateSeriesCover(
       onPhase?.("downloading");
       const s = await fetchSeries(permalink, false, seriesType || undefined);
       coverUrl = s.cover ?? null;
-    } catch {
+    } catch (err) {
+      console.debug("[dynasty-reader/api/series] fetchSeries failed for", permalink, err);
       return null;
     }
   }

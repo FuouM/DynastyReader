@@ -10,6 +10,7 @@
 import type { ReaderSession } from "./reader-session";
 import { isMobile } from "../stores";
 import { spreadIndexOf } from "./reader-spread";
+import { setStripAnimated, setStripInstant, stripTranslateX } from "./reader-transform";
 
 // ---------------------------------------------------------------------------
 // Timing constants (previously module-level in reader-session.ts)
@@ -92,27 +93,11 @@ export function slideTo(
         targetSlide.scrollLeft = 0;
       }
     }
-    const sign = s.direction() === "rtl" ? 1 : -1;
-    const transformValue = `translateX(${sign * slideIndex * 100}%)`;
     if (s.stripEl) {
       if (!s.scrollLock() || instant) {
-        // Force layout commit so transition:none takes effect before transform
-        s.stripEl.style.transition = "none";
-        void s.stripEl.offsetWidth;
-        s.stripEl.style.transform = transformValue;
+        setStripInstant(s.stripEl, slideIndex, s.direction());
       } else {
-        // Scope will-change to the animation window — saves ~10 MB VRAM between page turns
-        if (isMobile()) {
-          s.stripEl.style.willChange = "transform";
-          const el = s.stripEl;
-          el.addEventListener(
-            "transitionend",
-            () => { el.style.willChange = "auto"; },
-            { once: true },
-          );
-        }
-        s.stripEl.style.transition = "";
-        s.stripEl.style.transform = transformValue;
+        setStripAnimated(s.stripEl, slideIndex, s.direction(), isMobile);
       }
     }
   } else {
@@ -184,18 +169,14 @@ export function resetToCurrentPage(s: ReaderSession, smooth = false): void {
     const slideIndex = s.isSpread()
       ? spreadIndexOf(s.spreads(), s.currentIndex())
       : s.currentIndex();
-    const sign = s.direction() === "rtl" ? 1 : -1;
-    const transformValue = `translateX(${sign * slideIndex * 100}%)`;
     if (s.stripEl) {
       if (!smooth) {
-        s.stripEl.style.transition = "none";
-        void s.stripEl.offsetWidth;
-        s.stripEl.style.transform = transformValue;
+        setStripInstant(s.stripEl, slideIndex, s.direction());
         requestAnimationFrame(() => {
           if (s.stripEl) s.stripEl.style.transition = "";
         });
       } else {
-        s.stripEl.style.transform = transformValue;
+        s.stripEl.style.transform = stripTranslateX(slideIndex, s.direction());
       }
     }
   } else {
@@ -242,12 +223,10 @@ export function applyLayoutMode(s: ReaderSession): void {
     s.stripEl.classList.toggle("rtl", s.direction() === "rtl");
     s.stripEl.classList.toggle("ltr", s.direction() === "ltr");
 
-    s.stripEl.style.transition = "none";
     const slideIndex = s.isSpread()
       ? spreadIndexOf(s.spreads(), s.currentIndex())
       : s.currentIndex();
-    const sign = s.direction() === "rtl" ? 1 : -1;
-    s.stripEl.style.transform = `translateX(${sign * slideIndex * 100}%)`;
+    setStripInstant(s.stripEl, slideIndex, s.direction(), false);
     requestAnimationFrame(() => {
       if (s.stripEl) s.stripEl.style.transition = "";
     });

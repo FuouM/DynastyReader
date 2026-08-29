@@ -57,7 +57,8 @@ export async function getCacheOverviewStats(): Promise<CacheOverviewStats> {
       try {
         const diskStat = await ipc.dirStat("");
         return Number(diskStat.total_bytes ?? 0);
-      } catch {
+      } catch (err) {
+        console.debug("[dynasty-reader/db/cache.repo] dirStat failed:", err);
         return 0;
       }
     })(),

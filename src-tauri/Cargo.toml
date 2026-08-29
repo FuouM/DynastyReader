@@ -2,7 +2,7 @@
 name = "dynasty-scans-reader"
 version = "0.3.1"
 description = "Portable standalone Dynasty Scans reader"
-authors = ["Project Curator"]
+authors = ["DynastyReader"]
 edition = "2021"
 
 [lib]

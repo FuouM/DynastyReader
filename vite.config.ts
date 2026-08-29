@@ -25,11 +25,12 @@ export default defineConfig({
     target: "es2020",
     outDir: "dist",
     sourcemap: false,
-    assetsInlineLimit: 1024 * 300,
+    assetsInlineLimit: 4096,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ["solid-js", "solid-js/web"],
+          tauri: ["@tauri-apps/api", "@tauri-apps/plugin-dialog", "@tauri-apps/plugin-log", "@tauri-apps/plugin-window-state"],
         },
       },
     },

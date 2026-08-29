@@ -146,7 +146,8 @@ export async function addItemToCollection(
       } else {
         resolvedCover = null;
       }
-    } catch {
+    } catch (err) {
+      console.debug("[dynasty-reader/db/collections.repo] cover lookup failed:", err);
       resolvedCover = null;
     }
   }

@@ -1,4 +1,5 @@
 import * as ipc from "../ipc";
+import { log } from "../utils/log";
 
 /**
  * Resolves a plugin-relative path to its absolute path if the file exists and is non-empty.
@@ -9,7 +10,8 @@ export async function fileResolve(path: string): Promise<string | null> {
     const resp = await ipc.fileExists(path);
     if (!resp.exists) return null;
     return String(resp.absolute_path);
-  } catch {
+  } catch (err) {
+    log.debug("api/fs", "fileResolve failed for", path, err);
     return null;
   }
 }

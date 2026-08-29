@@ -56,7 +56,8 @@ export async function revalidateFeedHead(tabId: string): Promise<FeedHeadRevalid
       return { hasNew: false, etag: res.etag ?? cached?.etag, status: "unchanged" };
     }
     return { hasNew: false, etag: cached?.etag, status: "error" };
-  } catch {
+  } catch (err) {
+    console.debug("[dynasty-reader/browse] revalidateFeedHead failed for", tabId, err);
     return { hasNew: false, etag: cached?.etag, status: "error" };
   }
 }

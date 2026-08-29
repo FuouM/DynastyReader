@@ -19,7 +19,8 @@ const [hotkeysSignal, setHotkeysSignal] = persistedSignal<CustomHotkeysMap>(getD
         }
       }
       return merged as CustomHotkeysMap;
-    } catch {
+    } catch (err) {
+      console.debug("[dynasty-reader/hotkeys-store] deserialize failed:", err);
       return getDefaultHotkeys();
     }
   },

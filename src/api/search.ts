@@ -36,7 +36,8 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
         const permalink = normalizeTagPermalink(t);
         try {
           return await fetchSeries(permalink, false, "tag");
-        } catch {
+        } catch (err) {
+          console.debug("[dynasty-reader/api/search] tag fetch failed for", t, err);
           return null;
         }
       }),

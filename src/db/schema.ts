@@ -107,7 +107,8 @@ async function columnExists(table: string, column: string): Promise<boolean> {
   try {
     const rows = await query<{ name: string }>(`PRAGMA table_info(${table})`);
     return rows.some((r) => r.name.toLowerCase() === column.toLowerCase());
-  } catch {
+  } catch (err) {
+    console.debug("[dynasty-reader/db/schema] columnExists failed for", table, column, err);
     return false;
   }
 }
@@ -136,7 +137,8 @@ const MIGRATIONS: Migration[] = [
         try {
           await runStep(sql, label, params);
           return true;
-        } catch {
+        } catch (err) {
+          console.debug("[dynasty-reader/db/schema] tryStep failed:", label, err);
           failures.push(label);
           return false;
         }
@@ -243,7 +245,8 @@ const MIGRATIONS: Migration[] = [
       const tryStep = async (sql: string, label: string): Promise<void> => {
         try {
           await runStep(sql, label);
-        } catch {
+        } catch (err) {
+          console.debug("[dynasty-reader/db/schema] tryStep failed:", label, err);
           failures.push(label);
         }
       };
@@ -303,7 +306,8 @@ const MIGRATIONS: Migration[] = [
       const tryStep = async (sql: string, label: string): Promise<void> => {
         try {
           await runStep(sql, label);
-        } catch {
+        } catch (err) {
+          console.debug("[dynasty-reader/db/schema] tryStep failed:", label, err);
           failures.push(label);
         }
       };

@@ -27,6 +27,7 @@ import {
   getOverscrollTarget,
   isOverscrollReady,
 } from "./overscroll-math";
+import { stripTranslateX, stripTranslateXWithPull } from "./reader-transform";
 import type { OverscrollGestureState } from "./ReaderOverscrollOverlay";
 import type { TapZoneGuideState } from "./ReaderTapZoneGuide";
 
@@ -173,17 +174,17 @@ export function useReaderGestures(s: ReaderSession) {
       }
       if (s.isHorizontal()) {
         const slideIndex = s.isSpread() ? s.slideIndex() : s.currentIndex();
-        const sign = s.direction() === "rtl" ? 1 : -1;
+        const dir = s.direction();
         if (smooth) {
           s.stripEl.style.transition = "transform 0.2s ease-out";
-          s.stripEl.style.transform = `translateX(${sign * slideIndex * 100}%)`;
+          s.stripEl.style.transform = stripTranslateX(slideIndex, dir);
           resetTransformTimer = window.setTimeout(() => {
             if (s.stripEl) s.stripEl.style.transition = "";
             resetTransformTimer = null;
           }, 200);
         } else {
           s.stripEl.style.transition = "none";
-          s.stripEl.style.transform = `translateX(${sign * slideIndex * 100}%)`;
+          s.stripEl.style.transform = stripTranslateX(slideIndex, dir);
           requestAnimationFrame(() => {
             if (s.stripEl) s.stripEl.style.transition = "";
           });
@@ -325,8 +326,7 @@ export function useReaderGestures(s: ReaderSession) {
           if (s.stripEl) {
             const pullSign = isRtl ? -1 : 1;
             const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
-            const sign = isRtl ? 1 : -1;
-            s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
+            s.stripEl.style.transform = stripTranslateXWithPull(cur, s.direction(), damped);
           }
           return;
         }
@@ -351,8 +351,7 @@ export function useReaderGestures(s: ReaderSession) {
           if (s.stripEl) {
             const pullSign = isRtl ? 1 : -1;
             const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
-            const sign = isRtl ? 1 : -1;
-            s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
+            s.stripEl.style.transform = stripTranslateXWithPull(cur, s.direction(), damped);
           }
           return;
         }
@@ -648,8 +647,7 @@ export function useReaderGestures(s: ReaderSession) {
             if (s.stripEl) {
               const pullSign = isRtl ? -1 : 1;
               const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
-              const sign = isRtl ? 1 : -1;
-              s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
+              s.stripEl.style.transform = stripTranslateXWithPull(cur, s.direction(), damped);
             }
             return;
           }
@@ -670,8 +668,7 @@ export function useReaderGestures(s: ReaderSession) {
             if (s.stripEl) {
               const pullSign = isRtl ? 1 : -1;
               const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
-              const sign = isRtl ? 1 : -1;
-              s.stripEl.style.transform = `translateX(calc(${sign * cur * 100}% + ${damped}px))`;
+              s.stripEl.style.transform = stripTranslateXWithPull(cur, s.direction(), damped);
             }
             return;
           }

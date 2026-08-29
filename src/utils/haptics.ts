@@ -9,7 +9,9 @@ export function triggerHaptic(style: "snap" | "confirm" | "tap" = "snap"): void 
   if (typeof window !== "undefined" && (window as any).AndroidThemeBridge?.triggerHaptic) {
     try {
       (window as any).AndroidThemeBridge.triggerHaptic(style);
-    } catch {}
+    } catch (err) {
+      console.debug("[dynasty-reader/haptics] AndroidThemeBridge.triggerHaptic failed:", err);
+    }
   }
 
   // 2. Web navigator.vibrate fallback
@@ -22,6 +24,8 @@ export function triggerHaptic(style: "snap" | "confirm" | "tap" = "snap"): void 
       } else {
         navigator.vibrate(15);
       }
-    } catch {}
+    } catch (err) {
+      console.debug("[dynasty-reader/haptics] navigator.vibrate failed:", err);
+    }
   }
 }

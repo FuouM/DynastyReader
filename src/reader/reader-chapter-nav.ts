@@ -42,8 +42,8 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
               s.setSeriesPermalink(s.containerTagPermalink);
               if (s.containerTagType) s.setSeriesType(s.containerTagType);
             }
-          } catch {
-            // fallback error ignored, throw original below if seriesData is null
+          } catch (err2) {
+            console.debug("[dynasty-reader/reader-chapter-nav] containerTag fetch failed:", err2);
           }
         }
         if (!seriesData) throw err;

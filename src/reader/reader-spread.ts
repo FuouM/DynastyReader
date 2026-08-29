@@ -155,8 +155,8 @@ export function getAdjacentChapters(
     let s = (p || "").toLowerCase().replace(/^\/+|\/+$/g, "").trim();
     try {
       s = decodeURIComponent(s);
-    } catch {
-      // ignore malformed URI component
+    } catch (err) {
+      console.debug("[dynasty-reader/reader-spread] decodeURIComponent failed:", s, err);
     }
     return s.replace(/\.json$/i, "").trim();
   };

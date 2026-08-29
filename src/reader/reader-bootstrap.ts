@@ -251,7 +251,8 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   let bookmarked = false;
   try {
     bookmarked = (await getBookmark(permalink)) !== null;
-  } catch {
+  } catch (err) {
+    console.debug("[dynasty-reader/reader-bootstrap] getBookmark failed:", err);
     bookmarked = false;
   }
   s.setBookmarked(bookmarked);

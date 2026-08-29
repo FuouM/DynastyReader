@@ -28,7 +28,8 @@ export function persistedSignal<T>(
   const deserialize = options.deserialize ?? ((v: string) => {
     try {
       return JSON.parse(v);
-    } catch {
+    } catch (err) {
+      console.debug("[dynasty-reader/persisted-signal] deserialize fallback, raw:", v, err);
       return v as unknown as T;
     }
   });

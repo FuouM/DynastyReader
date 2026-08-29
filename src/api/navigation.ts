@@ -1,5 +1,6 @@
 import { PAGES_PREFIX } from "../stores";
 import * as ipc from "../ipc";
+import { log } from "../utils/log";
 import type { ParsedDynastyUrl } from "../types/api";
 
 import { KIND_BY_PATH_SEGMENT } from "../taxonomy";
@@ -23,7 +24,8 @@ export async function openExternal(url: string): Promise<void> {
   try {
     await ipc.openUrl(url);
     return;
-  } catch {
+  } catch (err) {
+    log.debug("navigation", "openUrl fallback, opening in new tab:", err);
     window.open(url, "_blank", "noopener");
   }
 }
@@ -39,7 +41,8 @@ export function parseDynastyUrl(input: string): ParsedDynastyUrl | null {
     if (!rawKind) return null;
     const permalink = parts[1].replace(/\.json$/i, "");
     return { kind: normalizeToSeriesKind(rawKind), permalink };
-  } catch {
+  } catch (err) {
+    log.debug("navigation", "parseDynastyUrl failed for", input, err);
     return null;
   }
 }
