@@ -158,10 +158,10 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
       >
         <Show when={isMobile()}>
           <div class="ds-reader-nav-row nav-main ds-reader-mobile-row--full">
-            <div class="ds-segmented-switch ds-nav-history-switch ds-reader-view-switch">
+            <div class="ds-segmented-switch ds-reader-view-switch">
               <button
                 type="button"
-                class="ds-segmented-btn"
+                class="win-button ds-segmented-btn"
                 id="ds-reader-nav-browse"
                 title={t("topbar.browseRecent")}
                 onClick={() => navigate({ view: "browse" })}
@@ -170,7 +170,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
               </button>
               <button
                 type="button"
-                class="ds-segmented-btn"
+                class="win-button ds-segmented-btn"
                 id="ds-reader-nav-library"
                 title={t("topbar.library")}
                 onClick={() => navigate({ view: "library" })}
@@ -181,7 +181,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
             <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
               <button
                 type="button"
-                class="ds-segmented-btn ds-nav-history-btn"
+                class="win-button ds-segmented-btn ds-nav-history-btn"
                 id="ds-nav-back"
                 title={t("topbar.navBackTooltip")}
                 disabled={!canGoBack()}
@@ -208,11 +208,11 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
                   }
                 }}
               >
-                <ArrowLeftIcon />
+                <span class="ds-btn-icon-wrap"><ArrowLeftIcon /></span>
               </button>
               <button
                 type="button"
-                class="ds-segmented-btn ds-nav-history-btn"
+                class="win-button ds-segmented-btn ds-nav-history-btn"
                 id="ds-nav-forward"
                 title={t("topbar.navForwardTooltip")}
                 disabled={!canGoForward()}
@@ -239,7 +239,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
                   }
                 }}
               >
-                <ArrowRightIcon />
+                <span class="ds-btn-icon-wrap"><ArrowRightIcon /></span>
               </button>
             </div>
             <div class="ds-reader-mobile-title--flex" onClick={handleOpenSeries} title={s.seriesPermalink() ? t("reader.toolbar.viewSeries") : undefined}>

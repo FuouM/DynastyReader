@@ -150,18 +150,37 @@ body {
   box-sizing: border-box;
 }
 .ds-segmented-btn:not(:has(.ds-btn-text)) {
-  padding: 0 6px;
-  min-width: 24px;
+  width: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  padding: 0 !important;
+  font-size: 12px;
 }
-.ds-segmented-btn span {
+.ds-segmented-btn span,
+.ds-nav-history-btn span {
   line-height: normal;
   display: inline-flex;
   align-items: center;
 }
-.ds-segmented-btn span.ds-btn-icon-wrap {
+.ds-segmented-btn span.ds-btn-icon-wrap,
+.ds-nav-history-btn span.ds-btn-icon-wrap {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   line-height: 1;
+}
+.ds-segmented-btn i,
+.ds-segmented-btn .bi,
+.ds-nav-history-btn i,
+.ds-nav-history-btn .bi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 12px;
 }
 .ds-segmented-btn:hover {
   background: var(--sys-button-hover, #e5f1fb);
@@ -182,12 +201,11 @@ body {
 }
 .ds-nav-history-btn {
   width: 24px !important;
-  height: 24px !important;
+  height: 100% !important;
   min-width: 24px !important;
   max-width: 24px !important;
-  min-height: 24px !important;
-  max-height: 24px !important;
-  aspect-ratio: 1 / 1;
+  min-height: 0 !important;
+  max-height: 100% !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;

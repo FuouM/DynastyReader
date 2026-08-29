@@ -92,7 +92,7 @@ export function Topbar() {
           <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
             <button
               type="button"
-              class="ds-segmented-btn ds-nav-history-btn"
+              class="win-button ds-segmented-btn ds-nav-history-btn"
               id="ds-nav-back"
               title={t("topbar.navBackTooltip")}
               disabled={!canGoBack()}
@@ -119,11 +119,11 @@ export function Topbar() {
                 }
               }}
             >
-              <ArrowLeftIcon />
+              <span class="ds-btn-icon-wrap"><ArrowLeftIcon /></span>
             </button>
             <button
               type="button"
-              class="ds-segmented-btn ds-nav-history-btn"
+              class="win-button ds-segmented-btn ds-nav-history-btn"
               id="ds-nav-forward"
               title={t("topbar.navForwardTooltip")}
               disabled={!canGoForward()}
@@ -150,7 +150,7 @@ export function Topbar() {
                 }
               }}
             >
-              <ArrowRightIcon />
+              <span class="ds-btn-icon-wrap"><ArrowRightIcon /></span>
             </button>
           </div>
           <Show when={sessionTab() !== null}>
