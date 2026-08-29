@@ -28,6 +28,7 @@ import { InputField } from "../components/InputField";
 import { FeedItemRow } from "../components/FeedItemRow";
 import { EmptyState } from "../components/EmptyState";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
+import { CloudDownloadIcon, StorageIcon } from "../components/Icon";
 import type { AddToCollectionItem } from "../components/AddToCollectionModal";
 
 const PAGE_SIZE = 25;
@@ -152,20 +153,69 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     });
   });
 
+  const totalCount = (): number => pane.data()?.rows.length ?? 0;
+  const filteredCount = (): number => filtered().length;
+  const isFiltering = (): boolean => query().trim().length > 0;
+
   const totalBytes = (): number =>
     (pane.data()?.rows ?? []).reduce((acc, c) => acc + c.totalSizeBytes, 0);
+
+  const filteredBytes = (): number =>
+    filtered().reduce((acc, c) => acc + c.totalSizeBytes, 0);
 
   const model = (): DownloadedModel | undefined => pane.data();
 
   return (
     <div class="ds-tab-pane active" id="ds-tab-downloaded">
-      <div id="ds-downloaded-header">
-        <span class="ds-downloaded-count">
-          {t("browse.downloaded.chaptersCount", { count: filtered().length, noun: filtered().length === 1 ? t("browse.downloaded.nounChapter") : t("browse.downloaded.nounChapters") })}
+      <div id="ds-downloaded-header" class="ds-downloaded-header">
+        <div class="ds-downloaded-stats">
+          <span class="ds-downloaded-stat-item">
+            <CloudDownloadIcon class="ds-downloaded-stat-icon" />
+            <span class="ds-downloaded-count">
+              <Show
+                when={isFiltering()}
+                fallback={
+                  <>
+                    <b>{totalCount()}</b>{" "}
+                    {t("browse.downloaded.chaptersCount", {
+                      count: "",
+                      noun:
+                        totalCount() === 1
+                          ? t("browse.downloaded.nounChapter")
+                          : t("browse.downloaded.nounChapters"),
+                    }).trim()}
+                  </>
+                }
+              >
+                <b>{filteredCount()}</b> {t("common.of")} <b>{totalCount()}</b>{" "}
+                {t("browse.downloaded.chaptersCount", {
+                  count: "",
+                  noun:
+                    totalCount() === 1
+                      ? t("browse.downloaded.nounChapter")
+                      : t("browse.downloaded.nounChapters"),
+                }).trim()}
+              </Show>
+            </span>
+          </span>
           <Show when={totalBytes() > 0}>
-            <span class="ds-downloaded-size"> · {formatBytes(totalBytes())}</span>
+            <span class="ds-downloaded-divider">·</span>
+            <span class="ds-downloaded-stat-item ds-downloaded-stat-size">
+              <StorageIcon class="ds-downloaded-stat-icon" />
+              <span class="ds-downloaded-size">
+                <b>{formatBytes(isFiltering() ? filteredBytes() : totalBytes())}</b>
+                <Show when={isFiltering() && filteredBytes() !== totalBytes()}>
+                  <span class="ds-muted"> ({formatBytes(totalBytes())})</span>
+                </Show>
+              </span>
+            </span>
           </Show>
-        </span>
+        </div>
+        <Show when={isFiltering()}>
+          <span class="ds-status-pill fresh">
+            {t("common.search") || "Filtered"}
+          </span>
+        </Show>
       </div>
 
       <div id="ds-downloaded-filter-wrap" class="ds-mb-8">

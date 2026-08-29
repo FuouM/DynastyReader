@@ -286,6 +286,61 @@
 .ds-etag-hash {
   font-family: monospace;
 }
+
+/* Downloaded tab header & stats */
+#ds-downloaded-header,
+.ds-downloaded-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  border: 1px solid var(--sys-border-medium, #ccc);
+  background: var(--sys-control-bg, #f5f5f5);
+  border-radius: 3px;
+  font-size: 11px;
+  box-sizing: border-box;
+}
+.ds-downloaded-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--sys-text-muted, #666);
+  font-size: 11px;
+}
+.ds-downloaded-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--sys-window-text, #333);
+}
+.ds-downloaded-stat-item b {
+  color: var(--sys-window-text, #111);
+  font-weight: 700;
+}
+.ds-downloaded-stat-icon {
+  font-size: 12px;
+  color: var(--sys-primary, #0078d4);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.ds-downloaded-stat-size .ds-downloaded-stat-icon {
+  color: var(--sys-text-muted, #666);
+}
+.ds-downloaded-divider {
+  color: var(--sys-border-dark, #aaa);
+  opacity: 0.6;
+  user-select: none;
+}
+.ds-downloaded-count,
+.ds-downloaded-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
 #ds-browse-check-updates-btn,
 .ds-status-refresh-btn,
 .win-button.ds-status-refresh-btn {
