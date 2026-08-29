@@ -1,4 +1,5 @@
 import { createSignal, onCleanup, Show } from "solid-js";
+import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import {
   route,
@@ -180,9 +181,6 @@ export function Topbar() {
           <span id="ds-title">
             {title()}
           </span>
-          <Show when={banner() !== null}>
-            <div id="ds-banner">{banner()}</div>
-          </Show>
           <div id="ds-topbar-right">
             <Show when={actions() !== null}>
               <div id="ds-actions">{actions()}</div>
@@ -217,6 +215,11 @@ export function Topbar() {
             onClose={() => setHistoryMenu(null)}
           />
         )}
+      </Show>
+      <Show when={banner() !== null}>
+        <Portal mount={document.body}>
+          <div id="ds-banner">{banner()}</div>
+        </Portal>
       </Show>
     </>
   );

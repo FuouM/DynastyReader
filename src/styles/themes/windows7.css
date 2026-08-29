@@ -334,43 +334,41 @@
     border-left: 1px solid #8e8f8f !important;
   }
 
-  /* ── SubTabs — authentic Windows 7 Aero tab strip ── */
+  /* ── SubTabs — Aero toolbar tab buttons with complete borders ── */
   [data-theme="windows7"] .ds-subtabs {
-    border-bottom: 1px solid #8e8f8f;
-    gap: 2px;
+    border-bottom: none;
+    gap: 4px;
   }
 
   [data-theme="windows7"] .ds-subtab {
-    border-radius: 3px 3px 0 0;
+    border-radius: 3px;
     border: 1px solid #8e8f8f;
-    border-bottom: 0;
     background: linear-gradient(180deg, #f2f2f2 45%, #ebebeb 45%, #cfcfcf 100%);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.85), 0 1px 1px rgba(0, 0, 0, 0.05);
     color: #222222;
-    padding: 2px 10px;
-    position: relative;
-    top: 1px;
+    padding: 0 10px;
+    height: 24px;
+    min-height: 24px;
+    box-sizing: border-box;
   }
 
   [data-theme="windows7"] .ds-subtab:hover {
     border-color: #3c7fb1;
     background: linear-gradient(180deg, #eaf6fd 45%, #bee6fd 45%, #a7d9f5 100%) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9);
   }
 
   [data-theme="windows7"] .ds-subtab.active {
-    background: #ffffff !important;
-    border: 1px solid #8e8f8f !important;
-    border-bottom: 1px solid #ffffff !important;
-    box-shadow: inset 0 2px 0 0 #ffbd69, inset 0 3px 0 0 #ffffff !important;
+    background: linear-gradient(180deg, #d8ebff 0%, #b9d8f6 46%, #8fb9ea 52%, #c8ddf5 100%) !important;
+    border: 1px solid #2e6aa5 !important;
+    box-shadow: inset 1px 1px 0 rgba(16, 42, 74, 0.15), inset -1px -1px 0 rgba(255, 255, 255, 0.6) !important;
     color: #0f2440 !important;
     font-weight: 600;
-    z-index: 2;
   }
 
   [data-theme="windows7"] .ds-subtab.active span {
     color: #0f2440 !important;
   }
-
   /* ── Group boxes / fieldsets — rounded Aero fieldsets ── */
   [data-theme="windows7"] .group-box {
     background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%);
