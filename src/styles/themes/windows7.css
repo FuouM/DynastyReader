@@ -1,0 +1,583 @@
+@layer themes, components;
+
+/*
+ * windows7.css — Windows 7 Aero theme (ported inspiration).
+ *
+ * This is an original interpretation of the Aero visual language (glass gradients,
+ * glossy buttons, inset highlights, rounded fieldsets, and softly striped window
+ * chrome).  It does not copy `7.css` directly — gradients, stop positions, shadows,
+ * and token values are independently authored to match the look while staying
+ * compatible with the DynastyReader token cascade (`[data-theme="windows7"]`).
+ *
+ * Token palette is deliberately blue-grey to evoke the Aero desktop behind a
+ * semi-transparent title bar, while window interiors stay white for readability.
+ */
+
+@layer themes {
+  :root[data-theme="windows7"],
+  [data-theme="windows7"],
+  body.ds-windows7 {
+    /* core surfaces */
+    --sys-control-bg: #eef2f8;
+    --sys-control-text: #0f1e32;
+    --sys-window-bg: #ffffff;
+    --sys-window-text: #162030;
+    --sys-border-light: #ffffff;
+    --sys-border-dark: #8d9ab2;
+    --sys-border-medium: #b9c9dc;
+    --sys-border-focus: #3b84c2;
+    --sys-highlight-bg: #2f7dd6;
+    --sys-highlight-text: #ffffff;
+    --sys-button-bg: #eef4ff;
+    --sys-button-border: #8e9fb8;
+    --sys-button-hover: #d7ecfe;
+    --sys-button-active: #b9d1ec;
+    --sys-status-bg: #eef3fb;
+    --sys-status-text: #23344e;
+    --sys-menu-bg: #f2f7fd;
+    --sys-menu-border: #9eb6d1;
+    --sys-text-primary: #162030;
+    --sys-text-secondary: #3f536e;
+    --sys-text-muted: #607698;
+    --sys-text-subtle: #6f8299;
+    --sys-text-color: #162030;
+    --sys-hover-bg: #e6eef8;
+    --sys-bg-active: #dceaf8;
+    --sys-card-bg: #ffffff;
+    --sys-primary: #2a6cb6;
+    --sys-primary-border: #1e4f84;
+    --sys-primary-hover: #3680d1;
+    --sys-primary-active: #1b4f84;
+    --sys-button-disabled-bg: #f1f2f4;
+    --sys-button-disabled-text: #8d98aa;
+    --sys-button-disabled-border: #b9c0cf;
+    --sys-success-accent: #0c9b5a;
+    --sys-error-text: #c1272d;
+    --sys-reader-viewport-bg: #d9e6f5;
+    --sys-scrollbar-thumb: rgba(0, 0, 0, 0.22);
+    --sys-scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
+    --sys-scrollbar-track: #f0f0f0;
+    --sys-scrollbar-track-border: #dcdcdc;
+    --sys-scrollbar-thumb-border: #f0f0f0;
+    --ds-status-fresh-bg: #e4f4e7;
+    --ds-status-fresh-text: #176a2c;
+    --ds-status-fresh-border: #b9debd;
+    --ds-status-stale-bg: #fff2d1;
+    --ds-status-stale-text: #6e3e00;
+    --ds-status-stale-border: #f0d48a;
+    --ds-danger-bg: #fde7e8;
+    --ds-danger-text: #b42318;
+    --ds-danger-border: #f0a3a6;
+    --ds-warn-bg: #fff3e0;
+    --ds-warn-text: #7a3c06;
+    --ds-warn-border: #e8b97a;
+    /* reader */
+    --ds-reader-bg: #ffffff;
+    --ds-reader-viewport-bg: #d7e7f7;
+    --ds-reader-nav-border: #b9c9dc;
+    --ds-reader-divider: rgba(22, 32, 48, 0.08);
+    /* tag taxonomy — Aero blue-grey tints, still readable */
+    --tag-user-bg: #fff6d6;
+    --tag-user-border: #f1df9f;
+    --tag-user-text: #6b5900;
+    --tag-user-hover-bg: #ffefb0;
+    --tag-user-hover-border: #e8c96a;
+    --tag-user-hover-text: #513f00;
+    --tag-character-bg: #d8f0f6;
+    --tag-character-border: #a8ddec;
+    --tag-character-text: #0e5a6e;
+    --tag-character-hover-bg: #c2e8f1;
+    --tag-character-hover-border: #86ccde;
+    --tag-character-hover-text: #0b4a5c;
+    --tag-copyright-bg: #ebe1f8;
+    --tag-copyright-border: #d2bff1;
+    --tag-copyright-text: #4f2d7a;
+    --tag-copyright-hover-bg: #decbf5;
+    --tag-copyright-hover-border: #c3a6f0;
+    --tag-copyright-hover-text: #3e225f;
+    --tag-meta-bg: #e6e8ec;
+    --tag-meta-border: #ced3da;
+    --tag-meta-text: #3c4148;
+    --tag-meta-hover-bg: #d9dce1;
+    --tag-meta-hover-border: #b8bec7;
+    --tag-meta-hover-text: #2d333a;
+    --tag-artist-bg: #ffe9db;
+    --tag-artist-border: #f2c6aa;
+    --tag-artist-text: #7a2e0f;
+    --tag-artist-hover-bg: #ffddc4;
+    --tag-artist-hover-border: #f0b78f;
+    --tag-artist-hover-text: #5f240c;
+    --tag-pairing-bg: #fde2ee;
+    --tag-pairing-border: #f6b8d0;
+    --tag-pairing-text: #8a1745;
+    --tag-pairing-hover-bg: #fcd0e3;
+    --tag-pairing-hover-border: #f3a0be;
+    --tag-pairing-hover-text: #6f1237;
+    --tag-status-bg: #e3f0e6;
+    --tag-status-border: #b9d8be;
+    --tag-status-text: #196138;
+    --tag-status-hover-bg: #cfe6d3;
+    --tag-status-hover-border: #9bcd9f;
+    --tag-status-hover-text: #144f2e;
+    --tag-rank-3-bg: #e1ecf7;
+    --tag-rank-3-border: #b8cfe8;
+    --tag-rank-3-text: #32506e;
+    --tag-rank-3-hover-bg: #d0e1f2;
+    --tag-rank-3-hover-border: #9ebdda;
+    --tag-rank-3-hover-text: #27405a;
+    --tag-concept-bg: #e0e7ff;
+    --tag-concept-border: #c4d0fb;
+    --tag-concept-text: #3c3aa3;
+    --tag-concept-hover-bg: #ced8ff;
+    --tag-concept-hover-border: #aab8f8;
+    --tag-concept-hover-text: #2f2e81;
+    --tag-identity-bg: #fde2e2;
+    --tag-identity-border: #f3b8b8;
+    --tag-identity-text: #8a1515;
+    --tag-identity-hover-bg: #fbd0d0;
+    --tag-identity-hover-border: #ef9a9a;
+    --tag-identity-hover-text: #6e1111;
+    --sys-link: #205da8;
+    --sys-link-hover: #2a7cd3;
+    --skeleton-shimmer: rgba(255, 255, 255, 0.7);
+    --sys-switch-thumb-bg: #f7fbff;
+    --sys-switch-thumb-border: #8ea5c0;
+    --sys-switch-thumb-checked-bg: #ffffff;
+    --sys-button-primary-bg: #2f7dd6;
+    --sys-button-primary-border: #1e4f84;
+    --sys-button-primary-hover: #3a8be6;
+    --sys-button-primary-active: #1b4f84;
+
+    /* Aero-specific private vars (only consumed inside this file) */
+    --w7-aero-title-start: #e8f1fd;
+    --w7-aero-title-mid: #c8ddf5;
+    --w7-aero-title-end: #eaf2fe;
+    --w7-aero-bar: #4a90d8;
+    --w7-glass-stripe: linear-gradient(
+      54deg,
+      transparent 0 5%,
+      rgba(255, 255, 255, 0.18) 5.6% 6.2%,
+      transparent 7% 11%,
+      rgba(0, 0, 0, 0.06) 11.5% 12.5%,
+      transparent 13% 100%
+    );
+  }
+
+  /* Active light selections — move to themes layer so !important beats layout (reversed layer order) */
+  [data-theme="windows7"] .win-button.active,
+  [data-theme="windows7"] .ds-segmented-btn.active,
+  [data-theme="windows7"] .ds-session-tab.active,
+  [data-theme="windows7"] .ds-subtab.active {
+    background:
+      linear-gradient(180deg, #d8ebff 0%, #b9d8f6 46%, #8fb9ea 52%, #c8ddf5 100%) !important;
+    border-color: #2e6aa5 !important;
+    color: #0f2440 !important;
+    box-shadow: inset 1px 1px 1px rgba(16, 42, 74, 0.14) !important;
+  }
+
+  [data-theme="windows7"] .win-button.active .ds-btn-text,
+  [data-theme="windows7"] .win-button.active .bi,
+  [data-theme="windows7"] .ds-segmented-btn.active .ds-btn-text,
+  [data-theme="windows7"] .ds-segmented-btn.active .ds-btn-icon-wrap,
+  [data-theme="windows7"] .ds-segmented-btn.active .bi,
+  [data-theme="windows7"] .ds-session-tab.active .ds-truncate,
+  [data-theme="windows7"] .ds-session-tab.active > i.bi,
+  [data-theme="windows7"] .ds-subtab.active span {
+    color: #0f2440 !important;
+  }
+}
+
+/* ── Aero chrome overrides — scoped to [data-theme="windows7"] ─────────── */
+@layer components {
+  /* Wallpaper + font. The gradient evokes the classic Windows 7 Bliss-like
+     sky behind the semi-transparent window chrome. Kept subtle so pure-white
+     cards still pop. */
+  [data-theme="windows7"] body {
+    font-family: "Segoe UI", "SegoeUI", Tahoma, Verdana, sans-serif;
+    text-rendering: optimizeLegibility;
+  }
+
+  [data-theme="windows7"] html {
+    background:
+      radial-gradient(1200px 600px at 70% -10%, rgba(255, 255, 255, 0.9) 0%, transparent 60%),
+      linear-gradient(180deg, #c7ddf4 0%, #a9c8eb 40%, #8fb8e2 100%);
+  }
+
+  [data-theme="windows7"] body {
+    background:
+      radial-gradient(1200px 600px at 70% -10%, rgba(255, 255, 255, 0.72) 0%, transparent 55%),
+      linear-gradient(180deg, #d2e6f9 0%, #b9d4ef 55%, #a0c1e6 100%);
+  }
+
+  [data-theme="windows7"] #ds-root {
+    background: transparent;
+  }
+
+  /* ── Title bar / top bar — semi-transparent Aero glass over the blue ── */
+  [data-theme="windows7"] #ds-topbar {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.34) 38%, rgba(255, 255, 255, 0.12) 52%, rgba(255, 255, 255, 0.28) 100%),
+      linear-gradient(90deg, #6ca6dd 0%, #4e8ed1 36%, #3e76bb 68%, #5d9ad9 100%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.58);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.28),
+      0 3px 12px rgba(16, 42, 74, 0.28);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  [data-theme="windows7"] #ds-topbar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--w7-glass-stripe);
+    opacity: 0.28;
+    mix-blend-mode: soft-light;
+  }
+
+  [data-theme="windows7"] #ds-title {
+    color: #ffffff;
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.65),
+      0 0 6px rgba(0, 0, 0, 0.35);
+    font-weight: 600;
+    letter-spacing: 0.1px;
+  }
+
+  /* ── Buttons — glossy Aero button with soft hover glint and pressed inset ── */
+  [data-theme="windows7"] .win-button {
+    border-radius: 3px;
+    border-color: #8e9fb8;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(245, 250, 255, 0.96) 42%, #d6e7fb 44%, #c2d7f0 58%, #e2eefc 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.92),
+      inset 0 1px 0 rgba(255, 255, 255, 0.98),
+      0 1px 2px rgba(0, 0, 0, 0.08);
+    color: #0f2440;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  [data-theme="windows7"] .win-button:hover {
+    border-color: #3b84c2;
+    background:
+      linear-gradient(180deg, #f0f9ff 0%, #d9ecff 42%, #b3d7f8 44%, #a8cbf2 56%, #e1f0ff 100%) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.98),
+      0 0 0 1px rgba(59, 132, 194, 0.22),
+      0 0 10px rgba(63, 141, 210, 0.32);
+  }
+
+  [data-theme="windows7"] .win-button:active,
+  [data-theme="windows7"] .win-button.active:active,
+  [data-theme="windows7"] .win-button.active:hover {
+    border-color: #2f5e8e;
+    background:
+      linear-gradient(180deg, #b8d2ee 0%, #a6c7e8 46%, #8fb6de 52%, #c2d9f1 100%) !important;
+    box-shadow:
+      inset 1px 1px 2px rgba(16, 42, 74, 0.2),
+      inset -1px -1px 1px rgba(255, 255, 255, 0.66);
+  }
+
+  [data-theme="windows7"] .win-button:focus-visible {
+    outline: 1px dotted #0f2440;
+    outline-offset: -4px;
+    box-shadow:
+      inset 0 0 0 1px #7ab4ea,
+      inset 0 0 4px rgba(59, 132, 194, 0.55),
+      0 0 6px rgba(59, 132, 194, 0.35);
+  }
+
+  [data-theme="windows7"] .win-button:disabled {
+    background: linear-gradient(180deg, #f3f3f3 0%, #eeeeee 100%);
+    border-color: #b9c0cf;
+    color: #8d98aa;
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  /* Primary / default button gets the classic pulsing Aero blue */
+  [data-theme="windows7"] .win-button.primary {
+    background:
+      linear-gradient(180deg, #eaf4ff 0%, #cfe6ff 42%, #8ec0f0 44%, #b8d8f6 58%, #e7f1ff 100%);
+    border-color: #2e6aa5;
+    color: #0f2440;
+    font-weight: 600;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 0 0 1px rgba(46, 106, 165, 0.18);
+    animation: w7-aero-pulse 1.8s ease-in-out infinite alternate;
+  }
+
+  [data-theme="windows7"] .win-button.primary:hover {
+    border-color: #1e4f84;
+    background:
+      linear-gradient(180deg, #e0f0ff 0%, #c2e0ff 42%, #7fb8f0 44%, #a9d0f6 58%, #e0efff 100%) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.95),
+      0 0 10px rgba(47, 125, 214, 0.45);
+  }
+
+  @keyframes w7-aero-pulse {
+    from { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9), inset 0 0 3px rgba(74, 160, 230, 0.45), 0 0 0 1px rgba(46, 106, 165, 0.12); }
+    to   { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9), inset 0 0 6px rgba(74, 160, 230, 0.78), 0 0 10px rgba(47, 125, 214, 0.32); }
+  }
+
+  /* Segmented switch frame reads as one Aero toolbar */
+  [data-theme="windows7"] .ds-segmented-switch {
+    border-color: #8e9fb8;
+    background: linear-gradient(180deg, #fafcff 0%, #eaf2fd 100%);
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px #fff, 0 1px 1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+  }
+
+  [data-theme="windows7"] .ds-segmented-btn {
+    border-radius: 0;
+  }
+
+  [data-theme="windows7"] .ds-segmented-btn:hover {
+    background:
+      linear-gradient(180deg, #f0f9ff 0%, #d9ecff 42%, #b3d7f8 44%, #a8cbf2 56%, #e1f0ff 100%) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.96);
+  }
+
+  [data-theme="windows7"] .ds-segmented-btn.active:hover {
+    background:
+      linear-gradient(180deg, #e0f0ff 0%, #b9d9ff 42%, #8ec0ff 44%, #a8d0f6 56%, #d6e9ff 100%) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.96);
+  }
+
+  [data-theme="windows7"] .ds-segmented-btn + .ds-segmented-btn {
+    border-left-color: #b9c9dc !important;
+  }
+
+  /* ── Group boxes / fieldsets — classic rounded Aero fieldsets ── */
+  [data-theme="windows7"] .group-box {
+    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%);
+    border: 1px solid #b8c9dc;
+    border-radius: 5px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.96),
+      0 1px 2px rgba(16, 42, 74, 0.06);
+  }
+
+  [data-theme="windows7"] .group-box-title {
+    background: linear-gradient(180deg, #ffffff 0%, #eaf1fb 100%);
+    border: 1px solid #b8c9dc;
+    border-radius: 3px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+    color: #1b3555;
+    font-weight: 600;
+    padding: 1px 8px;
+  }
+
+  /* ── Text fields — inset Aero edit control ── */
+  [data-theme="windows7"] .input-field,
+  [data-theme="windows7"] .win-textbox,
+  [data-theme="windows7"] .ds-select,
+  [data-theme="windows7"] .ds-pager-input {
+    background: #ffffff;
+    border: 1px solid #aab9cc;
+    border-top-color: #8e9fb8;
+    border-radius: 2px;
+    box-shadow: inset 0 1px 2px rgba(16, 42, 74, 0.08);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  [data-theme="windows7"] .input-field:hover,
+  [data-theme="windows7"] .win-textbox:hover {
+    border-color: #6ea7d6 #b8d5ee #cde5f4 #bcd8ee;
+  }
+
+  [data-theme="windows7"] .input-field:focus,
+  [data-theme="windows7"] .win-textbox:focus,
+  [data-theme="windows7"] .ds-select:focus {
+    border-color: #3b84c2 #9ec9eb #b7d9f1 #a9ccea;
+    box-shadow: 0 0 4px rgba(59, 132, 194, 0.35);
+    outline: none;
+  }
+
+  [data-theme="windows7"] .input-clear-btn {
+    border-radius: 2px;
+  }
+
+  [data-theme="windows7"] .input-clear-btn:hover {
+    background: linear-gradient(180deg, #eaf5ff 0%, #d2e7ff 100%);
+    border: 1px solid #8e9fb8;
+  }
+
+  /* ── Modal windows — Aero window chrome with glass header ── */
+  [data-theme="windows7"] .ds-modal-backdrop {
+    background: rgba(28, 52, 84, 0.34);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  [data-theme="windows7"] .ds-modal-window {
+    background: #eef4fc;
+    border: 1px solid rgba(0, 0, 0, 0.58);
+    border-radius: 7px;
+    box-shadow:
+      0 12px 36px rgba(8, 24, 48, 0.38),
+      0 1px 0 rgba(255, 255, 255, 0.9) inset,
+      inset 0 0 0 1px rgba(255, 255, 255, 0.88);
+    overflow: hidden;
+  }
+
+  [data-theme="windows7"] .ds-modal-header {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.42) 44%, rgba(255, 255, 255, 0.14) 52%, rgba(255, 255, 255, 0.38) 100%),
+      linear-gradient(90deg, #6ca6dd, #4e8ed1 55%, #3e76bb);
+    border-bottom: 1px solid #8ea8c7;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    color: #ffffff;
+  }
+
+  [data-theme="windows7"] .ds-modal-title {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  }
+
+  [data-theme="windows7"] .ds-modal-body {
+    background: #ffffff;
+    border-top: 1px solid #ffffff;
+  }
+
+  [data-theme="windows7"] .ds-modal-footer {
+    background: linear-gradient(180deg, #eef4fc 0%, #e3ecf8 100%);
+    border-top: 1px solid #b9c9dc;
+    box-shadow: inset 0 1px 0 #fff;
+  }
+
+  [data-theme="windows7"] .ds-modal-close {
+    border-radius: 3px;
+  }
+
+  /* ── Cards / items — Aero card with soft border ── */
+  [data-theme="windows7"] .ds-item,
+  [data-theme="windows7"] .ds-chapter-row,
+  [data-theme="windows7"] .ds-cache-item,
+  [data-theme="windows7"] .ds-history-item {
+    background: #ffffff;
+    border-color: #c8d7ea;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px rgba(16, 42, 74, 0.04);
+  }
+
+  [data-theme="windows7"] .ds-item:hover,
+  [data-theme="windows7"] .ds-chapter-row:hover {
+    background: linear-gradient(180deg, #f3f9ff 0%, #e6f0fd 100%);
+    border-color: #a9bee0;
+  }
+
+  /* ── Tag pills retain Aero borders */
+  [data-theme="windows7"] .tag-pill {
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+  }
+
+  /* ── Switch control — Aero slider ── */
+  [data-theme="windows7"] .ds-switch-track {
+    border-radius: 3px;
+    border-color: #8e9fb8;
+    background: linear-gradient(180deg, #eaf2fd 0%, #dbe8f7 100%);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="windows7"] .ds-switch.checked .ds-switch-track {
+    background: linear-gradient(180deg, #3a8be6 0%, #2a6cb6 100%);
+    border-color: #1e4f84;
+  }
+
+  [data-theme="windows7"] .ds-switch-thumb {
+    border-radius: 2px;
+    background: linear-gradient(180deg, #ffffff 0%, #eaf2fd 100%);
+    border-color: #8e9fb8;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  }
+
+  /* ── Progress + skeleton — glassy blue progress bar ── */
+  [data-theme="windows7"] .ds-progress-track,
+  [data-theme="windows7"] .ds-reader-progress-track {
+    border: 1px solid #8e9fb8;
+    border-radius: 3px;
+    background:
+      linear-gradient(180deg, #f6f9fd 0%, #e9f0f8 100%);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+
+  [data-theme="windows7"] .ds-progress-fill,
+  [data-theme="windows7"] .ds-reader-progress-fill,
+  [data-theme="windows7"] [role="progressbar"] > div {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, transparent 42%),
+      linear-gradient(90deg, #2e8f2e 0%, #34b134 55%, #2a9a2a 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+  }
+
+  [data-theme="windows7"] .skeleton,
+  [data-theme="windows7"] .skeleton-pulse,
+  [data-theme="windows7"] .ds-slot-loading {
+    background-color: #e6eef8;
+  }
+
+  /* ── Reader surface tints stay in Aero blue family ── */
+  [data-theme="windows7"] #ds-reader-viewport {
+    background: var(--ds-reader-viewport-bg);
+  }
+
+  [data-theme="windows7"] #ds-reader-viewport.horizontal #ds-reader-strip > .ds-slot .ds-page-img,
+  [data-theme="windows7"] .ds-page-img {
+    box-shadow: 0 4px 16px rgba(16, 42, 74, 0.24), 0 1px 3px rgba(16, 42, 74, 0.18);
+  }
+
+  [data-theme="windows7"] .ds-reader-nav {
+    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%) !important;
+    border-color: #b9c9dc !important;
+    box-shadow: inset 0 1px 0 #fff;
+  }
+
+  [data-theme="windows7"] #ds-banner {
+    background: linear-gradient(180deg, #fffbe6 0%, #fef3c7 100%);
+    border-color: #e8c86a;
+    color: #5a3e00;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  }
+
+  /* Bottom nav on Aero — mimic taskbar glass */
+  [data-theme="windows7"] #ds-bottom-nav {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.22) 48%, rgba(255, 255, 255, 0.12) 52%, rgba(0, 0, 0, 0.04) 100%),
+      linear-gradient(90deg, #b9d1ec, #8fb8e2 55%, #b9d1ec);
+    border-top-color: rgba(0, 0, 0, 0.42);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  [data-theme="windows7"] .ds-bn-tab.active {
+    background:
+      linear-gradient(180deg, #d8ebff 0%, #b9d8f6 46%, #8fb9ea 52%, #c8ddf5 100%) !important;
+    border-color: #2e6aa5 !important;
+    color: #0f2440 !important;
+  }
+
+  [data-theme="windows7"] .ds-bn-tab.active .bi {
+    color: #0f2440 !important;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    [data-theme="windows7"] .win-button.primary {
+      animation: none;
+    }
+  }
+}

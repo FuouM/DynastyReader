@@ -90,11 +90,12 @@ export function DisplaySettings() {
               const isLight = value === "light";
               const isDark = value === "dark";
               const isHC = value === "high-contrast";
+              const isWin7 = value === "windows7";
               return {
                 id: `ds-settings-theme-${value}`,
                 value,
-                icon: isLight ? <SunIcon /> : isDark ? <MoonIcon /> : isHC ? <OledIcon /> : <Icon name="palette" />,
-                text: cfg.label.split(" ")[0],
+                icon: isLight ? <SunIcon /> : isDark ? <MoonIcon /> : isHC ? <OledIcon /> : isWin7 ? <Icon name="windows" /> : <Icon name="palette" />,
+                text: isWin7 ? "Win7" : isHC ? "High" : cfg.label.split(" ")[0],
                 title: cfg.label,
               };
             })}
