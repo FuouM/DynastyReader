@@ -29,6 +29,20 @@ pub fn data_root() -> PathBuf {
     if let Some(root) = ROOT.get() {
         return root.clone();
     }
+    // Dev via `cargo run` / `tauri dev`: CARGO_MANIFEST_DIR is src-tauri.
+    // Prefer the repo's `.data` (parent of src-tauri) so dev and portable
+    // builds share the same cache when launched from the repo.
+    if let Ok(manifest) = std::env::var("CARGO_MANIFEST_DIR") {
+        if let Some(repo_root) = Path::new(&manifest).parent() {
+            let repo_data = repo_root.join(".data");
+            if repo_data.is_dir() || repo_root.join("src-tauri").join("Cargo.toml").exists() {
+                if let Ok(canon) = repo_data.canonicalize() {
+                    return canon;
+                }
+                return repo_data;
+            }
+        }
+    }
     std::env::current_exe()
         .ok()
         .and_then(|exe| exe.parent().map(|p| p.to_path_buf()))

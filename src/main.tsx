@@ -43,19 +43,22 @@ import "./styles/utilities.css";
 import "./styles/mobile.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-// Initialize database schema and then mount the SolidJS app
+// Initialize database schema before mounting so every pane's first query
+// (including LocalPane's `local_series`) sees the migrated tables.
 async function bootstrap() {
-  const appEl = document.getElementById("app");
-  if (appEl) {
-    render(() => <App />, appEl);
-  }
-
   try {
     await initDb();
+    const { setDbReady } = await import("./stores/router");
+    setDbReady(true);
   } catch (err) {
     const msg = errorMessage(err);
     console.error("dynasty-scans: db init failed:", msg);
     showBanner(t("main.dbInitFailedBanner", { msg }));
+  }
+
+  const appEl = document.getElementById("app");
+  if (appEl) {
+    render(() => <App />, appEl);
   }
 }
 

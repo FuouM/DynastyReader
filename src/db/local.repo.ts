@@ -14,12 +14,27 @@ export interface LocalSeriesRow {
 }
 
 export async function getLocalSeries(): Promise<LocalSeriesRow[]> {
-  return query<LocalSeriesRow>(`SELECT * FROM local_series ORDER BY updated_at DESC`);
+  try {
+    return await query<LocalSeriesRow>(`SELECT * FROM local_series ORDER BY updated_at DESC`);
+  } catch (err) {
+    const msg = String((err as Error)?.message ?? err);
+    if (msg.includes("no such table")) {
+      console.warn("[local.repo] local_series missing (migration pending):", msg);
+      return [];
+    }
+    throw err;
+  }
 }
 
 export async function getLocalSeriesByPermalink(permalink: string): Promise<LocalSeriesRow | null> {
-  const rows = await query<LocalSeriesRow>(`SELECT * FROM local_series WHERE permalink = ?`, [permalink]);
-  return rows[0] ?? null;
+  try {
+    const rows = await query<LocalSeriesRow>(`SELECT * FROM local_series WHERE permalink = ?`, [permalink]);
+    return rows[0] ?? null;
+  } catch (err) {
+    const msg = String((err as Error)?.message ?? err);
+    if (msg.includes("no such table")) return null;
+    throw err;
+  }
 }
 
 export async function deleteLocalSeries(permalink: string): Promise<void> {

@@ -14,9 +14,23 @@
 import { convertFileSrc as tauriConvertFileSrc, invoke } from "@tauri-apps/api/core";
 import type { UpdateInfo } from "./types/api";
 
-/** Asset-protocol URL for a resolved absolute on-disk path. */
-export const convertFileSrc = tauriConvertFileSrc;
-
+/** Asset-protocol URL for a resolved absolute on-disk path. Falls back to a
+ * no-op placeholder when running outside Tauri (e.g. plain Vite browser
+ * preview) so the page never tries to load `file://K:/...` which Chrome
+ * blocks with "Not allowed to load local resource". */
+export function convertFileSrc(path: string): string {
+  try {
+    // Tauri v2 only defines the internal IPC bridge inside the WebView.
+    if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
+      return tauriConvertFileSrc(path);
+    }
+  } catch {
+    // fall through
+  }
+  // Outside Tauri (vite preview) — return empty so <img> shows placeholder
+  // instead of a blocked file:// URL.
+  return "";
+}
 /* ---------------------------------------------------------------------------
  * HTTP
  * ------------------------------------------------------------------------ */

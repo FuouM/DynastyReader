@@ -1,6 +1,6 @@
-import { createResource, createSignal, For, Show } from "solid-js";
+import { createEffect, createResource, createSignal, For, Show } from "solid-js";
 import { open } from "@tauri-apps/plugin-dialog";
-import { navigate } from "../stores";
+import { navigate, dbReady } from "../stores";
 import { getLocalSeries } from "../db/local.repo";
 import * as ipc from "../ipc";
 import { showBanner } from "../stores/topbar";
@@ -16,7 +16,18 @@ import type { LibraryPaneApi } from "./panes";
 
 export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const [tick, setTick] = createSignal(0);
-  const [data, { refetch }] = createResource(tick, async () => getLocalSeries());
+  // Defer the first fetch until migrations have run; otherwise the resource
+  // fires during bootstrap's render-before-init window and throws
+  // "no such table: local_series" before v4 is applied.
+  const [data, { refetch }] = createResource(
+    () => (dbReady() ? tick() : undefined),
+    async () => getLocalSeries(),
+  );
+
+  // Refetch once when dbReady flips from false -> true (bootstrap completed).
+  createEffect(() => {
+    if (dbReady()) setTick((v) => v + 1);
+  });
 
   const [scanning, setScanning] = createSignal(false);
   const [scanResult, setScanResult] = createSignal<ArchiveScanResult | null>(null);
