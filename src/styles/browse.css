@@ -302,6 +302,24 @@
   font-size: 11px;
   box-sizing: border-box;
 }
+#ds-downloaded-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+}
+#ds-downloaded-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ds-downloaded-sort-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .ds-downloaded-stats {
   display: flex;
   align-items: center;

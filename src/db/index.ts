@@ -22,6 +22,7 @@ export {
   clearHistory,
   getHistory,
   getHistoryPage,
+  getHistoryMap,
   getHistoryPermalinks,
   getHistoryRevision,
   onHistoryChanged,

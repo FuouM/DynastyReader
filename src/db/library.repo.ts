@@ -214,14 +214,24 @@ export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPa
   );
 }
 
-/** Returns a Set of chapter permalinks that have been recorded in history. */
-export async function getHistoryPermalinks(permalinks: string[]): Promise<Set<string>> {
-  if (permalinks.length === 0) return new Set();
-  const rows = await query<{ chapter_permalink: string }>(
-    `SELECT DISTINCT chapter_permalink FROM reading_history WHERE chapter_permalink IN (${inClause(permalinks.length)})`,
+/** Returns a Map of chapter permalinks to their most recent read timestamp (read_at). */
+export async function getHistoryMap(permalinks: string[]): Promise<Map<string, number>> {
+  if (permalinks.length === 0) return new Map();
+  const rows = await query<{ chapter_permalink: string; read_at: number }>(
+    `SELECT chapter_permalink, read_at FROM reading_history WHERE chapter_permalink IN (${inClause(permalinks.length)})`,
     permalinks,
   );
-  return new Set(rows.map((r) => r.chapter_permalink));
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    map.set(r.chapter_permalink, r.read_at);
+  }
+  return map;
+}
+
+/** Returns a Set of chapter permalinks that have been recorded in history. */
+export async function getHistoryPermalinks(permalinks: string[]): Promise<Set<string>> {
+  const map = await getHistoryMap(permalinks);
+  return new Set(map.keys());
 }
 
 

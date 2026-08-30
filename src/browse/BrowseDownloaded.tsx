@@ -13,11 +13,12 @@ import { convertFileSrc } from "../ipc";
 import { formatBytes } from "../lib/format";
 import { formatDate } from "../utils/formatting";
 import { t } from "../i18n";
+import { persistedSignal } from "../lib/persisted-signal";
 import { DownloadManager } from "./DownloadManager";
 import {
   getFullyCachedChapters,
   getBookmarkPermalinks,
-  getHistoryPermalinks,
+  getHistoryMap,
   type FullyCachedChapterRow,
 } from "../db";
 import {
@@ -32,6 +33,7 @@ import { Loading } from "../components/Loading";
 import { InputField } from "../components/InputField";
 import { EmptyState } from "../components/EmptyState";
 import { GroupBox } from "../components/GroupBox";
+import { DsSelect } from "../components/Button";
 import {
   BookIcon,
   CheckIcon,
@@ -43,10 +45,13 @@ import {
   BookmarkIcon,
 } from "../components/Icon";
 const PAGE_SIZE = 25;
+export type DownloadedSortMode = "download-desc" | "name-asc" | "read-desc";
+
 interface DownloadedModel {
   rows: FullyCachedChapterRow[];
   bookmarkSet: Set<string>;
   readHistorySet: Set<string>;
+  readHistoryMap: Map<string, number>;
 }
 
 interface DownloadedSeriesGroup {
@@ -56,6 +61,7 @@ interface DownloadedSeriesGroup {
   chapters: FullyCachedChapterRow[];
   totalSizeBytes: number;
   lastCachedAt: number;
+  lastReadAt: number;
 }
 
 function isNumberedSeries(group: DownloadedSeriesGroup): boolean {
@@ -383,7 +389,11 @@ function SeriesDownloadedCard(props: {
   );
 }
 
-function buildGroups(rows: FullyCachedChapterRow[]): { groups: DownloadedSeriesGroup[]; orphans: FullyCachedChapterRow[] } {
+function buildGroups(
+  rows: FullyCachedChapterRow[],
+  readHistoryMap: Map<string, number>,
+  sortMode: DownloadedSortMode,
+): { groups: DownloadedSeriesGroup[]; orphans: FullyCachedChapterRow[] } {
   const map = new Map<string, DownloadedSeriesGroup>();
   const orphans: FullyCachedChapterRow[] = [];
   for (const r of rows) {
@@ -401,12 +411,15 @@ function buildGroups(rows: FullyCachedChapterRow[]): { groups: DownloadedSeriesG
         chapters: [],
         totalSizeBytes: 0,
         lastCachedAt: 0,
+        lastReadAt: 0,
       };
       map.set(key, g);
     }
     g.chapters.push(r);
     g.totalSizeBytes += r.totalSizeBytes;
     g.lastCachedAt = Math.max(g.lastCachedAt, r.lastCachedAt);
+    const readAt = readHistoryMap.get(r.chapterPermalink) ?? 0;
+    g.lastReadAt = Math.max(g.lastReadAt, readAt);
     if (!g.coverPath && r.coverPath) g.coverPath = r.coverPath;
     if (!g.seriesName && r.seriesName) g.seriesName = r.seriesName;
   }
@@ -415,7 +428,40 @@ function buildGroups(rows: FullyCachedChapterRow[]): { groups: DownloadedSeriesG
       a.chapterTitle.localeCompare(b.chapterTitle, undefined, { numeric: true, sensitivity: "base" }),
     );
   }
-  const groups = Array.from(map.values()).sort((a, b) => b.lastCachedAt - a.lastCachedAt);
+
+  const groups = Array.from(map.values());
+
+  if (sortMode === "name-asc") {
+    groups.sort((a, b) => {
+      const nameA = a.seriesName || a.seriesPermalink;
+      const nameB = b.seriesName || b.seriesPermalink;
+      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: "base" });
+    });
+    orphans.sort((a, b) =>
+      a.chapterTitle.localeCompare(b.chapterTitle, undefined, { numeric: true, sensitivity: "base" }),
+    );
+  } else if (sortMode === "read-desc") {
+    // Most recently read series first; unread series (lastReadAt === 0) after read series
+    groups.sort((a, b) => {
+      if (b.lastReadAt !== a.lastReadAt) {
+        return b.lastReadAt - a.lastReadAt;
+      }
+      return b.lastCachedAt - a.lastCachedAt;
+    });
+    orphans.sort((a, b) => {
+      const readA = readHistoryMap.get(a.chapterPermalink) ?? 0;
+      const readB = readHistoryMap.get(b.chapterPermalink) ?? 0;
+      if (readB !== readA) {
+        return readB - readA;
+      }
+      return b.lastCachedAt - a.lastCachedAt;
+    });
+  } else {
+    // "download-desc" (default): newest cached first
+    groups.sort((a, b) => b.lastCachedAt - a.lastCachedAt);
+    orphans.sort((a, b) => b.lastCachedAt - a.lastCachedAt);
+  }
+
   return { groups, orphans };
 }
 
@@ -428,6 +474,9 @@ export interface BrowseDownloadedProps {
 
 export function BrowseDownloaded(props: BrowseDownloadedProps) {
   const [currentPage, setCurrentPage] = createSignal(1);
+  const [sortMode, setSortMode] = persistedSignal<DownloadedSortMode>("download-desc", {
+    name: "ds_downloaded_sort_mode",
+  });
   const [query, setQuery] = createSignal("");
   const [inputVal, setInputVal] = createSignal("");
   let debounceTimer: number | null = null;
@@ -456,11 +505,12 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     load: async () => {
       const rows = await getFullyCachedChapters();
       const perms = rows.map((r) => r.chapterPermalink);
-      const [bookmarkSet, readHistorySet] = await Promise.all([
+      const [bookmarkSet, readHistoryMap] = await Promise.all([
         getBookmarkPermalinks(perms),
-        getHistoryPermalinks(perms),
+        getHistoryMap(perms),
       ]);
-      return { rows, bookmarkSet, readHistorySet };
+      const readHistorySet = new Set(readHistoryMap.keys());
+      return { rows, bookmarkSet, readHistorySet, readHistoryMap };
     },
   });
 
@@ -485,8 +535,14 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     );
   };
 
-  const grouped = () => buildGroups(filteredRows());
-
+  const grouped = () => {
+    const data = model();
+    return buildGroups(
+      filteredRows(),
+      data?.readHistoryMap ?? new Map(),
+      sortMode(),
+    );
+  };
   const totalGroupsCount = () =>
     grouped().groups.length + (grouped().orphans.length > 0 ? 1 : 0);
 
@@ -549,6 +605,24 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
               setCurrentPage(1);
             }}
           />
+          <div class="ds-downloaded-sort-wrap">
+            <span class="ds-item-meta ds-nowrap" style="font-size:11.5px;color:var(--sys-text-muted,#666);">
+              {t("browse.downloaded.sortBy")}
+            </span>
+            <DsSelect
+              id="ds-downloaded-sort"
+              value={sortMode()}
+              onChange={(val) => {
+                setSortMode(val as DownloadedSortMode);
+                setCurrentPage(1);
+              }}
+              options={[
+                { value: "download-desc", label: t("browse.downloaded.sorts.lastDownloaded") },
+                { value: "name-asc", label: t("browse.downloaded.sorts.alphabetical") },
+                { value: "read-desc", label: t("browse.downloaded.sorts.lastRead") },
+              ]}
+            />
+          </div>
         </div>
 
         <div id="ds-downloaded-toolbar-right" class="ds-toolbar-row">

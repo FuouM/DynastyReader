@@ -167,6 +167,12 @@ export const en = {
       emptyTitle: "No downloaded chapters found. Read a chapter with Auto-Cache enabled to save it for offline reading.",
       loading: "Loading downloaded chapters...",
       pagesCount: "✓ {{count}} pages",
+      sortBy: "Sort by:",
+      sorts: {
+        lastDownloaded: "Recently Downloaded",
+        alphabetical: "Alphabetical (A–Z)",
+        lastRead: "Last Read",
+      },
     },
     search: {
       panelTitle: "In-App Search & Filter",
