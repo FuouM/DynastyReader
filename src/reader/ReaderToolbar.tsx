@@ -20,6 +20,7 @@ import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
 import { IconButton } from "../components/Button";
 import { ReaderMainRow, ReaderControlsRow } from "./ReaderNavRows";
 import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
+import { log } from "../utils/log";
 import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
@@ -57,7 +58,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
         resetCopied();
       }
     } catch (err) {
-      console.warn("[ReaderToolbar] copy link failed:", err);
+      log.warn("reader-toolbar", "copy link failed:", err);
       const msg = errorMessage(err);
       showBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
     }

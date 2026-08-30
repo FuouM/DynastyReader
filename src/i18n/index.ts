@@ -1,4 +1,5 @@
 import { persistedSignal } from "../lib/persisted-signal";
+import { log } from "../utils/log";
 import { en, type Dict } from "./en";
 import {
   type Locale,
@@ -25,7 +26,7 @@ export const locale = localeSignal;
 
 export function setLocale(loc: Locale): void {
   if (!(loc in dictionaries)) {
-    console.warn(`[i18n] Unsupported locale "${loc}", falling back to "en".`);
+    log.warn("i18n", `Unsupported locale "${loc}", falling back to "en".`);
     loc = "en";
   }
   setLocaleRaw(loc);
@@ -72,7 +73,7 @@ export function t(path: TranslationKey, params?: TranslationParams): string {
       if (typeof fallbackCur === "string") {
         return interpolate(fallbackCur, params);
       }
-      console.warn(`[i18n] Missing translation for key: "${path}"`);
+      log.warn("i18n", `Missing translation for key: "${path}"`);
       return String(path);
     }
   }
@@ -81,7 +82,7 @@ export function t(path: TranslationKey, params?: TranslationParams): string {
     return interpolate(cur, params);
   }
 
-  console.warn(`[i18n] Translation path does not resolve to a string: "${path}"`);
+  log.warn("i18n", `Translation path does not resolve to a string: "${path}"`);
   return String(path);
 }
 

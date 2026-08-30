@@ -5,6 +5,7 @@ import { initAppTheme, showBanner, setDbReady, initGlobalDownloadListener } from
 import { t } from "./i18n";
 import { initDb } from "./db";
 import { errorMessage } from "./utils/errors";
+import { log } from "./utils/log";
 import { App } from "./App";
 
 // Apply the persisted theme before the plugin renders so the first paint is
@@ -52,7 +53,7 @@ async function bootstrap() {
     initGlobalDownloadListener();
   } catch (err) {
     const msg = errorMessage(err);
-    console.error("dynasty-scans: db init failed:", msg);
+    log.error("main", "db init failed:", msg);
     showBanner(t("main.dbInitFailedBanner", { msg }));
   }
 

@@ -4,6 +4,7 @@ import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";
 import { tryParseJson } from "../utils/json";
 import { FeedSchema } from "./schemas";
+import { log } from "../utils/log";
 import { persistSuggestEntries } from "./cache-persist";
 import type { Feed, FeedRevalidationResult, RevalidateOnlineResult } from "../types/api";
 
@@ -72,7 +73,7 @@ export async function fetchFeedWithRevalidation(
       const raw = JSON.parse(cached.json_payload);
       parsed = FeedSchema.parse(raw);
     } catch (err) {
-      console.warn(`[api/feed] failed to parse cached feed payload for ${key}:`, err);
+      log.warn("api/feed", `failed to parse cached feed payload for ${key}:`, err);
     }
     if (parsed) {
       recordCacheHit(cached.json_payload.length);
@@ -93,7 +94,7 @@ export async function fetchFeedWithRevalidation(
             return { data: res.data, isNew: true, etag: res.etag };
           }
         } catch (err) {
-          console.warn("Background feed revalidation failed:", err);
+          log.warn("api/feed", "Background feed revalidation failed:", err);
         }
         return null;
       })();

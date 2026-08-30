@@ -4,6 +4,7 @@
  */
 
 import { createSignal } from "solid-js";
+import { log } from "../utils/log";
 
 export type ChangeListener = () => void;
 
@@ -33,7 +34,7 @@ export function createChangeNotifier(name = "change-notifier"): ChangeNotifier {
       try {
         fn();
       } catch (err) {
-        console.error(`[${name}] listener error:`, err);
+        log.error(name, "listener error:", err);
       }
     }
   };

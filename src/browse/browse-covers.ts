@@ -3,6 +3,7 @@ import { persistedSignal } from "../lib/persisted-signal";
 import { debounce } from "@solid-primitives/scheduled";
 import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
+import { log } from "../utils/log";
 import { isSeriesKind, isDoujinTag, getChapterContainerTag } from "../taxonomy";
 
 /**
@@ -317,7 +318,7 @@ export class BrowseCovers {
           setCoverPathMap(new Map(currentMap));
         }
       } catch (err) {
-        console.warn("[browse-covers] preloadBatch failed:", err);
+        log.warn("browse-covers", "preloadBatch failed:", err);
       }
     }
   }
@@ -384,7 +385,7 @@ export class BrowseCovers {
       dsView.addEventListener("scroll", this.onScrollActive, { passive: true });
       this.scrollCleanups.push(() => dsView.removeEventListener("scroll", this.onScrollActive));
     } else {
-      console.warn("[ds-covers] #ds-view not found — scroll tracking may miss events");
+      log.warn("browse-covers", "#ds-view not found — scroll tracking may miss events");
     }
     // Fallback: document capture for any other scroll sources.
     document.addEventListener("scroll", this.onScrollActive, { capture: true, passive: true });
@@ -499,7 +500,7 @@ export class BrowseCovers {
             this.setFailedAttempt(target.coverKey, { count, lastTried: Date.now() });
           }
         } catch (err) {
-          console.warn(`[ds-covers] worker error: ${target.coverKey}`, err);
+          log.warn("browse-covers", `worker error: ${target.coverKey}`, err);
           this.memoryCache.delete(target.coverKey);
           const prevFail = this.failedAttempts.get(target.coverKey);
           const count = (prevFail?.count ?? 0) + 1;

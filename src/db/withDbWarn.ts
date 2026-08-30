@@ -3,6 +3,8 @@
  * Deduplicates `console.warn("[db.manage] … failed:", err)` that was copy-pasted
  * across countTable / dirStatBatch / wipeDatabase fallbacks.
  */
+import { log } from "../utils/log";
+
 export async function withDbWarn<T>(
   label: string,
   fn: () => Promise<T>,
@@ -11,11 +13,11 @@ export async function withDbWarn<T>(
   try {
     return await fn();
   } catch (err) {
-    console.warn(`[db.manage] ${label} failed:`, err);
+    log.warn("db/manage", `${label} failed:`, err);
     return fallback;
   }
 }
 
 export function warnDb(label: string, err: unknown): void {
-  console.warn(`[db.manage] ${label}:`, err);
+  log.warn("db/manage", `${label}:`, err);
 }

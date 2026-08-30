@@ -4,6 +4,7 @@ import { seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
 import { getChapterContainerTag } from "../taxonomy";
 import { DB_NAME } from "../stores";
 import * as ipc from "../ipc";
+import { log } from "../utils/log";
 export interface ChapterAggRow {
   chapterPermalink: string;
   pageCount: number;
@@ -117,7 +118,7 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
             const params = updates.map((u) => [u.size, u.path]);
             await ipc.dbExecuteBatch(DB_NAME, stmts, params);
           } catch (err) {
-            console.debug("[cache-aggregate] backfill size_bytes error:", err);
+            log.debug("cache-aggregate", "backfill size_bytes error:", err);
           }
         })();
       }
@@ -217,7 +218,7 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
         tags: parsed.tags,
       });
     } catch (err) {
-      console.error(`[cache-aggregate] invalid chapter metadata for ${m.cache_key}:`, err);
+      log.error("cache-aggregate", `invalid chapter metadata for ${m.cache_key}:`, err);
     }
   }
 

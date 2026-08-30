@@ -41,6 +41,7 @@ import { AddToCollectionButton } from "./AddToCollectionButton";
 import { TagRow } from "./TagRow";
 import type { AddToCollectionItem } from "./AddToCollectionModal";
 import type { SeriesTag } from "../types/api";
+import { log } from "../utils/log";
 
 export interface FeedItemData {
   permalink: string;
@@ -121,7 +122,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
         resetCopied();
       }
     } catch (err) {
-      console.warn("[FeedItemRow] copy link failed:", err);
+      log.warn("feed-item-row", "copy link failed:", err);
       const msg = errorMessage(err);
       setBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
     }

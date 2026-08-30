@@ -1,6 +1,7 @@
 import { execute, query } from "./client";
 import { initBlacklistCache } from "./blacklist.repo";
 import { directoryGroups } from "../utils/directory";
+import { log } from "../utils/log";
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS followed_series (
@@ -98,7 +99,7 @@ async function runStep(sql: string, label: string, params: unknown[] = []): Prom
   try {
     await execute(sql, params);
   } catch (err) {
-    console.error(`[db/schema] ${label} failed:`, err);
+    log.error("db/schema", `${label} failed:`, err);
     throw err;
   }
 }
@@ -108,7 +109,7 @@ async function columnExists(table: string, column: string): Promise<boolean> {
     const rows = await query<{ name: string }>(`PRAGMA table_info(${table})`);
     return rows.some((r) => r.name.toLowerCase() === column.toLowerCase());
   } catch (err) {
-    console.debug("[dynasty-reader/db/schema] columnExists failed for", table, column, err);
+    log.debug("db/schema", "columnExists failed for", table, column, err);
     return false;
   }
 }
@@ -118,7 +119,7 @@ async function getSchemaVersion(): Promise<number> {
     const rows = await query<{ user_version: number }>(`PRAGMA user_version`);
     return Number(rows[0]?.user_version ?? 0);
   } catch (err) {
-    console.error("[db/schema] failed to read user_version:", err);
+    log.error("db/schema", "failed to read user_version:", err);
     return 0;
   }
 }
@@ -138,7 +139,7 @@ const MIGRATIONS: Migration[] = [
           await runStep(sql, label, params);
           return true;
         } catch (err) {
-          console.debug("[dynasty-reader/db/schema] tryStep failed:", label, err);
+          log.debug("db/schema", "tryStep failed:", label, err);
           failures.push(label);
           return false;
         }
@@ -227,13 +228,13 @@ const MIGRATIONS: Migration[] = [
         await initBlacklistCache();
       } catch (err) {
         failures.push("blacklist cache init");
-        console.error("[db/schema] blacklist cache init failed:", err);
+        log.error("db/schema", "blacklist cache init failed:", err);
       }
 
       if (failures.length > 0) {
-        const msg = `[db/schema] migration v1: ${failures.length} step(s) failed: ${failures.join(", ")}`;
-        console.error(msg);
-        throw new Error(msg);
+        const msg = `migration v1: ${failures.length} step(s) failed: ${failures.join(", ")}`;
+        log.error("db/schema", msg);
+        throw new Error(`[db/schema] ${msg}`);
       }
     },
   },
@@ -246,7 +247,7 @@ const MIGRATIONS: Migration[] = [
         try {
           await runStep(sql, label);
         } catch (err) {
-          console.debug("[dynasty-reader/db/schema] tryStep failed:", label, err);
+          log.debug("db/schema", "tryStep failed:", label, err);
           failures.push(label);
         }
       };
@@ -270,9 +271,9 @@ const MIGRATIONS: Migration[] = [
         "index directory_entries.kind_letter",
       );
       if (failures.length > 0) {
-        const msg = `[db/schema] migration v2: ${failures.length} step(s) failed: ${failures.join(", ")}`;
-        console.error(msg);
-        throw new Error(msg);
+        const msg = `migration v2: ${failures.length} step(s) failed: ${failures.join(", ")}`;
+        log.error("db/schema", msg);
+        throw new Error(`[db/schema] ${msg}`);
       }
 
       // Backfill any existing cached directory pages from cached_metadata into directory_entries
@@ -290,11 +291,11 @@ const MIGRATIONS: Migration[] = [
             const groups = directoryGroups(parsed);
             await saveDirectoryEntries(kind, groups);
           } catch (rowErr) {
-            console.warn(`[db/schema] failed to backfill directory row "${row.cache_key}":`, rowErr);
+            log.warn("db/schema", `failed to backfill directory row "${row.cache_key}":`, rowErr);
           }
         }
       } catch (err) {
-        console.error("[db/schema] backfill directory_entries failed:", err);
+        log.error("db/schema", "backfill directory_entries failed:", err);
       }
     },
   },
@@ -307,7 +308,7 @@ const MIGRATIONS: Migration[] = [
         try {
           await runStep(sql, label);
         } catch (err) {
-          console.debug("[dynasty-reader/db/schema] tryStep failed:", label, err);
+          log.debug("db/schema", "tryStep failed:", label, err);
           failures.push(label);
         }
       };
@@ -324,9 +325,9 @@ const MIGRATIONS: Migration[] = [
         "index cached_pages.page0",
       );
       if (failures.length > 0) {
-        const msg = `[db/schema] migration v3: ${failures.length} step(s) failed: ${failures.join(", ")}`;
-        console.error(msg);
-        throw new Error(msg);
+        const msg = `migration v3: ${failures.length} step(s) failed: ${failures.join(", ")}`;
+        log.error("db/schema", msg);
+        throw new Error(`[db/schema] ${msg}`);
       }
     },
   },
@@ -403,14 +404,14 @@ export async function initDb(): Promise<void> {
         const current = await getSchemaVersion();
         for (const migration of MIGRATIONS) {
           if (migration.version <= current) continue;
-          console.info(`[db/schema] applying migration v${migration.version}: ${migration.name}`);
+          log.debug("db/schema", `applying migration v${migration.version}: ${migration.name}`);
           await migration.up();
           await setSchemaVersion(migration.version);
         }
         await initBlacklistCache();
       } catch (err) {
         initDbPromise = null;
-        console.error("[db/schema] initDb failed — user_version not advanced:", err);
+        log.error("db/schema", "initDb failed — user_version not advanced:", err);
         throw err;
       }
     })();

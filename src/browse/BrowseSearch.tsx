@@ -61,6 +61,7 @@ import {
   RefreshIcon,
   Icon,
 } from "../components/Icon";
+import { log } from "../utils/log";
 
 const getAllClasses = (): { id: SearchClass; label: string }[] => [
   { id: "Series", label: t("browse.search.classes.series") },
@@ -117,7 +118,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
             .map((it) => it.permalink);
           fullyCachedSet = await getFullyCachedChapterPermalinks(chapterPermalinks);
         } catch (cacheCheckErr) {
-          console.debug("[BrowseSearch] failed to check fully cached chapter permalinks:", cacheCheckErr);
+          log.debug("browse-search", "failed to check fully cached chapter permalinks:", cacheCheckErr);
         }
         return { pageData, fullyCachedSet, blMode: getBlacklistMode() };
       } catch (err) {

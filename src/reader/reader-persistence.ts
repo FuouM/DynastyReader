@@ -7,6 +7,7 @@
 import { debounce } from "@solid-primitives/scheduled";
 import { isMobile } from "../stores";
 import { setReadingProgress } from "../db";
+import { log } from "../utils/log";
 import type { ReaderState } from "./reader-state";
 
 export interface ReaderPersistence {
@@ -33,7 +34,7 @@ export function createReaderPersistence(state: ReaderState, permalink: string): 
         completed: state.atEnd(),
       });
     } catch (err) {
-      console.error("[dynasty-reader] failed to persist reading progress:", err);
+      log.error("reader-persistence", "failed to persist reading progress:", err);
     }
   };
 

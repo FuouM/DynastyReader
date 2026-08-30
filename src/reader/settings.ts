@@ -7,6 +7,7 @@
  */
 import { isMobile } from "../stores";
 import { persistedSignal } from "../lib/persisted-signal";
+import { log } from "../utils/log";
 import type { FitMode, ReaderMode, PagedLayout } from "../types/reader";
 
 export type ReaderNavPosition = "top" | "bottom";
@@ -130,7 +131,7 @@ const [getDefaultReadingDirection, setDefaultReadingDirection] = persistedSignal
       const legacy = localStorage.getItem("ds-reader-direction");
       if (legacy === "ltr" || legacy === "rtl") return legacy;
     } catch (err) {
-      console.debug("[settings] legacy direction read failed:", err);
+      log.debug("settings", "legacy direction read failed:", err);
     }
     return "auto";
   },

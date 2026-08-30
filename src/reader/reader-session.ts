@@ -39,6 +39,7 @@ import * as nav from "./reader-chapter-nav";
 import * as boot from "./reader-bootstrap";
 import { createReaderState, type ReaderState, type SlotStateRecord } from "./reader-state";
 import { createReaderPersistence, type ReaderPersistence } from "./reader-persistence";
+import { log } from "../utils/log";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
 
 const FULLSCREEN_RELAYOUT_FIRST_MS = 60;
@@ -648,21 +649,21 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       try {
         if (!document.fullscreenElement && document.fullscreenEnabled) {
           void container?.requestFullscreen().catch((err) => {
-            console.debug("[reader-session] requestFullscreen rejected:", err);
+            log.debug("reader-session", "requestFullscreen rejected:", err);
           });
         }
       } catch (err) {
-        console.debug("[reader-session] requestFullscreen failed:", err);
+        log.debug("reader-session", "requestFullscreen failed:", err);
       }
     } else {
       try {
         if (document.fullscreenElement) {
           void document.exitFullscreen().catch((err) => {
-            console.debug("[reader-session] exitFullscreen rejected:", err);
+            log.debug("reader-session", "exitFullscreen rejected:", err);
           });
         }
       } catch (err) {
-        console.debug("[reader-session] exitFullscreen failed:", err);
+        log.debug("reader-session", "exitFullscreen failed:", err);
       }
     }
     this.resetToCurrentPage(false);

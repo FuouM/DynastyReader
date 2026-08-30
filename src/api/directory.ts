@@ -3,6 +3,7 @@ import { cachedJson, httpGetText } from "./http";
 import { FEED_TTL_MS } from "./feed";
 import { tryParseJson } from "../utils/json";
 import { directoryGroups } from "../utils/directory";
+import { log } from "../utils/log";
 import { persistDirectoryEntries, persistSuggestEntries } from "./cache-persist";
 import type { Directory, DirectoryGroup, SuggestResult } from "../types/api";
 
@@ -80,7 +81,7 @@ export async function suggest(query: string): Promise<SuggestResult[]> {
       return local;
     }
   } catch (err) {
-    console.debug("[api/directory] local suggest lookup missed or failed:", err);
+    log.debug("api/directory", "local suggest lookup missed or failed:", err);
   }
   // 2. Query online endpoint
   const { status, body } = await httpGetText(absUrl("/tags/suggest"), {

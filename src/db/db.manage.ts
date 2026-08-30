@@ -2,6 +2,7 @@ import { query, execute } from "./client";
 import { DB_NAME } from "../stores";
 import * as ipc from "../ipc";
 import { withDbWarn } from "./withDbWarn";
+import { log } from "../utils/log";
 export interface DbFileStats {
   dbSizeBytes: number;
   walSizeBytes: number;
@@ -45,7 +46,7 @@ const ALLOWED_COUNT_TABLES = new Set<string>([
 
 async function countTable(table: string): Promise<number> {
   if (!ALLOWED_COUNT_TABLES.has(table)) {
-    console.warn(`[db.manage] countTable rejected unapproved table name: "${table}"`);
+    log.warn("db/manage", `countTable rejected unapproved table name: "${table}"`);
     return 0;
   }
   return withDbWarn(`countTable failed for "${table}"`, async () => {
@@ -69,13 +70,13 @@ export async function getDbFileStats(): Promise<DbFileStats> {
       totalSizeBytes: dbSizeBytes + walSizeBytes + shmSizeBytes,
     };
   } catch (err) {
-    console.warn("[db.manage] dirStatBatch failed, attempting single dirStat fallback:", err);
+    log.warn("db/manage", "dirStatBatch failed, attempting single dirStat fallback:", err);
     try {
       const single = await ipc.dirStat(DB_NAME);
       const total = single?.total_bytes ?? 0;
       return { dbSizeBytes: total, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: total };
     } catch (fallbackErr) {
-      console.warn("[db.manage] dirStat single fallback failed:", fallbackErr);
+      log.warn("db/manage", "dirStat single fallback failed:", fallbackErr);
       return { dbSizeBytes: 0, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: 0 };
     }
   }
@@ -149,12 +150,12 @@ export async function wipeDatabase(): Promise<void> {
   try {
     await ipc.dbExecuteBatch(DB_NAME, statements);
   } catch (err) {
-    console.warn("[db.manage] batch wipe failed, falling back to sequential:", err);
+    log.warn("db/manage", "batch wipe failed, falling back to sequential:", err);
     for (const sql of statements) {
       try {
         await execute(sql, []);
       } catch (stmtErr) {
-        console.warn(`[db.manage] sequential wipe statement failed (${sql}):`, stmtErr);
+        log.warn("db/manage", `sequential wipe statement failed (${sql}):`, stmtErr);
       }
     }
   }
@@ -162,13 +163,13 @@ export async function wipeDatabase(): Promise<void> {
   try {
     await execute("VACUUM", []);
   } catch (err) {
-    console.warn("[db.manage] VACUUM after wipe failed:", err);
+    log.warn("db/manage", "VACUUM after wipe failed:", err);
   }
   // Reset sqlite_sequence if present
   try {
     await execute("DELETE FROM sqlite_sequence", []);
   } catch (err) {
-    console.warn("[db.manage] sqlite_sequence reset after wipe failed:", err);
+    log.warn("db/manage", "sqlite_sequence reset after wipe failed:", err);
   }
 }
 

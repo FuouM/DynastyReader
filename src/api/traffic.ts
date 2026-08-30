@@ -6,6 +6,7 @@
 
 import { persistedSignal } from "../lib/persisted-signal";
 import { throttle } from "@solid-primitives/scheduled";
+import { log } from "../utils/log";
 
 export interface TrafficMetrics {
   bytesDownloaded: number;
@@ -34,7 +35,7 @@ const [lifetimeMetrics, setLifetimeMetrics] = persistedSignal<TrafficMetrics>({ 
         bytesSaved: Math.max(0, Number(p.bytesSaved) || 0),
       };
     } catch (err) {
-      console.debug("[dynasty-reader/api/traffic] lifetime deserialize failed:", err);
+      log.debug("api/traffic", "lifetime deserialize failed:", err);
       return { ...DEFAULT_METRICS };
     }
   },
@@ -65,7 +66,7 @@ function notify(): void {
     try {
       listener(snap);
     } catch (err) {
-      console.warn("[ds-traffic] listener error:", err);
+      log.warn("api/traffic", "listener error:", err);
     }
   }
 }

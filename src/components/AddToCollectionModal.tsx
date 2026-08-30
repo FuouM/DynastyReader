@@ -26,6 +26,7 @@ import {
   type CollectionItemKind,
 } from "../db";
 import { isMobile, showBanner, uiScale } from "../stores";
+import { log } from "../utils/log";
 
 export interface AddToCollectionItem {
   permalink: string;
@@ -150,7 +151,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
       );
       setLoadError(false);
     } catch (err) {
-      console.error("[dynasty-reader] failed to load collections:", err);
+      log.error("add-to-collection", "failed to load collections:", err);
       setLoadError(true);
     } finally {
       setLoading(false);

@@ -11,6 +11,7 @@
  */
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { persistedSignal } from "../lib/persisted-signal";
+import { log } from "../utils/log";
 
 /** Registry — single source of truth for theme ids, meta colors, and DOM mapping. */
 export const THEME_REGISTRY = {
@@ -43,7 +44,7 @@ function deserializeTheme(raw: string): AppTheme {
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    console.debug("[dynasty-reader/theme] deserialize fallback, raw:", raw, err);
+    log.debug("theme", "deserialize fallback, raw:", raw, err);
     parsed = raw.replace(/^["']|["']$/g, "").trim().toLowerCase();
   }
   return isAppTheme(parsed) ? parsed : "light";
@@ -93,7 +94,7 @@ function applyThemeToDom(t: AppTheme): void {
     try {
       w.AndroidThemeBridge.updateTheme(isDark, THEME_META[t] ?? "#f5f5f5");
     } catch (err) {
-      console.debug("[dynasty-reader/theme] AndroidThemeBridge.updateTheme failed:", err);
+      log.debug("theme", "AndroidThemeBridge.updateTheme failed:", err);
     }
   }
 
@@ -156,7 +157,7 @@ export function initAppTheme(): void {
       }
     }
   } catch (err) {
-    console.debug("[theme] legacy theme migration check failed:", err);
+    log.debug("theme", "legacy theme migration check failed:", err);
   }
   applyThemeToDom(getAppTheme());
 }

@@ -3,6 +3,7 @@ import { getCached, setCached, deleteCached } from "../db";
 import { httpDownloadFull } from "./http";
 import { fileDelete, fileExists } from "./fs";
 import * as ipc from "../ipc";
+import { log } from "../utils/log";
 
 const COVER_DOWNLOAD_TIMEOUT_MS = 30_000;
 const COVER_SKIP_TRANSCODE_THRESHOLD_BYTES = 100_000;
@@ -34,11 +35,11 @@ async function transcodeCover(url: string, rawOutPath: string, webpOutPath: stri
       try {
         await fileDelete(rawOutPath);
       } catch (delErr) {
-        console.debug(`[api/cover-pipeline] raw cover delete failed for ${rawOutPath}:`, delErr);
+        log.debug("api/cover-pipeline", `raw cover delete failed for ${rawOutPath}:`, delErr);
       }
     }
   } catch (err) {
-    console.warn("Failed to transcode cover to WebP, keeping raw download:", err);
+    log.warn("api/cover-pipeline", "Failed to transcode cover to WebP, keeping raw download:", err);
   }
   return finalPath;
 }
@@ -61,7 +62,7 @@ export async function fetchAndCacheCover(opts: {
     try {
       if (await fileExists(cached.json_payload)) return cached.json_payload;
     } catch (checkErr) {
-      console.debug(`[api/cover-pipeline] cover file existence check failed for ${cached.json_payload}:`, checkErr);
+      log.debug("api/cover-pipeline", `cover file existence check failed for ${cached.json_payload}:`, checkErr);
     }
     // Stale DB entry — purge so fresh download can set new path
     await deleteCached(cacheKey);

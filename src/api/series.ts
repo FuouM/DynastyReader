@@ -6,6 +6,7 @@ import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";
 import { fileExists, fileResolve } from "./fs";
 import { fetchChapter } from "./chapter";
+import { log } from "../utils/log";
 import type { Series } from "../types/api";
 import { SeriesSchema } from "./schemas";
 import { coverPathsForChapter, coverPathsForSeries, fetchAndCacheCover } from "./cover-pipeline";
@@ -50,7 +51,7 @@ export async function fetchSeries(
       recordCacheHit(cached.json_payload.length);
       return parsed;
     } catch (parseErr) {
-      console.warn(`[api/series] cached JSON parse failed for series "${permalink}":`, parseErr);
+      log.warn("api/series", `cached JSON parse failed for series "${permalink}":`, parseErr);
     }
   }
 
@@ -60,7 +61,7 @@ export async function fetchSeries(
     try {
       parsed = SeriesSchema.parse(JSON.parse(cached.json_payload));
     } catch (parseErr) {
-      console.warn(`[api/series] stale cached JSON parse failed for series "${permalink}":`, parseErr);
+      log.warn("api/series", `stale cached JSON parse failed for series "${permalink}":`, parseErr);
     }
     if (parsed) {
       recordCacheHit(cached.json_payload.length);
@@ -83,7 +84,7 @@ export async function fetchSeries(
             }
           }
         } catch (err) {
-          console.warn("[dynasty-reader] background series revalidation failed:", err);
+          log.warn("api/series", "background series revalidation failed:", err);
         }
       })();
       return parsed;
@@ -120,7 +121,7 @@ export async function fetchSeries(
     try {
       return SeriesSchema.parse(JSON.parse(cached.json_payload));
     } catch (parseErr) {
-      console.warn(`[api/series] fallback cached JSON parse failed for series "${permalink}":`, parseErr);
+      log.warn("api/series", `fallback cached JSON parse failed for series "${permalink}":`, parseErr);
     }
   }
 
@@ -163,7 +164,7 @@ export async function refreshFollowedSeriesCover(
     try {
       if (await fileExists(currentCover)) return currentCover;
     } catch (checkErr) {
-      console.debug(`[api/series] currentCover fileExists check failed for ${currentCover}:`, checkErr);
+      log.debug("api/series", `currentCover fileExists check failed for ${currentCover}:`, checkErr);
     }
   }
   const fresh = await getOrHydrateSeriesCover(permalink);
@@ -172,7 +173,7 @@ export async function refreshFollowedSeriesCover(
       await updateFollowedSeriesCover(permalink, fresh);
     } catch (dbErr) {
       // The DB write must never break cover rendering; the fresh path still wins.
-      console.warn(`[api/series] updateFollowedSeriesCover DB write failed for "${permalink}":`, dbErr);
+      log.warn("api/series", `updateFollowedSeriesCover DB write failed for "${permalink}":`, dbErr);
     }
   }
   return fresh;
@@ -243,7 +244,7 @@ export async function getOrHydrateSeriesCover(
       const s = JSON.parse(seriesCached.json_payload) as Series;
       coverUrl = s.cover ?? null;
     } catch (parseErr) {
-      console.warn(`[api/series] seriesCached JSON parse failed for "${permalink}":`, parseErr);
+      log.warn("api/series", `seriesCached JSON parse failed for "${permalink}":`, parseErr);
     }
   }
   if (!coverUrl) {
@@ -252,7 +253,7 @@ export async function getOrHydrateSeriesCover(
       const s = await fetchSeries(permalink, false, seriesType || undefined);
       coverUrl = s.cover ?? null;
     } catch (err) {
-      console.debug("[dynasty-reader/api/series] fetchSeries failed for", permalink, err);
+      log.debug("api/series", "fetchSeries failed for", permalink, err);
       return null;
     }
   }
@@ -301,7 +302,7 @@ export async function getOrHydrateItemCover(
       }
     }
   } catch (err) {
-    console.warn(`[api/series] getOrHydrateItemCover fallback failed for chapter "${chapterPermalink}":`, err);
+    log.warn("api/series", `getOrHydrateItemCover fallback failed for chapter "${chapterPermalink}":`, err);
   }
   return null;
 }

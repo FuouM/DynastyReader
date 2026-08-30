@@ -1,5 +1,6 @@
 import { query, execute } from "./client";
 import { createChangeNotifier } from "../lib/change-notifier";
+import { log } from "../utils/log";
 import type { CollectionRow, CollectionItemRow, CollectionItemKind } from "../types/db";
 
 const collectionsNotifier = createChangeNotifier("collections.repo");
@@ -147,7 +148,7 @@ export async function addItemToCollection(
         resolvedCover = null;
       }
     } catch (err) {
-      console.debug("[dynasty-reader/db/collections.repo] cover lookup failed:", err);
+      log.debug("collections.repo", "cover lookup failed:", err);
       resolvedCover = null;
     }
   }

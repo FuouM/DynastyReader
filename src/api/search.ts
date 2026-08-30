@@ -5,6 +5,7 @@ import { parseSearchHtml } from "./search-parser";
 import { fetchSeries } from "./series";
 import { getCached, setCached } from "../db";
 import { recordCacheHit } from "./traffic";
+import { log } from "../utils/log";
 import { persistSuggestEntries } from "./cache-persist";
 import { slugify } from "../utils/formatting";
 import type { SearchParams, SearchResultItem, SearchResultPage, ChapterTag } from "../types/api";
@@ -37,7 +38,7 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
         try {
           return await fetchSeries(permalink, false, "tag");
         } catch (err) {
-          console.debug("[dynasty-reader/api/search] tag fetch failed for", t, err);
+          log.debug("api/search", "tag fetch failed for", t, err);
           return null;
         }
       }),

@@ -5,6 +5,7 @@
  * Keeps the `console.warn` prefix per caller label for grepability.
  */
 
+import { log } from "../utils/log";
 import type { DirectoryGroup } from "../types/api";
 
 export async function persistSuggestEntries(
@@ -15,10 +16,10 @@ export async function persistSuggestEntries(
   try {
     const { saveSuggestEntries } = await import("../db");
     void saveSuggestEntries(entries).catch((err) => {
-      console.warn(`[api/${label}] saveSuggestEntries failed:`, err);
+      log.warn(`api/${label}`, "saveSuggestEntries failed:", err);
     });
   } catch (err) {
-    console.warn(`[api/${label}] failed to import db for saving suggestions:`, err);
+    log.warn(`api/${label}`, "failed to import db for saving suggestions:", err);
   }
 }
 
@@ -31,9 +32,9 @@ export async function persistDirectoryEntries(
   try {
     const { saveDirectoryEntries } = await import("../db");
     void saveDirectoryEntries(kind, groups).catch((err) => {
-      console.warn(`[api/${label}] saveDirectoryEntries failed for ${kind}:`, err);
+      log.warn(`api/${label}`, `saveDirectoryEntries failed for ${kind}:`, err);
     });
   } catch (err) {
-    console.warn(`[api/${label}] failed to import db for saving directory ${kind}:`, err);
+    log.warn(`api/${label}`, `failed to import db for saving directory ${kind}:`, err);
   }
 }

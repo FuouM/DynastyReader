@@ -6,6 +6,7 @@
 import { getCached } from "../db";
 import { checkFeedOnline } from "../api";
 import { tryParseJson } from "../utils/json";
+import { log } from "../utils/log";
 import type { Feed } from "../types/api";
 
 export const STALE_REVALIDATION_THRESHOLD_MS = 90_000;
@@ -57,7 +58,7 @@ export async function revalidateFeedHead(tabId: string): Promise<FeedHeadRevalid
     }
     return { hasNew: false, etag: cached?.etag, status: "error" };
   } catch (err) {
-    console.debug("[dynasty-reader/browse] revalidateFeedHead failed for", tabId, err);
+    log.debug("feed-head-revalidation", "revalidateFeedHead failed for", tabId, err);
     return { hasNew: false, etag: cached?.etag, status: "error" };
   }
 }

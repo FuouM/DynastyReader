@@ -3,6 +3,7 @@
  * Directly binds signal updates to localStorage with zero unrooted effect race conditions.
  */
 import { createSignal, type Signal, type Setter } from "solid-js";
+import { log } from "../utils/log";
 
 export interface PersistedSignalOptions<T> {
   name?: string;
@@ -29,7 +30,7 @@ export function persistedSignal<T>(
     try {
       return JSON.parse(v);
     } catch (err) {
-      console.debug("[dynasty-reader/persisted-signal] deserialize fallback, raw:", v, err);
+      log.debug("persisted-signal", "deserialize fallback, raw:", v, err);
       return v as unknown as T;
     }
   });
@@ -42,7 +43,7 @@ export function persistedSignal<T>(
         initial = deserialize(stored);
       }
     } catch (err) {
-      console.warn(`[persistedSignal] failed to read ${key}:`, err);
+      log.warn("persisted-signal", `failed to read ${key}:`, err);
     }
   }
 
@@ -55,7 +56,7 @@ export function persistedSignal<T>(
         try {
           window.localStorage.setItem(key, serialize(next));
         } catch (err) {
-          console.warn(`[persistedSignal] failed to write ${key}:`, err);
+          log.warn("persisted-signal", `failed to write ${key}:`, err);
         }
       }
       return next;

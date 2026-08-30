@@ -9,6 +9,7 @@ import type { ReaderSession } from "./reader-session";
 import { PAGES_PREFIX } from "../stores";
 import { fileMove, fileResolve, fileResolveWithStat, pageOutputPath } from "../api";
 import { setCachedPage } from "../db";
+import { log } from "../utils/log";
 
 /** Background legacy-filename standardization. Zero network traffic. */
 export function standardizeCachePaths(session: ReaderSession): void {
@@ -62,7 +63,7 @@ export function standardizeCachePaths(session: ReaderSession): void {
           await setCachedPage(session.permalink, i, newAbsPath, moveStat?.sizeBytes ?? 0);
           session.setCachedPage(i, newAbsPath);
         } catch (e) {
-          console.warn(`[dynasty-reader] could not move page ${i + 1} to canonical path:`, e);
+          log.warn("path-migration", `could not move page ${i + 1} to canonical path:`, e);
         }
       }
       // If nothing found: downloadPage already handles this via the queue

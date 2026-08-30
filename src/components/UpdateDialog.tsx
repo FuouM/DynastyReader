@@ -9,6 +9,7 @@ import type { UpdateInfo, DownloadProgress } from "../types/api";
 import * as ipc from "../ipc";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
+import { log } from "../utils/log";
 
 export const [updateInfo, setUpdateInfo] = createSignal<UpdateInfo | null>(null);
 export const [upToDateVersion, setUpToDateVersion] = createSignal<string | null>(null);
@@ -42,7 +43,7 @@ export async function checkUpdates(manual = false): Promise<UpdateInfo | null> {
     }
     return info;
   } catch (err) {
-    console.error("[dynasty-reader] update check failed:", err);
+    log.error("update-dialog", "update check failed:", err);
     setUpdateError(errorMessage(err));
     return null;
   } finally {
@@ -67,7 +68,7 @@ export async function installUpdate(): Promise<void> {
         }
       });
     } catch (err) {
-      console.error("Failed to setup update-progress listener:", err);
+      log.error("update-dialog", "Failed to setup update-progress listener:", err);
     }
   }
 
@@ -78,6 +79,6 @@ export async function installUpdate(): Promise<void> {
     const msg = errorMessage(err);
     setUpdateError(t("settings.about.installError", { msg }));
     setUpdateStatusText(t("settings.about.updateFailedNotice"));
-    console.error("Failed to install update:", err);
+    log.error("update-dialog", "Failed to install update:", err);
   }
 }

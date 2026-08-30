@@ -4,13 +4,14 @@
  * Calls native AndroidThemeBridge.triggerHaptic() when running on Android,
  * with graceful fallback to navigator.vibrate() in browser environments.
  */
+import { log } from "./log";
 export function triggerHaptic(style: "snap" | "confirm" | "tap" = "snap"): void {
   // 1. Android native bridge (uses native Android HapticFeedback engine / VibratorManager)
   if (typeof window !== "undefined" && (window as any).AndroidThemeBridge?.triggerHaptic) {
     try {
       (window as any).AndroidThemeBridge.triggerHaptic(style);
     } catch (err) {
-      console.debug("[dynasty-reader/haptics] AndroidThemeBridge.triggerHaptic failed:", err);
+      log.debug("haptics", "AndroidThemeBridge.triggerHaptic failed:", err);
     }
   }
 
@@ -25,7 +26,7 @@ export function triggerHaptic(style: "snap" | "confirm" | "tap" = "snap"): void 
         navigator.vibrate(15);
       }
     } catch (err) {
-      console.debug("[dynasty-reader/haptics] navigator.vibrate failed:", err);
+      log.debug("haptics", "navigator.vibrate failed:", err);
     }
   }
 }

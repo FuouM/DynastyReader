@@ -1,5 +1,6 @@
 import { createSignal } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
+import { log } from "../utils/log";
 import type { HotkeyActionId, CustomHotkeysMap } from "./types";
 import { HOTKEY_DEFINITIONS, getDefaultHotkeys, HOTKEY_DEFINITIONS_MAP } from "./registry";
 import { matchesEvent, normalizeKeyCombo } from "./key-combo";
@@ -20,7 +21,7 @@ const [hotkeysSignal, setHotkeysSignal] = persistedSignal<CustomHotkeysMap>(getD
       }
       return merged as CustomHotkeysMap;
     } catch (err) {
-      console.debug("[dynasty-reader/hotkeys-store] deserialize failed:", err);
+      log.debug("hotkeys-store", "deserialize failed:", err);
       return getDefaultHotkeys();
     }
   },

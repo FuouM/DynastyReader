@@ -3,6 +3,7 @@ import { inClause } from "./paging";
 import { loadCachedChapterContext } from "./cache-aggregate";
 import { DB_NAME } from "../stores";
 import * as ipc from "../ipc";
+import { log } from "../utils/log";
 import type {
   CachedPageRow,
   ChapterCacheCount,
@@ -58,7 +59,7 @@ export async function getCacheOverviewStats(): Promise<CacheOverviewStats> {
         const diskStat = await ipc.dirStat("");
         return Number(diskStat.total_bytes ?? 0);
       } catch (err) {
-        console.debug("[dynasty-reader/db/cache.repo] dirStat failed:", err);
+        log.debug("cache.repo", "dirStat failed:", err);
         return 0;
       }
     })(),
@@ -192,7 +193,7 @@ async function deleteFiles(paths: string[]): Promise<Set<string>> {
         await ipc.fileDelete(p);
         deleted.add(p);
       } catch (err) {
-        console.error("[cache.repo] FileDelete failed; keeping DB row to avoid orphan:", p, err);
+        log.error("cache.repo", "FileDelete failed; keeping DB row to avoid orphan:", p, err);
       }
     }),
   );
@@ -352,7 +353,7 @@ export async function getFullyCachedChapterPermalinks(permalinks?: string[]): Pr
         const parsed = JSON.parse(r.chapter_payload) as { pages?: unknown };
         if (Array.isArray(parsed.pages)) totalPages = parsed.pages.length;
       } catch (err) {
-        console.error(`[cache.repo] invalid chapter payload for ${r.chapter_permalink}:`, err);
+        log.error("cache.repo", `invalid chapter payload for ${r.chapter_permalink}:`, err);
       }
     }
     const pageCount = Number(r.page_count);

@@ -41,6 +41,7 @@ import { BlacklistNotice } from "../components/BlacklistNotice";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
 import { FeedItemRow } from "../components/FeedItemRow";
+import { log } from "../utils/log";
 import {
   revalidateFeedHead,
   STALE_REVALIDATION_THRESHOLD_MS,
@@ -293,7 +294,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
       }
       return "none";
     } catch (err) {
-      console.warn("Manual check updates failed:", err);
+      log.warn("browse-feed", "Manual check updates failed:", err);
       throw err;
     }
   };

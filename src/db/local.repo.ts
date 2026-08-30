@@ -1,4 +1,5 @@
 import { execute, query } from "./client";
+import { log } from "../utils/log";
 
 export interface LocalSeriesRow {
   permalink: string;
@@ -19,7 +20,7 @@ export async function getLocalSeries(): Promise<LocalSeriesRow[]> {
   } catch (err) {
     const msg = String((err as Error)?.message ?? err);
     if (msg.includes("no such table")) {
-      console.warn("[local.repo] local_series missing (migration pending):", msg);
+      log.warn("local.repo", "local_series missing (migration pending):", msg);
       return [];
     }
     throw err;

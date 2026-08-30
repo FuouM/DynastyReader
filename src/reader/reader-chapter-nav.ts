@@ -11,6 +11,7 @@ import { navigate, showBanner } from "../stores";
 import { t } from "../i18n";
 import { getPrevChapterStartPage } from "./settings";
 import { getAdjacentChapters } from "./reader-spread";
+import { log } from "../utils/log";
 
 export function gotoChapter(s: ReaderSession, c: ChapterRef, targetPage?: number | "last"): void {
   navigate({
@@ -43,7 +44,7 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
               if (s.containerTagType) s.setSeriesType(s.containerTagType);
             }
           } catch (err2) {
-            console.debug("[dynasty-reader/reader-chapter-nav] containerTag fetch failed:", err2);
+            log.debug("reader-chapter-nav", "containerTag fetch failed:", err2);
           }
         }
         if (!seriesData) throw err;
@@ -81,7 +82,7 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
       return cl;
     } catch (err) {
       if (attempt === 1) {
-        console.warn("[reader-session] loadChapterList failed:", err);
+        log.warn("reader-chapter-nav", "loadChapterList failed:", err);
         return lastCl;
       }
     }

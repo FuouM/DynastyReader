@@ -2,6 +2,7 @@ import { decodeEntities } from "../utils/html";
 import type { ChapterTag, SeriesTag } from "../types/api";
 import type { ReadingDirection, SpreadGroup } from "../types/reader";
 import type { ChapterRef } from "../types/routes";
+import { log } from "../utils/log";
 
 /**
  * Spread layout engine: maps page indices to dual-page (or standalone) spread
@@ -156,7 +157,7 @@ export function getAdjacentChapters(
     try {
       s = decodeURIComponent(s);
     } catch (err) {
-      console.debug("[dynasty-reader/reader-spread] decodeURIComponent failed:", s, err);
+      log.debug("reader-spread", "decodeURIComponent failed:", s, err);
     }
     return s.replace(/\.json$/i, "").trim();
   };

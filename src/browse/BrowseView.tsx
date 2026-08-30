@@ -33,6 +33,7 @@ import {
   ArrowDownIcon,
   ExternalLinkIcon,
 } from "../components/Icon";
+import { log } from "../utils/log";
 import {
   getPaneError,
   getPaneLoading,
@@ -151,7 +152,7 @@ export function BrowseView() {
       const text = (await navigator.clipboard.readText()) || "";
       if (text) setUrlValue(text.trim());
     } catch (err) {
-      console.warn("[ds-browse] clipboard read failed:", err);
+      log.warn("browse-view", "clipboard read failed:", err);
     }
   };
 

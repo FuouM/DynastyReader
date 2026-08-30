@@ -14,6 +14,7 @@ import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import { getPrevChapterStartPage, setPrevChapterStartPage, type PrevChapterStartPage } from "./settings";
 import { Button, IconButton, IconText, SegmentedSwitch } from "../components/Button";
+import { log } from "../utils/log";
 import { SettingsRow } from "../components/SettingsRow";
 import {
   ToolIcon,
@@ -269,7 +270,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                         resetCopied();
                       }
                     } catch (err) {
-                      console.warn("[ReaderToolbar] clipboard writeText failed:", err);
+                      log.warn("mobile-controls", "clipboard writeText failed:", err);
                     }
                   }}
                 />

@@ -12,6 +12,7 @@ import { DsButton } from "../components/Button";
 import { Icon } from "../components/Icon";
 import { t } from "../i18n";
 import { WIDE_RATIO } from "./reader-spread";
+import { log } from "../utils/log";
 export interface ReaderSlotProps {
   session: ReaderSession;
   index: number;
@@ -83,7 +84,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
         decoding="async"
         loading={props.index < 6 ? "eager" : "lazy"}
         onError={(ev) => {
-          console.error("[ReaderSlot] img onError for slot", props.index, "src:", (ev.currentTarget as HTMLImageElement).src?.slice(0, 100));
+          log.error("reader-slot", "img onError for slot", props.index, "src:", (ev.currentTarget as HTMLImageElement).src?.slice(0, 100));
           s.onPageImgError(props.index);
         }}
         ref={(img) => {

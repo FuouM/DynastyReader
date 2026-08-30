@@ -36,6 +36,7 @@ import { setBanner, isOnline, setTitle, setSessionTab } from "../stores";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
+import { log } from "../utils/log";
 import { loadChapterList } from "./reader-chapter-nav";
 
 export const RESTORE_REVEAL_DEADLINE_MS = 1200;
@@ -107,7 +108,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
         startPage = prog.page_index;
       }
     } catch (err) {
-      console.error("[dynasty-reader] failed to load reading progress:", err);
+      log.error("reader-bootstrap", "failed to load reading progress:", err);
     }
   }
   s.setCurrentIndex(Math.min(startPage, Math.max(0, pageCount - 1)));
@@ -148,7 +149,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
           }
         }
       } catch (err) {
-        console.debug("[dynasty-reader] layout metadata detection failed (non-fatal):", err);
+        log.debug("reader-bootstrap", "layout metadata detection failed (non-fatal):", err);
       }
     });
 
@@ -302,14 +303,14 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
       chapterTitle: s.chapterTitle(),
     });
   } catch (err) {
-    console.error("[dynasty-reader] failed to record history:", err);
+    log.error("reader-bootstrap", "failed to record history:", err);
   }
 
   let bookmarked = false;
   try {
     bookmarked = (await getBookmark(permalink)) !== null;
   } catch (err) {
-    console.debug("[dynasty-reader/reader-bootstrap] getBookmark failed:", err);
+    log.debug("reader-bootstrap", "getBookmark failed:", err);
     bookmarked = false;
   }
   s.setBookmarked(bookmarked);
