@@ -590,6 +590,7 @@
 /* Downloaded series fieldsets and cinema matrix */
 .ds-downloaded-series-group {
   margin-bottom: 8px;
+  contain: layout style;
 }
 .ds-downloaded-series-actions {
   display: inline-flex;
@@ -627,7 +628,6 @@
   font-size: 12px;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.1s ease;
 }
 
 .ds-downloaded-chapter-list .ds-chapter-row:last-child {
@@ -752,15 +752,7 @@
   flex-wrap: wrap;
   gap: 3px;
   padding: 2px 0;
-  max-height: 120px;
-  overflow-y: auto;
-  scrollbar-width: thin;
 }
-
-.ds-chapter-matrix.expanded {
-  max-height: none;
-}
-
 .ds-chapter-seat {
   min-width: 24px;
   height: 22px;

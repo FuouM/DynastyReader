@@ -46,7 +46,7 @@ import {
   ListCheckIcon,
   BookmarkIcon,
 } from "../components/Icon";
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 15;
 export type DownloadedSortMode = "download-desc" | "name-asc" | "read-desc";
 
 interface DownloadedModel {
@@ -60,6 +60,8 @@ interface DownloadedModel {
 export interface ProcessedCachedChapter extends FullyCachedChapterRow {
   shortLabel: string;
   volumeHeader?: string;
+  isRead: boolean;
+  isBookmarked: boolean;
 }
 interface DownloadedSeriesGroup {
   seriesPermalink: string;
@@ -69,8 +71,8 @@ interface DownloadedSeriesGroup {
   totalSizeBytes: number;
   lastCachedAt: number;
   lastReadAt: number;
+  readCount: number;
 }
-
 function isNumberedSeries(group: DownloadedSeriesGroup): boolean {
   const chs = group.chapters;
   if (chs.length === 0) return true;
@@ -111,8 +113,6 @@ function extractChapterLabel(title: string, index?: number, total?: number): str
 
 function SeriesDownloadedCard(props: {
   group: DownloadedSeriesGroup;
-  readHistorySet: Set<string>;
-  bookmarkSet: Set<string>;
 }) {
   const isNumbered = createMemo(() => isNumberedSeries(props.group));
   const [viewMode, setViewMode] = createSignal<"seats" | "list">(isNumbered() ? "seats" : "list");
@@ -167,11 +167,9 @@ function SeriesDownloadedCard(props: {
     return volSet.size > 1;
   });
 
-  const readCount = createMemo(() =>
-    props.group.chapters.filter((c) => props.readHistorySet.has(c.chapterPermalink)).length,
-  );
+  const readCount = () => props.group.readCount;
   const firstUnread = createMemo(() =>
-    props.group.chapters.find((c) => !props.readHistorySet.has(c.chapterPermalink)),
+    props.group.chapters.find((c) => !c.isRead),
   );
   return (
     <GroupBox
@@ -317,8 +315,6 @@ function SeriesDownloadedCard(props: {
         <div class="ds-chapter-matrix">
           <For each={displayedChapters()}>
             {(ch, idx) => {
-              const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
-              const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
               const showVolDivider = () => {
                 if (!hasMultipleVolumes() || !ch.volumeHeader) return false;
                 const list = displayedChapters();
@@ -326,7 +322,7 @@ function SeriesDownloadedCard(props: {
                 if (i === 0) return false;
                 return list[i - 1].volumeHeader !== ch.volumeHeader;
               };
-              const tooltip = `${ch.chapterTitle}${ch.volumeHeader ? ` (${ch.volumeHeader})` : ""}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · Read" : " · Unread"}${isBookmarked() ? " · Bookmarked" : ""}\nClick to read offline`;
+              const tooltip = `${ch.chapterTitle}${ch.volumeHeader ? ` (${ch.volumeHeader})` : ""}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${ch.isRead ? " · Read" : " · Unread"}${ch.isBookmarked ? " · Bookmarked" : ""}\nClick to read offline`;
 
               return (
                 <>
@@ -339,7 +335,7 @@ function SeriesDownloadedCard(props: {
                   </Show>
                   <button
                     type="button"
-                    class={`win-button ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
+                    class={`win-button ds-chapter-seat ${ch.isRead ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${ch.isBookmarked ? " ds-chapter-seat--bookmarked" : ""}`}
                     title={tooltip}
                     onClick={() =>
                       navigate({
@@ -351,7 +347,7 @@ function SeriesDownloadedCard(props: {
                       })
                     }
                   >
-                    <Show when={isRead()}>
+                    <Show when={ch.isRead}>
                       <CheckIcon size={10} class="ds-seat-check" />
                     </Show>
                     <span>{ch.shortLabel}</span>
@@ -362,14 +358,11 @@ function SeriesDownloadedCard(props: {
           </For>
         </div>
       </Show>
-
       {/* Mode 2: Detailed Chapter List */}
       <Show when={viewMode() === "list"}>
         <div class="ds-downloaded-chapter-list">
           <For each={visibleListChapters()}>
             {(ch, idx) => {
-              const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
-              const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
               const showVolDivider = () => {
                 if (!hasMultipleVolumes() || !ch.volumeHeader) return false;
                 const list = visibleListChapters();
@@ -385,7 +378,7 @@ function SeriesDownloadedCard(props: {
                     </div>
                   </Show>
                   <div
-                    class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
+                    class={`ds-chapter-row${ch.isRead ? " ds-chapter-read" : ""}`}
                     onClick={() =>
                       navigate({
                         view: "reader",
@@ -397,10 +390,10 @@ function SeriesDownloadedCard(props: {
                     }
                   >
                     <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
-                      <Show when={isRead()}>
+                      <Show when={ch.isRead}>
                         <CheckIcon size={11} class="ds-seat-check" style="flex-shrink:0;" />
                       </Show>
-                      <Show when={isBookmarked()}>
+                      <Show when={ch.isBookmarked}>
                         <BookmarkIcon filled size={11} style="color:var(--ds-warn-text,#d97706);flex-shrink:0;" />
                       </Show>
                       <span class="ds-truncate" style="font-size:12px;font-weight:500;">{ch.chapterTitle}</span>
@@ -443,8 +436,6 @@ function SeriesDownloadedCard(props: {
 
 function OrphanDownloadedCard(props: {
   orphans: ProcessedCachedChapter[];
-  readHistorySet: Set<string>;
-  bookmarkSet: Set<string>;
 }) {
   const [isCollapsed, setIsCollapsed] = createSignal<boolean>(false);
   const [listLimit, setListLimit] = createSignal<number>(20);
@@ -469,42 +460,37 @@ function OrphanDownloadedCard(props: {
     >
       <div class="ds-downloaded-chapter-list">
         <For each={visibleOrphans()}>
-          {(ch) => {
-            const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
-            const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
-
-            return (
-              <div
-                class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
-                onClick={() =>
-                  navigate({
-                    view: "reader",
-                    chapterPermalink: ch.chapterPermalink,
-                    chapterTitle: ch.chapterTitle,
-                  })
-                }
-              >
-                <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
-                  <Show when={isRead()}>
-                    <CheckIcon size={11} class="ds-seat-check" style="flex-shrink:0;" />
-                  </Show>
-                  <Show when={isBookmarked()}>
-                    <BookmarkIcon filled size={11} style="color:var(--ds-warn-text,#d97706);flex-shrink:0;" />
-                  </Show>
-                  <span class="ds-truncate" style="font-size:12px;font-weight:500;">{ch.chapterTitle}</span>
-                </div>
-                <div class="ds-chapter-badge ds-muted" style="font-size:11px;font-style:normal;display:flex;gap:6px;align-items:center;flex-shrink:0;">
-                  <span>{ch.pageCount}p</span>
-                  <Show when={ch.totalSizeBytes > 0}>
-                    <span>·</span>
-                    <span>{formatBytes(ch.totalSizeBytes)}</span>
-                  </Show>
-                  <span>·</span>
-                  <span>{formatDate(ch.lastCachedAt)}</span>
-                </div>
+          {(ch) => (
+            <div
+              class={`ds-chapter-row${ch.isRead ? " ds-chapter-read" : ""}`}
+              onClick={() =>
+                navigate({
+                  view: "reader",
+                  chapterPermalink: ch.chapterPermalink,
+                  chapterTitle: ch.chapterTitle,
+                })
+              }
+            >
+              <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
+                <Show when={ch.isRead}>
+                  <CheckIcon size={11} class="ds-seat-check" style="flex-shrink:0;" />
+                </Show>
+                <Show when={ch.isBookmarked}>
+                  <BookmarkIcon filled size={11} style="color:var(--ds-warn-text,#d97706);flex-shrink:0;" />
+                </Show>
+                <span class="ds-truncate" style="font-size:12px;font-weight:500;">{ch.chapterTitle}</span>
               </div>
-            );
-          }}
+              <div class="ds-chapter-badge ds-muted" style="font-size:11px;font-style:normal;display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                <span>{ch.pageCount}p</span>
+                <Show when={ch.totalSizeBytes > 0}>
+                  <span>·</span>
+                  <span>{formatBytes(ch.totalSizeBytes)}</span>
+                </Show>
+                <span>·</span>
+                <span>{formatDate(ch.lastCachedAt)}</span>
+              </div>
+            </div>
+          )}
         </For>
 
         {/* Show more / fewer toggle if > 20 items */}
@@ -529,6 +515,7 @@ function OrphanDownloadedCard(props: {
 function buildGroups(
   rows: FullyCachedChapterRow[],
   readHistoryMap: Map<string, number>,
+  bookmarkSet: Set<string>,
   volumeMap: Map<string, string>,
   sortMode: DownloadedSortMode,
 ): { groups: DownloadedSeriesGroup[]; orphans: ProcessedCachedChapter[] } {
@@ -536,10 +523,13 @@ function buildGroups(
   const orphans: ProcessedCachedChapter[] = [];
   for (const r of rows) {
     const vol = volumeMap.get(r.chapterPermalink) || extractVolumeHeader(r.chapterTitle);
+    const readAt = readHistoryMap.get(r.chapterPermalink) ?? 0;
     const ch: ProcessedCachedChapter = {
       ...r,
       shortLabel: "",
       volumeHeader: vol,
+      isRead: readAt > 0,
+      isBookmarked: bookmarkSet.has(r.chapterPermalink),
     };
     if (!r.seriesPermalink) {
       orphans.push(ch);
@@ -556,13 +546,14 @@ function buildGroups(
         totalSizeBytes: 0,
         lastCachedAt: 0,
         lastReadAt: 0,
+        readCount: 0,
       };
       map.set(key, g);
     }
     g.chapters.push(ch);
     g.totalSizeBytes += r.totalSizeBytes;
+    if (ch.isRead) g.readCount++;
     g.lastCachedAt = Math.max(g.lastCachedAt, r.lastCachedAt);
-    const readAt = readHistoryMap.get(r.chapterPermalink) ?? 0;
     g.lastReadAt = Math.max(g.lastReadAt, readAt);
     if (!g.coverPath && r.coverPath) g.coverPath = r.coverPath;
     if (!g.seriesName && r.seriesName) g.seriesName = r.seriesName;
@@ -695,8 +686,6 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
   });
 
   const model = () => pane.data();
-  const readHistorySet = createMemo(() => model()?.readHistorySet ?? new Set<string>());
-  const bookmarkSet = createMemo(() => model()?.bookmarkSet ?? new Set<string>());
 
   const filteredRows = createMemo<FullyCachedChapterRow[]>(() => {
     const data = model();
@@ -715,6 +704,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     return buildGroups(
       filteredRows(),
       data?.readHistoryMap ?? new Map(),
+      data?.bookmarkSet ?? new Set(),
       data?.volumeMap ?? new Map(),
       sortMode(),
     );
@@ -860,8 +850,6 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
               {(g) => (
                 <SeriesDownloadedCard
                   group={g}
-                  readHistorySet={readHistorySet()}
-                  bookmarkSet={bookmarkSet()}
                 />
               )}
             </For>
@@ -870,8 +858,6 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
             <Show when={visibleOrphans().length > 0}>
               <OrphanDownloadedCard
                 orphans={visibleOrphans()}
-                readHistorySet={readHistorySet()}
-                bookmarkSet={bookmarkSet()}
               />
             </Show>
           </div>
