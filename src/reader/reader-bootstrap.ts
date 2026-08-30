@@ -6,6 +6,7 @@
 import type { ReaderSession } from "./reader-session";
 import type { CachedPageRow } from "../types/db";
 import type { Chapter } from "../types/api";
+import { convertFileSrc } from "../ipc";
 import { fetchChapter, fetchSeries } from "../api";
 import {
   addHistory,
@@ -17,13 +18,13 @@ import { getChapterContainerTag } from "../taxonomy";
 import {
   detectIsLongStrip,
   detectReadingDirection,
+  spreadIndexOf,
 } from "./reader-spread";
 import {
   getDefaultFitMode,
   getEffectiveDefaultReaderMode,
   getEffectiveDefaultPagedLayout,
   getDefaultReadingDirection,
-  getPrefetchBuffer,
   isAutoCacheChapterEnabled,
   isCoverOffsetDefaultEnabled,
   isLongStripFitWidthEnabled,
@@ -209,6 +210,37 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   }
   s.recountCached();
 
+  // Pre-resolve dimensions and warm up image cache for immediate neighborhood
+  if (typeof window !== "undefined") {
+    const cachedMap = s.cachedPages[0];
+    const cur = s.currentIndex();
+    const isSpread = s.isSpread();
+    const spreads = s.spreads();
+    const toWarm = new Set<number>();
+    if (isSpread && spreads.length > 0) {
+      const curSpread = spreadIndexOf(spreads, cur);
+      for (const p of spreads[curSpread]?.pageIndices ?? []) toWarm.add(p);
+      for (const p of spreads[curSpread + 1]?.pageIndices ?? []) toWarm.add(p);
+      for (const p of spreads[curSpread + 2]?.pageIndices ?? []) toWarm.add(p);
+      if (curSpread > 0) for (const p of spreads[curSpread - 1]?.pageIndices ?? []) toWarm.add(p);
+    } else {
+      for (let i = Math.max(0, cur - 2); i <= Math.min(pageCount - 1, cur + 4); i++) toWarm.add(i);
+    }
+    for (const i of toWarm) {
+      const p = cachedMap[i];
+      if (p) {
+        const img = new Image();
+        img.src = convertFileSrc(p);
+        if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+          s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
+        } else {
+          img.onload = () => {
+            if (!s.disposedFlag) s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
+          };
+        }
+      }
+    }
+  }
   // Initial slot states (uncached pages)
   const autoCacheAll = isAutoCacheChapterEnabled();
   for (let i = 0; i < pageCount; i++) {
@@ -225,20 +257,35 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
 
   // Trigger priority download for uncached start/nearby pages
   const cur = s.currentIndex();
-  if (s.getCachedPath(cur) === undefined) s.enqueue(cur, true);
-  if (autoCacheAll) {
-    if (s.getCachedPath(cur + 1) === undefined) s.enqueue(cur + 1, true);
-    if (s.getCachedPath(cur + 2) === undefined) s.enqueue(cur + 2, true);
+  if (s.isSpread() && s.spreads().length > 0) {
+    const curSpread = spreadIndexOf(s.spreads(), cur);
+    const active = s.spreads()[curSpread];
+    if (active) {
+      for (const p of active.pageIndices) {
+        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
+      }
+    }
+    const nextSpread = s.spreads()[curSpread + 1];
+    if (nextSpread) {
+      for (const p of nextSpread.pageIndices) {
+        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
+      }
+    }
+    const spreadPlus2 = s.spreads()[curSpread + 2];
+    if (spreadPlus2) {
+      for (const p of spreadPlus2.pageIndices) {
+        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
+      }
+    }
   } else {
-    const prefetchCount = getPrefetchBuffer();
-    for (let offset = 1; offset <= prefetchCount; offset++) {
+    if (s.getCachedPath(cur) === undefined) s.enqueue(cur, true);
+    for (let offset = 1; offset <= 4; offset++) {
       const nextIdx = cur + offset;
       if (nextIdx < pageCount && s.getCachedPath(nextIdx) === undefined) {
         s.enqueue(nextIdx, true);
       }
     }
   }
-
   if (startPage > 0) {
     s.setRestoring(true);
   }

@@ -85,11 +85,10 @@ export function ReaderMainRow(props: NavRowProps) {
         <div class="ds-reader-progress-track">
           <div
             class="ds-reader-progress-fill"
-            style={
-              isMobile()
-                ? { width: "100%", transform: `scaleX(${s.progress().width / 100})` }
-                : { width: `${s.progress().width}%` }
-            }
+            style={{
+              width: "100%",
+              transform: `scaleX(${s.progress().width / 100})`,
+            }}
           ></div>
         </div>
       </div>

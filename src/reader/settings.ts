@@ -26,10 +26,13 @@ const [isAutoCacheChapterEnabled, setAutoCache] = persistedSignal(true, {
 export { isAutoCacheChapterEnabled, setAutoCache as setAutoCacheChapterEnabled };
 
 // Prefetch buffer
-const [getPrefetchBuffer, _setPrefetch] = persistedSignal(isMobile() ? 3 : 0, {
+const [getPrefetchBuffer, _setPrefetch] = persistedSignal(isMobile() ? 3 : 5, {
   name: "ds-reader-prefetch",
   serialize: String,
-  deserialize: (v) => Math.max(0, Math.min(10, parseInt(v, 10) || 0)),
+  deserialize: (v) => {
+    const n = parseInt(v, 10);
+    return isNaN(n) ? (isMobile() ? 3 : 5) : Math.max(0, Math.min(10, n));
+  },
 });
 export { getPrefetchBuffer };
 export const setPrefetchBuffer = (count: number) => _setPrefetch(Math.max(0, Math.min(10, count)));

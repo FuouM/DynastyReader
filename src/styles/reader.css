@@ -331,10 +331,11 @@
 }
 .ds-reader-progress-fill {
   height: 100%;
-  width: 0%;
+  width: 100%;
   background: var(--sys-primary, #0078d4);
   border-radius: 1px;
-  transition: width 0.25s ease;
+  transform-origin: left center;
+  will-change: transform;
 }
 #ds-reader-viewport {
   flex: 1;
@@ -423,6 +424,8 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1000px;
 }
 
 .ds-page-wrap {
@@ -461,7 +464,6 @@
 }
 .ds-page-img {
   display: block;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;

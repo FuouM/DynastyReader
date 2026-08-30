@@ -10,6 +10,7 @@
 import { batch, createComponent, createRoot, getOwner, runWithOwner } from "solid-js";
 import { createStore } from "solid-js/store";
 import { showBanner, setActions, clearActions } from "../stores";
+import { convertFileSrc } from "../ipc";
 import { t } from "../i18n";
 import { toggleAppTheme } from "../stores/theme";
 import type { ChapterPage } from "../types/api";
@@ -298,6 +299,19 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.cachedPages[1](index, path);
     this.slotStates[1](index, undefined);
     this.recountCached();
+    if (typeof window !== "undefined") {
+      const img = new Image();
+      img.src = convertFileSrc(path);
+      if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
+      } else {
+        img.onload = () => {
+          if (!this.disposedFlag) {
+            this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
+          }
+        };
+      }
+    }
   }
 
   setCachedPage(index: number, path: string): void {
@@ -448,17 +462,18 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     if (this.isSpread()) {
       this.enqueueSpreadNeighborhood();
     } else {
-      this.enqueue(this.currentIndex());
-      if (isAutoCacheChapterEnabled()) {
-        this.enqueue(this.currentIndex() + 1);
-        this.enqueue(this.currentIndex() + 2);
-      } else {
-        const prefetchCount = getPrefetchBuffer();
-        for (let offset = 1; offset <= prefetchCount; offset++) {
-          const nextIdx = this.currentIndex() + offset;
-          if (nextIdx < this.pages().length && this.getCachedPath(nextIdx) === undefined) {
-            this.enqueue(nextIdx);
-          }
+      this.enqueue(this.currentIndex(), true);
+      for (let offset = 1; offset <= 4; offset++) {
+        const nextIdx = this.currentIndex() + offset;
+        if (nextIdx < this.pages().length && this.getCachedPath(nextIdx) === undefined) {
+          this.enqueue(nextIdx, true);
+        }
+      }
+      const prefetchCount = Math.max(getPrefetchBuffer(), 6);
+      for (let offset = 5; offset <= prefetchCount; offset++) {
+        const nextIdx = this.currentIndex() + offset;
+        if (nextIdx < this.pages().length && this.getCachedPath(nextIdx) === undefined) {
+          this.enqueue(nextIdx, false);
         }
       }
     }
@@ -482,9 +497,44 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       const spreadsAhead = Math.ceil(prefetchCount / 2);
       end = Math.min(this.spreads().length - 1, cur + spreadsAhead);
     }
-    for (let s = cur; s <= end; s++) {
+
+    // 1. Enqueue active spread pages with top priority
+    const active = this.spreads()[cur];
+    if (active) {
+      for (const pageIndex of active.pageIndices) {
+        if (this.getCachedPath(pageIndex) === undefined) {
+          this.enqueue(pageIndex, true);
+        }
+      }
+    }
+
+    // 2. Enqueue immediate next spread with priority so next page turn is instant
+    if (cur + 1 < this.spreads().length) {
+      const next = this.spreads()[cur + 1];
+      for (const pageIndex of next.pageIndices) {
+        if (this.getCachedPath(pageIndex) === undefined) {
+          this.enqueue(pageIndex, true);
+        }
+      }
+    }
+
+    // 3. Prefetch further upcoming spreads
+    for (let s = cur + 2; s <= end; s++) {
       for (const pageIndex of this.spreads()[s].pageIndices) {
-        this.enqueue(pageIndex);
+        if (this.getCachedPath(pageIndex) === undefined) {
+          this.enqueue(pageIndex, false);
+        }
+      }
+    }
+    // 3. Preload previous spread if uncached
+    if (cur > 0) {
+      const prev = this.spreads()[cur - 1];
+      if (prev) {
+        for (const pageIndex of prev.pageIndices) {
+          if (this.getCachedPath(pageIndex) === undefined) {
+            this.enqueue(pageIndex, false);
+          }
+        }
       }
     }
   }
@@ -496,6 +546,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     const next = cur + delta;
     if (next < 0 || next >= this.spreads().length) return;
     this.setPage(anchorPageOf(this.spreads(), next), false, delta === -1);
+    this.enqueueSpreadNeighborhood();
   }
 
   // Layout controls ---------------------------------------------------------

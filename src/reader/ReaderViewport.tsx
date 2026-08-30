@@ -9,6 +9,8 @@
 
 import { createEffect, onCleanup, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
+import { convertFileSrc } from "../ipc";
+import { spreadIndexOf } from "./reader-spread";
 import { getPrefetchBuffer, isAutoCacheChapterEnabled } from "./settings";
 import { useReaderGestures } from "./useReaderGestures";
 import { ReaderOverscrollOverlay } from "./ReaderOverscrollOverlay";
@@ -45,7 +47,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           }
         }
       },
-      { root: s.viewportEl ?? undefined, rootMargin: "0px 0px", threshold: 0.05 },
+      { root: s.viewportEl ?? undefined, rootMargin: "800px 0px", threshold: 0.01 },
     );
     for (const el of s.slotEls) {
       if (el) observer.observe(el);
@@ -54,6 +56,31 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     void stripKey;
   });
 
+  // Warm next spreads' image cache on page turn (cached chapters only)
+  createEffect(() => {
+    const cur = s.currentIndex();
+    const isSpread = s.isSpread();
+    const spreads = s.spreads();
+    const cached = s.cachedPages[0];
+    // Track deps
+    void cur; void isSpread; void spreads.length;
+    const toWarm = new Set<number>();
+    if (isSpread && spreads.length > 0) {
+      const curSpread = spreadIndexOf(spreads, cur);
+      for (const p of spreads[curSpread + 1]?.pageIndices ?? []) toWarm.add(p);
+      for (const p of spreads[curSpread + 2]?.pageIndices ?? []) toWarm.add(p);
+    } else {
+      for (let i = cur + 1; i <= Math.min(s.pages().length - 1, cur + 4); i++) if (cached[i]) toWarm.add(i);
+    }
+    for (const idx of toWarm) {
+      const p = cached[idx];
+      if (!p || s.pageDimensions[0][idx]) continue;
+      const img = new Image();
+      img.src = convertFileSrc(p);
+      if (img.complete && img.naturalWidth > 0) s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
+      else img.onload = () => { if (!s.disposedFlag) s.setPageDimension(idx, img.naturalWidth, img.naturalHeight); };
+    }
+  });
   return (
     <div
       id="ds-reader-viewport"

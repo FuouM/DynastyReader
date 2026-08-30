@@ -4,7 +4,7 @@
  * In spread mode, renders spread wrapper divs with `.ds-spread-slot` and `.ds-spread-canvas`.
  */
 
-import { For, Show } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import { ReaderSlot } from "./ReaderSlot";
 export interface ReaderStripProps {
@@ -37,7 +37,7 @@ export function ReaderStrip(props: ReaderStripProps) {
           {(group) => {
             const single = group.pageIndices.length === 1;
 
-            const spreadStyle = () => {
+            const spreadStyle = createMemo(() => {
               if (single || group.pageIndices.length !== 2) return undefined;
               const [p0, p1] = group.pageIndices;
               const d0 = s.pageDimensions[0][p0];
@@ -61,7 +61,7 @@ export function ReaderStrip(props: ReaderStripProps) {
                 "--spread-ratio": `${total}`,
                 "--spread-orig-height": `${targetHeight}px`,
               };
-            };
+            });
 
             return (
               <div

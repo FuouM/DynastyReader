@@ -34,8 +34,9 @@ export interface ReaderQueueHost {
  * chapter (the priority-sorted queue keeps order sensible).
  */
 export class ReaderQueue {
-  private static readonly MAX_CONCURRENT = 3;
+  private static readonly MAX_CONCURRENT = 4;
   private readonly queue: number[] = [];
+  private readonly priorityIndices = new Set<number>();
   private readonly inFlight = new Set<number>();
   private readonly retrying = new Set<number>();
   private readonly failed = new Set<number>();
@@ -68,16 +69,18 @@ export class ReaderQueue {
     const pages = this.c.getPages();
     if (index < 0 || index >= pages.length) return;
     if (this.inFlight.has(index) || this.failed.has(index)) return;
-    if (!this.queue.includes(index)) {
-      if (priority) {
-        this.queue.unshift(index);
-      } else {
-        this.queue.push(index);
-      }
+    if (priority) {
+      this.priorityIndices.add(index);
     }
-    // Keep queue sorted by proximity to the user's reading position
+    if (!this.queue.includes(index)) {
+      this.queue.push(index);
+    }
+    // Keep queue sorted by priority first, then proximity to the user's reading position
     const current = this.c.getCurrentIndex();
     this.queue.sort((a, b) => {
+      const prioA = this.priorityIndices.has(a) ? 0 : 1;
+      const prioB = this.priorityIndices.has(b) ? 0 : 1;
+      if (prioA !== prioB) return prioA - prioB;
       const distA = Math.abs(a - current) + (a < current ? 1000 : 0);
       const distB = Math.abs(b - current) + (b < current ? 1000 : 0);
       return distA - distB;
@@ -90,6 +93,7 @@ export class ReaderQueue {
       const idx = this.queue.shift() as number;
       if (this.inFlight.has(idx)) continue;
       this.inFlight.add(idx);
+      this.priorityIndices.delete(idx);
       void this.downloadPage(idx).finally(() => {
         this.inFlight.delete(idx);
         this.pump();

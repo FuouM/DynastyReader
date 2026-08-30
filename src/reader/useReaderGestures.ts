@@ -71,53 +71,60 @@ export function useReaderGestures(s: ReaderSession) {
 
     // Compute exact available viewport height dynamically via reactive primitive
     let lastIsLandscape = isMobile() && typeof window !== "undefined" && window.innerWidth > window.innerHeight;
+    let resizeRaf: number | null = null;
     createResizeObserver(
       () => vpEl,
       () => {
-        s.updateViewportHeight();
-        if (isMobile() && typeof window !== "undefined") {
-          const currentIsLandscape = window.innerWidth > window.innerHeight;
-          if (currentIsLandscape !== lastIsLandscape) {
-            lastIsLandscape = currentIsLandscape;
-            if (!s.isLongStrip()) {
-              const targetMode = currentIsLandscape
-                ? getEffectiveDefaultReaderMode(s.mode())
-                : getDefaultReaderMode();
-              const targetLayout = currentIsLandscape
-                ? getEffectiveDefaultPagedLayout(s.pagedLayout())
-                : getDefaultPagedLayout();
-              const targetFit = currentIsLandscape
-                ? getEffectiveFitMode(s.fitMode())
-                : getDefaultFitMode();
-              let changed = false;
-              if (targetMode !== s.mode()) {
-                s.setModeSignal(targetMode);
-                changed = true;
-              }
-              if (targetLayout !== s.pagedLayout()) {
-                s.setPagedLayoutSignal(targetLayout);
-                changed = true;
-              }
-              if (targetFit !== s.fitMode()) {
-                s.setFitModeSignal(targetFit);
-                changed = true;
-              }
-              if (changed) {
-                s.applyLayoutMode();
-                s.resetToCurrentPage(false);
+        if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+        resizeRaf = requestAnimationFrame(() => {
+          resizeRaf = null;
+          s.updateViewportHeight();
+          if (isMobile() && typeof window !== "undefined") {
+            const currentIsLandscape = window.innerWidth > window.innerHeight;
+            if (currentIsLandscape !== lastIsLandscape) {
+              lastIsLandscape = currentIsLandscape;
+              if (!s.isLongStrip()) {
+                const targetMode = currentIsLandscape
+                  ? getEffectiveDefaultReaderMode(s.mode())
+                  : getDefaultReaderMode();
+                const targetLayout = currentIsLandscape
+                  ? getEffectiveDefaultPagedLayout(s.pagedLayout())
+                  : getDefaultPagedLayout();
+                const targetFit = currentIsLandscape
+                  ? getEffectiveFitMode(s.fitMode())
+                  : getDefaultFitMode();
+                let changed = false;
+                if (targetMode !== s.mode()) {
+                  s.setModeSignal(targetMode);
+                  changed = true;
+                }
+                if (targetLayout !== s.pagedLayout()) {
+                  s.setPagedLayoutSignal(targetLayout);
+                  changed = true;
+                }
+                if (targetFit !== s.fitMode()) {
+                  s.setFitModeSignal(targetFit);
+                  changed = true;
+                }
+                if (changed) {
+                  s.applyLayoutMode();
+                  s.resetToCurrentPage(false);
+                }
               }
             }
           }
-        }
+        });
       },
     );
-
+    s.onDispose(() => {
+      if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+    });
     window.setTimeout(() => {
       s.updateViewportHeight();
       s.applyLayoutMode();
     }, 0);
 
-    // Dynamic scroll-position tracking (continuous scroll mode)
+    // Dynamic scroll-position tracking (continuous scroll mode) — O(log N) binary search
     const computeCurrentPageFromScroll = (): void => {
       if (s.isHorizontal() || s.isProgrammaticScroll) return;
       const vp = s.viewportEl;
@@ -126,23 +133,32 @@ export function useReaderGestures(s: ReaderSession) {
       const totalSlots = s.slotEls.length;
       if (totalSlots === 0) return;
 
-      const vpRect = vp.getBoundingClientRect();
-      const focalY = vpRect.top + vpRect.height * 0.4;
+      const targetY = vp.scrollTop + vp.clientHeight * 0.4;
 
-      let bestIdx = s.currentIndex();
-      for (let i = 0; i < totalSlots; i++) {
-        const el = s.slotEls[i];
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        if (r.top <= focalY && r.bottom > focalY) {
-          bestIdx = i;
-          break;
+      let low = 0;
+      let high = totalSlots - 1;
+      let bestIdx = 0;
+
+      while (low <= high) {
+        const mid = (low + high) >> 1;
+        const el = s.slotEls[mid];
+        if (!el) {
+          low = mid + 1;
+          continue;
         }
-        if (r.top > focalY) {
-          bestIdx = i > 0 ? i - 1 : 0;
+        const top = el.offsetTop;
+        const bottom = top + el.offsetHeight;
+
+        if (targetY >= top && targetY < bottom) {
+          bestIdx = mid;
           break;
+        } else if (targetY < top) {
+          high = mid - 1;
+          bestIdx = mid;
+        } else {
+          low = mid + 1;
+          bestIdx = mid;
         }
-        bestIdx = i;
       }
 
       if (bestIdx !== s.currentIndex()) {

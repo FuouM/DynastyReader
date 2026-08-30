@@ -10,7 +10,6 @@ import type { SlotStateKind } from "./reader-queue";
 import { convertFileSrc } from "../ipc";
 import { DsButton } from "../components/Button";
 import { Icon } from "../components/Icon";
-import { isMobile } from "../stores";
 import { t } from "../i18n";
 import { WIDE_RATIO } from "./reader-spread";
 export interface ReaderSlotProps {
@@ -26,19 +25,7 @@ export interface ReaderSlotProps {
 export function ReaderSlot(props: ReaderSlotProps) {
   const s = props.session;
   const cachedPath = (): string | undefined => s.cachedPages[0][props.index];
-  const isVisible = () => {
-    const cur = s.currentIndex();
-    const behind = isMobile() ? 3 : 6;
-    const ahead = isMobile() ? 5 : 10;
-    return props.index >= cur - behind && props.index <= cur + ahead;
-  };
-  const placeholderStyle = (): string => {
-    const dim = s.pageDimensions[0][props.index];
-    if (dim && dim.width > 0 && dim.height > 0) {
-      return `aspect-ratio:${dim.width}/${dim.height};min-height:200px;`;
-    }
-    return "min-height:200px;";
-  };
+
   return (
     <div
       class="ds-slot"
@@ -48,10 +35,8 @@ export function ReaderSlot(props: ReaderSlotProps) {
         s.slotEls[props.index] = el;
       }}
     >
-      <Show when={isVisible()} fallback={<div class="ds-slot-placeholder" style={placeholderStyle()} />}>
-        <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={props.index} />}>
-          <SlotImgContent session={s} index={props.index} path={cachedPath()!} />
-        </Show>
+      <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={props.index} />}>
+        <SlotImgContent session={s} index={props.index} path={cachedPath()!} />
       </Show>
     </div>
   );
@@ -61,6 +46,28 @@ export function ReaderSlot(props: ReaderSlotProps) {
 function SlotImgContent(props: { session: ReaderSession; index: number; path: string }) {
   const s = props.session;
   const [loaded, setLoaded] = createSignal(false);
+  let handledDimension = false;
+
+  const handleDimension = (naturalWidth: number, naturalHeight: number) => {
+    if (handledDimension || naturalWidth <= 0 || naturalHeight <= 0) return;
+    handledDimension = true;
+    setLoaded(true);
+    s.setPageDimension(props.index, naturalWidth, naturalHeight);
+    if (props.index === 0) s.updateFirstSlotHeight();
+    if (props.index === s.pages().length - 1) s.updateLastSlotHeight();
+    const isWide = naturalWidth > naturalHeight * WIDE_RATIO;
+    if (isWide !== s.widePages().has(props.index)) {
+      const next = new Set(s.widePages());
+      if (isWide) {
+        next.add(props.index);
+      } else {
+        next.delete(props.index);
+      }
+      s.setWidePages(next);
+      // Debounce rebuild so concurrent wide scans don't trigger multiple rapid jumps.
+      s.scheduleWidePageLayoutReset();
+    }
+  };
 
   return (
     <div class="ds-page-wrap">
@@ -73,36 +80,20 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
         class="ds-page-img"
         alt={t("reader.session.slot.pageAlt", { page: props.index + 1 })}
         src={convertFileSrc(props.path)}
+        decoding="async"
+        loading={props.index < 6 ? "eager" : "lazy"}
         onError={(ev) => {
           console.error("[ReaderSlot] img onError for slot", props.index, "src:", (ev.currentTarget as HTMLImageElement).src?.slice(0, 100));
           s.onPageImgError(props.index);
         }}
         ref={(img) => {
           if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-            setLoaded(true);
-            s.setPageDimension(props.index, img.naturalWidth, img.naturalHeight);
-            if (props.index === 0) s.updateFirstSlotHeight();
-            if (props.index === s.pages().length - 1) s.updateLastSlotHeight();
+            handleDimension(img.naturalWidth, img.naturalHeight);
           }
         }}
         onLoad={(ev) => {
-          setLoaded(true);
           const img = ev.currentTarget as HTMLImageElement;
-          s.setPageDimension(props.index, img.naturalWidth, img.naturalHeight);
-          if (props.index === 0) s.updateFirstSlotHeight();
-          if (props.index === s.pages().length - 1) s.updateLastSlotHeight();
-          const isWide = img.naturalWidth > img.naturalHeight * WIDE_RATIO;
-          if (isWide !== s.widePages().has(props.index)) {
-            const next = new Set(s.widePages());
-            if (isWide) {
-              next.add(props.index);
-            } else {
-              next.delete(props.index);
-            }
-            s.setWidePages(next);
-            // Debounce rebuild so concurrent wide scans don't trigger multiple rapid jumps.
-            s.scheduleWidePageLayoutReset();
-          }
+          handleDimension(img.naturalWidth, img.naturalHeight);
         }}
       />
     </div>
