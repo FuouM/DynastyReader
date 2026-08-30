@@ -249,6 +249,94 @@ export async function ephemeralConvertImages(
 }
 
 /* ---------------------------------------------------------------------------
+ * Local Import (CBZ)
+ * ------------------------------------------------------------------------ */
+
+export interface ArchiveScanChapter {
+  title: string;
+  page_count: number;
+}
+
+export interface ArchiveScanResult {
+  file_name: string;
+  series_title: string;
+  chapters: ArchiveScanChapter[];
+  total_pages: number;
+}
+
+export async function scanArchive(path: string): Promise<ArchiveScanResult> {
+  return invoke<ArchiveScanResult>("scanArchive", { path });
+}
+
+export interface LocalSeriesMeta {
+  title: string;
+  author?: string | null;
+  description?: string | null;
+}
+
+export async function importArchive(path: string, meta: LocalSeriesMeta): Promise<string> {
+  return invoke<string>("importArchive", { path, meta });
+}
+
+export async function deleteLocalSeries(permalink: string): Promise<void> {
+  await invoke("deleteLocalSeries", { permalink });
+}
+
+/* ---------------------------------------------------------------------------
+ * Download Queue
+ * ------------------------------------------------------------------------ */
+
+export interface DownloadRequest {
+  series_permalink: string;
+  series_title: string;
+  chapter_permalink: string;
+  chapter_title: string;
+  chapter_index: number;
+}
+
+export async function enqueueChapters(chapters: DownloadRequest[]): Promise<void> {
+  await invoke("enqueueChapters", { chapters });
+}
+
+export async function pauseDownloads(): Promise<void> {
+  await invoke("pauseDownloads");
+}
+
+export async function resumeDownloads(): Promise<void> {
+  await invoke("resumeDownloads");
+}
+
+export async function cancelDownload(chapterPermalink: string): Promise<void> {
+  await invoke("cancelDownload", { chapterPermalink });
+}
+
+export async function retryFailedDownloads(seriesPermalink: string): Promise<void> {
+  await invoke("retryFailedDownloads", { seriesPermalink });
+}
+
+export async function clearCompletedDownloads(seriesPermalink: string): Promise<void> {
+  await invoke("clearCompletedDownloads", { seriesPermalink });
+}
+
+export interface DownloadQueueItem {
+  series_permalink: string;
+  series_title: string;
+  chapter_permalink: string;
+  chapter_title: string;
+  chapter_index: number;
+  status: string;
+  progress: number;
+  total_pages: number;
+  error_msg: string | null;
+  queued_at: number;
+  completed_at: number | null;
+}
+
+export async function getDownloadQueue(): Promise<{ items: DownloadQueueItem[] }> {
+  return invoke<{ items: DownloadQueueItem[] }>("getDownloadQueue");
+}
+
+/* ---------------------------------------------------------------------------
  * System
  * ------------------------------------------------------------------------ */
 

@@ -51,6 +51,7 @@ import {
   HistoryPane,
   type LibraryPaneApi,
 } from "./panes";
+import { LocalPane } from "./LocalPane";
 import { CollectionDetailView } from "./CollectionDetailView";
 export function LibraryView() {
   return (
@@ -67,7 +68,7 @@ export function LibraryView() {
 // Main grid & Tabbed view
 // ---------------------------------------------------------------------------
 
-export type LibraryTabId = "followed" | "collections" | "bookmarks" | "history";
+export type LibraryTabId = "followed" | "collections" | "bookmarks" | "history" | "local";
 
 export interface LibraryTabDef {
   id: LibraryTabId;
@@ -100,6 +101,12 @@ export const getLibraryTabs = (): readonly LibraryTabDef[] => [
     get label() { return t("library.tabs.history"); },
     get shortLabel() { return t("library.tabsShort.history"); },
     icon: "bi-clock-history",
+  },
+  {
+    id: "local",
+    get label() { return "Local"; },
+    get shortLabel() { return "Local"; },
+    icon: "bi-folder",
   },
 ];
 
@@ -236,6 +243,16 @@ function LibraryGrid() {
               </div>
               <div class="ds-library-panel-footer ds-hidden"></div>
             </GroupBox>
+            {/* 5. Local Imports */}
+            <GroupBox
+              class="ds-library-panel"
+              title={<IconText icon={<FolderIcon />}>Local</IconText>}
+            >
+              <div class="ds-library-panel-body">
+                <LocalPane register={register("local")} />
+              </div>
+              <div class="ds-library-panel-footer ds-hidden"></div>
+            </GroupBox>
           </div>
         }
       >
@@ -301,6 +318,13 @@ function LibraryGrid() {
             classList={{ "ds-hidden": activeTab() !== "history" }}
           >
             <HistoryPane register={register("history")} />
+          </div>
+          <div
+            id="ds-library-tab-local"
+            class="ds-library-tab-pane"
+            classList={{ "ds-hidden": activeTab() !== "local" }}
+          >
+            <LocalPane register={register("local")} />
           </div>
         </div>
       </Show>

@@ -330,6 +330,68 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 4,
+    name: "local_series table for CBZ imports",
+    up: async () => {
+      await runStep(
+        `CREATE TABLE IF NOT EXISTS local_series (
+          permalink TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          author TEXT,
+          description TEXT,
+          cover_path TEXT,
+          source_path TEXT,
+          chapter_count INTEGER NOT NULL DEFAULT 0,
+          total_pages INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )`,
+        "create local_series",
+      );
+      await runStep(
+        "CREATE INDEX IF NOT EXISTS idx_local_series_updated ON local_series(updated_at DESC)",
+        "index local_series.updated",
+      );
+    },
+  },
+  {
+    version: 5,
+    name: "download_queue table for offline series downloads",
+    up: async () => {
+      await runStep(
+        `CREATE TABLE IF NOT EXISTS download_queue (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          series_permalink TEXT NOT NULL,
+          series_title TEXT NOT NULL,
+          chapter_permalink TEXT NOT NULL UNIQUE,
+          chapter_title TEXT NOT NULL,
+          chapter_index INTEGER NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          progress INTEGER NOT NULL DEFAULT 0,
+          total_pages INTEGER NOT NULL DEFAULT 0,
+          error_msg TEXT,
+          queued_at INTEGER NOT NULL,
+          completed_at INTEGER
+        )`,
+        "create download_queue",
+      );
+      await runStep(
+        "CREATE INDEX IF NOT EXISTS idx_download_queue_series ON download_queue(series_permalink)",
+        "index download_queue.series",
+      );
+      await runStep(
+        "CREATE INDEX IF NOT EXISTS idx_download_queue_status ON download_queue(status)",
+        "index download_queue.status",
+      );
+      // Reset any stuck downloading rows from a previous crash
+      try {
+        await execute(`UPDATE download_queue SET status = 'pending' WHERE status = 'downloading'`, []);
+      } catch {
+        // Best-effort
+      }
+    },
+  },
 ];
 
 let initDbPromise: Promise<void> | null = null;
@@ -355,5 +417,3 @@ export async function initDb(): Promise<void> {
   }
   return initDbPromise;
 }
-
-
