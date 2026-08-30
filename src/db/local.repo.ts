@@ -1,6 +1,6 @@
 import { execute, query } from "./client";
+import * as ipc from "../ipc";
 import { log } from "../utils/log";
-
 export interface LocalSeriesRow {
   permalink: string;
   title: string;
@@ -16,7 +16,16 @@ export interface LocalSeriesRow {
 
 export async function getLocalSeries(): Promise<LocalSeriesRow[]> {
   try {
-    return await query<LocalSeriesRow>(`SELECT * FROM local_series ORDER BY updated_at DESC`);
+    const rows = await query<LocalSeriesRow>(`SELECT * FROM local_series ORDER BY updated_at DESC`);
+    for (const r of rows) {
+      if (r.cover_path && !r.cover_path.includes(":") && !r.cover_path.startsWith("/")) {
+        try {
+          const res = await ipc.fileExists(r.cover_path);
+          if (res.exists) r.cover_path = String(res.absolute_path);
+        } catch {}
+      }
+    }
+    return rows;
   } catch (err) {
     const msg = String((err as Error)?.message ?? err);
     if (msg.includes("no such table")) {
@@ -30,7 +39,14 @@ export async function getLocalSeries(): Promise<LocalSeriesRow[]> {
 export async function getLocalSeriesByPermalink(permalink: string): Promise<LocalSeriesRow | null> {
   try {
     const rows = await query<LocalSeriesRow>(`SELECT * FROM local_series WHERE permalink = ?`, [permalink]);
-    return rows[0] ?? null;
+    const r = rows[0] ?? null;
+    if (r && r.cover_path && !r.cover_path.includes(":") && !r.cover_path.startsWith("/")) {
+      try {
+        const res = await ipc.fileExists(r.cover_path);
+        if (res.exists) r.cover_path = String(res.absolute_path);
+      } catch {}
+    }
+    return r;
   } catch (err) {
     const msg = String((err as Error)?.message ?? err);
     if (msg.includes("no such table")) return null;

@@ -6,12 +6,13 @@ import * as ipc from "../ipc";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
-import { Button, ConfirmDeleteButton, IconButton } from "../components/Button";
+import { Button, IconButton } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import { Loading } from "../components/Loading";
-import { AddIcon, TrashIcon, FolderIcon } from "../components/Icon";
+import { AddIcon, FolderIcon } from "../components/Icon";
 import type { ArchiveScanResult } from "../ipc";
+import { LibraryItemRow } from "./LibraryItemRow";
 import type { LibraryPaneApi } from "./panes";
 
 export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
@@ -147,25 +148,22 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
         </div>
       </Show>
       <Show when={data() !== undefined && data()!.length > 0}>
-        <div class="ds-feed-list">
-          <For each={data()!}>
-            {(row) => (
-              <div class="ds-feed-row" style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--ds-border);">
-                <div style="flex:1;min-width:0;">
-                  <div class="ds-feed-title" style="cursor:pointer;font-weight:600;" onClick={() => navigate({ view: "series", seriesPermalink: row.permalink, seriesName: row.title })}>
-                    {row.title}
-                  </div>
-                  <div class="ds-muted" style="font-size:12px;">
-                    {row.chapter_count} chapter(s) · {row.total_pages} pages
-                    <Show when={row.author}> · {row.author}</Show>
-                  </div>
-                </div>
-                <Button text="Open" onClick={() => navigate({ view: "series", seriesPermalink: row.permalink, seriesName: row.title })} />
-                <ConfirmDeleteButton icon={<TrashIcon />} text="Delete" onConfirm={() => void handleDelete(row.permalink)} />
-              </div>
-            )}
-          </For>
-        </div>
+        <For each={data()!}>
+          {(row) => (
+            <LibraryItemRow
+              title={row.title}
+              subtitle={`${row.chapter_count} chapter(s) · ${row.total_pages} pages${row.author ? ` · ${row.author}` : ""}`}
+              badge="Local"
+              cover={row.cover_path}
+              coverAlt={row.title}
+              onOpen={() => navigate({ view: "series", seriesPermalink: row.permalink, seriesName: row.title })}
+              actionLabel={t("common.open")}
+              actionIcon="bi-folder2-open"
+              deleteTitle="Delete local series"
+              onDelete={() => handleDelete(row.permalink)}
+            />
+          )}
+        </For>
       </Show>
     </div>
   );

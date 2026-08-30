@@ -754,4 +754,22 @@
   [data-theme="windows7"] .ds-downloaded-chapter-list .ds-vol-divider::after {
     background: linear-gradient(90deg, #b8cde4 0%, rgba(184, 205, 228, 0.2) 100%) !important;
   }
+  /* ── Library Master-Detail on Windows 7 ── */
+  [data-theme="windows7"] .ds-library-nav-list {
+    background: #ffffff !important;
+    border: 1px solid #aab9cc !important;
+    border-radius: 3px !important;
+    box-shadow: inset 0 1px 2px rgba(16, 42, 74, 0.08) !important;
+  }
+  [data-theme="windows7"] .ds-library-nav-item:hover {
+    background: linear-gradient(180deg, #f3f9ff 0%, #e6f0fd 100%) !important;
+    border-color: #b8c9dc !important;
+    color: #000000 !important;
+  }
+  [data-theme="windows7"] .ds-library-nav-item.active {
+    background: linear-gradient(180deg, #d8ebff 0%, #b9d8f6 46%, #8fb9ea 52%, #c8ddf5 100%) !important;
+    border: 1px solid #2e6aa5 !important;
+    box-shadow: inset 1px 1px 0 rgba(16, 42, 74, 0.15), inset -1px -1px 0 rgba(255, 255, 255, 0.6) !important;
+    color: #0f2440 !important;
+  }
 }

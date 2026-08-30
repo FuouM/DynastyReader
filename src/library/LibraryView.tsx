@@ -10,6 +10,7 @@
 import {
   createEffect,
   createSignal,
+  For,
   Show,
   type Accessor,
 } from "solid-js";
@@ -174,89 +175,131 @@ function LibraryGrid() {
     await paneApis.history?.refetch();
   };
 
+  const renderPanes = () => (
+    <>
+      <div
+        id="ds-library-tab-followed"
+        class="ds-library-tab-pane"
+        classList={{ "ds-hidden": activeTab() !== "followed" }}
+      >
+        <FollowedPane register={register("followed")} />
+      </div>
+      <div
+        id="ds-library-tab-collections"
+        class="ds-library-tab-pane"
+        classList={{ "ds-hidden": activeTab() !== "collections" }}
+      >
+        <CollectionsPane
+          register={register("collections")}
+          onOpenDetail={openDetail}
+          onCreateNew={() => setCreating(true)}
+        />
+      </div>
+      <div
+        id="ds-library-tab-bookmarks"
+        class="ds-library-tab-pane"
+        classList={{ "ds-hidden": activeTab() !== "bookmarks" }}
+      >
+        <BookmarksPane register={register("bookmarks")} />
+      </div>
+      <div
+        id="ds-library-tab-history"
+        class="ds-library-tab-pane"
+        classList={{ "ds-hidden": activeTab() !== "history" }}
+      >
+        <HistoryPane register={register("history")} />
+      </div>
+      <div
+        id="ds-library-tab-local"
+        class="ds-library-tab-pane"
+        classList={{ "ds-hidden": activeTab() !== "local" }}
+      >
+        <LocalPane register={register("local")} />
+      </div>
+    </>
+  );
+
   return (
     <div id="ds-library-container">
       <Show
         when={isNarrowOrMobile()}
         fallback={
-          <div class="ds-library-grid">
-            {/* 1. Followed Series */}
+          /* Desktop Master-Detail Split (WinForms Style) */
+          <div class="ds-library-split">
+            {/* ── Master Left Navigation GroupBox ── */}
             <GroupBox
-              class="ds-library-panel"
-              title={<IconText icon={<Icon name="bookmark-heart" />}>{t("library.followed")}</IconText>}
+              class="ds-library-master-box"
+              title={<IconText icon={<Icon name="collection" />}>Categories</IconText>}
             >
-              <div class="ds-library-panel-body">
-                <FollowedPane register={register("followed")} />
+              <div class="win-listbox ds-library-nav-list">
+                <For each={getLibraryTabs()}>
+                  {(tab) => (
+                    <button
+                      type="button"
+                      class={`win-listbox-item ds-library-nav-item${activeTab() === tab.id ? " active" : ""}`}
+                      onClick={() => switchTab(tab.id)}
+                    >
+                      <span class="ds-nav-icon">
+                        <Icon name={tab.icon.replace(/^bi-/, "")} />
+                      </span>
+                      <span class="ds-nav-label">{tab.label}</span>
+                    </button>
+                  )}
+                </For>
               </div>
-              <div class="ds-library-panel-footer ds-hidden"></div>
             </GroupBox>
 
-            {/* 2. Collections & Favorites */}
+            {/* ── Detail Right Content GroupBox ── */}
             <GroupBox
-              class="ds-library-panel"
-              title={<IconText icon={<FolderIcon />}>{t("library.collections")}</IconText>}
+              class="ds-library-detail-box"
+              title={
+                <span class="ds-icon-text">
+                  <Show when={activeTab() === "followed"}>
+                    <Icon name="bookmark-heart" /> {t("library.followed")}
+                  </Show>
+                  <Show when={activeTab() === "collections"}>
+                    <FolderIcon /> {t("library.collections")}
+                  </Show>
+                  <Show when={activeTab() === "bookmarks"}>
+                    <BookmarkIcon /> {t("library.bookmarks")}
+                  </Show>
+                  <Show when={activeTab() === "history"}>
+                    <Icon name="clock-history" /> {t("library.history")}
+                  </Show>
+                  <Show when={activeTab() === "local"}>
+                    <FolderIcon /> Local Imports
+                  </Show>
+                </span>
+              }
               actions={
-                <IconButton
-                  icon={<AddIcon />}
-                  text={t("library.newCollectionButton")}
-                  title={t("library.createCollectionTooltip")}
-                  onClick={() => setCreating(true)}
-                />
+                <div class="ds-library-detail-actions">
+                  <Show when={activeTab() === "collections"}>
+                    <IconButton
+                      icon={<AddIcon />}
+                      text={t("library.newCollectionButton")}
+                      title={t("library.createCollectionTooltip")}
+                      onClick={() => setCreating(true)}
+                    />
+                  </Show>
+                  <Show when={activeTab() === "history"}>
+                    <ConfirmDeleteButton
+                      icon={<TrashIcon />}
+                      text={t("library.clearHistoryButton")}
+                      title={t("library.clearHistoryTooltip")}
+                      onConfirm={clearHistoryAll}
+                    />
+                  </Show>
+                </div>
               }
             >
-              <div class="ds-library-panel-body">
-                <CollectionsPane
-                  register={register("collections")}
-                  onOpenDetail={openDetail}
-                  onCreateNew={() => setCreating(true)}
-                />
+              <div class="ds-library-detail-content">
+                {renderPanes()}
               </div>
-              <div class="ds-library-panel-footer ds-hidden"></div>
-            </GroupBox>
-
-            {/* 3. Bookmarks */}
-            <GroupBox
-              class="ds-library-panel"
-              title={<IconText icon={<BookmarkIcon />}>{t("library.bookmarks")}</IconText>}
-            >
-              <div class="ds-library-panel-body">
-                <BookmarksPane register={register("bookmarks")} />
-              </div>
-              <div class="ds-library-panel-footer ds-hidden"></div>
-            </GroupBox>
-
-            {/* 4. Reading History */}
-            <GroupBox
-              class="ds-library-panel"
-              title={<IconText icon={<Icon name="clock-history" />}>{t("library.history")}</IconText>}
-              actions={
-                <ConfirmDeleteButton
-                  icon={<TrashIcon />}
-                  text={t("library.clearHistoryButton")}
-                  title={t("library.clearHistoryTooltip")}
-                  onConfirm={clearHistoryAll}
-                />
-              }
-            >
-              <div class="ds-library-panel-body">
-                <HistoryPane register={register("history")} />
-              </div>
-              <div class="ds-library-panel-footer ds-hidden"></div>
-            </GroupBox>
-            {/* 5. Local Imports */}
-            <GroupBox
-              class="ds-library-panel"
-              title={<IconText icon={<FolderIcon />}>Local</IconText>}
-            >
-              <div class="ds-library-panel-body">
-                <LocalPane register={register("local")} />
-              </div>
-              <div class="ds-library-panel-footer ds-hidden"></div>
             </GroupBox>
           </div>
         }
       >
-        {/* Narrow / Mobile 4-tab Layout */}
+        {/* Mobile SubTabs Layout */}
         <SubTabs
           tabs={getLibraryTabs()}
           activeTab={activeTab()}
@@ -287,45 +330,7 @@ function LibraryGrid() {
         />
 
         <div class="ds-library-tab-content">
-          <div
-            id="ds-library-tab-followed"
-            class="ds-library-tab-pane"
-            classList={{ "ds-hidden": activeTab() !== "followed" }}
-          >
-            <FollowedPane register={register("followed")} />
-          </div>
-          <div
-            id="ds-library-tab-collections"
-            class="ds-library-tab-pane"
-            classList={{ "ds-hidden": activeTab() !== "collections" }}
-          >
-            <CollectionsPane
-              register={register("collections")}
-              onOpenDetail={openDetail}
-              onCreateNew={() => setCreating(true)}
-            />
-          </div>
-          <div
-            id="ds-library-tab-bookmarks"
-            class="ds-library-tab-pane"
-            classList={{ "ds-hidden": activeTab() !== "bookmarks" }}
-          >
-            <BookmarksPane register={register("bookmarks")} />
-          </div>
-          <div
-            id="ds-library-tab-history"
-            class="ds-library-tab-pane"
-            classList={{ "ds-hidden": activeTab() !== "history" }}
-          >
-            <HistoryPane register={register("history")} />
-          </div>
-          <div
-            id="ds-library-tab-local"
-            class="ds-library-tab-pane"
-            classList={{ "ds-hidden": activeTab() !== "local" }}
-          >
-            <LocalPane register={register("local")} />
-          </div>
+          {renderPanes()}
         </div>
       </Show>
       <CreateCollectionModal

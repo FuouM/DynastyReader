@@ -436,7 +436,8 @@ fn register_local_series_in_db(
     .map_err(|e| format!("create local_series failed: {e}"))?;
 
     let now = chrono_like_now();
-    let cover_path = format!("local/{}/cover.webp", series_slug);
+    let cover_rel_path = format!("local/{}/cover.webp", series_slug);
+    let series_cover_abs = crate::paths::data_root().join(&cover_rel_path).to_string_lossy().into_owned();
 
     conn.execute(
         "INSERT OR REPLACE INTO local_series (permalink, title, author, description, cover_path, source_path, chapter_count, total_pages, created_at, updated_at)
@@ -446,7 +447,7 @@ fn register_local_series_in_db(
             meta.title,
             meta.author,
             meta.description,
-            cover_path,
+            series_cover_abs,
             Option::<String>::None,
             chapter_permalinks.len() as i64,
             total_pages as i64,
@@ -461,15 +462,28 @@ fn register_local_series_in_db(
     // We do this in a transaction
     let tx = conn.unchecked_transaction().map_err(|e| format!("tx failed: {e}"))?;
 
-    // Series metadata for completeness (optional)
+    // Series metadata with chapter taggings for SeriesView
     {
+        let taggings: Vec<serde_json::Value> = groups
+            .iter()
+            .enumerate()
+            .map(|(idx, (ch_title, _pages))| {
+                let ch_permalink = &chapter_permalinks[idx];
+                serde_json::json!({
+                    "title": ch_title,
+                    "permalink": ch_permalink,
+                })
+            })
+            .collect();
+
         let series_payload = serde_json::json!({
             "name": meta.title,
             "permalink": series_permalink,
             "type": "local",
-            "cover": cover_path,
+            "cover": series_cover_abs,
             "description": meta.description,
             "author": meta.author,
+            "taggings": taggings,
         })
         .to_string();
         tx.execute(
@@ -527,12 +541,11 @@ fn register_local_series_in_db(
             .map_err(|e| format!("insert cached_pages failed: {e}"))?;
             // Also cover for series on first chapter
             if idx == 0 && pi == 0 {
-                let series_cover_abs = crate::paths::data_root().join(&cover_path).to_string_lossy().into_owned();
                 // Only if cover.webp exists
                 if Path::new(&series_cover_abs).exists() {
                     tx.execute(
                         "INSERT OR REPLACE INTO cached_metadata (cache_key, data_type, json_payload, cached_at) VALUES (?1, 'cover', ?2, ?3)",
-                        rusqlite::params![format!("cover:series:{}", series_permalink), series_cover_abs, now],
+                        rusqlite::params![format!("cover:series:{}", series_permalink), &series_cover_abs, now],
                     )
                     .map_err(|e| format!("insert series cover failed: {e}"))?;
                 } else {

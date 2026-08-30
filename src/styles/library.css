@@ -10,6 +10,141 @@
   box-sizing: border-box;
   container-type: inline-size;
 }
+/* ==========================================================================
+   Desktop Master-Detail Split Layout for Library (WinForms Style)
+   ========================================================================== */
+
+.ds-library-split {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Master Left Navigation GroupBox ── */
+.ds-library-master-box {
+  width: 220px;
+  flex: 0 0 220px;
+  display: flex !important;
+  flex-direction: column !important;
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
+  padding: 14px 8px 8px !important;
+  box-sizing: border-box;
+}
+
+.ds-library-master-box > .group-box-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── WinForms ListBox Container ── */
+.win-listbox,
+.ds-library-nav-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  background: var(--sys-window-bg);
+  border: 1px solid var(--sys-border-dark, #888);
+  border-radius: 2px;
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+/* ── WinForms ListBox Item ── */
+.win-listbox-item,
+.ds-library-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  height: 26px;
+  min-height: 26px;
+  font-size: 11.5px;
+  font-family: inherit;
+  color: var(--sys-window-text, #111);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  user-select: none;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.win-listbox-item:hover,
+.ds-library-nav-item:hover {
+  background: var(--sys-button-hover, #e5f1fb);
+  border-color: var(--sys-border-focus, #0078d7);
+}
+
+.win-listbox-item.active,
+.ds-library-nav-item.active {
+  background: var(--sys-highlight-bg, #0078d7) !important;
+  color: var(--sys-highlight-text, #ffffff) !important;
+  border-color: var(--sys-primary-border, #005499) !important;
+}
+
+.win-listbox-item .ds-nav-icon,
+.ds-library-nav-item .ds-nav-icon {
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.win-listbox-item .ds-nav-label,
+.ds-library-nav-item .ds-nav-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Detail Right Content GroupBox ── */
+.ds-library-detail-box {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
+  padding: 16px 0 6px 8px !important;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ds-library-detail-box > .group-box-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ds-library-detail-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ds-library-detail-content .ds-library-tab-pane {
+  padding-right: 8px;
+}
+
 .ds-library-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -30,28 +165,44 @@
   }
 }
 
-/* Thin mobile-style scrollbars for library wide view (4 columns / 2x2 grid) */
-.ds-library-grid *,
+/* Thin mobile-style scrollbars for library view */
+#ds-library-container *,
+.ds-library-split *,
+.ds-library-nav-list,
+.ds-library-detail-content,
+.ds-library-tab-pane,
 .ds-library-panel-body,
 .ds-library-followed-scroll {
   -webkit-overflow-scrolling: touch;
 }
 
-.ds-library-grid ::-webkit-scrollbar,
+#ds-library-container *::-webkit-scrollbar,
+.ds-library-split *::-webkit-scrollbar,
+.ds-library-nav-list::-webkit-scrollbar,
+.ds-library-detail-content::-webkit-scrollbar,
+.ds-library-tab-pane::-webkit-scrollbar,
 .ds-library-panel-body::-webkit-scrollbar,
 .ds-library-followed-scroll::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
 
-.ds-library-grid ::-webkit-scrollbar-track,
+#ds-library-container *::-webkit-scrollbar-track,
+.ds-library-split *::-webkit-scrollbar-track,
+.ds-library-nav-list::-webkit-scrollbar-track,
+.ds-library-detail-content::-webkit-scrollbar-track,
+.ds-library-tab-pane::-webkit-scrollbar-track,
 .ds-library-panel-body::-webkit-scrollbar-track,
 .ds-library-followed-scroll::-webkit-scrollbar-track {
   background: transparent;
   border: none;
 }
 
-.ds-library-grid ::-webkit-scrollbar-thumb,
+#ds-library-container *::-webkit-scrollbar-thumb,
+.ds-library-split *::-webkit-scrollbar-thumb,
+.ds-library-nav-list::-webkit-scrollbar-thumb,
+.ds-library-detail-content::-webkit-scrollbar-thumb,
+.ds-library-tab-pane::-webkit-scrollbar-thumb,
 .ds-library-panel-body::-webkit-scrollbar-thumb,
 .ds-library-followed-scroll::-webkit-scrollbar-thumb {
   background: var(--sys-scrollbar-thumb, rgba(0, 0, 0, 0.22));
@@ -59,7 +210,11 @@
   border: none;
 }
 
-.ds-library-grid ::-webkit-scrollbar-thumb:hover,
+#ds-library-container *::-webkit-scrollbar-thumb:hover,
+.ds-library-split *::-webkit-scrollbar-thumb:hover,
+.ds-library-nav-list::-webkit-scrollbar-thumb:hover,
+.ds-library-detail-content::-webkit-scrollbar-thumb:hover,
+.ds-library-tab-pane::-webkit-scrollbar-thumb:hover,
 .ds-library-panel-body::-webkit-scrollbar-thumb:hover,
 .ds-library-followed-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--sys-scrollbar-thumb-hover, rgba(0, 0, 0, 0.45));

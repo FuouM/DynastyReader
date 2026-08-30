@@ -1,6 +1,7 @@
 import { SITE_ROOT } from "../stores";
 import { seriesTypeToPath } from "../taxonomy";
-import { getCached, setCached, deleteCached, updateFollowedSeriesCover, touchCached } from "../db";
+import { getCached, setCached, deleteCached, updateFollowedSeriesCover, touchCached, query } from "../db";
+import { getLocalSeriesByPermalink } from "../db/local.repo";
 import { seriesKey, seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
 import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";
@@ -34,12 +35,81 @@ export function seriesEndpoints(permalink: string, preferredType?: string): stri
   return [preferredUrl, ...defaultEndpoints.filter((u) => u !== preferredUrl)];
 }
 
+async function fetchLocalSeries(permalink: string): Promise<Series> {
+  const key = seriesKey(permalink);
+  const cached = await getCached(key);
+  if (cached) {
+    try {
+      const parsed = SeriesSchema.parse(JSON.parse(cached.json_payload));
+      if (parsed.taggings && parsed.taggings.length > 0) {
+        return parsed;
+      }
+    } catch {}
+  }
+
+  // Look up local series row from SQLite
+  const localRow = await getLocalSeriesByPermalink(permalink);
+  const slug = permalink.replace(/^local:/, "");
+
+  // Look up chapters for this local series in cached_metadata
+  const chapterRows = await query<{ cache_key: string; json_payload: string }>(
+    `SELECT cache_key, json_payload FROM cached_metadata WHERE data_type = 'chapter' AND cache_key LIKE ?`,
+    [`chapter:local:${slug}%`],
+  );
+
+  const taggings: Array<{ title: string; permalink: string }> = [];
+  for (const row of chapterRows) {
+    try {
+      const chData = JSON.parse(row.json_payload);
+      if (chData.permalink && chData.title) {
+        taggings.push({
+          title: chData.title,
+          permalink: chData.permalink,
+        });
+      }
+    } catch {}
+  }
+
+  // Fallback: look in cached_pages if cached_metadata is missing
+  if (taggings.length === 0) {
+    const pageRows = await query<{ chapter_permalink: string }>(
+      `SELECT DISTINCT chapter_permalink FROM cached_pages WHERE chapter_permalink LIKE ?`,
+      [`local:${slug}%`],
+    );
+    for (const r of pageRows) {
+      taggings.push({
+        title: localRow?.title || r.chapter_permalink,
+        permalink: r.chapter_permalink,
+      });
+    }
+  }
+  const coverAbs = localRow?.cover_path
+    ? (await fileResolve(localRow.cover_path)) || localRow.cover_path
+    : (await fileResolve(`local/${slug}/cover.webp`)) || `local/${slug}/cover.webp`;
+
+  const seriesPayload = {
+    name: localRow?.title || slug,
+    permalink,
+    type: "local",
+    cover: coverAbs,
+    description: localRow?.description || null,
+    author: localRow?.author || null,
+    taggings,
+  };
+
+  await setCached(key, "series", JSON.stringify(seriesPayload));
+  return SeriesSchema.parse(seriesPayload);
+}
+
 /** Series / anthology / doujin / author / tag detail with Stale-While-Revalidate caching. `force` skips the cache. */
 export async function fetchSeries(
   permalink: string,
   force = false,
   preferredType?: string,
 ): Promise<Series> {
+  if (permalink.startsWith("local:")) {
+    return fetchLocalSeries(permalink);
+  }
   const key = seriesKey(permalink);
   const cached = await getCached(key);
   const isStale = !cached || Date.now() - cached.cached_at >= SERIES_TTL_MS;
@@ -140,6 +210,13 @@ export async function getSeriesCover(
   onPhase?: (phase: "downloading" | "processing") => void,
 ): Promise<string | null> {
   if (!coverUrl) return null;
+  if (permalink.startsWith("local:")) {
+    const directLocal = await fileResolve(coverUrl);
+    if (directLocal) return directLocal;
+    const slug = permalink.replace(/^local:/, "");
+    const coverFallback = await fileResolve(`local/${slug}/cover.webp`);
+    if (coverFallback) return coverFallback;
+  }
   const { rawOutPath, webpOutPath } = coverPathsForSeries(permalink, coverUrl);
   return fetchAndCacheCover({
     cacheKey: seriesCoverKey(permalink),

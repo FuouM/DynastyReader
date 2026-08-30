@@ -199,9 +199,9 @@ export function SeriesView() {
             anchorEl,
           )
         }
-        openUrl={openUrl}
+        openUrl={series.type === "local" ? "" : openUrl}
         seriesType={series.type}
-        onDownloadAll={() => void handleDownloadAll()}
+        onDownloadAll={series.type === "local" ? undefined : () => void handleDownloadAll()}
       />,
     );
   });
@@ -334,9 +334,9 @@ export function SeriesView() {
               onToggleBlacklist={() => void handleToggleBlacklist()}
               onRefresh={() => setForceTick((t) => t + 1)}
               onOpenAddToCol={handleOpenAddToCol}
-              openUrl={dynastyUrl(seriesTypeToPath(data()!.series.type), encodeURIComponent(data()!.series.permalink))}
+              openUrl={data()!.series.type === "local" ? "" : dynastyUrl(seriesTypeToPath(data()!.series.type), encodeURIComponent(data()!.series.permalink))}
               seriesType={data()!.series.type}
-              onDownloadAll={() => void handleDownloadAll()}
+              onDownloadAll={data()!.series.type === "local" ? undefined : () => void handleDownloadAll()}
             />
           }
         />
@@ -449,11 +449,13 @@ function SeriesActions(props: SeriesActionsProps) {
           onClick={props.onDownloadAll}
         />
       </Show>
-      <ExternalLinkButton
-        className="ds-btn-icon"
-        title={t("series.openInBrowserTooltip", { type: props.seriesType ? props.seriesType.toLowerCase() : "series" })}
-        url={props.openUrl}
-      />
+      <Show when={props.openUrl}>
+        <ExternalLinkButton
+          className="ds-btn-icon"
+          title={t("series.openInBrowserTooltip", { type: props.seriesType ? props.seriesType.toLowerCase() : "series" })}
+          url={props.openUrl}
+        />
+      </Show>
     </>
   );
 }
