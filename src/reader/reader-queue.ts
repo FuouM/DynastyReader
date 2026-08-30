@@ -1,5 +1,5 @@
 import { absUrl } from "../stores";
-import { fileResolve, httpDownloadFull, pageOutputPath } from "../api";
+import { fileResolveWithStat, httpDownloadFull, pageOutputPath } from "../api";
 import { setCachedPage } from "../db";
 import type { ChapterPage } from "../types/api";
 import { t } from "../i18n";
@@ -105,11 +105,12 @@ export class ReaderQueue {
     const outPath = pageOutputPath(c.getSeriesPermalink() ?? "", c.permalink, index, page.url);
     try {
       // If the file already exists at the canonical path, skip the network entirely
-      const existing = await fileResolve(outPath);
+      const existing = await fileResolveWithStat(outPath);
       let absPath: string;
       let sizeBytes = 0;
       if (existing) {
-        absPath = existing;
+        absPath = existing.absolutePath;
+        sizeBytes = existing.sizeBytes;
       } else {
         const res = await httpDownloadFull(absUrl(page.url), outPath);
         absPath = res.absolutePath;

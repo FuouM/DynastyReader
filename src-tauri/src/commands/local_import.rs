@@ -513,10 +513,12 @@ fn register_local_series_in_db(
         for (pi, _) in pages.iter().enumerate() {
             let ext = pages[pi].rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
             let file_path = format!("local/{}/chapters/{}/p{:03}.{}", series_slug, ch_slug, pi, ext);
-            let abs = crate::paths::data_root().join(&file_path).to_string_lossy().into_owned();
+            let page_abs_path = crate::paths::data_root().join(&file_path);
+            let file_size = std::fs::metadata(&page_abs_path).map(|m| m.len() as i64).unwrap_or(0);
+            let abs = page_abs_path.to_string_lossy().into_owned();
             tx.execute(
                 "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-                rusqlite::params![ch_permalink, pi as i64, abs, 0i64, now],
+                rusqlite::params![ch_permalink, pi as i64, abs, file_size, now],
             )
             .map_err(|e| format!("insert cached_pages failed: {e}"))?;
             // Also cover for series on first chapter

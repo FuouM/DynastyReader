@@ -7,7 +7,7 @@
 
 import type { ReaderSession } from "./reader-session";
 import { PAGES_PREFIX } from "../stores";
-import { fileMove, fileResolve, pageOutputPath } from "../api";
+import { fileMove, fileResolve, fileResolveWithStat, pageOutputPath } from "../api";
 import { setCachedPage } from "../db";
 
 /** Background legacy-filename standardization. Zero network traffic. */
@@ -27,11 +27,11 @@ export function standardizeCachePaths(session: ReaderSession): void {
 
       // Skip if already at canonical path. `cachedPages` holds absolute paths,
       // so compare against the resolved absolute form (not the relative `targetPath`).
-      const alreadyThere = await fileResolve(targetPath);
+      const alreadyThere = await fileResolveWithStat(targetPath);
       if (alreadyThere) {
-        if (session.getCachedPath(i) !== alreadyThere) {
-          await setCachedPage(session.permalink, i, alreadyThere, 0);
-          session.setCachedPage(i, alreadyThere);
+        if (session.getCachedPath(i) !== alreadyThere.absolutePath) {
+          await setCachedPage(session.permalink, i, alreadyThere.absolutePath, alreadyThere.sizeBytes);
+          session.setCachedPage(i, alreadyThere.absolutePath);
         }
         continue;
       }
@@ -58,7 +58,8 @@ export function standardizeCachePaths(session: ReaderSession): void {
       if (found) {
         try {
           const newAbsPath = await fileMove(found, targetPath);
-          await setCachedPage(session.permalink, i, newAbsPath, 0);
+          const moveStat = await fileResolveWithStat(targetPath);
+          await setCachedPage(session.permalink, i, newAbsPath, moveStat?.sizeBytes ?? 0);
           session.setCachedPage(i, newAbsPath);
         } catch (e) {
           console.warn(`[dynasty-reader] could not move page ${i + 1} to canonical path:`, e);

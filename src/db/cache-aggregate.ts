@@ -2,7 +2,8 @@ import { query } from "./client";
 import { inClause } from "./paging";
 import { seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
 import { getChapterContainerTag } from "../taxonomy";
-
+import { DB_NAME } from "../stores";
+import * as ipc from "../ipc";
 export interface ChapterAggRow {
   chapterPermalink: string;
   pageCount: number;
@@ -75,11 +76,58 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
   };
   if (aggs.length === 0) return empty;
 
+  // Self-heal / Backfill unmeasured 0-byte rows from disk
+  const unmeasuredPermalinks = aggs
+    .filter((a) => a.pageCount > 0 && a.sizeBytes === 0)
+    .map((a) => a.chapterPermalink);
+  if (unmeasuredPermalinks.length > 0) {
+    const unmeasuredPages = await query<{ chapter_permalink: string; file_path: string }>(
+      `SELECT chapter_permalink, file_path FROM cached_pages WHERE chapter_permalink IN (${inClause(unmeasuredPermalinks.length)}) AND (size_bytes = 0 OR size_bytes IS NULL)`,
+      unmeasuredPermalinks,
+    );
+    if (unmeasuredPages.length > 0) {
+      const paths = unmeasuredPages.map((p) => p.file_path);
+      const fileResp = await ipc.fileExistsBatch(paths);
+      const sizeByPath = new Map<string, number>();
+      const updates: { path: string; size: number }[] = [];
+      for (const item of fileResp.items ?? []) {
+        if (item.exists && item.size_bytes > 0) {
+          sizeByPath.set(item.path, Number(item.size_bytes));
+          updates.push({ path: item.path, size: Number(item.size_bytes) });
+        }
+      }
+      if (updates.length > 0) {
+        // Update in-memory aggs immediately
+        const addMap = new Map<string, number>();
+        for (const p of unmeasuredPages) {
+          const sz = sizeByPath.get(p.file_path) ?? 0;
+          if (sz > 0) {
+            addMap.set(p.chapter_permalink, (addMap.get(p.chapter_permalink) ?? 0) + sz);
+          }
+        }
+        for (const a of aggs) {
+          const add = addMap.get(a.chapterPermalink);
+          if (add) a.sizeBytes += add;
+        }
+
+        // Persist to DB in background
+        void (async () => {
+          try {
+            const stmts = updates.map(() => `UPDATE cached_pages SET size_bytes = ? WHERE file_path = ?`);
+            const params = updates.map((u) => [u.size, u.path]);
+            await ipc.dbExecuteBatch(DB_NAME, stmts, params);
+          } catch (err) {
+            console.debug("[cache-aggregate] backfill size_bytes error:", err);
+          }
+        })();
+      }
+    }
+  }
+
   const permalinks = aggs.map((a) => a.chapterPermalink);
   const placeholders = inClause(permalinks.length);
   const chapterKeys = permalinks.map((cp) => `chapter:${cp}`);
   const chapterKeyPlaceholders = inClause(chapterKeys.length);
-
   const [progRows, histRows, metaChapterRows, page0Rows] = await Promise.all([
     query<{
       chapter_permalink: string;
