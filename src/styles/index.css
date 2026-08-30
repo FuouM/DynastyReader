@@ -723,10 +723,20 @@ body {
   white-space: pre-wrap;
 }
 .ds-vol-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
   font-weight: 600;
   color: var(--sys-text-secondary, #555);
   margin: 10px 0 4px;
+  user-select: none;
+}
+.ds-vol-header::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--sys-border-light, #e0e0e0);
 }
 .ds-chapter-row {
   display: flex;

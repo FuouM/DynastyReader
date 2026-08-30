@@ -17,6 +17,7 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
+import { extractVolumeHeader } from "../utils/volume";
 import {
   isMobile,
   navigate,
@@ -78,7 +79,7 @@ function collectChapters(series: Series): ChapterMeta[] {
         title: t.title || t.permalink,
         permalink: t.permalink,
         released_on: t.released_on ?? undefined,
-        volumeHeader,
+        volumeHeader: volumeHeader || extractVolumeHeader(t.title || t.permalink),
       });
     }
   }

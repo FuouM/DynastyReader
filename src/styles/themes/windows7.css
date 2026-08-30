@@ -733,4 +733,25 @@
     font-style: normal !important;
     color: #555555 !important;
   }
+  [data-theme="windows7"] .ds-vol-header {
+    color: #2b5788 !important;
+  }
+  [data-theme="windows7"] .ds-vol-header::after {
+    background: linear-gradient(90deg, #b8cde4 0%, rgba(184, 205, 228, 0.2) 100%) !important;
+  }
+  [data-theme="windows7"] .ds-seat-vol-divider {
+    width: 2px;
+    height: 18px;
+    background: linear-gradient(180deg, #9bbad8 0%, #4679a9 50%, #9bbad8 100%) !important;
+    box-shadow: 1px 0 0 rgba(255, 255, 255, 0.7);
+    margin: 2px 5px;
+  }
+  [data-theme="windows7"] .ds-downloaded-chapter-list .ds-vol-divider {
+    background: linear-gradient(180deg, #f0f5fb 0%, #e6eef7 100%) !important;
+    color: #2b5788 !important;
+    border-bottom: 1px solid #d0deee !important;
+  }
+  [data-theme="windows7"] .ds-downloaded-chapter-list .ds-vol-divider::after {
+    background: linear-gradient(90deg, #b8cde4 0%, rgba(184, 205, 228, 0.2) 100%) !important;
+  }
 }

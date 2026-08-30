@@ -203,4 +203,30 @@
   body.ds-dark .ds-downloaded-chapter-list .ds-chapter-row:hover {
     background: #2a2a2d !important;
   }
+  [data-theme="dark"] .ds-vol-header,
+  body.ds-dark .ds-vol-header {
+    color: #a1a1aa !important;
+  }
+  [data-theme="dark"] .ds-vol-header::after,
+  body.ds-dark .ds-vol-header::after {
+    background: #3f3f46 !important;
+  }
+  [data-theme="dark"] .ds-seat-vol-divider,
+  body.ds-dark .ds-seat-vol-divider {
+    width: 2px;
+    height: 18px;
+    background: #4b5563 !important;
+    box-shadow: 1px 0 0 #27272a;
+    margin: 2px 5px;
+  }
+  [data-theme="dark"] .ds-downloaded-chapter-list .ds-vol-divider,
+  body.ds-dark .ds-downloaded-chapter-list .ds-vol-divider {
+    background: #252528 !important;
+    color: #a1a1aa !important;
+    border-bottom: 1px solid #333336 !important;
+  }
+  [data-theme="dark"] .ds-downloaded-chapter-list .ds-vol-divider::after,
+  body.ds-dark .ds-downloaded-chapter-list .ds-vol-divider::after {
+    background: #3f3f46 !important;
+  }
 }

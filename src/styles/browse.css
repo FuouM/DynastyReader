@@ -638,6 +638,25 @@
   background: var(--sys-hover-bg, #f0f0f0) !important;
 }
 
+.ds-downloaded-chapter-list .ds-vol-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sys-text-secondary, #555);
+  background: var(--sys-control-bg, #f5f5f5);
+  border-bottom: 1px solid var(--sys-border-light, #eee);
+  user-select: none;
+}
+
+.ds-downloaded-chapter-list .ds-vol-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--sys-border-light, #ddd);
+}
 .ds-downloaded-chapter-list .ds-chapter-badge {
   font-style: normal !important;
   font-size: 11px;
@@ -717,9 +736,17 @@
   gap: 3px;
   padding: 4px 0;
   margin-bottom: 4px;
-  flex-wrap: wrap;
 }
-
+.ds-seat-vol-divider {
+  display: inline-block;
+  width: 2px;
+  height: 18px;
+  background-color: var(--sys-border-medium, #bbb);
+  margin: 2px 4px;
+  align-self: center;
+  flex-shrink: 0;
+  border-radius: 1px;
+}
 .ds-chapter-matrix {
   display: flex;
   flex-wrap: wrap;
