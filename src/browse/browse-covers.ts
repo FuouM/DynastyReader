@@ -1,10 +1,13 @@
 import { createSignal } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
-import { debounce } from "@solid-primitives/scheduled";
-import { getOrHydrateItemCover } from "../api";
 import { getBatchCached, deleteCached } from "../db";
 import { log } from "../utils/log";
 import { isSeriesKind, isDoujinTag, getChapterContainerTag } from "../taxonomy";
+import { CoverMemoryCache, MAX_MEMORY_CACHE, type CoverState } from "./browse-covers-memory-cache";
+import { CoverHydrationPipeline, type CoverTarget, type ItemCoverInfo } from "./browse-covers-hydration";
+
+export type { CoverState } from "./browse-covers-memory-cache";
+export type { CoverTarget, ItemCoverInfo } from "./browse-covers-hydration";
 
 /**
  * Module-level reactive signal that mirrors `BrowseCovers.enabled`. Any Solid
@@ -17,34 +20,10 @@ const [coversEnabledSignal, setCoversEnabledSignal] = persistedSignal(true, {
   deserialize: (v) => v !== null ? v === "true" : true,
 });
 
-export type CoverState = "no-cover" | "downloading" | "processing" | "loading" | "loaded";
-
 const [coverPathMap, setCoverPathMap] = createSignal<Map<string, string>>(new Map(), { equals: false });
 const [coverStateMap, setCoverStateMap] = createSignal<Map<string, CoverState>>(new Map(), { equals: false });
 
 export { coversEnabledSignal, coverStateMap };
-
-export interface CoverTarget {
-  coverKey: string;
-  chapterPermalink: string;
-  seriesPermalink: string | null;
-  seriesType: string | null;
-}
-
-export interface ItemCoverInfo {
-  coverKey: string;
-  chapterPermalink: string;
-  seriesPermalink: string;
-  seriesName: string;
-  seriesType: string;
-  isStandalone: boolean;
-}
-
-// RAM quick win: 100 in-memory cover paths (down from 500) covers 5 full 20-item feed pages
-// of smooth scrolling, cutting Map entry overhead without dropping visible cover cache.
-const SCROLL_IDLE_MS = 300;
-const MAX_MEMORY_CACHE = 100;
-const MAX_FAILED_ATTEMPTS = 50;
 
 /**
  * Feed cover-hydration engine. Reactive singleton that drives cover image paths
@@ -52,38 +31,26 @@ const MAX_FAILED_ATTEMPTS = 50;
  * flicker and reconciliation race conditions.
  */
 export class BrowseCovers {
-  private readonly memoryCache = new Map<string, string>();
-  private readonly failedAttempts = new Map<string, { count: number; lastTried: number }>();
-  private readonly inflight = new Map<string, Promise<string | null>>();
-  private readonly queue: CoverTarget[] = [];
-  private readonly queuedKeys = new Set<string>();
-  private readonly MAX_CONCURRENCY = 4;
+  private readonly cache = new CoverMemoryCache();
+  private readonly pipeline: CoverHydrationPipeline;
 
   constructor() {
+    this.pipeline = new CoverHydrationPipeline({
+      coversEnabled: () => this.coversEnabled,
+      cache: this.cache,
+      setCoverState: (key, state) => this.setCoverState(key, state),
+      updateCoverPath: (key, path) => this.updateCoverPath(key, path),
+    });
+
     if (typeof document !== "undefined") {
       document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && !this.isScrolling) {
-          this.pumpCoverHydration();
+        if (!document.hidden && !this.pipeline.isScrolling) {
+          this.pipeline.pump();
         }
       });
     }
   }
 
-  private setMemoryCache(key: string, val: string): void {
-    if (this.memoryCache.size >= MAX_MEMORY_CACHE) {
-      const oldest = this.memoryCache.keys().next().value;
-      if (oldest !== undefined) this.memoryCache.delete(oldest);
-    }
-    this.memoryCache.set(key, val);
-  }
-
-  private setFailedAttempt(key: string, val: { count: number; lastTried: number }): void {
-    if (this.failedAttempts.size >= MAX_FAILED_ATTEMPTS) {
-      const oldest = this.failedAttempts.keys().next().value;
-      if (oldest !== undefined) this.failedAttempts.delete(oldest);
-    }
-    this.failedAttempts.set(key, val);
-  }
   private setCoverState(key: string, state: CoverState): void {
     setCoverStateMap((prev) => {
       if (prev.get(key) === state) return prev;
@@ -98,9 +65,9 @@ export class BrowseCovers {
   }
 
   private updateCoverPath(key: string, path: string): void {
-    this.setMemoryCache(key, path);
+    this.cache.set(key, path);
     this.setCoverState(key, "loading");
-    this.failedAttempts.delete(key);
+    this.cache.deleteFailedAttempt(key);
     setCoverPathMap((prev) => {
       if (prev.get(key) === path) return prev;
       const next = new Map(prev);
@@ -112,18 +79,10 @@ export class BrowseCovers {
       return next;
     });
   }
-  private activeWorkers = 0;
-  private hydrationHost: HTMLElement | null = null;
-  private lazyObserver: IntersectionObserver | null = null;
-  private isScrolling = false;
-  private readonly onScrollIdle = debounce(() => {
-    this.isScrolling = false;
-    this.pumpCoverHydration();
-  }, SCROLL_IDLE_MS);
-  private scrollTrackingAttached = false;
+
   /** Reactively looks up a cached cover path. */
   getCover(coverKey: string): string | undefined {
-    return coverPathMap().get(coverKey) || this.memoryCache.get(coverKey) || undefined;
+    return coverPathMap().get(coverKey) || this.cache.get(coverKey) || undefined;
   }
 
   /** Reactively looks up the current lifecycle state of a cover. */
@@ -133,24 +92,23 @@ export class BrowseCovers {
     if (path) return "loading";
     const explicit = coverStateMap().get(coverKey);
     if (explicit) return explicit;
-    if (this.queuedKeys.has(coverKey)) return "downloading";
+    if (this.pipeline.queuedKeysRef.has(coverKey)) return "downloading";
     return "no-cover";
   }
+
   clearMemoryCache(): void {
-    this.memoryCache.clear();
-    this.failedAttempts.clear();
-    this.queuedKeys.clear();
-    this.queue.length = 0;
+    this.cache.clearData();
+    this.cache.clearFailedAttempts();
+    this.pipeline.reset();
     setCoverPathMap(new Map());
     setCoverStateMap(new Map());
-    this.detachScrollTracking();
   }
 
   /** Evicts a broken/missing cover path from memory cache and SQLite. */
   evict(coverKey: string): void {
-    this.memoryCache.delete(coverKey);
-    this.failedAttempts.delete(coverKey);
-    this.queuedKeys.delete(coverKey);
+    this.cache.delete(coverKey);
+    this.cache.deleteFailedAttempt(coverKey);
+    this.pipeline.unqueueKey(coverKey);
     setCoverPathMap((prev) => {
       if (!prev.has(coverKey)) return prev;
       const next = new Map(prev);
@@ -165,17 +123,11 @@ export class BrowseCovers {
     });
     void deleteCached(`cover:${coverKey}`);
   }
+
   /** Manually forces a retry for a cover target. */
   retryCover(target: CoverTarget, el?: HTMLElement): void {
     this.evict(target.coverKey);
-    if (el && this.lazyObserver) {
-      this.lazyObserver.observe(el);
-    }
-    if (!this.queuedKeys.has(target.coverKey)) {
-      this.queuedKeys.add(target.coverKey);
-      this.queue.unshift(target);
-      this.pumpCoverHydration();
-    }
+    this.pipeline.retryCover(target, el);
   }
 
   get coversEnabled(): boolean {
@@ -185,17 +137,12 @@ export class BrowseCovers {
   setCoversEnabled(v: boolean): void {
     setCoversEnabledSignal(v);
     if (!v) {
-      this.queue.length = 0;
-      this.queuedKeys.clear();
-      this.detachScrollTracking();
-      if (this.lazyObserver) {
-        this.lazyObserver.disconnect();
-        this.lazyObserver = null;
-      }
+      this.pipeline.disable();
     }
   }
+
   get currentHydrationHost(): HTMLElement | null {
-    return this.hydrationHost;
+    return this.pipeline.hydrationHost;
   }
 
   /** Maps a feed chapter or series search item to its cover key + series metadata. */
@@ -264,19 +211,7 @@ export class BrowseCovers {
 
   /** Resets per-page hydration state and attaches scroll tracking once. */
   beginPage(host: HTMLElement): void {
-    this.hydrationHost = host;
-    this.queue.length = 0; // reset queue for new page
-    this.queuedKeys.clear();
-    if (this.lazyObserver) {
-      this.lazyObserver.disconnect();
-      this.lazyObserver = null;
-    }
-
-    // Attach scroll tracking to #ds-view on first ever feed render.
-    if (!this.scrollTrackingAttached && this.coversEnabled) {
-      this.scrollTrackingAttached = true;
-      this.attachScrollTracking();
-    }
+    this.pipeline.beginPage(host);
   }
 
   /** Pre-loads locally cached covers from SQLite in a single batch query. */
@@ -288,7 +223,7 @@ export class BrowseCovers {
     for (const ct of coverTargets) {
       if (!uniqueCoverKeys.has(ct.coverKey)) {
         uniqueCoverKeys.set(ct.coverKey, ct);
-        if (!this.memoryCache.has(ct.coverKey)) {
+        if (!this.cache.has(ct.coverKey)) {
           keysToQuery.push(`cover:${ct.coverKey}`);
         }
       }
@@ -302,7 +237,7 @@ export class BrowseCovers {
         for (const [fullKey, payload] of cachedMap) {
           const rawKey = fullKey.replace(/^cover:/, "");
           if (payload) {
-            this.setMemoryCache(rawKey, payload);
+            this.cache.set(rawKey, payload);
             if (currentMap.get(rawKey) !== payload) {
               currentMap.set(rawKey, payload);
               changed = true;
@@ -325,27 +260,12 @@ export class BrowseCovers {
 
   /** Observes a cover wrap; enqueues hydration when it nears the viewport. */
   observe(wrap: HTMLElement): void {
-    if (!this.coversEnabled) return;
-    this.getLazyObserver().observe(wrap);
+    this.pipeline.observe(wrap);
   }
 
   /** Pauses hydration pumps during the scroll-to-top animation. */
   scrollToTop(): void {
-    // Keep hydration paused for the whole animation. We must NOT arm the idle
-    // timer here: Chromium's programmatic smooth scroll does not emit JS scroll
-    // events for its full duration, so a 400ms idle timer would fire mid-flight,
-    // flip isScrolling to false, and let the pump run while covers are still
-    // flying past — causing scroll jank.
-    if (!this.coversEnabled) return;
-    this.onScrollIdle.clear();
-    this.isScrolling = true;
-    // Deliberately keep the observer connected: covers flying past the
-    // viewport get queued (not pumped — isScrolling is true), so they hydrate
-    // in the background once the scroll settles. Covers that were scrolled past
-    // quickly on the way DOWN were queued but never hydrated; dropping them
-    // here (the old behavior) forced a fresh re-hydration on the way back up.
-    // Keeping the queue + observer lets the idle pump drain them while the user
-    // rests at the top, so the return trip is all cache hits.
+    this.pipeline.scrollToTop();
   }
 
   /**
@@ -354,167 +274,12 @@ export class BrowseCovers {
    * genuinely stable again.
    */
   resumeAfterScrollToTop(host: HTMLElement): void {
-    if (!this.coversEnabled) return;
-    // Force the paused state so re-observed covers only get queued, never
-    // pumped immediately — even if the idle timer fired mid-animation (scroll
-    // events on a long smooth scroll can be more than SCROLL_IDLE_MS apart).
-    this.isScrolling = true;
-    this.reobserveUnloadedCovers(host);
-    this.onScrollIdle.clear();
-    this.onScrollIdle();
+    this.pipeline.resumeAfterScrollToTop(host);
   }
 
   /** Re-observes wraps that never got an image (e.g. after scroll-to-top). */
   reobserveUnloadedCovers(host: HTMLElement): void {
-    if (!this.coversEnabled) return;
-    const observer = this.getLazyObserver();
-    const unmountedWraps = host.querySelectorAll<HTMLElement>(
-      ".ds-feed-cover-wrap:not(:has(img.ds-feed-cover))",
-    );
-    for (const wrap of unmountedWraps) {
-      observer.observe(wrap);
-    }
-  }
-
-  private scrollCleanups: (() => void)[] = [];
-
-  private attachScrollTracking(): void {
-    // Primary: attach directly to the scrollable container so the event is guaranteed.
-    const dsView = document.getElementById("ds-view");
-    if (dsView) {
-      dsView.addEventListener("scroll", this.onScrollActive, { passive: true });
-      this.scrollCleanups.push(() => dsView.removeEventListener("scroll", this.onScrollActive));
-    } else {
-      log.warn("browse-covers", "#ds-view not found — scroll tracking may miss events");
-    }
-    // Fallback: document capture for any other scroll sources.
-    document.addEventListener("scroll", this.onScrollActive, { capture: true, passive: true });
-    this.scrollCleanups.push(() => document.removeEventListener("scroll", this.onScrollActive, { capture: true }));
-  }
-
-  private detachScrollTracking(): void {
-    for (const fn of this.scrollCleanups) fn();
-    this.scrollCleanups.length = 0;
-    this.scrollTrackingAttached = false;
-  }
-
-  private readonly onScrollActive = (): void => {
-    if (!this.isScrolling) {
-      this.isScrolling = true;
-    }
-    this.onScrollIdle();
-  };
-  private getLazyObserver(): IntersectionObserver {
-    if (!this.lazyObserver) {
-      this.lazyObserver = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              const el = entry.target as HTMLElement;
-              if (!this.coversEnabled) continue;
-
-              const coverKey = el.dataset.feedCover;
-              const chapterPermalink = el.dataset.chapterPermalink;
-              const seriesPermalink = el.dataset.seriesPermalink;
-              const seriesType = el.dataset.seriesType;
-
-              if (coverKey) {
-                const resolved = this.memoryCache.get(coverKey);
-                if (resolved) {
-                  this.lazyObserver?.unobserve(el);
-                  this.updateCoverPath(coverKey, resolved);
-                } else if (chapterPermalink) {
-                  const fail = this.failedAttempts.get(coverKey);
-                  const cooldown = fail ? Math.min(30000, 3000 * fail.count) : 0;
-                  const readyToRetry = !fail || Date.now() - fail.lastTried > cooldown;
-
-                  if (readyToRetry && !this.queuedKeys.has(coverKey)) {
-                    this.queuedKeys.add(coverKey);
-                    this.setCoverState(coverKey, "downloading");
-                    this.queue.unshift({
-                      coverKey,
-                      chapterPermalink,
-                      seriesPermalink: seriesPermalink || null,
-                      seriesType: seriesType || null,
-                    });
-                    if (!this.isScrolling) this.pumpCoverHydration();
-                  }
-                }
-              }
-            }
-          }
-        },
-        { rootMargin: "300px" },
-      );
-    }
-    return this.lazyObserver;
-  }
-  private pumpCoverHydration(): void {
-    if (
-      !this.coversEnabled ||
-      this.isScrolling ||
-      !this.hydrationHost ||
-      this.hydrationHost.offsetParent === null ||
-      this.queue.length === 0 ||
-      (typeof document !== "undefined" && document.hidden)
-    ) {
-      return;
-    }
-    while (
-      !this.isScrolling &&
-      !(typeof document !== "undefined" && document.hidden) &&
-      this.hydrationHost?.offsetParent !== null &&
-      this.activeWorkers < this.MAX_CONCURRENCY &&
-      this.queue.length > 0
-    ) {
-      const target = this.queue.shift();
-      if (!target) break;
-
-      this.activeWorkers++;
-
-      void (async () => {
-        try {
-          let task = this.inflight.get(target.coverKey);
-          if (!task) {
-            this.setCoverState(target.coverKey, "downloading");
-            task = getOrHydrateItemCover({
-              coverKey: target.coverKey,
-              chapterPermalink: target.chapterPermalink,
-              seriesOrGroupPermalink: target.seriesPermalink,
-              seriesType: target.seriesType,
-              onPhase: (phase) => {
-                this.setCoverState(target.coverKey, phase);
-              },
-            });
-            this.inflight.set(target.coverKey, task);
-          }
-
-          const coverPath = await task;
-          if (coverPath) {
-            this.updateCoverPath(target.coverKey, coverPath);
-          } else {
-            this.setCoverState(target.coverKey, "no-cover");
-            this.memoryCache.delete(target.coverKey);
-            const prevFail = this.failedAttempts.get(target.coverKey);
-            const count = (prevFail?.count ?? 0) + 1;
-            this.setFailedAttempt(target.coverKey, { count, lastTried: Date.now() });
-          }
-        } catch (err) {
-          log.warn("browse-covers", `worker error: ${target.coverKey}`, err);
-          this.memoryCache.delete(target.coverKey);
-          const prevFail = this.failedAttempts.get(target.coverKey);
-          const count = (prevFail?.count ?? 0) + 1;
-          this.setFailedAttempt(target.coverKey, { count, lastTried: Date.now() });
-        } finally {
-          this.queuedKeys.delete(target.coverKey);
-          this.inflight.delete(target.coverKey);
-          this.activeWorkers--;
-          setTimeout(() => {
-            if (!this.isScrolling) this.pumpCoverHydration();
-          }, 0);
-        }
-      })();
-    }
+    this.pipeline.reobserveUnloadedCovers(host);
   }
 }
 
