@@ -438,93 +438,240 @@
 }
 
 /* Download Manager & Chapter Cinema Seats Matrix */
-.ds-download-manager {
-  background: var(--sys-control-bg, #f8f9fa);
-  border: 1px solid var(--sys-border-light, #e0e0e0);
-  border-radius: 6px;
-  margin-bottom: 12px;
-  overflow: hidden;
+.ds-download-manager-group {
+  margin-bottom: 8px;
 }
 
-.ds-download-manager-header {
+.ds-download-manager-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ds-download-speed-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sys-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 4px;
+  user-select: none;
+}
+
+.ds-download-series-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ds-download-series-item {
+  background: var(--sys-window-bg);
+  border: 1px solid var(--sys-border-medium, #ccc);
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ds-download-series-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: var(--sys-surface-2, #f0f2f5);
-  font-size: 12px;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.ds-download-progress-track {
-  height: 6px;
-  background: var(--sys-border-light, #e0e0e0);
-  border-radius: 3px;
-  overflow: hidden;
-  position: relative;
+.ds-download-series-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
   flex: 1;
+  min-width: 0;
 }
 
-.ds-download-progress-fill {
-  height: 100%;
-  background: var(--sys-primary, #0078d4);
-  transition: width 0.3s ease;
-  border-radius: 3px;
+.ds-download-series-title {
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.ds-download-queue-item {
+.ds-download-series-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.ds-download-series-subrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.ds-download-series-subtext {
+  font-size: 11px;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ds-download-percent-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sys-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ds-download-chapters-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--sys-border-light, #eee);
+}
+
+.ds-download-chapter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 2px 4px;
+  background: var(--sys-control-bg);
+}
+
+.ds-download-chapter-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ds-download-chapter-status {
+  margin-left: 6px;
+  font-size: 10.5px;
+}
+
+.ds-chapter-cancel-btn {
+  height: 18px !important;
+  min-height: 18px !important;
+  width: 18px !important;
+  padding: 0 !important;
+  font-size: 9px !important;
+}
+
+/* Downloaded series fieldsets and cinema matrix */
+.ds-downloaded-series-group {
+  margin-bottom: 8px;
+}
+
+.ds-downloaded-series-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ds-downloaded-summary-strip {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
-  font-size: 11.5px;
-  border-top: 1px solid var(--sys-border-light, #eee);
+  margin-bottom: 6px;
+}
+
+.ds-downloaded-cover {
+  width: 32px;
+  height: 44px;
+  object-fit: cover;
+  border: 1px solid var(--sys-border-dark, #b0b0b0);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.ds-downloaded-summary-text {
+  font-size: 11px;
+  font-style: normal;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ds-downloaded-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--sys-text-muted);
+  margin-bottom: 8px;
+  background: var(--sys-control-bg);
+  border: 1px solid var(--sys-border-medium, #ccc);
+  flex-wrap: wrap;
+}
+
+.ds-legend-title {
+  font-weight: 600;
+  color: var(--sys-window-text);
+}
+
+.ds-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ds-legend-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+  box-sizing: border-box;
+}
+.ds-legend-swatch.downloaded {
+  background: var(--sys-button-hover, #e5f1fb);
+  border: 1px solid var(--sys-border-focus, #0078d4);
+}
+
+.ds-legend-swatch.read {
+  background: var(--sys-control-bg, #ececec);
+  border: 1px solid var(--sys-button-border, #707070);
+  color: var(--sys-text-muted);
+}
+
+.ds-legend-swatch.bookmarked {
+  background: var(--sys-control-bg, #ececec);
+  border: 1px solid var(--sys-button-border, #707070);
+  position: relative;
 }
 
 .ds-chapter-range-bar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 12px;
-  background: var(--sys-surface-2, #f5f6f8);
-  border-bottom: 1px solid var(--sys-border-light, #eee);
+  gap: 3px;
+  padding: 4px 0;
+  margin-bottom: 4px;
   flex-wrap: wrap;
-  font-size: 11px;
-}
-
-.ds-range-pill {
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-size: 10.5px;
-  font-weight: 600;
-  cursor: pointer;
-  background: var(--sys-control-bg, #fff);
-  border: 1px solid var(--sys-border-light, #ccc);
-  color: var(--sys-window-text, #333);
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
-  user-select: none;
-  line-height: normal;
-}
-
-.ds-range-pill:hover {
-  background: var(--sys-hover-bg, #f0f0f0);
-  border-color: var(--sys-border-medium, #bbb);
-}
-
-.ds-range-pill.active {
-  background: var(--sys-primary, #0078d4);
-  border-color: var(--sys-primary, #0078d4);
-  color: #fff;
 }
 
 .ds-chapter-matrix {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 8px 12px;
-  max-height: 140px;
+  gap: 3px;
+  padding: 2px 0;
+  max-height: 120px;
   overflow-y: auto;
   scrollbar-width: thin;
-  transition: max-height 0.2s ease;
 }
 
 .ds-chapter-matrix.expanded {
@@ -533,9 +680,8 @@
 
 .ds-chapter-seat {
   min-width: 24px;
-  height: 24px;
+  height: 22px;
   padding: 0 4px;
-  border-radius: 3px;
   font-size: 10.5px;
   font-weight: 600;
   display: inline-flex;
@@ -544,58 +690,57 @@
   gap: 2px;
   cursor: pointer;
   user-select: none;
-  transition: transform 0.1s ease, filter 0.1s ease, border-color 0.1s ease;
   box-sizing: border-box;
-  text-decoration: none;
   position: relative;
   line-height: 1;
-  letter-spacing: -0.2px;
-}
-
-.ds-chapter-seat:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.1);
-  z-index: 2;
-}
-
-.ds-chapter-seat:active {
-  transform: translateY(0);
+  border-radius: var(--radius-1, 2px);
 }
 
 .ds-chapter-seat--downloaded {
-  background: var(--sys-primary, #0078d4);
-  color: #fff;
-  border: 1px solid var(--sys-primary, #0078d4);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+  background-color: var(--sys-button-hover, #e5f1fb) !important;
+  color: var(--sys-primary, #0078d4) !important;
+  border: 1px solid var(--sys-border-focus, #0078d4) !important;
+}
+
+.ds-chapter-seat--downloaded:hover {
+  background-color: var(--sys-button-active, #cce4f7) !important;
+  border-color: var(--sys-primary-border, #005a9e) !important;
 }
 
 .ds-chapter-seat--read {
-  background: var(--sys-control-bg, #e9ecef);
-  color: var(--sys-text-muted, #6c757d);
-  border: 1px solid var(--sys-border-light, #ced4da);
+  background-color: var(--sys-control-bg, #ececec) !important;
+  color: var(--sys-text-muted, #707070) !important;
+  border: 1px solid var(--sys-button-border, #707070) !important;
   opacity: 0.85;
 }
 
-.ds-chapter-seat--downloading {
-  background: rgba(0, 120, 212, 0.15);
-  color: var(--sys-primary, #0078d4);
-  border: 1px dashed var(--sys-primary, #0078d4);
-  animation: ds-pulse-seat 1.6s infinite ease-in-out;
+.ds-chapter-seat--read:hover {
+  background-color: var(--sys-hover-bg, #f0f0f0) !important;
+  opacity: 1;
 }
 
-@keyframes ds-pulse-seat {
-  0% { box-shadow: 0 0 0 0 rgba(0, 120, 212, 0.4); }
-  70% { box-shadow: 0 0 0 4px rgba(0, 120, 212, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 120, 212, 0); }
+.ds-seat-check {
+  font-size: 9px;
+  opacity: 0.85;
 }
 
-.ds-chapter-seat--bookmarked::after {
-  content: "★";
-  font-size: 7px;
+/* Bookmark Dog-Ear / Corner Fold on Chapter Seat & Legend */
+.ds-chapter-seat--bookmarked::before,
+.ds-legend-swatch.bookmarked::before {
+  content: "";
   position: absolute;
-  top: 0px;
-  right: 1px;
-  color: #ffb703;
-  line-height: 1;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 7px 7px 0;
+  border-color: transparent var(--ds-warn-text, #d97706) transparent transparent;
+  z-index: 2;
+  border-top-right-radius: 1px;
+}
+
+.ds-rotate-180 {
+  transform: rotate(180deg);
 }
 }

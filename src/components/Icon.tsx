@@ -114,3 +114,8 @@ export const ChartIcon = (props: BaseIconProps) => <Icon name="pie-chart" {...pr
 export const StorageIcon = (props: BaseIconProps) => <Icon name="hdd-stack" {...props} />;
 export const ImageIcon = (props: BaseIconProps) => <Icon name="image" {...props} />;
 export const ListCheckIcon = (props: BaseIconProps) => <Icon name="list-check" {...props} />;
+export const PlayIcon = (props: BaseIconProps) => <Icon name="play-fill" {...props} />;
+export const PauseIcon = (props: BaseIconProps) => <Icon name="pause-fill" {...props} />;
+export const SpeedIcon = (props: BaseIconProps) => <Icon name="lightning-charge-fill" {...props} />;
+export const HourglassIcon = (props: BaseIconProps) => <Icon name="hourglass-split" {...props} />;
+export const DownloadIcon = (props: BaseIconProps) => <Icon name="download" {...props} />;

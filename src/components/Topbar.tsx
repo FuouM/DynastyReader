@@ -30,7 +30,7 @@ import {
   CloseIcon,
   RefreshIcon,
   SettingsIcon,
-  CloudDownloadIcon,
+  DownloadIcon,
   Icon,
 } from "./Icon";
 import { IconButton, SegmentedSwitch } from "./Button";
@@ -192,16 +192,15 @@ export function Topbar() {
               <Show when={activeDownloadCount() > 0}>
                 <button
                   type="button"
-                  class="win-button ds-btn-sm"
+                  class="win-button"
                   id="ds-topbar-downloads-btn"
                   onClick={() => navigate({ view: "browse", browseTab: "downloaded" })}
                   title="Downloads in progress — click to view in Downloaded tab"
-                  style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--sys-primary,#0078d4);background:rgba(0,120,212,0.1);border:1px solid var(--sys-primary,#0078d4);border-radius:4px;height:24px;padding:0 7px;box-sizing:border-box;"
                 >
-                  <CloudDownloadIcon class="ds-spin" style="font-size:12px;" />
+                  <DownloadIcon />
                   <span>{activeDownloadCount()}</span>
                   <Show when={downloadSpeedBps() > 0}>
-                    <span style="font-weight:normal;opacity:0.85;font-size:10.5px;">{formatDownloadSpeed(downloadSpeedBps())}</span>
+                    <span class="ds-topbar-download-speed ds-muted">{formatDownloadSpeed(downloadSpeedBps())}</span>
                   </Show>
                 </button>
               </Show>

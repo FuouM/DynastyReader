@@ -31,8 +31,14 @@ import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
 import { InputField } from "../components/InputField";
 import { EmptyState } from "../components/EmptyState";
-import { CloudDownloadIcon, StorageIcon } from "../components/Icon";
-
+import { GroupBox } from "../components/GroupBox";
+import {
+  BookIcon,
+  CheckIcon,
+  PlayIcon,
+  ChevronRightIcon,
+  StorageIcon,
+} from "../components/Icon";
 const PAGE_SIZE = 25;
 interface DownloadedModel {
   rows: FullyCachedChapterRow[];
@@ -49,14 +55,22 @@ interface DownloadedSeriesGroup {
   lastCachedAt: number;
 }
 
-function extractChapterLabel(title: string): string {
+function extractChapterLabel(title: string, index?: number, total?: number): string {
   const clean = title.trim();
   const match = clean.match(/(?:chapter|ch\.?|c)\s*(\d+(?:\.\d+)?)/i);
   if (match) return match[1];
   const leadingNum = clean.match(/^(\d+(?:\.\d+)?)/);
   if (leadingNum) return leadingNum[1];
-  if (clean.length <= 5) return clean;
-  return clean.slice(0, 4);
+  const anyNum = clean.match(/\b(\d+(?:\.\d+)?)\b/);
+  if (anyNum) return anyNum[1];
+  if (/oneshot|one-shot/i.test(clean)) return "OS";
+  if (/prologue/i.test(clean)) return "Pro";
+  if (/epilogue/i.test(clean)) return "Epi";
+  if (/extra/i.test(clean)) return "Ex";
+  if (clean.length <= 4) return clean;
+  if (index !== undefined) return `${index + 1}`;
+  if (total === 1) return "1";
+  return "1";
 }
 
 function SeriesDownloadedCard(props: {
@@ -65,9 +79,8 @@ function SeriesDownloadedCard(props: {
   bookmarkSet: Set<string>;
 }) {
   const [activeRange, setActiveRange] = createSignal<number>(-1);
-  const [expanded, setExpanded] = createSignal<boolean>(false);
+  const [isCollapsed, setIsCollapsed] = createSignal<boolean>(false);
   const CHUNK_SIZE = 50;
-
   const totalChapters = () => props.group.chapters.length;
   const isLarge = () => totalChapters() > CHUNK_SIZE;
 
@@ -103,31 +116,17 @@ function SeriesDownloadedCard(props: {
     props.group.chapters.find((c) => !props.readHistorySet.has(c.chapterPermalink));
 
   return (
-    <div
-      class="ds-downloaded-group"
-      style="border:1px solid var(--sys-border-light,#e0e0e0);border-radius:6px;margin-bottom:12px;background:var(--sys-window-bg,#fff);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);"
-    >
-      <div
-        class="ds-downloaded-group-header"
-        style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--sys-surface-2,#f5f6f8);border-bottom:1px solid var(--sys-border-light,#e8e8e8);"
-      >
-        <Show when={props.group.coverPath}>
-          <img
-            src={convertFileSrc(props.group.coverPath!)}
-            alt=""
-            style="width:38px;height:52px;object-fit:cover;border-radius:3px;flex-shrink:0;cursor:pointer;"
-            onClick={() =>
-              navigate({
-                view: "series",
-                seriesPermalink: props.group.seriesPermalink,
-                seriesName: props.group.seriesName || props.group.seriesPermalink,
-              })
-            }
-          />
-        </Show>
-        <div style="flex:1;min-width:0;">
-          <div
-            style="font-weight:600;font-size:13.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+    <GroupBox
+      class="ds-downloaded-series-group ds-mb-8"
+      collapsible={true}
+      collapsed={isCollapsed()}
+      onToggle={() => setIsCollapsed((c) => !c)}
+      title={
+        <span class="ds-icon-text">
+          <BookIcon />
+          <span
+            class="ds-truncate ds-link-title"
+            style="max-width:320px;"
             onClick={() =>
               navigate({
                 view: "series",
@@ -138,30 +137,19 @@ function SeriesDownloadedCard(props: {
             title={props.group.seriesName || props.group.seriesPermalink}
           >
             {props.group.seriesName || props.group.seriesPermalink}
-          </div>
-          <div
-            class="ds-muted"
-            style="font-size:11.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px;"
-          >
-            <span>{props.group.chapters.length} chapter{props.group.chapters.length === 1 ? "" : "s"}</span>
-            <span>·</span>
-            <span>{formatBytes(props.group.totalSizeBytes)}</span>
-            <span>·</span>
-            <span>{formatDate(props.group.lastCachedAt)}</span>
-            <Show when={readCount() > 0}>
-              <span>·</span>
-              <span style="color:var(--sys-primary,#0078d4);font-weight:600;">
-                {readCount()}/{props.group.chapters.length} Read
-              </span>
-            </Show>
-          </div>
-        </div>
-
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          </span>
+          <span class="ds-muted" style="font-weight:normal;font-size:11px;">
+            ({props.group.chapters.length} ch · {formatBytes(props.group.totalSizeBytes)})
+          </span>
+        </span>
+      }
+      actions={
+        <div class="ds-downloaded-series-actions">
           <Show when={firstUnread()}>
             {(next) => (
               <button
-                class="win-button ds-btn-sm primary"
+                type="button"
+                class="win-button primary ds-btn-sm"
                 onClick={() =>
                   navigate({
                     view: "reader",
@@ -171,13 +159,14 @@ function SeriesDownloadedCard(props: {
                     chapterTitle: next().chapterTitle,
                   })
                 }
-                title={`Continue reading from unread chapter: ${next().chapterTitle}`}
+                title={`Continue reading: ${next().chapterTitle}`}
               >
-                ▶ Read Next
+                <PlayIcon /> Read Next
               </button>
             )}
           </Show>
           <button
+            type="button"
             class="win-button ds-btn-sm"
             onClick={() =>
               navigate({
@@ -187,16 +176,38 @@ function SeriesDownloadedCard(props: {
               })
             }
           >
-            Go to Series →
+            Series <ChevronRightIcon />
           </button>
-          <Show when={totalChapters() > 25}>
-            <button
-              class="win-button ds-btn-sm ds-btn-icon"
-              onClick={() => setExpanded((v) => !v)}
-              title={expanded() ? "Collapse matrix height" : "Expand matrix height"}
-            >
-              {expanded() ? "▴" : "▾"}
-            </button>
+        </div>
+      }
+    >
+      {/* Series Summary Strip */}
+      <div class="ds-downloaded-summary-strip">
+        <Show when={props.group.coverPath}>
+          <img
+            src={convertFileSrc(props.group.coverPath!)}
+            alt=""
+            class="ds-downloaded-cover"
+            onClick={() =>
+              navigate({
+                view: "series",
+                seriesPermalink: props.group.seriesPermalink,
+                seriesName: props.group.seriesName || props.group.seriesPermalink,
+              })
+            }
+          />
+        </Show>
+        <div class="ds-downloaded-summary-text ds-muted">
+          <span>{props.group.chapters.length} chapters</span>
+          <span>·</span>
+          <span>{formatBytes(props.group.totalSizeBytes)}</span>
+          <span>·</span>
+          <span>{formatDate(props.group.lastCachedAt)}</span>
+          <Show when={readCount() > 0}>
+            <span>·</span>
+            <span style="color:var(--sys-primary);font-weight:600;">
+              {readCount()}/{props.group.chapters.length} Read
+            </span>
           </Show>
         </div>
       </div>
@@ -204,9 +215,10 @@ function SeriesDownloadedCard(props: {
       {/* Range Segment Selector for Large Series (>50 chapters) */}
       <Show when={isLarge()}>
         <div class="ds-chapter-range-bar">
-          <span class="ds-muted" style="font-size:10.5px;margin-right:2px;">Range:</span>
+          <span class="ds-muted" style="font-size:11px;margin-right:2px;">Range:</span>
           <button
-            class={`ds-range-pill${activeRange() === -1 ? " active" : ""}`}
+            type="button"
+            class={`win-button ds-btn-sm${activeRange() === -1 ? " active primary" : ""}`}
             onClick={() => setActiveRange(-1)}
           >
             All ({totalChapters()})
@@ -214,7 +226,8 @@ function SeriesDownloadedCard(props: {
           <For each={chunks()}>
             {(chunk, idx) => (
               <button
-                class={`ds-range-pill${activeRange() === idx() ? " active" : ""}`}
+                type="button"
+                class={`win-button ds-btn-sm${activeRange() === idx() ? " active primary" : ""}`}
                 onClick={() => setActiveRange(idx())}
               >
                 {chunk.label}
@@ -225,17 +238,17 @@ function SeriesDownloadedCard(props: {
       </Show>
 
       {/* Cinema Seats Matrix */}
-      <div class={`ds-chapter-matrix${expanded() ? " expanded" : ""}`}>
+      <div class="ds-chapter-matrix">
         <For each={displayedChapters()}>
-          {(ch) => {
+          {(ch, idx) => {
             const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
             const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
-            const shortLabel = extractChapterLabel(ch.chapterTitle);
-            const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · ✓ Read" : " · Unread"}\nClick to read offline`;
-
+            const shortLabel = extractChapterLabel(ch.chapterTitle, idx(), totalChapters());
+            const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · Read" : " · Unread"}${isBookmarked() ? " · Bookmarked" : ""}\nClick to read offline`;
             return (
-              <div
-                class={`ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
+              <button
+                type="button"
+                class={`win-button ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
                 title={tooltip}
                 onClick={() =>
                   navigate({
@@ -248,15 +261,15 @@ function SeriesDownloadedCard(props: {
                 }
               >
                 <Show when={isRead()}>
-                  <span style="font-size:9px;opacity:0.75;line-height:1;">✓</span>
+                  <CheckIcon size={10} class="ds-seat-check" />
                 </Show>
                 <span>{shortLabel}</span>
-              </div>
+              </button>
             );
           }}
         </For>
       </div>
-    </div>
+    </GroupBox>
   );
 }
 
@@ -302,182 +315,162 @@ export interface BrowseDownloadedProps {
 }
 
 export function BrowseDownloaded(props: BrowseDownloadedProps) {
+  const [currentPage, setCurrentPage] = createSignal(1);
+  const [query, setQuery] = createSignal("");
+  const [inputVal, setInputVal] = createSignal("");
+  let debounceTimer: number | null = null;
+
+  const handleInput = (val: string) => {
+    setInputVal(val);
+    if (debounceTimer !== null) clearTimeout(debounceTimer);
+    debounceTimer = window.setTimeout(() => {
+      setQuery(val);
+      setCurrentPage(1);
+    }, 200);
+  };
+
+  createEffect(() => {
+    if (route().view !== "browse") {
+      setInputVal("");
+      setQuery("");
+      setCurrentPage(1);
+    }
+  });
+
   const pane = useTabPane<DownloadedModel>({
     active: props.active,
     revision: props.revision,
     forceTick: props.forceTick,
-    load: async (_page) => {
+    load: async () => {
       const rows = await getFullyCachedChapters();
-      const permalinks = rows.map((r) => r.chapterPermalink);
+      const perms = rows.map((r) => r.chapterPermalink);
       const [bookmarkSet, readHistorySet] = await Promise.all([
-        getBookmarkPermalinks(permalinks).catch(() => new Set<string>()),
-        getHistoryPermalinks(permalinks).catch(() => new Set<string>()),
+        getBookmarkPermalinks(perms),
+        getHistoryPermalinks(perms),
       ]);
       return { rows, bookmarkSet, readHistorySet };
     },
   });
-  const showSpinner = useDelayedSpinner(pane.loading);
 
-  const [query, setQuery] = createSignal("");
-  const [page, setPage] = createSignal(1);
-
-  createEffect(() => setPaneLoading(props.tabId, pane.loading()));
+  const showSpinner = useDelayedSpinner(() => pane.loading());
 
   createEffect(() => {
-    if (route().view !== "browse") {
-      setQuery("");
-      setPage(1);
-    }
+    setPaneLoading("downloaded", pane.loading());
   });
 
-  createEffect(() => {
-    query();
-    setPage(1);
-  });
+  const model = () => pane.data();
 
-  const filteredRows = (): FullyCachedChapterRow[] => {
-    const rows = pane.data()?.rows;
-    if (!rows) return [];
+  const filteredRows = () => {
+    const data = model();
+    if (!data) return [];
     const q = query().trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (c) =>
-        c.chapterTitle.toLowerCase().includes(q) ||
-        (c.seriesName && c.seriesName.toLowerCase().includes(q)) ||
-        c.chapterPermalink.toLowerCase().includes(q),
+    if (!q) return data.rows;
+    return data.rows.filter(
+      (r) =>
+        r.chapterTitle.toLowerCase().includes(q) ||
+        (r.seriesName && r.seriesName.toLowerCase().includes(q)) ||
+        r.chapterPermalink.toLowerCase().includes(q),
     );
   };
 
   const grouped = () => buildGroups(filteredRows());
 
-  // Pager now pages by groups+orphans units: each group counts as 1, each orphan as 1
-  const totalUnits = (): number => grouped().groups.length + grouped().orphans.length;
-  const totalPages = (): number => Math.max(1, Math.ceil(totalUnits() / PAGE_SIZE));
-  const currentPage = (): number => Math.min(page(), totalPages());
+  const totalGroupsCount = () =>
+    grouped().groups.length + (grouped().orphans.length > 0 ? 1 : 0);
 
+  const totalPages = () => Math.max(1, Math.ceil(totalGroupsCount() / PAGE_SIZE));
 
-  // Simpler pagination for initial: show all groups on page 1 style, but keep pager by groups
-  // For correctness with small datasets (<25 groups), pageOrphans calc above handles it; for larger,
-  // we show groups per page and orphans only after groups exhausted.
-  const visibleGroups = (): DownloadedSeriesGroup[] => {
-    const start = (currentPage() - 1) * PAGE_SIZE;
+  const pagedData = () => {
+    const { groups, orphans } = grouped();
+    const page = currentPage();
+    const start = (page - 1) * PAGE_SIZE;
     const end = start + PAGE_SIZE;
-    return grouped().groups.slice(start, end);
-  };
-  const visibleOrphans = (): FullyCachedChapterRow[] => {
-    const groupsLen = grouped().groups.length;
-    const start = (currentPage() - 1) * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    if (end <= groupsLen) return [];
-    if (start >= groupsLen) {
-      return grouped().orphans.slice(start - groupsLen, end - groupsLen);
-    }
-    // Straddling page: groups take start..groupsLen, orphans fill remainder
-    return grouped().orphans.slice(0, end - groupsLen);
+
+    const visibleGroups = groups.slice(start, end);
+    const orphanIndex = groups.length;
+    const showOrphans = orphans.length > 0 && orphanIndex >= start && orphanIndex < end;
+
+    return {
+      visibleGroups,
+      visibleOrphans: showOrphans ? orphans : [],
+    };
   };
 
-  const goToPage = (p: number): void => {
-    setPage(p);
+  const visibleGroups = () => pagedData().visibleGroups;
+  const visibleOrphans = () => pagedData().visibleOrphans;
+
+  const totalBytes = () =>
+    filteredRows().reduce((acc, r) => acc + r.totalSizeBytes, 0);
+
+  const totalChapters = () => filteredRows().length;
+
+  const goToPage = (page: number) => {
+    if (page < 1 || page > totalPages()) return;
+    setCurrentPage(page);
     scrollBrowseToTop();
   };
 
   createEffect(() => {
+    if (!props.active()) return;
+    const pages = totalPages();
+    const cur = currentPage();
     setTopPagerFor(props.tabId, {
-      totalPages: totalPages(),
-      currentPage: currentPage(),
+      totalPages: pages,
+      currentPage: cur,
       onPage: (p) => goToPage(p),
     });
   });
 
-  const totalCount = (): number => pane.data()?.rows.length ?? 0;
-  const filteredCount = (): number => filteredRows().length;
-  const isFiltering = (): boolean => query().trim().length > 0;
-
-  const totalBytes = (): number =>
-    (pane.data()?.rows ?? []).reduce((acc, c) => acc + c.totalSizeBytes, 0);
-
-  const filteredBytes = (): number =>
-    filteredRows().reduce((acc, c) => acc + c.totalSizeBytes, 0);
-
-  const model = (): DownloadedModel | undefined => pane.data();
-
   return (
     <div class="ds-tab-pane active" id="ds-tab-downloaded">
-      <div id="ds-downloaded-header" class="ds-downloaded-header">
-        <div class="ds-downloaded-stats">
-          <span class="ds-downloaded-stat-item">
-            <CloudDownloadIcon class="ds-downloaded-stat-icon" />
-            <span class="ds-downloaded-count">
-              <Show
-                when={isFiltering()}
-                fallback={
-                  <>
-                    <b>{totalCount()}</b>{" "}
-                    {t("browse.downloaded.chaptersCount", {
-                      count: "",
-                      noun:
-                        totalCount() === 1
-                          ? t("browse.downloaded.nounChapter")
-                          : t("browse.downloaded.nounChapters"),
-                    }).trim()}
-                  </>
-                }
-              >
-                <b>{filteredCount()}</b> {t("common.of")} <b>{totalCount()}</b>{" "}
-                {t("browse.downloaded.chaptersCount", {
-                  count: "",
-                  noun:
-                    totalCount() === 1
-                      ? t("browse.downloaded.nounChapter")
-                      : t("browse.downloaded.nounChapters"),
-                }).trim()}
+      {/* Header Controls Bar */}
+      <div id="ds-downloaded-header" class="ds-toolbar">
+        <div id="ds-downloaded-toolbar-left" class="ds-toolbar-row">
+          <InputField
+            id="ds-downloaded-search"
+            value={inputVal()}
+            onInput={handleInput}
+            placeholder={t("browse.downloaded.filterPlaceholder")}
+            onClear={() => {
+              setInputVal("");
+              setQuery("");
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+
+        <div id="ds-downloaded-toolbar-right" class="ds-toolbar-row">
+          <span class="ds-muted" id="ds-downloaded-count">
+            <StorageIcon />
+            <span>
+              {t("browse.downloaded.chaptersCount", {
+                count: totalChapters(),
+                noun: totalChapters() === 1 ? t("browse.downloaded.nounChapter") : t("browse.downloaded.nounChapters"),
+              })}
+              <Show when={totalChapters() > 0}>
+                {" "}({formatBytes(totalBytes())})
               </Show>
             </span>
           </span>
-          <Show when={totalBytes() > 0}>
-            <span class="ds-downloaded-divider">·</span>
-            <span class="ds-downloaded-stat-item ds-downloaded-stat-size">
-              <StorageIcon class="ds-downloaded-stat-icon" />
-              <span class="ds-downloaded-size">
-                <b>{formatBytes(isFiltering() ? filteredBytes() : totalBytes())}</b>
-                <Show when={isFiltering() && filteredBytes() !== totalBytes()}>
-                  <span class="ds-muted"> ({formatBytes(totalBytes())})</span>
-                </Show>
-              </span>
-            </span>
-          </Show>
         </div>
-        <Show when={isFiltering()}>
-          <span class="ds-status-pill fresh">
-            {t("common.search") || "Filtered"}
-          </span>
-        </Show>
       </div>
 
+      {/* Download Manager for Active Downloads */}
       <DownloadManager onComplete={() => pane.reload()} />
-      <div id="ds-downloaded-filter-wrap" class="ds-mb-8">
-        <InputField
-          placeholder={t("browse.downloaded.filterPlaceholder")}
-          value={query()}
-          onInput={setQuery}
-          onClear={() => setQuery("")}
-        />
-      </div>
-
-      {/* Visual Legend */}
-      <div style="display:flex;align-items:center;gap:12px;padding:5px 10px;font-size:11px;color:var(--sys-text-muted,#777);margin-bottom:10px;background:var(--sys-surface-2,#f4f5f7);border:1px solid var(--sys-border-light,#e2e4e8);border-radius:4px;flex-wrap:wrap;">
-        <span style="font-weight:600;">Legend:</span>
-        <span style="display:inline-flex;align-items:center;gap:4px;">
-          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--sys-primary,#0078d4);" />
-          Downloaded (Ready)
+      {/* Legend */}
+      <div class="ds-downloaded-legend">
+        <span class="ds-legend-title">Legend:</span>
+        <span class="ds-legend-item">
+          <span class="ds-legend-swatch downloaded" />
+          <span>Downloaded</span>
         </span>
-        <span style="display:inline-flex;align-items:center;gap:4px;">
-          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--sys-control-bg,#e9ecef);border:1px solid var(--sys-border-light,#ced4da);" />
-          ✓ Read
+        <span class="ds-legend-item">
+          <span class="ds-legend-swatch read"><CheckIcon size={10} /></span>
+          <span>Read</span>
         </span>
-        <span style="display:inline-flex;align-items:center;gap:4px;">
-          <span style="color:#ffb703;font-size:11px;line-height:1;">★</span>
-          Bookmarked
+        <span class="ds-legend-item">
+          <span class="ds-legend-swatch bookmarked" />
+          <span>Bookmarked</span>
         </span>
       </div>
 
@@ -510,29 +503,29 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
 
             {/* Orphan / Standalone Chapters */}
             <Show when={visibleOrphans().length > 0}>
-              <div
-                class="ds-downloaded-group"
-                style="border:1px solid var(--sys-border-light,#e0e0e0);border-radius:6px;margin-bottom:12px;background:var(--sys-window-bg,#fff);overflow:hidden;"
+              <GroupBox
+                class="ds-downloaded-series-group ds-mb-8"
+                title={
+                  <span class="ds-icon-text">
+                    <BookIcon />
+                    <span>Individual Chapters / Oneshots ({visibleOrphans().length})</span>
+                  </span>
+                }
               >
-                <div
-                  class="ds-downloaded-group-header"
-                  style="padding:8px 12px;background:var(--sys-surface-2,#f5f6f8);border-bottom:1px solid var(--sys-border-light,#e8e8e8);font-weight:600;font-size:13px;"
-                >
-                  Individual Chapters / Oneshots ({visibleOrphans().length})
-                </div>
                 <div class="ds-chapter-matrix">
                   <For each={visibleOrphans()}>
-                    {(ch) => {
+                    {(ch, idx) => {
                       const isRead = () =>
                         pane.data()?.readHistorySet.has(ch.chapterPermalink) ?? false;
                       const isBookmarked = () =>
                         pane.data()?.bookmarkSet.has(ch.chapterPermalink) ?? false;
-                      const shortLabel = extractChapterLabel(ch.chapterTitle);
-                      const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · ✓ Read" : " · Unread"}\nClick to read offline`;
+                      const shortLabel = extractChapterLabel(ch.chapterTitle, idx(), visibleOrphans().length);
+                      const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · Read" : " · Unread"}\nClick to read offline`;
 
                       return (
-                        <div
-                          class={`ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
+                        <button
+                          type="button"
+                          class={`win-button ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
                           title={tooltip}
                           onClick={() =>
                             navigate({
@@ -543,15 +536,15 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
                           }
                         >
                           <Show when={isRead()}>
-                            <span style="font-size:10px;opacity:0.75;">✓</span>
+                            <CheckIcon size={10} class="ds-seat-check" />
                           </Show>
                           <span>{shortLabel}</span>
-                        </div>
+                        </button>
                       );
                     }}
                   </For>
                 </div>
-              </div>
+              </GroupBox>
             </Show>
           </div>
         </Show>

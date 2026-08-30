@@ -673,4 +673,39 @@
   [data-theme="windows7"] .ds-bn-tab.active .bi {
     color: #0f2440 !important;
   }
+
+  /* ── Downloaded Chapter Seats on Aero ── */
+  [data-theme="windows7"] .ds-chapter-seat--downloaded {
+    background: linear-gradient(180deg, #eaf6fd 0%, #bee6fd 45%, #a7d9f5 100%) !important;
+    border: 1px solid #3c7fb1 !important;
+    color: #0c4a6e !important;
+    box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  [data-theme="windows7"] .ds-chapter-seat--downloaded:hover {
+    background: linear-gradient(180deg, #e0f0ff 0%, #c2e0ff 42%, #7fb8f0 44%, #a9d0f6 58%, #e0efff 100%) !important;
+    border-color: #1e4f84 !important;
+    color: #052e47 !important;
+  }
+  [data-theme="windows7"] .ds-chapter-seat--read {
+    background: linear-gradient(180deg, #f2f2f2 0%, #ebebeb 50%, #dddddd 51%, #cfcfcf 100%) !important;
+    border: 1px solid #8e8f8f !important;
+    color: #555555 !important;
+  }
+  [data-theme="windows7"] .ds-chapter-seat--read:hover {
+    background: linear-gradient(180deg, #eaf6fd 45%, #bee6fd 45%, #a7d9f5 100%) !important;
+    border-color: #3c7fb1 !important;
+    color: #0c4a6e !important;
+  }
+  [data-theme="windows7"] .ds-legend-swatch.downloaded {
+    background: linear-gradient(180deg, #eaf6fd 0%, #bee6fd 45%, #a7d9f5 100%) !important;
+    border: 1px solid #3c7fb1 !important;
+  }
+  [data-theme="windows7"] .ds-legend-swatch.read {
+    background: linear-gradient(180deg, #f2f2f2 0%, #ebebeb 50%, #dddddd 51%, #cfcfcf 100%) !important;
+    border: 1px solid #8e8f8f !important;
+  }
+  [data-theme="windows7"] .ds-chapter-seat--bookmarked::before,
+  [data-theme="windows7"] .ds-legend-swatch.bookmarked::before {
+    border-color: transparent #d97706 transparent transparent !important;
+  }
 }

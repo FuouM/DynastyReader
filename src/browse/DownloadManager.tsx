@@ -12,7 +12,19 @@ import {
 import { formatBytes } from "../lib/format";
 import { errorMessage } from "../utils/errors";
 import { showBanner } from "../stores/topbar";
-import { CloudDownloadIcon, RefreshIcon } from "../components/Icon";
+import { GroupBox } from "../components/GroupBox";
+import {
+  DownloadIcon,
+  RefreshIcon,
+  TrashIcon,
+  PlayIcon,
+  PauseIcon,
+  SpeedIcon,
+  HourglassIcon,
+  CloseIcon,
+  CheckIcon,
+  ChevronDownIcon,
+} from "../components/Icon";
 
 export interface DownloadProgressPayload {
   chapter_permalink: string;
@@ -55,12 +67,26 @@ function formatEta(seconds: number): string {
 
 export function DownloadManager(props: { onComplete?: () => void }) {
   const [items, setItems] = createSignal<DownloadQueueItem[]>([]);
+  const QUEUE_COLLAPSED_KEY = "ds_download_queue_collapsed";
+  const [isCollapsed, setIsCollapsed] = createSignal(
+    typeof window !== "undefined" ? localStorage.getItem(QUEUE_COLLAPSED_KEY) === "true" : false,
+  );
   const [isPaused, setIsPaused] = createSignal(false);
   const [expandedSeries, setExpandedSeries] = createSignal<Set<string>>(new Set());
   const [activeProgress, setActiveProgress] = createSignal<Record<string, { done: number; total: number; bytes: number }>>({});
   const [speedBps, setSpeedBps] = createSignal(0);
   const [etaSeconds, setEtaSeconds] = createSignal(0);
   const [sessionBytes, setSessionBytes] = createSignal(0);
+
+  const handleToggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(QUEUE_COLLAPSED_KEY, String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   let unlisten: UnlistenFn | null = null;
   let pollTimer: number | null = null;
@@ -91,35 +117,42 @@ export function DownloadManager(props: { onComplete?: () => void }) {
           const now = Date.now();
           const pageBytes = payload.last_page_bytes || 200_000;
 
-          if (pageBytes > 0) {
-            totalDownloadedBytes += pageBytes;
-            totalDownloadedPages += 1;
-            setSessionBytes(totalDownloadedBytes);
-
+          if (pageBytes > 0 && payload.status === "downloading") {
             const dt = (now - lastSampleTime) / 1000;
             if (dt > 0.15) {
               const instantSpeed = pageBytes / dt;
-              setSpeedBps((cur) => (cur === 0 ? instantSpeed : cur * 0.65 + instantSpeed * 0.35));
+              const prev = speedBps();
+              const ema = prev === 0 ? instantSpeed : prev * 0.7 + instantSpeed * 0.3;
+              setSpeedBps(ema);
               lastSampleTime = now;
 
-              // Calculate ETA across active/pending chapters in queue
-              const activeSpeed = speedBps();
-              if (activeSpeed > 0) {
-                const list = items();
-                let remainingPages = 0;
-                for (const item of list) {
-                  if (item.status === "pending") {
-                    remainingPages += item.total_pages > 0 ? item.total_pages : 24;
-                  } else if (item.status === "downloading") {
-                    const chTotal = payload.total_pages || item.total_pages || 24;
-                    remainingPages += Math.max(0, chTotal - payload.pages_done);
-                  }
+              totalDownloadedBytes += pageBytes;
+              setSessionBytes(totalDownloadedBytes);
+
+              const currentQueue = items();
+              const pendingItems = currentQueue.filter((i) => i.status === "pending" || i.status === "downloading");
+              const currentActive = currentQueue.find((i) => i.chapter_permalink === payload.chapter_permalink);
+              const remainingPagesInCurrent = Math.max(0, payload.total_pages - payload.pages_done);
+              const otherPendingPages = pendingItems
+                .filter((i) => i.chapter_permalink !== payload.chapter_permalink)
+                .reduce((acc, i) => acc + (i.total_pages > 0 ? i.total_pages : 20), 0);
+              const totalRemainingPages = remainingPagesInCurrent + otherPendingPages;
+
+              if (totalDownloadedPages > 0) {
+                const avgBytesPerPage = totalDownloadedBytes / totalDownloadedPages;
+                const remainingBytesEst = totalRemainingPages * avgBytesPerPage;
+                if (ema > 1000) {
+                  setEtaSeconds(remainingBytesEst / ema);
                 }
-                const avgBytesPerPage = totalDownloadedPages > 0 ? totalDownloadedBytes / totalDownloadedPages : 250_000;
-                const estRemainingBytes = remainingPages * avgBytesPerPage;
-                setEtaSeconds(estRemainingBytes / activeSpeed);
+              } else if (currentActive && payload.total_pages > 0) {
+                const estTotalBytes = payload.total_pages * pageBytes;
+                const estRemaining = Math.max(0, estTotalBytes - (payload.bytes_done || payload.pages_done * pageBytes));
+                if (ema > 1000) {
+                  setEtaSeconds(estRemaining / ema);
+                }
               }
             }
+            totalDownloadedPages += 1;
           }
 
           setActiveProgress((prev) => ({
@@ -127,9 +160,23 @@ export function DownloadManager(props: { onComplete?: () => void }) {
             [payload.chapter_permalink]: {
               done: payload.pages_done,
               total: payload.total_pages,
-              bytes: payload.bytes_done || (prev[payload.chapter_permalink]?.bytes ?? 0) + pageBytes,
+              bytes: payload.bytes_done || 0,
             },
           }));
+
+          setItems((prev) =>
+            prev.map((item) => {
+              if (item.chapter_permalink === payload.chapter_permalink) {
+                return {
+                  ...item,
+                  progress: payload.pages_done,
+                  total_pages: payload.total_pages || item.total_pages,
+                  status: payload.status as DownloadQueueItem["status"],
+                };
+              }
+              return item;
+            }),
+          );
 
           if (payload.status === "done" || payload.status === "failed" || payload.status === "cancelled") {
             void refreshQueue();
@@ -155,9 +202,8 @@ export function DownloadManager(props: { onComplete?: () => void }) {
 
   onCleanup(() => {
     if (unlisten) unlisten();
-    if (pollTimer !== null) window.clearInterval(pollTimer);
+    if (pollTimer !== null) clearInterval(pollTimer);
   });
-
   const totalCount = () => items().length;
   const activeOrPendingCount = () =>
     items().filter((i) => i.status === "downloading" || i.status === "pending").length;
@@ -221,6 +267,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
       } else if (failedChapters > 0) {
         status = "failed";
       }
+
       groups.push({
         series_permalink: perm,
         series_title,
@@ -235,23 +282,36 @@ export function DownloadManager(props: { onComplete?: () => void }) {
       });
     }
 
-    // Sort series groups: active on top, then most recent queued_at DESC
-    groups.sort((a, b) => {
-      const aActive = a.status === "downloading" || (a.status === "paused" && a.downloadingItem !== undefined);
-      const bActive = b.status === "downloading" || (b.status === "paused" && b.downloadingItem !== undefined);
-      if (aActive && !bActive) return -1;
-      if (!aActive && bActive) return 1;
+    // Sort order:
+    // 1. Actively downloading series
+    // 2. Paused / pending series with incomplete chapters
+    // 3. Failed series
+    // 4. Completed series
+    // Sub-sorted by latestQueuedAt descending
+    return groups.sort((a, b) => {
+      const getPriority = (g: SeriesDownloadGroup) => {
+        if (g.status === "downloading") return 1;
+        if (g.status === "paused" || g.status === "pending") return 2;
+        if (g.status === "failed") return 3;
+        return 4; // done
+      };
+      const priA = getPriority(a);
+      const priB = getPriority(b);
+      if (priA !== priB) return priA - priB;
       return b.latestQueuedAt - a.latestQueuedAt;
     });
-
-    return groups;
   };
 
-  const toggleExpand = (perm: string) => {
-    const s = new Set(expandedSeries());
-    if (s.has(perm)) s.delete(perm);
-    else s.add(perm);
-    setExpandedSeries(s);
+  const toggleExpand = (seriesPerm: string) => {
+    setExpandedSeries((prev) => {
+      const next = new Set(prev);
+      if (next.has(seriesPerm)) {
+        next.delete(seriesPerm);
+      } else {
+        next.add(seriesPerm);
+      }
+      return next;
+    });
   };
 
   const handlePauseResume = async () => {
@@ -259,13 +319,11 @@ export function DownloadManager(props: { onComplete?: () => void }) {
       if (isPaused()) {
         await resumeDownloads();
         setIsPaused(false);
-        showBanner("Downloads resumed");
       } else {
         await pauseDownloads();
         setIsPaused(true);
         setSpeedBps(0);
         setEtaSeconds(0);
-        showBanner("Downloads paused");
       }
       await refreshQueue();
     } catch (err) {
@@ -273,9 +331,9 @@ export function DownloadManager(props: { onComplete?: () => void }) {
     }
   };
 
-  const handleCancelChapter = async (perm: string) => {
+  const handleCancelChapter = async (chapterPermalink: string) => {
     try {
-      await cancelDownload(perm);
+      await cancelDownload(chapterPermalink);
       await refreshQueue();
     } catch (err) {
       showBanner(errorMessage(err));
@@ -285,7 +343,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
   const handleCancelSeries = async (group: SeriesDownloadGroup) => {
     try {
       for (const item of group.items) {
-        if (item.status === "downloading" || item.status === "pending") {
+        if (item.status === "pending" || item.status === "downloading") {
           await cancelDownload(item.chapter_permalink);
         }
       }
@@ -295,20 +353,18 @@ export function DownloadManager(props: { onComplete?: () => void }) {
     }
   };
 
-  const handleRetrySeries = async (seriesPerm: string) => {
+  const handleClearSeries = async (seriesPermalink: string) => {
     try {
-      await retryFailedDownloads(seriesPerm);
-      setIsPaused(false);
+      await clearCompletedDownloads(seriesPermalink);
       await refreshQueue();
-      showBanner("Retrying failed downloads for series");
     } catch (err) {
       showBanner(errorMessage(err));
     }
   };
 
-  const handleClearSeries = async (seriesPerm: string) => {
+  const handleRetrySeries = async (seriesPermalink: string) => {
     try {
-      await clearCompletedDownloads(seriesPerm);
+      await retryFailedDownloads(seriesPermalink);
       await refreshQueue();
     } catch (err) {
       showBanner(errorMessage(err));
@@ -316,14 +372,12 @@ export function DownloadManager(props: { onComplete?: () => void }) {
   };
 
   const handleRetryAll = async () => {
-    const groups = seriesGroups().filter((g) => g.failedChapters > 0);
+    const failed = seriesGroups().filter((g) => g.failedChapters > 0);
     try {
-      for (const g of groups) {
+      for (const g of failed) {
         await retryFailedDownloads(g.series_permalink);
       }
-      setIsPaused(false);
       await refreshQueue();
-      showBanner(`Retrying all failed downloads`);
     } catch (err) {
       showBanner(errorMessage(err));
     }
@@ -343,72 +397,59 @@ export function DownloadManager(props: { onComplete?: () => void }) {
 
   return (
     <Show when={totalCount() > 0}>
-      <div class="ds-download-manager">
-        {/* Global Toolbar Header */}
-        <div class="ds-download-manager-header">
-          <CloudDownloadIcon
-            class={activeOrPendingCount() > 0 && !isPaused() ? "ds-spin" : ""}
-            style="font-size:16px;color:var(--sys-primary,#0078d4);flex-shrink:0;"
-          />
-
-          <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span style="font-weight:600;">Download Queue</span>
-            <span class="ds-status-pill" style="font-size:10px;padding:1px 6px;">
-              {activeOrPendingCount()} active · {seriesGroups().length} series
-            </span>
-
-            {/* Live Speed & ETA Badges */}
-            <Show when={activeOrPendingCount() > 0 && !isPaused() && speedBps() > 0}>
-              <span
-                style="font-size:11px;font-weight:600;color:var(--sys-primary,#0078d4);display:inline-flex;align-items:center;gap:4px;background:rgba(0,120,212,0.08);padding:1px 6px;border-radius:4px;"
-              >
-                <span>⚡ {formatSpeed(speedBps())}</span>
-                <Show when={etaSeconds() > 0}>
-                  <span class="ds-muted" style="font-weight:normal;">({formatEta(etaSeconds())} left)</span>
-                </Show>
-                <Show when={sessionBytes() > 0}>
-                  <span class="ds-muted" style="font-weight:normal;">· {formatBytes(sessionBytes())}</span>
-                </Show>
-              </span>
-            </Show>
-          </div>
-
-          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <GroupBox
+        class="ds-download-manager-group ds-mb-8"
+        collapsible={true}
+        collapsed={isCollapsed()}
+        onToggle={handleToggleCollapse}
+        title={
+          <span class="ds-icon-text">
+            <DownloadIcon />
+            <span>Download Queue ({activeOrPendingCount()} active)</span>
+          </span>
+        }
+        actions={
+          <div class="ds-download-manager-header-actions">
             <Show when={activeOrPendingCount() > 0}>
               <button
-                class="win-button ds-btn-sm"
+                type="button"
+                class="win-button"
                 onClick={handlePauseResume}
                 title={isPaused() ? "Resume downloads" : "Pause downloads"}
               >
-                {isPaused() ? "▶ Resume All" : "⏸ Pause All"}
+                <Show when={isPaused()} fallback={<><PauseIcon /> Pause</>}>
+                  <PlayIcon /> Resume
+                </Show>
               </button>
             </Show>
 
             <Show when={allFailedCount() > 0}>
               <button
-                class="win-button ds-btn-sm"
+                type="button"
+                class="win-button"
                 onClick={handleRetryAll}
                 title="Retry all failed downloads"
-                style="color:var(--ds-warn-text,#d97706);"
+                style="color:var(--ds-warn-text);"
               >
-                <RefreshIcon /> Retry All Failed
+                <RefreshIcon /> Retry Failed
               </button>
             </Show>
 
             <Show when={allCompletedCount() > 0 && activeOrPendingCount() === 0}>
               <button
-                class="win-button ds-btn-sm"
+                type="button"
+                class="win-button"
                 onClick={handleClearAllCompleted}
                 title="Clear all completed download entries"
               >
-                Clear Completed
+                <TrashIcon /> Clear Completed
               </button>
             </Show>
           </div>
-        </div>
-
+        }
+      >
         {/* Series Grouped Download Cards */}
-        <div style="display:flex;flex-direction:column;gap:1px;background:var(--sys-border-light,#e8e8e8);">
+        <div class="ds-download-series-list">
           <For each={seriesGroups()}>
             {(group) => {
               const isExpanded = () => expandedSeries().has(group.series_permalink);
@@ -418,79 +459,43 @@ export function DownloadManager(props: { onComplete?: () => void }) {
               const isPsd = () => group.status === "paused";
 
               return (
-                <div style="background:var(--sys-window-bg,#fff);padding:8px 12px;display:flex;flex-direction:column;gap:6px;">
-                  {/* Series Info Row */}
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="flex:1;min-width:0;">
-                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                        <span style="font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                          {group.series_title}
+                <div class="ds-download-series-item">
+                  {/* Top Row: Series Title + Status + Action Buttons */}
+                  <div class="ds-download-series-header">
+                    <div class="ds-download-series-title-row">
+                      <span class="ds-download-series-title" title={group.series_title}>
+                        {group.series_title}
+                      </span>
+                      <Show when={isAct()}>
+                        <span class="ds-status-pill fresh">
+                          Downloading
                         </span>
-                        <Show when={isAct()}>
-                          <span class="ds-status-pill fresh" style="font-size:9.5px;padding:0 5px;">
-                            Downloading
-                          </span>
-                        </Show>
-                        <Show when={isPsd()}>
-                          <span class="ds-status-pill" style="font-size:9.5px;padding:0 5px;">
-                            Paused
-                          </span>
-                        </Show>
-                        <Show when={isDone()}>
-                          <span class="ds-status-pill" style="font-size:9.5px;padding:0 5px;color:var(--ds-success-text,#22c55e);">
-                            ✓ Complete
-                          </span>
-                        </Show>
-                        <Show when={isFail()}>
-                          <span class="ds-status-pill" style="font-size:9.5px;padding:0 5px;color:var(--ds-warn-text,#ef4444);">
-                            {group.failedChapters} Failed
-                          </span>
-                        </Show>
-                        <Show when={isAct() && speedBps() > 0}>
-                          <span class="ds-muted" style="font-size:10.5px;font-weight:600;color:var(--sys-primary,#0078d4);">
-                            ⚡ {formatSpeed(speedBps())}
-                          </span>
-                        </Show>
-                      </div>
-
-                      <div class="ds-muted" style="font-size:11px;margin-top:2px;">
-                        <Show
-                          when={group.downloadingItem}
-                          fallback={
-                            <span>
-                              {group.completedChapters}/{group.totalChapters} chapters complete
-                              <Show when={group.status === "downloading" && group.completedChapters < group.totalChapters}>
-                                {" "}· Preparing next chapter…
-                              </Show>
-                              <Show when={group.failedChapters > 0}> · {group.failedChapters} failed</Show>
-                            </span>
-                          }
-                        >
-                          {(down) => (
-                            <span>
-                              {group.completedChapters + 1}/{group.totalChapters}: {down().chapter_title} ({activeProgress()[down().chapter_permalink]?.done ?? down().progress}/{(activeProgress()[down().chapter_permalink]?.total ?? down().total_pages) || 1} pages)
-                              <Show when={isAct() && etaSeconds() > 0}>
-                                {" "}· {formatEta(etaSeconds())} remaining
-                              </Show>
-                            </span>
-                          )}
-                        </Show>
-                      </div>
+                      </Show>
+                      <Show when={isPsd()}>
+                        <span class="ds-status-pill">
+                          Paused
+                        </span>
+                      </Show>
+                      <Show when={isDone()}>
+                        <span class="ds-status-pill" style="color:var(--ds-status-fresh-text);">
+                          <CheckIcon size={11} /> Complete
+                        </span>
+                      </Show>
+                      <Show when={isFail()}>
+                        <span class="ds-status-pill" style="color:var(--ds-danger-text);">
+                          {group.failedChapters} Failed
+                        </span>
+                      </Show>
                     </div>
 
-                    {/* Progress Percentage Badge */}
-                    <div style="font-size:12px;font-weight:700;color:var(--sys-primary,#0078d4);white-space:nowrap;">
-                      {group.overallPercent}%
-                    </div>
-
-                    {/* Series Actions */}
-                    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                    <div class="ds-download-series-actions">
                       <Show when={group.failedChapters > 0}>
                         <button
+                          type="button"
                           class="win-button ds-btn-sm"
                           onClick={() => void handleRetrySeries(group.series_permalink)}
                           title="Retry failed chapters in this series"
-                          style="color:var(--ds-warn-text,#d97706);padding:0 6px;"
+                          style="color:var(--ds-warn-text);"
                         >
                           <RefreshIcon /> Retry
                         </button>
@@ -498,54 +503,86 @@ export function DownloadManager(props: { onComplete?: () => void }) {
 
                       <Show when={isDone()}>
                         <button
+                          type="button"
                           class="win-button ds-btn-sm"
                           onClick={() => void handleClearSeries(group.series_permalink)}
                           title="Clear completed chapters"
-                          style="padding:0 6px;"
                         >
-                          Clear
+                          <TrashIcon /> Clear
                         </button>
                       </Show>
 
                       <Show when={!isDone()}>
                         <button
+                          type="button"
                           class="win-button ds-btn-sm"
                           onClick={() => void handleCancelSeries(group)}
                           title="Cancel all pending chapters in this series"
-                          style="padding:0 6px;"
                         >
                           Cancel
                         </button>
                       </Show>
 
                       <button
+                        type="button"
                         class="win-button ds-btn-sm ds-btn-icon"
                         onClick={() => toggleExpand(group.series_permalink)}
-                        title={isExpanded() ? "Hide chapters" : "Show chapters"}
+                        title={isExpanded() ? "Hide chapter list" : "Show chapter list"}
                       >
-                        {isExpanded() ? "▴" : "▾"}
+                        <ChevronDownIcon class={isExpanded() ? "ds-rotate-180" : ""} />
                       </button>
                     </div>
                   </div>
 
-                  {/* Unified Series Progress Bar */}
-                  <div class="ds-download-progress-track" style="height:5px;">
+                  {/* Second Row: Detailed Status & Live Metrics + Percent */}
+                  <div class="ds-download-series-subrow">
+                    <div class="ds-download-series-subtext ds-muted">
+                      <Show
+                        when={group.downloadingItem}
+                        fallback={
+                          <span>
+                            {group.completedChapters}/{group.totalChapters} chapters complete
+                            <Show when={group.status === "downloading" && group.completedChapters < group.totalChapters}>
+                              {" "}· Preparing next chapter…
+                            </Show>
+                            <Show when={group.failedChapters > 0}> · {group.failedChapters} failed</Show>
+                          </span>
+                        }
+                      >
+                        {(down) => (
+                          <span>
+                            {group.completedChapters + 1}/{group.totalChapters}: {down().chapter_title} ({activeProgress()[down().chapter_permalink]?.done ?? down().progress}/{(activeProgress()[down().chapter_permalink]?.total ?? down().total_pages) || 1} pages)
+                            <Show when={isAct() && speedBps() > 0}>
+                              {" "}· <span style="color:var(--sys-primary);font-weight:600;"><SpeedIcon size={11} /> {formatSpeed(speedBps())}</span>
+                              <Show when={sessionBytes() > 0}>
+                                <span class="ds-muted"> ({formatBytes(sessionBytes())})</span>
+                              </Show>
+                            </Show>
+                            <Show when={isAct() && etaSeconds() > 0}>
+                              {" "}· {formatEta(etaSeconds())} remaining
+                            </Show>
+                          </span>
+                        )}
+                      </Show>
+                    </div>
+
+                    <div class="ds-download-percent-badge">
+                      {group.overallPercent}%
+                    </div>
+                  </div>
+
+                  {/* Third Row: Full-width Progress Bar */}
+                  <div class="ds-progress-track">
                     <div
-                      class="ds-download-progress-fill"
+                      class={`ds-progress-fill${isDone() ? " done" : isFail() ? " fail" : ""}`}
                       style={{
                         width: `${group.overallPercent}%`,
-                        background: isDone()
-                          ? "var(--ds-success-text,#22c55e)"
-                          : isFail()
-                            ? "var(--ds-warn-text,#ef4444)"
-                            : "var(--sys-primary,#0078d4)",
                       }}
                     />
                   </div>
-
                   {/* Expandable Chapter Detail Rows */}
                   <Show when={isExpanded()}>
-                    <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;padding-top:4px;border-top:1px dashed var(--sys-border-light,#eee);">
+                    <div class="ds-download-chapters-drawer">
                       <For each={group.items}>
                         {(ch) => {
                           const isChAct = () => ch.status === "downloading";
@@ -556,39 +593,39 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                           const chTotal = () => chProg()?.total ?? ch.total_pages;
 
                           return (
-                            <div
-                              style="display:flex;align-items:center;gap:8px;font-size:11px;padding:2px 4px;border-radius:3px;background:var(--sys-surface-2,#f8f9fa);"
-                            >
-                              <div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            <div class="ds-download-chapter-row">
+                              <div class="ds-download-chapter-label">
                                 <span>{ch.chapter_title}</span>
-                                <span class="ds-muted" style="margin-left:6px;">
+                                <span class="ds-muted ds-download-chapter-status">
                                   <Show when={isChAct()}>
-                                    <span style="color:var(--sys-primary,#0078d4);font-weight:600;">
+                                    <span style="color:var(--sys-primary);font-weight:600;">
                                       Downloading {chDone()}/{chTotal() > 0 ? chTotal() : "?"} pages
                                     </span>
                                   </Show>
                                   <Show when={isChDone()}>
-                                    <span style="color:var(--ds-success-text,#22c55e);">✓ Done</span>
+                                    <span style="color:var(--ds-status-fresh-text);">
+                                      <CheckIcon size={10} /> Complete
+                                    </span>
                                   </Show>
                                   <Show when={isChFail()}>
-                                    <span style="color:var(--ds-warn-text,#ef4444);">
-                                      ✕ Failed{ch.error_msg ? `: ${ch.error_msg}` : ""}
+                                    <span style="color:var(--ds-danger-text);">
+                                      <CloseIcon size={10} /> Failed{ch.error_msg ? `: ${ch.error_msg}` : ""}
                                     </span>
                                   </Show>
                                   <Show when={ch.status === "pending"}>
-                                    <span>⏱ Queued</span>
+                                    <span><HourglassIcon size={10} /> Queued</span>
                                   </Show>
                                 </span>
                               </div>
 
                               <Show when={!isChDone()}>
                                 <button
-                                  class="win-button ds-btn-sm ds-btn-icon"
-                                  style="height:20px;min-height:20px;width:20px;font-size:10px;padding:0;"
+                                  type="button"
+                                  class="win-button ds-btn-sm ds-btn-icon ds-chapter-cancel-btn"
                                   onClick={() => void handleCancelChapter(ch.chapter_permalink)}
                                   title="Cancel chapter download"
                                 >
-                                  ✕
+                                  <CloseIcon size={10} />
                                 </button>
                               </Show>
                             </div>
@@ -602,7 +639,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
             }}
           </For>
         </div>
-      </div>
+      </GroupBox>
     </Show>
   );
 }

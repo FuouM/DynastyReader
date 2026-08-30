@@ -184,7 +184,7 @@
   gap: 4px;
   flex-shrink: 0;
 }
-#ds-root[data-mobile] #ds-topbar-tools .win-button {
+#ds-root[data-mobile] #ds-topbar-tools .ds-btn-icon {
   width: 24px;
   height: 24px;
   min-height: 24px;
@@ -198,6 +198,22 @@
   justify-content: center;
   box-sizing: border-box;
   font-size: 13px;
+}
+#ds-root[data-mobile] #ds-topbar-downloads-btn {
+  width: auto !important;
+  min-width: 28px !important;
+  max-width: none !important;
+  height: 24px !important;
+  aspect-ratio: auto !important;
+  padding: 0 5px !important;
+  gap: 3px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+#ds-root[data-mobile] #ds-topbar-downloads-btn .ds-topbar-download-speed {
+  display: none !important;
 }
 /* Landscape / Wide mobile: layout adjustments */
 @media (orientation: landscape), (min-width: 600px) {
@@ -1111,5 +1127,41 @@
   flex: 1 1 0 !important;
   min-width: 0 !important;
   justify-content: center !important;
+}
+
+/* ── Download Manager & Cinema Matrix Mobile Overrides ── */
+#ds-root[data-mobile] .ds-download-manager-header-actions {
+  flex-wrap: wrap !important;
+  gap: 2px !important;
+}
+
+#ds-root[data-mobile] .ds-download-series-header {
+  flex-wrap: wrap !important;
+}
+
+#ds-root[data-mobile] .ds-download-series-actions {
+  width: 100% !important;
+  justify-content: flex-end !important;
+  margin-top: 2px !important;
+}
+
+#ds-root[data-mobile] .ds-downloaded-series-actions {
+  flex-wrap: wrap !important;
+  gap: 2px !important;
+}
+
+#ds-root[data-mobile] .ds-chapter-seat {
+  min-width: 28px !important;
+  height: 26px !important;
+  font-size: 11px !important;
+  padding: 0 5px !important;
+}
+
+#ds-root[data-mobile] .ds-chapter-range-bar {
+  gap: 2px !important;
+}
+
+#ds-root[data-mobile] .ds-chapter-matrix {
+  max-height: 160px !important;
 }
 }

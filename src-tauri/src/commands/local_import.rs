@@ -63,14 +63,6 @@ fn slugify(input: &str) -> String {
     }
 }
 
-fn series_slug_from_path(path: &str) -> String {
-    let stem = Path::new(path)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("import");
-    slugify(stem)
-}
-
 /// Natural sort key: split into (text, number) chunks for human ordering.
 fn natural_key(s: &str) -> Vec<NaturalChunk> {
     let mut chunks = Vec::new();

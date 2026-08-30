@@ -93,6 +93,23 @@ fn ensure_download_queue_table() -> Result<(), String> {
     Ok(())
 }
 
+fn ensure_processor_running(
+    app: &AppHandle,
+    state: &DownloadState,
+    http_client: &reqwest::Client,
+) {
+    if !state.running.load(Ordering::SeqCst) {
+        state.running.store(true, Ordering::SeqCst);
+        let app_clone = app.clone();
+        let client_clone = http_client.clone();
+        tokio::spawn(async move {
+            run_processor(app_clone, client_clone).await;
+        });
+    } else {
+        state.notify.notify_one();
+    }
+}
+
 #[tauri::command(rename = "enqueueChapters")]
 pub async fn enqueue_chapters(
     app: AppHandle,
@@ -128,16 +145,7 @@ pub async fn enqueue_chapters(
     .map_err(|e| format!("enqueue task failed: {e}"))??;
 
     // Wake processor if not running
-    if !state.running.load(Ordering::SeqCst) {
-        let app_clone = app.clone();
-        let http_client = http_state.0.clone();
-        state.running.store(true, Ordering::SeqCst);
-        tokio::spawn(async move {
-            run_processor(app_clone, http_client).await;
-        });
-    } else {
-        state.notify.notify_one();
-    }
+    ensure_processor_running(&app, &state, &http_state.0);
     Ok(())
 }
 
@@ -148,9 +156,13 @@ pub async fn pause_downloads(state: State<'_, DownloadState>) -> Result<(), Stri
 }
 
 #[tauri::command(rename = "resumeDownloads")]
-pub async fn resume_downloads(state: State<'_, DownloadState>) -> Result<(), String> {
+pub async fn resume_downloads(
+    app: AppHandle,
+    state: State<'_, DownloadState>,
+    http_state: State<'_, crate::commands::http::HttpState>,
+) -> Result<(), String> {
     state.paused.store(false, Ordering::SeqCst);
-    state.notify.notify_one();
+    ensure_processor_running(&app, &state, &http_state.0);
     Ok(())
 }
 
@@ -184,24 +196,35 @@ pub async fn cancel_download(
 
 #[tauri::command(rename = "retryFailedDownloads")]
 pub async fn retry_failed_downloads(
+    app: AppHandle,
     state: State<'_, DownloadState>,
+    http_state: State<'_, crate::commands::http::HttpState>,
     series_permalink: String,
 ) -> Result<(), String> {
     let sp = series_permalink.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
         let conn = rusqlite::Connection::open(db_path()).map_err(|e| format!("open db: {e}"))?;
-        conn.execute(
-            "UPDATE download_queue SET status = 'pending', error_msg = NULL WHERE series_permalink = ?1 AND status = 'failed'",
-            rusqlite::params![sp],
-        )
-        .map_err(|e| format!("retry failed: {e}"))?;
+        let now = chrono_now();
+        if sp.is_empty() || sp == "_singles" {
+            conn.execute(
+                "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE (series_permalink = '' OR series_permalink IS NULL OR series_permalink = '_singles') AND status = 'failed'",
+                rusqlite::params![now],
+            )
+            .map_err(|e| format!("retry failed: {e}"))?;
+        } else {
+            conn.execute(
+                "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE series_permalink = ?2 AND status = 'failed'",
+                rusqlite::params![now, sp],
+            )
+            .map_err(|e| format!("retry failed: {e}"))?;
+        }
         Ok(())
     })
     .await
     .map_err(|e| format!("retry task failed: {e}"))??;
 
     state.paused.store(false, Ordering::SeqCst);
-    state.notify.notify_one();
+    ensure_processor_running(&app, &state, &http_state.0);
     Ok(())
 }
 
@@ -210,11 +233,19 @@ pub async fn clear_completed_downloads(series_permalink: String) -> Result<(), S
     let sp = series_permalink.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
         let conn = rusqlite::Connection::open(db_path()).map_err(|e| format!("open db: {e}"))?;
-        conn.execute(
-            "DELETE FROM download_queue WHERE series_permalink = ?1 AND status IN ('done', 'failed', 'skipped')",
-            rusqlite::params![sp],
-        )
-        .map_err(|e| format!("clear failed: {e}"))?;
+        if sp.is_empty() || sp == "_singles" {
+            conn.execute(
+                "DELETE FROM download_queue WHERE (series_permalink = '' OR series_permalink IS NULL OR series_permalink = '_singles') AND status IN ('done', 'failed', 'skipped')",
+                [],
+            )
+            .map_err(|e| format!("clear failed: {e}"))?;
+        } else {
+            conn.execute(
+                "DELETE FROM download_queue WHERE series_permalink = ?1 AND status IN ('done', 'failed', 'skipped')",
+                rusqlite::params![sp],
+            )
+            .map_err(|e| format!("clear failed: {e}"))?;
+        }
         Ok(())
     })
     .await
@@ -223,8 +254,12 @@ pub async fn clear_completed_downloads(series_permalink: String) -> Result<(), S
 }
 
 #[tauri::command(rename = "getDownloadQueue")]
-pub async fn get_download_queue() -> Result<serde_json::Value, String> {
-    tokio::task::spawn_blocking(|| -> Result<serde_json::Value, String> {
+pub async fn get_download_queue(
+    app: AppHandle,
+    state: State<'_, DownloadState>,
+    http_state: State<'_, crate::commands::http::HttpState>,
+) -> Result<serde_json::Value, String> {
+    let (items, has_pending) = tokio::task::spawn_blocking(|| -> Result<(Vec<serde_json::Value>, bool), String> {
         ensure_download_queue_table()?;
         let conn = rusqlite::Connection::open(db_path()).map_err(|e| format!("open db: {e}"))?;
         let mut stmt = conn
@@ -248,13 +283,26 @@ pub async fn get_download_queue() -> Result<serde_json::Value, String> {
             })
             .map_err(|e| format!("query failed: {e}"))?;
         let mut out = Vec::new();
+        let mut has_pending_work = false;
         for r in rows {
-            out.push(r.map_err(|e| format!("row failed: {e}"))?);
+            let val = r.map_err(|e| format!("row failed: {e}"))?;
+            if let Some(status) = val.get("status").and_then(|s| s.as_str()) {
+                if status == "pending" || status == "downloading" {
+                    has_pending_work = true;
+                }
+            }
+            out.push(val);
         }
-        Ok(serde_json::json!({ "items": out }))
+        Ok((out, has_pending_work))
     })
     .await
-    .map_err(|e| format!("get_download_queue failed: {e}"))?
+    .map_err(|e| format!("get_download_queue failed: {e}"))??;
+
+    if has_pending && !state.paused.load(Ordering::SeqCst) {
+        ensure_processor_running(&app, &state, &http_state.0);
+    }
+
+    Ok(serde_json::json!({ "items": items }))
 }
 fn chrono_now() -> i64 {
     std::time::SystemTime::now()
