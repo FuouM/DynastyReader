@@ -69,10 +69,18 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
       s.scheduleWidePageLayoutReset();
     }
   };
+  const dim = () => s.pageDimensions[0][props.index];
+  const aspectStyle = () => {
+    const d = dim();
+    if (d && d.width > 0 && d.height > 0) {
+      return { "aspect-ratio": `${d.width} / ${d.height}` };
+    }
+    return undefined;
+  };
 
   return (
-    <div class="ds-page-wrap">
-      <Show when={loaded()}>
+    <div class="ds-page-wrap" style={aspectStyle()}>
+      <Show when={loaded() || !!dim()}>
         <div class="ds-slot-page-badge">
           {props.index + 1} / {s.pages().length}
         </div>
@@ -81,7 +89,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
         class="ds-page-img"
         alt={t("reader.session.slot.pageAlt", { page: props.index + 1 })}
         src={convertFileSrc(props.path)}
-        decoding="async"
+        decoding="auto"
         loading="eager"
         onError={(ev) => {
           log.error("reader-slot", "img onError for slot", props.index, "src:", (ev.currentTarget as HTMLImageElement).src?.slice(0, 100));

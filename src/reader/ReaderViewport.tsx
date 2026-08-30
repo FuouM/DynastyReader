@@ -29,14 +29,17 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       (entries) => {
         if (s.isHorizontal()) return;
         const autoCache = isAutoCacheChapterEnabled();
-        const prefetchCount = getPrefetchBuffer();
+        const prefetchCount = Math.max(getPrefetchBuffer(), 4);
         for (const entry of entries) {
           if (entry.isIntersecting) {
             const idx = Number((entry.target as HTMLElement).dataset.index);
             s.enqueue(idx);
             if (autoCache) {
-              s.enqueue(idx + 1);
-              s.enqueue(idx + 2);
+              for (let offset = 1; offset <= 4; offset++) {
+                if (idx + offset < s.pages().length) {
+                  s.enqueue(idx + offset);
+                }
+              }
             } else {
               for (let offset = 1; offset <= prefetchCount; offset++) {
                 if (idx + offset < s.pages().length) {
@@ -47,7 +50,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
           }
         }
       },
-      { root: s.viewportEl ?? undefined, rootMargin: "800px 0px", threshold: 0.01 },
+      { root: s.viewportEl ?? undefined, rootMargin: "1600px 0px", threshold: 0.01 },
     );
     for (const el of s.slotEls) {
       if (el) observer.observe(el);
@@ -56,13 +59,13 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
     void stripKey;
   });
 
-  // Warm next spreads' image cache on page turn (cached chapters only)
+  // Warm next spreads' image cache on page turn (paged / spread mode only)
   createEffect(() => {
+    if (!s.isHorizontal()) return;
     const cur = s.currentIndex();
     const isSpread = s.isSpread();
     const spreads = s.spreads();
     const cached = s.cachedPages[0];
-    // Track deps
     void cur; void isSpread; void spreads.length;
     const toWarm = new Set<number>();
     if (isSpread && spreads.length > 0) {
@@ -70,15 +73,28 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       for (const p of spreads[curSpread + 1]?.pageIndices ?? []) toWarm.add(p);
       for (const p of spreads[curSpread + 2]?.pageIndices ?? []) toWarm.add(p);
     } else {
-      for (let i = cur + 1; i <= Math.min(s.pages().length - 1, cur + 4); i++) if (cached[i]) toWarm.add(i);
+      for (let i = cur + 1; i <= Math.min(s.pages().length - 1, cur + 6); i++) if (cached[i]) toWarm.add(i);
     }
     for (const idx of toWarm) {
       const p = cached[idx];
-      if (!p || s.pageDimensions[0][idx]) continue;
+      if (!p) continue;
       const img = new Image();
       img.src = convertFileSrc(p);
-      if (img.complete && img.naturalWidth > 0) s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
-      else img.onload = () => { if (!s.disposedFlag) s.setPageDimension(idx, img.naturalWidth, img.naturalHeight); };
+      if (img.complete && img.naturalWidth > 0) {
+        s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
+        if (typeof img.decode === "function") {
+          img.decode().catch(() => {});
+        }
+      } else {
+        img.onload = () => {
+          if (!s.disposedFlag) {
+            s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
+            if (typeof img.decode === "function") {
+              img.decode().catch(() => {});
+            }
+          }
+        };
+      }
     }
   });
   return (

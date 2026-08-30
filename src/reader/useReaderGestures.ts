@@ -141,7 +141,8 @@ export function useReaderGestures(s: ReaderSession) {
       const totalSlots = s.slotEls.length;
       if (totalSlots === 0) return;
 
-      const targetY = vp.scrollTop + vp.clientHeight * 0.4;
+      const vpRect = vp.getBoundingClientRect();
+      const targetY = vpRect.top + vpRect.height * 0.4;
 
       let low = 0;
       let high = totalSlots - 1;
@@ -154,13 +155,12 @@ export function useReaderGestures(s: ReaderSession) {
           low = mid + 1;
           continue;
         }
-        const top = el.offsetTop;
-        const bottom = top + el.offsetHeight;
+        const rect = el.getBoundingClientRect();
 
-        if (targetY >= top && targetY < bottom) {
+        if (targetY >= rect.top && targetY < rect.bottom) {
           bestIdx = mid;
           break;
-        } else if (targetY < top) {
+        } else if (targetY < rect.top) {
           high = mid - 1;
           bestIdx = mid;
         } else {

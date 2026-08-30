@@ -211,34 +211,67 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   }
   s.recountCached();
 
-  // Pre-resolve dimensions and warm up image cache for immediate neighborhood
+  // Pre-resolve dimensions and warm up image cache for all cached pages
   if (typeof window !== "undefined") {
     const cachedMap = s.cachedPages[0];
     const cur = s.currentIndex();
     const isSpread = s.isSpread();
     const spreads = s.spreads();
-    const toWarm = new Set<number>();
+    const priorityIndices: number[] = [];
     if (isSpread && spreads.length > 0) {
       const curSpread = spreadIndexOf(spreads, cur);
-      for (const p of spreads[curSpread]?.pageIndices ?? []) toWarm.add(p);
-      for (const p of spreads[curSpread + 1]?.pageIndices ?? []) toWarm.add(p);
-      for (const p of spreads[curSpread + 2]?.pageIndices ?? []) toWarm.add(p);
-      if (curSpread > 0) for (const p of spreads[curSpread - 1]?.pageIndices ?? []) toWarm.add(p);
+      for (const p of spreads[curSpread]?.pageIndices ?? []) priorityIndices.push(p);
+      for (const p of spreads[curSpread + 1]?.pageIndices ?? []) priorityIndices.push(p);
+      for (const p of spreads[curSpread + 2]?.pageIndices ?? []) priorityIndices.push(p);
+      if (curSpread > 0) for (const p of spreads[curSpread - 1]?.pageIndices ?? []) priorityIndices.push(p);
     } else {
-      for (let i = Math.max(0, cur - 2); i <= Math.min(pageCount - 1, cur + 4); i++) toWarm.add(i);
+      for (let i = Math.max(0, cur - 2); i <= Math.min(pageCount - 1, cur + 6); i++) {
+        priorityIndices.push(i);
+      }
     }
-    for (const i of toWarm) {
+
+    const warmPage = (i: number) => {
       const p = cachedMap[i];
-      if (p) {
-        const img = new Image();
-        img.src = convertFileSrc(p);
-        if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-          s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-        } else {
-          img.onload = () => {
-            if (!s.disposedFlag) s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-          };
+      if (!p) return;
+      const img = new Image();
+      img.src = convertFileSrc(p);
+      if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
+        if (typeof img.decode === "function") {
+          img.decode().catch(() => {});
         }
+      } else {
+        img.onload = () => {
+          if (!s.disposedFlag) {
+            s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
+            if (typeof img.decode === "function") {
+              img.decode().catch(() => {});
+            }
+          }
+        };
+      }
+    };
+
+    for (const i of priorityIndices) {
+      warmPage(i);
+    }
+
+    // Warm remaining cached pages in chapter in idle/background
+    const remainingIndices = Object.keys(cachedMap)
+      .map(Number)
+      .filter((idx) => !priorityIndices.includes(idx));
+
+    if (remainingIndices.length > 0) {
+      const warmRemaining = () => {
+        if (s.disposedFlag) return;
+        for (const idx of remainingIndices) {
+          warmPage(idx);
+        }
+      };
+      if (typeof requestIdleCallback === "function") {
+        requestIdleCallback(warmRemaining, { timeout: 1000 });
+      } else {
+        setTimeout(warmRemaining, 50);
       }
     }
   }

@@ -513,10 +513,8 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 1000px;
+  contain: layout style;
 }
-
 .ds-page-wrap {
   position: relative;
   display: inline-flex;
