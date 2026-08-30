@@ -33,7 +33,7 @@ import {
   DashIcon,
   PlusIcon,
 } from "../components/Icon";
-
+import { ReaderProgressWrap } from "./ReaderProgressWrap";
 export interface NavRowProps {
   session: ReaderSession;
   controlsOpen?: Accessor<boolean>;
@@ -66,32 +66,7 @@ export function ReaderMainRow(props: NavRowProps) {
         disabled={s.progress().prevDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
       />
-      <div class="ds-reader-progress-wrap">
-        <div class="ds-reader-progress-pill">
-          <span class="ds-reader-progress-label" title={s.progress().title}>
-            <span class="ds-prog-page-slot">
-              <span class="ds-prog-prefix">{t("reader.toolbar.pagePrefix")}</span>
-              <span class="ds-prog-current">{s.progress().currentNumStr}</span>
-              <span class="ds-prog-sep">/</span>
-              <span class="ds-prog-total">{s.progress().totalNumStr}</span>
-            </span>
-            <span class="ds-prog-pct">({s.progress().pct}%)</span>
-            <Show when={s.progress().cachedNote !== ""}>
-              <span class="ds-prog-cached-dot">·</span>
-              <span class="ds-prog-cached">{s.progress().cachedNote}</span>
-            </Show>
-          </span>
-        </div>
-        <div class="ds-reader-progress-track">
-          <div
-            class="ds-reader-progress-fill"
-            style={{
-              width: "100%",
-              transform: `scaleX(${s.progress().width / 100})`,
-            }}
-          ></div>
-        </div>
-      </div>
+      <ReaderProgressWrap session={s} />
       <IconButton
         className="ds-nav-btn-page ds-btn-icon"
         icon={<ChevronRightIcon />}

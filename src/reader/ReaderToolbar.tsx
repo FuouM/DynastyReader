@@ -20,6 +20,7 @@ import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
 import { IconButton } from "../components/Button";
 import { ReaderMainRow, ReaderControlsRow } from "./ReaderNavRows";
 import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
+import { ReaderProgressWrap } from "./ReaderProgressWrap";
 import { log } from "../utils/log";
 import {
   ChevronDoubleLeftIcon,
@@ -373,22 +374,7 @@ export function ReaderBottomNav(props: { session: ReaderSession }) {
               disabled={s.progress().prevDisabled}
               onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
             />
-            <div class="ds-reader-progress-wrap">
-              <div class="ds-reader-progress-pill">
-                <span class="ds-reader-progress-label">
-                  <span class="ds-prog-current">{s.progress().currentNumStr}</span>
-                  <span class="ds-prog-sep">/</span>
-                  <span class="ds-prog-total">{s.progress().totalNumStr}</span>
-                  <span class="ds-prog-pct">({s.progress().pct}%)</span>
-                </span>
-              </div>
-              <div class="ds-reader-progress-track">
-                <div
-                  class="ds-reader-progress-fill"
-                  style={{ width: "100%", transform: `scaleX(${s.progress().width / 100})` }}
-                ></div>
-              </div>
-            </div>
+            <ReaderProgressWrap session={s} showPrefix={false} showCachedNote={false} />
             <IconButton
               className="ds-nav-btn-page ds-btn-icon"
               icon={<ChevronRightIcon />}

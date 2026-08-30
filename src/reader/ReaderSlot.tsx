@@ -82,7 +82,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
         alt={t("reader.session.slot.pageAlt", { page: props.index + 1 })}
         src={convertFileSrc(props.path)}
         decoding="async"
-        loading={props.index < 6 ? "eager" : "lazy"}
+        loading="eager"
         onError={(ev) => {
           log.error("reader-slot", "img onError for slot", props.index, "src:", (ev.currentTarget as HTMLImageElement).src?.slice(0, 100));
           s.onPageImgError(props.index);
