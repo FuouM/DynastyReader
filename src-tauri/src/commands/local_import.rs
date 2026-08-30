@@ -406,7 +406,7 @@ fn create_cover_webp(src_bytes: &[u8], out_path: &Path) -> Result<(), String> {
     let rgb = img.to_rgb8();
     let (w2, h2) = (rgb.width(), rgb.height());
     let encoded = webp::Encoder::from_rgb(rgb.as_raw(), w2, h2).encode(80.0);
-    std::fs::write(out_path, encoded.as_ref()).map_err(|e| format!("cover write failed: {e}"))?;
+    std::fs::write(out_path, &*encoded).map_err(|e| format!("cover write failed: {e}"))?;
     Ok(())
 }
 
