@@ -7,7 +7,7 @@
  * orphan chapters (no series) stay as individual rows below the groups.
  */
 
-import { createEffect, createSignal, For, Show, type Accessor } from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show, type Accessor } from "solid-js";
 import { navigate, route } from "../stores";
 import { convertFileSrc } from "../ipc";
 import { formatBytes } from "../lib/format";
@@ -54,11 +54,14 @@ interface DownloadedModel {
   readHistoryMap: Map<string, number>;
 }
 
+export interface ProcessedCachedChapter extends FullyCachedChapterRow {
+  shortLabel: string;
+}
 interface DownloadedSeriesGroup {
   seriesPermalink: string;
   seriesName: string | null;
   coverPath: string | null;
-  chapters: FullyCachedChapterRow[];
+  chapters: ProcessedCachedChapter[];
   totalSizeBytes: number;
   lastCachedAt: number;
   lastReadAt: number;
@@ -105,7 +108,7 @@ function SeriesDownloadedCard(props: {
   readHistorySet: Set<string>;
   bookmarkSet: Set<string>;
 }) {
-  const isNumbered = () => isNumberedSeries(props.group);
+  const isNumbered = createMemo(() => isNumberedSeries(props.group));
   const [viewMode, setViewMode] = createSignal<"seats" | "list">(isNumbered() ? "seats" : "list");
   const [activeRange, setActiveRange] = createSignal<number>(-1);
   const [isCollapsed, setIsCollapsed] = createSignal<boolean>(false);
@@ -115,7 +118,7 @@ function SeriesDownloadedCard(props: {
   const totalChapters = () => props.group.chapters.length;
   const isLarge = () => totalChapters() > CHUNK_SIZE;
 
-  const chunks = () => {
+  const chunks = createMemo(() => {
     if (!isLarge()) return [];
     const list: { label: string; start: number; end: number; count: number }[] = [];
     const total = totalChapters();
@@ -129,9 +132,9 @@ function SeriesDownloadedCard(props: {
       });
     }
     return list;
-  };
+  });
 
-  const displayedChapters = () => {
+  const displayedChapters = createMemo(() => {
     if (viewMode() === "seats") {
       if (!isLarge() || activeRange() === -1) {
         return props.group.chapters;
@@ -141,19 +144,20 @@ function SeriesDownloadedCard(props: {
       return props.group.chapters.slice(ch.start, ch.end);
     }
     return props.group.chapters;
-  };
+  });
 
-  const visibleListChapters = () => {
+  const visibleListChapters = createMemo(() => {
     const list = displayedChapters();
     if (listLimit() === -1 || list.length <= 15) return list;
     return list.slice(0, listLimit());
-  };
+  });
 
-  const readCount = () =>
-    props.group.chapters.filter((c) => props.readHistorySet.has(c.chapterPermalink)).length;
-  const firstUnread = () =>
-    props.group.chapters.find((c) => !props.readHistorySet.has(c.chapterPermalink));
-
+  const readCount = createMemo(() =>
+    props.group.chapters.filter((c) => props.readHistorySet.has(c.chapterPermalink)).length,
+  );
+  const firstUnread = createMemo(() =>
+    props.group.chapters.find((c) => !props.readHistorySet.has(c.chapterPermalink)),
+  );
   return (
     <GroupBox
       class="ds-downloaded-series-group ds-mb-8"
@@ -178,7 +182,7 @@ function SeriesDownloadedCard(props: {
             {props.group.seriesName || props.group.seriesPermalink}
           </span>
           <span class="ds-muted" style="font-weight:normal;font-size:11px;">
-            ({props.group.chapters.length} ch · {formatBytes(props.group.totalSizeBytes)})
+            ({props.group.chapters.length} ch{props.group.totalSizeBytes > 0 ? ` · ${formatBytes(props.group.totalSizeBytes)}` : ""})
           </span>
         </span>
       }
@@ -240,6 +244,9 @@ function SeriesDownloadedCard(props: {
           <img
             src={convertFileSrc(props.group.coverPath!)}
             alt=""
+            decoding="async"
+            width="32"
+            height="44"
             class="ds-downloaded-cover"
             onClick={() =>
               navigate({
@@ -252,8 +259,10 @@ function SeriesDownloadedCard(props: {
         </Show>
         <div class="ds-downloaded-summary-text ds-muted">
           <span>{props.group.chapters.length} chapters</span>
-          <span>·</span>
-          <span>{formatBytes(props.group.totalSizeBytes)}</span>
+          <Show when={props.group.totalSizeBytes > 0}>
+            <span>·</span>
+            <span>{formatBytes(props.group.totalSizeBytes)}</span>
+          </Show>
           <span>·</span>
           <span>{formatDate(props.group.lastCachedAt)}</span>
           <Show when={readCount() > 0}>
@@ -294,10 +303,9 @@ function SeriesDownloadedCard(props: {
 
         <div class="ds-chapter-matrix">
           <For each={displayedChapters()}>
-            {(ch, idx) => {
+            {(ch) => {
               const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
               const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
-              const shortLabel = extractChapterLabel(ch.chapterTitle, idx(), totalChapters());
               const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · Read" : " · Unread"}${isBookmarked() ? " · Bookmarked" : ""}\nClick to read offline`;
               return (
                 <button
@@ -317,7 +325,7 @@ function SeriesDownloadedCard(props: {
                   <Show when={isRead()}>
                     <CheckIcon size={10} class="ds-seat-check" />
                   </Show>
-                  <span>{shortLabel}</span>
+                  <span>{ch.shortLabel}</span>
                 </button>
               );
             }}
@@ -389,16 +397,106 @@ function SeriesDownloadedCard(props: {
   );
 }
 
+function OrphanDownloadedCard(props: {
+  orphans: ProcessedCachedChapter[];
+  readHistorySet: Set<string>;
+  bookmarkSet: Set<string>;
+}) {
+  const [isCollapsed, setIsCollapsed] = createSignal<boolean>(false);
+  const [listLimit, setListLimit] = createSignal<number>(20);
+
+  const visibleOrphans = createMemo(() => {
+    if (listLimit() === -1 || props.orphans.length <= 20) return props.orphans;
+    return props.orphans.slice(0, listLimit());
+  });
+
+  return (
+    <GroupBox
+      class="ds-downloaded-series-group ds-mb-8"
+      collapsible={true}
+      collapsed={isCollapsed()}
+      onToggle={() => setIsCollapsed((c) => !c)}
+      title={
+        <span class="ds-icon-text">
+          <BookIcon />
+          <span>Individual Chapters / Oneshots ({props.orphans.length})</span>
+        </span>
+      }
+    >
+      <div class="ds-downloaded-chapter-list">
+        <For each={visibleOrphans()}>
+          {(ch) => {
+            const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
+            const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
+
+            return (
+              <div
+                class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
+                onClick={() =>
+                  navigate({
+                    view: "reader",
+                    chapterPermalink: ch.chapterPermalink,
+                    chapterTitle: ch.chapterTitle,
+                  })
+                }
+              >
+                <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
+                  <Show when={isRead()}>
+                    <CheckIcon size={11} class="ds-seat-check" style="flex-shrink:0;" />
+                  </Show>
+                  <Show when={isBookmarked()}>
+                    <BookmarkIcon filled size={11} style="color:var(--ds-warn-text,#d97706);flex-shrink:0;" />
+                  </Show>
+                  <span class="ds-truncate" style="font-size:12px;font-weight:500;">{ch.chapterTitle}</span>
+                </div>
+                <div class="ds-chapter-badge ds-muted" style="font-size:11px;font-style:normal;display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                  <span>{ch.pageCount}p</span>
+                  <Show when={ch.totalSizeBytes > 0}>
+                    <span>·</span>
+                    <span>{formatBytes(ch.totalSizeBytes)}</span>
+                  </Show>
+                  <span>·</span>
+                  <span>{formatDate(ch.lastCachedAt)}</span>
+                </div>
+              </div>
+            );
+          }}
+        </For>
+
+        {/* Show more / fewer toggle if > 20 items */}
+        <Show when={props.orphans.length > 20}>
+          <div style="display:flex;justify-content:center;padding:4px 0;margin-top:2px;">
+            <button
+              type="button"
+              class="win-button ds-btn-sm"
+              onClick={() => setListLimit((lim) => (lim === -1 ? 20 : -1))}
+              style="font-size:11px;padding:1px 10px;"
+            >
+              {listLimit() === -1
+                ? "Show fewer"
+                : `Show all ${props.orphans.length} chapters`}
+            </button>
+          </div>
+        </Show>
+      </div>
+    </GroupBox>
+  );
+}
+
 function buildGroups(
   rows: FullyCachedChapterRow[],
   readHistoryMap: Map<string, number>,
   sortMode: DownloadedSortMode,
-): { groups: DownloadedSeriesGroup[]; orphans: FullyCachedChapterRow[] } {
+): { groups: DownloadedSeriesGroup[]; orphans: ProcessedCachedChapter[] } {
   const map = new Map<string, DownloadedSeriesGroup>();
-  const orphans: FullyCachedChapterRow[] = [];
+  const orphans: ProcessedCachedChapter[] = [];
   for (const r of rows) {
+    const ch: ProcessedCachedChapter = {
+      ...r,
+      shortLabel: "",
+    };
     if (!r.seriesPermalink) {
-      orphans.push(r);
+      orphans.push(ch);
       continue;
     }
     const key = r.seriesPermalink;
@@ -415,7 +513,7 @@ function buildGroups(
       };
       map.set(key, g);
     }
-    g.chapters.push(r);
+    g.chapters.push(ch);
     g.totalSizeBytes += r.totalSizeBytes;
     g.lastCachedAt = Math.max(g.lastCachedAt, r.lastCachedAt);
     const readAt = readHistoryMap.get(r.chapterPermalink) ?? 0;
@@ -427,10 +525,21 @@ function buildGroups(
     g.chapters.sort((a, b) =>
       a.chapterTitle.localeCompare(b.chapterTitle, undefined, { numeric: true, sensitivity: "base" }),
     );
+    const total = g.chapters.length;
+    for (let i = 0; i < total; i++) {
+      g.chapters[i].shortLabel = extractChapterLabel(
+        g.chapters[i].chapterTitle,
+        i,
+        total,
+      );
+    }
+  }
+  const orphanTotal = orphans.length;
+  for (let i = 0; i < orphanTotal; i++) {
+    orphans[i].shortLabel = extractChapterLabel(orphans[i].chapterTitle, i, orphanTotal);
   }
 
   const groups = Array.from(map.values());
-
   if (sortMode === "name-asc") {
     groups.sort((a, b) => {
       const nameA = a.seriesName || a.seriesPermalink;
@@ -513,7 +622,6 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
       return { rows, bookmarkSet, readHistorySet, readHistoryMap };
     },
   });
-
   const showSpinner = useDelayedSpinner(() => pane.loading());
 
   createEffect(() => {
@@ -521,34 +629,39 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
   });
 
   const model = () => pane.data();
+  const readHistorySet = createMemo(() => model()?.readHistorySet ?? new Set<string>());
+  const bookmarkSet = createMemo(() => model()?.bookmarkSet ?? new Set<string>());
 
-  const filteredRows = () => {
+  const filteredRows = createMemo<FullyCachedChapterRow[]>(() => {
     const data = model();
     if (!data) return [];
     const q = query().trim().toLowerCase();
     if (!q) return data.rows;
     return data.rows.filter(
-      (r) =>
+      (r: FullyCachedChapterRow) =>
         r.chapterTitle.toLowerCase().includes(q) ||
         (r.seriesName && r.seriesName.toLowerCase().includes(q)) ||
         r.chapterPermalink.toLowerCase().includes(q),
     );
-  };
-
-  const grouped = () => {
+  });
+  const grouped = createMemo(() => {
     const data = model();
     return buildGroups(
       filteredRows(),
       data?.readHistoryMap ?? new Map(),
       sortMode(),
     );
-  };
-  const totalGroupsCount = () =>
-    grouped().groups.length + (grouped().orphans.length > 0 ? 1 : 0);
+  });
 
-  const totalPages = () => Math.max(1, Math.ceil(totalGroupsCount() / PAGE_SIZE));
+  const totalGroupsCount = createMemo(() =>
+    grouped().groups.length + (grouped().orphans.length > 0 ? 1 : 0),
+  );
 
-  const pagedData = () => {
+  const totalPages = createMemo(() =>
+    Math.max(1, Math.ceil(totalGroupsCount() / PAGE_SIZE)),
+  );
+
+  const pagedData = createMemo(() => {
     const { groups, orphans } = grouped();
     const page = currentPage();
     const start = (page - 1) * PAGE_SIZE;
@@ -562,16 +675,16 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
       visibleGroups,
       visibleOrphans: showOrphans ? orphans : [],
     };
-  };
+  });
 
   const visibleGroups = () => pagedData().visibleGroups;
   const visibleOrphans = () => pagedData().visibleOrphans;
 
-  const totalBytes = () =>
-    filteredRows().reduce((acc, r) => acc + r.totalSizeBytes, 0);
+  const totalBytes = createMemo(() =>
+    filteredRows().reduce((acc: number, r: FullyCachedChapterRow) => acc + r.totalSizeBytes, 0),
+  );
 
-  const totalChapters = () => filteredRows().length;
-
+  const totalChapters = createMemo(() => filteredRows().length);
   const goToPage = (page: number) => {
     if (page < 1 || page > totalPages()) return;
     setCurrentPage(page);
@@ -681,66 +794,19 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
               {(g) => (
                 <SeriesDownloadedCard
                   group={g}
-                  readHistorySet={pane.data()?.readHistorySet ?? new Set()}
-                  bookmarkSet={pane.data()?.bookmarkSet ?? new Set()}
+                  readHistorySet={readHistorySet()}
+                  bookmarkSet={bookmarkSet()}
                 />
               )}
             </For>
 
             {/* Orphan / Standalone Chapters */}
             <Show when={visibleOrphans().length > 0}>
-              <GroupBox
-                class="ds-downloaded-series-group ds-mb-8"
-                title={
-                  <span class="ds-icon-text">
-                    <BookIcon />
-                    <span>Individual Chapters / Oneshots ({visibleOrphans().length})</span>
-                  </span>
-                }
-              >
-                <div class="ds-downloaded-chapter-list">
-                  <For each={visibleOrphans()}>
-                    {(ch) => {
-                      const isRead = () =>
-                        pane.data()?.readHistorySet.has(ch.chapterPermalink) ?? false;
-                      const isBookmarked = () =>
-                        pane.data()?.bookmarkSet.has(ch.chapterPermalink) ?? false;
-
-                      return (
-                        <div
-                          class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
-                          onClick={() =>
-                            navigate({
-                              view: "reader",
-                              chapterPermalink: ch.chapterPermalink,
-                              chapterTitle: ch.chapterTitle,
-                            })
-                          }
-                        >
-                          <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
-                            <Show when={isRead()}>
-                              <CheckIcon size={11} class="ds-seat-check" style="flex-shrink:0;" />
-                            </Show>
-                            <Show when={isBookmarked()}>
-                              <BookmarkIcon filled size={11} style="color:var(--ds-warn-text,#d97706);flex-shrink:0;" />
-                            </Show>
-                            <span class="ds-truncate" style="font-size:12px;font-weight:500;">{ch.chapterTitle}</span>
-                          </div>
-                          <div class="ds-chapter-badge ds-muted" style="font-size:11px;font-style:normal;display:flex;gap:6px;align-items:center;flex-shrink:0;">
-                            <span>{ch.pageCount}p</span>
-                            <Show when={ch.totalSizeBytes > 0}>
-                              <span>·</span>
-                              <span>{formatBytes(ch.totalSizeBytes)}</span>
-                            </Show>
-                            <span>·</span>
-                            <span>{formatDate(ch.lastCachedAt)}</span>
-                          </div>
-                        </div>
-                      );
-                    }}
-                  </For>
-                </div>
-              </GroupBox>
+              <OrphanDownloadedCard
+                orphans={visibleOrphans()}
+                readHistorySet={readHistorySet()}
+                bookmarkSet={bookmarkSet()}
+              />
             </Show>
           </div>
         </Show>

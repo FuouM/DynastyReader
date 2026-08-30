@@ -453,6 +453,7 @@ export class BrowseCovers {
       !this.coversEnabled ||
       this.isScrolling ||
       !this.hydrationHost ||
+      this.hydrationHost.offsetParent === null ||
       this.queue.length === 0 ||
       (typeof document !== "undefined" && document.hidden)
     ) {
@@ -461,6 +462,7 @@ export class BrowseCovers {
     while (
       !this.isScrolling &&
       !(typeof document !== "undefined" && document.hidden) &&
+      this.hydrationHost?.offsetParent !== null &&
       this.activeWorkers < this.MAX_CONCURRENCY &&
       this.queue.length > 0
     ) {
