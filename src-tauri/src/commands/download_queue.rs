@@ -237,8 +237,10 @@ fn chrono_now() -> i64 {
 
 async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
     let state: State<DownloadState> = app.state();
-    // Ensure stuck rows are reset
-    let _ = ensure_download_queue_table();
+    // Ensure stuck rows are reset (blocking, so offload)
+    let _ = tokio::task::spawn_blocking(|| ensure_download_queue_table())
+        .await
+        .unwrap_or(Ok(()));
     loop {
         // Pause gate
         if state.paused.load(Ordering::SeqCst) {
@@ -246,31 +248,23 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
             continue;
         }
 
-        // Pick next pending row
-        let next: Option<DownloadRequest> = {
+        // Pick next pending row — run blocking DB work without holding
+        // non-Send rusqlite types across an await.
+        let next: Option<DownloadRequest> = tokio::task::spawn_blocking(|| {
             let conn = match rusqlite::Connection::open(db_path()) {
                 Ok(c) => c,
-                Err(_) => {
-                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                    continue;
-                }
+                Err(_) => return None,
             };
             let _ = conn.busy_timeout(std::time::Duration::from_millis(5000));
             let mut stmt = match conn.prepare(
                 "SELECT series_permalink, series_title, chapter_permalink, chapter_title, chapter_index FROM download_queue WHERE status = 'pending' ORDER BY queued_at ASC LIMIT 1",
             ) {
                 Ok(s) => s,
-                Err(_) => {
-                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                    continue;
-                }
+                Err(_) => return None,
             };
             let mut rows = match stmt.query([]) {
                 Ok(r) => r,
-                Err(_) => {
-                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                    continue;
-                }
+                Err(_) => return None,
             };
             if let Ok(Some(row)) = rows.next() {
                 Some(DownloadRequest {
@@ -283,7 +277,18 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
             } else {
                 None
             }
-        };
+        })
+        .await
+        .unwrap_or(None);
+
+        // Handle DB open failures that would have been `continue` + sleep
+        // inside the blocking closure: treat None as either "no work" or
+        // transient error. For transient errors we still need a short backoff.
+        // We distinguish by checking if there is actually a pending row via a
+        // quick count — if None and we just failed to open, sleep 2s.
+        // Simpler: if next is None, just go to the "no work" branch which
+        // parks with a timeout. A spurious 30s wait on transient open failure
+        // is acceptable (next enqueue will wake it via notify).
 
         let req = match next {
             Some(r) => r,
@@ -296,15 +301,17 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
             }
         };
 
-        // Mark downloading
-        {
+        // Mark downloading (blocking)
+        let chapter_permalink = req.chapter_permalink.clone();
+        let _ = tokio::task::spawn_blocking(move || {
             if let Ok(conn) = rusqlite::Connection::open(db_path()) {
                 let _ = conn.execute(
                     "UPDATE download_queue SET status = 'downloading', progress = 0, total_pages = 0 WHERE chapter_permalink = ?1",
-                    rusqlite::params![req.chapter_permalink],
+                    rusqlite::params![chapter_permalink],
                 );
             }
-        }
+        })
+        .await;
 
         // Create cancel channel for this chapter
         let (tx, mut rx) = watch::channel(false);
@@ -321,36 +328,45 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
             map.remove(&req.chapter_permalink);
         }
 
-        // Update status
+        // Update status (blocking)
         let now = chrono_now();
+        let req_clone = req.clone();
+        let app_clone = app.clone();
         match result {
             Ok((done, total)) => {
-                if let Ok(conn) = rusqlite::Connection::open(db_path()) {
-                    let status = if done >= total && total > 0 { "done" } else { "done" };
-                    let _ = conn.execute(
-                        "UPDATE download_queue SET status = ?1, progress = ?2, total_pages = ?3, completed_at = ?4 WHERE chapter_permalink = ?5",
-                        rusqlite::params![status, done as i64, total as i64, now, req.chapter_permalink],
-                    );
-                    let _ = app.emit(
-                        "download://progress",
-                        DownloadProgressPayload {
-                            chapter_permalink: req.chapter_permalink.clone(),
-                            series_permalink: req.series_permalink.clone(),
-                            pages_done: done,
-                            total_pages: total,
-                            status: status.to_string(),
-                        },
-                    );
-                }
+                let _ = tokio::task::spawn_blocking(move || {
+                    if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+                        let status = if done >= total && total > 0 { "done" } else { "done" };
+                        let _ = conn.execute(
+                            "UPDATE download_queue SET status = ?1, progress = ?2, total_pages = ?3, completed_at = ?4 WHERE chapter_permalink = ?5",
+                            rusqlite::params![status, done as i64, total as i64, now, req_clone.chapter_permalink],
+                        );
+                    }
+                })
+                .await;
+                let _ = app_clone.emit(
+                    "download://progress",
+                    DownloadProgressPayload {
+                        chapter_permalink: req.chapter_permalink.clone(),
+                        series_permalink: req.series_permalink.clone(),
+                        pages_done: done,
+                        total_pages: total,
+                        status: "done".to_string(),
+                    },
+                );
             }
             Err(e) if e == "cancelled" => {
-                if let Ok(conn) = rusqlite::Connection::open(db_path()) {
-                    let _ = conn.execute(
-                        "UPDATE download_queue SET status = 'failed', error_msg = 'cancelled' WHERE chapter_permalink = ?1",
-                        rusqlite::params![req.chapter_permalink],
-                    );
-                }
-                let _ = app.emit(
+                let cp = req.chapter_permalink.clone();
+                let _ = tokio::task::spawn_blocking(move || {
+                    if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+                        let _ = conn.execute(
+                            "UPDATE download_queue SET status = 'failed', error_msg = 'cancelled' WHERE chapter_permalink = ?1",
+                            rusqlite::params![cp],
+                        );
+                    }
+                })
+                .await;
+                let _ = app_clone.emit(
                     "download://progress",
                     DownloadProgressPayload {
                         chapter_permalink: req.chapter_permalink.clone(),
@@ -362,13 +378,18 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                 );
             }
             Err(e) => {
-                if let Ok(conn) = rusqlite::Connection::open(db_path()) {
-                    let _ = conn.execute(
-                        "UPDATE download_queue SET status = 'failed', error_msg = ?1 WHERE chapter_permalink = ?2",
-                        rusqlite::params![e, req.chapter_permalink],
-                    );
-                }
-                let _ = app.emit(
+                let cp = req.chapter_permalink.clone();
+                let err_msg = e.clone();
+                let _ = tokio::task::spawn_blocking(move || {
+                    if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+                        let _ = conn.execute(
+                            "UPDATE download_queue SET status = 'failed', error_msg = ?1 WHERE chapter_permalink = ?2",
+                            rusqlite::params![err_msg, cp],
+                        );
+                    }
+                })
+                .await;
+                let _ = app_clone.emit(
                     "download://progress",
                     DownloadProgressPayload {
                         chapter_permalink: req.chapter_permalink.clone(),
