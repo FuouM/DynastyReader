@@ -22,30 +22,15 @@ static ROOT: OnceLock<PathBuf> = OnceLock::new();
 /// `<exe dir>/.data` → `./.data` (CWD fallback).
 pub fn data_root() -> PathBuf {
     if let Ok(dir) = std::env::var("DSREADER_DATA_DIR") {
-        let trimmed = dir.trim();
-        if !trimmed.is_empty() {
-            // PowerShell's "$PSScriptRoot\" + "\.data" historically produced
-            // `K:\path\\.data` with a doubled separator (see dev.ps1). Normalize
-            // by collapsing duplicate separators and trimming trailing ones so
-            // the asset-protocol URL never becomes `...//.data/...`.
-            let normalized = trimmed
-                .replace("\\\\", "\\")
-                .replace("//", "/");
-            let p = PathBuf::from(normalized.trim_end_matches(['/', '\\']));
-            // Canonicalize when the dir already exists to get the true case
-            // and remove any residual `..` or `.` components.
-            if let Ok(canon) = p.canonicalize() {
-                return canon;
-            }
-            return p;
+        if !dir.trim().is_empty() {
+            return PathBuf::from(dir.trim());
         }
     }
     if let Some(root) = ROOT.get() {
         return root.clone();
     }
-    // Dev via `cargo run` / `tauri dev`: CARGO_MANIFEST_DIR is src-tauri.
-    // Prefer the repo's `.data` (parent of src-tauri) so dev and portable
-    // builds share the same cache when launched from the repo.
+    // `cargo run` / `tauri dev` set CARGO_MANIFEST_DIR to src-tauri; prefer
+    // the repo-root `.data` so dev and release share the same cache.
     if let Ok(manifest) = std::env::var("CARGO_MANIFEST_DIR") {
         if let Some(repo_root) = Path::new(&manifest).parent() {
             let repo_data = repo_root.join(".data");
