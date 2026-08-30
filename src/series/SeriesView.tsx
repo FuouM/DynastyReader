@@ -198,6 +198,7 @@ export function SeriesView() {
         }
         openUrl={openUrl}
         seriesType={series.type}
+        onDownloadAll={() => void handleDownloadAll()}
       />,
     );
   });
@@ -256,6 +257,26 @@ export function SeriesView() {
       setBusyBlacklist(false);
     }
   };
+  const handleDownloadAll = async (): Promise<void> => {
+    const d = data();
+    if (!d) return;
+    const { series, chapters } = d;
+    const reqs = chapters.map((ch, idx) => ({
+      series_permalink: series.permalink,
+      series_title: series.name,
+      chapter_permalink: ch.permalink,
+      chapter_title: ch.title,
+      chapter_index: idx,
+    }));
+    try {
+      const { enqueueChapters } = await import("../ipc");
+      await enqueueChapters(reqs);
+      showBanner(`Queued ${reqs.length} chapters for download`);
+    } catch (err) {
+      showBanner(errorMessage(err));
+    }
+  };
+
 
   const handleOpenAddToCol = (anchorEl: HTMLElement): void => {
     const d = data();
@@ -388,8 +409,8 @@ interface SeriesActionsProps {
   onOpenAddToCol: (anchorEl: HTMLElement) => void;
   openUrl: string;
   seriesType?: string;
+  onDownloadAll?: () => void;
 }
-
 function SeriesActions(props: SeriesActionsProps) {
   return (
     <>
@@ -417,6 +438,13 @@ function SeriesActions(props: SeriesActionsProps) {
         title={t("series.reloadTooltip")}
         onClick={props.onRefresh}
       />
+      <Show when={props.onDownloadAll}>
+        <Button
+          text="Download All"
+          title="Download all chapters for offline reading"
+          onClick={props.onDownloadAll}
+        />
+      </Show>
       <ExternalLinkButton
         className="ds-btn-icon"
         title={t("series.openInBrowserTooltip", { type: props.seriesType ? props.seriesType.toLowerCase() : "series" })}
