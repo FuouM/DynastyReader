@@ -13,6 +13,7 @@ import { convertFileSrc } from "../ipc";
 import { formatBytes } from "../lib/format";
 import { formatDate } from "../utils/formatting";
 import { t } from "../i18n";
+import { DownloadManager } from "./DownloadManager";
 import {
   getFullyCachedChapters,
   getBookmarkPermalinks,
@@ -29,14 +30,10 @@ import {
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
 import { InputField } from "../components/InputField";
-import { FeedItemRow } from "../components/FeedItemRow";
 import { EmptyState } from "../components/EmptyState";
-import { useAddToCollection } from "../components/hooks/useAddToCollection";
 import { CloudDownloadIcon, StorageIcon } from "../components/Icon";
-import type { AddToCollectionItem } from "../components/AddToCollectionModal";
 
 const PAGE_SIZE = 25;
-
 interface DownloadedModel {
   rows: FullyCachedChapterRow[];
   bookmarkSet: Set<string>;
@@ -52,37 +49,214 @@ interface DownloadedSeriesGroup {
   lastCachedAt: number;
 }
 
-function DownloadedRow(props: {
-  ch: FullyCachedChapterRow;
-  isBookmarked: boolean;
-  isRead: boolean;
-  onAddToCol: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
+function extractChapterLabel(title: string): string {
+  const clean = title.trim();
+  const match = clean.match(/(?:chapter|ch\.?|c)\s*(\d+(?:\.\d+)?)/i);
+  if (match) return match[1];
+  const leadingNum = clean.match(/^(\d+(?:\.\d+)?)/);
+  if (leadingNum) return leadingNum[1];
+  if (clean.length <= 5) return clean;
+  return clean.slice(0, 4);
+}
+
+function SeriesDownloadedCard(props: {
+  group: DownloadedSeriesGroup;
+  readHistorySet: Set<string>;
+  bookmarkSet: Set<string>;
 }) {
+  const [activeRange, setActiveRange] = createSignal<number>(-1);
+  const [expanded, setExpanded] = createSignal<boolean>(false);
+  const CHUNK_SIZE = 50;
+
+  const totalChapters = () => props.group.chapters.length;
+  const isLarge = () => totalChapters() > CHUNK_SIZE;
+
+  const chunks = () => {
+    if (!isLarge()) return [];
+    const list: { label: string; start: number; end: number; count: number }[] = [];
+    const total = totalChapters();
+    for (let i = 0; i < total; i += CHUNK_SIZE) {
+      const end = Math.min(i + CHUNK_SIZE, total);
+      list.push({
+        label: `${i + 1}–${end}`,
+        start: i,
+        end,
+        count: end - i,
+      });
+    }
+    return list;
+  };
+
+  const displayedChapters = () => {
+    if (!isLarge() || activeRange() === -1) {
+      return props.group.chapters;
+    }
+    const ch = chunks()[activeRange()];
+    if (!ch) return props.group.chapters;
+    return props.group.chapters.slice(ch.start, ch.end);
+  };
+
+  const readCount = () =>
+    props.group.chapters.filter((c) => props.readHistorySet.has(c.chapterPermalink)).length;
+
+  const firstUnread = () =>
+    props.group.chapters.find((c) => !props.readHistorySet.has(c.chapterPermalink));
+
   return (
-    <FeedItemRow
-      item={{
-        permalink: props.ch.chapterPermalink,
-        title: props.ch.chapterTitle,
-        series: props.ch.seriesName,
-        tags: props.ch.tags,
-      }}
-      isBookmarked={props.isBookmarked}
-      isRead={props.isRead}
-      coverPath={props.ch.coverPath}
-      isFullyCached={true}
-      extraMeta={
-        <>
-          <span class="ds-muted">{t("browse.downloaded.pagesCount", { count: props.ch.pageCount })}</span>
-          <Show when={props.ch.totalSizeBytes > 0}>
-            <span class="ds-muted">· {formatBytes(props.ch.totalSizeBytes)}</span>
+    <div
+      class="ds-downloaded-group"
+      style="border:1px solid var(--sys-border-light,#e0e0e0);border-radius:6px;margin-bottom:12px;background:var(--sys-window-bg,#fff);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);"
+    >
+      <div
+        class="ds-downloaded-group-header"
+        style="display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--sys-surface-2,#f5f6f8);border-bottom:1px solid var(--sys-border-light,#e8e8e8);"
+      >
+        <Show when={props.group.coverPath}>
+          <img
+            src={convertFileSrc(props.group.coverPath!)}
+            alt=""
+            style="width:38px;height:52px;object-fit:cover;border-radius:3px;flex-shrink:0;cursor:pointer;"
+            onClick={() =>
+              navigate({
+                view: "series",
+                seriesPermalink: props.group.seriesPermalink,
+                seriesName: props.group.seriesName || props.group.seriesPermalink,
+              })
+            }
+          />
+        </Show>
+        <div style="flex:1;min-width:0;">
+          <div
+            style="font-weight:600;font-size:13.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+            onClick={() =>
+              navigate({
+                view: "series",
+                seriesPermalink: props.group.seriesPermalink,
+                seriesName: props.group.seriesName || props.group.seriesPermalink,
+              })
+            }
+            title={props.group.seriesName || props.group.seriesPermalink}
+          >
+            {props.group.seriesName || props.group.seriesPermalink}
+          </div>
+          <div
+            class="ds-muted"
+            style="font-size:11.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px;"
+          >
+            <span>{props.group.chapters.length} chapter{props.group.chapters.length === 1 ? "" : "s"}</span>
+            <span>·</span>
+            <span>{formatBytes(props.group.totalSizeBytes)}</span>
+            <span>·</span>
+            <span>{formatDate(props.group.lastCachedAt)}</span>
+            <Show when={readCount() > 0}>
+              <span>·</span>
+              <span style="color:var(--sys-primary,#0078d4);font-weight:600;">
+                {readCount()}/{props.group.chapters.length} Read
+              </span>
+            </Show>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <Show when={firstUnread()}>
+            {(next) => (
+              <button
+                class="win-button ds-btn-sm primary"
+                onClick={() =>
+                  navigate({
+                    view: "reader",
+                    seriesPermalink: props.group.seriesPermalink,
+                    seriesName: props.group.seriesName || props.group.seriesPermalink,
+                    chapterPermalink: next().chapterPermalink,
+                    chapterTitle: next().chapterTitle,
+                  })
+                }
+                title={`Continue reading from unread chapter: ${next().chapterTitle}`}
+              >
+                ▶ Read Next
+              </button>
+            )}
           </Show>
-          <Show when={props.ch.lastCachedAt > 0}>
-            <span class="ds-muted">· {formatDate(props.ch.lastCachedAt)}</span>
+          <button
+            class="win-button ds-btn-sm"
+            onClick={() =>
+              navigate({
+                view: "series",
+                seriesPermalink: props.group.seriesPermalink,
+                seriesName: props.group.seriesName || props.group.seriesPermalink,
+              })
+            }
+          >
+            Go to Series →
+          </button>
+          <Show when={totalChapters() > 25}>
+            <button
+              class="win-button ds-btn-sm ds-btn-icon"
+              onClick={() => setExpanded((v) => !v)}
+              title={expanded() ? "Collapse matrix height" : "Expand matrix height"}
+            >
+              {expanded() ? "▴" : "▾"}
+            </button>
           </Show>
-        </>
-      }
-      onAddToCol={props.onAddToCol}
-    />
+        </div>
+      </div>
+
+      {/* Range Segment Selector for Large Series (>50 chapters) */}
+      <Show when={isLarge()}>
+        <div class="ds-chapter-range-bar">
+          <span class="ds-muted" style="font-size:10.5px;margin-right:2px;">Range:</span>
+          <button
+            class={`ds-range-pill${activeRange() === -1 ? " active" : ""}`}
+            onClick={() => setActiveRange(-1)}
+          >
+            All ({totalChapters()})
+          </button>
+          <For each={chunks()}>
+            {(chunk, idx) => (
+              <button
+                class={`ds-range-pill${activeRange() === idx() ? " active" : ""}`}
+                onClick={() => setActiveRange(idx())}
+              >
+                {chunk.label}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
+
+      {/* Cinema Seats Matrix */}
+      <div class={`ds-chapter-matrix${expanded() ? " expanded" : ""}`}>
+        <For each={displayedChapters()}>
+          {(ch) => {
+            const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
+            const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
+            const shortLabel = extractChapterLabel(ch.chapterTitle);
+            const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · ✓ Read" : " · Unread"}\nClick to read offline`;
+
+            return (
+              <div
+                class={`ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
+                title={tooltip}
+                onClick={() =>
+                  navigate({
+                    view: "reader",
+                    seriesPermalink: props.group.seriesPermalink,
+                    seriesName: props.group.seriesName || props.group.seriesPermalink,
+                    chapterPermalink: ch.chapterPermalink,
+                    chapterTitle: ch.chapterTitle,
+                  })
+                }
+              >
+                <Show when={isRead()}>
+                  <span style="font-size:9px;opacity:0.75;line-height:1;">✓</span>
+                </Show>
+                <span>{shortLabel}</span>
+              </div>
+            );
+          }}
+        </For>
+      </div>
+    </div>
   );
 }
 
@@ -146,8 +320,6 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
 
   const [query, setQuery] = createSignal("");
   const [page, setPage] = createSignal(1);
-  const addToCol = useAddToCollection();
-  const [collapsed, setCollapsed] = createSignal<Set<string>>(new Set());
 
   createEffect(() => setPaneLoading(props.tabId, pane.loading()));
 
@@ -229,13 +401,6 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
 
   const model = (): DownloadedModel | undefined => pane.data();
 
-  const toggleGroup = (perm: string): void => {
-    const s = new Set(collapsed());
-    if (s.has(perm)) s.delete(perm);
-    else s.add(perm);
-    setCollapsed(s);
-  };
-
   return (
     <div class="ds-tab-pane active" id="ds-tab-downloaded">
       <div id="ds-downloaded-header" class="ds-downloaded-header">
@@ -289,6 +454,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         </Show>
       </div>
 
+      <DownloadManager onComplete={() => pane.reload()} />
       <div id="ds-downloaded-filter-wrap" class="ds-mb-8">
         <InputField
           placeholder={t("browse.downloaded.filterPlaceholder")}
@@ -296,6 +462,23 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
           onInput={setQuery}
           onClear={() => setQuery("")}
         />
+      </div>
+
+      {/* Visual Legend */}
+      <div style="display:flex;align-items:center;gap:12px;padding:5px 10px;font-size:11px;color:var(--sys-text-muted,#777);margin-bottom:10px;background:var(--sys-surface-2,#f4f5f7);border:1px solid var(--sys-border-light,#e2e4e8);border-radius:4px;flex-wrap:wrap;">
+        <span style="font-weight:600;">Legend:</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--sys-primary,#0078d4);" />
+          Downloaded (Ready)
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:4px;">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--sys-control-bg,#e9ecef);border:1px solid var(--sys-border-light,#ced4da);" />
+          ✓ Read
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:4px;">
+          <span style="color:#ffb703;font-size:11px;line-height:1;">★</span>
+          Bookmarked
+        </span>
       </div>
 
       <div id="ds-downloaded-body">
@@ -317,72 +500,59 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
           <div class="ds-feed-list">
             <For each={visibleGroups()}>
               {(g) => (
-                <div class="ds-downloaded-group" style="border:1px solid var(--ds-border);border-radius:8px;margin-bottom:12px;overflow:hidden;">
-                  <div
-                    class="ds-downloaded-group-header"
-                    style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--ds-surface-2);cursor:pointer;"
-                    onClick={() => toggleGroup(g.seriesPermalink)}
-                  >
-                    <Show when={g.coverPath}>
-                      <img
-                        src={convertFileSrc(g.coverPath!)}
-                        alt=""
-                        style="width:42px;height:58px;object-fit:cover;border-radius:4px;flex-shrink:0;"
-                      />
-                    </Show>
-                    <div style="flex:1;min-width:0;">
-                      <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        {g.seriesName || g.seriesPermalink}
-                      </div>
-                      <div class="ds-muted" style="font-size:12px;">
-                        {g.chapters.length} chapter{g.chapters.length === 1 ? "" : "s"} · {formatBytes(g.totalSizeBytes)} · {formatDate(g.lastCachedAt)}
-                      </div>
-                    </div>
-                    <button
-                      class="win-button ds-btn-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate({ view: "series", seriesPermalink: g.seriesPermalink, seriesName: g.seriesName || g.seriesPermalink });
-                      }}
-                    >
-                      Go to Series →
-                    </button>
-                    <span class="ds-muted" style="font-size:12px;">
-                      {collapsed().has(g.seriesPermalink) ? "▸" : "▾"}
-                    </span>
-                  </div>
-                  <Show when={!collapsed().has(g.seriesPermalink) || g.chapters.length <= 5}>
-                    <div class="ds-downloaded-group-chapters" style="padding:4px 0;">
-                      <For each={g.chapters}>
-                        {(ch) => (
-                          <DownloadedRow
-                            ch={ch}
-                            isBookmarked={pane.data()?.bookmarkSet.has(ch.chapterPermalink) ?? false}
-                            isRead={pane.data()?.readHistorySet.has(ch.chapterPermalink) ?? false}
-                            onAddToCol={addToCol.onAddToCol}
-                          />
-                        )}
-                      </For>
-                    </div>
-                  </Show>
-                  <Show when={collapsed().has(g.seriesPermalink) && g.chapters.length > 5}>
-                    <div class="ds-muted" style="padding:8px 12px;font-size:12px;text-align:center;cursor:pointer;" onClick={() => toggleGroup(g.seriesPermalink)}>
-                      {g.chapters.length} chapters collapsed — click to expand
-                    </div>
-                  </Show>
-                </div>
-              )}
-            </For>
-            <For each={visibleOrphans()}>
-              {(ch) => (
-                <DownloadedRow
-                  ch={ch}
-                  isBookmarked={pane.data()?.bookmarkSet.has(ch.chapterPermalink) ?? false}
-                  isRead={pane.data()?.readHistorySet.has(ch.chapterPermalink) ?? false}
-                  onAddToCol={addToCol.onAddToCol}
+                <SeriesDownloadedCard
+                  group={g}
+                  readHistorySet={pane.data()?.readHistorySet ?? new Set()}
+                  bookmarkSet={pane.data()?.bookmarkSet ?? new Set()}
                 />
               )}
             </For>
+
+            {/* Orphan / Standalone Chapters */}
+            <Show when={visibleOrphans().length > 0}>
+              <div
+                class="ds-downloaded-group"
+                style="border:1px solid var(--sys-border-light,#e0e0e0);border-radius:6px;margin-bottom:12px;background:var(--sys-window-bg,#fff);overflow:hidden;"
+              >
+                <div
+                  class="ds-downloaded-group-header"
+                  style="padding:8px 12px;background:var(--sys-surface-2,#f5f6f8);border-bottom:1px solid var(--sys-border-light,#e8e8e8);font-weight:600;font-size:13px;"
+                >
+                  Individual Chapters / Oneshots ({visibleOrphans().length})
+                </div>
+                <div class="ds-chapter-matrix">
+                  <For each={visibleOrphans()}>
+                    {(ch) => {
+                      const isRead = () =>
+                        pane.data()?.readHistorySet.has(ch.chapterPermalink) ?? false;
+                      const isBookmarked = () =>
+                        pane.data()?.bookmarkSet.has(ch.chapterPermalink) ?? false;
+                      const shortLabel = extractChapterLabel(ch.chapterTitle);
+                      const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · ✓ Read" : " · Unread"}\nClick to read offline`;
+
+                      return (
+                        <div
+                          class={`ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
+                          title={tooltip}
+                          onClick={() =>
+                            navigate({
+                              view: "reader",
+                              chapterPermalink: ch.chapterPermalink,
+                              chapterTitle: ch.chapterTitle,
+                            })
+                          }
+                        >
+                          <Show when={isRead()}>
+                            <span style="font-size:10px;opacity:0.75;">✓</span>
+                          </Show>
+                          <span>{shortLabel}</span>
+                        </div>
+                      );
+                    }}
+                  </For>
+                </div>
+              </div>
+            </Show>
           </div>
         </Show>
       </div>
@@ -397,7 +567,6 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         <Loading message={t("common.loading")} />
       </Show>
 
-      {addToCol.host}
     </div>
   );
 }

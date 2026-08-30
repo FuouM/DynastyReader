@@ -60,6 +60,14 @@ export { uiScale, setUiScale, applyUiScale } from "./ui-scale";
 export { isMobile, uiMode, setUiMode } from "./platform";
 export type { UiMode } from "./platform";
 
+export {
+  activeDownloadCount,
+  downloadSpeedBps,
+  activeSeriesName,
+  activeChapterName,
+  formatDownloadSpeed,
+  initGlobalDownloadListener,
+} from "./download";
 
 /** Reactive signal for whether the webview has a network connection. */
 export const isOnline = createConnectivitySignal();

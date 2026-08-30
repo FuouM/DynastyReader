@@ -30,6 +30,8 @@ pub struct DownloadProgressPayload {
     pub series_permalink: String,
     pub pages_done: usize,
     pub total_pages: usize,
+    pub bytes_done: u64,
+    pub last_page_bytes: u64,
     pub status: String,
 }
 
@@ -377,6 +379,8 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                         series_permalink: req.series_permalink.clone(),
                         pages_done: done,
                         total_pages: total,
+                        bytes_done: 0,
+                        last_page_bytes: 0,
                         status: "done".to_string(),
                     },
                 );
@@ -399,6 +403,8 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                         series_permalink: req.series_permalink.clone(),
                         pages_done: 0,
                         total_pages: 0,
+                        bytes_done: 0,
+                        last_page_bytes: 0,
                         status: "cancelled".to_string(),
                     },
                 );
@@ -422,6 +428,8 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                         series_permalink: req.series_permalink.clone(),
                         pages_done: 0,
                         total_pages: 0,
+                        bytes_done: 0,
+                        last_page_bytes: 0,
                         status: "failed".to_string(),
                     },
                 );
@@ -496,6 +504,7 @@ async fn download_chapter(
         .ok();
     }
     let mut done = 0usize;
+    let mut total_bytes_done = 0u64;
     for (idx, page) in pages.iter().enumerate() {
         // Check cancel
         if *cancel_rx.borrow() {
@@ -554,6 +563,7 @@ async fn download_chapter(
                     .await
                     .ok();
                     done += 1;
+                    total_bytes_done += size as u64;
                     let _ = app.emit(
                         "download://progress",
                         DownloadProgressPayload {
@@ -561,6 +571,8 @@ async fn download_chapter(
                             series_permalink: req.series_permalink.clone(),
                             pages_done: done,
                             total_pages: total,
+                            bytes_done: total_bytes_done,
+                            last_page_bytes: size as u64,
                             status: "downloading".to_string(),
                         },
                     );
@@ -615,8 +627,9 @@ async fn download_chapter(
         };
 
         match size_res {
-            Ok(_) => {
+            Ok(page_size) => {
                 done += 1;
+                total_bytes_done += page_size as u64;
                 let cp = req.chapter_permalink.clone();
                 tokio::task::spawn_blocking(move || {
                     if let Ok(conn) = rusqlite::Connection::open(db_path()) {
@@ -635,6 +648,8 @@ async fn download_chapter(
                         series_permalink: req.series_permalink.clone(),
                         pages_done: done,
                         total_pages: total,
+                        bytes_done: total_bytes_done,
+                        last_page_bytes: page_size as u64,
                         status: "downloading".to_string(),
                     },
                 );

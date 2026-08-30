@@ -1,7 +1,7 @@
 import { render } from "solid-js/web";
 import { restoreStateCurrent, saveWindowState, StateFlags } from "@tauri-apps/plugin-window-state";
 import { attachConsole } from "@tauri-apps/plugin-log";
-import { initAppTheme, showBanner } from "./stores";
+import { initAppTheme, showBanner, setDbReady, initGlobalDownloadListener } from "./stores";
 import { t } from "./i18n";
 import { initDb } from "./db";
 import { errorMessage } from "./utils/errors";
@@ -48,8 +48,8 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 async function bootstrap() {
   try {
     await initDb();
-    const { setDbReady } = await import("./stores/router");
     setDbReady(true);
+    initGlobalDownloadListener();
   } catch (err) {
     const msg = errorMessage(err);
     console.error("dynasty-scans: db init failed:", msg);

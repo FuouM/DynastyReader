@@ -56,6 +56,7 @@ import {
   BookmarkIcon,
   BlacklistIcon,
   RefreshIcon,
+  CloudDownloadIcon,
 } from "../components/Icon";
 import { SeriesHeader } from "./SeriesHeader";
 import { SeriesChapterList, type ChapterMeta } from "./SeriesChapterList";
@@ -441,6 +442,7 @@ function SeriesActions(props: SeriesActionsProps) {
       />
       <Show when={props.onDownloadAll}>
         <Button
+          icon={<CloudDownloadIcon />}
           text="Download All"
           title="Download all chapters for offline reading"
           onClick={props.onDownloadAll}
