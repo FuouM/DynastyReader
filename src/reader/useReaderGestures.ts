@@ -6,7 +6,6 @@
 import { createSignal, onMount } from "solid-js";
 import { createResizeObserver } from "@solid-primitives/resize-observer";
 import type { ReaderSession } from "./reader-session";
-import type { ChapterRef } from "../types/routes";
 import { isMobile } from "../stores";
 import {
   isMobileGesturesOnDesktopEnabled,
@@ -20,16 +19,25 @@ import {
 import { getAdjacentChapters } from "./reader-spread";
 import { triggerHaptic } from "../utils/haptics";
 import {
-  OVERSCROLL_ENGAGE_THRESHOLD_PX,
-  OVERSCROLL_MAX_PULL_PX,
   SWIPE_MIN_DIST_TOUCH_PX,
   SWIPE_MIN_DIST_MOUSE_PX,
-  getOverscrollTarget,
-  isOverscrollReady,
 } from "./overscroll-math";
-import { stripTranslateX, stripTranslateXWithPull } from "./reader-transform";
+import { stripTranslateX } from "./reader-transform";
 import type { OverscrollGestureState } from "./ReaderOverscrollOverlay";
 import type { TapZoneGuideState } from "./ReaderTapZoneGuide";
+import {
+  LONG_PRESS_DELAY_MS,
+  MOVEMENT_THRESHOLD_PX,
+  TAP_TIME_THRESHOLD_MS,
+  TRANSITION_DURATION_MS,
+  type OverscrollActive,
+  tryEngageOverscroll,
+  applyOverscrollTransform,
+  updateActiveOverscroll,
+  resolveOverscrollRelease,
+  resolveTapZone,
+  resolveSwipe,
+} from "./gesture-helpers";
 
 export function useReaderGestures(s: ReaderSession) {
   const [tapZoneGuide, setTapZoneGuide] = createSignal<TapZoneGuideState | null>(null);
@@ -192,12 +200,12 @@ export function useReaderGestures(s: ReaderSession) {
         const slideIndex = s.isSpread() ? s.slideIndex() : s.currentIndex();
         const dir = s.direction();
         if (smooth) {
-          s.stripEl.style.transition = "transform 0.2s ease-out";
+          s.stripEl.style.transition = `transform ${TRANSITION_DURATION_MS}ms ease-out`;
           s.stripEl.style.transform = stripTranslateX(slideIndex, dir);
           resetTransformTimer = window.setTimeout(() => {
             if (s.stripEl) s.stripEl.style.transition = "";
             resetTransformTimer = null;
-          }, 200);
+          }, TRANSITION_DURATION_MS);
         } else {
           s.stripEl.style.transition = "none";
           s.stripEl.style.transform = stripTranslateX(slideIndex, dir);
@@ -207,12 +215,12 @@ export function useReaderGestures(s: ReaderSession) {
         }
       } else {
         if (smooth) {
-          s.stripEl.style.transition = "transform 0.2s ease-out";
+          s.stripEl.style.transition = `transform ${TRANSITION_DURATION_MS}ms ease-out`;
           s.stripEl.style.transform = "translateY(0px)";
           resetTransformTimer = window.setTimeout(() => {
             if (s.stripEl) s.stripEl.style.transition = "";
             resetTransformTimer = null;
-          }, 200);
+          }, TRANSITION_DURATION_MS);
         } else {
           s.stripEl.style.transform = "";
         }
@@ -225,14 +233,7 @@ export function useReaderGestures(s: ReaderSession) {
     let touchStartTime = 0;
     let touchMoved = false;
     let hasVibrated = false;
-    let activeOverscroll: {
-      direction: "prev" | "next";
-      chapter: ChapterRef | null;
-      targetX: number;
-      targetY: number;
-      ready: boolean;
-      dist: number;
-    } | null = null;
+    let activeOverscroll: OverscrollActive = null;
 
     let touchLongPressTimer: number | null = null;
     let didTouchLongPress = false;
@@ -260,7 +261,7 @@ export function useReaderGestures(s: ReaderSession) {
             triggerHaptic("tap");
             setTapZoneGuide({ activeZone: getTapZone(t.clientX) });
           }
-        }, 350);
+        }, LONG_PRESS_DELAY_MS);
       }
     };
 
@@ -272,7 +273,7 @@ export function useReaderGestures(s: ReaderSession) {
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
 
-      if (Math.hypot(dx, dy) > 8) {
+      if (Math.hypot(dx, dy) > MOVEMENT_THRESHOLD_PX) {
         touchMoved = true;
         if (touchLongPressTimer !== null) {
           clearTimeout(touchLongPressTimer);
@@ -286,12 +287,12 @@ export function useReaderGestures(s: ReaderSession) {
       }
       // If overscroll gesture is already engaged, update finger tracking and check center collision
       if (activeOverscroll) {
-        const ready = isOverscrollReady(t.clientX, t.clientY, activeOverscroll.targetX, activeOverscroll.targetY);
-        activeOverscroll.ready = ready;
-        if (ready && !hasVibrated) {
+        const updated = updateActiveOverscroll(activeOverscroll, t.clientX, t.clientY, hasVibrated);
+        activeOverscroll = updated.state;
+        if (updated.triggerHaptic) {
           triggerHaptic("snap");
           hasVibrated = true;
-        } else if (!ready) {
+        } else if (!activeOverscroll.ready) {
           hasVibrated = false;
         }
         dispatchOverscroll({
@@ -301,131 +302,27 @@ export function useReaderGestures(s: ReaderSession) {
           targetY: activeOverscroll.targetY,
           direction: activeOverscroll.direction,
           chapter: activeOverscroll.chapter,
-          ready,
+          ready: activeOverscroll.ready,
         });
         return;
       }
       // Check for overscroll boundary engagement
       const { prevCh, nextCh } = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
-      if (s.isHorizontal()) {
-        const isRtl = s.direction() === "rtl";
-        const cur = s.isSpread() ? s.slideIndex() : s.currentIndex();
-        const total = s.isSpread() ? s.spreads().length : s.pages().length;
-
-        const isPullingPrev =
-          cur === 0 &&
-          (isRtl ? dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX : dx > OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
-          absX > absY * 1.1;
-
-        const isPullingNext =
-          cur >= total - 1 &&
-          (isRtl ? dx > OVERSCROLL_ENGAGE_THRESHOLD_PX : dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
-          absX > absY * 1.1;
-
-        if (isPullingPrev) {
-          const { targetX, targetY } = getOverscrollTarget(touchStartX, touchStartY, "prev", true, isRtl);
-          const ready = isOverscrollReady(t.clientX, t.clientY, targetX, targetY);
-          if (ready && !hasVibrated) {
-            triggerHaptic("snap");
-            hasVibrated = true;
-          }
-          activeOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: absX };
-          dispatchOverscroll({
-            fingerX: t.clientX,
-            fingerY: t.clientY,
-            targetX,
-            targetY,
-            direction: "prev",
-            chapter: prevCh,
-            ready,
-          });
-          if (s.stripEl) {
-            const pullSign = isRtl ? -1 : 1;
-            const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
-            s.stripEl.style.transform = stripTranslateXWithPull(cur, s.direction(), damped);
-          }
-          return;
+      const result = tryEngageOverscroll({
+        s, dx, dy, absX, absY,
+        startX: touchStartX, startY: touchStartY,
+        fingerX: t.clientX, fingerY: t.clientY,
+        prevCh, nextCh,
+      });
+      if (result) {
+        activeOverscroll = result.engaged;
+        if (result.engaged.ready && !hasVibrated) {
+          triggerHaptic("snap");
+          hasVibrated = true;
         }
-
-        if (isPullingNext) {
-          const { targetX, targetY } = getOverscrollTarget(touchStartX, touchStartY, "next", true, isRtl);
-          const ready = isOverscrollReady(t.clientX, t.clientY, targetX, targetY);
-          if (ready && !hasVibrated) {
-            triggerHaptic("snap");
-            hasVibrated = true;
-          }
-          activeOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: absX };
-          dispatchOverscroll({
-            fingerX: t.clientX,
-            fingerY: t.clientY,
-            targetX,
-            targetY,
-            direction: "next",
-            chapter: nextCh,
-            ready,
-          });
-          if (s.stripEl) {
-            const pullSign = isRtl ? 1 : -1;
-            const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
-            s.stripEl.style.transform = stripTranslateXWithPull(cur, s.direction(), damped);
-          }
-          return;
-        }
-      } else {
-        // Vertical Continuous Scroll Mode
-        const vp = s.viewportEl;
-        if (vp) {
-          const isAtTop = vp.scrollTop <= 5;
-          const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 5;
-
-          if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
-            const { targetX, targetY } = getOverscrollTarget(touchStartX, touchStartY, "prev", false);
-            const ready = isOverscrollReady(t.clientX, t.clientY, targetX, targetY);
-            if (ready && !hasVibrated) {
-              triggerHaptic("snap");
-              hasVibrated = true;
-            }
-            activeOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: dy };
-            dispatchOverscroll({
-              fingerX: t.clientX,
-              fingerY: t.clientY,
-              targetX,
-              targetY,
-              direction: "prev",
-              chapter: prevCh,
-              ready,
-            });
-            if (s.stripEl) {
-              const damped = Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dy, 0.72));
-              s.stripEl.style.transform = `translateY(${damped}px)`;
-            }
-            return;
-          }
-
-          if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
-            const { targetX, targetY } = getOverscrollTarget(touchStartX, touchStartY, "next", false);
-            const ready = isOverscrollReady(t.clientX, t.clientY, targetX, targetY);
-            if (ready && !hasVibrated) {
-              triggerHaptic("snap");
-              hasVibrated = true;
-            }
-            activeOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: -dy };
-            dispatchOverscroll({
-              fingerX: t.clientX,
-              fingerY: t.clientY,
-              targetX,
-              targetY,
-              direction: "next",
-              chapter: nextCh,
-              ready,
-            });
-            if (s.stripEl) {
-              const damped = -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(-dy, 0.72));
-              s.stripEl.style.transform = `translateY(${damped}px)`;
-            }
-            return;
-          }
-        }
+        dispatchOverscroll(result.overscrollState);
+        applyOverscrollTransform(s, result);
+        return;
       }
     };
 
@@ -457,11 +354,7 @@ export function useReaderGestures(s: ReaderSession) {
         resetStripTransform(true);
         if (over.ready && over.chapter) {
           triggerHaptic("confirm");
-          if (over.direction === "prev") {
-            s.gotoPrevChapter();
-          } else {
-            s.gotoNextChapter();
-          }
+          resolveOverscrollRelease(s, over);
         }
         return;
       }
@@ -469,55 +362,18 @@ export function useReaderGestures(s: ReaderSession) {
       resetStripTransform(true);
 
       // 1. Horizontal Swipe gesture for in-chapter page flips
-      if (
-        touchMoved &&
-        absX > SWIPE_MIN_DIST_TOUCH_PX &&
-        absX > absY * 1.25 &&
-        (absX > 60 || (absX > SWIPE_MIN_DIST_TOUCH_PX && dt < 350))
-      ) {
-        const isRtl = s.direction() === "rtl";
-        const step = isRtl ? (totalDx > 0 ? 1 : -1) : (totalDx < 0 ? 1 : -1);
-        const cur = s.currentIndex();
-        const total = s.pages().length;
-        const targetPage = cur + step;
-        if (targetPage >= 0 && targetPage < total) {
-          if (s.isHorizontal() && s.isSpread()) {
-            s.stepSpread(step as 1 | -1);
-          } else {
-            s.setPage(targetPage, false);
-          }
-        } else if (cur === 0 && step === -1) {
-          triggerDirectionHint();
-        }
-        return;
+      if (touchMoved) {
+        const handled = resolveSwipe(s, totalDx, totalDy, absX, absY, dt, SWIPE_MIN_DIST_TOUCH_PX, 60, 350, triggerDirectionHint);
+        if (handled) return;
       }
 
       // 2. Tap gesture (without move)
-      if (!touchMoved && dt < 450) {
+      if (!touchMoved && dt < TAP_TIME_THRESHOLD_MS) {
         if (!s.isHorizontal()) {
           s.toggleToolbarVisible();
           return;
         }
-
-        const zone = getTapZone(t.clientX);
-        const isRtl = s.direction() === "rtl";
-        if (zone === "left") {
-          const step = isRtl ? 1 : -1;
-          const targetPage = s.currentIndex() + step;
-          if (targetPage >= 0 && targetPage < s.pages().length) {
-            if (s.isSpread()) s.stepSpread(step as 1 | -1);
-            else s.setPage(targetPage);
-          }
-        } else if (zone === "right") {
-          const step = isRtl ? -1 : 1;
-          const targetPage = s.currentIndex() + step;
-          if (targetPage >= 0 && targetPage < s.pages().length) {
-            if (s.isSpread()) s.stepSpread(step as 1 | -1);
-            else s.setPage(targetPage);
-          }
-        } else {
-          s.toggleToolbarVisible();
-        }
+        resolveTapZone(s, getTapZone(t.clientX));
       }
     };
 
@@ -534,14 +390,7 @@ export function useReaderGestures(s: ReaderSession) {
     let slotScrollTop = 0;
     let vpScrollTop = 0;
     let vpScrollLeft = 0;
-    let activeMouseOverscroll: {
-      direction: "prev" | "next";
-      chapter: ChapterRef | null;
-      targetX: number;
-      targetY: number;
-      ready: boolean;
-      dist: number;
-    } | null = null;
+    let activeMouseOverscroll: OverscrollActive = null;
 
     const onMouseDown = (ev: MouseEvent): void => {
       if (ev.button !== 0) return;
@@ -563,7 +412,7 @@ export function useReaderGestures(s: ReaderSession) {
             didMouseLongPress = true;
             setTapZoneGuide({ activeZone: getTapZone(ev.clientX) });
           }
-        }, 350);
+        }, LONG_PRESS_DELAY_MS);
       }
 
       if (s.isHorizontal()) {
@@ -590,7 +439,7 @@ export function useReaderGestures(s: ReaderSession) {
       const dx = ev.clientX - mouseStartX;
       const dy = ev.clientY - mouseStartY;
 
-      if (Math.hypot(dx, dy) > 8) {
+      if (Math.hypot(dx, dy) > MOVEMENT_THRESHOLD_PX) {
         mouseMoved = true;
         if (mouseLongPressTimer !== null) {
           clearTimeout(mouseLongPressTimer);
@@ -609,12 +458,12 @@ export function useReaderGestures(s: ReaderSession) {
       }
       // If mouse overscroll gesture is already engaged, update finger tracking and check center collision
       if (activeMouseOverscroll) {
-        const ready = isOverscrollReady(ev.clientX, ev.clientY, activeMouseOverscroll.targetX, activeMouseOverscroll.targetY);
-        activeMouseOverscroll.ready = ready;
-        if (ready && !hasVibrated) {
+        const updated = updateActiveOverscroll(activeMouseOverscroll, ev.clientX, ev.clientY, hasVibrated);
+        activeMouseOverscroll = updated.state;
+        if (updated.triggerHaptic) {
           triggerHaptic("snap");
           hasVibrated = true;
-        } else if (!ready) {
+        } else if (!activeMouseOverscroll.ready) {
           hasVibrated = false;
         }
         dispatchOverscroll({
@@ -624,121 +473,44 @@ export function useReaderGestures(s: ReaderSession) {
           targetY: activeMouseOverscroll.targetY,
           direction: activeMouseOverscroll.direction,
           chapter: activeMouseOverscroll.chapter,
-          ready,
+          ready: activeMouseOverscroll.ready,
         });
         return;
       }
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
       const { prevCh, nextCh } = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
-      if (s.isHorizontal()) {
-        if (isMobileGesturesOnDesktopEnabled()) {
-          const isRtl = s.direction() === "rtl";
-          const cur = s.isSpread() ? s.slideIndex() : s.currentIndex();
-          const total = s.isSpread() ? s.spreads().length : s.pages().length;
-
-          const isPullingPrev =
-            cur === 0 &&
-            (isRtl ? dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX : dx > OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
-            absX > absY * 1.1;
-
-          const isPullingNext =
-            cur >= total - 1 &&
-            (isRtl ? dx > OVERSCROLL_ENGAGE_THRESHOLD_PX : dx < -OVERSCROLL_ENGAGE_THRESHOLD_PX) &&
-            absX > absY * 1.1;
-
-          if (isPullingPrev) {
-            const { targetX, targetY } = getOverscrollTarget(mouseStartX, mouseStartY, "prev", true, isRtl);
-            const ready = isOverscrollReady(ev.clientX, ev.clientY, targetX, targetY);
-            activeMouseOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: absX };
-            dispatchOverscroll({
-              fingerX: ev.clientX,
-              fingerY: ev.clientY,
-              targetX,
-              targetY,
-              direction: "prev",
-              chapter: prevCh,
-              ready,
-            });
-            if (s.stripEl) {
-              const pullSign = isRtl ? -1 : 1;
-              const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
-              s.stripEl.style.transform = stripTranslateXWithPull(cur, s.direction(), damped);
-            }
-            return;
-          }
-
-          if (isPullingNext) {
-            const { targetX, targetY } = getOverscrollTarget(mouseStartX, mouseStartY, "next", true, isRtl);
-            const ready = isOverscrollReady(ev.clientX, ev.clientY, targetX, targetY);
-            activeMouseOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: absX };
-            dispatchOverscroll({
-              fingerX: ev.clientX,
-              fingerY: ev.clientY,
-              targetX,
-              targetY,
-              direction: "next",
-              chapter: nextCh,
-              ready,
-            });
-            if (s.stripEl) {
-              const pullSign = isRtl ? 1 : -1;
-              const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(absX, 0.72));
-              s.stripEl.style.transform = stripTranslateXWithPull(cur, s.direction(), damped);
-            }
-            return;
-          }
+      if (s.isHorizontal() && isMobileGesturesOnDesktopEnabled()) {
+        const result = tryEngageOverscroll({
+          s, dx, dy, absX, absY,
+          startX: mouseStartX, startY: mouseStartY,
+          fingerX: ev.clientX, fingerY: ev.clientY,
+          prevCh, nextCh,
+        });
+        if (result) {
+          activeMouseOverscroll = result.engaged;
+          dispatchOverscroll(result.overscrollState);
+          applyOverscrollTransform(s, result);
+          return;
         }
-      } else {
+      } else if (!s.isHorizontal()) {
         // Vertical Continuous Scroll Mode
         const vp = s.viewportEl;
-        if (vp) {
-          const isAtTop = vp.scrollTop <= 5;
-          const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 5;
-
-          if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
-            const { targetX, targetY } = getOverscrollTarget(mouseStartX, mouseStartY, "prev", false);
-            const ready = isOverscrollReady(ev.clientX, ev.clientY, targetX, targetY);
-            activeMouseOverscroll = { direction: "prev", chapter: prevCh, targetX, targetY, ready, dist: dy };
-            dispatchOverscroll({
-              fingerX: ev.clientX,
-              fingerY: ev.clientY,
-              targetX,
-              targetY,
-              direction: "prev",
-              chapter: prevCh,
-              ready,
-            });
-            if (s.stripEl) {
-              const damped = Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dy, 0.72));
-              s.stripEl.style.transform = `translateY(${damped}px)`;
-            }
+        if (vp && isMobileGesturesOnDesktopEnabled()) {
+          const result = tryEngageOverscroll({
+            s, dx, dy, absX, absY,
+            startX: mouseStartX, startY: mouseStartY,
+            fingerX: ev.clientX, fingerY: ev.clientY,
+            prevCh, nextCh,
+          });
+          if (result) {
+            activeMouseOverscroll = result.engaged;
+            dispatchOverscroll(result.overscrollState);
+            applyOverscrollTransform(s, result);
             return;
           }
-
-          if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * 1.1) {
-            const { targetX, targetY } = getOverscrollTarget(mouseStartX, mouseStartY, "next", false);
-            const ready = isOverscrollReady(ev.clientX, ev.clientY, targetX, targetY);
-            activeMouseOverscroll = { direction: "next", chapter: nextCh, targetX, targetY, ready, dist: -dy };
-            dispatchOverscroll({
-              fingerX: ev.clientX,
-              fingerY: ev.clientY,
-              targetX,
-              targetY,
-              direction: "next",
-              chapter: nextCh,
-              ready,
-            });
-            if (s.stripEl) {
-              const damped = -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(-dy, 0.72));
-              s.stripEl.style.transform = `translateY(${damped}px)`;
-            }
-            return;
-          }
-          if (isMobileGesturesOnDesktopEnabled()) {
-            vp.scrollTop = vpScrollTop - dy;
-            vp.scrollLeft = vpScrollLeft - dx;
-          }
+          vp.scrollTop = vpScrollTop - dy;
+          vp.scrollLeft = vpScrollLeft - dx;
         }
       }
     };
@@ -775,13 +547,7 @@ export function useReaderGestures(s: ReaderSession) {
         activeMouseOverscroll = null;
         dispatchOverscroll(null);
         resetStripTransform(true);
-        if (over.ready && over.chapter) {
-          if (over.direction === "prev") {
-            s.gotoPrevChapter();
-          } else {
-            s.gotoNextChapter();
-          }
-        }
+        resolveOverscrollRelease(s, over);
         return;
       }
       if (isMobileGesturesOnDesktopEnabled()) {
@@ -790,54 +556,19 @@ export function useReaderGestures(s: ReaderSession) {
       // Horizontal swipe for page flips in horizontal mode
       if (
         s.isHorizontal() &&
-        mouseMoved &&
-        absX > SWIPE_MIN_DIST_MOUSE_PX &&
-        absX > absY * 1.25 &&
-        (absX > 65 || (absX > SWIPE_MIN_DIST_MOUSE_PX && dt < 300))
+        mouseMoved
       ) {
-        const isRtl = s.direction() === "rtl";
-        const step = isRtl ? (totalDx > 0 ? 1 : -1) : (totalDx < 0 ? 1 : -1);
-        const cur = s.currentIndex();
-        const total = s.pages().length;
-        const targetPage = cur + step;
-        if (targetPage >= 0 && targetPage < total) {
-          if (s.isHorizontal() && s.isSpread()) {
-            s.stepSpread(step as 1 | -1);
-          } else {
-            s.setPage(targetPage, false);
-          }
-        } else if (cur === 0 && step === -1) {
-          triggerDirectionHint();
-        }
-        return;
+        const handled = resolveSwipe(s, totalDx, totalDy, absX, absY, dt, SWIPE_MIN_DIST_MOUSE_PX, 65, 300, triggerDirectionHint);
+        if (handled) return;
       }
 
       // Tap / Click gesture without drag when mobile gestures on desktop is enabled
-      if (isMobileGesturesOnDesktopEnabled() && !mouseMoved && dt < 450) {
+      if (isMobileGesturesOnDesktopEnabled() && !mouseMoved && dt < TAP_TIME_THRESHOLD_MS) {
         if (!s.isHorizontal()) {
           s.toggleToolbarVisible();
           return;
         }
-
-        const zone = getTapZone(ev.clientX);
-        const isRtl = s.direction() === "rtl";
-        if (zone === "left") {
-          const step = isRtl ? 1 : -1;
-          const targetPage = s.currentIndex() + step;
-          if (targetPage >= 0 && targetPage < s.pages().length) {
-            if (s.isSpread()) s.stepSpread(step as 1 | -1);
-            else s.setPage(targetPage);
-          }
-        } else if (zone === "right") {
-          const step = isRtl ? -1 : 1;
-          const targetPage = s.currentIndex() + step;
-          if (targetPage >= 0 && targetPage < s.pages().length) {
-            if (s.isSpread()) s.stepSpread(step as 1 | -1);
-            else s.setPage(targetPage);
-          }
-        } else {
-          s.toggleToolbarVisible();
-        }
+        resolveTapZone(s, getTapZone(ev.clientX));
       }
     };
 
