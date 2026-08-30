@@ -14,22 +14,41 @@
 import { convertFileSrc as tauriConvertFileSrc, invoke } from "@tauri-apps/api/core";
 import type { UpdateInfo } from "./types/api";
 
-/** Asset-protocol URL for a resolved absolute on-disk path. Falls back to a
- * no-op placeholder when running outside Tauri (e.g. plain Vite browser
- * preview) so the page never tries to load `file://K:/...` which Chrome
- * blocks with "Not allowed to load local resource". */
+/** Asset-protocol URL for a resolved absolute on-disk path.
+ *
+ * Tauri's `convertFileSrc` normally returns `http://asset.localhost/...` when
+ * `assetProtocol` is enabled. When running outside the Tauri WebView (plain
+ * `vite dev` in a browser) it would return `file://K:/...` which Chrome blocks
+ * with "Not allowed to load local resource". We also normalize the double
+ * separator that `dev.ps1` historically produced (`K:\path\\.data` → double
+ * slash) so the asset handler can locate the file.
+ */
 export function convertFileSrc(path: string): string {
+  if (!path) return "";
+  // Collapse duplicate separators that leak from DSREADER_DATA_DIR
+  // (`K:\a\\.data` → `K:\a\.data` and `K:/a//.data` → `K:/a/.data`) before
+  // handing to Tauri's encoder. Only collapse exactly `//` not `://`.
+  const normalized = path.replace(/\\\\/g, "\\").replace(/(?<!:)\/\//g, "/");
   try {
-    // Tauri v2 only defines the internal IPC bridge inside the WebView.
-    if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
-      return tauriConvertFileSrc(path);
+    const url = tauriConvertFileSrc(normalized);
+    // Tauri falls back to `file://` when called outside the WebView or when
+    // assetProtocol is disabled. Never return a file:// URL to the WebView.
+    if (url.startsWith("file://")) {
+      // Outside Tauri (vite preview) — return empty so <img> shows placeholder.
+      // Inside Tauri this should never happen with scope ["**"], but guard
+      // anyway to avoid the "Not allowed to load local resource" error.
+      if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
+        // Fallback manual asset URL construction.
+        const encoded = encodeURIComponent(normalized).replace(/%2F/g, "/").replace(/%5C/g, "/");
+        // Tauri expects forward slashes; asset.localhost serves any path under scope ["**"].
+        return `http://asset.localhost/${encoded.replace(/^\/+/, "")}`;
+      }
+      return "";
     }
+    return url;
   } catch {
-    // fall through
+    return "";
   }
-  // Outside Tauri (vite preview) — return empty so <img> shows placeholder
-  // instead of a blocked file:// URL.
-  return "";
 }
 /* ---------------------------------------------------------------------------
  * HTTP

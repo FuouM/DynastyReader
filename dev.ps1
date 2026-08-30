@@ -5,8 +5,8 @@ param(
 # Launch the standalone Dynasty Scans Reader in dev mode
 . "$PSScriptRoot\env.ps1"
 
-$appDir = "$PSScriptRoot\"
-$dataDir = "$appDir\.data"
+$appDir = $PSScriptRoot
+$dataDir = Join-Path $appDir ".data"
 
 # Ensure the portable data root exists for dev so the app never writes into src-tauri/target
 New-Item -ItemType Directory -Path $dataDir -Force | Out-Null

@@ -9,6 +9,7 @@
 
 import { createEffect, createSignal, For, Show, type Accessor } from "solid-js";
 import { navigate, route } from "../stores";
+import { convertFileSrc } from "../ipc";
 import { formatBytes } from "../lib/format";
 import { formatDate } from "../utils/formatting";
 import { t } from "../i18n";
@@ -323,7 +324,11 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
                     onClick={() => toggleGroup(g.seriesPermalink)}
                   >
                     <Show when={g.coverPath}>
-                      <img src={g.coverPath!} alt="" style="width:42px;height:58px;object-fit:cover;border-radius:4px;flex-shrink:0;" />
+                      <img
+                        src={convertFileSrc(g.coverPath!)}
+                        alt=""
+                        style="width:42px;height:58px;object-fit:cover;border-radius:4px;flex-shrink:0;"
+                      />
                     </Show>
                     <div style="flex:1;min-width:0;">
                       <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">

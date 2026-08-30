@@ -22,8 +22,22 @@ static ROOT: OnceLock<PathBuf> = OnceLock::new();
 /// `<exe dir>/.data` → `./.data` (CWD fallback).
 pub fn data_root() -> PathBuf {
     if let Ok(dir) = std::env::var("DSREADER_DATA_DIR") {
-        if !dir.trim().is_empty() {
-            return PathBuf::from(dir);
+        let trimmed = dir.trim();
+        if !trimmed.is_empty() {
+            // PowerShell's "$PSScriptRoot\" + "\.data" historically produced
+            // `K:\path\\.data` with a doubled separator (see dev.ps1). Normalize
+            // by collapsing duplicate separators and trimming trailing ones so
+            // the asset-protocol URL never becomes `...//.data/...`.
+            let normalized = trimmed
+                .replace("\\\\", "\\")
+                .replace("//", "/");
+            let p = PathBuf::from(normalized.trim_end_matches(['/', '\\']));
+            // Canonicalize when the dir already exists to get the true case
+            // and remove any residual `..` or `.` components.
+            if let Ok(canon) = p.canonicalize() {
+                return canon;
+            }
+            return p;
         }
     }
     if let Some(root) = ROOT.get() {
@@ -127,15 +141,18 @@ pub fn resolve_in_root(raw: &str) -> Result<PathBuf, String> {
     if raw.is_empty() {
         return Ok(root);
     }
-    let p = Path::new(raw);
+    // Collapse duplicate separators that may be stored in the DB from the old
+    // `dev.ps1` double-slash bug (`K:\path\\.data` / `K:/path//.data`).
+    let normalized_raw = raw.replace("\\\\", "\\").replace("//", "/");
+    let p = Path::new(&normalized_raw);
     let target = if p.is_absolute() {
-        reject_unsafe_components(raw)?;
+        reject_unsafe_components(&normalized_raw)?;
         p.to_path_buf()
     } else {
         if p.has_root() {
             return Err("path escapes data directory".to_string());
         }
-        reject_unsafe_components(raw)?;
+        reject_unsafe_components(&normalized_raw)?;
         for comp in p.components() {
             if matches!(comp, std::path::Component::ParentDir) {
                 return Err("path escapes data directory".to_string());
