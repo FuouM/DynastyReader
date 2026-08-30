@@ -21,11 +21,6 @@ export async function getDownloadQueue(): Promise<DownloadQueueRow[]> {
   return rows;
 }
 
-export async function enqueueDownloadQueue(chapters: string[]): Promise<void> {
-  // Placeholder — actual enqueue goes via Tauri command; this is fallback
-  void chapters;
-}
-
 export async function clearDownloadQueue(permalink: string): Promise<void> {
   await execute(`DELETE FROM download_queue WHERE series_permalink = ?`, [permalink]);
 }

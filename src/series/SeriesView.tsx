@@ -32,6 +32,7 @@ import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { fetchChapter, fetchSeries, getSeriesCover } from "../api";
+import { enqueueChapters } from "../ipc";
 import {
   addBlacklistedSeries,
   followSeries,
@@ -269,7 +270,6 @@ export function SeriesView() {
       chapter_index: idx,
     }));
     try {
-      const { enqueueChapters } = await import("../ipc");
       await enqueueChapters(reqs);
       showBanner(`Queued ${reqs.length} chapters for download`);
     } catch (err) {
@@ -334,6 +334,7 @@ export function SeriesView() {
               onOpenAddToCol={handleOpenAddToCol}
               openUrl={dynastyUrl(seriesTypeToPath(data()!.series.type), encodeURIComponent(data()!.series.permalink))}
               seriesType={data()!.series.type}
+              onDownloadAll={() => void handleDownloadAll()}
             />
           }
         />

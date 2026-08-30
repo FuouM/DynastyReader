@@ -191,10 +191,6 @@ fn group_entries(entries: Vec<String>) -> Vec<(String, Vec<String>)> {
             .trim()
             .to_string();
         let title = if clean.is_empty() { raw_title } else { clean };
-        // Try to detect c### pattern in filenames for better title
-        if title.to_ascii_lowercase().starts_with("c") == false {
-            // Keep folder name as-is; alternative: inspect first file for c### token
-        }
         natural_sort(&mut pages);
         out.push((title, pages));
     }
@@ -489,16 +485,19 @@ fn register_local_series_in_db(
 
     for (idx, (ch_title, pages)) in groups.iter().enumerate() {
         let ch_permalink = &chapter_permalinks[idx];
-        let ch_slug = slugify(ch_title);
+        let ch_slug = ch_permalink
+            .strip_prefix(&format!("local:{}-", series_slug))
+            .unwrap_or(ch_permalink);
         // chapter metadata
         let chapter_payload = serde_json::json!({
             "title": ch_title,
             "permalink": ch_permalink,
             "tags": [{"type": "Series", "name": meta.title, "permalink": series_permalink.replace("local:", "")}],
             "pages": (0..pages.len()).map(|pi| {
+                let ext = pages[pi].rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
                 serde_json::json!({
                     "name": format!("p{:03}", pi),
-                    "url": format!("/local/{}/chapters/{}/p{:03}.jpg", series_slug, ch_slug, pi)
+                    "url": format!("/local/{}/chapters/{}/p{:03}.{}", series_slug, ch_slug, pi, ext)
                 })
             }).collect::<Vec<_>>(),
         })
@@ -509,10 +508,7 @@ fn register_local_series_in_db(
         )
         .map_err(|e| format!("insert chapter metadata failed: {e}"))?;
 
-        // cover for chapter
-        let cover_payload = format!("local/{}/chapters/{}/p000.jpg", series_slug, ch_slug);
-        // fallback to jpg; actual ext may differ, but we try to use first page path
-        // Find actual ext of first page
+        // cover for chapter: use first page's actual extension
         let first_ext = pages.first().and_then(|n| n.rsplit('.').next()).unwrap_or("jpg");
         let actual_cover = format!("local/{}/chapters/{}/p000.{}", series_slug, ch_slug, first_ext.to_ascii_lowercase());
         tx.execute(
@@ -525,13 +521,7 @@ fn register_local_series_in_db(
         for (pi, _) in pages.iter().enumerate() {
             let ext = pages[pi].rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
             let file_path = format!("local/{}/chapters/{}/p{:03}.{}", series_slug, ch_slug, pi, ext);
-            // Absolute path for reader: resolve via data_root; store relative like pages/ does
-            // cached_pages.file_path is stored as absolute? In httpDownload it stores absolute_path.
-            // For local we store relative and reader will resolve via fileExists/convertFileSrc.
-            // To keep parity with existing, store relative path as-is; the reader's fileResolve handles it.
-            // But we need absolute for setCachedPage parity — store absolute path derived from data_root.
             let abs = crate::paths::data_root().join(&file_path).to_string_lossy().into_owned();
-            // Ensure cached_pages table exists
             tx.execute(
                 "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
                 rusqlite::params![ch_permalink, pi as i64, abs, 0i64, now],
@@ -557,9 +547,7 @@ fn register_local_series_in_db(
                 }
             }
         }
-        let _ = cover_payload;
     }
-
     tx.commit().map_err(|e| format!("tx commit failed: {e}"))?;
     Ok(())
 }
