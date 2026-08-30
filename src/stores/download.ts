@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
-import { getDownloadQueue } from "../ipc";
+import { getDownloadQueue, pauseDownloads, resumeDownloads } from "../ipc";
+import { isAndroid } from "./platform";
 import { formatBytes } from "../lib/format";
 
 export interface DownloadProgressPayload {
@@ -28,6 +29,8 @@ export function formatDownloadSpeed(bytesPerSec: number): string {
 let initialized = false;
 let lastSampleTime = Date.now();
 let speedEMA = 0;
+
+let wasAutoPausedByVisibility = false;
 
 export function initGlobalDownloadListener(): void {
   if (initialized) return;
@@ -94,4 +97,39 @@ export function initGlobalDownloadListener(): void {
       void refreshState();
     }
   }, 3000);
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+      if (!isAndroid()) return;
+      if (document.hidden) {
+        if (activeDownloadCount() > 0) {
+          wasAutoPausedByVisibility = true;
+          void pauseDownloads();
+        }
+      } else {
+        if (wasAutoPausedByVisibility) {
+          wasAutoPausedByVisibility = false;
+          void resumeDownloads();
+          void refreshState();
+        }
+      }
+    });
+
+    window.addEventListener("pagehide", () => {
+      if (!isAndroid()) return;
+      if (activeDownloadCount() > 0) {
+        wasAutoPausedByVisibility = true;
+        void pauseDownloads();
+      }
+    });
+
+    window.addEventListener("pageshow", () => {
+      if (!isAndroid()) return;
+      if (wasAutoPausedByVisibility) {
+        wasAutoPausedByVisibility = false;
+        void resumeDownloads();
+        void refreshState();
+      }
+    });
+  }
 }

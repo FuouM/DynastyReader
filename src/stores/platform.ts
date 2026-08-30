@@ -11,6 +11,11 @@ const isNativeMobileDevice = (): boolean => {
   const ua = navigator.userAgent || "";
   return /Android|iPhone|iPad|iPod|Mobile|Silk/i.test(ua);
 };
+export const isAndroid = (): boolean => {
+  if (typeof navigator === "undefined") return false;
+  return /Android/i.test(navigator.userAgent || "");
+};
+
 
 const [uiModeSignal, setUiModeSignal] = persistedSignal<UiMode>("auto", {
   name: "ds-ui-mode",

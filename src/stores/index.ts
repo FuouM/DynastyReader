@@ -57,7 +57,7 @@ export type { AppTheme } from "./theme";
 
 export { uiScale, setUiScale, applyUiScale } from "./ui-scale";
 
-export { isMobile, uiMode, setUiMode } from "./platform";
+export { isMobile, isAndroid, uiMode, setUiMode } from "./platform";
 export type { UiMode } from "./platform";
 
 export {
