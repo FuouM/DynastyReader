@@ -179,4 +179,28 @@
   body.ds-dark .ds-legend-swatch.bookmarked::before {
     border-color: transparent #f59e0b transparent transparent !important;
   }
+
+  /* ── Downloaded Chapter List on Dark Theme ── */
+  [data-theme="dark"] .ds-downloaded-chapter-list,
+  body.ds-dark .ds-downloaded-chapter-list {
+    border: 1px solid #3f3f46 !important;
+    background: #1e1e1e !important;
+  }
+  [data-theme="dark"] .ds-downloaded-chapter-list .ds-chapter-row,
+  body.ds-dark .ds-downloaded-chapter-list .ds-chapter-row {
+    background: #1e1e1e !important;
+    border: none !important;
+    border-bottom: 1px solid #2e2e32 !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+  [data-theme="dark"] .ds-downloaded-chapter-list .ds-chapter-row:last-child,
+  body.ds-dark .ds-downloaded-chapter-list .ds-chapter-row:last-child {
+    border-bottom: none !important;
+  }
+  [data-theme="dark"] .ds-downloaded-chapter-list .ds-chapter-row:hover,
+  body.ds-dark .ds-downloaded-chapter-list .ds-chapter-row:hover {
+    background: #2a2a2d !important;
+  }
 }

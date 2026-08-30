@@ -38,6 +38,9 @@ import {
   PlayIcon,
   ChevronRightIcon,
   StorageIcon,
+  ColumnsGapIcon,
+  ListCheckIcon,
+  BookmarkIcon,
 } from "../components/Icon";
 const PAGE_SIZE = 25;
 interface DownloadedModel {
@@ -53,6 +56,24 @@ interface DownloadedSeriesGroup {
   chapters: FullyCachedChapterRow[];
   totalSizeBytes: number;
   lastCachedAt: number;
+}
+
+function isNumberedSeries(group: DownloadedSeriesGroup): boolean {
+  const chs = group.chapters;
+  if (chs.length === 0) return true;
+  let numberedCount = 0;
+  for (const ch of chs) {
+    const t = ch.chapterTitle.trim();
+    if (
+      /(?:chapter|ch\.?|c)\s*\d+/i.test(t) ||
+      /^act\s*\d+/i.test(t) ||
+      /^volume\s*\d+/i.test(t) ||
+      /^\d+(?:\.\d+)?\b/.test(t)
+    ) {
+      numberedCount++;
+    }
+  }
+  return numberedCount / chs.length >= 0.5;
 }
 
 function extractChapterLabel(title: string, index?: number, total?: number): string {
@@ -78,9 +99,13 @@ function SeriesDownloadedCard(props: {
   readHistorySet: Set<string>;
   bookmarkSet: Set<string>;
 }) {
+  const isNumbered = () => isNumberedSeries(props.group);
+  const [viewMode, setViewMode] = createSignal<"seats" | "list">(isNumbered() ? "seats" : "list");
   const [activeRange, setActiveRange] = createSignal<number>(-1);
   const [isCollapsed, setIsCollapsed] = createSignal<boolean>(false);
+  const [listLimit, setListLimit] = createSignal<number>(15);
   const CHUNK_SIZE = 50;
+
   const totalChapters = () => props.group.chapters.length;
   const isLarge = () => totalChapters() > CHUNK_SIZE;
 
@@ -101,17 +126,25 @@ function SeriesDownloadedCard(props: {
   };
 
   const displayedChapters = () => {
-    if (!isLarge() || activeRange() === -1) {
-      return props.group.chapters;
+    if (viewMode() === "seats") {
+      if (!isLarge() || activeRange() === -1) {
+        return props.group.chapters;
+      }
+      const ch = chunks()[activeRange()];
+      if (!ch) return props.group.chapters;
+      return props.group.chapters.slice(ch.start, ch.end);
     }
-    const ch = chunks()[activeRange()];
-    if (!ch) return props.group.chapters;
-    return props.group.chapters.slice(ch.start, ch.end);
+    return props.group.chapters;
+  };
+
+  const visibleListChapters = () => {
+    const list = displayedChapters();
+    if (listLimit() === -1 || list.length <= 15) return list;
+    return list.slice(0, listLimit());
   };
 
   const readCount = () =>
     props.group.chapters.filter((c) => props.readHistorySet.has(c.chapterPermalink)).length;
-
   const firstUnread = () =>
     props.group.chapters.find((c) => !props.readHistorySet.has(c.chapterPermalink));
 
@@ -165,6 +198,20 @@ function SeriesDownloadedCard(props: {
               </button>
             )}
           </Show>
+
+          {/* View Mode Toggle (only for serialized manga) */}
+          <Show when={isNumbered()}>
+            <button
+              type="button"
+              class="win-button ds-btn-sm ds-btn-icon"
+              onClick={() => setViewMode((m) => (m === "seats" ? "list" : "seats"))}
+              title={viewMode() === "seats" ? "Switch to detailed chapter list" : "Switch to compact chapter seats matrix"}
+            >
+              <Show when={viewMode() === "seats"} fallback={<ColumnsGapIcon />}>
+                <ListCheckIcon />
+              </Show>
+            </button>
+          </Show>
           <button
             type="button"
             class="win-button ds-btn-sm"
@@ -212,63 +259,126 @@ function SeriesDownloadedCard(props: {
         </div>
       </div>
 
-      {/* Range Segment Selector for Large Series (>50 chapters) */}
-      <Show when={isLarge()}>
-        <div class="ds-chapter-range-bar">
-          <span class="ds-muted" style="font-size:11px;margin-right:2px;">Range:</span>
-          <button
-            type="button"
-            class={`win-button ds-btn-sm${activeRange() === -1 ? " active primary" : ""}`}
-            onClick={() => setActiveRange(-1)}
-          >
-            All ({totalChapters()})
-          </button>
-          <For each={chunks()}>
-            {(chunk, idx) => (
-              <button
-                type="button"
-                class={`win-button ds-btn-sm${activeRange() === idx() ? " active primary" : ""}`}
-                onClick={() => setActiveRange(idx())}
-              >
-                {chunk.label}
-              </button>
-            )}
+      {/* Mode 1: Cinema Seats Matrix */}
+      <Show when={viewMode() === "seats"}>
+        {/* Range Segment Selector for Large Series (>50 chapters) */}
+        <Show when={isLarge()}>
+          <div class="ds-chapter-range-bar">
+            <span class="ds-muted" style="font-size:11px;margin-right:2px;">Range:</span>
+            <button
+              type="button"
+              class={`win-button ds-btn-sm${activeRange() === -1 ? " active primary" : ""}`}
+              onClick={() => setActiveRange(-1)}
+            >
+              All ({totalChapters()})
+            </button>
+            <For each={chunks()}>
+              {(chunk, idx) => (
+                <button
+                  type="button"
+                  class={`win-button ds-btn-sm${activeRange() === idx() ? " active primary" : ""}`}
+                  onClick={() => setActiveRange(idx())}
+                >
+                  {chunk.label}
+                </button>
+              )}
+            </For>
+          </div>
+        </Show>
+
+        <div class="ds-chapter-matrix">
+          <For each={displayedChapters()}>
+            {(ch, idx) => {
+              const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
+              const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
+              const shortLabel = extractChapterLabel(ch.chapterTitle, idx(), totalChapters());
+              const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · Read" : " · Unread"}${isBookmarked() ? " · Bookmarked" : ""}\nClick to read offline`;
+              return (
+                <button
+                  type="button"
+                  class={`win-button ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
+                  title={tooltip}
+                  onClick={() =>
+                    navigate({
+                      view: "reader",
+                      seriesPermalink: props.group.seriesPermalink,
+                      seriesName: props.group.seriesName || props.group.seriesPermalink,
+                      chapterPermalink: ch.chapterPermalink,
+                      chapterTitle: ch.chapterTitle,
+                    })
+                  }
+                >
+                  <Show when={isRead()}>
+                    <CheckIcon size={10} class="ds-seat-check" />
+                  </Show>
+                  <span>{shortLabel}</span>
+                </button>
+              );
+            }}
           </For>
         </div>
       </Show>
 
-      {/* Cinema Seats Matrix */}
-      <div class="ds-chapter-matrix">
-        <For each={displayedChapters()}>
-          {(ch, idx) => {
-            const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
-            const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
-            const shortLabel = extractChapterLabel(ch.chapterTitle, idx(), totalChapters());
-            const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · Read" : " · Unread"}${isBookmarked() ? " · Bookmarked" : ""}\nClick to read offline`;
-            return (
+      {/* Mode 2: Detailed Chapter List */}
+      <Show when={viewMode() === "list"}>
+        <div class="ds-downloaded-chapter-list">
+          <For each={visibleListChapters()}>
+            {(ch) => {
+              const isRead = () => props.readHistorySet.has(ch.chapterPermalink);
+              const isBookmarked = () => props.bookmarkSet.has(ch.chapterPermalink);
+              return (
+                <div
+                  class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
+                  onClick={() =>
+                    navigate({
+                      view: "reader",
+                      seriesPermalink: props.group.seriesPermalink,
+                      seriesName: props.group.seriesName || props.group.seriesPermalink,
+                      chapterPermalink: ch.chapterPermalink,
+                      chapterTitle: ch.chapterTitle,
+                    })
+                  }
+                >
+                  <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
+                    <Show when={isRead()}>
+                      <CheckIcon size={11} class="ds-seat-check" style="flex-shrink:0;" />
+                    </Show>
+                    <Show when={isBookmarked()}>
+                      <BookmarkIcon filled size={11} style="color:var(--ds-warn-text,#d97706);flex-shrink:0;" />
+                    </Show>
+                    <span class="ds-truncate" style="font-size:12px;font-weight:500;">{ch.chapterTitle}</span>
+                  </div>
+                  <div class="ds-chapter-badge ds-muted" style="font-size:11px;font-style:normal;display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                    <span>{ch.pageCount}p</span>
+                    <Show when={ch.totalSizeBytes > 0}>
+                      <span>·</span>
+                      <span>{formatBytes(ch.totalSizeBytes)}</span>
+                    </Show>
+                    <span>·</span>
+                    <span>{formatDate(ch.lastCachedAt)}</span>
+                  </div>
+                </div>
+              );
+            }}
+          </For>
+
+          {/* Show more / fewer toggle if > 15 items */}
+          <Show when={props.group.chapters.length > 15}>
+            <div style="display:flex;justify-content:center;padding:4px 0;margin-top:2px;">
               <button
                 type="button"
-                class={`win-button ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
-                title={tooltip}
-                onClick={() =>
-                  navigate({
-                    view: "reader",
-                    seriesPermalink: props.group.seriesPermalink,
-                    seriesName: props.group.seriesName || props.group.seriesPermalink,
-                    chapterPermalink: ch.chapterPermalink,
-                    chapterTitle: ch.chapterTitle,
-                  })
-                }
+                class="win-button ds-btn-sm"
+                onClick={() => setListLimit((lim) => (lim === -1 ? 15 : -1))}
+                style="font-size:11px;padding:1px 10px;"
               >
-                <Show when={isRead()}>
-                  <CheckIcon size={10} class="ds-seat-check" />
-                </Show>
-                <span>{shortLabel}</span>
+                {listLimit() === -1
+                  ? "Show fewer"
+                  : `Show all ${props.group.chapters.length} chapters`}
               </button>
-            );
-          }}
-        </For>
-      </div>
+            </div>
+          </Show>
+        </div>
+      </Show>
     </GroupBox>
   );
 }
@@ -301,7 +411,9 @@ function buildGroups(rows: FullyCachedChapterRow[]): { groups: DownloadedSeriesG
     if (!g.seriesName && r.seriesName) g.seriesName = r.seriesName;
   }
   for (const g of map.values()) {
-    g.chapters.sort((a, b) => a.chapterTitle.localeCompare(b.chapterTitle));
+    g.chapters.sort((a, b) =>
+      a.chapterTitle.localeCompare(b.chapterTitle, undefined, { numeric: true, sensitivity: "base" }),
+    );
   }
   const groups = Array.from(map.values()).sort((a, b) => b.lastCachedAt - a.lastCachedAt);
   return { groups, orphans };
@@ -512,21 +624,17 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
                   </span>
                 }
               >
-                <div class="ds-chapter-matrix">
+                <div class="ds-downloaded-chapter-list">
                   <For each={visibleOrphans()}>
-                    {(ch, idx) => {
+                    {(ch) => {
                       const isRead = () =>
                         pane.data()?.readHistorySet.has(ch.chapterPermalink) ?? false;
                       const isBookmarked = () =>
                         pane.data()?.bookmarkSet.has(ch.chapterPermalink) ?? false;
-                      const shortLabel = extractChapterLabel(ch.chapterTitle, idx(), visibleOrphans().length);
-                      const tooltip = `${ch.chapterTitle}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${isRead() ? " · Read" : " · Unread"}\nClick to read offline`;
 
                       return (
-                        <button
-                          type="button"
-                          class={`win-button ds-chapter-seat ${isRead() ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${isBookmarked() ? " ds-chapter-seat--bookmarked" : ""}`}
-                          title={tooltip}
+                        <div
+                          class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
                           onClick={() =>
                             navigate({
                               view: "reader",
@@ -535,11 +643,25 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
                             })
                           }
                         >
-                          <Show when={isRead()}>
-                            <CheckIcon size={10} class="ds-seat-check" />
-                          </Show>
-                          <span>{shortLabel}</span>
-                        </button>
+                          <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
+                            <Show when={isRead()}>
+                              <CheckIcon size={11} class="ds-seat-check" style="flex-shrink:0;" />
+                            </Show>
+                            <Show when={isBookmarked()}>
+                              <BookmarkIcon filled size={11} style="color:var(--ds-warn-text,#d97706);flex-shrink:0;" />
+                            </Show>
+                            <span class="ds-truncate" style="font-size:12px;font-weight:500;">{ch.chapterTitle}</span>
+                          </div>
+                          <div class="ds-chapter-badge ds-muted" style="font-size:11px;font-style:normal;display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                            <span>{ch.pageCount}p</span>
+                            <Show when={ch.totalSizeBytes > 0}>
+                              <span>·</span>
+                              <span>{formatBytes(ch.totalSizeBytes)}</span>
+                            </Show>
+                            <span>·</span>
+                            <span>{formatDate(ch.lastCachedAt)}</span>
+                          </div>
+                        </div>
                       );
                     }}
                   </For>

@@ -579,12 +579,51 @@
   align-items: center;
   gap: 4px;
 }
-
 .ds-downloaded-summary-strip {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
+}
+
+.ds-downloaded-chapter-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--sys-window-bg);
+  border: 1px solid var(--sys-border-medium, #ccc);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.ds-downloaded-chapter-list .ds-chapter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border: none !important;
+  border-bottom: 1px solid var(--sys-border-light, #eee) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  background: var(--sys-window-bg) !important;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.1s ease;
+}
+
+.ds-downloaded-chapter-list .ds-chapter-row:last-child {
+  border-bottom: none !important;
+}
+
+.ds-downloaded-chapter-list .ds-chapter-row:hover {
+  background: var(--sys-hover-bg, #f0f0f0) !important;
+}
+
+.ds-downloaded-chapter-list .ds-chapter-badge {
+  font-style: normal !important;
+  font-size: 11px;
 }
 
 .ds-downloaded-cover {
