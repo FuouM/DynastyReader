@@ -201,12 +201,12 @@ function CollectionItemCard(props: {
     const task =
       !isChapterLike() && props.it.item_kind === "series"
         ? getOrHydrateSeriesCover(props.it.item_permalink)
-        : getOrHydrateItemCover(
-            props.it.cover || `chapter:${props.it.item_permalink}`,
-            props.it.item_permalink,
-            props.it.parent_series_permalink,
-            props.it.item_kind,
-          );
+        : getOrHydrateItemCover({
+            coverKey: props.it.cover || `chapter:${props.it.item_permalink}`,
+            chapterPermalink: props.it.item_permalink,
+            seriesOrGroupPermalink: props.it.parent_series_permalink,
+            seriesType: props.it.item_kind,
+          });
     void task.then((freshPath) => {
       if (freshPath) {
         setCover(freshPath);

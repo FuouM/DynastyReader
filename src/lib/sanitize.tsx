@@ -9,27 +9,30 @@ import { createMemo, type JSX } from "solid-js";
 import { decodeEntities } from "../utils/html";
 import { openExternal } from "../api";
 
+/** Wraps a value as a JSX.Element (SolidJS requires this coercion for mixed text/element arrays). */
+const el = (v: JSX.Element): JSX.Element => v as JSX.Element;
+
 function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {
   const out: JSX.Element[] = [];
   for (const node of nodes) {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = decodeEntities(node.textContent || "");
-      if (text) out.push(text as unknown as JSX.Element);
+      if (text) out.push(el(text));
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      const tag = el.tagName.toLowerCase();
-      const kids = () => renderSanitizedNodes(Array.from(el.childNodes));
+      const htmlEl = node as HTMLElement;
+      const tag = htmlEl.tagName.toLowerCase();
+      const kids = () => renderSanitizedNodes(Array.from(htmlEl.childNodes));
       if (tag === "p") {
         const children = kids();
-        if (children.length > 0) out.push((<p class="ds-series-desc-p">{children}</p>) as unknown as JSX.Element);
+        if (children.length > 0) out.push(el(<p class="ds-series-desc-p">{children}</p>));
       } else if (tag === "br") {
-        out.push((<br />) as unknown as JSX.Element);
+        out.push(el(<br />));
       } else if (tag === "a") {
-        const href = el.getAttribute("href") || "";
-        const text = decodeEntities(el.textContent?.trim() || "");
+        const href = htmlEl.getAttribute("href") || "";
+        const text = decodeEntities(htmlEl.textContent?.trim() || "");
         if (href) {
           out.push(
-            (
+            el(
               <a
                 class="ds-external-link"
                 title={href}
@@ -40,16 +43,16 @@ function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {
                 }}
               >
                 {text && text !== href ? `${text} — ${href}` : href}
-              </a>
-            ) as unknown as JSX.Element,
+              </a>,
+            ),
           );
         } else {
-          out.push(text as unknown as JSX.Element);
+          out.push(el(text));
         }
       } else if (tag === "b" || tag === "strong") {
-        out.push((<strong>{kids()}</strong>) as unknown as JSX.Element);
+        out.push(el(<strong>{kids()}</strong>));
       } else if (tag === "i" || tag === "em") {
-        out.push((<em>{kids()}</em>) as unknown as JSX.Element);
+        out.push(el(<em>{kids()}</em>));
       } else {
         out.push(...kids());
       }
@@ -66,7 +69,7 @@ export function SanitizedDescription(props: { html: string }): JSX.Element {
     return renderSanitizedNodes(Array.from(doc.body.childNodes));
   });
 
-  return (<div class="ds-series-desc">{nodes()}</div>) as unknown as JSX.Element;
+  return el(<div class="ds-series-desc">{nodes()}</div>);
 }
 
 export function sanitizeDescriptionHtml(html: string): JSX.Element[] {

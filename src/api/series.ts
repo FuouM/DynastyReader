@@ -268,13 +268,16 @@ export async function getOrHydrateSeriesCover(
  * 2. If series/doujin permalink provided, downloads series cover.
  * 3. Fallback for standalone chapters / oneshots: loads chapter page 1 as cover art.
  */
-export async function getOrHydrateItemCover(
-  coverKey: string,
-  chapterPermalink: string,
-  seriesOrGroupPermalink?: string | null,
-  seriesType?: string | null,
-  onPhase?: (phase: "downloading" | "processing") => void,
-): Promise<string | null> {
+export interface HydrateItemCoverOpts {
+  coverKey: string;
+  chapterPermalink: string;
+  seriesOrGroupPermalink?: string | null;
+  seriesType?: string | null;
+  onPhase?: (phase: "downloading" | "processing") => void;
+}
+
+export async function getOrHydrateItemCover(opts: HydrateItemCoverOpts): Promise<string | null> {
+  const { coverKey, chapterPermalink, seriesOrGroupPermalink, seriesType, onPhase } = opts;
   if (!coverKey) return null;
   const local = await getLocalCover(coverKey);
   if (local) return local;

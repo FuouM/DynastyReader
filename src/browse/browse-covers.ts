@@ -477,15 +477,15 @@ export class BrowseCovers {
           let task = this.inflight.get(target.coverKey);
           if (!task) {
             this.setCoverState(target.coverKey, "downloading");
-            task = getOrHydrateItemCover(
-              target.coverKey,
-              target.chapterPermalink,
-              target.seriesPermalink,
-              target.seriesType,
-              (phase) => {
+            task = getOrHydrateItemCover({
+              coverKey: target.coverKey,
+              chapterPermalink: target.chapterPermalink,
+              seriesOrGroupPermalink: target.seriesPermalink,
+              seriesType: target.seriesType,
+              onPhase: (phase) => {
                 this.setCoverState(target.coverKey, phase);
               },
-            );
+            });
             this.inflight.set(target.coverKey, task);
           }
 

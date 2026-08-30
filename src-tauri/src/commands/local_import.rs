@@ -330,7 +330,9 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
                 "page_count": pages.len(),
             });
             let ch_json_path = ch_dir.join("chapter.json");
-            std::fs::write(&ch_json_path, serde_json::to_string_pretty(&chapter_json).unwrap())
+            let chapter_json_str = serde_json::to_string_pretty(&chapter_json)
+                .map_err(|e| format!("failed serializing chapter.json: {e}"))?;
+            std::fs::write(&ch_json_path, chapter_json_str)
                 .map_err(|e| format!("failed writing chapter.json: {e}"))?;
 
             chapter_permalinks.push(ch_permalink);
@@ -346,7 +348,9 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
             "chapter_count": chapter_permalinks.len(),
             "total_pages": total_pages,
         });
-        std::fs::write(series_dir.join("series.json"), serde_json::to_string_pretty(&series_json).unwrap())
+        let series_json_str = serde_json::to_string_pretty(&series_json)
+            .map_err(|e| format!("failed serializing series.json: {e}"))?;
+        std::fs::write(series_dir.join("series.json"), series_json_str)
             .map_err(|e| format!("failed writing series.json: {e}"))?;
 
         // Generate cover.webp from first page of first chapter (if available)

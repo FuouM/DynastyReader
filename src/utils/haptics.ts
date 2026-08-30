@@ -5,11 +5,22 @@
  * with graceful fallback to navigator.vibrate() in browser environments.
  */
 import { log } from "./log";
+
+interface AndroidThemeBridge {
+  triggerHaptic(style: string): void;
+}
+
+declare global {
+  interface Window {
+    AndroidThemeBridge?: AndroidThemeBridge;
+  }
+}
+
 export function triggerHaptic(style: "snap" | "confirm" | "tap" = "snap"): void {
   // 1. Android native bridge (uses native Android HapticFeedback engine / VibratorManager)
-  if (typeof window !== "undefined" && (window as any).AndroidThemeBridge?.triggerHaptic) {
+  if (typeof window !== "undefined" && window.AndroidThemeBridge?.triggerHaptic) {
     try {
-      (window as any).AndroidThemeBridge.triggerHaptic(style);
+      window.AndroidThemeBridge.triggerHaptic(style);
     } catch (err) {
       log.debug("haptics", "AndroidThemeBridge.triggerHaptic failed:", err);
     }
