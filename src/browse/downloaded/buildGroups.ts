@@ -92,7 +92,13 @@ export function buildGroups(
   }
 
   const groups = Array.from(map.values());
-  if (sortMode === "name-asc") {
+  if (sortMode === "size-desc") {
+    groups.sort((a, b) => b.totalSizeBytes - a.totalSizeBytes);
+    orphans.sort((a, b) => b.totalSizeBytes - a.totalSizeBytes);
+  } else if (sortMode === "size-asc") {
+    groups.sort((a, b) => a.totalSizeBytes - b.totalSizeBytes);
+    orphans.sort((a, b) => a.totalSizeBytes - b.totalSizeBytes);
+  } else if (sortMode === "name-asc") {
     groups.sort((a, b) => {
       const nameA = a.seriesName || a.seriesPermalink;
       const nameB = b.seriesName || b.seriesPermalink;

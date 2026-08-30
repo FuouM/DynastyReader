@@ -363,7 +363,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
   return (
     <Show when={totalCount() > 0}>
       <GroupBox
-        class="ds-download-manager-group ds-mb-8"
+        class="ds-download-manager-group ds-mb-6"
         collapsible={true}
         collapsed={isCollapsed()}
         onToggle={handleToggleCollapse}
@@ -378,7 +378,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
             <Show when={activeOrPendingCount() > 0}>
               <button
                 type="button"
-                class="win-button"
+                class="win-button ds-btn-sm"
                 onClick={handlePauseResume}
                 title={isPaused() ? "Resume downloads" : "Pause downloads"}
               >
@@ -391,7 +391,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
             <Show when={allFailedCount() > 0}>
               <button
                 type="button"
-                class="win-button"
+                class="win-button ds-btn-sm"
                 onClick={handleRetryAll}
                 title="Retry all failed downloads"
                 style="color:var(--ds-warn-text);"
@@ -403,7 +403,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
             <Show when={allCompletedCount() > 0 && activeOrPendingCount() === 0}>
               <button
                 type="button"
-                class="win-button"
+                class="win-button ds-btn-sm"
                 onClick={handleClearAllCompleted}
                 title="Clear all completed download entries"
               >
@@ -424,7 +424,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
               const isPsd = () => group.status === "paused";
 
               return (
-                <div class="ds-download-series-item">
+                <div class={`ds-download-series-item${isDone() ? " ds-download-series-item--done" : ""}${isAct() ? " ds-download-series-item--active" : ""}`}>
                   {/* Top Row: Series Title + Status + Action Buttons */}
                   <div class="ds-download-series-header">
                     <div class="ds-download-series-title-row">
@@ -442,8 +442,11 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                         </span>
                       </Show>
                       <Show when={isDone()}>
-                        <span class="ds-status-pill" style="color:var(--ds-status-fresh-text);">
-                          <CheckIcon size={11} /> Complete
+                        <span class="ds-status-pill fresh">
+                          <CheckIcon size={10} /> Complete
+                        </span>
+                        <span class="ds-muted ds-download-series-count" style="font-size:10.5px;">
+                          ({group.totalChapters} ch)
                         </span>
                       </Show>
                       <Show when={isFail()}>
@@ -499,53 +502,55 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                     </div>
                   </div>
 
-                  {/* Second Row: Detailed Status & Live Metrics + Percent */}
-                  <div class="ds-download-series-subrow">
-                    <div class="ds-download-series-subtext ds-muted">
-                      <Show
-                        when={group.downloadingItem}
-                        fallback={
-                          <span>
-                            {group.completedChapters}/{group.totalChapters} chapters complete
-                            <Show when={group.status === "downloading" && group.completedChapters < group.totalChapters}>
-                              {" "}· Preparing next chapter…
-                            </Show>
-                            <Show when={group.failedChapters > 0}> · {group.failedChapters} failed</Show>
-                          </span>
-                        }
-                      >
-                        {(down) => (
-                          <span>
-                            {group.completedChapters + 1}/{group.totalChapters}: {down().chapter_title} ({activeProgress()[down().chapter_permalink]?.done ?? down().progress}/{(activeProgress()[down().chapter_permalink]?.total ?? down().total_pages) || 1} pages)
-                            <Show when={isAct() && speedBps() > 0}>
-                              {" "}· <span style="color:var(--sys-primary);font-weight:600;"><SpeedIcon size={11} /> {formatSpeed(speedBps())}</span>
-                              <Show when={sessionBytes() > 0}>
-                                <span class="ds-muted"> ({formatBytes(sessionBytes())})</span>
+                  {/* Live Status & Metrics + Progress Bar (for non-completed items) */}
+                  <Show when={!isDone()}>
+                    {/* Second Row: Detailed Status & Live Metrics + Percent */}
+                    <div class="ds-download-series-subrow">
+                      <div class="ds-download-series-subtext ds-muted">
+                        <Show
+                          when={group.downloadingItem}
+                          fallback={
+                            <span>
+                              {group.completedChapters}/{group.totalChapters} chapters complete
+                              <Show when={group.status === "downloading" && group.completedChapters < group.totalChapters}>
+                                {" "}· Preparing next chapter…
                               </Show>
-                            </Show>
-                            <Show when={isAct() && etaSeconds() > 0}>
-                              {" "}· {formatEta(etaSeconds())} remaining
-                            </Show>
-                          </span>
-                        )}
-                      </Show>
+                              <Show when={group.failedChapters > 0}> · {group.failedChapters} failed</Show>
+                            </span>
+                          }
+                        >
+                          {(down) => (
+                            <span>
+                              {group.completedChapters + 1}/{group.totalChapters}: {down().chapter_title} ({activeProgress()[down().chapter_permalink]?.done ?? down().progress}/{(activeProgress()[down().chapter_permalink]?.total ?? down().total_pages) || 1} pages)
+                              <Show when={isAct() && speedBps() > 0}>
+                                {" "}· <span style="color:var(--sys-primary);font-weight:600;"><SpeedIcon size={10} /> {formatSpeed(speedBps())}</span>
+                                <Show when={sessionBytes() > 0}>
+                                  <span class="ds-muted"> ({formatBytes(sessionBytes())})</span>
+                                </Show>
+                              </Show>
+                              <Show when={isAct() && etaSeconds() > 0}>
+                                {" "}· {formatEta(etaSeconds())} remaining
+                              </Show>
+                            </span>
+                          )}
+                        </Show>
+                      </div>
+
+                      <div class="ds-download-percent-badge">
+                        {group.overallPercent}%
+                      </div>
                     </div>
 
-                    <div class="ds-download-percent-badge">
-                      {group.overallPercent}%
+                    {/* Third Row: Full-width Progress Bar */}
+                    <div class="ds-progress-track">
+                      <div
+                        class={`ds-progress-fill${isFail() ? " fail" : ""}`}
+                        style={{
+                          width: `${group.overallPercent}%`,
+                        }}
+                      />
                     </div>
-                  </div>
-
-                  {/* Third Row: Full-width Progress Bar */}
-                  <div class="ds-progress-track">
-                    <div
-                      class={`ds-progress-fill${isDone() ? " done" : isFail() ? " fail" : ""}`}
-                      style={{
-                        width: `${group.overallPercent}%`,
-                      }}
-                    />
-                  </div>
-                  {/* Expandable Chapter Detail Rows */}
+                  </Show>
                   <Show when={isExpanded()}>
                     <div class="ds-download-chapters-drawer">
                       <For each={group.items}>

@@ -266,9 +266,9 @@ export async function getLocalCover(coverKey: string): Promise<string | null> {
   const cached = await getCached(key);
   if (!cached || !cached.json_payload) return null;
 
-  // Verify file still exists on disk
-  if (await fileResolve(cached.json_payload)) return cached.json_payload;
-
+  // Verify file still exists on disk and return absolute path
+  const resolved = await fileResolve(cached.json_payload);
+  if (resolved) return resolved;
   // File is missing or deleted from disk; clean up stale database entry
   await deleteCached(key);
   return null;

@@ -6,7 +6,7 @@
 import { Show } from "solid-js";
 import { formatBytes } from "../../lib/format";
 import { formatDate } from "../../utils/formatting";
-import { CheckIcon, BookmarkIcon } from "../../components/Icon";
+import { CheckIcon, BookmarkIcon, TrashIcon } from "../../components/Icon";
 import type { ProcessedCachedChapter } from "./types";
 
 interface DownloadedChapterRowProps {
@@ -14,6 +14,7 @@ interface DownloadedChapterRowProps {
   seriesPermalink?: string | null;
   seriesName?: string | null;
   onClick: () => void;
+  onDelete?: () => void;
 }
 
 export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
@@ -39,6 +40,20 @@ export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
         </Show>
         <span>·</span>
         <span>{formatDate(props.ch.lastCachedAt)}</span>
+        <Show when={props.onDelete}>
+          <button
+            type="button"
+            class="win-button ds-btn-sm ds-btn-icon"
+            style="margin-left:4px;width:18px;height:18px;min-height:18px;padding:0;"
+            title={`Delete cached chapter: ${props.ch.chapterTitle}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              props.onDelete?.();
+            }}
+          >
+            <TrashIcon size={10} />
+          </button>
+        </Show>
       </div>
     </div>
   );

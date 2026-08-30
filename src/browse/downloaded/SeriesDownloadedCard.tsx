@@ -8,6 +8,7 @@ import { convertFileSrc } from "../../ipc";
 import { formatBytes } from "../../lib/format";
 import { formatDate } from "../../utils/formatting";
 import { GroupBox } from "../../components/GroupBox";
+import { ConfirmDeleteButton } from "../../components/Button";
 import {
   BookIcon,
   CheckIcon,
@@ -15,6 +16,7 @@ import {
   ChevronRightIcon,
   ColumnsGapIcon,
   ListCheckIcon,
+  TrashIcon,
 } from "../../components/Icon";
 import type { DownloadedSeriesGroup, ProcessedCachedChapter } from "./types";
 import { DownloadedChapterRow } from "./DownloadedChapterRow";
@@ -50,13 +52,19 @@ function showVolDivider(
 
 interface SeriesDownloadedCardProps {
   group: DownloadedSeriesGroup;
+  defaultViewMode?: "seats" | "list";
+  defaultCollapsed?: boolean;
+  onDelete?: () => void;
+  onDeleteChapter?: (chapterPermalink: string) => void;
 }
 
 export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
   const isNumbered = createMemo(() => isNumberedSeries(props.group));
-  const [viewMode, setViewMode] = createSignal<"seats" | "list">(isNumbered() ? "seats" : "list");
+  const [viewMode, setViewMode] = createSignal<"seats" | "list">(
+    props.defaultViewMode ?? (isNumbered() ? "seats" : "list"),
+  );
   const [activeRange, setActiveRange] = createSignal<number>(-1);
-  const [isCollapsed, setIsCollapsed] = createSignal<boolean>(false);
+  const [isCollapsed, setIsCollapsed] = createSignal<boolean>(props.defaultCollapsed ?? false);
   const [listLimit, setListLimit] = createSignal<number>(15);
   const CHUNK_SIZE = 50;
 
@@ -190,6 +198,14 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
           >
             Series <ChevronRightIcon />
           </button>
+          <Show when={props.onDelete}>
+            <ConfirmDeleteButton
+              icon={<TrashIcon />}
+              className="ds-btn-sm ds-btn-icon"
+              title={`Clear cached chapters for ${props.group.seriesName || props.group.seriesPermalink}`}
+              onConfirm={props.onDelete!}
+            />
+          </Show>
         </div>
       }
     >
@@ -296,7 +312,11 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
                       <span>{ch.volumeHeader}</span>
                     </div>
                   </Show>
-                  <DownloadedChapterRow ch={ch} onClick={() => navigateToChapter(ch)} />
+                  <DownloadedChapterRow
+                    ch={ch}
+                    onClick={() => navigateToChapter(ch)}
+                    onDelete={props.onDeleteChapter ? () => props.onDeleteChapter!(ch.chapterPermalink) : undefined}
+                  />
                 </>
               );
             }}

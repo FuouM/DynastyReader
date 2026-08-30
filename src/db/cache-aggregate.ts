@@ -51,7 +51,10 @@ async function groupCachedPages(limit?: number): Promise<ChapterAggRow[]> {
     last_cached: number;
   }>(
     `SELECT chapter_permalink, COUNT(*) as page_count, SUM(COALESCE(size_bytes, 0)) as size_bytes, MAX(cached_at) as last_cached
-     FROM cached_pages GROUP BY chapter_permalink ORDER BY last_cached DESC${limitClause}`,
+     FROM cached_pages
+     WHERE chapter_permalink NOT LIKE 'local:%'
+     GROUP BY chapter_permalink
+     ORDER BY last_cached DESC${limitClause}`,
   );
   return rows.map((r) => ({
     chapterPermalink: r.chapter_permalink,

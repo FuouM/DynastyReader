@@ -295,7 +295,8 @@
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 6px 10px;
+  padding: 4px 8px;
+  min-height: 32px;
   border: 1px solid var(--sys-border-medium, #ccc);
   background: var(--sys-control-bg, #f5f5f5);
   border-radius: 3px;
@@ -457,52 +458,58 @@
 
 /* Download Manager & Chapter Cinema Seats Matrix */
 .ds-download-manager-group {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .ds-download-manager-header-actions {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .ds-download-speed-badge {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--sys-primary);
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 1px 4px;
+  padding: 1px 3px;
   user-select: none;
 }
 
 .ds-download-series-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ds-download-series-item {
   background: var(--sys-window-bg);
   border: 1px solid var(--sys-border-medium, #ccc);
-  padding: 6px 8px;
+  padding: 4px 7px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  border-radius: var(--radius-1, 2px);
+}
+
+.ds-download-series-item--done {
+  padding: 3px 7px;
+  background: var(--sys-control-bg, #fafafa);
 }
 
 .ds-download-series-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ds-download-series-title-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
   flex: 1;
   min-width: 0;
@@ -510,7 +517,7 @@
 
 .ds-download-series-title {
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -527,43 +534,53 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 10.5px;
 }
 
 .ds-download-series-subtext {
-  font-size: 11px;
+  font-size: 10.5px;
   flex: 1;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--sys-text-muted, #666);
 }
 
 .ds-download-percent-badge {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--sys-primary);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
+.ds-progress-track {
+  height: 3px;
+  background: var(--sys-border-light, #e0e0e0);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
 .ds-download-chapters-drawer {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: 4px;
-  padding-top: 4px;
+  gap: 1px;
+  margin-top: 3px;
+  padding-top: 3px;
   border-top: 1px dashed var(--sys-border-light, #eee);
 }
 
 .ds-download-chapter-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  padding: 2px 4px;
+  gap: 5px;
+  font-size: 10.5px;
+  padding: 1px 4px;
   background: var(--sys-control-bg);
+  min-height: 20px;
+  border-radius: 1px;
 }
 
 .ds-download-chapter-label {
@@ -575,16 +592,16 @@
 }
 
 .ds-download-chapter-status {
-  margin-left: 6px;
-  font-size: 10.5px;
+  margin-left: 5px;
+  font-size: 10px;
 }
 
 .ds-chapter-cancel-btn {
-  height: 18px !important;
-  min-height: 18px !important;
-  width: 18px !important;
+  height: 16px !important;
+  min-height: 16px !important;
+  width: 16px !important;
   padding: 0 !important;
-  font-size: 9px !important;
+  font-size: 8px !important;
 }
 
 /* Downloaded series fieldsets and cinema matrix */

@@ -4,7 +4,7 @@
 
 import type { FullyCachedChapterRow } from "../../db";
 
-export type DownloadedSortMode = "download-desc" | "name-asc" | "read-desc";
+export type DownloadedSortMode = "download-desc" | "name-asc" | "read-desc" | "size-desc" | "size-asc";
 
 export interface DownloadedModel {
   rows: FullyCachedChapterRow[];

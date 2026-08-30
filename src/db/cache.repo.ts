@@ -285,6 +285,7 @@ export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]>
 
   for (const row of aggs) {
     const cp = row.chapterPermalink;
+    if (cp.startsWith("local:")) continue;
     const meta = chapterMeta.get(cp);
     const info = chapterInfo.get(cp);
 
@@ -329,8 +330,13 @@ export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]>
  */
 export async function getFullyCachedChapterPermalinks(permalinks?: string[]): Promise<Set<string>> {
   if (permalinks && permalinks.length === 0) return new Set();
-  const whereClause = permalinks ? ` WHERE cp.chapter_permalink IN (${inClause(permalinks.length)})` : "";
-  const params = permalinks ?? [];
+  const whereClauses = ["cp.chapter_permalink NOT LIKE 'local:%'"];
+  const params: unknown[] = [];
+  if (permalinks) {
+    whereClauses.push(`cp.chapter_permalink IN (${inClause(permalinks.length)})`);
+    params.push(...permalinks);
+  }
+  const whereClause = ` WHERE ${whereClauses.join(" AND ")}`;
   const rows = await query<{
     chapter_permalink: string;
     page_count: number;

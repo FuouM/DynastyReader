@@ -1,20 +1,20 @@
-import { createEffect, createResource, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createResource, createSignal, For, Show } from "solid-js";
 import { open } from "@tauri-apps/plugin-dialog";
 import { navigate, dbReady } from "../stores";
 import { getLocalSeries } from "../db/local.repo";
 import * as ipc from "../ipc";
 import { showBanner } from "../stores/topbar";
+import { formatBytes } from "../lib/format";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { Button, IconButton } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import { Loading } from "../components/Loading";
-import { AddIcon, FolderIcon } from "../components/Icon";
+import { AddIcon, FolderIcon, StorageIcon } from "../components/Icon";
 import type { ArchiveScanResult } from "../ipc";
 import { LibraryItemRow } from "./LibraryItemRow";
 import type { LibraryPaneApi } from "./panes";
-
 export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const [tick, setTick] = createSignal(0);
   // Defer the first fetch until migrations have run; otherwise the resource
@@ -36,6 +36,10 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const [editTitle, setEditTitle] = createSignal("");
   const [importing, setImporting] = createSignal(false);
 
+  const totalBytes = createMemo(() =>
+    data()?.reduce((sum, r) => sum + (r.total_size_bytes ?? 0), 0) ?? 0
+  );
+
   props.register({
     reset: () => setTick((v) => v + 1),
     refetch: async () => {
@@ -43,7 +47,6 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       await refetch();
     },
   });
-
   const pickAndScan = async (): Promise<void> => {
     try {
       const picked = await open({
@@ -96,13 +99,25 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
 
   return (
     <div class="ds-local-pane">
-      <div class="ds-local-pane-actions" style="margin-bottom:12px;display:flex;gap:8px;">
-        <IconButton icon={<AddIcon />} text="Import CBZ" onClick={() => void pickAndScan()} disabled={scanning()} />
-        <Show when={scanning()}>
-          <span class="ds-muted" style="align-self:center;">Scanning…</span>
+      <div class="ds-local-pane-actions" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <IconButton icon={<AddIcon />} text="Import CBZ" onClick={() => void pickAndScan()} disabled={scanning()} />
+          <Show when={scanning()}>
+            <span class="ds-muted" style="align-self:center;">Scanning…</span>
+          </Show>
+        </div>
+        <Show when={data() && data()!.length > 0}>
+          <span class="ds-muted" style="font-size:11.5px;display:inline-flex;align-items:center;gap:4px;">
+            <StorageIcon />
+            <span>
+              {data()!.length} {data()!.length === 1 ? "series" : "series"}
+              <Show when={totalBytes() > 0}>
+                {" "}({formatBytes(totalBytes())})
+              </Show>
+            </span>
+          </span>
         </Show>
       </div>
-
       <Show when={scanResult()}>
         <Modal
           open={true}
@@ -152,7 +167,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
           {(row) => (
             <LibraryItemRow
               title={row.title}
-              subtitle={`${row.chapter_count} chapter(s) · ${row.total_pages} pages${row.author ? ` · ${row.author}` : ""}`}
+              subtitle={`${row.chapter_count} chapter(s) · ${row.total_pages} pages${(row.total_size_bytes ?? 0) > 0 ? ` · ${formatBytes(row.total_size_bytes!)}` : ""}${row.author ? ` · ${row.author}` : ""}`}
               badge="Local"
               cover={row.cover_path}
               coverAlt={row.title}

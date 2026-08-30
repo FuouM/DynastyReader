@@ -521,9 +521,10 @@ fn register_local_series_in_db(
         // cover for chapter: use first page's actual extension
         let first_ext = pages.first().and_then(|n| n.rsplit('.').next()).unwrap_or("jpg");
         let actual_cover = format!("local/{}/chapters/{}/p000.{}", series_slug, ch_slug, first_ext.to_ascii_lowercase());
+        let actual_cover_abs = crate::paths::data_root().join(&actual_cover).to_string_lossy().into_owned();
         tx.execute(
             "INSERT OR REPLACE INTO cached_metadata (cache_key, data_type, json_payload, cached_at) VALUES (?1, 'cover', ?2, ?3)",
-            rusqlite::params![format!("cover:chapter:{}", ch_permalink), actual_cover, now],
+            rusqlite::params![format!("cover:chapter:{}", ch_permalink), actual_cover_abs, now],
         )
         .map_err(|e| format!("insert cover failed: {e}"))?;
 
