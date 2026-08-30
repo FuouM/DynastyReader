@@ -425,6 +425,7 @@
   border-radius: 1px;
   transform-origin: left center;
   will-change: transform;
+  transition: transform 0.25s ease;
 }
 #ds-reader-viewport {
   flex: 1;

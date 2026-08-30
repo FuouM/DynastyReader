@@ -82,16 +82,10 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
       img.src = convertFileSrc(p);
       if (img.complete && img.naturalWidth > 0) {
         s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
-        if (typeof img.decode === "function") {
-          img.decode().catch(() => {});
-        }
       } else {
         img.onload = () => {
           if (!s.disposedFlag) {
             s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
-            if (typeof img.decode === "function") {
-              img.decode().catch(() => {});
-            }
           }
         };
       }

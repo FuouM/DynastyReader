@@ -211,7 +211,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   }
   s.recountCached();
 
-  // Pre-resolve dimensions and warm up image cache for all cached pages
+  // Pre-resolve dimensions for the initial view (paged/spread mode)
   if (typeof window !== "undefined") {
     const cachedMap = s.cachedPages[0];
     const cur = s.currentIndex();
@@ -222,56 +222,25 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
       const curSpread = spreadIndexOf(spreads, cur);
       for (const p of spreads[curSpread]?.pageIndices ?? []) priorityIndices.push(p);
       for (const p of spreads[curSpread + 1]?.pageIndices ?? []) priorityIndices.push(p);
-      for (const p of spreads[curSpread + 2]?.pageIndices ?? []) priorityIndices.push(p);
       if (curSpread > 0) for (const p of spreads[curSpread - 1]?.pageIndices ?? []) priorityIndices.push(p);
     } else {
-      for (let i = Math.max(0, cur - 2); i <= Math.min(pageCount - 1, cur + 6); i++) {
-        priorityIndices.push(i);
-      }
+      priorityIndices.push(cur);
+      if (cur + 1 < pageCount) priorityIndices.push(cur + 1);
     }
 
-    const warmPage = (i: number) => {
+    for (const i of priorityIndices) {
       const p = cachedMap[i];
-      if (!p) return;
+      if (!p) continue;
       const img = new Image();
       img.src = convertFileSrc(p);
       if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
         s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-        if (typeof img.decode === "function") {
-          img.decode().catch(() => {});
-        }
       } else {
         img.onload = () => {
           if (!s.disposedFlag) {
             s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-            if (typeof img.decode === "function") {
-              img.decode().catch(() => {});
-            }
           }
         };
-      }
-    };
-
-    for (const i of priorityIndices) {
-      warmPage(i);
-    }
-
-    // Warm remaining cached pages in chapter in idle/background
-    const remainingIndices = Object.keys(cachedMap)
-      .map(Number)
-      .filter((idx) => !priorityIndices.includes(idx));
-
-    if (remainingIndices.length > 0) {
-      const warmRemaining = () => {
-        if (s.disposedFlag) return;
-        for (const idx of remainingIndices) {
-          warmPage(idx);
-        }
-      };
-      if (typeof requestIdleCallback === "function") {
-        requestIdleCallback(warmRemaining, { timeout: 1000 });
-      } else {
-        setTimeout(warmRemaining, 50);
       }
     }
   }

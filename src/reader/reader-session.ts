@@ -305,16 +305,10 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       img.src = convertFileSrc(path);
       if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
         this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
-        if (typeof img.decode === "function") {
-          img.decode().catch(() => {});
-        }
       } else {
         img.onload = () => {
           if (!this.disposedFlag) {
             this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
-            if (typeof img.decode === "function") {
-              img.decode().catch(() => {});
-            }
           }
         };
       }
