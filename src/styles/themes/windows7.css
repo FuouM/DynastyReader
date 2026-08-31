@@ -1,4 +1,4 @@
-@layer themes, components;
+@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
 
 /*
  * windows7.css — Windows 7 Aero theme.
@@ -163,26 +163,6 @@
 
 /* ── Aero chrome overrides — scoped to [data-theme="windows7"] ─────────── */
 @layer components {
-  /* Active light selections */
-  [data-theme="windows7"] .win-button.active,
-  [data-theme="windows7"] .ds-segmented-btn.active,
-  [data-theme="windows7"] .ds-session-tab.active {
-    background:
-      linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
-    border-color: var(--ds-accent-active-border, #2c597c) !important;
-    color: var(--ds-accent-active-text, #0f2440) !important;
-    box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.2), inset -1px 1px 0 rgba(0, 0, 0, 0.07) !important;
-  }
-
-  [data-theme="windows7"] .win-button.active .ds-btn-text,
-  [data-theme="windows7"] .win-button.active .bi,
-  [data-theme="windows7"] .ds-segmented-btn.active .ds-btn-text,
-  [data-theme="windows7"] .ds-segmented-btn.active .ds-btn-icon-wrap,
-  [data-theme="windows7"] .ds-segmented-btn.active .bi,
-  [data-theme="windows7"] .ds-session-tab.active .ds-truncate,
-  [data-theme="windows7"] .ds-session-tab.active > i.bi {
-    color: var(--ds-accent-active-text, #0f2440) !important;
-  }
   /* Wallpaper + Segoe UI font */
   :root[data-theme="windows7"] {
     background:
@@ -356,17 +336,9 @@
     background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 45%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9);
   }
-
-  [data-theme="windows7"] .ds-subtab.active {
-    background: linear-gradient(180deg, var(--ds-accent-subtab-grad-1, #d8ebff) 0%, var(--ds-accent-subtab-grad-2, #b9d8f6) 46%, var(--ds-accent-subtab-grad-3, #8fb9ea) 52%, var(--ds-accent-subtab-grad-4, #c8ddf5) 100%) !important;
-    border: 1px solid var(--ds-accent-subtab-border, #2e6aa5) !important;
-    box-shadow: inset 1px 1px 0 rgba(16, 42, 74, 0.15), inset -1px -1px 0 rgba(255, 255, 255, 0.6) !important;
-    color: var(--ds-accent-subtab-text, #0f2440) !important;
-    font-weight: 600;
-  }
-
-  [data-theme="windows7"] .ds-subtab.active span {
-    color: var(--ds-accent-subtab-text, #0f2440) !important;
+  [data-theme="windows7"] .ds-subtab.active:hover {
+    background:
+      linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
   }
 
   /* ── Group boxes / fieldsets — rounded Aero fieldsets ── */
@@ -394,7 +366,7 @@
   [data-theme="windows7"] .ds-select,
   [data-theme="windows7"] .ds-pager-input {
     background: #ffffff;
-    border: 1px solid var(--ds-accent-box-border, #aab9cc);
+    border: 1px solid #aab9cc;
     border-top-color: #8e8f8f;
     box-shadow: inset 0 1px 2px rgba(16, 42, 74, 0.08);
   }
@@ -522,23 +494,9 @@
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, var(--sys-button-hover, rgba(230, 240, 252, 0.9)) 90%, rgba(255, 255, 255, 0.8) 100%) !important;
     border: 1px solid var(--ds-accent-hover-border, #aaddfa) !important;
     border-radius: 3px !important;
-    color: var(--ds-accent-subtab-text, #0f2440) !important;
+    color: var(--ds-accent-active-text, #0f2440) !important;
   }
 
-  [data-theme="windows7"] .ds-settings-nav-item.active {
-    background: linear-gradient(180deg, var(--ds-accent-subtab-grad-1, #d8ebff) 0%, var(--ds-accent-subtab-grad-2, #b9d8f6) 46%, var(--ds-accent-subtab-grad-3, #8fb9ea) 52%, var(--ds-accent-subtab-grad-4, #c8ddf5) 100%) !important;
-    border: 1px solid var(--ds-accent-subtab-border, #2e6aa5) !important;
-    border-radius: 3px !important;
-    color: var(--ds-accent-subtab-text, #0f2440) !important;
-    font-weight: 600;
-    box-shadow: inset 1px 1px 0 rgba(16, 42, 74, 0.15), inset -1px -1px 0 rgba(255, 255, 255, 0.6) !important;
-  }
-
-  [data-theme="windows7"] .ds-settings-nav-item.active .bi,
-  [data-theme="windows7"] .ds-settings-nav-item.active .ds-btn-text,
-  [data-theme="windows7"] .ds-settings-nav-item.active span {
-    color: var(--ds-accent-subtab-text, #0f2440) !important;
-  }
   [data-theme="windows7"] .ds-settings-row-label {
     color: #162030;
     font-weight: 500;
@@ -817,16 +775,6 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  [data-theme="windows7"] .ds-bn-tab.active {
-    background:
-      linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
-    border-color: var(--ds-accent-active-border, #2c597c) !important;
-    color: var(--ds-accent-active-text, #0f2440) !important;
-  }
-
-  [data-theme="windows7"] .ds-bn-tab.active .bi {
-    color: var(--ds-accent-active-text, #0f2440) !important;
-  }
   /* ── Downloaded Chapter Seats on Aero ── */
   [data-theme="windows7"] .ds-chapter-seat--downloaded {
     background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 0%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
@@ -919,12 +867,6 @@
     border-color: var(--ds-accent-box-border, #b8c9dc) !important;
     color: #000000 !important;
   }
-  [data-theme="windows7"] .ds-library-nav-item.active {
-    background: linear-gradient(180deg, var(--ds-accent-subtab-grad-1, #d8ebff) 0%, var(--ds-accent-subtab-grad-2, #b9d8f6) 46%, var(--ds-accent-subtab-grad-3, #8fb9ea) 52%, var(--ds-accent-subtab-grad-4, #c8ddf5) 100%) !important;
-    border: 1px solid var(--ds-accent-subtab-border, #2e6aa5) !important;
-    box-shadow: inset 1px 1px 0 rgba(16, 42, 74, 0.15), inset -1px -1px 0 rgba(255, 255, 255, 0.6) !important;
-    color: var(--ds-accent-subtab-text, #0f2440) !important;
-  }
 
   /* ── Download Manager Queue on Windows 7 ── */
   [data-theme="windows7"] .ds-download-series-item {
@@ -955,3 +897,58 @@
     color: var(--ds-accent-badge-text, #1b3555) !important;
   }
 }
+
+/* ── Active-state overrides — unlayered to beat base !important rules ─── */
+[data-theme="windows7"] .win-button.active,
+[data-theme="windows7"] .ds-segmented-btn.active,
+[data-theme="windows7"] .ds-session-tab.active,
+[data-theme="windows7"] .ds-subtab.active,
+[data-theme="windows7"] .ds-settings-nav-item.active,
+[data-theme="windows7"] .ds-library-nav-item.active {
+  background:
+    linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
+  border-color: var(--ds-accent-active-border, #2c597c) !important;
+  color: var(--ds-accent-active-text, #0f2440) !important;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.2), inset -1px 1px 0 rgba(0, 0, 0, 0.07) !important;
+}
+
+[data-theme="windows7"] .win-button.active .ds-btn-text,
+[data-theme="windows7"] .win-button.active .bi,
+[data-theme="windows7"] .ds-segmented-btn.active .ds-btn-text,
+[data-theme="windows7"] .ds-segmented-btn.active .ds-btn-icon-wrap,
+[data-theme="windows7"] .ds-segmented-btn.active .bi,
+[data-theme="windows7"] .ds-session-tab.active .ds-truncate,
+[data-theme="windows7"] .ds-session-tab.active > i.bi,
+[data-theme="windows7"] .ds-subtab.active,
+[data-theme="windows7"] .ds-subtab.active span,
+[data-theme="windows7"] .ds-subtab.active .bi,
+[data-theme="windows7"] .ds-settings-nav-item.active,
+[data-theme="windows7"] .ds-settings-nav-item.active .bi,
+[data-theme="windows7"] .ds-settings-nav-item.active .ds-btn-text,
+[data-theme="windows7"] .ds-settings-nav-item.active span,
+[data-theme="windows7"] .ds-library-nav-item.active,
+[data-theme="windows7"] .ds-library-nav-item.active .ds-nav-icon,
+[data-theme="windows7"] .ds-library-nav-item.active .ds-nav-label {
+  color: var(--ds-accent-active-text, #0f2440) !important;
+}
+
+[data-theme="windows7"] .ds-subtab.active:hover,
+[data-theme="windows7"] .ds-settings-nav-item.active:hover,
+[data-theme="windows7"] .ds-library-nav-item.active:hover {
+  background:
+    linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
+  border-color: var(--ds-accent-active-border, #2c597c) !important;
+}
+
+[data-theme="windows7"] .ds-bn-tab.active {
+  background:
+    linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
+  border-color: var(--ds-accent-active-border, #2c597c) !important;
+  color: var(--ds-accent-active-text, #0f2440) !important;
+}
+
+[data-theme="windows7"] .ds-bn-tab.active .bi {
+  color: var(--ds-accent-active-text, #0f2440) !important;
+}
+
+

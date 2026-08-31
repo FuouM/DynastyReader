@@ -486,7 +486,7 @@
 
 .ds-download-series-item {
   background: var(--sys-window-bg, #ffffff);
-  border: 1px solid var(--ds-accent-box-border, var(--sys-border-medium, #c8d4e2));
+  border: 1px solid var(--sys-border-medium, #c8d4e2);
   padding: 4px 7px;
   display: flex;
   flex-direction: column;
@@ -497,7 +497,7 @@
 .ds-download-series-item--done {
   padding: 3px 7px;
   background: var(--sys-window-bg, #ffffff);
-  border-color: var(--ds-accent-box-border, var(--sys-border-medium, #c8d4e2));
+  border-color: var(--sys-border-medium, #c8d4e2);
 }
 
 .ds-download-series-item--active {

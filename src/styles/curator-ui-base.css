@@ -145,7 +145,7 @@
 }
 
 .group-box {
-  border: 1px solid var(--ds-accent-box-border, var(--sys-border-medium, #c8d4e2));
+  border: 1px solid var(--sys-border-medium, #c8d4e2);
   border-radius: 4px;
   padding: 12px;
   position: relative;
@@ -157,11 +157,11 @@
   top: -9px;
   left: 10px;
   background: var(--sys-window-bg, #ffffff);
-  border: 1px solid var(--ds-accent-badge-border, var(--sys-border-medium, #b8cde6));
+  border: 1px solid var(--sys-border-medium, #b8cde6);
   border-radius: 3px;
   padding: 1px 8px;
   font-weight: 600;
-  color: var(--ds-accent-badge-text, var(--sys-primary, #1b3d64));
+  color: var(--sys-text-secondary, #333333);
   display: inline-flex;
   align-items: center;
   gap: 4px;

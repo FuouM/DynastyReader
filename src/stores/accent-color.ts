@@ -25,6 +25,7 @@ export const ACCENT_COLOR_PRESETS: readonly AccentColorPreset[] = [
   { id: "green", label: "Green", hex: "#10b981" },
   { id: "teal", label: "Teal", hex: "#06b6d4" },
   { id: "slate", label: "Slate", hex: "#64748b" },
+  { id: "green-yuri", label: "GreenYuri", hex: "#b1fe00" },
 ] as const;
 
 export const ACCENT_COLOR_STORAGE_KEY = "ds-accent-color";

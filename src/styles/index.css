@@ -86,10 +86,10 @@ body {
   padding-bottom: 1px;
 }
 .ds-session-tab.active {
-  background: var(--sys-highlight-bg, #0078d7) !important;
+  background: var(--sys-highlight-bg, #0078d7);
   color: var(--sys-highlight-text, #ffffff) !important;
-  border-color: var(--sys-primary-border, #005499) !important;
-  font-weight: 500 !important;
+  border-color: var(--sys-primary-border, #005499);
+  font-weight: 500;
 }
 .ds-tab-close {
   cursor: pointer;
@@ -610,10 +610,10 @@ body {
   align-items: center;
 }
 .ds-subtab.active {
-  background: var(--sys-highlight-bg, #0078d7) !important;
+  background: var(--sys-highlight-bg, #0078d7);
   color: var(--sys-highlight-text, #ffffff) !important;
-  border-color: var(--sys-primary-border, #005499) !important;
-  font-weight: 500 !important;
+  border-color: var(--sys-primary-border, #005499);
+  font-weight: 500;
 }
 .ds-tagline {
   display: flex;
@@ -1026,7 +1026,7 @@ code,
   background: var(--sys-button-hover, #e5f1fb);
 }
 .ds-settings-nav-item.active {
-  background: var(--sys-highlight-bg, #0078d7) !important;
+  background: var(--sys-highlight-bg, #0078d7);
   color: var(--sys-highlight-text, #ffffff) !important;
   font-weight: 600;
 }
@@ -1093,10 +1093,10 @@ code,
   margin-top: 1px;
 }
 .ds-settings-row-control {
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
 }
 .ds-settings-row-control .ds-segmented-switch {
   height: 24px;
@@ -1152,6 +1152,7 @@ code,
   align-items: center;
   gap: 4px;
   padding: 3px 4px;
+  max-width: 100%;
   background: var(--sys-control-bg, #ececec);
   border: 1px solid var(--sys-border-dark, #888888);
   border-top-color: #666666;

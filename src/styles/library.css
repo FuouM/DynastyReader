@@ -89,9 +89,9 @@
 
 .win-listbox-item.active,
 .ds-library-nav-item.active {
-  background: var(--sys-highlight-bg, #0078d7) !important;
+  background: var(--sys-highlight-bg, #0078d7);
   color: var(--sys-highlight-text, #ffffff) !important;
-  border-color: var(--sys-primary-border, #005499) !important;
+  border-color: var(--sys-primary-border, #005499);
 }
 
 .win-listbox-item .ds-nav-icon,
