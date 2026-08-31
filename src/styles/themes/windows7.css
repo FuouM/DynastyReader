@@ -443,14 +443,16 @@
       linear-gradient(90deg, #6ca6dd, #4e8ed1 55%, #3e76bb);
     border-bottom: 1px solid #8ea8c7;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
-    color: #ffffff;
+    color: #1b3555;
   }
 
-  [data-theme="windows7"] .ds-modal-title {
-    color: #ffffff;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  [data-theme="windows7"] .ds-modal-header .ds-modal-title,
+  [data-theme="windows7"] .ds-modal-header .ds-modal-title span,
+  [data-theme="windows7"] .ds-modal-header .ds-modal-title .bi {
+    color: #1b3555 !important;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.95), 0 0 3px #ffffff, 0 1px 0 #ffffff !important;
+    font-weight: 600;
   }
-
   [data-theme="windows7"] .ds-modal-body {
     background: #ffffff;
     border-top: 1px solid #ffffff;
@@ -497,11 +499,33 @@
     border-radius: 3px;
   }
 
+  /* ── Settings Modal & Navigation — Aero glass sidebar and list items ── */
+  [data-theme="windows7"] .ds-settings-layout {
+    background: #ffffff;
+    padding: 10px 12px;
+    box-sizing: border-box;
+  }
+
+  [data-theme="windows7"] .ds-settings-sidebar {
+    background: linear-gradient(180deg, #f7fbff 0%, #edf4fc 100%);
+    border: 1px solid #b8c9dc;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.95);
+    padding: 6px 4px;
+  }
+
+  [data-theme="windows7"] .ds-settings-nav-item {
+    color: #1b3555;
+    border: 1px solid transparent;
+    border-radius: 3px;
+  }
+
   [data-theme="windows7"] .ds-settings-nav-item:hover,
   [data-theme="windows7"] .ds-history-item:hover {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(230, 236, 245, 0.8) 90%, rgba(255, 255, 255, 0.8) 100%) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(230, 240, 252, 0.9) 90%, rgba(255, 255, 255, 0.8) 100%) !important;
     border: 1px solid #aaddfa !important;
     border-radius: 3px !important;
+    color: #0f2440 !important;
   }
 
   [data-theme="windows7"] .ds-settings-nav-item.active {
@@ -509,6 +533,84 @@
     border: 1px solid #2e6aa5 !important;
     border-radius: 3px !important;
     color: #0f2440 !important;
+    font-weight: 600;
+    box-shadow: inset 1px 1px 0 rgba(16, 42, 74, 0.15), inset -1px -1px 0 rgba(255, 255, 255, 0.6) !important;
+  }
+
+  [data-theme="windows7"] .ds-settings-nav-item.active .bi,
+  [data-theme="windows7"] .ds-settings-nav-item.active .ds-btn-text,
+  [data-theme="windows7"] .ds-settings-nav-item.active span {
+    color: #0f2440 !important;
+  }
+
+  [data-theme="windows7"] .ds-settings-row-label {
+    color: #162030;
+    font-weight: 500;
+  }
+
+  [data-theme="windows7"] .ds-settings-row-desc {
+    color: #4a6382;
+  }
+
+  [data-theme="windows7"] .ds-settings-row.has-divider {
+    border-top: 1px solid #d0dceb !important;
+    box-shadow: 0 1px 0 #ffffff;
+  }
+
+  [data-theme="windows7"] .ds-prefetch-val {
+    color: #1b3555;
+    font-weight: 600;
+  }
+
+  /* Nested GroupBox (e.g. Mobile Landscape Overrides inside Reading & Cache) */
+  [data-theme="windows7"] .group-box .group-box {
+    background: linear-gradient(180deg, #ffffff 0%, #f4f8fd 100%);
+    border: 1px solid #b8c9dc;
+    box-shadow: inset 0 0 0 1px #ffffff;
+  }
+
+  /* Settings Subpage Header (Hotkeys drill-down) */
+  [data-theme="windows7"] .ds-settings-subpage {
+    background: #ffffff;
+  }
+
+  [data-theme="windows7"] .ds-settings-subpage-header {
+    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%);
+    border-bottom: 1px solid #b8c9dc;
+    box-shadow: 0 1px 0 #ffffff;
+    padding: 8px 12px;
+  }
+
+  /* ── Cache View & Stat Cards — Aero Glass Panels ── */
+  [data-theme="windows7"] .ds-stat-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f4f8fd 100%);
+    border: 1px solid #b8c9dc;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.95), 0 1px 2px rgba(16, 42, 74, 0.05);
+  }
+
+  [data-theme="windows7"] .ds-stat-val {
+    color: #1a5ea5;
+    font-weight: 700;
+  }
+
+  [data-theme="windows7"] .ds-stat-lbl {
+    color: #4a6382;
+  }
+
+  [data-theme="windows7"] .ds-db-details {
+    color: #3f536e;
+  }
+
+  [data-theme="windows7"] .ds-db-details strong {
+    color: #162030;
+  }
+
+  [data-theme="windows7"] .ds-cache-list {
+    background: #ffffff;
+    border: 1px solid #b8c9dc;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 2px rgba(16, 42, 74, 0.06);
   }
 
   /* ── Hover flash fix — Aero gradients cannot animate via background-color ── */
@@ -539,7 +641,8 @@
   }
 
   [data-theme="windows7"] .ds-item:hover,
-  [data-theme="windows7"] .ds-chapter-row:hover {
+  [data-theme="windows7"] .ds-chapter-row:hover,
+  [data-theme="windows7"] .ds-cache-item:hover {
     background: linear-gradient(180deg, #f3f9ff 0%, #e6f0fd 100%);
     border-color: #3c7fb1;
   }
@@ -671,6 +774,26 @@
     box-shadow: inset 0 1px 0 #ffffff;
   }
 
+  /* ── Reader Sheet (Slide-up menu) on Windows 7 ── */
+  [data-theme="windows7"] .ds-reader-sheet-window {
+    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%) !important;
+    border-top: 1px solid #b8c9dc !important;
+    box-shadow: 0 -4px 20px rgba(16, 42, 74, 0.25), inset 0 1px 0 #ffffff !important;
+    color: #162030 !important;
+  }
+
+  [data-theme="windows7"] .ds-reader-sheet-header {
+    border-bottom: 1px solid #b8c9dc !important;
+    box-shadow: 0 1px 0 #ffffff !important;
+  }
+
+  [data-theme="windows7"] .ds-reader-sheet-header .ds-modal-title,
+  [data-theme="windows7"] .ds-reader-sheet-header .ds-modal-title span,
+  [data-theme="windows7"] .ds-reader-sheet-header .ds-modal-title .bi {
+    color: #1b3555 !important;
+    text-shadow: none !important;
+    font-weight: 600;
+  }
   [data-theme="windows7"] #ds-banner {
     background: linear-gradient(180deg, #fffbe6 0%, #fef3c7 100%);
     border: 1px solid #e8c86a;

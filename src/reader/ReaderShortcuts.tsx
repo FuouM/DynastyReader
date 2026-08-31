@@ -66,6 +66,9 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
       } else if (matchesHotkey(ev, "reader.toggleFullscreen")) {
         ev.preventDefault();
         c.setFullscreen(!c.isFullscreen());
+      } else if (matchesHotkey(ev, "reader.toggleToolbar")) {
+        ev.preventDefault();
+        c.toggleToolbarVisible();
       } else if (matchesHotkey(ev, "reader.zoomIn")) {
         if (c.fitMode() === "original") {
           ev.preventDefault();

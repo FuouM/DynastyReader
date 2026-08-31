@@ -597,6 +597,11 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     if (fit !== "original") {
       this.setZoomScaleSignal(1.0);
     }
+    if (!this.isHorizontal()) {
+      this.updateSlotClearances();
+    } else {
+      this.resetToCurrentPage(false);
+    }
   }
 
   setScrollLock(): void {
@@ -626,18 +631,26 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   zoomIn(): void {
     if (this.fitMode() !== "original") return;
     this.setZoomScaleSignal((prev) => Math.min(3.0, Math.round((prev + 0.1) * 10) / 10));
+    if (!this.isHorizontal()) {
+      requestAnimationFrame(() => this.updateSlotClearances());
+    }
   }
 
   zoomOut(): void {
     if (this.fitMode() !== "original") return;
     this.setZoomScaleSignal((prev) => Math.max(0.25, Math.round((prev - 0.1) * 10) / 10));
+    if (!this.isHorizontal()) {
+      requestAnimationFrame(() => this.updateSlotClearances());
+    }
   }
 
   resetZoom(): void {
     if (this.fitMode() !== "original") return;
     this.setZoomScaleSignal(1.0);
+    if (!this.isHorizontal()) {
+      requestAnimationFrame(() => this.updateSlotClearances());
+    }
   }
-
   toggleTheme(): void {
     toggleAppTheme();
   }
@@ -713,6 +726,16 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   }
 
   toggleToolbarVisible(): void {
+    if (!this.isHorizontal()) {
+      this.isProgrammaticScroll = true;
+      if (this.programmaticScrollTimer !== null) {
+        clearTimeout(this.programmaticScrollTimer);
+      }
+      this.programmaticScrollTimer = window.setTimeout(() => {
+        this.isProgrammaticScroll = false;
+        this.programmaticScrollTimer = null;
+      }, 260);
+    }
     this.setToolbarVisible(!this.toolbarVisible());
     this.clearToolbarTimer();
   }

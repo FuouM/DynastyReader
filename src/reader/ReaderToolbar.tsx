@@ -156,7 +156,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
     <>
       <nav
         class="ds-reader-nav ds-reader-nav-top"
-        classList={{ "ds-toolbar-hidden": isMobile() && !s.toolbarVisible() }}
+        classList={{ "ds-toolbar-hidden": !s.toolbarVisible() }}
       >
         <Show when={isMobile()}>
           <div class="ds-reader-nav-row nav-main ds-reader-mobile-row--full">
@@ -350,7 +350,7 @@ export function ReaderBottomNav(props: { session: ReaderSession }) {
     <Show when={isMobile() || navPos() === "bottom"}>
       <nav
         class="ds-reader-nav ds-reader-nav-bottom"
-        classList={{ "ds-toolbar-hidden": isMobile() && !s.toolbarVisible() }}
+        classList={{ "ds-toolbar-hidden": !s.toolbarVisible() }}
       >
         <Show when={isMobile()}>
           <div class="ds-reader-nav-row nav-main">

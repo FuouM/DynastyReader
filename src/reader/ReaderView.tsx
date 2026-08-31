@@ -61,6 +61,7 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
           }}
           id="ds-reader-container"
           class={`fit-${session.fitMode()}`}
+          style={{ "--ds-zoom-scale": session.zoomScale() }}
           classList={{
             "ds-fullscreen": session.isFullscreen(),
             "ds-dark": theme() !== "light",

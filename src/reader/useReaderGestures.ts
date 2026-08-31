@@ -86,7 +86,34 @@ export function useReaderGestures(s: ReaderSession) {
         if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
         resizeRaf = requestAnimationFrame(() => {
           resizeRaf = null;
-          s.updateViewportHeight();
+          if (!s.isHorizontal()) {
+            const vp = s.viewportEl;
+            const curIdx = s.currentIndex();
+            const anchorEl = s.slotEls[curIdx] || s.slotEls[0];
+            const wasAtTop = !!vp && vp.scrollTop <= 2 && curIdx === 0;
+            let offsetFromVpTop = 0;
+
+            if (vp && anchorEl) {
+              const vpRect = vp.getBoundingClientRect();
+              const anchorRect = anchorEl.getBoundingClientRect();
+              offsetFromVpTop = anchorRect.top - vpRect.top;
+            }
+
+            s.updateViewportHeight();
+
+            if (vp && anchorEl && !wasAtTop) {
+              const newVpRect = vp.getBoundingClientRect();
+              const newAnchorRect = anchorEl.getBoundingClientRect();
+              const currentOffset = newAnchorRect.top - newVpRect.top;
+              const delta = currentOffset - offsetFromVpTop;
+              if (Math.abs(delta) > 0.5) {
+                vp.scrollTop += delta;
+              }
+            }
+          } else {
+            s.updateViewportHeight();
+          }
+
           if (isMobile() && typeof window !== "undefined") {
             const currentIsLandscape = window.innerWidth > window.innerHeight;
             if (currentIsLandscape !== lastIsLandscape) {
@@ -234,9 +261,11 @@ export function useReaderGestures(s: ReaderSession) {
     let touchMoved = false;
     let hasVibrated = false;
     let activeOverscroll: OverscrollActive = null;
-
     let touchLongPressTimer: number | null = null;
     let didTouchLongPress = false;
+    let activeTouchSlot: HTMLElement | null = null;
+    let touchSlotScrollLeft = 0;
+    let touchSlotScrollTop = 0;
 
     const onTouchStart = (ev: TouchEvent): void => {
       if (ev.touches.length !== 1) return;
@@ -251,10 +280,19 @@ export function useReaderGestures(s: ReaderSession) {
       didTouchLongPress = false;
       hasVibrated = false;
       activeOverscroll = null;
+      activeTouchSlot = null;
       dispatchOverscroll(null);
 
       if (touchLongPressTimer !== null) clearTimeout(touchLongPressTimer);
       if (s.isHorizontal()) {
+        const curSlide = s.isSpread() ? s.slideIndex() : s.currentIndex();
+        const target = s.isSpread() ? s.spreadSlotEls[curSlide] : s.slotEls[curSlide];
+        if (target && (target.scrollWidth > target.clientWidth || target.scrollHeight > target.clientHeight)) {
+          activeTouchSlot = target;
+          touchSlotScrollLeft = target.scrollLeft;
+          touchSlotScrollTop = target.scrollTop;
+        }
+
         touchLongPressTimer = window.setTimeout(() => {
           if (!touchMoved && s.isHorizontal()) {
             didTouchLongPress = true;
@@ -283,6 +321,12 @@ export function useReaderGestures(s: ReaderSession) {
 
       if (tapZoneGuide()) {
         setTapZoneGuide({ activeZone: getTapZone(t.clientX) });
+        return;
+      }
+
+      if (activeTouchSlot) {
+        activeTouchSlot.scrollLeft = touchSlotScrollLeft - dx;
+        activeTouchSlot.scrollTop = touchSlotScrollTop - dy;
         return;
       }
       // If overscroll gesture is already engaged, update finger tracking and check center collision
@@ -347,6 +391,15 @@ export function useReaderGestures(s: ReaderSession) {
       const dt = Date.now() - touchStartTime;
       const absX = Math.abs(totalDx);
       const absY = Math.abs(totalDy);
+
+      let wasTouchSlotPanned = false;
+      if (activeTouchSlot) {
+        activeTouchSlot = null;
+        if (touchMoved) {
+          wasTouchSlotPanned = true;
+        }
+      }
+
       if (activeOverscroll) {
         const over = activeOverscroll;
         activeOverscroll = null;
@@ -361,12 +414,11 @@ export function useReaderGestures(s: ReaderSession) {
       // Always reset strip transform smoothly in case a drag slightly displaced it
       resetStripTransform(true);
 
-      // 1. Horizontal Swipe gesture for in-chapter page flips
-      if (touchMoved) {
+      // 1. Horizontal Swipe gesture for in-chapter page flips (horizontal mode only)
+      if (s.isHorizontal() && touchMoved && !wasTouchSlotPanned) {
         const handled = resolveSwipe(s, totalDx, totalDy, absX, absY, dt, SWIPE_MIN_DIST_TOUCH_PX, 60, 350, triggerDirectionHint);
         if (handled) return;
       }
-
       // 2. Tap gesture (without move)
       if (!touchMoved && dt < TAP_TIME_THRESHOLD_MS) {
         if (!s.isHorizontal()) {
@@ -428,7 +480,7 @@ export function useReaderGestures(s: ReaderSession) {
       } else {
         vpScrollTop = vpEl.scrollTop;
         vpScrollLeft = vpEl.scrollLeft;
-        if (isMobileGesturesOnDesktopEnabled()) {
+        if (isMobileGesturesOnDesktopEnabled() || s.fitMode() === "original") {
           vpEl.classList.add("ds-dragging");
         }
       }
@@ -496,21 +548,25 @@ export function useReaderGestures(s: ReaderSession) {
       } else if (!s.isHorizontal()) {
         // Vertical Continuous Scroll Mode
         const vp = s.viewportEl;
-        if (vp && isMobileGesturesOnDesktopEnabled()) {
-          const result = tryEngageOverscroll({
-            s, dx, dy, absX, absY,
-            startX: mouseStartX, startY: mouseStartY,
-            fingerX: ev.clientX, fingerY: ev.clientY,
-            prevCh, nextCh,
-          });
-          if (result) {
-            activeMouseOverscroll = result.engaged;
-            dispatchOverscroll(result.overscrollState);
-            applyOverscrollTransform(s, result);
-            return;
+        if (vp) {
+          if (isMobileGesturesOnDesktopEnabled()) {
+            const result = tryEngageOverscroll({
+              s, dx, dy, absX, absY,
+              startX: mouseStartX, startY: mouseStartY,
+              fingerX: ev.clientX, fingerY: ev.clientY,
+              prevCh, nextCh,
+            });
+            if (result) {
+              activeMouseOverscroll = result.engaged;
+              dispatchOverscroll(result.overscrollState);
+              applyOverscrollTransform(s, result);
+              return;
+            }
           }
-          vp.scrollTop = vpScrollTop - dy;
-          vp.scrollLeft = vpScrollLeft - dx;
+          if (isMobileGesturesOnDesktopEnabled() || s.fitMode() === "original") {
+            vp.scrollTop = vpScrollTop - dy;
+            vp.scrollLeft = vpScrollLeft - dx;
+          }
         }
       }
     };
@@ -531,9 +587,13 @@ export function useReaderGestures(s: ReaderSession) {
         }
       }
 
+      let wasSlotPanned = false;
       if (activeSlot) {
         activeSlot.classList.remove("ds-dragging");
         activeSlot = null;
+        if (mouseMoved) {
+          wasSlotPanned = true;
+        }
       }
       vpEl.classList.remove("ds-dragging");
 
@@ -556,19 +616,23 @@ export function useReaderGestures(s: ReaderSession) {
       // Horizontal swipe for page flips in horizontal mode
       if (
         s.isHorizontal() &&
-        mouseMoved
+        mouseMoved &&
+        !wasSlotPanned
       ) {
         const handled = resolveSwipe(s, totalDx, totalDy, absX, absY, dt, SWIPE_MIN_DIST_MOUSE_PX, 65, 300, triggerDirectionHint);
         if (handled) return;
       }
 
-      // Tap / Click gesture without drag when mobile gestures on desktop is enabled
-      if (isMobileGesturesOnDesktopEnabled() && !mouseMoved && dt < TAP_TIME_THRESHOLD_MS) {
+      // Tap / Click gesture without drag
+      if (!mouseMoved && dt < TAP_TIME_THRESHOLD_MS) {
         if (!s.isHorizontal()) {
           s.toggleToolbarVisible();
           return;
         }
-        resolveTapZone(s, getTapZone(ev.clientX));
+        const zone = getTapZone(ev.clientX);
+        if (zone === "center" || isMobileGesturesOnDesktopEnabled()) {
+          resolveTapZone(s, zone);
+        }
       }
     };
 

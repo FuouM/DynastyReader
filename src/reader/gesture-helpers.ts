@@ -237,6 +237,7 @@ export function resolveSwipe(
   fastTimeMs: number,
   triggerDirectionHint: () => void,
 ): boolean {
+  if (!s.isHorizontal()) return false;
   if (
     absX > minDistPx &&
     absX > absY * 1.25 &&

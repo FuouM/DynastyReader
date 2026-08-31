@@ -100,6 +100,14 @@ export const HOTKEY_DEFINITIONS: HotkeyDefinition[] = [
     defaultKeys: ["f", "F11"],
   },
   {
+    id: "reader.toggleToolbar",
+    get label() { return t("settings.hotkeys.actions.readerToggleToolbar"); },
+    get description() { return t("settings.hotkeys.actions.readerToggleToolbarDesc"); },
+    get category() { return t("settings.hotkeys.categories.reader") as HotkeyCategory; },
+    scope: "reader",
+    defaultKeys: ["h"],
+  },
+  {
     id: "reader.zoomIn",
     get label() { return t("settings.hotkeys.actions.readerZoomIn"); },
     get description() { return t("settings.hotkeys.actions.readerZoomInDesc"); },

@@ -601,7 +601,8 @@
 }
 /* Reader HUD & Overlay on mobile */
 #ds-root[data-mobile] .ds-reader-nav {
-  transition: opacity 0.25s ease, transform 0.25s ease !important;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin: 0 !important;
 }
 
 #ds-root[data-mobile] .ds-reader-nav-top {
@@ -635,14 +636,17 @@
 #ds-root[data-mobile] .ds-reader-nav.ds-toolbar-hidden {
   opacity: 0 !important;
   pointer-events: none !important;
+  margin: 0 !important;
 }
 
 #ds-root[data-mobile] .ds-reader-nav-top.ds-toolbar-hidden {
   transform: translateY(-100%) !important;
+  margin-top: 0 !important;
 }
 
 #ds-root[data-mobile] .ds-reader-nav-bottom.ds-toolbar-hidden {
   transform: translateY(100%) !important;
+  margin-bottom: 0 !important;
 }
 
 #ds-root[data-mobile] .ds-slot-page-badge {

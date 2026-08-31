@@ -192,39 +192,32 @@ export function ReaderControlsRow(props: NavRowProps) {
           onClick={() => s.setFullscreen(!s.isFullscreen())}
         />
       </Show>
-      <div class="ds-ctrl-zoom-group" classList={{ "ds-zoom-disabled": s.fitMode() !== "original" }}>
-        <IconButton
-          className="ds-btn-icon"
-          icon={<DashIcon />}
-          title={
-            s.fitMode() !== "original"
-              ? t("reader.toolbar.zoomDisabledTooltip")
-              : t("reader.toolbar.zoomOutTooltip")
-          }
-          disabled={s.fitMode() !== "original" || s.zoomScale() <= 0.25}
-          onClick={() => s.zoomOut()}
-        />
-        <DsButton
-          className=""
-          cssText="min-width:38px;padding:2px 4px;"
-          title={s.fitMode() !== "original" ? t("reader.toolbar.zoomDisabledTooltip") : t("reader.toolbar.zoomResetTooltip")}
-          disabled={s.fitMode() !== "original"}
-          onClick={() => s.resetZoom()}
-        >
-          {Math.round(s.zoomScale() * 100)}%
-        </DsButton>
-        <IconButton
-          className="ds-btn-icon"
-          icon={<PlusIcon />}
-          title={
-            s.fitMode() !== "original"
-              ? t("reader.toolbar.zoomDisabledTooltip")
-              : t("reader.toolbar.zoomInTooltip")
-          }
-          disabled={s.fitMode() !== "original" || s.zoomScale() >= 3.0}
-          onClick={() => s.zoomIn()}
-        />
-      </div>
+      <Show when={s.fitMode() === "original"}>
+        <div class="ds-ctrl-zoom-group">
+          <IconButton
+            className="ds-btn-icon"
+            icon={<DashIcon />}
+            title={t("reader.toolbar.zoomOutTooltip")}
+            disabled={s.zoomScale() <= 0.25}
+            onClick={() => s.zoomOut()}
+          />
+          <DsButton
+            className=""
+            cssText="min-width:38px;padding:2px 4px;"
+            title={t("reader.toolbar.zoomResetTooltip")}
+            onClick={() => s.resetZoom()}
+          >
+            {Math.round(s.zoomScale() * 100)}%
+          </DsButton>
+          <IconButton
+            className="ds-btn-icon"
+            icon={<PlusIcon />}
+            title={t("reader.toolbar.zoomInTooltip")}
+            disabled={s.zoomScale() >= 3.0}
+            onClick={() => s.zoomIn()}
+          />
+        </div>
+      </Show>
     </div>
   );
 }

@@ -19,6 +19,7 @@ export type ReaderActionId =
   | "reader.toggleCoverOffset"
   | "reader.toggleScrollLock"
   | "reader.toggleFullscreen"
+  | "reader.toggleToolbar"
   | "reader.zoomIn"
   | "reader.zoomOut"
   | "reader.resetZoom";
