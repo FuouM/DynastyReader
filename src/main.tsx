@@ -1,7 +1,7 @@
 import { render } from "solid-js/web";
 import { restoreStateCurrent, saveWindowState, StateFlags } from "@tauri-apps/plugin-window-state";
 import { attachConsole } from "@tauri-apps/plugin-log";
-import { initAppTheme, showBanner, setDbReady, initGlobalDownloadListener } from "./stores";
+import { initAppTheme, initAccentColor, showBanner, setDbReady, initGlobalDownloadListener } from "./stores";
 import { t } from "./i18n";
 import { initDb } from "./db";
 import { errorMessage } from "./utils/errors";
@@ -11,6 +11,7 @@ import { App } from "./App";
 // Apply the persisted theme before the plugin renders so the first paint is
 // already light or dark (no flash from the default light stylesheet).
 initAppTheme();
+initAccentColor();
 
 // Mirror browser console output into the tauri-plugin-log backend so the
 // daemon-style `data/logs/dynasty-reader.log` file captures frontend errors

@@ -485,20 +485,25 @@
 }
 
 .ds-download-series-item {
-  background: var(--sys-window-bg);
-  border: 1px solid var(--sys-border-medium, #ccc);
+  background: var(--sys-window-bg, #ffffff);
+  border: 1px solid var(--ds-accent-box-border, var(--sys-border-medium, #c8d4e2));
   padding: 4px 7px;
   display: flex;
   flex-direction: column;
   gap: 3px;
-  border-radius: var(--radius-1, 2px);
+  border-radius: var(--radius-2, 3px);
 }
 
 .ds-download-series-item--done {
   padding: 3px 7px;
-  background: var(--sys-control-bg, #fafafa);
+  background: var(--sys-window-bg, #ffffff);
+  border-color: var(--ds-accent-box-border, var(--sys-border-medium, #c8d4e2));
 }
 
+.ds-download-series-item--active {
+  background: var(--sys-window-bg, #ffffff);
+  border-color: var(--sys-border-focus, #0078d4);
+}
 .ds-download-series-header {
   display: flex;
   align-items: center;

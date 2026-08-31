@@ -1,7 +1,6 @@
 @layer themes {
   :root[data-theme="high-contrast"],
-  [data-theme="high-contrast"],
-  body.ds-high-contrast {
+  html[data-theme="high-contrast"] {
     --sys-control-bg: #000000;
     --sys-control-text: #ffffff;
     --sys-window-bg: #000000;
@@ -131,5 +130,22 @@
     --sys-button-primary-border: var(--sys-primary-border);
     --sys-button-primary-hover: var(--sys-primary-hover);
     --sys-button-primary-active: var(--sys-primary-active);
+  }
+}
+
+@layer components {
+  /* ── Group boxes in High Contrast theme ── */
+  [data-theme="high-contrast"] .group-box,
+  body.ds-high-contrast .group-box {
+    background: #000000 !important;
+    border-color: #555555 !important;
+    box-shadow: none !important;
+  }
+  [data-theme="high-contrast"] .group-box-title,
+  body.ds-high-contrast .group-box-title {
+    background: #000000 !important;
+    border-color: #555555 !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
   }
 }

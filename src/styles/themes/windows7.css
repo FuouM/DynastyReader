@@ -19,22 +19,22 @@
   [data-theme="windows7"],
   body.ds-windows7 {
     /* core surfaces */
-    --sys-control-bg: #eef2f8;
-    --sys-control-text: #0f1e32;
+    --sys-control-bg: var(--ds-accent-box-bg-1, #eef2f8);
+    --sys-control-text: var(--ds-accent-badge-text, #0f1e32);
     --sys-window-bg: #ffffff;
     --sys-window-text: #162030;
     --sys-border-light: #ffffff;
     --sys-border-dark: #8e8f8f;
-    --sys-border-medium: #b9c9dc;
-    --sys-border-focus: #3c7fb1;
-    --sys-highlight-bg: #2f7dd6;
+    --sys-border-medium: var(--ds-accent-box-border, #b9c9dc);
+    --sys-border-focus: var(--ds-accent-aero-mid, #3c7fb1);
+    --sys-highlight-bg: var(--ds-accent-aero-mid, #2f7dd6);
     --sys-highlight-text: #ffffff;
     --sys-button-bg: #f2f2f2;
     --sys-button-border: #8e8f8f;
-    --sys-button-hover: #eaf6fd;
-    --sys-button-active: #e5f4fc;
-    --sys-status-bg: #eef3fb;
-    --sys-status-text: #23344e;
+    --sys-button-hover: var(--ds-accent-hover-grad-1, #eaf6fd);
+    --sys-button-active: var(--ds-accent-active-grad-1, #e5f4fc);
+    --sys-status-bg: var(--ds-accent-box-bg-1, #eef3fb);
+    --sys-status-text: var(--ds-accent-badge-text, #23344e);
     --sys-menu-bg: #f0f0f0;
     --sys-menu-border: #8e8f8f;
     --sys-text-primary: #162030;
@@ -42,19 +42,19 @@
     --sys-text-muted: #607698;
     --sys-text-subtle: #6f8299;
     --sys-text-color: #162030;
-    --sys-hover-bg: #e6eef8;
-    --sys-bg-active: #dceaf8;
+    --sys-hover-bg: var(--ds-accent-hover-grad-1, #e6eef8);
+    --sys-bg-active: var(--ds-accent-active-grad-1, #dceaf8);
     --sys-card-bg: #ffffff;
-    --sys-primary: #2a6cb6;
-    --sys-primary-border: #1e4f84;
-    --sys-primary-hover: #3680d1;
-    --sys-primary-active: #1b4f84;
+    --sys-primary: var(--ds-accent-aero-dark, #2a6cb6);
+    --sys-primary-border: var(--ds-accent-aero-border, #1e4f84);
+    --sys-primary-hover: var(--ds-accent-aero-light, #3680d1);
+    --sys-primary-active: var(--ds-accent-aero-border, #1b4f84);
     --sys-button-disabled-bg: #f4f4f4;
     --sys-button-disabled-text: #838383;
     --sys-button-disabled-border: #adb2b5;
     --sys-success-accent: #0bd82c;
     --sys-error-text: #c1272d;
-    --sys-reader-viewport-bg: #d9e6f5;
+    --sys-reader-viewport-bg: var(--ds-accent-wall-1, #d9e6f5);
     --sys-scrollbar-thumb: rgba(0, 0, 0, 0.22);
     --sys-scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
     --sys-scrollbar-track: #f0f0f0;
@@ -74,8 +74,8 @@
     --ds-warn-border: #e8b97a;
     /* reader */
     --ds-reader-bg: #ffffff;
-    --ds-reader-viewport-bg: #d7e7f7;
-    --ds-reader-nav-border: #b9c9dc;
+    --ds-reader-viewport-bg: var(--ds-accent-wall-1, #d7e7f7);
+    --ds-reader-nav-border: var(--ds-accent-box-border, #b9c9dc);
     --ds-reader-divider: rgba(22, 32, 48, 0.08);
     /* tag taxonomy — Aero tints */
     --tag-user-bg: #fff6d6;
@@ -138,16 +138,16 @@
     --tag-identity-hover-bg: #fbd0d0;
     --tag-identity-hover-border: #ef9a9a;
     --tag-identity-hover-text: #6e1111;
-    --sys-link: #205da8;
-    --sys-link-hover: #2a7cd3;
+    --sys-link: var(--ds-accent-aero-dark, #205da8);
+    --sys-link-hover: var(--ds-accent-aero-mid, #2a7cd3);
     --skeleton-shimmer: rgba(255, 255, 255, 0.7);
     --sys-switch-thumb-bg: #f7fbff;
     --sys-switch-thumb-border: #8ea5c0;
     --sys-switch-thumb-checked-bg: #ffffff;
-    --sys-button-primary-bg: #2f7dd6;
-    --sys-button-primary-border: #1e4f84;
-    --sys-button-primary-hover: #3a8be6;
-    --sys-button-primary-active: #1b4f84;
+    --sys-button-primary-bg: var(--ds-accent-aero-mid, #2f7dd6);
+    --sys-button-primary-border: var(--ds-accent-aero-border, #1e4f84);
+    --sys-button-primary-hover: var(--ds-accent-aero-light, #3a8be6);
+    --sys-button-primary-active: var(--ds-accent-aero-border, #1b4f84);
 
     /* 7.css Aero gradient presets */
     --w7-glass-stripe: linear-gradient(
@@ -160,14 +160,17 @@
     );
   }
 
+
+/* ── Aero chrome overrides — scoped to [data-theme="windows7"] ─────────── */
+@layer components {
   /* Active light selections */
   [data-theme="windows7"] .win-button.active,
   [data-theme="windows7"] .ds-segmented-btn.active,
   [data-theme="windows7"] .ds-session-tab.active {
     background:
-      linear-gradient(180deg, #e5f4fc 0%, #c4e5f6 30% 50%, #98d1ef 50%, #68b3db 100%) !important;
-    border-color: #2c597c !important;
-    color: #0f2440 !important;
+      linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
+    border-color: var(--ds-accent-active-border, #2c597c) !important;
+    color: var(--ds-accent-active-text, #0f2440) !important;
     box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.2), inset -1px 1px 0 rgba(0, 0, 0, 0.07) !important;
   }
 
@@ -178,28 +181,23 @@
   [data-theme="windows7"] .ds-segmented-btn.active .bi,
   [data-theme="windows7"] .ds-session-tab.active .ds-truncate,
   [data-theme="windows7"] .ds-session-tab.active > i.bi {
-    color: #0f2440 !important;
+    color: var(--ds-accent-active-text, #0f2440) !important;
   }
-}
-
-/* ── Aero chrome overrides — scoped to [data-theme="windows7"] ─────────── */
-@layer components {
   /* Wallpaper + Segoe UI font */
-  [data-theme="windows7"] body {
-    font-family: "Segoe UI", "SegoeUI", Tahoma, Verdana, sans-serif;
-    text-rendering: optimizeLegibility;
-  }
-
-  [data-theme="windows7"] html {
+  :root[data-theme="windows7"],
+  html[data-theme="windows7"] {
     background:
       radial-gradient(1200px 600px at 70% -10%, rgba(255, 255, 255, 0.9) 0%, transparent 60%),
-      linear-gradient(180deg, #c7ddf4 0%, #a9c8eb 40%, #8fb8e2 100%);
+      linear-gradient(180deg, var(--ds-accent-wall-1, #c7ddf4) 0%, var(--ds-accent-wall-2, #a9c8eb) 40%, var(--ds-accent-wall-3, #8fb8e2) 100%);
   }
 
-  [data-theme="windows7"] body {
+  :root[data-theme="windows7"] body,
+  body.ds-windows7 {
+    font-family: "Segoe UI", "SegoeUI", Tahoma, Verdana, sans-serif;
+    text-rendering: optimizeLegibility;
     background:
       radial-gradient(1200px 600px at 70% -10%, rgba(255, 255, 255, 0.72) 0%, transparent 55%),
-      linear-gradient(180deg, #d2e6f9 0%, #b9d4ef 55%, #a0c1e6 100%);
+      linear-gradient(180deg, var(--ds-accent-wall-1, #d2e6f9) 0%, var(--ds-accent-wall-2, #b9d4ef) 55%, var(--ds-accent-wall-3, #a0c1e6) 100%);
   }
 
   [data-theme="windows7"] #ds-root {
@@ -210,7 +208,7 @@
   [data-theme="windows7"] #ds-topbar {
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.34) 38%, rgba(255, 255, 255, 0.12) 52%, rgba(255, 255, 255, 0.28) 100%),
-      linear-gradient(90deg, rgba(108, 166, 221, 0.88) 0%, rgba(78, 142, 209, 0.88) 36%, rgba(62, 118, 187, 0.88) 68%, rgba(93, 154, 217, 0.88) 100%);
+      linear-gradient(90deg, var(--ds-accent-topbar-1, rgba(108, 166, 221, 0.88)) 0%, var(--ds-accent-topbar-2, rgba(78, 142, 209, 0.88)) 36%, var(--ds-accent-topbar-3, rgba(62, 118, 187, 0.88)) 68%, var(--ds-accent-topbar-4, rgba(93, 154, 217, 0.88)) 100%) !important;
     border-bottom: 1px solid rgba(0, 0, 0, 0.58);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.92),
@@ -218,7 +216,6 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-
   [data-theme="windows7"] #ds-topbar::after {
     content: "";
     position: absolute;
@@ -254,18 +251,18 @@
   }
 
   [data-theme="windows7"] .win-button:hover {
-    border-color: #3c7fb1;
+    border-color: var(--sys-border-focus, #3c7fb1);
     background:
-      linear-gradient(180deg, #eaf6fd 45%, #bee6fd 45%, #a7d9f5 100%) !important;
+      linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 45%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.9);
   }
 
   [data-theme="windows7"] .win-button:active,
   [data-theme="windows7"] .win-button.active:active {
-    border-color: #2c597c;
+    border-color: var(--ds-accent-active-border, #2c597c);
     background:
-      linear-gradient(180deg, #e5f4fc 0%, #c4e5f6 30% 50%, #98d1ef 50%, #68b3db 100%) !important;
+      linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
     box-shadow:
       inset 1px 1px 0 rgba(0, 0, 0, 0.2),
       inset -1px 1px 0 rgba(0, 0, 0, 0.07);
@@ -274,7 +271,7 @@
   [data-theme="windows7"] .win-button:focus-visible {
     outline: 1px dotted #000000;
     outline-offset: -4px;
-    box-shadow: inset 0 0 0 1px #98d1ef;
+    box-shadow: inset 0 0 0 1px var(--ds-accent-hover-grad-3, #98d1ef);
   }
 
   [data-theme="windows7"] .win-button:disabled {
@@ -286,23 +283,26 @@
   }
 
   /* Primary / default button */
-  [data-theme="windows7"] .win-button.primary {
+  [data-theme="windows7"] .win-button.primary,
+  [data-theme="windows7"] .ds-modal-done {
     background:
-      linear-gradient(180deg, #eaf6fd 45%, #bee6fd 45%, #a7d9f5 100%);
-    border-color: #3c7fb1;
-    color: #0f2440;
-    font-weight: 600;
+      linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 45%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
+    border-color: var(--sys-border-focus, #3c7fb1) !important;
+    color: var(--ds-accent-active-text, #0f2440) !important;
+    font-weight: 600 !important;
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.9),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   }
 
-  [data-theme="windows7"] .win-button.primary:hover {
-    border-color: #1e4f84;
+  [data-theme="windows7"] .win-button.primary:hover,
+  [data-theme="windows7"] .ds-modal-done:hover {
+    border-color: var(--sys-primary-border, #1e4f84) !important;
     background:
-      linear-gradient(180deg, #e0f0ff 0%, #c2e0ff 42%, #7fb8f0 44%, #a9d0f6 58%, #e0efff 100%) !important;
+      linear-gradient(180deg, var(--ds-accent-hover-grad-1, #e0f0ff) 0%, var(--ds-accent-hover-grad-2, #c2e0ff) 42%, var(--ds-accent-hover-grad-3, #7fb8f0) 44%, var(--ds-accent-hover-grad-2, #a9d0f6) 58%, var(--ds-accent-hover-grad-1, #e0efff) 100%) !important;
+    color: var(--ds-accent-active-text, #0f2440) !important;
     box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.95);
+      inset 0 0 0 1px rgba(255, 255, 255, 0.95) !important;
   }
 
   /* Segmented switch frame */
@@ -322,12 +322,12 @@
 
   [data-theme="windows7"] .ds-segmented-btn:hover {
     background:
-      linear-gradient(180deg, #eaf6fd 45%, #bee6fd 45%, #a7d9f5 100%) !important;
+      linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 45%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
   }
 
   [data-theme="windows7"] .ds-segmented-btn.active:hover {
     background:
-      linear-gradient(180deg, #e5f4fc 0%, #c4e5f6 30% 50%, #98d1ef 50%, #68b3db 100%) !important;
+      linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
   }
 
   [data-theme="windows7"] .ds-segmented-btn + .ds-segmented-btn {
@@ -353,37 +353,38 @@
   }
 
   [data-theme="windows7"] .ds-subtab:hover {
-    border-color: #3c7fb1;
-    background: linear-gradient(180deg, #eaf6fd 45%, #bee6fd 45%, #a7d9f5 100%) !important;
+    border-color: var(--sys-border-focus, #3c7fb1);
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 45%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9);
   }
 
   [data-theme="windows7"] .ds-subtab.active {
-    background: linear-gradient(180deg, #d8ebff 0%, #b9d8f6 46%, #8fb9ea 52%, #c8ddf5 100%) !important;
-    border: 1px solid #2e6aa5 !important;
+    background: linear-gradient(180deg, var(--ds-accent-subtab-grad-1, #d8ebff) 0%, var(--ds-accent-subtab-grad-2, #b9d8f6) 46%, var(--ds-accent-subtab-grad-3, #8fb9ea) 52%, var(--ds-accent-subtab-grad-4, #c8ddf5) 100%) !important;
+    border: 1px solid var(--ds-accent-subtab-border, #2e6aa5) !important;
     box-shadow: inset 1px 1px 0 rgba(16, 42, 74, 0.15), inset -1px -1px 0 rgba(255, 255, 255, 0.6) !important;
-    color: #0f2440 !important;
+    color: var(--ds-accent-subtab-text, #0f2440) !important;
     font-weight: 600;
   }
 
   [data-theme="windows7"] .ds-subtab.active span {
-    color: #0f2440 !important;
+    color: var(--ds-accent-subtab-text, #0f2440) !important;
   }
+
   /* ── Group boxes / fieldsets — rounded Aero fieldsets ── */
   [data-theme="windows7"] .group-box {
-    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%);
-    border: 1px solid #b8c9dc;
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-1, #f7fbff) 0%, var(--ds-accent-box-bg-2, #eef4fc) 100%);
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc);
     border-radius: 5px;
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.96);
   }
 
   [data-theme="windows7"] .group-box-title {
-    background: linear-gradient(180deg, #ffffff 0%, #eaf1fb 100%);
-    border: 1px solid #b8c9dc;
+    background: linear-gradient(180deg, #ffffff 0%, var(--ds-accent-badge-bg, #eaf1fb) 100%) !important;
+    border: 1px solid var(--ds-accent-badge-border, #b8c9dc) !important;
     border-radius: 3px;
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
-    color: #1b3555;
+    color: var(--ds-accent-badge-text, #1b3555) !important;
     font-weight: 600;
     padding: 1px 8px;
   }
@@ -394,20 +395,19 @@
   [data-theme="windows7"] .ds-select,
   [data-theme="windows7"] .ds-pager-input {
     background: #ffffff;
-    border: 1px solid #aab9cc;
+    border: 1px solid var(--ds-accent-box-border, #aab9cc);
     border-top-color: #8e8f8f;
     box-shadow: inset 0 1px 2px rgba(16, 42, 74, 0.08);
   }
-
   [data-theme="windows7"] .input-field:hover,
   [data-theme="windows7"] .win-textbox:hover {
-    border-color: #3c7fb1;
+    border-color: var(--sys-border-focus, #3c7fb1);
   }
 
   [data-theme="windows7"] .input-field:focus,
-  [data-theme="windows7"] .win-textbox:focus,
+  [data-theme="windows7"] .input-wrapper:focus-within,
   [data-theme="windows7"] .ds-select:focus {
-    border-color: #3c7fb1;
+    border-color: var(--sys-border-focus, #3c7fb1);
     outline: none;
   }
 
@@ -416,7 +416,7 @@
   }
 
   [data-theme="windows7"] .input-clear-btn:hover {
-    background: linear-gradient(180deg, #eaf5ff 0%, #d2e7ff 100%);
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf5ff) 0%, var(--ds-accent-hover-grad-2, #d2e7ff) 100%);
     border: 1px solid #8e8f8f;
   }
 
@@ -428,7 +428,7 @@
   }
 
   [data-theme="windows7"] .ds-modal-window {
-    background: #eef4fc;
+    background: var(--ds-accent-box-bg-2, #eef4fc);
     border: 1px solid rgba(0, 0, 0, 0.65);
     border-radius: 6px;
     box-shadow:
@@ -440,16 +440,16 @@
   [data-theme="windows7"] .ds-modal-header {
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.42) 44%, rgba(255, 255, 255, 0.14) 52%, rgba(255, 255, 255, 0.38) 100%),
-      linear-gradient(90deg, #6ca6dd, #4e8ed1 55%, #3e76bb);
-    border-bottom: 1px solid #8ea8c7;
+      linear-gradient(90deg, var(--ds-accent-aero-light, #6ca6dd), var(--ds-accent-aero-mid, #4e8ed1) 55%, var(--ds-accent-aero-dark, #3e76bb)) !important;
+    border-bottom: 1px solid var(--ds-accent-badge-border, #8ea8c7) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
-    color: #1b3555;
+    color: var(--ds-accent-badge-text, #1b3555) !important;
   }
 
   [data-theme="windows7"] .ds-modal-header .ds-modal-title,
   [data-theme="windows7"] .ds-modal-header .ds-modal-title span,
   [data-theme="windows7"] .ds-modal-header .ds-modal-title .bi {
-    color: #1b3555 !important;
+    color: var(--ds-accent-badge-text, #1b3555) !important;
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.95), 0 0 3px #ffffff, 0 1px 0 #ffffff !important;
     font-weight: 600;
   }
@@ -459,8 +459,8 @@
   }
 
   [data-theme="windows7"] .ds-modal-footer {
-    background: linear-gradient(180deg, #eef4fc 0%, #e3ecf8 100%);
-    border-top: 1px solid #b9c9dc;
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-2, #eef4fc) 0%, var(--ds-accent-box-bg-1, #e3ecf8) 100%);
+    border-top: 1px solid var(--ds-accent-box-border, #b9c9dc);
     box-shadow: inset 0 1px 0 #ffffff;
   }
 
@@ -505,34 +505,32 @@
     padding: 10px 12px;
     box-sizing: border-box;
   }
-
   [data-theme="windows7"] .ds-settings-sidebar {
-    background: linear-gradient(180deg, #f7fbff 0%, #edf4fc 100%);
-    border: 1px solid #b8c9dc;
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-1, #f7fbff) 0%, var(--ds-accent-box-bg-2, #edf4fc) 100%);
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc);
     border-radius: 4px;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.95);
     padding: 6px 4px;
   }
-
   [data-theme="windows7"] .ds-settings-nav-item {
-    color: #1b3555;
+    color: var(--ds-accent-badge-text, #1b3555);
     border: 1px solid transparent;
     border-radius: 3px;
   }
 
   [data-theme="windows7"] .ds-settings-nav-item:hover,
   [data-theme="windows7"] .ds-history-item:hover {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(230, 240, 252, 0.9) 90%, rgba(255, 255, 255, 0.8) 100%) !important;
-    border: 1px solid #aaddfa !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, var(--sys-button-hover, rgba(230, 240, 252, 0.9)) 90%, rgba(255, 255, 255, 0.8) 100%) !important;
+    border: 1px solid var(--ds-accent-hover-border, #aaddfa) !important;
     border-radius: 3px !important;
-    color: #0f2440 !important;
+    color: var(--ds-accent-subtab-text, #0f2440) !important;
   }
 
   [data-theme="windows7"] .ds-settings-nav-item.active {
-    background: linear-gradient(180deg, #d8ebff 0%, #b9d8f6 46%, #8fb9ea 52%, #c8ddf5 100%) !important;
-    border: 1px solid #2e6aa5 !important;
+    background: linear-gradient(180deg, var(--ds-accent-subtab-grad-1, #d8ebff) 0%, var(--ds-accent-subtab-grad-2, #b9d8f6) 46%, var(--ds-accent-subtab-grad-3, #8fb9ea) 52%, var(--ds-accent-subtab-grad-4, #c8ddf5) 100%) !important;
+    border: 1px solid var(--ds-accent-subtab-border, #2e6aa5) !important;
     border-radius: 3px !important;
-    color: #0f2440 !important;
+    color: var(--ds-accent-subtab-text, #0f2440) !important;
     font-weight: 600;
     box-shadow: inset 1px 1px 0 rgba(16, 42, 74, 0.15), inset -1px -1px 0 rgba(255, 255, 255, 0.6) !important;
   }
@@ -540,9 +538,8 @@
   [data-theme="windows7"] .ds-settings-nav-item.active .bi,
   [data-theme="windows7"] .ds-settings-nav-item.active .ds-btn-text,
   [data-theme="windows7"] .ds-settings-nav-item.active span {
-    color: #0f2440 !important;
+    color: var(--ds-accent-subtab-text, #0f2440) !important;
   }
-
   [data-theme="windows7"] .ds-settings-row-label {
     color: #162030;
     font-weight: 500;
@@ -551,49 +548,61 @@
   [data-theme="windows7"] .ds-settings-row-desc {
     color: #4a6382;
   }
-
+  /* ── Accent Color Palette in Windows 7 ── */
+  [data-theme="windows7"] .ds-winforms-palette {
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-1, #ffffff) 0%, var(--ds-accent-box-bg-2, #eef4fc) 100%) !important;
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc) !important;
+    box-shadow: inset 1px 1px 2px rgba(16, 42, 74, 0.12) !important;
+  }
+  [data-theme="windows7"] .ds-winforms-color-cell {
+    border: 1px solid rgba(0, 0, 0, 0.45);
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.6), inset -1px -1px 0 rgba(0, 0, 0, 0.25);
+  }
+  [data-theme="windows7"] .ds-winforms-color-cell:hover {
+    border-color: var(--sys-border-focus, #3c7fb1);
+    box-shadow: inset 0 0 0 1px #ffffff, inset 1px 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  [data-theme="windows7"] .ds-winforms-color-cell.is-active {
+    border-color: var(--sys-window-text, #0f2440);
+    box-shadow: inset 0 0 0 1px #ffffff, inset 0 0 0 2px var(--sys-border-focus, #3c7fb1) !important;
+  }
   [data-theme="windows7"] .ds-settings-row.has-divider {
-    border-top: 1px solid #d0dceb !important;
+    border-top: 1px solid var(--ds-accent-divider, #d0dceb) !important;
     box-shadow: 0 1px 0 #ffffff;
   }
-
   [data-theme="windows7"] .ds-prefetch-val {
-    color: #1b3555;
+    color: var(--sys-primary, #1b3555);
     font-weight: 600;
   }
-
   /* Nested GroupBox (e.g. Mobile Landscape Overrides inside Reading & Cache) */
   [data-theme="windows7"] .group-box .group-box {
-    background: linear-gradient(180deg, #ffffff 0%, #f4f8fd 100%);
-    border: 1px solid #b8c9dc;
+    background: linear-gradient(180deg, #ffffff 0%, var(--ds-accent-box-bg-2, #f4f8fd) 100%);
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc);
     box-shadow: inset 0 0 0 1px #ffffff;
   }
-
   /* Settings Subpage Header (Hotkeys drill-down) */
   [data-theme="windows7"] .ds-settings-subpage {
     background: #ffffff;
   }
 
   [data-theme="windows7"] .ds-settings-subpage-header {
-    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%);
-    border-bottom: 1px solid #b8c9dc;
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-1, #f7fbff) 0%, var(--ds-accent-box-bg-2, #eef4fc) 100%);
+    border-bottom: 1px solid var(--ds-accent-box-border, #b8c9dc);
     box-shadow: 0 1px 0 #ffffff;
     padding: 8px 12px;
   }
 
   /* ── Cache View & Stat Cards — Aero Glass Panels ── */
   [data-theme="windows7"] .ds-stat-card {
-    background: linear-gradient(180deg, #ffffff 0%, #f4f8fd 100%);
-    border: 1px solid #b8c9dc;
+    background: linear-gradient(180deg, #ffffff 0%, var(--ds-accent-box-bg-2, #f4f8fd) 100%);
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc);
     border-radius: 4px;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.95), 0 1px 2px rgba(16, 42, 74, 0.05);
   }
-
   [data-theme="windows7"] .ds-stat-val {
-    color: #1a5ea5;
+    color: var(--sys-primary, #1a5ea5);
     font-weight: 700;
   }
-
   [data-theme="windows7"] .ds-stat-lbl {
     color: #4a6382;
   }
@@ -608,11 +617,10 @@
 
   [data-theme="windows7"] .ds-cache-list {
     background: #ffffff;
-    border: 1px solid #b8c9dc;
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc);
     border-radius: 4px;
     box-shadow: inset 0 1px 2px rgba(16, 42, 74, 0.06);
   }
-
   /* ── Hover flash fix — Aero gradients cannot animate via background-color ── */
   /* .ds-item has `transition: background-color 0.12s` in the base layer, but */
   /* Aero hovers swap `background: #fff` -> `linear-gradient(...)`.            */
@@ -636,15 +644,15 @@
   [data-theme="windows7"] .ds-cache-item,
   [data-theme="windows7"] .ds-history-item {
     background: #ffffff;
-    border: 1px solid #c8d7ea;
+    border: 1px solid var(--ds-accent-box-border, #c8d7ea);
     border-radius: 3px;
   }
 
   [data-theme="windows7"] .ds-item:hover,
   [data-theme="windows7"] .ds-chapter-row:hover,
   [data-theme="windows7"] .ds-cache-item:hover {
-    background: linear-gradient(180deg, #f3f9ff 0%, #e6f0fd 100%);
-    border-color: #3c7fb1;
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #f3f9ff) 0%, var(--ds-accent-hover-grad-2, #e6f0fd) 100%);
+    border-color: var(--sys-border-focus, #3c7fb1);
   }
 
   /* ── Tag pills retain Aero borders ── */
@@ -657,18 +665,18 @@
   [data-theme="windows7"] .ds-switch-track {
     border-radius: 3px;
     border: 1px solid #8e8f8f;
-    background: linear-gradient(180deg, #eaf2fd 0%, #dbe8f7 100%);
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-1, #eaf2fd) 0%, var(--ds-accent-box-bg-2, #dbe8f7) 100%);
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
   }
 
   [data-theme="windows7"] .ds-switch.checked .ds-switch-track {
-    background: linear-gradient(180deg, #3a8be6 0%, #2a6cb6 100%);
-    border-color: #1e4f84;
+    background: linear-gradient(180deg, var(--ds-accent-aero-light, #3a8be6) 0%, var(--ds-accent-aero-mid, #2a6cb6) 100%) !important;
+    border-color: var(--ds-accent-aero-border, #1e4f84) !important;
   }
 
   [data-theme="windows7"] .ds-switch-thumb {
     border-radius: 2px;
-    background: linear-gradient(180deg, #ffffff 0%, #eaf2fd 100%);
+    background: linear-gradient(180deg, #ffffff 0%, var(--ds-accent-box-bg-1, #eaf2fd) 100%);
     border: 1px solid #8e8f8f;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   }
@@ -708,39 +716,39 @@
 
   /* ── Reader Navbar Progress Pill & Track ── */
   [data-theme="windows7"] .ds-reader-progress-pill {
-    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%);
-    border: 1px solid #b8c9dc;
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-1, #f7fbff) 0%, var(--ds-accent-box-bg-2, #eef4fc) 100%);
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc);
     border-radius: 2px;
-    color: #1b3555;
+    color: var(--ds-accent-badge-text, #1b3555);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
   [data-theme="windows7"] .ds-reader-progress-pill:not(.ds-reader-progress-pill--editing):hover {
-    background: linear-gradient(180deg, #ffffff 0%, #e5f0fc 100%);
-    border-color: #7da2ce;
+    background: linear-gradient(180deg, #ffffff 0%, var(--ds-accent-hover-grad-1, #e5f0fc) 100%);
+    border-color: var(--ds-accent-badge-border, #7da2ce);
     box-shadow: inset 0 0 1px #fff, 0 0 3px rgba(60, 140, 230, 0.3);
   }
   [data-theme="windows7"] .ds-reader-progress-pill.ds-reader-progress-pill--editing {
     background: #ffffff;
-    border: 1px solid #3399ff;
+    border: 1px solid var(--sys-border-focus, #3399ff);
     box-shadow: 0 0 3px rgba(51, 153, 255, 0.5);
   }
   [data-theme="windows7"] .ds-prog-jump-input {
     background: #ffffff;
-    color: #1b3555;
-    border: 1px solid #7da2ce;
+    color: var(--ds-accent-badge-text, #1b3555);
+    border: 1px solid var(--ds-accent-badge-border, #7da2ce);
   }
   [data-theme="windows7"] .ds-prog-jump-btn {
-    background: linear-gradient(180deg, #3a9bfb 0%, #2080df 100%);
-    border: 1px solid #1c68b5;
+    background: linear-gradient(180deg, var(--ds-accent-aero-light, #3a9bfb) 0%, var(--ds-accent-aero-mid, #2080df) 100%);
+    border: 1px solid var(--ds-accent-aero-border, #1c68b5);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   }
   [data-theme="windows7"] .ds-prog-jump-btn:hover {
-    background: linear-gradient(180deg, #4da6fc 0%, #2d8be6 100%);
-    border-color: #1a5ea5;
+    background: linear-gradient(180deg, var(--ds-accent-aero-light, #4da6fc) 0%, var(--ds-accent-aero-mid, #2d8be6) 100%);
+    border-color: var(--ds-accent-aero-border, #1a5ea5);
   }
 
   [data-theme="windows7"] .ds-reader-progress-track {
-    background: #c8d7ea;
+    background: var(--ds-accent-box-border, #c8d7ea);
     border-radius: 1px;
     height: 2px;
     border: none;
@@ -748,14 +756,14 @@
   }
 
   [data-theme="windows7"] .ds-reader-progress-fill {
-    background: linear-gradient(90deg, #2a6cb6, #3a8be6) !important;
+    background: linear-gradient(90deg, var(--ds-accent-aero-mid, #2a6cb6), var(--ds-accent-aero-light, #3a8be6)) !important;
     border-radius: 1px;
     box-shadow: none;
   }
   [data-theme="windows7"] .skeleton,
   [data-theme="windows7"] .skeleton-pulse,
   [data-theme="windows7"] .ds-slot-loading {
-    background-color: #e6eef8;
+    background-color: var(--ds-accent-box-bg-2, #e6eef8);
   }
 
   /* ── Reader surface tints stay in Aero blue family ── */
@@ -769,28 +777,27 @@
   }
 
   [data-theme="windows7"] .ds-reader-nav {
-    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%) !important;
-    border-color: #b9c9dc !important;
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-1, #f7fbff) 0%, var(--ds-accent-box-bg-2, #eef4fc) 100%) !important;
+    border-color: var(--ds-accent-box-border, #b9c9dc) !important;
     box-shadow: inset 0 1px 0 #ffffff;
   }
 
   /* ── Reader Sheet (Slide-up menu) on Windows 7 ── */
   [data-theme="windows7"] .ds-reader-sheet-window {
-    background: linear-gradient(180deg, #f7fbff 0%, #eef4fc 100%) !important;
-    border-top: 1px solid #b8c9dc !important;
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-1, #f7fbff) 0%, var(--ds-accent-box-bg-2, #eef4fc) 100%) !important;
+    border-top: 1px solid var(--ds-accent-box-border, #b8c9dc) !important;
     box-shadow: 0 -4px 20px rgba(16, 42, 74, 0.25), inset 0 1px 0 #ffffff !important;
-    color: #162030 !important;
+    color: var(--sys-window-text, #162030) !important;
   }
 
   [data-theme="windows7"] .ds-reader-sheet-header {
-    border-bottom: 1px solid #b8c9dc !important;
+    border-bottom: 1px solid var(--ds-accent-box-border, #b8c9dc) !important;
     box-shadow: 0 1px 0 #ffffff !important;
   }
-
   [data-theme="windows7"] .ds-reader-sheet-header .ds-modal-title,
   [data-theme="windows7"] .ds-reader-sheet-header .ds-modal-title span,
   [data-theme="windows7"] .ds-reader-sheet-header .ds-modal-title .bi {
-    color: #1b3555 !important;
+    color: var(--ds-accent-badge-text, #1b3555) !important;
     text-shadow: none !important;
     font-weight: 600;
   }
@@ -805,7 +812,7 @@
   [data-theme="windows7"] #ds-bottom-nav {
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.22) 48%, rgba(255, 255, 255, 0.12) 52%, rgba(0, 0, 0, 0.04) 100%),
-      linear-gradient(90deg, rgba(185, 209, 236, 0.85), rgba(143, 184, 226, 0.85) 55%, rgba(185, 209, 236, 0.85));
+      linear-gradient(90deg, var(--ds-accent-taskbar-1, rgba(185, 209, 236, 0.85)), var(--ds-accent-taskbar-2, rgba(143, 184, 226, 0.85)) 55%, var(--ds-accent-taskbar-1, rgba(185, 209, 236, 0.85)));
     border-top: 1px solid rgba(0, 0, 0, 0.42);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(8px);
@@ -813,26 +820,25 @@
   }
   [data-theme="windows7"] .ds-bn-tab.active {
     background:
-      linear-gradient(180deg, #e5f4fc 0%, #c4e5f6 30% 50%, #98d1ef 50%, #68b3db 100%) !important;
-    border-color: #2c597c !important;
-    color: #0f2440 !important;
+      linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
+    border-color: var(--ds-accent-active-border, #2c597c) !important;
+    color: var(--ds-accent-active-text, #0f2440) !important;
   }
 
   [data-theme="windows7"] .ds-bn-tab.active .bi {
-    color: #0f2440 !important;
+    color: var(--ds-accent-active-text, #0f2440) !important;
   }
-
   /* ── Downloaded Chapter Seats on Aero ── */
   [data-theme="windows7"] .ds-chapter-seat--downloaded {
-    background: linear-gradient(180deg, #eaf6fd 0%, #bee6fd 45%, #a7d9f5 100%) !important;
-    border: 1px solid #3c7fb1 !important;
-    color: #0c4a6e !important;
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 0%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
+    border: 1px solid var(--sys-border-focus, #3c7fb1) !important;
+    color: var(--ds-accent-badge-text, #0c4a6e) !important;
     box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(0, 0, 0, 0.08);
   }
   [data-theme="windows7"] .ds-chapter-seat--downloaded:hover {
-    background: linear-gradient(180deg, #e0f0ff 0%, #c2e0ff 42%, #7fb8f0 44%, #a9d0f6 58%, #e0efff 100%) !important;
-    border-color: #1e4f84 !important;
-    color: #052e47 !important;
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #e0f0ff) 0%, var(--ds-accent-hover-grad-2, #c2e0ff) 42%, var(--ds-accent-hover-grad-3, #7fb8f0) 44%, var(--ds-accent-hover-grad-2, #a9d0f6) 58%, var(--ds-accent-hover-grad-1, #e0efff) 100%) !important;
+    border-color: var(--sys-primary-border, #1e4f84) !important;
+    color: var(--ds-accent-badge-text, #052e47) !important;
   }
   [data-theme="windows7"] .ds-chapter-seat--read {
     background: linear-gradient(180deg, #f2f2f2 0%, #ebebeb 50%, #dddddd 51%, #cfcfcf 100%) !important;
@@ -840,13 +846,13 @@
     color: #555555 !important;
   }
   [data-theme="windows7"] .ds-chapter-seat--read:hover {
-    background: linear-gradient(180deg, #eaf6fd 45%, #bee6fd 45%, #a7d9f5 100%) !important;
-    border-color: #3c7fb1 !important;
-    color: #0c4a6e !important;
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 45%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
+    border-color: var(--sys-border-focus, #3c7fb1) !important;
+    color: var(--ds-accent-badge-text, #0c4a6e) !important;
   }
   [data-theme="windows7"] .ds-legend-swatch.downloaded {
-    background: linear-gradient(180deg, #eaf6fd 0%, #bee6fd 45%, #a7d9f5 100%) !important;
-    border: 1px solid #3c7fb1 !important;
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 0%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
+    border: 1px solid var(--sys-border-focus, #3c7fb1) !important;
   }
   [data-theme="windows7"] .ds-legend-swatch.read {
     background: linear-gradient(180deg, #f2f2f2 0%, #ebebeb 50%, #dddddd 51%, #cfcfcf 100%) !important;
@@ -859,14 +865,14 @@
 
   /* ── Downloaded Chapter List on Windows 7 ── */
   [data-theme="windows7"] .ds-downloaded-chapter-list {
-    border: 1px solid #aab9cc !important;
+    border: 1px solid var(--ds-accent-box-border, #aab9cc) !important;
     border-radius: 3px !important;
     box-shadow: inset 0 1px 2px rgba(16, 42, 74, 0.08);
   }
   [data-theme="windows7"] .ds-downloaded-chapter-list .ds-chapter-row {
     background: #ffffff !important;
     border: none !important;
-    border-bottom: 1px solid #e2eaf4 !important;
+    border-bottom: 1px solid var(--ds-accent-divider, #e2eaf4) !important;
     border-radius: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
@@ -875,49 +881,78 @@
     border-bottom: none !important;
   }
   [data-theme="windows7"] .ds-downloaded-chapter-list .ds-chapter-row:hover {
-    background: linear-gradient(180deg, #f3f9ff 0%, #e6f0fd 100%) !important;
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #f3f9ff) 0%, var(--ds-accent-hover-grad-2, #e6f0fd) 100%) !important;
   }
   [data-theme="windows7"] .ds-downloaded-chapter-list .ds-chapter-badge {
     font-style: normal !important;
     color: #555555 !important;
   }
   [data-theme="windows7"] .ds-vol-header {
-    color: #2b5788 !important;
+    color: var(--ds-accent-badge-text, #2b5788) !important;
   }
   [data-theme="windows7"] .ds-vol-header::after {
-    background: linear-gradient(90deg, #b8cde4 0%, rgba(184, 205, 228, 0.2) 100%) !important;
+    background: linear-gradient(90deg, var(--ds-accent-box-border, #b8cde4) 0%, rgba(184, 205, 228, 0.2) 100%) !important;
   }
   [data-theme="windows7"] .ds-seat-vol-divider {
     width: 2px;
     height: 18px;
-    background: linear-gradient(180deg, #9bbad8 0%, #4679a9 50%, #9bbad8 100%) !important;
+    background: linear-gradient(180deg, var(--ds-accent-aero-light, #9bbad8) 0%, var(--ds-accent-aero-mid, #4679a9) 50%, var(--ds-accent-aero-light, #9bbad8) 100%) !important;
     box-shadow: 1px 0 0 rgba(255, 255, 255, 0.7);
     margin: 2px 5px;
   }
   [data-theme="windows7"] .ds-downloaded-chapter-list .ds-vol-divider {
-    background: linear-gradient(180deg, #f0f5fb 0%, #e6eef7 100%) !important;
-    color: #2b5788 !important;
-    border-bottom: 1px solid #d0deee !important;
+    background: linear-gradient(180deg, var(--ds-accent-box-bg-1, #f0f5fb) 0%, var(--ds-accent-box-bg-2, #e6eef7) 100%) !important;
+    color: var(--ds-accent-badge-text, #2b5788) !important;
+    border-bottom: 1px solid var(--ds-accent-divider, #d0deee) !important;
   }
   [data-theme="windows7"] .ds-downloaded-chapter-list .ds-vol-divider::after {
-    background: linear-gradient(90deg, #b8cde4 0%, rgba(184, 205, 228, 0.2) 100%) !important;
+    background: linear-gradient(90deg, var(--ds-accent-box-border, #b8cde4) 0%, rgba(184, 205, 228, 0.2) 100%) !important;
   }
   /* ── Library Master-Detail on Windows 7 ── */
   [data-theme="windows7"] .ds-library-nav-list {
     background: #ffffff !important;
-    border: 1px solid #aab9cc !important;
+    border: 1px solid var(--ds-accent-box-border, #aab9cc) !important;
     border-radius: 3px !important;
     box-shadow: inset 0 1px 2px rgba(16, 42, 74, 0.08) !important;
   }
   [data-theme="windows7"] .ds-library-nav-item:hover {
-    background: linear-gradient(180deg, #f3f9ff 0%, #e6f0fd 100%) !important;
-    border-color: #b8c9dc !important;
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #f3f9ff) 0%, var(--ds-accent-hover-grad-2, #e6f0fd) 100%) !important;
+    border-color: var(--ds-accent-box-border, #b8c9dc) !important;
     color: #000000 !important;
   }
   [data-theme="windows7"] .ds-library-nav-item.active {
-    background: linear-gradient(180deg, #d8ebff 0%, #b9d8f6 46%, #8fb9ea 52%, #c8ddf5 100%) !important;
-    border: 1px solid #2e6aa5 !important;
+    background: linear-gradient(180deg, var(--ds-accent-subtab-grad-1, #d8ebff) 0%, var(--ds-accent-subtab-grad-2, #b9d8f6) 46%, var(--ds-accent-subtab-grad-3, #8fb9ea) 52%, var(--ds-accent-subtab-grad-4, #c8ddf5) 100%) !important;
+    border: 1px solid var(--ds-accent-subtab-border, #2e6aa5) !important;
     box-shadow: inset 1px 1px 0 rgba(16, 42, 74, 0.15), inset -1px -1px 0 rgba(255, 255, 255, 0.6) !important;
-    color: #0f2440 !important;
+    color: var(--ds-accent-subtab-text, #0f2440) !important;
+  }
+
+  /* ── Download Manager Queue on Windows 7 ── */
+  [data-theme="windows7"] .ds-download-series-item {
+    background: linear-gradient(180deg, #ffffff 0%, var(--ds-accent-box-bg-2, #eef4fc) 100%) !important;
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc) !important;
+    border-radius: 3px !important;
+    box-shadow: inset 0 0 0 1px #ffffff, 0 1px 2px rgba(16, 42, 74, 0.04) !important;
+  }
+  [data-theme="windows7"] .ds-download-series-item--done {
+    background: linear-gradient(180deg, #ffffff 0%, var(--ds-accent-box-bg-1, #f7fbff) 100%) !important;
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc) !important;
+  }
+  [data-theme="windows7"] .ds-download-series-item--active {
+    background: linear-gradient(180deg, #ffffff 0%, var(--ds-accent-hover-grad-1, #eaf6fd) 100%) !important;
+    border: 1px solid var(--sys-border-focus, #3c7fb1) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 1px 3px rgba(16, 42, 74, 0.08) !important;
+  }
+  [data-theme="windows7"] .ds-download-chapter-row {
+    background: #ffffff !important;
+    border-bottom: 1px solid var(--ds-accent-divider, #e2eaf4) !important;
+  }
+  [data-theme="windows7"] .ds-download-chapters-drawer {
+    border: 1px solid var(--ds-accent-box-border, #b8c9dc) !important;
+    border-radius: 2px !important;
+  }
+  [data-theme="windows7"] .ds-download-speed-badge,
+  [data-theme="windows7"] .ds-download-percent-badge {
+    color: var(--ds-accent-badge-text, #1b3555) !important;
   }
 }

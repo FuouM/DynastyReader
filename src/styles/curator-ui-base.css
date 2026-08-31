@@ -145,21 +145,23 @@
 }
 
 .group-box {
-  border: 1px solid var(--sys-border-dark);
-  border-radius: 3px;
+  border: 1px solid var(--ds-accent-box-border, var(--sys-border-medium, #c8d4e2));
+  border-radius: 4px;
   padding: 12px;
   position: relative;
-  background-color: var(--sys-control-bg);
+  background: var(--sys-window-bg, #ffffff);
   margin-top: 8px;
 }
 .group-box-title {
   position: absolute;
   top: -9px;
   left: 10px;
-  background-color: var(--sys-control-bg);
-  padding: 0 6px;
+  background: var(--sys-window-bg, #ffffff);
+  border: 1px solid var(--ds-accent-badge-border, var(--sys-border-medium, #b8cde6));
+  border-radius: 3px;
+  padding: 1px 8px;
   font-weight: 600;
-  color: var(--sys-text-secondary, #333333);
+  color: var(--ds-accent-badge-text, var(--sys-primary, #1b3d64));
   display: inline-flex;
   align-items: center;
   gap: 4px;

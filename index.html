@@ -47,6 +47,76 @@
               window.AndroidThemeBridge.updateTheme(isDark, metaColors[theme] || "#f5f5f5");
             } catch {}
           }
+          var rawAccent = localStorage.getItem("ds-accent-color");
+          var accent = "default";
+          if (rawAccent) {
+            try { accent = JSON.parse(rawAccent); } catch (_) { accent = rawAccent.replace(/^["']|["']$/g, "").trim().toLowerCase(); }
+          }
+          if (accent && accent !== "default" && /^#[0-9a-f]{3,6}$/i.test(accent)) {
+            var c = accent.replace("#", "");
+            if (c.length === 3) c = c.split("").map(function(x){return x+x;}).join("");
+            var num = parseInt(c, 16);
+            var r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+            var isDark = (colorSchemes[theme] || "light") === "dark";
+            var adj = function(f) {
+              var nr = f >= 0 ? Math.round(r + (255 - r) * f) : Math.round(r * (1 + f));
+              var ng = f >= 0 ? Math.round(g + (255 - g) * f) : Math.round(g * (1 + f));
+              var nb = f >= 0 ? Math.round(b + (255 - b) * f) : Math.round(b * (1 + f));
+              return "#" + ((1 << 24) + (nr << 16) + (ng << 8) + nb).toString(16).slice(1);
+            };
+            var yiq = (r * 299 + g * 587 + b * 114) / 1000;
+            var contrast = yiq >= 150 ? "#000000" : "#ffffff";
+            root.style.setProperty("--sys-accent", accent);
+            root.style.setProperty("--sys-primary", isDark ? adj(0.18) : accent);
+            root.style.setProperty("--sys-primary-border", isDark ? adj(-0.15) : adj(-0.22));
+            root.style.setProperty("--sys-primary-hover", isDark ? adj(0.28) : adj(0.10));
+            root.style.setProperty("--sys-primary-active", isDark ? adj(0.05) : adj(-0.12));
+            root.style.setProperty("--sys-highlight-bg", accent);
+            root.style.setProperty("--sys-highlight-text", contrast);
+            root.style.setProperty("--sys-border-focus", isDark ? adj(0.22) : accent);
+            root.style.setProperty("--sys-button-hover", isDark ? adj(-0.72) : adj(0.90));
+            root.style.setProperty("--sys-button-active", isDark ? adj(-0.55) : adj(0.78));
+            root.style.setProperty("--sys-button-primary-bg", isDark ? adj(0.18) : accent);
+            root.style.setProperty("--sys-button-primary-border", isDark ? adj(-0.15) : adj(-0.22));
+            root.style.setProperty("--sys-button-primary-hover", isDark ? adj(0.28) : adj(0.10));
+            root.style.setProperty("--sys-button-primary-active", isDark ? adj(0.05) : adj(-0.12));
+            root.style.setProperty("--ds-accent-aero-light", adj(0.25));
+            root.style.setProperty("--ds-accent-aero-mid", accent);
+            root.style.setProperty("--ds-accent-aero-dark", adj(-0.18));
+            root.style.setProperty("--ds-accent-aero-border", adj(-0.32));
+            root.style.setProperty("--ds-accent-active-grad-1", adj(0.90));
+            root.style.setProperty("--ds-accent-active-grad-2", adj(0.77));
+            root.style.setProperty("--ds-accent-active-grad-3", adj(0.60));
+            root.style.setProperty("--ds-accent-active-grad-4", adj(0.41));
+            root.style.setProperty("--ds-accent-active-border", adj(-0.25));
+            root.style.setProperty("--ds-accent-active-text", adj(-0.55));
+            root.style.setProperty("--ds-accent-hover-grad-1", adj(0.92));
+            root.style.setProperty("--ds-accent-hover-grad-2", adj(0.76));
+            root.style.setProperty("--ds-accent-hover-grad-3", adj(0.66));
+            root.style.setProperty("--ds-accent-hover-border", adj(0.08));
+            root.style.setProperty("--ds-accent-subtab-grad-1", adj(0.85));
+            root.style.setProperty("--ds-accent-subtab-grad-2", adj(0.72));
+            root.style.setProperty("--ds-accent-subtab-grad-3", adj(0.56));
+            root.style.setProperty("--ds-accent-subtab-grad-4", adj(0.78));
+            root.style.setProperty("--ds-accent-subtab-border", adj(-0.25));
+            root.style.setProperty("--ds-accent-subtab-text", adj(-0.55));
+            root.style.setProperty("--ds-accent-badge-bg", adj(0.68));
+            root.style.setProperty("--ds-accent-badge-border", adj(0.38));
+            root.style.setProperty("--ds-accent-badge-text", adj(-0.55));
+            root.style.setProperty("--ds-accent-box-bg-1", "#ffffff");
+            root.style.setProperty("--ds-accent-box-bg-2", adj(0.75));
+            root.style.setProperty("--ds-accent-box-border", adj(0.40));
+            root.style.setProperty("--ds-accent-divider", adj(0.45));
+            root.style.setProperty("--ds-accent-wall-1", adj(0.60));
+            root.style.setProperty("--ds-accent-wall-2", adj(0.42));
+            root.style.setProperty("--ds-accent-wall-3", adj(0.25));
+            root.style.setProperty("--ds-accent-topbar-1", adj(0.32));
+            root.style.setProperty("--ds-accent-topbar-2", adj(0.18));
+            root.style.setProperty("--ds-accent-topbar-3", accent);
+            root.style.setProperty("--ds-accent-topbar-4", adj(0.24));
+            root.style.setProperty("--ds-accent-taskbar-1", adj(0.35));
+            root.style.setProperty("--ds-accent-taskbar-2", adj(0.20));
+          }
         } catch {}
       })();
     </script>

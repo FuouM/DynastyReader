@@ -1,6 +1,20 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import { theme, setTheme, THEME_REGISTRY, uiScale, applyUiScale, uiMode, setUiMode, type UiMode, type AppTheme } from "../../stores";
+import {
+  theme,
+  setTheme,
+  THEME_REGISTRY,
+  accentColor,
+  setAccentColor,
+  ACCENT_COLOR_PRESETS,
+  getContrastText,
+  uiScale,
+  applyUiScale,
+  uiMode,
+  setUiMode,
+  type UiMode,
+  type AppTheme,
+} from "../../stores";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";
@@ -26,6 +40,18 @@ export function DisplaySettings() {
     applyUiScale(clamped);
   };
 
+  const isCustomColor = createMemo(() => {
+    const cur = accentColor();
+    if (!cur || cur === "default") return false;
+    return !ACCENT_COLOR_PRESETS.some((p) => p.hex.toLowerCase() === cur.toLowerCase());
+  });
+  const activeColorLabel = createMemo(() => {
+    const cur = accentColor();
+    if (!cur || cur === "default") return "Blue (Default)";
+    const found = ACCENT_COLOR_PRESETS.find((p) => p.hex.toLowerCase() === cur.toLowerCase());
+    if (found) return found.label;
+    return `Custom (${cur.toUpperCase()})`;
+  });
   const hasScalePreset = createMemo(() =>
     SCALE_PRESETS.some((s) => Math.abs(s - scale()) < 0.01),
   );
@@ -150,6 +176,76 @@ export function DisplaySettings() {
                     </For>
                   </div>
                 </Show>
+              </div>
+            </Show>
+          </div>
+        </SettingsRow>
+        {/* Accent Color Palette — authentic WinForms square color wells */}
+        <SettingsRow
+          label={t("settings.display.accentColor")}
+          desc={t("settings.display.accentColorDesc")}
+          divider
+        >
+          <div class="ds-col" style="gap: 5px; align-items: flex-end;">
+            <div class="ds-winforms-palette">
+              <For each={ACCENT_COLOR_PRESETS}>
+                {(preset) => {
+                  const isSelected = () => {
+                    const cur = accentColor();
+                    if (preset.id === "default") {
+                      return !cur || cur === "default" || cur === preset.hex.toLowerCase();
+                    }
+                    return cur === preset.hex.toLowerCase();
+                  };
+                  return (
+                    <button
+                      type="button"
+                      class={`ds-winforms-color-cell${isSelected() ? " is-active" : ""}`}
+                      style={{ "background-color": preset.hex }}
+                      title={preset.label}
+                      onClick={() => setAccentColor(preset.id === "default" ? "default" : preset.hex)}
+                    >
+                      <Show when={isSelected()}>
+                        <i class="bi bi-check" style={{ color: getContrastText(preset.hex) }} />
+                      </Show>
+                    </button>
+                  );
+                }}
+              </For>
+
+              {/* Custom Color Well */}
+              <label
+                class={`ds-winforms-color-cell ds-winforms-color-cell--custom${isCustomColor() ? " is-active" : ""}`}
+                style={{
+                  "background-color": isCustomColor() ? accentColor() : "transparent",
+                  color: isCustomColor() ? getContrastText(accentColor()) : "var(--sys-window-text, #333)",
+                }}
+                title={t("settings.display.accentCustomTooltip")}
+              >
+                <input
+                  type="color"
+                  class="ds-accent-color-native-input"
+                  value={isCustomColor() ? accentColor() : "#0078d4"}
+                  onInput={(e) => setAccentColor(e.currentTarget.value)}
+                />
+                <Show when={isCustomColor()} fallback={<i class="bi bi-palette" />}>
+                  <i class="bi bi-check" />
+                </Show>
+              </label>
+            </div>
+
+            {/* Custom Color Status / Reset (when non-default) */}
+            <Show when={isCustomColor() || (accentColor() && accentColor() !== "default")}>
+              <div class="ds-accent-custom-label">
+                <span class="ds-accent-hex-pill">{activeColorLabel()}</span>
+                <button
+                  type="button"
+                  class="win-button ds-btn-sm"
+                  style="height: 18px; min-height: 18px; padding: 0 6px; font-size: 10px;"
+                  onClick={() => setAccentColor("default")}
+                >
+                  {t("settings.display.accentDefault")}
+                </button>
               </div>
             </Show>
           </div>

@@ -1144,6 +1144,108 @@ code,
   gap: 4px;
   flex-shrink: 0;
 }
+
+/* ── WinForms-authentic Color Palette Wells ── */
+.ds-winforms-palette {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  background: var(--sys-control-bg, #ececec);
+  border: 1px solid var(--sys-border-dark, #888888);
+  border-top-color: #666666;
+  border-left-color: #666666;
+  border-radius: 2px;
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.ds-winforms-color-cell {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.45), inset -1px -1px 0 rgba(0, 0, 0, 0.2);
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-sizing: border-box;
+  transition: none !important;
+}
+
+.ds-winforms-color-cell:hover {
+  border-color: var(--sys-border-focus, #0078d4);
+  box-shadow: inset 0 0 0 1px #ffffff, inset 1px 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.ds-winforms-color-cell.is-active {
+  border-color: var(--sys-window-text, #000000);
+  box-shadow: inset 0 0 0 1px #ffffff, inset 0 0 0 2px rgba(0, 0, 0, 0.85);
+}
+
+.ds-winforms-color-cell.is-active:hover {
+  border-color: var(--sys-window-text, #000000);
+  box-shadow: inset 0 0 0 1px #ffffff, inset 0 0 0 2px var(--sys-border-focus, #0078d4);
+}
+
+.ds-winforms-color-cell i {
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.ds-winforms-color-cell--custom {
+  background: var(--sys-button-bg, #f0f0f0);
+  border: 1px dashed var(--sys-border-dark, #888888);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.ds-winforms-color-cell--custom:hover {
+  border-style: solid;
+  border-color: var(--sys-border-focus, #0078d4);
+  box-shadow: inset 0 0 0 1px #ffffff;
+}
+
+.ds-winforms-color-cell--custom.is-active {
+  border-style: solid;
+}
+
+.ds-accent-color-native-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+}
+
+.ds-accent-custom-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.ds-accent-hex-pill {
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--sys-window-bg, #ffffff);
+  color: var(--sys-text-primary, #000000);
+  border: 1px solid var(--sys-border-medium, #cccccc);
+}
 #ds-settings-sec-storage .ds-settings-row-control .win-button {
   width: 155px;
   min-width: 155px;
