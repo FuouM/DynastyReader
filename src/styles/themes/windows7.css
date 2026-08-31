@@ -159,7 +159,7 @@
       transparent 13% 100%
     );
   }
-
+}
 
 /* ── Aero chrome overrides — scoped to [data-theme="windows7"] ─────────── */
 @layer components {
