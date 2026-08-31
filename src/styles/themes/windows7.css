@@ -184,8 +184,7 @@
     color: var(--ds-accent-active-text, #0f2440) !important;
   }
   /* Wallpaper + Segoe UI font */
-  :root[data-theme="windows7"],
-  html[data-theme="windows7"] {
+  :root[data-theme="windows7"] {
     background:
       radial-gradient(1200px 600px at 70% -10%, rgba(255, 255, 255, 0.9) 0%, transparent 60%),
       linear-gradient(180deg, var(--ds-accent-wall-1, #c7ddf4) 0%, var(--ds-accent-wall-2, #a9c8eb) 40%, var(--ds-accent-wall-3, #8fb8e2) 100%);

@@ -30,14 +30,16 @@ export const ACCENT_COLOR_PRESETS: readonly AccentColorPreset[] = [
 export const ACCENT_COLOR_STORAGE_KEY = "ds-accent-color";
 export const ACCENT_COLOR_CHANGE_EVENT = "ds-accent-color-change";
 
+const DEFAULT_RGB: [number, number, number] = [0, 120, 212];
+
 export function parseHex(hex: string): [number, number, number] {
   let clean = hex.replace("#", "").trim();
   if (clean.length === 3) {
     clean = clean.split("").map((c) => c + c).join("");
   }
-  if (clean.length !== 6) return [0, 120, 212];
+  if (clean.length !== 6) return DEFAULT_RGB;
   const num = parseInt(clean, 16);
-  if (isNaN(num)) return [0, 120, 212];
+  if (isNaN(num)) return DEFAULT_RGB;
   return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
 }
 
@@ -73,7 +75,7 @@ export function getContrastText(hex: string): string {
   return yiq >= 150 ? "#000000" : "#ffffff";
 }
 
-export function computeAccentPalette(hex: string, appTheme: AppTheme = "light") {
+export function computeAccentPalette(hex: string, appTheme: AppTheme = "light"): Record<string, string> {
   const contrastText = getContrastText(hex);
   const isDark = appTheme === "dark";
   const isHighContrast = appTheme === "high-contrast";
@@ -216,60 +218,8 @@ export function computeAccentPalette(hex: string, appTheme: AppTheme = "light") 
   };
 }
 
-const MANAGED_VARS = [
-  "--sys-accent",
-  "--sys-primary",
-  "--sys-primary-border",
-  "--sys-primary-hover",
-  "--sys-primary-active",
-  "--sys-highlight-bg",
-  "--sys-highlight-text",
-  "--sys-border-focus",
-  "--sys-button-hover",
-  "--sys-button-active",
-  "--sys-button-primary-bg",
-  "--sys-button-primary-border",
-  "--sys-button-primary-hover",
-  "--sys-button-primary-active",
-  "--sys-link",
-  "--sys-link-hover",
-  "--ds-accent-aero-light",
-  "--ds-accent-aero-mid",
-  "--ds-accent-aero-dark",
-  "--ds-accent-aero-border",
-  "--ds-accent-active-grad-1",
-  "--ds-accent-active-grad-2",
-  "--ds-accent-active-grad-3",
-  "--ds-accent-active-grad-4",
-  "--ds-accent-active-border",
-  "--ds-accent-active-text",
-  "--ds-accent-hover-grad-1",
-  "--ds-accent-hover-grad-2",
-  "--ds-accent-hover-grad-3",
-  "--ds-accent-hover-border",
-  "--ds-accent-subtab-grad-1",
-  "--ds-accent-subtab-grad-2",
-  "--ds-accent-subtab-grad-3",
-  "--ds-accent-subtab-grad-4",
-  "--ds-accent-subtab-border",
-  "--ds-accent-subtab-text",
-  "--ds-accent-badge-bg",
-  "--ds-accent-badge-border",
-  "--ds-accent-badge-text",
-  "--ds-accent-box-bg-1",
-  "--ds-accent-box-bg-2",
-  "--ds-accent-box-border",
-  "--ds-accent-divider",
-  "--ds-accent-wall-1",
-  "--ds-accent-wall-2",
-  "--ds-accent-wall-3",
-  "--ds-accent-topbar-1",
-  "--ds-accent-topbar-2",
-  "--ds-accent-topbar-3",
-  "--ds-accent-topbar-4",
-  "--ds-accent-taskbar-1",
-  "--ds-accent-taskbar-2",
-];
+/** All CSS custom property names managed by the accent color system — derived from the palette to guarantee sync. */
+const MANAGED_VARS = Object.keys(computeAccentPalette("#0078d4")) as readonly string[];
 
 export function applyAccentColorToDom(color: string | null, activeTheme?: AppTheme): void {
   if (typeof document === "undefined") return;

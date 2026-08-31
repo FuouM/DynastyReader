@@ -1,6 +1,5 @@
 @layer themes {
-  :root[data-theme="high-contrast"],
-  html[data-theme="high-contrast"] {
+  :root[data-theme="high-contrast"] {
     --sys-control-bg: #000000;
     --sys-control-text: #ffffff;
     --sys-window-bg: #000000;

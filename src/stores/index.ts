@@ -57,14 +57,9 @@ export type { AppTheme } from "./theme";
 export {
   accentColor,
   setAccentColor,
-  getAccentColor,
   initAccentColor,
-  applyAccentColorToDom,
-  getContrastText,
   ACCENT_COLOR_PRESETS,
-  ACCENT_COLOR_CHANGE_EVENT,
-  ACCENT_COLOR_STORAGE_KEY,
-  type AccentColorPreset,
+  getContrastText,
 } from "./accent-color";
 
 export { uiScale, setUiScale, applyUiScale } from "./ui-scale";
