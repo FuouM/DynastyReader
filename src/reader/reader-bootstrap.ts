@@ -64,11 +64,17 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   s.containerTagType = containerTag?.type || null;
 
   const hasRouteChapterList = Boolean(route.chapterList && route.chapterList.length > 0);
-  const seriesPermalink = hasRouteChapterList
-    ? (route.seriesPermalink || containerTag?.permalink || null)
-    : (containerTag?.permalink || route.seriesPermalink || null);
-  const seriesName = containerTag?.name || route.seriesName || chapter.title;
-  const preferredType = containerTag?.type || (route.seriesPermalink ? "series" : undefined);
+  // Tag/author/pairing listings mis-attribute chapters. If the chapter has a
+  // true container (Series/Anthology/Issue/Doujin) that differs from the
+  // route's seriesPermalink, ignore the route — otherwise gotoSeries returns
+  // to the tag. If the chapter is not part of any series (no containerTag),
+  // continue like before and keep the route's tag context.
+  const routeMismatch =
+    Boolean(containerTag && containerTag.permalink && route.seriesPermalink && containerTag.permalink !== route.seriesPermalink);
+  const useRouteList = hasRouteChapterList && !routeMismatch;
+  const seriesPermalink = (containerTag && containerTag.permalink) || (!routeMismatch ? route.seriesPermalink || null : null);
+  const seriesName = (containerTag && containerTag.name) || (!routeMismatch ? route.seriesName || chapter.title : chapter.title);
+  const preferredType = (containerTag && containerTag.type) || (!routeMismatch && route.seriesPermalink ? "series" : undefined);
 
   s.setSeriesPermalink(seriesPermalink);
   s.setSeriesType(preferredType ?? null);
@@ -84,7 +90,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
     };
   });
   s.setChapterPermalink(s.permalink);
-  if (hasRouteChapterList) {
+  if (useRouteList) {
     s.setChapterList(route.chapterList!);
   } else {
     s.setChapterList([]);
