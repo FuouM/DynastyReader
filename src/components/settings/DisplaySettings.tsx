@@ -9,7 +9,7 @@ import {
   ACCENT_COLOR_PRESETS,
   getContrastText,
   uiScale,
-  applyUiScale,
+  setUiScale,
   uiMode,
   setUiMode,
   type UiMode,
@@ -37,7 +37,7 @@ export function DisplaySettings() {
   const syncScale = (val: number): void => {
     const clamped = Math.min(2.0, Math.max(0.5, val));
     setScale(clamped);
-    applyUiScale(clamped);
+    setUiScale(clamped);
   };
 
   const isCustomColor = createMemo(() => {

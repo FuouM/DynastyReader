@@ -9,10 +9,10 @@
 
 import { batch, createComponent, createRoot, getOwner, runWithOwner } from "solid-js";
 import { createStore } from "solid-js/store";
-import { showBanner, setActions, clearActions } from "../stores";
+import { showBanner, setActions } from "../stores";
 import { convertFileSrc } from "../ipc";
 import { t } from "../i18n";
-import { toggleAppTheme } from "../stores/theme";
+import { toggleTheme as toggleThemeStore } from "../stores/theme";
 import type { ChapterPage } from "../types/api";
 import type { ChapterRef, Route } from "../types/routes";
 import type {
@@ -358,7 +358,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       this.actionsDispose();
       this.actionsDispose = null;
     }
-    clearActions();
+    setActions(null);
   }
 
   recountCached(): void {
@@ -652,7 +652,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     }
   }
   toggleTheme(): void {
-    toggleAppTheme();
+    toggleThemeStore();
   }
 
   setFullscreen(active: boolean): void {

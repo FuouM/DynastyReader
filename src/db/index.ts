@@ -95,8 +95,6 @@ export {
 } from "./db.manage";
 export { getLocalSeries, getLocalSeriesByPermalink, deleteLocalSeries } from "./local.repo";
 export type { LocalSeriesRow } from "./local.repo";
-export { getDownloadQueue as getDownloadQueueRows } from "./download.repo";
-export type { DownloadQueueRow } from "./download.repo";
 export type { DbStats, DbFileStats, DbTableCounts } from "./db.manage";
 export type {
   CachedMetadata,

@@ -8,7 +8,7 @@
  */
 
 import { batch, createSignal } from "solid-js";
-import { clearActions } from "./topbar";
+import { setActions } from "./topbar";
 import { isMobile } from "./platform";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
@@ -84,8 +84,7 @@ export function navigate(r: Route): void {
     }
 
     // Clear actions before switching routes
-    clearActions();
-    // Track in history stack if this is a fresh user navigation
+    setActions(null);
     if (!isNavigatingHistory) {
       setHistoryBackStack((s) => [...s, { ...route() }]);
       // Clear forward history on new branch

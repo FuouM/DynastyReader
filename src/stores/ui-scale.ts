@@ -25,7 +25,3 @@ export const setUiScale = (scale: number | ((prev: number) => number)) => {
   const next = typeof scale === "function" ? scale(scaleSignal()) : scale;
   setScaleRaw(Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.round(next * 100) / 100)));
 };
-
-export function applyUiScale(scale: number): void {
-  setUiScale(scale);
-}

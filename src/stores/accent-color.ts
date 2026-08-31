@@ -245,19 +245,15 @@ export function setAccentColor(color: string): void {
   window.dispatchEvent(new CustomEvent<{ accentColor: string }>(ACCENT_COLOR_CHANGE_EVENT, { detail: { accentColor: norm } }));
 }
 
-export function getAccentColor(): string {
-  return accentColorSignal();
-}
-
 export function initAccentColor(): void {
-  applyAccentColorToDom(getAccentColor(), theme());
+  applyAccentColorToDom(accentColor(), theme());
 
   // Listen to theme changes to re-adapt the active accent color
   if (typeof window !== "undefined") {
     makeEventListener(window, THEME_CHANGE_EVENT, (ev) => {
       const custom = ev as CustomEvent<{ theme: AppTheme }>;
       const t = custom.detail?.theme ?? theme();
-      applyAccentColorToDom(getAccentColor(), t);
+      applyAccentColorToDom(accentColor(), t);
     });
   }
 }

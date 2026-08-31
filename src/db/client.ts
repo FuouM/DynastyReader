@@ -1,20 +1,17 @@
-import { createPluginDb } from "../lib";
 import { DB_NAME } from "../stores";
 import type { Row } from "../types/db";
+import * as ipc from "../ipc";
 
 export type { Row };
 
-/**
- * Plugin-scoped SQLite client bound to `dynasty_reader.db`.
- *
- * Implemented entirely on top of the shared `createPluginDb` factory in
- * `plugins/lib/db.ts` so error unwrapping and row deserialization stay
- * identical across every plugin in the workspace.
- */
-const db = createPluginDb(DB_NAME);
-
 /** Runs a write query; returns rows affected. */
-export const execute = db.execute;
+export async function execute(sql: string, params: unknown[] = []): Promise<number> {
+  const resp = await ipc.dbExecute(DB_NAME, sql, params);
+  return Number(resp.rows_affected ?? 0);
+}
 
 /** Runs a read query; returns rows as plain objects. */
-export const query = db.query;
+export async function query<T extends object = Row>(sql: string, params: unknown[] = []): Promise<T[]> {
+  const resp = await ipc.dbQuery(DB_NAME, sql, params);
+  return (resp.rows ?? []) as T[];
+}

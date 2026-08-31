@@ -47,7 +47,6 @@ export {
   setActions,
   showBanner,
   hideBanner,
-  clearActions,
 } from "./topbar";
 
 export { theme, setTheme, toggleTheme, initAppTheme, THEME_CHANGE_EVENT, THEME_REGISTRY } from "./theme";
@@ -59,9 +58,7 @@ export {
   ACCENT_COLOR_PRESETS,
   getContrastText,
 } from "./accent-color";
-
-export { uiScale, setUiScale, applyUiScale } from "./ui-scale";
-
+export { uiScale, setUiScale } from "./ui-scale";
 export { isMobile, isAndroid, uiMode, setUiMode } from "./platform";
 export type { UiMode } from "./platform";
 

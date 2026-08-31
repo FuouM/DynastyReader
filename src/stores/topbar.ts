@@ -39,8 +39,3 @@ export function hideBanner(): void {
   dismissBanner.clear();
   _setBanner(null);
 }
-
-/** Empties the top-bar action host. */
-export function clearActions(): void {
-  setActions(null);
-}

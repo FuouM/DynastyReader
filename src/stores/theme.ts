@@ -123,24 +123,18 @@ export function setTheme(t: AppTheme): void {
   applyThemeToDom(t);
   window.dispatchEvent(new CustomEvent<{ theme: AppTheme }>(THEME_CHANGE_EVENT, { detail: { theme: t } }));
 }
-export function getAppTheme(): AppTheme {
-  return themeSignal();
-}
 
 export function toggleTheme(): void {
   const idx = VALID_THEMES.indexOf(theme());
   setTheme(VALID_THEMES[(idx + 1) % VALID_THEMES.length]);
 }
 
-export { toggleTheme as toggleAppTheme };
-
 export function onThemeChange(fn: (t: AppTheme) => void): () => void {
   return makeEventListener(window, THEME_CHANGE_EVENT, (ev) => {
     const custom = ev as CustomEvent<{ theme: AppTheme }>;
-    fn(custom.detail?.theme ?? getAppTheme());
+    fn(custom.detail?.theme ?? theme());
   });
 }
-
 /** Applies the persisted theme on startup, migrating the legacy reader key. */
 export function initAppTheme(): void {
   try {
@@ -153,5 +147,5 @@ export function initAppTheme(): void {
   } catch (err) {
     log.debug("theme", "legacy theme migration check failed:", err);
   }
-  applyThemeToDom(getAppTheme());
+  applyThemeToDom(theme());
 }
