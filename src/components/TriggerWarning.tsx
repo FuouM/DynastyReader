@@ -40,7 +40,7 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
           </DsButton>
           <IconButton
             className="primary ds-modal-proceed"
-            cssText="min-width:85px;background:#dc3545;border-color:#b02a37;color:#fff;"
+            cssText="min-width:85px;background:var(--ds-danger-border);border-color:var(--ds-danger-border);color:#fff;"
             icon={<ExternalLinkIcon />}
             text={t("dialogs.triggerWarning.proceedButton")}
             onClick={() => {

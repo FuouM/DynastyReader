@@ -18,7 +18,7 @@ export function BlacklistNotice(props: BlacklistNoticeProps) {
   return (
     <div class="ds-row ds-blacklist-notice">
       <div class="ds-flex-row">
-        <BlacklistIcon filled={true} color="#dc3545" />
+        <BlacklistIcon filled={true} color="var(--ds-danger-text)" />
         <span>
           <b>{props.count}</b> {props.noun}
           {props.count === 1 ? "" : "s"} {t("browse.search.hiddenByBlacklist", { count: props.count }).replace(/^[0-9]+\s+/, "").replace(/results\s+/, "")}

@@ -1,16 +1,9 @@
 /*
- * windows7.css — Windows 7 Aero theme.
- * Layers already declared in tokens.css — this file only contributes to @layer themes / components.
+ * windows7.css — Windows 7 Aero theme (token overrides only).
+ * Layer: themes. Component-level Aero chrome is in windows7-aero.css.
  *
  * Implements authentic Windows 7 Aero visual styling based on the 7.css
- * design specifications:
- *  - Crisp 1px borders with specular inset highlight lines (no ambient web blur or diffuse glows)
- *  - Authentic 2-step gradient buttons (#f2f2f2 45% -> #ebebeb 45% -> #cfcfcf)
- *  - Sky-blue hover sheen (#eaf6fd -> #bee6fd -> #a7d9f5) and inset pressed states
- *  - Classic Aero ruby-red close button with radial gloss
- *  - Authentic Aero tabs with top accent shelf
- *  - Inset edit controls with top-darkened 1px borders
- *  - Iconic Windows 7 green glossy progress bars and Segoe UI typography
+ * design specifications.
  */
 @layer themes {
   :root[data-theme="windows7"],
@@ -38,8 +31,6 @@
     --sys-text-primary: #162030;
     --sys-text-secondary: #3f536e;
     --sys-text-muted: #607698;
-    --sys-text-subtle: #6f8299;
-    --sys-text-color: #162030;
     --sys-hover-bg: var(--ds-accent-hover-grad-1, #e6eef8);
     --sys-bg-active: var(--ds-accent-active-grad-1, #dceaf8);
     --sys-card-bg: #ffffff;

@@ -8,7 +8,7 @@
   flex-shrink: 0;
   overflow: hidden;
   contain: strict;
-  border-radius: 2px;
+  border-radius: var(--radius-1);
   cursor: pointer;
 }
 
@@ -52,7 +52,7 @@
   height: 24px;
   min-height: 24px;
   max-height: 24px;
-  font-size: 11px;
+  font-size: var(--font-sm);
   padding: 0 8px;
   display: inline-flex;
   align-items: center;
@@ -80,14 +80,14 @@
   display: flex;
   align-items: flex-start;
   gap: 4px;
-  font-size: 11px;
+  font-size: var(--font-sm);
   margin-top: 1px;
 }
 
 .ds-tag-row-label {
   font-weight: 600;
   color: var(--sys-text-secondary, #555);
-  font-size: 10px;
+  font-size: var(--font-xs);
   width: 68px;
   min-width: 68px;
   flex-shrink: 0;
@@ -107,7 +107,7 @@
   object-fit: cover;
   border: 1px solid var(--sys-border-light, #ccc);
   background: var(--sys-control-bg, #eee);
-  border-radius: 2px;
+  border-radius: var(--radius-1);
   flex-shrink: 0;
   display: block;
 }
@@ -116,12 +116,12 @@
   height: 58px;
   border: 1px solid var(--sys-border-light, #ccc);
   background: var(--sys-control-bg, #eee);
-  border-radius: 2px;
+  border-radius: var(--radius-1);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--sys-text-muted, #aaa);
-  font-size: 13px;
+  font-size: var(--font-lg);
   flex-shrink: 0;
   position: relative;
   transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
@@ -210,7 +210,7 @@
 }
 .ds-feed-update-btn {
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--font-sm);
   color: var(--sys-highlight-bg, #0284c7);
   border-color: var(--sys-highlight-bg, #0284c7);
   background: var(--sys-window-bg, #fff);
@@ -236,8 +236,8 @@
   margin-top: 10px;
   background: var(--sys-control-bg, #f5f5f5);
   border: 1px solid var(--sys-border-light, #e0e0e0);
-  border-radius: 3px;
-  font-size: 11px;
+  border-radius: var(--radius-2);
+  font-size: var(--font-sm);
 }
 .ds-feed-status-left {
   display: flex;
@@ -245,7 +245,7 @@
   gap: 8px;
   flex-wrap: wrap;
   color: var(--sys-text-muted, #666);
-  font-size: 11px;
+  font-size: var(--font-sm);
 }
 .ds-status-item {
   display: inline-flex;
@@ -257,8 +257,8 @@
 }
 .ds-status-pill {
   padding: 1px 6px;
-  border-radius: 2px;
-  font-size: 10px;
+  border-radius: var(--radius-1);
+  font-size: var(--font-xs);
   font-weight: 600;
 }
 .ds-status-pill.fresh {
@@ -276,11 +276,11 @@
   align-items: center;
   gap: 2px;
   font-family: monospace;
-  font-size: 10px;
+  font-size: var(--font-xs);
   background: var(--sys-window-bg, #fff);
   border: 1px solid var(--sys-border-light, #ccc);
   padding: 1px 4px;
-  border-radius: 2px;
+  border-radius: var(--radius-1);
   color: var(--sys-text-muted, #777);
 }
 .ds-etag-hash {
@@ -299,8 +299,8 @@
   min-height: 32px;
   border: 1px solid var(--sys-border-medium, #ccc);
   background: var(--sys-control-bg, #f5f5f5);
-  border-radius: 3px;
-  font-size: 11px;
+  border-radius: var(--radius-2);
+  font-size: var(--font-sm);
   box-sizing: border-box;
 }
 #ds-downloaded-toolbar-left {
@@ -327,7 +327,7 @@
   gap: 8px;
   flex-wrap: wrap;
   color: var(--sys-text-muted, #666);
-  font-size: 11px;
+  font-size: var(--font-sm);
 }
 .ds-downloaded-stat-item {
   display: inline-flex;
@@ -340,7 +340,7 @@
   font-weight: 700;
 }
 .ds-downloaded-stat-icon {
-  font-size: 12px;
+  font-size: var(--font-md);
   color: var(--sys-link, #0078d4);
   display: inline-flex;
   align-items: center;
@@ -363,7 +363,7 @@
 #ds-browse-check-updates-btn,
 .ds-status-refresh-btn,
 .win-button.ds-status-refresh-btn {
-  font-size: 11px;
+  font-size: var(--font-sm);
   padding: 0 8px;
   height: 24px;
   min-height: 24px;
@@ -391,7 +391,7 @@
 }
 .ds-scroll-top-btn,
 .win-button.ds-scroll-top-btn {
-  font-size: 11px;
+  font-size: var(--font-sm);
   padding: 0 6px;
   height: 24px;
   min-height: 24px;
@@ -431,7 +431,7 @@
 }
 .ds-typeahead-item {
   padding: 4px 8px;
-  font-size: 12px;
+  font-size: var(--font-md);
   cursor: pointer;
   display: flex;
   gap: 8px;
@@ -442,7 +442,7 @@
   background: var(--sys-hover-bg, #f0f0f0);
 }
 .ds-typeahead-type {
-  font-size: 10px;
+  font-size: var(--font-xs);
   color: var(--sys-text-muted, #888);
 }
 
@@ -564,7 +564,7 @@
 .ds-progress-track {
   height: 3px;
   background: var(--sys-border-light, #e0e0e0);
-  border-radius: 2px;
+  border-radius: var(--radius-1);
   overflow: hidden;
 }
 
@@ -598,7 +598,7 @@
 
 .ds-download-chapter-status {
   margin-left: 5px;
-  font-size: 10px;
+  font-size: var(--font-xs);
 }
 
 .ds-chapter-cancel-btn {
@@ -631,7 +631,7 @@
   flex-direction: column;
   background: var(--sys-window-bg);
   border: 1px solid var(--sys-border-medium, #ccc);
-  border-radius: 2px;
+  border-radius: var(--radius-1);
   margin-top: 4px;
   overflow: hidden;
 }
@@ -647,7 +647,7 @@
   margin: 0 !important;
   box-shadow: none !important;
   background: var(--sys-window-bg) !important;
-  font-size: 12px;
+  font-size: var(--font-md);
   cursor: pointer;
   user-select: none;
 }
@@ -665,7 +665,7 @@
   align-items: center;
   gap: 8px;
   padding: 4px 8px 3px;
-  font-size: 11px;
+  font-size: var(--font-sm);
   font-weight: 600;
   color: var(--sys-text-secondary, #555);
   background: var(--sys-control-bg, #f5f5f5);
@@ -681,7 +681,7 @@
 }
 .ds-downloaded-chapter-list .ds-chapter-badge {
   font-style: normal !important;
-  font-size: 11px;
+  font-size: var(--font-sm);
 }
 
 .ds-downloaded-cover {
@@ -694,7 +694,7 @@
 }
 
 .ds-downloaded-summary-text {
-  font-size: 11px;
+  font-size: var(--font-sm);
   font-style: normal;
   display: flex;
   gap: 6px;
@@ -707,7 +707,7 @@
   align-items: center;
   gap: 12px;
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--font-sm);
   color: var(--sys-text-muted);
   margin-bottom: 8px;
   background: var(--sys-control-bg);
