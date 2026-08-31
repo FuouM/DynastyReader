@@ -387,7 +387,7 @@ function CreateCollectionModal(props: {
       onClose={props.onClose}
       title={
         <>
-          <FolderIcon color="var(--sys-primary,#0078d4)" />{" "}
+          <FolderIcon color="var(--sys-link,#0078d4)" />{" "}
           {t("library.createCollectionModalTitle")}
         </>
       }

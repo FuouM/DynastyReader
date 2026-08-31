@@ -523,7 +523,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                             <span>
                               {group.completedChapters + 1}/{group.totalChapters}: {down().chapter_title} ({activeProgress()[down().chapter_permalink]?.done ?? down().progress}/{(activeProgress()[down().chapter_permalink]?.total ?? down().total_pages) || 1} pages)
                               <Show when={isAct() && speedBps() > 0}>
-                                {" "}· <span style="color:var(--sys-primary);font-weight:600;"><SpeedIcon size={10} /> {formatSpeed(speedBps())}</span>
+                                {" "}· <span style="color:var(--sys-link);font-weight:600;"><SpeedIcon size={10} /> {formatSpeed(speedBps())}</span>
                                 <Show when={sessionBytes() > 0}>
                                   <span class="ds-muted"> ({formatBytes(sessionBytes())})</span>
                                 </Show>
@@ -568,7 +568,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                                 <span>{ch.chapter_title}</span>
                                 <span class="ds-muted ds-download-chapter-status">
                                   <Show when={isChAct()}>
-                                    <span style="color:var(--sys-primary);font-weight:600;">
+                                    <span style="color:var(--sys-link);font-weight:600;">
                                       Downloading {chDone()}/{chTotal() > 0 ? chTotal() : "?"} pages
                                     </span>
                                   </Show>

@@ -341,7 +341,7 @@
 }
 .ds-downloaded-stat-icon {
   font-size: 12px;
-  color: var(--sys-primary, #0078d4);
+  color: var(--sys-link, #0078d4);
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;

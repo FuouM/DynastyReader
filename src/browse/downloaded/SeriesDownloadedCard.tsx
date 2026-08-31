@@ -232,7 +232,7 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
           <span>{formatDate(props.group.lastCachedAt)}</span>
           <Show when={readCount() > 0}>
             <span>·</span>
-            <span style="color:var(--sys-primary);font-weight:600;">
+            <span style="color:var(--sys-link);font-weight:600;">
               {readCount()}/{props.group.chapters.length} Read
             </span>
           </Show>

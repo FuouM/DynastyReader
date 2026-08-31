@@ -213,7 +213,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
         >
           <div ref={dropdownRef} class="ds-popup-card ds-add-to-collection-dropdown" style={positionStyle()}>
             <div class="ds-dropdown-header">
-              <IconText icon={<FolderIcon color="var(--sys-primary,#0078d4)" />}>
+              <IconText icon={<FolderIcon color="var(--sys-link,#0078d4)" />}>
                 {t("dialogs.addToCollection.title")}
               </IconText>
               <Button className="ds-btn-icon" icon={<CloseIcon />} title={t("common.close")} onClick={props.onClose} />

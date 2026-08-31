@@ -73,7 +73,7 @@
   white-space: nowrap;
 }
 .ds-external-link {
-  color: var(--sys-primary, #0078d4);
+  color: var(--sys-link, #0078d4);
   text-decoration: underline;
   cursor: pointer;
   word-break: break-all;
@@ -110,7 +110,7 @@
 .ds-offline-icon {
   margin-left: 2px;
   vertical-align: middle;
-  color: var(--sys-primary, #0078d4);
+  color: var(--sys-link, #0078d4);
   font-size: 11px;
 }
 .ds-cover-xs {
@@ -776,7 +776,7 @@
 }
 .ds-history-icon {
   font-size: 13px;
-  color: var(--sys-primary, #0078d4);
+  color: var(--sys-link, #0078d4);
   flex-shrink: 0;
 }
 .ds-history-item-main {
@@ -993,7 +993,7 @@
   color: var(--ds-danger-text);
 }
 .ds-add-col-icon--active {
-  color: var(--sys-primary, #0078d4);
+  color: var(--sys-link, #0078d4);
   font-size: 12px;
   flex-shrink: 0;
 }
@@ -1066,7 +1066,7 @@
 
 /* Icon in series taggable cards */
 .ds-taggable-icon {
-  color: var(--sys-primary, #0078d4);
+  color: var(--sys-link, #0078d4);
   margin-top: 1px;
   flex-shrink: 0;
 }

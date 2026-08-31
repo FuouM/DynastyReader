@@ -11,6 +11,7 @@ import { persistedSignal } from "../lib/persisted-signal";
 import { theme, THEME_CHANGE_EVENT, type AppTheme } from "./theme";
 import { parsePersistedString } from "../lib/persisted-helpers";
 import {
+  resolveAccentColorHex,
   parseHex,
   toHex,
   adjustBrightness,
@@ -42,22 +43,23 @@ export const ACCENT_COLOR_STORAGE_KEY = "ds-accent-color";
 export const ACCENT_COLOR_CHANGE_EVENT = "ds-accent-color-change";
 
 // Re-export helpers for consumers (DisplaySettings etc.) — single source via lib/color.
-export { parseHex, toHex, adjustBrightness, rgbToHsl, hslToRgb, getContrastText, getDeepAccentText, getAccessibleLinkColor };
+export { resolveAccentColorHex, parseHex, toHex, adjustBrightness, rgbToHsl, hslToRgb, getContrastText, getDeepAccentText, getAccessibleLinkColor };
 
 export function hexToRgba(hex: string, alpha: number): string {
   const [r, g, b] = parseHex(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
-export function computeAccentPalette(hex: string, appTheme: AppTheme = "light"): Record<string, string> {
+export function computeAccentPalette(rawColor: string, appTheme: AppTheme = "light"): Record<string, string> {
+  const hex = resolveAccentColorHex(rawColor);
   const contrastText = getContrastText(hex);
   const isDark = appTheme === "dark";
   const isHighContrast = appTheme === "high-contrast";
   const isWin7 = appTheme === "windows7";
 
   const accessibleLink = getAccessibleLinkColor(hex, isDark || isHighContrast);
-  let primary = isDark || isHighContrast ? hex : accessibleLink;
-  let primaryHover = isDark || isHighContrast ? adjustBrightness(hex, 10) : adjustBrightness(accessibleLink, 10);
-  let primaryActive = isDark || isHighContrast ? adjustBrightness(hex, -12) : adjustBrightness(accessibleLink, -12);
+  let primary = hex;
+  let primaryHover = adjustBrightness(hex, 10);
+  let primaryActive = adjustBrightness(hex, -12);
   let primaryBorder = adjustBrightness(primary, -22);
   let highlightBg = hex;
   let highlightText = contrastText;
@@ -218,7 +220,8 @@ export function applyAccentColorToDom(color: string | null, activeTheme?: AppThe
     return;
   }
 
-  const palette = computeAccentPalette(color, curTheme);
+  const resolvedHex = resolveAccentColorHex(color);
+  const palette = computeAccentPalette(resolvedHex, curTheme);
   for (const [key, val] of Object.entries(palette)) {
     root.style.setProperty(key, val);
   }

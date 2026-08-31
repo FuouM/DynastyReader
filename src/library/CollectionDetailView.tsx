@@ -133,7 +133,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
           <div class="ds-collection-stats">
             <Show
               when={collection()?.is_default}
-              fallback={<FolderIcon color="var(--sys-primary,#0078d4)" class="ds-icon-md" />}
+              fallback={<FolderIcon color="var(--sys-link, #0078d4)" class="ds-icon-md" />}
             >
               <StarIcon filled={true} class="ds-icon-warning" />
             </Show>

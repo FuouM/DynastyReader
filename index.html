@@ -51,14 +51,28 @@
               window.AndroidThemeBridge.updateTheme(isDark, metaColors[theme] || "#f5f5f5");
             } catch {}
           }
+          var presetMap = {
+            "default": "#0078d4",
+            "purple": "#8b5cf6",
+            "pink": "#ec4899",
+            "red": "#ef4444",
+            "orange": "#f97316",
+            "amber": "#d97706",
+            "green": "#10b981",
+            "teal": "#06b6d4",
+            "slate": "#64748b",
+            "green-yuri": "#b1fe00"
+          };
           var rawAccent = localStorage.getItem("ds-accent-color");
           var accent = "default";
           if (rawAccent) {
             try { accent = JSON.parse(rawAccent); } catch (_) { accent = rawAccent.replace(/^["']|["']$/g, "").trim().toLowerCase(); }
           }
-          if (accent && accent !== "default" && /^#[0-9a-f]{3,6}$/i.test(accent)) {
-            var c = accent.replace("#", "");
+          var hexVal = (accent && accent !== "default") ? (presetMap[accent.toLowerCase()] || accent) : null;
+          if (hexVal && /^#?[0-9a-f]{3,6}$/i.test(hexVal)) {
+            var c = hexVal.replace("#", "");
             if (c.length === 3) c = c.split("").map(function(x){return x+x;}).join("");
+            accent = "#" + c;
             var num = parseInt(c, 16);
             var r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
             var isDark = (colorSchemes[theme] || "light") === "dark";
@@ -143,7 +157,7 @@
             var accLinkHover = isDark ? adj(0.15) : adj(-0.15);
             var aeroDark = getAccessibleLink(false);
             root.style.setProperty("--sys-accent", accent);
-            root.style.setProperty("--sys-primary", isDark ? adj(0.18) : accLink);
+            root.style.setProperty("--sys-primary", isDark ? adj(0.18) : accent);
             root.style.setProperty("--sys-link", accLink);
             root.style.setProperty("--sys-link-hover", accLinkHover);
             root.style.setProperty("--sys-primary-border", isDark ? adj(-0.15) : adj(-0.22));

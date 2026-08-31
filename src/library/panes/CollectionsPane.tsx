@@ -51,7 +51,7 @@ export function CollectionsPane(props: CollectionsPaneProps) {
                 col.is_default ? t("library.defaultCollectionBadge") : ""
               }`}
               icon={col.is_default ? "bi-star-fill" : "bi-folder2-open"}
-              iconColor={col.is_default ? "#d97706" : "var(--sys-primary,#0078d4)"}
+              iconColor={col.is_default ? "#d97706" : "var(--sys-link, #0078d4)"}
               onOpen={() => openDetail(col)}
               actionLabel={t("common.open")}
               actionIcon="bi-folder2-open"

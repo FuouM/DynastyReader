@@ -909,7 +909,8 @@
 [data-theme="windows7"] .ds-session-tab.active,
 [data-theme="windows7"] .ds-subtab.active,
 [data-theme="windows7"] .ds-settings-nav-item.active,
-[data-theme="windows7"] .ds-library-nav-item.active {
+[data-theme="windows7"] .ds-library-nav-item.active,
+[data-theme="windows7"] .ds-bn-tab.active {
   background:
     linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
   border-color: var(--ds-accent-active-border, #2c597c) !important;
@@ -933,27 +934,24 @@
 [data-theme="windows7"] .ds-settings-nav-item.active span,
 [data-theme="windows7"] .ds-library-nav-item.active,
 [data-theme="windows7"] .ds-library-nav-item.active .ds-nav-icon,
-[data-theme="windows7"] .ds-library-nav-item.active .ds-nav-label {
+[data-theme="windows7"] .ds-library-nav-item.active .ds-nav-label,
+[data-theme="windows7"] .ds-bn-tab.active,
+[data-theme="windows7"] .ds-bn-tab.active .ds-btn-text,
+[data-theme="windows7"] .ds-bn-tab.active .ds-btn-icon-wrap,
+[data-theme="windows7"] .ds-bn-tab.active .bi,
+[data-theme="windows7"] .ds-bn-tab.active i,
+[data-theme="windows7"] .ds-bn-tab.active svg {
   color: var(--ds-accent-active-text, #0f2440) !important;
+  fill: currentColor;
 }
 
 [data-theme="windows7"] .ds-subtab.active:hover,
 [data-theme="windows7"] .ds-settings-nav-item.active:hover,
-[data-theme="windows7"] .ds-library-nav-item.active:hover {
+[data-theme="windows7"] .ds-library-nav-item.active:hover,
+[data-theme="windows7"] .ds-bn-tab.active:hover {
   background:
     linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
   border-color: var(--ds-accent-active-border, #2c597c) !important;
-}
-
-[data-theme="windows7"] .ds-bn-tab.active {
-  background:
-    linear-gradient(180deg, var(--ds-accent-active-grad-1, #e5f4fc) 0%, var(--ds-accent-active-grad-2, #c4e5f6) 30% 50%, var(--ds-accent-active-grad-3, #98d1ef) 50%, var(--ds-accent-active-grad-4, #68b3db) 100%) !important;
-  border-color: var(--ds-accent-active-border, #2c597c) !important;
-  color: var(--ds-accent-active-text, #0f2440) !important;
-}
-
-[data-theme="windows7"] .ds-bn-tab.active .bi {
-  color: var(--ds-accent-active-text, #0f2440) !important;
 }
 
 

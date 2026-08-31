@@ -53,7 +53,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
           </Show>
 
           <Show when={props.icon}>
-            <i class={`bi ${props.icon} ds-icon-14`} style={{ color: props.iconColor || "var(--sys-primary,#0078d4)" }}></i>
+            <i class={`bi ${props.icon} ds-icon-14`} style={{ color: props.iconColor || "var(--sys-link, #0078d4)" }}></i>
           </Show>
         </>
       }

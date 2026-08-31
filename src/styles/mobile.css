@@ -309,13 +309,18 @@
 }
 
 .ds-bn-tab.active {
-  background: var(--sys-highlight-bg, #0078d4) !important;
-  color: var(--sys-highlight-text, #ffffff) !important;
-  font-weight: 600 !important;
+  background: var(--sys-highlight-bg, #0078d4);
+  color: var(--sys-highlight-text, #ffffff);
+  font-weight: 600;
   border-radius: 0;
 }
-.ds-bn-tab.active .bi {
-  color: var(--sys-highlight-text, #ffffff) !important;
+.ds-bn-tab.active .bi,
+.ds-bn-tab.active i,
+.ds-bn-tab.active .ds-btn-icon-wrap,
+.ds-bn-tab.active .ds-btn-text,
+.ds-bn-tab.active svg {
+  color: inherit;
+  fill: currentColor;
 }
 /* Collapse action button text (Read Later, Read) to icon-only on mobile */
 #ds-root[data-mobile] .ds-action-btn-text {

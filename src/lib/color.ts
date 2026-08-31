@@ -6,7 +6,32 @@
 
 const DEFAULT_RGB: [number, number, number] = [0, 120, 212];
 
-export function parseHex(hex: string): [number, number, number] {
+export const PRESET_HEX_MAP: Record<string, string> = {
+  default: "#0078d4",
+  purple: "#8b5cf6",
+  pink: "#ec4899",
+  red: "#ef4444",
+  orange: "#f97316",
+  amber: "#d97706",
+  green: "#10b981",
+  teal: "#06b6d4",
+  slate: "#64748b",
+  "green-yuri": "#b1fe00",
+};
+
+export function resolveAccentColorHex(color: string | null | undefined): string {
+  if (!color || color === "default") return "#0078d4";
+  const norm = color.trim().toLowerCase();
+  if (PRESET_HEX_MAP[norm]) return PRESET_HEX_MAP[norm];
+  const clean = norm.replace("#", "");
+  if (/^[0-9a-f]{3,6}$/i.test(clean)) {
+    return `#${clean}`;
+  }
+  return "#0078d4";
+}
+
+export function parseHex(color: string): [number, number, number] {
+  const hex = resolveAccentColorHex(color);
   let clean = hex.replace("#", "").trim();
   if (clean.length === 3) clean = clean.split("").map((c) => c + c).join("");
   if (clean.length !== 6) return DEFAULT_RGB;
