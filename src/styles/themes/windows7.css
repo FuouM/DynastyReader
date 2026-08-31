@@ -139,7 +139,7 @@
     --tag-identity-hover-border: #ef9a9a;
     --tag-identity-hover-text: #6e1111;
     --sys-link: var(--ds-accent-aero-dark, #205da8);
-    --sys-link-hover: var(--ds-accent-aero-mid, #2a7cd3);
+    --sys-link-hover: var(--sys-link-hover, #2a7cd3);
     --skeleton-shimmer: rgba(255, 255, 255, 0.7);
     --sys-switch-thumb-bg: #f7fbff;
     --sys-switch-thumb-border: #8ea5c0;

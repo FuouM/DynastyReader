@@ -70,6 +70,93 @@ export function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+export function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return [h * 360, s, l];
+}
+
+export function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  h = (h % 360) / 360;
+  if (h < 0) h += 1;
+  let r: number;
+  let g: number;
+  let b: number;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+export function getDeepAccentText(hex: string, targetLightness = 0.14, maxSaturation = 0.75): string {
+  const [r, g, b] = parseHex(hex);
+  const [h, s] = rgbToHsl(r, g, b);
+  const isYellowGreen = h >= 45 && h <= 95;
+  const effectiveL = isYellowGreen ? Math.min(targetLightness, 0.11) : targetLightness;
+  const cappedS = Math.min(s, maxSaturation);
+  const [dr, dg, db] = hslToRgb(h, cappedS, effectiveL);
+  return toHex(dr, dg, db);
+}
+export function getAccessibleLinkColor(hex: string, isDark = false): string {
+  const [r, g, b] = parseHex(hex);
+  const [h, s] = rgbToHsl(r, g, b);
+
+  if (isDark) {
+    const isYellowGreen = h >= 45 && h <= 95;
+    const targetL = isYellowGreen ? 0.60 : 0.70;
+    const targetS = Math.max(0.65, Math.min(s, 0.90));
+    const [lr, lg, lb] = hslToRgb(h, targetS, targetL);
+    return toHex(lr, lg, lb);
+  } else {
+    let targetL = 0.35;
+    if (h >= 45 && h <= 95) {
+      targetL = 0.22;
+    } else if (h > 95 && h < 190) {
+      targetL = 0.28;
+    } else if (h >= 190 && h <= 250) {
+      targetL = 0.36;
+    } else {
+      targetL = 0.34;
+    }
+    const targetS = Math.max(0.60, Math.min(s, 0.95));
+    const [lr, lg, lb] = hslToRgb(h, targetS, targetL);
+    return toHex(lr, lg, lb);
+  }
+}
+
+
 export function getContrastText(hex: string): string {
   const [r, g, b] = parseHex(hex);
   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
@@ -82,18 +169,18 @@ export function computeAccentPalette(hex: string, appTheme: AppTheme = "light"):
   const isHighContrast = appTheme === "high-contrast";
   const isWin7 = appTheme === "windows7";
 
-  let primary = hex;
-  let primaryHover = adjustBrightness(hex, 10);
-  let primaryActive = adjustBrightness(hex, -12);
-  let primaryBorder = adjustBrightness(hex, -22);
+  const accessibleLink = getAccessibleLinkColor(hex, isDark || isHighContrast);
+  let primary = isDark || isHighContrast ? hex : accessibleLink;
+  let primaryHover = isDark || isHighContrast ? adjustBrightness(hex, 10) : adjustBrightness(accessibleLink, 10);
+  let primaryActive = isDark || isHighContrast ? adjustBrightness(hex, -12) : adjustBrightness(accessibleLink, -12);
+  let primaryBorder = adjustBrightness(primary, -22);
   let highlightBg = hex;
   let highlightText = contrastText;
   let borderFocus = hex;
   let buttonHover = adjustBrightness(hex, 90);
   let buttonActive = adjustBrightness(hex, 78);
-  let link = hex;
-  let linkHover = adjustBrightness(hex, -15);
-
+  let link = accessibleLink;
+  let linkHover = isDark || isHighContrast ? adjustBrightness(accessibleLink, 15) : adjustBrightness(accessibleLink, -15);
   if (isDark) {
     primary = adjustBrightness(hex, 18);
     primaryHover = adjustBrightness(hex, 28);
@@ -127,14 +214,14 @@ export function computeAccentPalette(hex: string, appTheme: AppTheme = "light"):
   // Windows 7 Aero Colorization Palette
   const aeroLight = adjustBrightness(hex, 25);
   const aeroMid = hex;
-  const aeroDark = adjustBrightness(hex, -18);
+  const aeroDark = getAccessibleLinkColor(hex, false);
   const aeroBorder = adjustBrightness(hex, -32);
   const activeGrad1 = adjustBrightness(hex, 90);
   const activeGrad2 = adjustBrightness(hex, 77);
   const activeGrad3 = adjustBrightness(hex, 60);
   const activeGrad4 = adjustBrightness(hex, 41);
   const activeBorder = adjustBrightness(hex, -25);
-  const activeText = adjustBrightness(hex, -55);
+  const activeText = getDeepAccentText(hex, 0.14, 0.75);
   const hoverGrad1 = adjustBrightness(hex, 92);
   const hoverGrad2 = adjustBrightness(hex, 76);
   const hoverGrad3 = adjustBrightness(hex, 66);
@@ -144,11 +231,11 @@ export function computeAccentPalette(hex: string, appTheme: AppTheme = "light"):
   const subtabGrad3 = adjustBrightness(hex, 56);
   const subtabGrad4 = adjustBrightness(hex, 78);
   const subtabBorder = adjustBrightness(hex, -25);
-  const subtabText = adjustBrightness(hex, -55);
+  const subtabText = activeText;
   // Frosted, clean, neutral Aero surfaces tinted in the accent family
   const badgeBg = adjustBrightness(hex, 68);
   const badgeBorder = adjustBrightness(hex, 38);
-  const badgeText = adjustBrightness(hex, -55);
+  const badgeText = getDeepAccentText(hex, 0.16, 0.70);
   const boxBg1 = "#ffffff";
   const boxBg2 = adjustBrightness(hex, 75);
   const boxBorder = adjustBrightness(hex, 40);
