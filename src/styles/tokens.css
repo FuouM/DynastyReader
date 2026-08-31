@@ -78,6 +78,8 @@
     --ds-accent-subtab-grad-4: #c8ddf5;
     --ds-accent-subtab-border: #2e6aa5;
     --ds-accent-subtab-text: #0f2440;
+    --ds-accent-topbar-text: #ffffff;
+    --ds-accent-topbar-shadow: 0 1px 2px rgba(0, 0, 0, 0.65), 0 0 6px rgba(0, 0, 0, 0.35);
     --ds-accent-badge-bg: #edf4fc;
     --ds-accent-badge-border: #b8cde6;
     --ds-accent-badge-text: #1b3d64;

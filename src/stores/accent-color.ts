@@ -249,6 +249,14 @@ export function computeAccentPalette(hex: string, appTheme: AppTheme = "light"):
   const topbar4 = adjustBrightness(hex, 24);
   const taskbar1 = adjustBrightness(hex, 35);
   const taskbar2 = adjustBrightness(hex, 20);
+  const [r, g, b] = parseHex(hex);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  const isLightTopbar = yiq >= 125;
+  const topbarText = isLightTopbar ? getDeepAccentText(hex, 0.12, 0.75) : "#ffffff";
+  const topbarShadow = isLightTopbar
+    ? "0 0 8px rgba(255, 255, 255, 0.95), 0 0 3px #ffffff, 0 1px 0 #ffffff"
+    : "0 1px 2px rgba(0, 0, 0, 0.65), 0 0 6px rgba(0, 0, 0, 0.35)";
+
 
   return {
     "--sys-accent": hex,
@@ -303,6 +311,8 @@ export function computeAccentPalette(hex: string, appTheme: AppTheme = "light"):
     "--ds-accent-topbar-4": topbar4,
     "--ds-accent-taskbar-1": taskbar1,
     "--ds-accent-taskbar-2": taskbar2,
+    "--ds-accent-topbar-text": topbarText,
+    "--ds-accent-topbar-shadow": topbarShadow,
   };
 }
 
