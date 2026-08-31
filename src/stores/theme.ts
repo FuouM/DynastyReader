@@ -8,12 +8,13 @@
  *
  * Adding a new theme (e.g. windows-xp): add one entry to `THEME_REGISTRY`
  * and one file `src/styles/themes/<name>.css` with `:root[data-theme="<name>"]` vars.
+ * Keep `index.html` head-script maps (HEAD_SCRIPT_SYNC) in sync — they are the
+ * pre-paint mirror of this registry to prevent flashbang.
  */
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { persistedSignal } from "../lib/persisted-signal";
+import { parsePersistedId } from "../lib/persisted-helpers";
 import { log } from "../utils/log";
-
-/** Registry — single source of truth for theme ids, meta colors, and DOM mapping. */
 export const THEME_REGISTRY = {
   light: { meta: "#f5f5f5", bg: "#ececec", text: "#000000", colorScheme: "light" as const, label: "Light" },
   dark: { meta: "#181818", bg: "#1e1e1e", text: "#e0e0e0", colorScheme: "dark" as const, label: "Dark" },
@@ -40,16 +41,9 @@ function isAppTheme(value: unknown): value is AppTheme {
 }
 
 function deserializeTheme(raw: string): AppTheme {
-  let parsed: unknown = raw;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (err) {
-    log.debug("theme", "deserialize fallback, raw:", raw, err);
-    parsed = raw.replace(/^["']|["']$/g, "").trim().toLowerCase();
-  }
+  const parsed = parsePersistedId(raw, "light");
   return isAppTheme(parsed) ? parsed : "light";
 }
-
 function applyThemeToDom(t: AppTheme): void {
   // Dual guard: CSS class (earliest layer, !important beats all layers) + injected style fallback.
   // Release WebView batches differently than Vite dev — rAF alone can remove guard before paint.

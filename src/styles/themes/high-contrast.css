@@ -133,15 +133,13 @@
 }
 
 @layer components {
-  /* ── Group boxes in High Contrast theme ── */
-  [data-theme="high-contrast"] .group-box,
-  body.ds-high-contrast .group-box {
+  /* Collapsed dual-stack via :is() — single rule covers data-theme and legacy body class */
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .group-box {
     background: #000000 !important;
     border-color: #555555 !important;
     box-shadow: none !important;
   }
-  [data-theme="high-contrast"] .group-box-title,
-  body.ds-high-contrast .group-box-title {
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .group-box-title {
     background: #000000 !important;
     border-color: #555555 !important;
     color: #ffffff !important;

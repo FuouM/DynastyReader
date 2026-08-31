@@ -1,7 +1,6 @@
-@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
-
 /*
  * windows7.css — Windows 7 Aero theme.
+ * Layers already declared in tokens.css — this file only contributes to @layer themes / components.
  *
  * Implements authentic Windows 7 Aero visual styling based on the 7.css
  * design specifications:
@@ -13,7 +12,6 @@
  *  - Inset edit controls with top-darkened 1px borders
  *  - Iconic Windows 7 green glossy progress bars and Segoe UI typography
  */
-
 @layer themes {
   :root[data-theme="windows7"],
   [data-theme="windows7"],
@@ -161,7 +159,12 @@
   }
 }
 
-/* ── Aero chrome overrides — scoped to [data-theme="windows7"] ─────────── */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * Part 2/2 — Aero chrome overrides (components layer).
+ * Kept in same file to preserve import order, but logically separate
+ * from the token overrides above. Future split: extract to windows7-aero.css
+ * and import alongside this file in main.tsx. Boundary is this comment.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 @layer components {
   /* Wallpaper + Segoe UI font */
   :root[data-theme="windows7"] {

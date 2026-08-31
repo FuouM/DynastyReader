@@ -137,55 +137,47 @@
 }
 
 @layer components {
-  /* ── Downloaded Chapter Seats on Dark Theme ── */
-  [data-theme="dark"] .ds-chapter-seat--downloaded,
-  body.ds-dark .ds-chapter-seat--downloaded {
+  /* Dual-stack fallback: [data-theme] (primary) + body.ds-* (legacy + index.html pre-paint).
+   * Collapsed via :is() so every override stays single-rule. Specificity preserved
+   * because :is() takes the specificity of its most specific argument. */
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-chapter-seat--downloaded {
     background-color: var(--sys-bg-active, #1e3a5f) !important;
     border: 1px solid var(--sys-primary-border, #2b6cb0) !important;
     color: var(--sys-primary, #90cdf4) !important;
   }
-  [data-theme="dark"] .ds-chapter-seat--downloaded:hover,
-  body.ds-dark .ds-chapter-seat--downloaded:hover {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-chapter-seat--downloaded:hover {
     background-color: var(--sys-button-hover, #2c4f7c) !important;
     border-color: var(--sys-border-focus, #4299e1) !important;
     color: var(--sys-primary-hover, #bee3f8) !important;
   }
-  [data-theme="dark"] .ds-chapter-seat--read,
-  body.ds-dark .ds-chapter-seat--read {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-chapter-seat--read {
     background-color: #222224 !important;
     border: 1px solid #3f3f46 !important;
     color: #88888f !important;
   }
-  [data-theme="dark"] .ds-chapter-seat--read:hover,
-  body.ds-dark .ds-chapter-seat--read:hover {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-chapter-seat--read:hover {
     background-color: #2d2d30 !important;
     color: #cccccc !important;
   }
-  [data-theme="dark"] .ds-legend-swatch.downloaded,
-  body.ds-dark .ds-legend-swatch.downloaded {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-legend-swatch.downloaded {
     background: var(--sys-bg-active, #1e3a5f) !important;
     border: 1px solid var(--sys-primary-border, #2b6cb0) !important;
   }
-  [data-theme="dark"] .ds-legend-swatch.read,
-  body.ds-dark .ds-legend-swatch.read {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-legend-swatch.read {
     background: #222224 !important;
     border: 1px solid #3f3f46 !important;
   }
-  [data-theme="dark"] .ds-chapter-seat--bookmarked::before,
-  [data-theme="dark"] .ds-legend-swatch.bookmarked::before,
-  body.ds-dark .ds-chapter-seat--bookmarked::before,
-  body.ds-dark .ds-legend-swatch.bookmarked::before {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-chapter-seat--bookmarked::before,
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-legend-swatch.bookmarked::before {
     border-color: transparent #f59e0b transparent transparent !important;
   }
 
   /* ── Downloaded Chapter List on Dark Theme ── */
-  [data-theme="dark"] .ds-downloaded-chapter-list,
-  body.ds-dark .ds-downloaded-chapter-list {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-downloaded-chapter-list {
     border: 1px solid #3f3f46 !important;
     background: #1e1e1e !important;
   }
-  [data-theme="dark"] .ds-downloaded-chapter-list .ds-chapter-row,
-  body.ds-dark .ds-downloaded-chapter-list .ds-chapter-row {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-downloaded-chapter-list .ds-chapter-row {
     background: #1e1e1e !important;
     border: none !important;
     border-bottom: 1px solid #2e2e32 !important;
@@ -193,68 +185,56 @@
     margin: 0 !important;
     box-shadow: none !important;
   }
-  [data-theme="dark"] .ds-downloaded-chapter-list .ds-chapter-row:last-child,
-  body.ds-dark .ds-downloaded-chapter-list .ds-chapter-row:last-child {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-downloaded-chapter-list .ds-chapter-row:last-child {
     border-bottom: none !important;
   }
-  [data-theme="dark"] .ds-downloaded-chapter-list .ds-chapter-row:hover,
-  body.ds-dark .ds-downloaded-chapter-list .ds-chapter-row:hover {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-downloaded-chapter-list .ds-chapter-row:hover {
     background: #2a2a2d !important;
   }
-  [data-theme="dark"] .ds-vol-header,
-  body.ds-dark .ds-vol-header {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-vol-header {
     color: #a1a1aa !important;
   }
-  [data-theme="dark"] .ds-vol-header::after,
-  body.ds-dark .ds-vol-header::after {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-vol-header::after {
     background: #3f3f46 !important;
   }
-  [data-theme="dark"] .ds-seat-vol-divider,
-  body.ds-dark .ds-seat-vol-divider {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-seat-vol-divider {
     width: 2px;
     height: 18px;
     background: #4b5563 !important;
     box-shadow: 1px 0 0 #27272a;
     margin: 2px 5px;
   }
-  [data-theme="dark"] .ds-downloaded-chapter-list .ds-vol-divider,
-  body.ds-dark .ds-downloaded-chapter-list .ds-vol-divider {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-downloaded-chapter-list .ds-vol-divider {
     background: #252528 !important;
     color: #a1a1aa !important;
     border-bottom: 1px solid #333336 !important;
   }
-  [data-theme="dark"] .ds-downloaded-chapter-list .ds-vol-divider::after,
-  body.ds-dark .ds-downloaded-chapter-list .ds-vol-divider::after {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-downloaded-chapter-list .ds-vol-divider::after {
     background: #3f3f46 !important;
   }
   /* ── Library Master-Detail on Dark Theme ── */
-  [data-theme="dark"] .ds-library-nav-list,
-  body.ds-dark .ds-library-nav-list {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-library-nav-list {
     background: #18181b !important;
     border-color: #3f3f46 !important;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4) !important;
   }
-  [data-theme="dark"] .ds-library-nav-item:hover,
-  body.ds-dark .ds-library-nav-item:hover {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-library-nav-item:hover {
     background: #27272a !important;
     border-color: #3f3f46 !important;
     color: #f4f4f5 !important;
   }
-  [data-theme="dark"] .ds-library-nav-item.active,
-  body.ds-dark .ds-library-nav-item.active {
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-library-nav-item.active {
     background: var(--sys-highlight-bg, #1e3a5f) !important;
     border-color: var(--sys-primary-border, #2b6cb0) !important;
     color: var(--sys-highlight-text, #ffffff) !important;
   }
   /* ── Group boxes in Dark theme ── */
-  [data-theme="dark"] .group-box,
-  body.ds-dark .group-box {
+  :is(:root[data-theme="dark"], body.ds-dark) .group-box {
     background: var(--sys-window-bg) !important;
     border-color: var(--sys-border-dark) !important;
     box-shadow: none !important;
   }
-  [data-theme="dark"] .group-box-title,
-  body.ds-dark .group-box-title {
+  :is(:root[data-theme="dark"], body.ds-dark) .group-box-title {
     background: var(--sys-control-bg) !important;
     border-color: var(--sys-border-dark) !important;
     color: var(--sys-control-text) !important;

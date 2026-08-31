@@ -6,8 +6,12 @@
     <meta name="theme-color" content="#f5f5f5" id="ds-theme-color-meta" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <title>DynastyReader</title>
+    <!-- HEAD_SCRIPT_SYNC: Theme bootstrap — synchronous pre-paint script.
+         Mirrors src/stores/theme.ts#THEME_REGISTRY and src/lib/color.ts helpers.
+         Any change to THEME_REGISTRY (meta/bg/text/colorScheme) or to
+         computeAccentPalette() must be reflected here to prevent flashbang
+         before the app bundle loads. Keep maps and color math in sync. -->
     <script>
-      (function () {
         try {
           var raw = localStorage.getItem("ds-theme");
           var theme = "light";
