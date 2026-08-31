@@ -6,7 +6,7 @@
 
 import { createEffect, createSignal, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
-import { navigate, setBanner, closeSessionMangaTab } from "../stores";
+import { navigate, showBanner, closeSessionMangaTab } from "../stores";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { dynastyUrl } from "../utils/formatting";
@@ -89,7 +89,7 @@ export function ReaderActions(props: ReaderActionsProps) {
       }
     } catch (err) {
       const msg = errorMessage(err);
-      setBanner(t("reader.toolbar.bookmarkErrorBanner", { msg }));
+      showBanner(t("reader.toolbar.bookmarkErrorBanner", { msg }));
     }
     setPending(false);
   };
@@ -99,19 +99,19 @@ export function ReaderActions(props: ReaderActionsProps) {
     for (let i = 0; i < total; i++) {
       if (!isCached(i) && !props.ctrl.isPageFailed(i)) props.ctrl.enqueue(i);
     }
-    setBanner(t("reader.toolbar.cachingChapterBanner"));
+    showBanner(t("reader.toolbar.cachingChapterBanner"));
   };
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(chapterUrl());
       setCopied(true);
-      setBanner(t("reader.toolbar.copiedLinkBanner"));
+      showBanner(t("reader.toolbar.copiedLinkBanner"));
       resetCopied.clear();
       resetCopied();
     } catch (err) {
       const msg = errorMessage(err);
-      setBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
+      showBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
     }
   };
 

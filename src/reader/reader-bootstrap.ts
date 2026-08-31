@@ -32,7 +32,7 @@ import {
   getScrollLock,
 } from "./settings";
 import { standardizeCachePaths } from "./path-migration";
-import { setBanner, isOnline, setTitle, setSessionTab } from "../stores";
+import { showBanner, isOnline, setTitle, setSessionTab } from "../stores";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
@@ -52,7 +52,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   } catch (err) {
     if (s.disposed) return;
     const msg = errorMessage(err);
-    setBanner(t("reader.session.loadChapterError", { msg }));
+    showBanner(t("reader.session.loadChapterError", { msg }));
     s.setError(msg);
     s.setLoading(false);
     return;
@@ -206,7 +206,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
     cachedRows = await getCachedPages(permalink);
   } catch (err) {
     cachedRows = [];
-    setBanner(
+    showBanner(
       t("reader.session.cacheLookupError", { msg: errorMessage(err) }),
     );
   }

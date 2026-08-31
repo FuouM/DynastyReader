@@ -43,12 +43,10 @@ export {
   title,
   setTitle,
   banner,
-  setBanner,
   actions,
   setActions,
   showBanner,
   hideBanner,
-  clearBanner,
   clearActions,
 } from "./topbar";
 

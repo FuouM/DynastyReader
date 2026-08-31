@@ -40,18 +40,6 @@ export function hideBanner(): void {
   _setBanner(null);
 }
 
-/** @deprecated Use `showBanner(msg)` and `hideBanner()`. Kept for backward compat. */
-export function setBanner(message: string | null): void {
-  if (message) {
-    showBanner(message);
-  } else {
-    hideBanner();
-  }
-}
-
-/** @deprecated Use `hideBanner()`. */
-export const clearBanner = hideBanner;
-
 /** Empties the top-bar action host. */
 export function clearActions(): void {
   setActions(null);

@@ -15,7 +15,7 @@ import { createEffect, createSignal, onMount, Show, type JSX } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import {
   navigate,
-  setBanner,
+  showBanner,
 } from "../stores";
 import { decodeEntities } from "../utils/html";
 import { categorizeChapterTags, isSeriesKind, seriesTypeToPath, getChapterContainerTag, isDoujinTag } from "../taxonomy";
@@ -118,13 +118,13 @@ export function FeedItemRow(props: FeedItemRowProps) {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(externalUrl());
         setCopied(true);
-        setBanner(t("reader.toolbar.copiedLinkBanner"));
+        showBanner(t("reader.toolbar.copiedLinkBanner"));
         resetCopied();
       }
     } catch (err) {
       log.warn("feed-item-row", "copy link failed:", err);
       const msg = errorMessage(err);
-      setBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
+      showBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
     }
   };
 
@@ -170,7 +170,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
       if (bookmarked()) {
         await removeBookmark(ch.permalink);
         setBookmarked(false);
-        setBanner(t("browse.feed.bookmarkRemovedBanner", { title: ch.title }));
+        showBanner(t("browse.feed.bookmarkRemovedBanner", { title: ch.title }));
       } else {
         await addBookmark({
           chapterPermalink: ch.permalink,
@@ -180,11 +180,11 @@ export function FeedItemRow(props: FeedItemRowProps) {
           pageIndex: 0,
         });
         setBookmarked(true);
-        setBanner(t("browse.feed.bookmarkSavedBanner", { title: ch.title }));
+        showBanner(t("browse.feed.bookmarkSavedBanner", { title: ch.title }));
       }
     } catch (err) {
       const msg = errorMessage(err);
-      setBanner(t("browse.feed.bookmarkErrorBanner", { msg }));
+      showBanner(t("browse.feed.bookmarkErrorBanner", { msg }));
     }
   };
 

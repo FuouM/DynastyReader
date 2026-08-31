@@ -19,7 +19,7 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import { setBanner } from "../stores";
+import { showBanner } from "../stores";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
@@ -123,7 +123,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
         return { pageData, fullyCachedSet, blMode: getBlacklistMode() };
       } catch (err) {
         const msg = errorMessage(err);
-        setBanner(t("browse.search.searchFailedBanner", { msg }));
+        showBanner(t("browse.search.searchFailedBanner", { msg }));
         throw err;
       }
     },
