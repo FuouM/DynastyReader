@@ -1,4 +1,4 @@
-import { DB_NAME } from "../stores";
+import { DB_NAME } from "../constants";
 import type { Row } from "../types/db";
 import * as ipc from "../ipc";
 

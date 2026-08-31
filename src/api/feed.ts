@@ -1,4 +1,4 @@
-import { absUrl } from "../stores";
+import { absUrl } from "../utils/url";
 import { getCached, setCached, touchCached } from "../db";
 import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";

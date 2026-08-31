@@ -1,4 +1,4 @@
-import { absUrl } from "../stores";
+import { absUrl } from "../utils/url";
 import { cachedJson, httpGetText } from "./http";
 import { FEED_TTL_MS } from "./feed";
 import { tryParseJson } from "../utils/json";

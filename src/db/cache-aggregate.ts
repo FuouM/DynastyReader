@@ -2,7 +2,7 @@ import { query } from "./client";
 import { inClause } from "./paging";
 import { seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
 import { getChapterContainerTag } from "../taxonomy";
-import { DB_NAME } from "../stores";
+import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 export interface ChapterAggRow {

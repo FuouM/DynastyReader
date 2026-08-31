@@ -2,7 +2,7 @@ import { createSignal } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import { getDownloadQueue, pauseDownloads, resumeDownloads } from "../ipc";
 import { isAndroid } from "./platform";
-import { formatBytes } from "../lib/format";
+import { formatSpeed } from "../lib/format";
 
 export interface DownloadProgressPayload {
   chapter_permalink: string;
@@ -21,10 +21,7 @@ const [activeChapterName, setActiveChapterName] = createSignal<string | null>(nu
 
 export { activeDownloadCount, downloadSpeedBps, activeSeriesName, activeChapterName };
 
-export function formatDownloadSpeed(bytesPerSec: number): string {
-  if (bytesPerSec <= 0 || !isFinite(bytesPerSec)) return "";
-  return `${formatBytes(bytesPerSec)}/s`;
-}
+export const formatDownloadSpeed = formatSpeed;
 
 let initialized = false;
 let lastSampleTime = Date.now();

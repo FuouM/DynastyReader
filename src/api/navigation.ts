@@ -1,4 +1,4 @@
-import { PAGES_PREFIX } from "../stores";
+import { PAGES_PREFIX } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 import type { ParsedDynastyUrl } from "../types/api";

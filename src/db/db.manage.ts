@@ -1,5 +1,5 @@
 import { query, execute } from "./client";
-import { DB_NAME } from "../stores";
+import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { withDbWarn } from "./withDbWarn";
 import { log } from "../utils/log";

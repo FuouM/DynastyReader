@@ -1,9 +1,9 @@
 /**
- * Date/time formatting helpers. `formatBytes` lives in the shared plugin
- * library (`plugins/lib/format.ts`) and is not re-implemented here.
+ * Date/time formatting helpers.
  */
 
 import { t } from "../i18n";
+export { dynastyUrl } from "./url";
 
 const shortDateFormatter = new Intl.DateTimeFormat("en-CA", {
   year: "numeric",
@@ -42,9 +42,4 @@ export function slugify(name: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
-import { SITE_ROOT } from "../stores";
 
-/** Constructs a full Dynasty Scans URL for the given path and permalink. */
-export function dynastyUrl(path: string, permalink: string): string {
-  return `${SITE_ROOT}/${path}/${permalink}`;
-}

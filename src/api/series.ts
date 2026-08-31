@@ -1,4 +1,4 @@
-import { SITE_ROOT } from "../stores";
+import { SITE_ROOT } from "../constants";
 import { seriesTypeToPath } from "../taxonomy";
 import { getCached, setCached, deleteCached, updateFollowedSeriesCover, touchCached, query } from "../db";
 import { getLocalSeriesByPermalink } from "../db/local.repo";

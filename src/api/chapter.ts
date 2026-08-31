@@ -1,4 +1,4 @@
-import { SITE_ROOT } from "../stores";
+import { SITE_ROOT } from "../constants";
 import { cachedJson } from "./http";
 import { ChapterSchema, type ValidatedChapter } from "./schemas";
 

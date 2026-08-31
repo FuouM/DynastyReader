@@ -1,4 +1,6 @@
-import { absUrl, COVERS_PREFIX, isMobile } from "../stores";
+import { absUrl } from "../utils/url";
+import { COVERS_PREFIX } from "../constants";
+import { isMobile } from "../stores";
 import { getCached, setCached, deleteCached } from "../db";
 import { httpDownloadFull } from "./http";
 import { fileDelete, fileExists } from "./fs";

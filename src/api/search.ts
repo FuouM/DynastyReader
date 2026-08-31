@@ -1,4 +1,4 @@
-import { SITE_ROOT } from "../stores";
+import { SITE_ROOT } from "../constants";
 import { isArtistTag, isDoujinTag } from "../taxonomy";
 import { httpGetText } from "./http";
 import { parseSearchHtml } from "./search-parser";

@@ -5,14 +5,9 @@
 
 import { createConnectivitySignal } from "@solid-primitives/connectivity";
 
-export const SITE_ROOT = "https://dynasty-scans.com";
-export const DB_NAME = "dynasty_reader.db";
+export { SITE_ROOT, DB_NAME, APP_VERSION, PAGES_PREFIX, COVERS_PREFIX } from "../constants";
+export { absUrl, dynastyUrl } from "../utils/url";
 
-export const APP_VERSION = "0.3.4";
-
-/** Relative path prefix (backend-side convention) under the portable data root. */
-export const PAGES_PREFIX = "pages";
-export const COVERS_PREFIX = "covers";
 
 export {
   route,
@@ -73,9 +68,3 @@ export {
 
 /** Reactive signal for whether the webview has a network connection. */
 export const isOnline = createConnectivitySignal();
-
-/** Absolute URL from a possibly-relative site path (e.g. `/system/.../01.webp`). */
-export function absUrl(u: string): string {
-  if (/^https?:\/\//i.test(u)) return u;
-  return SITE_ROOT + u;
-}

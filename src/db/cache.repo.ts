@@ -1,7 +1,7 @@
 import { query, execute } from "./client";
 import { inClause } from "./paging";
 import { loadCachedChapterContext } from "./cache-aggregate";
-import { DB_NAME } from "../stores";
+import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 import type {
