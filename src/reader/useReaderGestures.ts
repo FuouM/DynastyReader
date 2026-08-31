@@ -255,6 +255,7 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     // ── Touch Gesture Engine (Mobile Swipe, Drag-and-Hold Chapter Overscroll, Tap) ──
+    let lastTouchEndTime = 0;
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
@@ -269,6 +270,7 @@ export function useReaderGestures(s: ReaderSession) {
 
     const onTouchStart = (ev: TouchEvent): void => {
       if (ev.touches.length !== 1) return;
+      if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
       // If any modal/sheet is open, don't capture touch for reader gestures
       if (document.querySelector(".ds-modal-backdrop, .ds-reader-sheet-backdrop, .ds-overlay")) return;
       s.cancelScrollAnimation();
@@ -371,6 +373,7 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onTouchEnd = (ev: TouchEvent): void => {
+      lastTouchEndTime = Date.now();
       if (touchLongPressTimer !== null) {
         clearTimeout(touchLongPressTimer);
         touchLongPressTimer = null;
@@ -446,6 +449,12 @@ export function useReaderGestures(s: ReaderSession) {
 
     const onMouseDown = (ev: MouseEvent): void => {
       if (ev.button !== 0) return;
+      if (
+        Date.now() - lastTouchEndTime < 650 ||
+        (ev as MouseEvent & { sourceCapabilities?: { firesTouchEvents?: boolean } }).sourceCapabilities?.firesTouchEvents
+      ) {
+        return;
+      }
       if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
       s.cancelScrollAnimation();
       isMouseDown = true;
