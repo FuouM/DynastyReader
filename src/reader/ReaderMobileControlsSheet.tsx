@@ -5,7 +5,6 @@
 
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { debounce } from "@solid-primitives/scheduled";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode, ReaderMode, PagedLayout, ReadingDirection } from "../types/reader";
 import { theme, setTheme, isMobile, navigate } from "../stores";
@@ -14,8 +13,8 @@ import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import { getPrevChapterStartPage, setPrevChapterStartPage, type PrevChapterStartPage } from "./settings";
 import { Button, IconButton, IconText, SegmentedSwitch } from "../components/Button";
-import { log } from "../utils/log";
 import { SettingsRow } from "../components/SettingsRow";
+import { useCopyLink } from "../hooks/useCopyLink";
 import {
   ToolIcon,
   LockIcon,
@@ -41,8 +40,11 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   const [mounted, setMounted] = createSignal(false);
   const [closing, setClosing] = createSignal(false);
   const [prevChapterPage, setPrevChapterPage] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
-  const [copied, setCopied] = createSignal(false);
-  const resetCopied = debounce(() => setCopied(false), 2000);
+  const { copied, handleCopyLink } = useCopyLink({
+    getUrl: () => dynastyUrl("chapters", s.permalink),
+    namespace: "mobile-controls",
+    showBanners: false,
+  });
   let closeTimer: number | null = null;
   createEffect(() => {
     const open = s.controlsOpen() && isMobile();
@@ -262,17 +264,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
                   text={copied() ? t("common.copied") : t("reader.toolbar.copyLinkShort")}
                   cssText="height:32px;font-size:11.5px;justify-content:center;"
-                  onClick={async () => {
-                    try {
-                      if (typeof navigator !== "undefined" && navigator.clipboard) {
-                        await navigator.clipboard.writeText(dynastyUrl("chapters", s.permalink));
-                        setCopied(true);
-                        resetCopied();
-                      }
-                    } catch (err) {
-                      log.warn("mobile-controls", "clipboard writeText failed:", err);
-                    }
-                  }}
+                  onClick={handleCopyLink}
                 />
                 <Button
                   icon={<ExternalLinkIcon />}

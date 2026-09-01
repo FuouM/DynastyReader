@@ -53,6 +53,7 @@ import { Button } from "../components/Button";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { AddToCollectionButton } from "../components/AddToCollectionButton";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
+import { ErrorRetryRow } from "../components/ErrorRetryRow";
 import {
   BookmarkIcon,
   BlacklistIcon,
@@ -317,14 +318,10 @@ export function SeriesView() {
         <Loading />
       </Show>
       <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
-        <div class="ds-error-row">
-          <span class="ds-muted">{t("series.loadError", { msg: dataErrorText() })}</span>
-          <Button
-            icon={<RefreshIcon />}
-            text={t("common.retry")}
-            onClick={() => void refetch()}
-          />
-        </div>
+        <ErrorRetryRow
+          message={t("series.loadError", { msg: dataErrorText() })}
+          onRetry={() => void refetch()}
+        />
       </Show>
       <Show when={!data.loading && data() !== undefined}>
       <SeriesBody

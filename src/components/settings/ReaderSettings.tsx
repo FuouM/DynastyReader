@@ -45,6 +45,29 @@ import { DsSelect, IconText, IconButton, SegmentedSwitch, DsSwitch } from "../Bu
 import { SettingsRow } from "../SettingsRow";
 import { GroupBox } from "../GroupBox";
 
+interface ToggleSettingRowProps {
+  divider?: boolean;
+  label: string;
+  desc?: string;
+  id: string;
+  checked: boolean;
+  title?: string;
+  onChange: (next: boolean) => void;
+}
+
+function ToggleSettingRow(props: ToggleSettingRowProps) {
+  return (
+    <SettingsRow divider={props.divider} label={<>{props.label}:</>} desc={props.desc}>
+      <DsSwitch
+        id={props.id}
+        checked={props.checked}
+        title={props.title}
+        onChange={props.onChange}
+      />
+    </SettingsRow>
+  );
+}
+
 export function ReaderSettings() {
   const [autoCacheEnabled, setAutoCacheEnabled] = createSignal(isAutoCacheChapterEnabled());
   const [prefetchBuffer, setPrefetchBufferLocal] = createSignal(getPrefetchBuffer());
@@ -159,44 +182,48 @@ export function ReaderSettings() {
           </div>
         </fieldset>
         {/* Long Strip Spread Override */}
-        <SettingsRow divider label={<>{t("settings.reader.longStripOverride")}:</>} desc={t("settings.reader.longStripOverrideDesc")}>
-          <DsSwitch
-            id="ds-settings-longstrip-toggle"
-            checked={longStripOverride()}
-            title={t("settings.reader.longStripOverrideTooltip")}
-            onChange={(next) => { setLongStripSpreadOverrideEnabled(next); setLongStripOverride(next); }}
-          />
-        </SettingsRow>
+        <ToggleSettingRow
+          divider
+          label={t("settings.reader.longStripOverride")}
+          desc={t("settings.reader.longStripOverrideDesc")}
+          id="ds-settings-longstrip-toggle"
+          checked={longStripOverride()}
+          title={t("settings.reader.longStripOverrideTooltip")}
+          onChange={(next) => { setLongStripSpreadOverrideEnabled(next); setLongStripOverride(next); }}
+        />
 
         {/* Long Strip Auto Fit Width */}
-        <SettingsRow divider label={<>{t("settings.reader.longStripFitWidth")}:</>} desc={t("settings.reader.longStripFitWidthDesc")}>
-          <DsSwitch
-            id="ds-settings-longstrip-fit-toggle"
-            checked={longStripFitWidth()}
-            title={t("settings.reader.longStripFitWidthTooltip")}
-            onChange={(next) => { setLongStripFitWidthEnabled(next); setLongStripFitWidth(next); }}
-          />
-        </SettingsRow>
+        <ToggleSettingRow
+          divider
+          label={t("settings.reader.longStripFitWidth")}
+          desc={t("settings.reader.longStripFitWidthDesc")}
+          id="ds-settings-longstrip-fit-toggle"
+          checked={longStripFitWidth()}
+          title={t("settings.reader.longStripFitWidthTooltip")}
+          onChange={(next) => { setLongStripFitWidthEnabled(next); setLongStripFitWidth(next); }}
+        />
 
         {/* Spread Standalone Cover */}
-        <SettingsRow divider label={<>{t("settings.reader.coverOffset")}:</>} desc={t("settings.reader.coverOffsetDesc")}>
-          <DsSwitch
-            id="ds-settings-cover-offset-toggle"
-            checked={coverOffsetPref()}
-            title={t("settings.reader.coverOffsetTooltip")}
-            onChange={(next) => { setCoverOffsetDefaultEnabled(next); setCoverOffsetPref(next); }}
-          />
-        </SettingsRow>
+        <ToggleSettingRow
+          divider
+          label={t("settings.reader.coverOffset")}
+          desc={t("settings.reader.coverOffsetDesc")}
+          id="ds-settings-cover-offset-toggle"
+          checked={coverOffsetPref()}
+          title={t("settings.reader.coverOffsetTooltip")}
+          onChange={(next) => { setCoverOffsetDefaultEnabled(next); setCoverOffsetPref(next); }}
+        />
 
         {/* Mobile Gestures on Desktop */}
-        <SettingsRow divider label={<>{t("settings.reader.mobileGesturesDesktop")}:</>} desc={t("settings.reader.mobileGesturesDesktopDesc")}>
-          <DsSwitch
-            id="ds-settings-mobile-gestures-desktop-toggle"
-            checked={mobileGesturesDesktopPref()}
-            title={t("settings.reader.mobileGesturesDesktopTooltip")}
-            onChange={(next) => { setMobileGesturesOnDesktopEnabled(next); setMobileGesturesDesktopPref(next); }}
-          />
-        </SettingsRow>
+        <ToggleSettingRow
+          divider
+          label={t("settings.reader.mobileGesturesDesktop")}
+          desc={t("settings.reader.mobileGesturesDesktopDesc")}
+          id="ds-settings-mobile-gestures-desktop-toggle"
+          checked={mobileGesturesDesktopPref()}
+          title={t("settings.reader.mobileGesturesDesktopTooltip")}
+          onChange={(next) => { setMobileGesturesOnDesktopEnabled(next); setMobileGesturesDesktopPref(next); }}
+        />
 
         {/* Paged Mode: Slide Animation */}
         <SettingsRow divider label={<>{t("settings.reader.slideAnimation")}:</>} desc={t("settings.reader.slideAnimationDesc")}>

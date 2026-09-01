@@ -49,6 +49,7 @@ import { DsSelect, IconText, IconButton } from "../components/Button";
 import { SearchResultRow, type SearchRow } from "./SearchResultRow";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
+import { ErrorRetryRow } from "../components/ErrorRetryRow";
 import type {
   SearchClass,
   SearchResultPage,
@@ -58,7 +59,6 @@ import {
   SearchIcon,
   ClearIcon,
   CheckIcon,
-  RefreshIcon,
   Icon,
 } from "../components/Icon";
 import { log } from "../utils/log";
@@ -459,14 +459,10 @@ export function BrowseSearch(props: BrowseSearchProps) {
         </Show>
 
         <Show when={pane.error() !== undefined}>
-          <div class="ds-row ds-error-row">
-            <span class="ds-muted">{t("browse.search.searchError", { msg: paneErrorText() })}</span>
-            <IconButton
-              icon={<RefreshIcon />}
-              text={t("common.retry")}
-              onClick={() => pane.reload()}
-            />
-          </div>
+          <ErrorRetryRow
+            message={t("browse.search.searchError", { msg: paneErrorText() })}
+            onRetry={() => pane.reload()}
+          />
         </Show>
       </div>
 

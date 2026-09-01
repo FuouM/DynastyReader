@@ -10,6 +10,20 @@ import type { ReadingDirection } from "../types/reader";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 
+function TargetCard(props: { badge: string; title?: string; hint: string; hintClass?: string }) {
+  return (
+    <div class="ds-overscroll-target-card">
+      <span class="ds-overscroll-target-badge">{props.badge}</span>
+      <Show when={props.title}>
+        <div class="ds-overscroll-target-title">{props.title}</div>
+      </Show>
+      <div class={`ds-overscroll-target-hint ${props.hintClass ?? ""}`}>
+        {props.hint}
+      </div>
+    </div>
+  );
+}
+
 export interface OverscrollGestureState {
   fingerX: number;
   fingerY: number;
@@ -38,33 +52,18 @@ export function ReaderOverscrollOverlay(props: ReaderOverscrollOverlayProps) {
         when={chapter()}
         fallback={
           /* Clean informational notice when at start or end of series without lock/drag mechanics */
-          <div class="ds-overscroll-target-card">
-            <span class="ds-overscroll-target-badge">
-              {isNext()
-                ? t("reader.overscrollLock.endOfSeriesTitle")
-                : t("reader.overscrollLock.firstChapterTitle")}
-            </span>
-            <div class="ds-overscroll-target-hint ds-mt-2">
-              {isNext()
-                ? t("reader.overscrollLock.endOfSeriesDesc")
-                : t("reader.overscrollLock.firstChapterDesc")}
-            </div>
-          </div>
+          <TargetCard
+            badge={isNext() ? t("reader.overscrollLock.endOfSeriesTitle") : t("reader.overscrollLock.firstChapterTitle")}
+            hint={isNext() ? t("reader.overscrollLock.endOfSeriesDesc") : t("reader.overscrollLock.firstChapterDesc")}
+            hintClass="ds-mt-2"
+          />
         }
       >
-        <div class="ds-overscroll-target-card">
-          <span class="ds-overscroll-target-badge">
-            {isNext() ? t("reader.overscrollLock.nextChapterBadge") : t("reader.overscrollLock.prevChapterBadge")}
-          </span>
-          <div class="ds-overscroll-target-title">
-            {decodeEntities(chapter()!.title || props.currentPermalink)}
-          </div>
-          <div class="ds-overscroll-target-hint">
-            {g().ready
-              ? t("reader.overscrollLock.unlocked")
-              : (isNext() ? t("reader.overscrollLock.slideToUnlockNext") : t("reader.overscrollLock.slideToUnlockPrev"))}
-          </div>
-        </div>
+        <TargetCard
+          badge={isNext() ? t("reader.overscrollLock.nextChapterBadge") : t("reader.overscrollLock.prevChapterBadge")}
+          title={decodeEntities(chapter()!.title || props.currentPermalink)}
+          hint={g().ready ? t("reader.overscrollLock.unlocked") : (isNext() ? t("reader.overscrollLock.slideToUnlockNext") : t("reader.overscrollLock.slideToUnlockPrev"))}
+        />
 
         {/* Real-time Finger Tracking Circle */}
         <div

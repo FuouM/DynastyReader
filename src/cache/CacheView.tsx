@@ -36,6 +36,8 @@ import {
 import {
   SeriesDownloadedCard,
   OrphanDownloadedCard,
+  DownloadedLegend,
+  DownloadedToolbar,
   buildGroups,
   type DownloadedSortMode,
   type DownloadedSeriesGroup,
@@ -46,10 +48,10 @@ import { Pager } from "../components/Pager";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
 import { GroupBox } from "../components/GroupBox";
-import { ConfirmDeleteButton, DsSelect, IconText, IconButton, StatCard } from "../components/Button";
+import { ConfirmDeleteButton, IconText, IconButton, StatCard } from "../components/Button";
 import { useCacheActions } from "./useCacheActions";
-import { InputField } from "../components/InputField";
 import { Loading } from "../components/Loading";
+import { ErrorRetryRow } from "../components/ErrorRetryRow";
 import {
   ChartIcon,
   ToolIcon,
@@ -59,7 +61,6 @@ import {
   RefreshIcon,
   DatabaseIcon,
   TrafficIcon,
-  CheckIcon,
 } from "../components/Icon";
 
 type CacheData = {
@@ -228,12 +229,10 @@ export function CacheView() {
       </Show>
 
       <Show when={data.error !== undefined}>
-        <div class="ds-error-row">
-          <span class="ds-muted">
-            {t("cache.statsLoadError", { msg: errorMessage(data.error) })}
-          </span>
-          <IconButton icon={<RefreshIcon />} text={t("common.retry")} onClick={() => void refetch()} />
-        </div>
+        <ErrorRetryRow
+          message={t("cache.statsLoadError", { msg: errorMessage(data.error) })}
+          onRetry={() => void refetch()}
+        />
       </Show>
 
       <Show when={data() !== undefined && data.error === undefined}>
@@ -401,63 +400,30 @@ function CacheBody(props: {
           when={!props.hasRows}
           fallback={
             <>
-              <div id="ds-downloaded-header" class="ds-toolbar" style="margin-bottom:8px;">
-                <div id="ds-downloaded-toolbar-left" class="ds-toolbar-row">
-                  <InputField
-                    id="ds-cache-search"
-                    value={props.inputVal()}
-                    onInput={props.handleInput}
-                    placeholder={t("cache.filterPlaceholder")}
-                    onClear={props.clearInput}
-                  />
-                  <div class="ds-downloaded-sort-wrap">
-                    <span class="ds-item-meta ds-nowrap" style="font-size:11.5px;color:var(--sys-text-muted,#666);">
-                      {t("cache.sortBy")}
-                    </span>
-                    <DsSelect
-                      id="ds-cache-sort"
-                      value={props.sortMode()}
-                      onChange={(val) => props.setSortMode(val as DownloadedSortMode)}
-                      options={[
-                        { value: "size-desc", label: t("cache.sorts.sizeDesc") },
-                        { value: "size-asc", label: t("cache.sorts.sizeAsc") },
-                        { value: "download-desc", label: t("browse.downloaded.sorts.lastDownloaded") },
-                        { value: "name-asc", label: t("browse.downloaded.sorts.alphabetical") },
-                        { value: "read-desc", label: t("browse.downloaded.sorts.lastRead") },
-                      ]}
-                    />
-                  </div>
-                </div>
-
-                <div id="ds-downloaded-toolbar-right" class="ds-toolbar-row">
-                  <span class="ds-muted" id="ds-downloaded-count">
-                    <StorageIcon />
-                    <span>
-                      {props.totalChapters()} ch
-                      <Show when={props.totalChapters() > 0}>
-                        {" "}({formatBytes(props.totalBytes())})
-                      </Show>
-                    </span>
-                  </span>
-                </div>
-              </div>
+              <DownloadedToolbar
+                inputId="ds-cache-search"
+                inputVal={props.inputVal()}
+                onInput={props.handleInput}
+                inputPlaceholder={t("cache.filterPlaceholder")}
+                onClear={props.clearInput}
+                sortId="ds-cache-sort"
+                sortValue={props.sortMode()}
+                onSortChange={(val) => props.setSortMode(val)}
+                sortOptions={[
+                  { value: "size-desc", label: t("cache.sorts.sizeDesc") },
+                  { value: "size-asc", label: t("cache.sorts.sizeAsc") },
+                  { value: "download-desc", label: t("browse.downloaded.sorts.lastDownloaded") },
+                  { value: "name-asc", label: t("browse.downloaded.sorts.alphabetical") },
+                  { value: "read-desc", label: t("browse.downloaded.sorts.lastRead") },
+                ]}
+                totalChapters={props.totalChapters()}
+                totalBytes={props.totalBytes()}
+                countLabel={t("cache.sortBy")}
+                cssText="margin-bottom:8px;"
+              />
 
               {/* Legend */}
-              <div class="ds-downloaded-legend">
-                <span class="ds-legend-title">Legend:</span>
-                <span class="ds-legend-item">
-                  <span class="ds-legend-swatch downloaded" />
-                  <span>Downloaded</span>
-                </span>
-                <span class="ds-legend-item">
-                  <span class="ds-legend-swatch read"><CheckIcon size={10} /></span>
-                  <span>Read</span>
-                </span>
-                <span class="ds-legend-item">
-                  <span class="ds-legend-swatch bookmarked" />
-                  <span>Bookmarked</span>
-                </span>
-              </div>
+              <DownloadedLegend />
 
               <Show when={props.filteredRowsCount === 0}>
                 <EmptyState cssText="padding:16px;text-align:center;">

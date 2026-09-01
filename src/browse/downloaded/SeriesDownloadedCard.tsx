@@ -20,6 +20,7 @@ import {
 } from "../../components/Icon";
 import type { DownloadedSeriesGroup, ProcessedCachedChapter } from "./types";
 import { DownloadedChapterRow } from "./DownloadedChapterRow";
+import { ShowMoreToggle } from "./ShowMoreToggle";
 
 function isNumberedSeries(group: DownloadedSeriesGroup): boolean {
   const chs = group.chapters;
@@ -323,20 +324,12 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
           </For>
 
           {/* Show more / fewer toggle if > 15 items */}
-          <Show when={props.group.chapters.length > 15}>
-            <div style="display:flex;justify-content:center;padding:4px 0;margin-top:2px;">
-              <button
-                type="button"
-                class="win-button ds-btn-sm"
-                onClick={() => setListLimit((lim) => (lim === -1 ? 15 : -1))}
-                style="font-size:11px;padding:1px 10px;"
-              >
-                {listLimit() === -1
-                  ? "Show fewer"
-                  : `Show all ${props.group.chapters.length} chapters`}
-              </button>
-            </div>
-          </Show>
+          <ShowMoreToggle
+            total={props.group.chapters.length}
+            threshold={15}
+            listLimit={listLimit()}
+            onToggle={() => setListLimit((lim) => (lim === -1 ? 15 : -1))}
+          />
         </div>
       </Show>
     </GroupBox>

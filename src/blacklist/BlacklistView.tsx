@@ -22,7 +22,6 @@ import { useDelayedSpinner } from "../browse/browse-state";
 import { BackRefreshActions } from "../components/ActionBar";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import {
-  RefreshIcon,
   BlacklistIcon,
   ListCheckIcon,
   TrashIcon,
@@ -31,6 +30,7 @@ import { Loading } from "../components/Loading";
 import { Button, IconText } from "../components/Button";
 import { BlacklistModeSwitch } from "../components/BlacklistModeSwitch";
 import { GroupBox } from "../components/GroupBox";
+import { ErrorRetryRow } from "../components/ErrorRetryRow";
 export function BlacklistView() {
   const [data, { refetch }] = createResource<BlacklistedSeries[]>(() =>
     getBlacklistedSeries(),
@@ -81,10 +81,11 @@ export function BlacklistView() {
               <Loading />
             </Show>
             <Show when={data.error !== undefined && data() === undefined}>
-              <div class="ds-row ds-bl-error-row">
-                <span class="ds-muted">{t("blacklist.loadError", { msg: errorText() })}</span>
-                <Button icon={<RefreshIcon />} text={t("common.retry")} onClick={() => void refetch()} />
-              </div>
+              <ErrorRetryRow
+                message={t("blacklist.loadError", { msg: errorText() })}
+                onRetry={() => void refetch()}
+                className="ds-bl-error-row"
+              />
             </Show>
           </>
         }

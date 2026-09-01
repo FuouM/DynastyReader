@@ -38,17 +38,25 @@ export interface NavRowProps {
   session: ReaderSession;
   controlsOpen?: Accessor<boolean>;
   onToggleControls?: () => void;
+  /** Whether to show text labels on chapter buttons (default: true) */
+  showChapterText?: boolean;
+  /** Whether to show the controls toggle button (default: true) */
+  showControlsToggle?: boolean;
+  /** Props to pass to ReaderProgressWrap */
+  progressProps?: { showPrefix?: boolean; showCachedNote?: boolean };
 }
 
 export function ReaderMainRow(props: NavRowProps) {
   const s = props.session;
+  const showText = () => props.showChapterText ?? true;
+  const showControls = () => props.showControlsToggle ?? true;
 
   return (
     <div class="ds-reader-nav-row nav-main">
       <IconButton
         className="ds-nav-btn-ch"
         icon={<ChevronDoubleLeftIcon />}
-        text={t("reader.toolbar.chapterShort")}
+        text={showText() ? t("reader.toolbar.chapterShort") : undefined}
         title={t("reader.toolbar.prevChapter")}
         disabled={s.chapterNav().prevDisabled}
         onClick={() => s.gotoPrevChapter()}
@@ -66,7 +74,7 @@ export function ReaderMainRow(props: NavRowProps) {
         disabled={s.progress().prevDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
       />
-      <ReaderProgressWrap session={s} />
+      <ReaderProgressWrap session={s} {...props.progressProps} />
       <IconButton
         className="ds-nav-btn-page ds-btn-icon"
         icon={<ChevronRightIcon />}
@@ -83,19 +91,21 @@ export function ReaderMainRow(props: NavRowProps) {
       <IconButton
         className="ds-nav-btn-ch"
         icon={<ChevronDoubleRightIcon />}
-        text={t("reader.toolbar.chapterShort")}
+        text={showText() ? t("reader.toolbar.chapterShort") : undefined}
         reverse
         title={t("reader.toolbar.nextChapter")}
         disabled={s.chapterNav().nextDisabled}
         onClick={() => s.gotoNextChapter()}
       />
-      <IconButton
-        className="ds-nav-btn-page ds-btn-icon"
-        classList={{ active: !!props.controlsOpen?.() }}
-        icon={<ToolIcon />}
-        title={t("reader.toolbar.toggleControlsTooltip")}
-        onClick={props.onToggleControls}
-      />
+      <Show when={showControls()}>
+        <IconButton
+          className="ds-nav-btn-page ds-btn-icon"
+          classList={{ active: !!props.controlsOpen?.() }}
+          icon={<ToolIcon />}
+          title={t("reader.toolbar.toggleControlsTooltip")}
+          onClick={props.onToggleControls}
+        />
+      </Show>
     </div>
   );
 }

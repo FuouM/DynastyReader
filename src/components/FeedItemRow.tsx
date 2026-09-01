@@ -12,7 +12,6 @@
  */
 
 import { createEffect, createSignal, onMount, Show, type JSX } from "solid-js";
-import { debounce } from "@solid-primitives/scheduled";
 import {
   navigate,
   showBanner,
@@ -41,7 +40,7 @@ import { AddToCollectionButton } from "./AddToCollectionButton";
 import { TagRow } from "./TagRow";
 import type { AddToCollectionItem } from "./AddToCollectionModal";
 import type { SeriesTag } from "../types/api";
-import { log } from "../utils/log";
+import { useCopyLink } from "../hooks/useCopyLink";
 
 export interface FeedItemData {
   permalink: string;
@@ -109,24 +108,10 @@ export function FeedItemRow(props: FeedItemRowProps) {
     const path = isSeriesKind(ch.kind) ? seriesTypeToPath(ch.kind) : "chapters";
     return dynastyUrl(path, ch.permalink);
   };
-  const [copied, setCopied] = createSignal(false);
-  const resetCopied = debounce(() => setCopied(false), 2000);
-
-  const copyLink = async (ev: MouseEvent): Promise<void> => {
-    ev.stopPropagation();
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(externalUrl());
-        setCopied(true);
-        showBanner(t("reader.toolbar.copiedLinkBanner"));
-        resetCopied();
-      }
-    } catch (err) {
-      log.warn("feed-item-row", "copy link failed:", err);
-      const msg = errorMessage(err);
-      showBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
-    }
-  };
+  const { copied, handleCopyLink } = useCopyLink({
+    getUrl: externalUrl,
+    namespace: "feed-item-row",
+  });
 
   const isDirectSeries = isSeriesKind(ch.kind);
 
@@ -312,7 +297,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
               className="ds-btn-icon"
               icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
               title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
-              onClick={copyLink}
+              onClick={handleCopyLink}
             />
             <AddToCollectionButton
               cssText="flex-shrink:0;"

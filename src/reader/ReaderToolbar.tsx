@@ -7,7 +7,6 @@
 
 import { createEffect, createSignal, onCleanup, Show, on } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import { debounce } from "@solid-primitives/scheduled";
 import type { ReaderSession } from "./reader-session";
 import { isMobile, goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, showBanner, navigate } from "../stores";
 import { HistoryDropdown } from "../components/HistoryDropdown";
@@ -16,19 +15,12 @@ import { addBookmark, removeBookmark } from "../db";
 import { errorMessage } from "../utils/errors";
 import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
+import { useCopyLink } from "../hooks/useCopyLink";
 import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
 import { IconButton } from "../components/Button";
 import { ReaderMainRow, ReaderControlsRow } from "./ReaderNavRows";
 import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
-import { ReaderProgressWrap } from "./ReaderProgressWrap";
-import { log } from "../utils/log";
 import {
-  ChevronDoubleLeftIcon,
-  ChevronDoubleRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronBarLeftIcon,
-  ChevronBarRightIcon,
   ToolIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -47,23 +39,10 @@ export { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
 export function ReaderToolbar(props: { session: ReaderSession }) {
   const s = props.session;
   const [navPos, setNavPos] = createSignal<ReaderNavPosition>(getReaderNavPosition());
-  const [copied, setCopied] = createSignal(false);
-  const resetCopied = debounce(() => setCopied(false), 2000);
-
-  const handleCopyLink = async () => {
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(dynastyUrl("chapters", s.permalink));
-        setCopied(true);
-        showBanner(t("reader.toolbar.copiedLinkBanner"));
-        resetCopied();
-      }
-    } catch (err) {
-      log.warn("reader-toolbar", "copy link failed:", err);
-      const msg = errorMessage(err);
-      showBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
-    }
-  };
+  const { copied, handleCopyLink } = useCopyLink({
+    getUrl: () => dynastyUrl("chapters", s.permalink),
+    namespace: "reader-toolbar",
+  });
   createEffect(() => {
     const z = s.zoomScale();
     if (s.containerEl) {
@@ -353,49 +332,12 @@ export function ReaderBottomNav(props: { session: ReaderSession }) {
         classList={{ "ds-toolbar-hidden": !s.toolbarVisible() }}
       >
         <Show when={isMobile()}>
-          <div class="ds-reader-nav-row nav-main">
-            <IconButton
-              className="ds-nav-btn-ch"
-              icon={<ChevronDoubleLeftIcon />}
-              title={t("reader.toolbar.prevChapter")}
-              disabled={s.chapterNav().prevDisabled}
-              onClick={() => s.gotoPrevChapter()}
-            />
-            <IconButton
-              className="ds-nav-btn-jump ds-btn-icon"
-              icon={<ChevronBarLeftIcon />}
-              title={t("reader.toolbar.firstPage")}
-              onClick={() => s.setPage(0, true)}
-            />
-            <IconButton
-              className="ds-nav-btn-page ds-btn-icon"
-              icon={<ChevronLeftIcon />}
-              title={t("reader.toolbar.prevPage")}
-              disabled={s.progress().prevDisabled}
-              onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
-            />
-            <ReaderProgressWrap session={s} showPrefix={false} showCachedNote={false} />
-            <IconButton
-              className="ds-nav-btn-page ds-btn-icon"
-              icon={<ChevronRightIcon />}
-              title={t("reader.toolbar.nextPage")}
-              disabled={s.progress().nextDisabled}
-              onClick={() => (s.isSpread() ? s.stepSpread(1) : s.setPage(s.currentIndex() + 1))}
-            />
-            <IconButton
-              className="ds-nav-btn-jump ds-btn-icon"
-              icon={<ChevronBarRightIcon />}
-              title={t("reader.toolbar.lastPage", { total: s.pages().length })}
-              onClick={() => s.setPage(s.pages().length - 1, true)}
-            />
-            <IconButton
-              className="ds-nav-btn-ch"
-              icon={<ChevronDoubleRightIcon />}
-              title={t("reader.toolbar.nextChapter")}
-              disabled={s.chapterNav().nextDisabled}
-              onClick={() => s.gotoNextChapter()}
-            />
-          </div>
+          <ReaderMainRow
+            session={s}
+            showChapterText={false}
+            showControlsToggle={false}
+            progressProps={{ showPrefix: false, showCachedNote: false }}
+          />
         </Show>
         <Show when={!isMobile() && navPos() === "bottom"}>
           <ReaderMainRow

@@ -9,6 +9,7 @@ import { GroupBox } from "../../components/GroupBox";
 import { ConfirmDeleteButton } from "../../components/Button";
 import type { ProcessedCachedChapter } from "./types";
 import { DownloadedChapterRow } from "./DownloadedChapterRow";
+import { ShowMoreToggle } from "./ShowMoreToggle";
 
 interface OrphanDownloadedCardProps {
   orphans: ProcessedCachedChapter[];
@@ -67,20 +68,12 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
         </For>
 
         {/* Show more / fewer toggle if > 20 items */}
-        <Show when={props.orphans.length > 20}>
-          <div style="display:flex;justify-content:center;padding:4px 0;margin-top:2px;">
-            <button
-              type="button"
-              class="win-button ds-btn-sm"
-              onClick={() => setListLimit((lim) => (lim === -1 ? 20 : -1))}
-              style="font-size:11px;padding:1px 10px;"
-            >
-              {listLimit() === -1
-                ? "Show fewer"
-                : `Show all ${props.orphans.length} chapters`}
-            </button>
-          </div>
-        </Show>
+        <ShowMoreToggle
+          total={props.orphans.length}
+          threshold={20}
+          listLimit={listLimit()}
+          onToggle={() => setListLimit((lim) => (lim === -1 ? 20 : -1))}
+        />
       </div>
     </GroupBox>
   );

@@ -9,7 +9,6 @@
 
 import { createEffect, createMemo, createSignal, For, Show, type Accessor } from "solid-js";
 import { route } from "../stores";
-import { formatBytes } from "../lib/format";
 import { t } from "../i18n";
 import { persistedSignal } from "../lib/persisted-signal";
 import { DownloadManager } from "./DownloadManager";
@@ -30,13 +29,12 @@ import {
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
-import { InputField } from "../components/InputField";
 import { EmptyState } from "../components/EmptyState";
-import { DsSelect } from "../components/Button";
-import { StorageIcon, CheckIcon } from "../components/Icon";
 import {
   SeriesDownloadedCard,
   OrphanDownloadedCard,
+  DownloadedLegend,
+  DownloadedToolbar,
   buildGroups,
   type DownloadedSortMode,
   type DownloadedModel,
@@ -194,73 +192,36 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
   return (
     <div class="ds-tab-pane active" id="ds-tab-downloaded">
       {/* Header Controls Bar */}
-      <div id="ds-downloaded-header" class="ds-toolbar">
-        <div id="ds-downloaded-toolbar-left" class="ds-toolbar-row">
-          <InputField
-            id="ds-downloaded-search"
-            value={inputVal()}
-            onInput={handleInput}
-            placeholder={t("browse.downloaded.filterPlaceholder")}
-            onClear={() => {
-              setInputVal("");
-              setQuery("");
-              setCurrentPage(1);
-            }}
-          />
-          <div class="ds-downloaded-sort-wrap">
-            <span class="ds-item-meta ds-nowrap" style="font-size:11.5px;color:var(--sys-text-muted,#666);">
-              {t("browse.downloaded.sortBy")}
-            </span>
-            <DsSelect
-              id="ds-downloaded-sort"
-              value={sortMode()}
-              onChange={(val) => {
-                setSortMode(val as DownloadedSortMode);
-                setCurrentPage(1);
-              }}
-              options={[
-                { value: "download-desc", label: t("browse.downloaded.sorts.lastDownloaded") },
-                { value: "name-asc", label: t("browse.downloaded.sorts.alphabetical") },
-                { value: "read-desc", label: t("browse.downloaded.sorts.lastRead") },
-              ]}
-            />
-          </div>
-        </div>
-
-        <div id="ds-downloaded-toolbar-right" class="ds-toolbar-row">
-          <span class="ds-muted" id="ds-downloaded-count">
-            <StorageIcon />
-            <span>
-              {t("browse.downloaded.chaptersCount", {
-                count: totalChapters(),
-                noun: totalChapters() === 1 ? t("browse.downloaded.nounChapter") : t("browse.downloaded.nounChapters"),
-              })}
-              <Show when={totalChapters() > 0}>
-                {" "}({formatBytes(totalBytes())})
-              </Show>
-            </span>
-          </span>
-        </div>
-      </div>
+      <DownloadedToolbar
+        inputId="ds-downloaded-search"
+        inputVal={inputVal()}
+        onInput={handleInput}
+        inputPlaceholder={t("browse.downloaded.filterPlaceholder")}
+        onClear={() => {
+          setInputVal("");
+          setQuery("");
+          setCurrentPage(1);
+        }}
+        sortId="ds-downloaded-sort"
+        sortValue={sortMode()}
+        onSortChange={(val) => {
+          setSortMode(val);
+          setCurrentPage(1);
+        }}
+        sortOptions={[
+          { value: "download-desc", label: t("browse.downloaded.sorts.lastDownloaded") },
+          { value: "name-asc", label: t("browse.downloaded.sorts.alphabetical") },
+          { value: "read-desc", label: t("browse.downloaded.sorts.lastRead") },
+        ]}
+        totalChapters={totalChapters()}
+        totalBytes={totalBytes()}
+        countLabel={t("browse.downloaded.sortBy")}
+      />
 
       {/* Download Manager for Active Downloads */}
       <DownloadManager onComplete={() => pane.reload()} />
       {/* Legend */}
-      <div class="ds-downloaded-legend">
-        <span class="ds-legend-title">Legend:</span>
-        <span class="ds-legend-item">
-          <span class="ds-legend-swatch downloaded" />
-          <span>Downloaded</span>
-        </span>
-        <span class="ds-legend-item">
-          <span class="ds-legend-swatch read"><CheckIcon size={10} /></span>
-          <span>Read</span>
-        </span>
-        <span class="ds-legend-item">
-          <span class="ds-legend-swatch bookmarked" />
-          <span>Bookmarked</span>
-        </span>
-      </div>
+      <DownloadedLegend />
 
       <div id="ds-downloaded-body">
         <Show when={filteredRows().length === 0 && pane.data() !== undefined}>
