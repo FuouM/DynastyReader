@@ -91,6 +91,8 @@ export function SeriesView() {
   const [busyFollow, setBusyFollow] = createSignal(false);
   const [busyBlacklist, setBusyBlacklist] = createSignal(false);
   const [sortOrder, setSortOrder] = createSignal<"asc" | "desc">("asc");
+  const [followed, setFollowed] = createSignal(false);
+  const [blacklisted, setBlacklisted] = createSignal(false);
   const addToCol = useAddToCollection();
 
   const [data, { refetch }] = createResource(
@@ -127,8 +129,10 @@ export function SeriesView() {
         // Cover is decorative; a failed download must not block the page.
       }
 
-      const followed = (await getFollowedSeriesRow(permalink)) !== null;
-      const blacklisted = isSeriesBlacklisted(permalink, series.name);
+      const followedRow = (await getFollowedSeriesRow(permalink)) !== null;
+      const blacklistedVal = isSeriesBlacklisted(permalink, series.name);
+      setFollowed(followedRow);
+      setBlacklisted(blacklistedVal);
       const chapters = collectChapters(series);
       const chapterPermalinks = chapters.map((c) => c.permalink);
 
@@ -149,7 +153,7 @@ export function SeriesView() {
         showBanner(t("series.progressLoadError", { msg }));
       }
 
-      return { series, coverPath, followed, blacklisted, chapters, progress, cacheCounts, readHistorySet };
+      return { series, coverPath, chapters, progress, cacheCounts, readHistorySet };
     },
   );
   const showSpinner = useDelayedSpinner(() => data.loading);
@@ -181,10 +185,10 @@ export function SeriesView() {
     }
     setActions(
       <SeriesActions
-        followed={() => data()?.followed ?? false}
+        followed={followed}
         busyFollow={busyFollow}
         onToggleFollow={() => void handleToggleFollow()}
-        blacklisted={() => data()?.blacklisted ?? false}
+        blacklisted={blacklisted}
         busyBlacklist={busyBlacklist}
         onToggleBlacklist={() => void handleToggleBlacklist()}
         onRefresh={() => setForceTick((t) => t + 1)}
@@ -211,14 +215,15 @@ export function SeriesView() {
   const handleToggleFollow = async (): Promise<void> => {
     const d = data();
     if (!d) return;
-    const { series, coverPath, followed, chapters } = d;
+    const { series, coverPath, chapters } = d;
     const seriesPermalink = series.permalink;
     const seriesName = series.name;
     const latest = chapters[chapters.length - 1];
     setBusyFollow(true);
     try {
-      if (followed) {
+      if (followed()) {
         await unfollowSeries(seriesPermalink);
+        setFollowed(false);
         showBanner(t("series.unfollowedBanner", { name: seriesName }));
       } else {
         await followSeries({
@@ -228,12 +233,13 @@ export function SeriesView() {
           latestChapterPermalink: latest?.permalink ?? null,
           latestChapterTitle: latest?.title ?? null,
         });
+        setFollowed(true);
         showBanner(t("series.followingBanner", { name: seriesName }));
       }
-      await refetch();
     } catch (err) {
       const msg = errorMessage(err);
       showBanner(t("series.followErrorBanner", { msg }));
+    } finally {
       setBusyFollow(false);
     }
   };
@@ -241,22 +247,24 @@ export function SeriesView() {
   const handleToggleBlacklist = async (): Promise<void> => {
     const d = data();
     if (!d) return;
-    const { series, blacklisted } = d;
+    const { series } = d;
     const seriesPermalink = series.permalink;
     const seriesName = series.name;
     setBusyBlacklist(true);
     try {
-      if (blacklisted) {
+      if (blacklisted()) {
         await removeBlacklistedSeries(seriesPermalink);
+        setBlacklisted(false);
         showBanner(t("series.unblacklistedBanner", { name: seriesName }));
       } else {
         await addBlacklistedSeries(seriesPermalink, seriesName);
+        setBlacklisted(true);
         showBanner(t("series.blacklistedBanner", { name: seriesName }));
       }
-      await refetch();
     } catch (err) {
       const msg = errorMessage(err);
       showBanner(t("series.blacklistErrorBanner", { msg }));
+    } finally {
       setBusyBlacklist(false);
     }
   };
@@ -319,27 +327,29 @@ export function SeriesView() {
         </div>
       </Show>
       <Show when={!data.loading && data() !== undefined}>
-        <SeriesBody
-          data={data()!}
-          ordered={ordered}
-          sortOrder={sortOrder}
-          setSortOrder={setSortOrder}
-          mobileActions={
-            <SeriesActions
-              followed={() => data()!.followed}
-              busyFollow={busyFollow}
-              onToggleFollow={() => void handleToggleFollow()}
-              blacklisted={() => data()!.blacklisted}
-              busyBlacklist={busyBlacklist}
-              onToggleBlacklist={() => void handleToggleBlacklist()}
-              onRefresh={() => setForceTick((t) => t + 1)}
-              onOpenAddToCol={handleOpenAddToCol}
-              openUrl={data()!.series.type === "local" ? "" : dynastyUrl(seriesTypeToPath(data()!.series.type), encodeURIComponent(data()!.series.permalink))}
-              seriesType={data()!.series.type}
-              onDownloadAll={data()!.series.type === "local" ? undefined : () => void handleDownloadAll()}
-            />
-          }
-        />
+      <SeriesBody
+        data={data()!}
+        ordered={ordered}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        followed={followed}
+        blacklisted={blacklisted}
+        mobileActions={
+          <SeriesActions
+            followed={followed}
+            busyFollow={busyFollow}
+            onToggleFollow={() => void handleToggleFollow()}
+            blacklisted={blacklisted}
+            busyBlacklist={busyBlacklist}
+            onToggleBlacklist={() => void handleToggleBlacklist()}
+            onRefresh={() => setForceTick((t) => t + 1)}
+            onOpenAddToCol={handleOpenAddToCol}
+            openUrl={data()!.series.type === "local" ? "" : dynastyUrl(seriesTypeToPath(data()!.series.type), encodeURIComponent(data()!.series.permalink))}
+            seriesType={data()!.series.type}
+            onDownloadAll={data()!.series.type === "local" ? undefined : () => void handleDownloadAll()}
+          />
+        }
+      />
       </Show>
 
       {addToCol.host}
@@ -351,13 +361,13 @@ function SeriesBody(props: {
   data: {
     series: Series;
     coverPath: string | null;
-    followed: boolean;
-    blacklisted: boolean;
     chapters: ChapterMeta[];
     progress: Map<string, SeriesProgressRow>;
     cacheCounts: Map<string, number>;
     readHistorySet: Set<string>;
   };
+  followed: () => boolean;
+  blacklisted: () => boolean;
   ordered: Accessor<ChapterMeta[]>;
   sortOrder: Accessor<"asc" | "desc">;
   setSortOrder: (v: "asc" | "desc") => void;
@@ -365,7 +375,7 @@ function SeriesBody(props: {
 }) {
   return (
     <>
-      <Show when={props.data.blacklisted}>
+      <Show when={props.blacklisted()}>
         <div class="ds-row ds-blacklist-notice">
           <BlacklistIcon
             filled={true}
