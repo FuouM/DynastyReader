@@ -143,14 +143,14 @@ export function CacheView() {
 
   const deleteChapter = async (chapterPermalink: string): Promise<void> => {
     await clearCachedGroupPages([chapterPermalink]);
-    showBanner("Cached chapter cleared");
+    showBanner(t("cache.chapterClearedBanner"));
     void refetch();
   };
 
   const deleteAllOrphans = async (orphans: ProcessedCachedChapter[]): Promise<void> => {
     const perms = orphans.map((o) => o.chapterPermalink);
     await clearCachedGroupPages(perms);
-    showBanner("Cleared standalone cached chapters");
+    showBanner(t("cache.orphansClearedBanner"));
     void refetch();
   };
 

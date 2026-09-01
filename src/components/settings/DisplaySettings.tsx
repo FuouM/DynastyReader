@@ -143,8 +143,8 @@ export function DisplaySettings() {
                   id="ds-settings-theme-more-select"
                   className="ds-select--w115"
                   icon={theme() === "windows7" ? <Icon name="windows" /> : <Icon name="palette" />}
-                  text={(["light", "dark", "high-contrast"] as AppTheme[]).includes(theme() as AppTheme) ? "More…" : THEME_REGISTRY[theme() as AppTheme]?.label ?? "More…"}
-                  title="More themes"
+                  text={(["light", "dark", "high-contrast"] as AppTheme[]).includes(theme() as AppTheme) ? t("settings.display.moreThemes") : THEME_REGISTRY[theme() as AppTheme]?.label ?? t("settings.display.moreThemes")}
+                  title={t("settings.display.moreThemesTooltip")}
                   onClick={() => setMoreOpen(!moreOpen())}
                 />
                 <Show when={moreOpen()}>

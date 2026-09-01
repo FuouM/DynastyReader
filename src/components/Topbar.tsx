@@ -195,7 +195,7 @@ export function Topbar() {
                   class="win-button"
                   id="ds-topbar-downloads-btn"
                   onClick={() => navigate({ view: "browse", browseTab: "downloaded" })}
-                  title="Downloads in progress — click to view in Downloaded tab"
+                  title={t("topbar.downloadsInProgressTooltip")}
                 >
                   <DownloadIcon />
                   <span>{activeDownloadCount()}</span>

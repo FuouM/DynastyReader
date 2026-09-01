@@ -74,7 +74,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
     setImporting(true);
     try {
       const permalink = await ipc.importArchive(p, { title });
-      showBanner(`Imported "${title}"`);
+      showBanner(t("local.importedBanner", { title }));
       setScanResult(null);
       setScanPath(null);
       void refetch();
@@ -101,16 +101,16 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
     <div class="ds-local-pane">
       <div class="ds-local-pane-actions" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <IconButton icon={<AddIcon />} text="Import CBZ" onClick={() => void pickAndScan()} disabled={scanning()} />
+          <IconButton icon={<AddIcon />} text={t("local.importCbz")} onClick={() => void pickAndScan()} disabled={scanning()} />
           <Show when={scanning()}>
-            <span class="ds-muted" style="align-self:center;">Scanning…</span>
+            <span class="ds-muted" style="align-self:center;">{t("local.scanning")}</span>
           </Show>
         </div>
         <Show when={data() && data()!.length > 0}>
           <span class="ds-muted" style="font-size:11.5px;display:inline-flex;align-items:center;gap:4px;">
             <StorageIcon />
             <span>
-              {data()!.length} {data()!.length === 1 ? "series" : "series"}
+              {data()!.length} {t("local.seriesCount", { count: data()!.length })}
               <Show when={totalBytes() > 0}>
                 {" "}({formatBytes(totalBytes())})
               </Show>
@@ -127,13 +127,13 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
               setScanPath(null);
             }
           }}
-          title={`Import "${scanResult()!.file_name}"`}
+          title={t("local.importTitle", { name: scanResult()!.file_name })}
           body={
             <div class="ds-form-stack">
-              <label class="ds-form-label-sm">Series title</label>
+              <label class="ds-form-label-sm">{t("local.seriesTitleLabel")}</label>
               <InputField value={editTitle()} onInput={setEditTitle} placeholder={scanResult()!.series_title} />
               <div class="ds-muted" style="font-size:12px;">
-                {scanResult()!.chapters.length} chapter(s) · {scanResult()!.total_pages} pages
+                {t("local.chapterPagesSummary", { chapters: scanResult()!.chapters.length, pages: scanResult()!.total_pages })}
               </div>
               <For each={scanResult()!.chapters}>
                 {(ch) => (
@@ -147,7 +147,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
           footer={
             <div class="ds-modal-footer-actions">
               <Button text={t("common.cancel")} onClick={() => { setScanResult(null); setScanPath(null); }} disabled={importing()} />
-              <IconButton icon={<AddIcon />} text={importing() ? "Importing…" : "Import"} onClick={() => void doImport()} disabled={importing()} className="primary" />
+              <IconButton icon={<AddIcon />} text={importing() ? t("local.importing") : t("local.importButton")} onClick={() => void doImport()} disabled={importing()} className="primary" />
             </div>
           }
         />
@@ -159,7 +159,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       <Show when={data() !== undefined && (data()!.length === 0)}>
         <div class="ds-empty-state" style="padding:24px;text-align:center;">
           <FolderIcon />
-          <div class="ds-muted">No local imports yet. Import a CBZ to get started.</div>
+          <div class="ds-muted">{t("local.emptyHint")}</div>
         </div>
       </Show>
       <Show when={data() !== undefined && data()!.length > 0}>
@@ -174,7 +174,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
               onOpen={() => navigate({ view: "series", seriesPermalink: row.permalink, seriesName: row.title })}
               actionLabel={t("common.open")}
               actionIcon="bi-folder2-open"
-              deleteTitle="Delete local series"
+              deleteTitle={t("local.deleteTooltip")}
               onDelete={() => handleDelete(row.permalink)}
             />
           )}

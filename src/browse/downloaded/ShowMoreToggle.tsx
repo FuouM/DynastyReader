@@ -5,6 +5,7 @@
  */
 
 import { Show } from "solid-js";
+import { t } from "../../i18n";
 
 interface ShowMoreToggleProps {
   total: number;
@@ -24,8 +25,8 @@ export function ShowMoreToggle(props: ShowMoreToggleProps) {
           style="font-size:11px;padding:1px 10px;"
         >
           {props.listLimit === -1
-            ? "Show fewer"
-            : `Show all ${props.total} chapters`}
+            ? t("downloaded.showFewer")
+            : t("downloaded.showAllChapters", { count: props.total })}
         </button>
       </div>
     </Show>

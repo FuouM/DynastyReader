@@ -60,7 +60,7 @@ export function AboutSettings() {
             id="ds-about-open-github"
             title={t("settings.about.githubTooltip")}
             icon={<Icon name="github" />}
-            text="GitHub"
+            text={t("settings.about.github")}
             onClick={() => void openExternal("https://github.com/FuouM/DynastyReader")}
           />
           <ExternalLinkButton

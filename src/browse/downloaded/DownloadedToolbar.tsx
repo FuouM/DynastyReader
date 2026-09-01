@@ -6,6 +6,7 @@
 
 import { Show } from "solid-js";
 import { formatBytes } from "../../lib/format";
+import { t } from "../../i18n";
 import { InputField } from "../../components/InputField";
 import { DsSelect } from "../../components/Button";
 import { StorageIcon } from "../../components/Icon";
@@ -55,7 +56,7 @@ export function DownloadedToolbar(props: DownloadedToolbarProps) {
         <span class="ds-muted" id="ds-downloaded-count">
           <StorageIcon />
           <span>
-            {props.totalChapters} ch
+            {props.totalChapters} {t("downloaded.chaptersAbbrev")}
             <Show when={props.totalChapters > 0}>
               {" "}({formatBytes(props.totalBytes)})
             </Show>

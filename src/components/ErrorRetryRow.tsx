@@ -6,6 +6,7 @@
 
 import { IconButton } from "./Button";
 import { RefreshIcon } from "./Icon";
+import { t } from "../i18n";
 
 interface ErrorRetryRowProps {
   message: string;
@@ -19,7 +20,7 @@ export function ErrorRetryRow(props: ErrorRetryRowProps) {
       <span class="ds-muted">{props.message}</span>
       <IconButton
         icon={<RefreshIcon />}
-        text="Retry"
+        text={t("common.retry")}
         onClick={props.onRetry}
       />
     </div>

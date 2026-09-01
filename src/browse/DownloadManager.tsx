@@ -12,6 +12,7 @@ import {
 import { formatBytes } from "../lib/format";
 import { errorMessage } from "../utils/errors";
 import { showBanner } from "../stores/topbar";
+import { t } from "../i18n";
 import { GroupBox } from "../components/GroupBox";
 import {
   DownloadIcon,
@@ -370,7 +371,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
         title={
           <span class="ds-icon-text">
             <DownloadIcon />
-            <span>Download Queue ({activeOrPendingCount()} active)</span>
+            <span>{t("download.queueTitle", { count: activeOrPendingCount() })}</span>
           </span>
         }
         actions={
@@ -380,10 +381,10 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                 type="button"
                 class="win-button ds-btn-sm"
                 onClick={handlePauseResume}
-                title={isPaused() ? "Resume downloads" : "Pause downloads"}
+                title={isPaused() ? t("download.resumeTooltip") : t("download.pauseTooltip")}
               >
-                <Show when={isPaused()} fallback={<><PauseIcon /> Pause</>}>
-                  <PlayIcon /> Resume
+                <Show when={isPaused()} fallback={<><PauseIcon /> {t("download.pause")}</>}>
+                  <PlayIcon /> {t("download.resume")}
                 </Show>
               </button>
             </Show>
@@ -393,10 +394,10 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                 type="button"
                 class="win-button ds-btn-sm"
                 onClick={handleRetryAll}
-                title="Retry all failed downloads"
+                title={t("download.retryAllFailedTooltip")}
                 style="color:var(--ds-warn-text);"
               >
-                <RefreshIcon /> Retry Failed
+                <RefreshIcon /> {t("download.retryFailed")}
               </button>
             </Show>
 
@@ -405,9 +406,9 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                 type="button"
                 class="win-button ds-btn-sm"
                 onClick={handleClearAllCompleted}
-                title="Clear all completed download entries"
+                title={t("download.clearCompletedTooltip")}
               >
-                <TrashIcon /> Clear Completed
+                <TrashIcon /> {t("download.clearCompleted")}
               </button>
             </Show>
           </div>
@@ -433,25 +434,25 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                       </span>
                       <Show when={isAct()}>
                         <span class="ds-status-pill fresh">
-                          Downloading
+                          {t("download.statusDownloading")}
                         </span>
                       </Show>
                       <Show when={isPsd()}>
                         <span class="ds-status-pill">
-                          Paused
+                          {t("download.statusPaused")}
                         </span>
                       </Show>
                       <Show when={isDone()}>
                         <span class="ds-status-pill fresh">
-                          <CheckIcon size={10} /> Complete
+                          <CheckIcon size={10} /> {t("download.statusComplete")}
                         </span>
                         <span class="ds-muted ds-download-series-count" style="font-size:10.5px;">
-                          ({group.totalChapters} ch)
+                          ({group.totalChapters} {t("downloaded.chaptersAbbrev")})
                         </span>
                       </Show>
                       <Show when={isFail()}>
                         <span class="ds-status-pill" style="color:var(--ds-danger-text);">
-                          {group.failedChapters} Failed
+                          {t("download.statusFailed", { count: group.failedChapters })}
                         </span>
                       </Show>
                     </div>
@@ -462,10 +463,10 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                           type="button"
                           class="win-button ds-btn-sm"
                           onClick={() => void handleRetrySeries(group.series_permalink)}
-                          title="Retry failed chapters in this series"
+                          title={t("download.retrySeriesFailedTooltip")}
                           style="color:var(--ds-warn-text);"
                         >
-                          <RefreshIcon /> Retry
+                          <RefreshIcon /> {t("common.retry")}
                         </button>
                       </Show>
 
@@ -474,9 +475,9 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                           type="button"
                           class="win-button ds-btn-sm"
                           onClick={() => void handleClearSeries(group.series_permalink)}
-                          title="Clear completed chapters"
+                          title={t("download.clearSeriesCompletedTooltip")}
                         >
-                          <TrashIcon /> Clear
+                          <TrashIcon /> {t("common.clear")}
                         </button>
                       </Show>
 
@@ -485,9 +486,9 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                           type="button"
                           class="win-button ds-btn-sm"
                           onClick={() => void handleCancelSeries(group)}
-                          title="Cancel all pending chapters in this series"
+                          title={t("download.cancelSeriesPendingTooltip")}
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                       </Show>
 
@@ -495,7 +496,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                         type="button"
                         class="win-button ds-btn-sm ds-btn-icon"
                         onClick={() => toggleExpand(group.series_permalink)}
-                        title={isExpanded() ? "Hide chapter list" : "Show chapter list"}
+                        title={isExpanded() ? t("download.hideChapters") : t("download.showChapters")}
                       >
                         <ChevronDownIcon class={isExpanded() ? "ds-rotate-180" : ""} />
                       </button>
@@ -511,17 +512,17 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                           when={group.downloadingItem}
                           fallback={
                             <span>
-                              {group.completedChapters}/{group.totalChapters} chapters complete
+                              {t("download.chaptersComplete", { done: group.completedChapters, total: group.totalChapters })}
                               <Show when={group.status === "downloading" && group.completedChapters < group.totalChapters}>
-                                {" "}· Preparing next chapter…
+                                {" "}· {t("download.preparingNextChapter")}
                               </Show>
-                              <Show when={group.failedChapters > 0}> · {group.failedChapters} failed</Show>
+                              <Show when={group.failedChapters > 0}> · {group.failedChapters} {t("download.failed")}</Show>
                             </span>
                           }
                         >
                           {(down) => (
                             <span>
-                              {group.completedChapters + 1}/{group.totalChapters}: {down().chapter_title} ({activeProgress()[down().chapter_permalink]?.done ?? down().progress}/{(activeProgress()[down().chapter_permalink]?.total ?? down().total_pages) || 1} pages)
+                              {group.completedChapters + 1}/{group.totalChapters}: {down().chapter_title} ({activeProgress()[down().chapter_permalink]?.done ?? down().progress}/{(activeProgress()[down().chapter_permalink]?.total ?? down().total_pages) || 1} {t("downloaded.pagesLabel")})
                               <Show when={isAct() && speedBps() > 0}>
                                 {" "}· <span style="color:var(--sys-link);font-weight:600;"><SpeedIcon size={10} /> {formatSpeed(speedBps())}</span>
                                 <Show when={sessionBytes() > 0}>
@@ -529,7 +530,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                                 </Show>
                               </Show>
                               <Show when={isAct() && etaSeconds() > 0}>
-                                {" "}· {formatEta(etaSeconds())} remaining
+                                {" "}· {formatEta(etaSeconds())} {t("download.remaining")}
                               </Show>
                             </span>
                           )}
@@ -569,21 +570,21 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                                 <span class="ds-muted ds-download-chapter-status">
                                   <Show when={isChAct()}>
                                     <span style="color:var(--sys-link);font-weight:600;">
-                                      Downloading {chDone()}/{chTotal() > 0 ? chTotal() : "?"} pages
+                                      {t("download.downloadingPages", { done: chDone(), total: chTotal() > 0 ? chTotal() : "?" })}
                                     </span>
                                   </Show>
                                   <Show when={isChDone()}>
                                     <span style="color:var(--ds-status-fresh-text);">
-                                      <CheckIcon size={10} /> Complete
+                                      <CheckIcon size={10} /> {t("download.statusComplete")}
                                     </span>
                                   </Show>
                                   <Show when={isChFail()}>
                                     <span style="color:var(--ds-danger-text);">
-                                      <CloseIcon size={10} /> Failed{ch.error_msg ? `: ${ch.error_msg}` : ""}
+                                      <CloseIcon size={10} /> {t("download.statusFailed", { count: 1 })}{ch.error_msg ? `: ${ch.error_msg}` : ""}
                                     </span>
                                   </Show>
                                   <Show when={ch.status === "pending"}>
-                                    <span><HourglassIcon size={10} /> Queued</span>
+                                    <span><HourglassIcon size={10} /> {t("download.statusQueued")}</span>
                                   </Show>
                                 </span>
                               </div>
@@ -593,7 +594,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                                   type="button"
                                   class="win-button ds-btn-sm ds-btn-icon ds-chapter-cancel-btn"
                                   onClick={() => void handleCancelChapter(ch.chapter_permalink)}
-                                  title="Cancel chapter download"
+                                  title={t("download.cancelChapterTooltip")}
                                 >
                                   <CloseIcon size={10} />
                                 </button>

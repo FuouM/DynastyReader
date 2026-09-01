@@ -282,7 +282,7 @@ export function SeriesView() {
     }));
     try {
       await enqueueChapters(reqs);
-      showBanner(`Queued ${reqs.length} chapters for download`);
+      showBanner(t("series.downloadQueuedBanner", { count: reqs.length }));
     } catch (err) {
       showBanner(errorMessage(err));
     }
@@ -451,8 +451,8 @@ function SeriesActions(props: SeriesActionsProps) {
       <Show when={props.onDownloadAll}>
         <Button
           icon={<CloudDownloadIcon />}
-          text="Download All"
-          title="Download all chapters for offline reading"
+          text={t("series.downloadAll")}
+          title={t("series.downloadAllTooltip")}
           onClick={props.onDownloadAll}
         />
       </Show>
