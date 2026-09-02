@@ -1050,33 +1050,18 @@
   gap: 6px !important;
 }
 
-/* Cache View mobile adaptations */
+/* Cache View mobile adaptations (layout wrapping only, preserving desktop sizing) */
 #ds-root[data-mobile] .ds-cache-view {
-  padding: 8px !important;
+  padding: 0 !important;
 }
 
 #ds-root[data-mobile] .ds-stats-grid,
 #ds-root[data-mobile] .ds-stats-grid--4 {
   grid-template-columns: repeat(2, 1fr) !important;
-  gap: 6px !important;
-}
-
-#ds-root[data-mobile] .ds-stat-card {
-  padding: 6px 8px !important;
-}
-
-#ds-root[data-mobile] .ds-stat-val {
-  font-size: 14px !important;
-}
-
-#ds-root[data-mobile] .ds-stat-lbl {
-  font-size: 10.5px !important;
 }
 
 #ds-root[data-mobile] .ds-db-details {
   grid-template-columns: 1fr !important;
-  gap: 3px !important;
-  font-size: 11px !important;
 }
 
 #ds-root[data-mobile] .ds-cache-actions {
@@ -1091,7 +1076,6 @@
   justify-content: center !important;
   height: 24px !important;
   min-height: 24px !important;
-  font-size: 11px !important;
   box-sizing: border-box !important;
   padding: 0 8px !important;
 }
@@ -1111,11 +1095,6 @@
   flex: 1 1 auto !important;
   width: 100% !important;
   height: 24px !important;
-}
-
-#ds-root[data-mobile] .ds-cache-item {
-  padding: 6px 8px !important;
-  gap: 8px !important;
 }
 
 #ds-root[data-mobile] .ds-cache-item .ds-btn-icon {

@@ -1420,12 +1420,9 @@ code,
   .ds-stats-grid,
   .ds-stats-grid--4 {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 6px !important;
   }
   .ds-db-details {
     grid-template-columns: 1fr !important;
-    gap: 3px !important;
-    font-size: 11px !important;
   }
   .ds-cache-actions {
     display: grid !important;
@@ -1438,7 +1435,6 @@ code,
     justify-content: center !important;
     height: 24px !important;
     min-height: 24px !important;
-    font-size: 11px !important;
     box-sizing: border-box !important;
     padding: 0 8px !important;
   }
@@ -1454,10 +1450,6 @@ code,
   .ds-cache-filter-bar .ds-select {
     width: 100% !important;
     height: 24px !important;
-  }
-  .ds-cache-item {
-    padding: 6px 8px !important;
-    gap: 8px !important;
   }
   .ds-cache-item .ds-btn-icon {
     width: 24px !important;
