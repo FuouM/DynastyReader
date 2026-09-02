@@ -30,6 +30,8 @@ export interface LibraryItemRowProps {
   actionLabel?: string;
   actionIcon?: string;
   externalUrl?: string;
+  editTitle?: string;
+  onEdit?: () => void;
   deleteTitle?: string;
   onDelete?: () => Promise<void> | void;
 }
@@ -98,6 +100,17 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
             <ExternalLinkButton
               title={t("library.openOnDynastyTooltip")}
               url={props.externalUrl!}
+            />
+          </Show>
+          <Show when={props.onEdit}>
+            <IconButton
+              icon={<i class="bi bi-pencil" />}
+              className="ds-btn-icon"
+              title={props.editTitle || t("local.editTooltip")}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                props.onEdit!();
+              }}
             />
           </Show>
           <Show when={props.onDelete}>

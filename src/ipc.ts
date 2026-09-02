@@ -264,6 +264,7 @@ export async function ephemeralConvertImages(
 export interface ArchiveScanChapter {
   title: string;
   page_count: number;
+  files: string[];
 }
 
 export interface ArchiveScanResult {
@@ -289,6 +290,40 @@ export async function importArchive(path: string, meta: LocalSeriesMeta): Promis
 
 export async function deleteLocalSeries(permalink: string): Promise<void> {
   await invoke("deleteLocalSeries", { permalink });
+}
+
+export interface UpdateLocalSeriesMeta {
+  title: string;
+  author?: string | null;
+  description?: string | null;
+  /** Absolute path to a new cover image. Omit to keep the existing cover. */
+  new_cover_path?: string | null;
+}
+
+export async function updateLocalSeries(permalink: string, meta: UpdateLocalSeriesMeta): Promise<void> {
+  await invoke("updateLocalSeries", { permalink, meta });
+}
+export interface FolderScanResult {
+  folder_name: string;
+  series_title: string;
+  page_count: number;
+  files: string[];
+}
+
+export interface FolderImportMeta {
+  title: string;
+  chapter_title: string;
+  author?: string | null;
+  description?: string | null;
+  cover_path?: string | null;
+}
+
+export async function scanFolder(path: string): Promise<FolderScanResult> {
+  return invoke<FolderScanResult>("scanFolder", { path });
+}
+
+export async function importFolder(path: string, meta: FolderImportMeta): Promise<string> {
+  return invoke<string>("importFolder", { path, meta });
 }
 
 /* ---------------------------------------------------------------------------

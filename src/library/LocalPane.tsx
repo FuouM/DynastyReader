@@ -1,7 +1,9 @@
 import { createEffect, createMemo, createResource, createSignal, For, Show } from "solid-js";
 import { open } from "@tauri-apps/plugin-dialog";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import { navigate, dbReady } from "../stores";
 import { getLocalSeries } from "../db/local.repo";
+import type { LocalSeriesRow } from "../db/local.repo";
 import * as ipc from "../ipc";
 import { showBanner } from "../stores/topbar";
 import { formatBytes } from "../lib/format";
@@ -10,9 +12,9 @@ import { errorMessage } from "../utils/errors";
 import { Button, IconButton } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
+import type { ArchiveScanResult, FolderScanResult } from "../ipc";
 import { Loading } from "../components/Loading";
 import { AddIcon, FolderIcon, StorageIcon } from "../components/Icon";
-import type { ArchiveScanResult } from "../ipc";
 import { LibraryItemRow } from "./LibraryItemRow";
 import type { LibraryPaneApi } from "./panes";
 export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
@@ -36,9 +38,37 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const [editTitle, setEditTitle] = createSignal("");
   const [importing, setImporting] = createSignal(false);
 
+  // Edit modal state
+  const [editRow, setEditRow] = createSignal<LocalSeriesRow | null>(null);
+  const [editSeriesTitle, setEditSeriesTitle] = createSignal("");
+  const [editAuthor, setEditAuthor] = createSignal("");
+  const [editDescription, setEditDescription] = createSignal("");
+  const [newCoverPath, setNewCoverPath] = createSignal<string | null>(null);
+  const [saving, setSaving] = createSignal(false);
+
+  // Folder import state
+  const [folderScanResult, setFolderScanResult] = createSignal<FolderScanResult | null>(null);
+  const [folderScanPath, setFolderScanPath] = createSignal<string | null>(null);
+  const [folderSeriesTitle, setFolderSeriesTitle] = createSignal("");
+  const [folderChapterTitle, setFolderChapterTitle] = createSignal("");
+  const [folderCoverPath, setFolderCoverPath] = createSignal<string | null>(null);
+  const [importMenuOpen, setImportMenuOpen] = createSignal(false);
+  let importMenuRef: HTMLDivElement | undefined;
+
   const totalBytes = createMemo(() =>
     data()?.reduce((sum, r) => sum + (r.total_size_bytes ?? 0), 0) ?? 0
   );
+
+  // Click outside to close import menu
+  createEffect(() => {
+    if (!importMenuOpen()) return;
+    const handle = (ev: MouseEvent) => {
+      if (importMenuRef && !importMenuRef.contains(ev.target as Node)) {
+        setImportMenuOpen(false);
+      }
+    };
+    makeEventListener(document, "click", handle);
+  });
 
   props.register({
     reset: () => setTick((v) => v + 1),
@@ -86,6 +116,63 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       setImporting(false);
     }
   };
+  const pickAndScanFolder = async (): Promise<void> => {
+    setImportMenuOpen(false);
+    try {
+      const picked = await open({ directory: true, multiple: false });
+      if (!picked || Array.isArray(picked)) return;
+      setScanning(true);
+      const res = await ipc.scanFolder(picked as string);
+      setFolderScanPath(picked as string);
+      setFolderScanResult(res);
+      setFolderSeriesTitle(res.series_title);
+      setFolderChapterTitle(t("local.chapterTitleDefault"));
+      setFolderCoverPath(null);
+    } catch (err) {
+      showBanner(errorMessage(err));
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const pickFolderCover = async (): Promise<void> => {
+    try {
+      const picked = await open({
+        multiple: false,
+        filters: [{ name: "Image", extensions: ["jpg", "jpeg", "png", "webp", "avif", "bmp", "gif"] }],
+      });
+      if (!picked || Array.isArray(picked)) return;
+      setFolderCoverPath(picked as string);
+    } catch (err) {
+      showBanner(errorMessage(err));
+    }
+  };
+
+  const doFolderImport = async (): Promise<void> => {
+    const p = folderScanPath();
+    const sr = folderScanResult();
+    if (!p || !sr) return;
+    const title = folderSeriesTitle().trim() || sr.series_title;
+    const chapterTitle = folderChapterTitle().trim() || t("local.chapterTitleDefault");
+    setImporting(true);
+    try {
+      const permalink = await ipc.importFolder(p, {
+        title,
+        chapter_title: chapterTitle,
+        cover_path: folderCoverPath(),
+      });
+      showBanner(t("local.importedBanner", { title }));
+      setFolderScanResult(null);
+      setFolderScanPath(null);
+      setFolderCoverPath(null);
+      void refetch();
+      navigate({ view: "series", seriesPermalink: permalink, seriesName: title });
+    } catch (err) {
+      showBanner(errorMessage(err));
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleDelete = async (permalink: string): Promise<void> => {
     try {
@@ -97,11 +184,80 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
     }
   };
 
+  const openEdit = (row: LocalSeriesRow): void => {
+    setEditRow(row);
+    setEditSeriesTitle(row.title);
+    setEditAuthor(row.author ?? "");
+    setEditDescription(row.description ?? "");
+    setNewCoverPath(null);
+  };
+
+  const closeEdit = (): void => {
+    if (saving()) return;
+    setEditRow(null);
+    setNewCoverPath(null);
+  };
+
+  const pickNewCover = async (): Promise<void> => {
+    try {
+      const picked = await open({
+        multiple: false,
+        filters: [{ name: "Image", extensions: ["jpg", "jpeg", "png", "webp", "avif", "bmp", "gif"] }],
+      });
+      if (!picked || Array.isArray(picked)) return;
+      setNewCoverPath(picked as string);
+    } catch (err) {
+      showBanner(errorMessage(err));
+    }
+  };
+
+  const doEdit = async (): Promise<void> => {
+    const row = editRow();
+    if (!row) return;
+    const title = editSeriesTitle().trim() || row.title;
+    const author = editAuthor().trim() || null;
+    const description = editDescription().trim() || null;
+    setSaving(true);
+    try {
+      await ipc.updateLocalSeries(row.permalink, {
+        title,
+        author,
+        description,
+        new_cover_path: newCoverPath(),
+      });
+      showBanner(t("local.savedBanner", { title }));
+      setEditRow(null);
+      setNewCoverPath(null);
+      void refetch();
+    } catch (err) {
+      showBanner(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div class="ds-local-pane">
       <div class="ds-local-pane-actions" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <IconButton icon={<AddIcon />} text={t("local.importCbz")} onClick={() => void pickAndScan()} disabled={scanning()} />
+          <div ref={importMenuRef} style="position:relative;">
+            <IconButton
+              icon={<AddIcon />}
+              text={t("local.importMenuLabel")}
+              onClick={() => setImportMenuOpen((v) => !v)}
+              disabled={scanning()}
+            />
+            <Show when={importMenuOpen()}>
+              <div
+                class="ds-popup-card"
+                style="position:absolute;top:calc(100% + 4px);left:0;min-width:180px;z-index:20;display:flex;flex-direction:column;padding:4px;gap:2px;"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button text={t("local.importCbz")} onClick={() => { setImportMenuOpen(false); void pickAndScan(); }} />
+                <Button text={t("local.importFolder")} onClick={() => void pickAndScanFolder()} />
+              </div>
+            </Show>
+          </div>
           <Show when={scanning()}>
             <span class="ds-muted" style="align-self:center;">{t("local.scanning")}</span>
           </Show>
@@ -142,12 +298,150 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
                   </div>
                 )}
               </For>
+              <div style="margin-top:8px; border:1px solid var(--ds-border, #ddd); border-radius:6px; max-height:220px; overflow:auto; padding:6px; background:var(--ds-bg-subtle, rgba(0,0,0,0.02))">
+                <div style="font-size:11px; font-weight:600; margin-bottom:6px;">{t("local.previewTitle", { count: scanResult()!.total_pages })}</div>
+                <For each={scanResult()!.chapters}>
+                  {(ch) => (
+                    <div style="margin-bottom:8px;">
+                      <div style="font-size:11px; font-weight:600; opacity:0.8; margin-bottom:2px;">{ch.title}</div>
+                      <For each={ch.files}>
+                        {(f, idx) => {
+                          const ext = f.split(".").pop()?.toLowerCase() ?? "jpg";
+                          const out = `p${String(idx()).padStart(3, "0")}.${ext}`;
+                          return (
+                            <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; display:flex; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                              <span style="opacity:0.5; min-width:28px; text-align:right;">{String(idx() + 1).padStart(2, "0")}.</span>
+                              <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">{f}</span>
+                              <span style="opacity:0.5;">→</span>
+                              <span>{out}</span>
+                            </div>
+                          );
+                        }}
+                      </For>
+                    </div>
+                  )}
+                </For>
+              </div>
             </div>
           }
           footer={
             <div class="ds-modal-footer-actions">
               <Button text={t("common.cancel")} onClick={() => { setScanResult(null); setScanPath(null); }} disabled={importing()} />
               <IconButton icon={<AddIcon />} text={importing() ? t("local.importing") : t("local.importButton")} onClick={() => void doImport()} disabled={importing()} className="primary" />
+            </div>
+          }
+        />
+      </Show>
+
+      <Show when={folderScanResult()}>
+        <Modal
+          open={true}
+          onClose={() => {
+            if (!importing()) {
+              setFolderScanResult(null);
+              setFolderScanPath(null);
+              setFolderCoverPath(null);
+            }
+          }}
+          title={t("local.importFolderTitle", { name: folderScanResult()!.folder_name })}
+          body={
+            <div class="ds-form-stack">
+              <label class="ds-form-label-sm">{t("local.seriesTitleLabel")}</label>
+              <InputField value={folderSeriesTitle()} onInput={setFolderSeriesTitle} placeholder={folderScanResult()!.series_title} />
+              <label class="ds-form-label-sm">{t("local.chapterTitleLabel")}</label>
+              <InputField value={folderChapterTitle()} onInput={setFolderChapterTitle} placeholder={t("local.chapterTitleDefault")} />
+              <div class="ds-muted" style="font-size:12px;">
+                {t("local.folderSummary", { pages: folderScanResult()!.page_count })}
+              </div>
+              <label class="ds-form-label-sm">{t("local.coverLabel")}</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <Button text={t("local.newCoverButton")} onClick={() => void pickFolderCover()} disabled={importing()} />
+                <Show when={folderCoverPath()}>
+                  <span class="ds-muted" style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    {t("local.newCoverSelected", { name: folderCoverPath()!.split(/[/\\]/).pop() ?? "" })}
+                  </span>
+                  <Button text={t("local.newCoverRemove")} onClick={() => setFolderCoverPath(null)} disabled={importing()} />
+                </Show>
+                <Show when={!folderCoverPath()}>
+                  <span class="ds-muted" style="font-size:12px;">{t("local.newCoverKeepHint")}</span>
+                </Show>
+              </div>
+              <div style="margin-top:8px; border:1px solid var(--ds-border, #ddd); border-radius:6px; max-height:220px; overflow:auto; padding:6px; background:var(--ds-bg-subtle, rgba(0,0,0,0.02))">
+                <div style="font-size:11px; font-weight:600; margin-bottom:6px;">{t("local.previewTitle", { count: folderScanResult()!.page_count })}</div>
+                <For each={folderScanResult()!.files}>
+                  {(f, idx) => {
+                    const ext = f.split(".").pop()?.toLowerCase() ?? "jpg";
+                    const out = `p${String(idx()).padStart(3, "0")}.${ext}`;
+                    return (
+                      <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; display:flex; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        <span style="opacity:0.5; min-width:28px; text-align:right;">{String(idx() + 1).padStart(2, "0")}.</span>
+                        <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">{f}</span>
+                        <span style="opacity:0.5;">→</span>
+                        <span>{out}</span>
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
+            </div>
+          }
+          footer={
+            <div class="ds-modal-footer-actions">
+              <Button
+                text={t("common.cancel")}
+                onClick={() => { setFolderScanResult(null); setFolderScanPath(null); setFolderCoverPath(null); }}
+                disabled={importing()}
+              />
+              <IconButton
+                icon={<AddIcon />}
+                text={importing() ? t("local.importing") : t("local.importButton")}
+                onClick={() => void doFolderImport()}
+                disabled={importing()}
+                className="primary"
+              />
+            </div>
+          }
+        />
+      </Show>
+
+      <Show when={editRow()}>
+        <Modal
+          open={true}
+          onClose={closeEdit}
+          title={t("local.editTitle", { name: editRow()!.title })}
+          body={
+            <div class="ds-form-stack">
+              <label class="ds-form-label-sm">{t("local.seriesTitleLabel")}</label>
+              <InputField value={editSeriesTitle()} onInput={setEditSeriesTitle} placeholder={editRow()!.title} />
+              <label class="ds-form-label-sm">{t("local.authorLabel")}</label>
+              <InputField value={editAuthor()} onInput={setEditAuthor} placeholder="" />
+              <label class="ds-form-label-sm">{t("local.descriptionLabel")}</label>
+              <InputField value={editDescription()} onInput={setEditDescription} placeholder="" />
+              <label class="ds-form-label-sm">{t("local.coverLabel")}</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <Button text={t("local.newCoverButton")} onClick={() => void pickNewCover()} disabled={saving()} />
+                <Show when={newCoverPath()}>
+                  <span class="ds-muted" style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    {t("local.newCoverSelected", { name: newCoverPath()!.split(/[/\\]/).pop() ?? "" })}
+                  </span>
+                  <Button text={t("local.newCoverRemove")} onClick={() => setNewCoverPath(null)} disabled={saving()} />
+                </Show>
+                <Show when={!newCoverPath()}>
+                  <span class="ds-muted" style="font-size:12px;">{t("local.newCoverKeepHint")}</span>
+                </Show>
+              </div>
+            </div>
+          }
+          footer={
+            <div class="ds-modal-footer-actions">
+              <Button text={t("common.cancel")} onClick={closeEdit} disabled={saving()} />
+              <IconButton
+                icon={<i class="bi bi-check-lg" />}
+                text={saving() ? t("local.saving") : t("local.saveButton")}
+                onClick={() => void doEdit()}
+                disabled={saving()}
+                className="primary"
+              />
             </div>
           }
         />
@@ -175,6 +469,8 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
               actionLabel={t("common.open")}
               actionIcon="bi-folder2-open"
               deleteTitle={t("local.deleteTooltip")}
+              editTitle={t("local.editTooltip")}
+              onEdit={() => openEdit(row)}
               onDelete={() => handleDelete(row.permalink)}
             />
           )}

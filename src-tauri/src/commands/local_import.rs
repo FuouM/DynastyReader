@@ -109,6 +109,9 @@ fn natural_sort(paths: &mut [String]) {
 pub struct ArchiveScanChapter {
     pub title: String,
     pub page_count: usize,
+    /// Ordered filenames (zip entry names) that belong to this chapter, after
+    /// natural sort and grouping. Shown as import preview in the UI.
+    pub files: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -242,6 +245,7 @@ pub async fn scan_archive(path: String) -> Result<ArchiveScanResult, String> {
             chapters.push(ArchiveScanChapter {
                 title: display_title,
                 page_count: pages.len(),
+                files: pages,
             });
         }
         // If single group is bare "Chapter 1" with fallback we already handled; if still generic keep it.
@@ -373,6 +377,195 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
         // Register in SQLite via direct rusqlite (bypass IPC for blocking context)
         // Use the same DB file as the frontend: dynasty_reader.db
         register_local_series_in_db(&series_permalink, &meta, &chapter_permalinks, &groups, &series_slug, total_pages)?;
+
+        Ok(series_permalink)
+    })
+    .await
+    .map_err(|e| format!("import task failed: {e}"))??;
+    Ok(res)
+}
+/* ---------------------------------------------------------------------------
+ * Folder import — an already-unzipped CBZ
+ * One folder = one chapter. No recursion, no metadata inference.
+ * ------------------------------------------------------------------------ */
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FolderScanResult {
+    pub folder_name: String,
+    pub series_title: String,
+    pub page_count: usize,
+    /// Ordered filenames (direct children) after natural sort. Preview only.
+    pub files: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FolderImportMeta {
+    pub title: String,
+    pub chapter_title: String,
+    pub author: Option<String>,
+    pub description: Option<String>,
+    /// Absolute path to an explicit cover image, or None to use first page.
+    pub cover_path: Option<String>,
+}
+
+fn collect_image_files_from_dir(dir: &Path) -> Result<Vec<(String, PathBuf)>, String> {
+    let mut out = Vec::new();
+    let rd = std::fs::read_dir(dir).map_err(|e| format!("failed reading folder: {e}"))?;
+    for ent in rd {
+        let ent = ent.map_err(|e| format!("dir entry error: {e}"))?;
+        let path = ent.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if should_skip(name) {
+            continue;
+        }
+        if !is_image(name) {
+            continue;
+        }
+        out.push((name.to_string(), path));
+    }
+    Ok(out)
+}
+
+#[tauri::command(rename = "scanFolder")]
+pub async fn scan_folder(path: String) -> Result<FolderScanResult, String> {
+    let res = tokio::task::spawn_blocking(move || -> Result<FolderScanResult, String> {
+        let dir = PathBuf::from(&path);
+        if !dir.is_dir() {
+            return Err(format!("folder not found: {path}"));
+        }
+        let mut files = collect_image_files_from_dir(&dir)?;
+        if files.is_empty() {
+            return Err("no images found in folder".to_string());
+        }
+        // Natural-sort by filename string, keep PathBuf coupled.
+        files.sort_by(|a, b| natural_key(&a.0).cmp(&natural_key(&b.0)));
+        let folder_name = dir
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or(&path)
+            .to_string();
+        let series_title = folder_name.clone();
+        let file_names: Vec<String> = files.into_iter().map(|(name, _)| name).collect();
+        let page_count = file_names.len();
+        Ok(FolderScanResult {
+            folder_name,
+            series_title,
+            page_count,
+            files: file_names,
+        })
+    })
+    .await
+    .map_err(|e| format!("scan task failed: {e}"))??;
+    Ok(res)
+}
+
+#[tauri::command(rename = "importFolder")]
+pub async fn import_folder(path: String, meta: FolderImportMeta) -> Result<String, String> {
+    let res = tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let dir = PathBuf::from(&path);
+        if !dir.is_dir() {
+            return Err(format!("folder not found: {path}"));
+        }
+        let mut files = collect_image_files_from_dir(&dir)?;
+        if files.is_empty() {
+            return Err("no images found in folder".to_string());
+        }
+        files.sort_by(|a, b| natural_key(&a.0).cmp(&natural_key(&b.0)));
+
+        let title = meta.title.trim().to_string();
+        if title.is_empty() {
+            return Err("series title is required".to_string());
+        }
+        let chapter_title = {
+            let t = meta.chapter_title.trim();
+            if t.is_empty() { "Chapter 1".to_string() } else { t.to_string() }
+        };
+
+        let series_slug = slugify(&title);
+        let series_permalink = format!("local:{}", series_slug);
+        let data_root = crate::paths::data_root();
+        let series_dir = data_root.join("local").join(&series_slug);
+        if series_dir.exists() {
+            return Err(format!("a series with this title already exists: {title}"));
+        }
+        let chapters_dir = series_dir.join("chapters");
+        std::fs::create_dir_all(&chapters_dir).map_err(|e| format!("failed creating series dir: {e}"))?;
+
+        // One chapter only.
+        let ch_slug = slugify(&chapter_title);
+        let ch_slug = if ch_slug.is_empty() { "chapter-1".to_string() } else { ch_slug };
+        let ch_permalink = format!("local:{}-{}", series_slug, ch_slug);
+        let ch_dir = chapters_dir.join(&ch_slug);
+        std::fs::create_dir_all(&ch_dir).map_err(|e| format!("failed creating chapter dir: {e}"))?;
+
+        // Copy + rename pages to p000.ext … preserving lowercased extension.
+        let mut page_file_names: Vec<String> = Vec::with_capacity(files.len());
+        for (idx, (orig_name, src_path)) in files.iter().enumerate() {
+            let ext = orig_name.rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
+            let out_name = format!("p{:03}.{}", idx, ext);
+            let out_path = ch_dir.join(&out_name);
+            std::fs::copy(src_path, &out_path)
+                .map_err(|e| format!("failed copying page {}: {e}", orig_name))?;
+            page_file_names.push(orig_name.clone());
+        }
+
+        // chapter.json / series.json — same schema as CBZ.
+        let chapter_json = serde_json::json!({
+            "title": chapter_title,
+            "permalink": ch_permalink,
+            "series_permalink": series_permalink,
+            "page_count": files.len(),
+        });
+        let ch_json_str = serde_json::to_string_pretty(&chapter_json)
+            .map_err(|e| format!("failed serializing chapter.json: {e}"))?;
+        std::fs::write(ch_dir.join("chapter.json"), ch_json_str)
+            .map_err(|e| format!("failed writing chapter.json: {e}"))?;
+
+        let series_json = serde_json::json!({
+            "title": title,
+            "permalink": series_permalink,
+            "author": meta.author,
+            "description": meta.description,
+            "chapter_count": 1,
+            "total_pages": files.len(),
+        });
+        let series_json_str = serde_json::to_string_pretty(&series_json)
+            .map_err(|e| format!("failed serializing series.json: {e}"))?;
+        std::fs::write(series_dir.join("series.json"), series_json_str)
+            .map_err(|e| format!("failed writing series.json: {e}"))?;
+
+        // Cover: explicit path wins; otherwise first page.
+        let cover_out = series_dir.join("cover.webp");
+        let cover_bytes: Option<Vec<u8>> = if let Some(ref p) = meta.cover_path {
+            Some(std::fs::read(p).map_err(|e| format!("failed reading cover image: {e}"))?)
+        } else {
+            std::fs::read(&files[0].1).ok()
+        };
+        if let Some(bytes) = cover_bytes {
+            let _ = create_cover_webp(&bytes, &cover_out);
+        }
+
+        // Register in SQLite — reuses existing helper.
+        let local_meta = LocalSeriesMeta {
+            title: title.clone(),
+            author: meta.author.clone(),
+            description: meta.description.clone(),
+        };
+        let chapter_permalinks = vec![ch_permalink.clone()];
+        let groups = vec![(chapter_title.clone(), page_file_names)];
+        register_local_series_in_db(
+            &series_permalink,
+            &local_meta,
+            &chapter_permalinks,
+            &groups,
+            &series_slug,
+            files.len(),
+        )?;
 
         Ok(series_permalink)
     })
@@ -644,5 +837,112 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
     })
     .await
     .map_err(|e| format!("delete task failed: {e}"))??;
+    Ok(())
+}
+
+/* ---------------------------------------------------------------------------
+ * Update local series metadata
+ * ------------------------------------------------------------------------ */
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateLocalSeriesMeta {
+    pub title: String,
+    pub author: Option<String>,
+    pub description: Option<String>,
+    /// Absolute path to a new cover image. `None` = keep existing cover.
+    pub new_cover_path: Option<String>,
+}
+
+#[tauri::command(rename = "updateLocalSeries")]
+pub async fn update_local_series(
+    permalink: String,
+    meta: UpdateLocalSeriesMeta,
+) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || -> Result<(), String> {
+        if !permalink.starts_with("local:") {
+            return Err("not a local series permalink".to_string());
+        }
+        let slug = permalink.trim_start_matches("local:").to_string();
+        let data_root = crate::paths::data_root();
+        let series_dir = data_root.join("local").join(&slug);
+        let db_path = data_root.join("dynasty_reader.db");
+        let now = chrono_like_now();
+
+        // --- Optional cover replacement ---
+        // Do this before touching the DB so the cover path stored is correct.
+        let cover_abs = series_dir.join("cover.webp").to_string_lossy().into_owned();
+        if let Some(ref src) = meta.new_cover_path {
+            let src_bytes = std::fs::read(src)
+                .map_err(|e| format!("failed reading new cover image: {e}"))?;
+            let cover_out = series_dir.join("cover.webp");
+            create_cover_webp(&src_bytes, &cover_out)?;
+        }
+
+        // --- DB update ---
+        let conn = rusqlite::Connection::open(&db_path)
+            .map_err(|e| format!("failed opening db: {e}"))?;
+        conn.pragma_update(None, "journal_mode", "WAL")
+            .map_err(|e| format!("WAL pragma failed: {e}"))?;
+        conn.busy_timeout(std::time::Duration::from_millis(5000))
+            .map_err(|e| format!("busy timeout failed: {e}"))?;
+
+        let tx = conn.unchecked_transaction()
+            .map_err(|e| format!("tx failed: {e}"))?;
+
+        // Update local_series row
+        tx.execute(
+            "UPDATE local_series SET title = ?1, author = ?2, description = ?3, updated_at = ?4 WHERE permalink = ?5",
+            rusqlite::params![meta.title, meta.author, meta.description, now, permalink],
+        )
+        .map_err(|e| format!("update local_series failed: {e}"))?;
+
+        // Patch series JSON payload in cached_metadata
+        let series_cache_key = format!("series:{}", permalink);
+        let existing: Option<String> = tx
+            .query_row(
+                "SELECT json_payload FROM cached_metadata WHERE cache_key = ?1",
+                rusqlite::params![series_cache_key],
+                |row| row.get(0),
+            )
+            .ok();
+
+        if let Some(json_str) = existing {
+            let mut payload: serde_json::Value =
+                serde_json::from_str(&json_str).map_err(|e| format!("bad series JSON: {e}"))?;
+            payload["name"] = serde_json::json!(meta.title);
+            payload["author"] = match &meta.author {
+                Some(a) => serde_json::json!(a),
+                None => serde_json::Value::Null,
+            };
+            payload["description"] = match &meta.description {
+                Some(d) => serde_json::json!(d),
+                None => serde_json::Value::Null,
+            };
+            // Always reflect current cover path (may have just been regenerated)
+            payload["cover"] = serde_json::json!(cover_abs);
+            let updated_str = serde_json::to_string(&payload)
+                .map_err(|e| format!("re-serialise series JSON failed: {e}"))?;
+            tx.execute(
+                "UPDATE cached_metadata SET json_payload = ?1, cached_at = ?2 WHERE cache_key = ?3",
+                rusqlite::params![updated_str, now, series_cache_key],
+            )
+            .map_err(|e| format!("update cached_metadata failed: {e}"))?;
+        }
+
+        // If cover was replaced, update cover:series:<permalink> row too
+        if meta.new_cover_path.is_some() {
+            let cover_key = format!("cover:series:{}", permalink);
+            tx.execute(
+                "INSERT OR REPLACE INTO cached_metadata (cache_key, data_type, json_payload, cached_at) VALUES (?1, 'cover', ?2, ?3)",
+                rusqlite::params![cover_key, cover_abs, now],
+            )
+            .map_err(|e| format!("update cover metadata failed: {e}"))?;
+        }
+
+        tx.commit().map_err(|e| format!("commit failed: {e}"))?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("update task failed: {e}"))??;
     Ok(())
 }
