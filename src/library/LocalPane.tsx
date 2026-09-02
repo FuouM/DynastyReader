@@ -266,7 +266,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
           <span class="ds-muted" style="font-size:11.5px;display:inline-flex;align-items:center;gap:4px;">
             <StorageIcon />
             <span>
-              {data()!.length} {t("local.seriesCount", { count: data()!.length })}
+              {t("local.seriesCount", { count: data()!.length })}
               <Show when={totalBytes() > 0}>
                 {" "}({formatBytes(totalBytes())})
               </Show>
