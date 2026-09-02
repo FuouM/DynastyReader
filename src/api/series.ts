@@ -83,6 +83,10 @@ async function fetchLocalSeries(permalink: string): Promise<Series> {
       });
     }
   }
+
+  if (!localRow && taggings.length === 0) {
+    throw new Error(`Local series not found: "${permalink}"`);
+  }
   const coverAbs = localRow?.cover_path
     ? (await fileResolve(localRow.cover_path)) || localRow.cover_path
     : (await fileResolve(`local/${slug}/cover.webp`)) || `local/${slug}/cover.webp`;

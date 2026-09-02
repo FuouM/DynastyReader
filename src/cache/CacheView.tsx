@@ -16,7 +16,7 @@ import {
   For,
   Show,
 } from "solid-js";
-import { navigate, setActions, showBanner } from "../stores";
+import { navigate, setActions, showBanner, setSessionTab } from "../stores";
 import { formatBytes } from "../lib/format";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
@@ -137,12 +137,28 @@ export function CacheView() {
   const deleteSeries = async (group: DownloadedSeriesGroup): Promise<void> => {
     const perms = group.chapters.map((c) => c.chapterPermalink);
     await clearCachedGroupPages(perms);
+    setSessionTab((cur) => {
+      if (!cur) return null;
+      const sPerm = cur.route.seriesPermalink;
+      const chPerm = cur.route.chapterPermalink;
+      if (sPerm === group.seriesPermalink || (chPerm && perms.includes(chPerm))) {
+        return null;
+      }
+      return cur;
+    });
     showBanner(t("cache.deletedWorkSuccess", { name: group.seriesName || group.seriesPermalink }));
     void refetch();
   };
 
   const deleteChapter = async (chapterPermalink: string): Promise<void> => {
     await clearCachedGroupPages([chapterPermalink]);
+    setSessionTab((cur) => {
+      if (!cur) return null;
+      if (cur.route.chapterPermalink === chapterPermalink) {
+        return null;
+      }
+      return cur;
+    });
     showBanner(t("cache.chapterClearedBanner"));
     void refetch();
   };
@@ -150,6 +166,13 @@ export function CacheView() {
   const deleteAllOrphans = async (orphans: ProcessedCachedChapter[]): Promise<void> => {
     const perms = orphans.map((o) => o.chapterPermalink);
     await clearCachedGroupPages(perms);
+    setSessionTab((cur) => {
+      if (!cur) return null;
+      if (cur.route.chapterPermalink && perms.includes(cur.route.chapterPermalink)) {
+        return null;
+      }
+      return cur;
+    });
     showBanner(t("cache.orphansClearedBanner"));
     void refetch();
   };

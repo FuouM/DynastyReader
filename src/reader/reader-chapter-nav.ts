@@ -47,6 +47,18 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
             log.debug("reader-chapter-nav", "containerTag fetch failed:", err2);
           }
         }
+        if (!seriesData && (s.permalink.startsWith("local:") || permalink.startsWith("local:"))) {
+          const localPerm = permalink.startsWith("local:") ? permalink : `local:${permalink}`;
+          try {
+            seriesData = await fetchSeries(localPerm, useForce, "local");
+            if (seriesData) {
+              s.setSeriesPermalink(localPerm);
+              s.setSeriesType("local");
+            }
+          } catch (err3) {
+            log.debug("reader-chapter-nav", "local fallback fetch failed:", err3);
+          }
+        }
         if (!seriesData) throw err;
       }
       if (s.disposed || !seriesData) return lastCl;

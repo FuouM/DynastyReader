@@ -60,21 +60,36 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   if (s.disposed) return;
 
   const containerTag = getChapterContainerTag(chapter.tags);
-  s.containerTagPermalink = containerTag?.permalink || null;
-  s.containerTagType = containerTag?.type || null;
+  const isLocalChapter = permalink.startsWith("local:");
+  const containerPerm = containerTag?.permalink
+    ? isLocalChapter && !containerTag.permalink.startsWith("local:")
+      ? `local:${containerTag.permalink}`
+      : containerTag.permalink
+    : null;
+  s.containerTagPermalink = containerPerm;
+  s.containerTagType = isLocalChapter ? "local" : (containerTag?.type || null);
 
   const hasRouteChapterList = Boolean(route.chapterList && route.chapterList.length > 0);
+  const routeSeriesPerm = route.seriesPermalink
+    ? isLocalChapter && !route.seriesPermalink.startsWith("local:")
+      ? `local:${route.seriesPermalink}`
+      : route.seriesPermalink
+    : null;
+
   // Tag/author/pairing listings mis-attribute chapters. If the chapter has a
   // true container (Series/Anthology/Issue/Doujin) that differs from the
   // route's seriesPermalink, ignore the route — otherwise gotoSeries returns
   // to the tag. If the chapter is not part of any series (no containerTag),
   // continue like before and keep the route's tag context.
   const routeMismatch =
-    Boolean(containerTag && containerTag.permalink && route.seriesPermalink && containerTag.permalink !== route.seriesPermalink);
+    Boolean(containerPerm && routeSeriesPerm && containerPerm !== routeSeriesPerm);
   const useRouteList = hasRouteChapterList && !routeMismatch;
-  const seriesPermalink = (containerTag && containerTag.permalink) || (!routeMismatch ? route.seriesPermalink || null : null);
+  let seriesPermalink = containerPerm || (!routeMismatch ? routeSeriesPerm : null);
+  if (isLocalChapter && seriesPermalink && !seriesPermalink.startsWith("local:")) {
+    seriesPermalink = `local:${seriesPermalink}`;
+  }
   const seriesName = (containerTag && containerTag.name) || (!routeMismatch ? route.seriesName || chapter.title : chapter.title);
-  const preferredType = (containerTag && containerTag.type) || (!routeMismatch && route.seriesPermalink ? "series" : undefined);
+  const preferredType = isLocalChapter ? "local" : ((containerTag && containerTag.type) || (!routeMismatch && route.seriesPermalink ? "series" : undefined));
 
   s.setSeriesPermalink(seriesPermalink);
   s.setSeriesType(preferredType ?? null);

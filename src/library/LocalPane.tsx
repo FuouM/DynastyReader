@@ -1,7 +1,7 @@
 import { createEffect, createMemo, createResource, createSignal, For, Show } from "solid-js";
 import { open } from "@tauri-apps/plugin-dialog";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import { navigate, dbReady } from "../stores";
+import { navigate, dbReady, route, setSessionTab } from "../stores";
 import { getLocalSeries } from "../db/local.repo";
 import type { LocalSeriesRow } from "../db/local.repo";
 import * as ipc from "../ipc";
@@ -177,6 +177,24 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const handleDelete = async (permalink: string): Promise<void> => {
     try {
       await ipc.deleteLocalSeries(permalink);
+      setSessionTab((cur) => {
+        if (!cur) return null;
+        const sPerm = cur.route.seriesPermalink;
+        const chPerm = cur.route.chapterPermalink;
+        const slug = permalink.replace(/^local:/, "");
+        if (sPerm === permalink || sPerm === slug || chPerm?.startsWith(permalink) || chPerm?.startsWith(`local:${slug}`)) {
+          return null;
+        }
+        return cur;
+      });
+      const currentRoute = route();
+      const curSlug = permalink.replace(/^local:/, "");
+      if (
+        (currentRoute.view === "series" && (currentRoute.seriesPermalink === permalink || currentRoute.seriesPermalink === curSlug)) ||
+        (currentRoute.view === "reader" && (currentRoute.chapterPermalink?.startsWith(permalink) || currentRoute.chapterPermalink?.startsWith(`local:${curSlug}`)))
+      ) {
+        navigate({ view: "library", libraryTab: "local" });
+      }
       showBanner(t("cache.deletedWorkSuccess", { name: permalink }));
       void refetch();
     } catch (err) {

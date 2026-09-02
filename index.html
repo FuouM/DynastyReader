@@ -12,6 +12,7 @@
          computeAccentPalette() must be reflected here to prevent flashbang
          before the app bundle loads. Keep maps and color math in sync. -->
     <script>
+      (function() {
         try {
           var raw = localStorage.getItem("ds-theme");
           var theme = "light";
@@ -49,7 +50,7 @@
             try {
               var isDark = (colorSchemes[theme] || "light") === "dark";
               window.AndroidThemeBridge.updateTheme(isDark, metaColors[theme] || "#f5f5f5");
-            } catch {}
+            } catch (_) {}
           }
           var presetMap = {
             "default": "#0078d4",
@@ -216,7 +217,7 @@
             root.style.setProperty("--ds-accent-taskbar-1", adj(0.35));
             root.style.setProperty("--ds-accent-taskbar-2", adj(0.20));
           }
-        } catch {}
+        } catch (_) {}
       })();
     </script>
     <style>

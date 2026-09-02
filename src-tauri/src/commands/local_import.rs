@@ -695,7 +695,7 @@ fn register_local_series_in_db(
         let chapter_payload = serde_json::json!({
             "title": ch_title,
             "permalink": ch_permalink,
-            "tags": [{"type": "Series", "name": meta.title, "permalink": series_permalink.replace("local:", "")}],
+            "tags": [{"type": "Series", "name": meta.title, "permalink": series_permalink}],
             "pages": (0..pages.len()).map(|pi| {
                 let ext = pages[pi].rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
                 serde_json::json!({
