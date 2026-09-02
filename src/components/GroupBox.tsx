@@ -8,7 +8,7 @@
  * specificity changes. Collapse is opt-in via `collapsible`.
  */
 
-import { Show, type JSX } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show, type JSX } from "solid-js";
 
 export interface GroupBoxProps {
   id?: string;
@@ -28,11 +28,35 @@ export interface GroupBoxProps {
 }
 
 export function GroupBox(props: GroupBoxProps) {
+  let actionsEl: HTMLDivElement | undefined;
+  const [actionsWidth, setActionsWidth] = createSignal(0);
+
+  createEffect(() => {
+    if (!props.actions) {
+      setActionsWidth(0);
+      return;
+    }
+    if (!actionsEl) return;
+    const update = () => {
+      if (actionsEl) {
+        setActionsWidth(actionsEl.offsetWidth);
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(actionsEl);
+    onCleanup(() => ro.disconnect());
+  });
+
   return (
     <div
       id={props.id}
       class={`group-box${props.class ? ` ${props.class}` : ""}`}
-      classList={{ collapsed: !!(props.collapsible && props.collapsed) }}
+      classList={{
+        collapsed: !!(props.collapsible && props.collapsed),
+        "group-box--has-actions": !!props.actions,
+      }}
+      style={actionsWidth() > 0 ? { "--ds-group-actions-w": `${actionsWidth() + 12}px` } : undefined}
     >
       <div
         class="group-box-title"
@@ -54,7 +78,9 @@ export function GroupBox(props: GroupBoxProps) {
         </Show>
       </div>
       <Show when={props.actions}>
-        <div class="group-box-actions">{props.actions}</div>
+        <div ref={(el) => { actionsEl = el; }} class="group-box-actions">
+          {props.actions}
+        </div>
       </Show>
       <div class={`group-box-body${props.bodyClass ? ` ${props.bodyClass}` : ""}`}>
         {props.children}

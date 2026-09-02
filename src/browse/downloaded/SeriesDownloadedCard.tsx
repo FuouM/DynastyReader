@@ -147,7 +147,6 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
           <BookIcon />
           <span
             class="ds-truncate ds-link-title"
-            style="max-width:320px;"
             onClick={navigateToSeries}
             title={props.group.seriesName || props.group.seriesPermalink}
           >

@@ -165,8 +165,43 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  max-width: calc(100% - 20px);
+  max-width: calc(100% - 20px - var(--ds-group-actions-w, 0px));
   white-space: nowrap;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+}
+.group-box-title > * {
+  min-width: 0;
+}
+.group-box-title > *:not(.group-box-collapse-btn):not(svg):not(i):not(.bi):not(.ds-icon-inline):not(.ds-muted) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 0 1 auto;
+}
+.group-box-title .ds-icon-text {
+  min-width: 0;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 1 auto;
+}
+.group-box-title .ds-icon-text > *:not(svg):not(i):not(.bi):not(.ds-icon-inline):not(.ds-muted) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 0 1 auto;
+}
+.group-box-title .ds-icon-inline,
+.group-box-title .ds-icon-text > svg,
+.group-box-title .ds-icon-text > i,
+.group-box-title .ds-icon-text > .bi,
+.group-box-title .ds-icon-text > .ds-muted {
+  flex-shrink: 0;
 }
 .group-box-actions {
   position: absolute;
@@ -205,6 +240,7 @@
   color: var(--sys-button-border, #707070);
   font-size: var(--font-xs);
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 .group-box-collapse-btn:hover {
   background-color: var(--sys-button-hover, #e5f1fb);
