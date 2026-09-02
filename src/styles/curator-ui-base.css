@@ -241,7 +241,6 @@
   font-size: var(--font-xs);
   box-sizing: border-box;
   flex-shrink: 0;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 .group-box-collapse-btn:hover {
   background-color: rgba(0, 0, 0, 0.08);

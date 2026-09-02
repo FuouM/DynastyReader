@@ -1056,7 +1056,6 @@
 .group-box-title--collapsible {
   cursor: pointer;
   user-select: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .group-box-title--collapsible:hover {
   border-color: var(--sys-border-focus, #3c7fb1);
