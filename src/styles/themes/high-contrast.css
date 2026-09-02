@@ -143,4 +143,20 @@
     color: #ffffff !important;
     box-shadow: none !important;
   }
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .group-box-title--collapsible:hover {
+    border-color: #ffffff !important;
+  }
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .group-box-collapse-btn {
+    color: #ffffff !important;
+  }
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .group-box-collapse-btn:hover {
+    background-color: #ffffff !important;
+    border-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .group-box-collapse-btn:active {
+    background-color: #cccccc !important;
+    border-color: #ffffff !important;
+    color: #000000 !important;
+  }
 }
