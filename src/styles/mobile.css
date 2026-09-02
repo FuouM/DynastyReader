@@ -1159,18 +1159,11 @@
   gap: 2px !important;
 }
 
-#ds-root[data-mobile] .ds-chapter-seat {
-  min-width: 28px !important;
-  height: 26px !important;
-  font-size: 11px !important;
-  padding: 0 5px !important;
-}
-
-#ds-root[data-mobile] .ds-chapter-range-bar {
-  gap: 2px !important;
-}
-
-#ds-root[data-mobile] .ds-chapter-matrix {
-  max-height: 160px !important;
+/* Unify Downloaded tab chapter list rows to desktop sizing */
+#ds-root[data-mobile] .ds-downloaded-chapter-list .ds-chapter-row {
+  min-height: unset !important;
+  padding: 5px 8px !important;
+  gap: 0 !important;
+  font-size: var(--font-md) !important;
 }
 }
