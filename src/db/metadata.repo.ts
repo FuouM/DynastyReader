@@ -11,16 +11,6 @@ export async function getCached(key: string): Promise<CachedMetadata | null> {
 }
 
 /**
- * Retrieves all cached metadata records whose cache_key begins with a prefix (e.g. 'dir:series:').
- */
-export async function getCachedByPrefix(prefix: string): Promise<CachedMetadata[]> {
-  return query<CachedMetadata>(
-    `SELECT json_payload, cached_at, etag FROM cached_metadata WHERE cache_key LIKE ?`,
-    [`${prefix}%`],
-  );
-}
-
-/**
  * Batch retrieves multiple cached metadata records in a single fast SQL query.
  */
 export async function getBatchCached(keys: string[]): Promise<Map<string, string>> {

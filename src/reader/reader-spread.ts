@@ -36,7 +36,7 @@ function isLtrTag(tag: { type?: string; name?: string; permalink?: string }): bo
   );
 }
 
-export function isLongStripTag(tag: { type?: string; name?: string; permalink?: string }): boolean {
+function isLongStripTag(tag: { type?: string; name?: string; permalink?: string }): boolean {
   if (!tag) return false;
   if (tag.permalink && LONG_STRIP_TAG_PERMALINKS.has(tag.permalink.toLowerCase())) {
     return true;

@@ -9,7 +9,7 @@ import {
   retryFailedDownloads,
   type DownloadQueueItem,
 } from "../ipc";
-import { formatBytes } from "../lib/format";
+import { formatBytes, formatSpeed, formatEta } from "../lib/format";
 import { errorMessage } from "../utils/errors";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
@@ -26,10 +26,22 @@ import {
   CheckIcon,
   ChevronDownIcon,
 } from "../components/Icon";
-import type { DownloadProgressPayload, SeriesDownloadGroup } from "./download-manager";
-import { formatSpeed, formatEta } from "./download-manager";
+import type { DownloadProgressPayload } from "../stores/download";
 
-export type { DownloadProgressPayload, SeriesDownloadGroup };
+export interface SeriesDownloadGroup {
+  series_permalink: string;
+  series_title: string;
+  items: DownloadQueueItem[];
+  latestQueuedAt: number;
+  totalChapters: number;
+  completedChapters: number;
+  failedChapters: number;
+  downloadingItem?: DownloadQueueItem;
+  overallPercent: number;
+  status: "downloading" | "paused" | "failed" | "pending" | "done";
+}
+
+export type { DownloadProgressPayload };
 
 export function DownloadManager(props: { onComplete?: () => void }) {
   const [items, setItems] = createSignal<DownloadQueueItem[]>([]);

@@ -124,20 +124,6 @@ export async function dbBackup(dbName: string): Promise<DbBackupResult> {
   return invoke<DbBackupResult>("dbBackup", { dbName });
 }
 
-export interface DbBackupEntry {
-  filename: string;
-  size_bytes: number;
-  modified_secs: number;
-}
-
-export interface DbListBackupsResult {
-  backups: DbBackupEntry[];
-}
-
-export async function dbListBackups(dbName: string): Promise<DbListBackupsResult> {
-  return invoke<DbListBackupsResult>("dbListBackups", { dbName });
-}
-
 export interface DbRestoreResult {
   restored: boolean;
   backup_filename?: string;
@@ -145,9 +131,6 @@ export interface DbRestoreResult {
   target: string;
 }
 
-export async function dbRestore(dbName: string, backupFilename: string): Promise<DbRestoreResult> {
-  return invoke<DbRestoreResult>("dbRestore", { dbName, backupFilename });
-}
 
 export async function dbRestoreFromPath(dbName: string, sourcePath: string): Promise<DbRestoreResult> {
   return invoke<DbRestoreResult>("dbRestoreFromPath", { dbName, sourcePath });

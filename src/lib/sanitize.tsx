@@ -72,9 +72,3 @@ export function SanitizedDescription(props: { html: string }): JSX.Element {
   return el(<div class="ds-series-desc">{nodes()}</div>);
 }
 
-export function sanitizeDescriptionHtml(html: string): JSX.Element[] {
-  if (!html) return [];
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-  return renderSanitizedNodes(Array.from(doc.body.childNodes));
-}

@@ -193,16 +193,6 @@ export async function clearHistory(): Promise<void> {
   notifyHistoryChanged();
 }
 
-export async function getHistory(limit = 100): Promise<HistoryRow[]> {
-  return query<HistoryRow>(
-    `SELECT id, chapter_permalink, series_permalink, series_name, chapter_title, read_at
-     FROM reading_history
-     ORDER BY read_at DESC, id DESC LIMIT ?`,
-    [limit],
-  );
-}
-
-
 export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
   return queryPaged<HistoryRow>(
     `SELECT COUNT(*) as count FROM reading_history`,

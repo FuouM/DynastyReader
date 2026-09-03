@@ -33,7 +33,6 @@ export interface InputFieldProps {
   onBlur?: () => void;
   /** Optional content rendered inside the wrapper (e.g. a typeahead dropdown). */
   dropdown?: JSX.Element;
-  children?: JSX.Element;
 }
 export function InputField(props: InputFieldProps) {
   const [value, setValue] = createSignal(props.value ?? "");

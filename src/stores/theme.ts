@@ -11,7 +11,6 @@
  * Keep `index.html` head-script maps (HEAD_SCRIPT_SYNC) in sync — they are the
  * pre-paint mirror of this registry to prevent flashbang.
  */
-import { makeEventListener } from "@solid-primitives/event-listener";
 import { persistedSignal } from "../lib/persisted-signal";
 import { parsePersistedId } from "../lib/persisted-helpers";
 import { log } from "../utils/log";
@@ -129,12 +128,6 @@ export function toggleTheme(): void {
   setTheme(VALID_THEMES[(idx + 1) % VALID_THEMES.length]);
 }
 
-export function onThemeChange(fn: (t: AppTheme) => void): () => void {
-  return makeEventListener(window, THEME_CHANGE_EVENT, (ev) => {
-    const custom = ev as CustomEvent<{ theme: AppTheme }>;
-    fn(custom.detail?.theme ?? theme());
-  });
-}
 /** Applies the persisted theme on startup, migrating the legacy reader key. */
 export function initAppTheme(): void {
   try {

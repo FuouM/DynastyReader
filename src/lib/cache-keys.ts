@@ -15,14 +15,3 @@ export function seriesKey(permalink: string): string {
   return `series:${permalink}`;
 }
 
-export function chapterKey(permalink: string): string {
-  return `chapter:${permalink}`;
-}
-
-export function feedKey(urlPath: string): string {
-  return `feed:${urlPath}`;
-}
-
-export function dirKey(kind: "series" | "tags", page: number): string {
-  return `${kind === "series" ? "dir:series" : "dir:tags"}:${page}`;
-}

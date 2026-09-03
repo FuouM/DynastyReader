@@ -27,7 +27,6 @@ export {
   goBackTo,
   goForward,
   goForwardTo,
-  isSameRoute,
   closeSessionMangaTab,
   routeTitle,
   routeLabel,
@@ -41,7 +40,6 @@ export {
   actions,
   setActions,
   showBanner,
-  hideBanner,
 } from "./topbar";
 
 export { theme, setTheme, toggleTheme, initAppTheme, THEME_CHANGE_EVENT, THEME_REGISTRY } from "./theme";
@@ -60,8 +58,6 @@ export type { UiMode } from "./platform";
 export {
   activeDownloadCount,
   downloadSpeedBps,
-  activeSeriesName,
-  activeChapterName,
   formatDownloadSpeed,
   initGlobalDownloadListener,
 } from "./download";

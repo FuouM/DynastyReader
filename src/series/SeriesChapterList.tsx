@@ -15,7 +15,7 @@ export interface ChapterMeta extends ChapterRef {
   volumeHeader?: string;
 }
 
-export function ChapterRow(props: {
+function ChapterRow(props: {
   ch: ChapterMeta;
   prog: SeriesProgressRow | undefined;
   cachedCount: number;

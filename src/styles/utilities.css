@@ -100,13 +100,6 @@
   gap: 8px;
   font-size: var(--font-sm);
 }
-.ds-scroll-bottom-btn {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 50;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
 .ds-offline-icon {
   margin-left: 2px;
   vertical-align: middle;
@@ -882,12 +875,7 @@
 .ds-nowrap {
   white-space: nowrap;
 }
-.ds-tag-pill--compact {
-  font-size: var(--font-sm);
-  padding: 1px 6px;
-  border-radius: var(--radius-1);
-  cursor: pointer;
-}
+.ds-tag-pill--compact,
 .ds-tag-pill--normal {
   font-size: var(--font-sm);
   padding: 1px 6px;

@@ -6,7 +6,7 @@
 
 import { createEffect, createResource, createSignal, For, Show } from "solid-js";
 import { navigate, setActions, showBanner } from "../stores";
-import { decodeEntities, safeHtml } from "../utils/html";
+import { decodeEntities } from "../utils/html";
 import { formatDate, dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
@@ -148,7 +148,7 @@ export function BlacklistView() {
                           {decodeEntities(item.series_name)}
                         </div>
                         <div class="ds-muted ds-bl-series-meta">
-                          <span class="ds-etag-tag">{safeHtml(item.series_permalink)}</span>
+                          <span class="ds-etag-tag">{item.series_permalink}</span>
                           <span>{t("blacklist.blacklistedOn", { date: formatDate(item.created_at) })}</span>
                         </div>
                       </div>

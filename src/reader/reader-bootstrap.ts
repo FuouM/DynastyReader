@@ -39,7 +39,7 @@ import { errorMessage } from "../utils/errors";
 import { log } from "../utils/log";
 import { loadChapterList } from "./reader-chapter-nav";
 
-export const RESTORE_REVEAL_DEADLINE_MS = 1200;
+const RESTORE_REVEAL_DEADLINE_MS = 1200;
 
 export async function initReaderSession(s: ReaderSession): Promise<void> {
   const route = s.route;

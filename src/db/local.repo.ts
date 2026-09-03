@@ -1,4 +1,4 @@
-import { execute, query } from "./client";
+import { query } from "./client";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 export interface LocalSeriesRow {
@@ -81,8 +81,4 @@ export async function getLocalSeriesByPermalink(permalink: string): Promise<Loca
     if (msg.includes("no such table")) return null;
     throw err;
   }
-}
-
-export async function deleteLocalSeries(permalink: string): Promise<void> {
-  await execute(`DELETE FROM local_series WHERE permalink = ?`, [permalink]);
 }

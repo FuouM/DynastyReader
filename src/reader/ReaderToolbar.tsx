@@ -16,7 +16,7 @@ import { errorMessage } from "../utils/errors";
 import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import { useCopyLink } from "../hooks/useCopyLink";
-import { getReaderNavPosition, type ReaderNavPosition } from "./settings";
+import { getReaderNavPosition } from "./settings";
 import { IconButton } from "../components/Button";
 import { ReaderMainRow, ReaderControlsRow } from "./ReaderNavRows";
 import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
@@ -33,12 +33,10 @@ import {
   Icon,
 } from "../components/Icon";
 
-export { ReaderMainRow, ReaderControlsRow } from "./ReaderNavRows";
-export { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
 
 export function ReaderToolbar(props: { session: ReaderSession }) {
   const s = props.session;
-  const [navPos, setNavPos] = createSignal<ReaderNavPosition>(getReaderNavPosition());
+  const navPos = getReaderNavPosition;
   const { copied, handleCopyLink } = useCopyLink({
     getUrl: () => dynastyUrl("chapters", s.permalink),
     namespace: "reader-toolbar",
@@ -50,11 +48,6 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
     }
   });
 
-  const onNavPosChange = (ev: Event): void => {
-    const customEv = ev as CustomEvent<ReaderNavPosition>;
-    setNavPos(customEv.detail || getReaderNavPosition());
-  };
-  makeEventListener(window, "ds-reader-nav-pos-change", onNavPosChange);
 
   const onFullscreenChange = (): void => {
     if (!document.fullscreenElement && s.isFullscreen()) {
@@ -318,13 +311,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
 
 export function ReaderBottomNav(props: { session: ReaderSession }) {
   const s = props.session;
-  const [navPos, setNavPos] = createSignal<ReaderNavPosition>(getReaderNavPosition());
-
-  const onNavPosChange = (ev: Event): void => {
-    const customEv = ev as CustomEvent<ReaderNavPosition>;
-    setNavPos(customEv.detail || getReaderNavPosition());
-  };
-  makeEventListener(window, "ds-reader-nav-pos-change", onNavPosChange);
+  const navPos = getReaderNavPosition;
   return (
     <Show when={isMobile() || navPos() === "bottom"}>
       <nav

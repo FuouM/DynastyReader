@@ -9,7 +9,6 @@ import { Icon, type BootstrapIconName } from "./Icon";
 
 export interface EmptyStateProps {
   iconName?: BootstrapIconName;
-  iconClass?: string;
   iconCssText?: string;
   cssText?: string;
   children?: JSX.Element;
@@ -20,9 +19,6 @@ export function EmptyState(props: EmptyStateProps) {
     <div class="ds-empty-state" style={props.cssText}>
       <Show when={props.iconName}>
         <Icon name={props.iconName!} style={props.iconCssText} />
-      </Show>
-      <Show when={!props.iconName && props.iconClass}>
-        <i class={props.iconClass} style={props.iconCssText} aria-hidden="true"></i>
       </Show>
       {props.children}
     </div>

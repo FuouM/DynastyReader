@@ -33,9 +33,3 @@ export function showBanner(message: string): void {
   _setBanner(message);
   dismissBanner();
 }
-
-/** Hides the transient banner immediately. */
-export function hideBanner(): void {
-  dismissBanner.clear();
-  _setBanner(null);
-}

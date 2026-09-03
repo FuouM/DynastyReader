@@ -1,7 +1,6 @@
 import { query, execute } from "./client";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
-import { withDbWarn } from "./withDbWarn";
 import { log } from "../utils/log";
 export interface DbFileStats {
   dbSizeBytes: number;
@@ -49,10 +48,13 @@ async function countTable(table: string): Promise<number> {
     log.warn("db/manage", `countTable rejected unapproved table name: "${table}"`);
     return 0;
   }
-  return withDbWarn(`countTable failed for "${table}"`, async () => {
+  try {
     const rows = await query<{ c: number }>(`SELECT COUNT(*) as c FROM ${table}`);
     return rows[0]?.c ?? 0;
-  }, 0);
+  } catch (err) {
+    log.warn("db/manage", `countTable failed for "${table}":`, err);
+    return 0;
+  }
 }
 
 /** File size for the main db + wal/shm sidecars. */
@@ -176,15 +178,6 @@ export async function wipeDatabase(): Promise<void> {
 /** Creates a timestamped backup via VACUUM INTO. Returns backup filename and size. */
 export async function backupDatabase(): Promise<ipc.DbBackupResult> {
   return ipc.dbBackup(DB_NAME);
-}
-
-export async function listDatabaseBackups(): Promise<ipc.DbBackupEntry[]> {
-  const res = await ipc.dbListBackups(DB_NAME);
-  return res.backups ?? [];
-}
-
-export async function restoreDatabase(backupFilename: string): Promise<ipc.DbRestoreResult> {
-  return ipc.dbRestore(DB_NAME, backupFilename);
 }
 
 export async function restoreDatabaseFromPath(sourcePath: string): Promise<ipc.DbRestoreResult> {

@@ -44,12 +44,6 @@ import { ReaderActions, type ReaderActionsController } from "../components/Reade
 
 const FULLSCREEN_RELAYOUT_FIRST_MS = 60;
 const FULLSCREEN_RELAYOUT_SECOND_MS = 180;
-export {
-  isAutoCacheChapterEnabled,
-  setAutoCacheChapterEnabled,
-  getPrefetchBuffer,
-  setPrefetchBuffer,
-} from "./settings";
 
 export function createReaderSession(route: Route): ReaderSession {
   return new ReaderSession(route);

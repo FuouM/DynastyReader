@@ -2,31 +2,10 @@
  * Small action-bar / empty-state components shared across views. Port of `action-bar.ts`.
  */
 
-import type { JSX } from "solid-js";
 import { t } from "../i18n";
 import { ArrowLeftIcon, RefreshIcon } from "./Icon";
 import { IconButton } from "./Button";
 
-export interface TopbarActionProps {
-  html?: JSX.Element;
-  title: string;
-  onClick: () => void;
-  children?: JSX.Element;
-}
-
-/** Compact top-bar action button. */
-export function TopbarAction(props: TopbarActionProps) {
-  return (
-    <button
-      type="button"
-      class="win-button ds-btn-compact"
-      title={props.title}
-      onClick={() => props.onClick()}
-    >
-      {props.children ?? props.html}
-    </button>
-  );
-}
 
 export interface BackRefreshActionsProps {
   backLabel: string;

@@ -252,35 +252,6 @@ export function StatCard(props: StatCardProps) {
   );
 }
 
-export interface ToggleButtonProps {
-  id?: string;
-  className?: string;
-  style?: string;
-  disabled?: boolean;
-  value: boolean;
-  icon: JSX.Element;
-  activeIcon: JSX.Element;
-  text: string;
-  activeText: string;
-  title?: string;
-  activeTitle?: string;
-  onToggle?: (next: boolean) => void;
-}
-
-export function ToggleButton(props: ToggleButtonProps) {
-  return (
-    <Button
-      id={props.id}
-      className={[props.className, props.value ? "primary" : undefined].filter(Boolean).join(" ")}
-      cssText={props.style}
-      title={props.value ? props.activeTitle ?? props.title : props.title}
-      disabled={props.disabled}
-      icon={props.value ? props.activeIcon : props.icon}
-      text={props.value ? props.activeText : props.text}
-      onClick={() => props.onToggle?.(!props.value)}
-    />
-  );
-}
 
 export interface DsSwitchProps {
   id?: string;
@@ -333,5 +304,3 @@ export function DsSwitch(props: DsSwitchProps) {
     </button>
   );
 }
-
-export const ToggleSwitch = DsSwitch;

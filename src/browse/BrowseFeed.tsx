@@ -22,9 +22,11 @@ import { fetchFeedWithRevalidation } from "../api";
 import {
   getBlacklistMode,
   isItemBlacklisted,
+  getHistoryPermalinks,
+  getBookmarkPermalinks,
+  getFullyCachedChapterPermalinks,
   type BlacklistMode,
 } from "../db";
-import { fetchItemStateSets } from "./useItemRowState";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import {
   setPaneError,
@@ -68,6 +70,15 @@ interface FeedModel {
   rows: FeedRowData[];
   blacklistedRows: FeedRowData[];
 }
+async function fetchItemStateSets(permalinks: string[]) {
+  const [readHistorySet, bookmarkSet, fullyCachedSet] = await Promise.all([
+    getHistoryPermalinks(permalinks).catch(() => new Set<string>()),
+    getBookmarkPermalinks(permalinks).catch(() => new Set<string>()),
+    getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>()),
+  ]);
+  return { readHistorySet, bookmarkSet, fullyCachedSet };
+}
+
 
 async function loadFeedModel(tabId: string, page: number): Promise<FeedModel> {
   const url = `${FEED_TAB_TO_URL[tabId]}?page=${page}`;

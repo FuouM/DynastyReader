@@ -1,7 +1,7 @@
 export { execute, query } from "./client";
 export type { Row } from "./client";
 export { initDb } from "./schema";
-export { getCached, getCachedByPrefix, getBatchCached, setCached, touchCached, deleteCached } from "./metadata.repo";
+export { getCached, getBatchCached, setCached, touchCached, deleteCached } from "./metadata.repo";
 export {
   getFollowedSeriesPage,
   getFollowedSeriesRow,
@@ -20,7 +20,6 @@ export {
   addHistory,
   removeHistory,
   clearHistory,
-  getHistory,
   getHistoryPage,
   getHistoryMap,
   getHistoryPermalinks,
@@ -73,7 +72,6 @@ export {
   notifyCollectionsChanged,
   getCollectionById,
   createCollection,
-  renameCollection,
   deleteCollection,
   getCollectionItems,
   addItemToCollection,
@@ -89,11 +87,9 @@ export {
   getDbStats,
   wipeDatabase,
   backupDatabase,
-  listDatabaseBackups,
-  restoreDatabase,
   restoreDatabaseFromPath,
 } from "./db.manage";
-export { getLocalSeries, getLocalSeriesByPermalink, deleteLocalSeries } from "./local.repo";
+export { getLocalSeries, getLocalSeriesByPermalink } from "./local.repo";
 export type { LocalSeriesRow } from "./local.repo";
 export type { DbStats, DbFileStats, DbTableCounts } from "./db.manage";
 export type {

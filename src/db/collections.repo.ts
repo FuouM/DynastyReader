@@ -63,24 +63,6 @@ export async function createCollection(name: string): Promise<CollectionRow> {
   return { ...rows[0], itemCount: 0 };
 }
 
-/**
- * Renames a custom collection. Default collections cannot be renamed.
- */
-export async function renameCollection(id: number, newName: string): Promise<void> {
-  const cleanName = newName.trim();
-  if (!cleanName) {
-    throw new Error("Collection name cannot be empty.");
-  }
-  const existing = await getCollectionById(id);
-  if (!existing) {
-    throw new Error("Collection not found.");
-  }
-  if (existing.is_default) {
-    throw new Error("The default Favorites collection cannot be renamed.");
-  }
-  await execute("UPDATE collections SET name = ? WHERE id = ?", [cleanName, id]);
-  notifyCollectionsChanged();
-}
 
 /**
  * Deletes a custom collection and all its item associations.

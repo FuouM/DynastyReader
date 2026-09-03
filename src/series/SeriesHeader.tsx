@@ -12,7 +12,7 @@ import type { Series } from "../types/api";
 import { TagRow } from "../components/TagRow";
 import { Cover } from "../components/Cover";
 import { SanitizedDescription } from "../lib/sanitize";
-export function groupTags(series: Series): GroupedSeriesTags {
+function groupTags(series: Series): GroupedSeriesTags {
   return groupSeriesTags(series.tags, series.taggings);
 }
 

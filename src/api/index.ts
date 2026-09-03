@@ -1,5 +1,5 @@
-export { httpGetText, httpDownloadFull, cachedJson } from "./http";
-export { fileResolve, fileResolveWithStat, fileExists, fileMove, fileDelete } from "./fs";
+export { httpGetText, httpDownloadFull } from "./http";
+export { fileResolve, fileResolveWithStat, fileExists, fileMove } from "./fs";
 export { checkFeedOnline, fetchFeedWithRevalidation } from "./feed";
 export { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages, suggest } from "./directory";
 export {
@@ -11,10 +11,7 @@ export {
 export { fetchChapter } from "./chapter";
 export { openExternal, parseDynastyUrl, pageOutputPath } from "./navigation";
 export { searchDynasty } from "./search";
-export { parseSearchHtml } from "./search-parser";
 export {
-  recordNetworkTraffic,
-  recordCacheHit,
   getSessionTraffic,
   resetLifetimeTraffic,
   subscribeSessionTraffic,

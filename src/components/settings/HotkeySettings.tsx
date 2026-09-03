@@ -316,5 +316,3 @@ export function HotkeysSection(props: HotkeysSectionProps) {
     </div>
   );
 }
-
-export const HotkeySettings = HotkeysSection;

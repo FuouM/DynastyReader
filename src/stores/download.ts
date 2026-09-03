@@ -16,10 +16,7 @@ export interface DownloadProgressPayload {
 
 const [activeDownloadCount, setActiveDownloadCount] = createSignal(0);
 const [downloadSpeedBps, setDownloadSpeedBps] = createSignal(0);
-const [activeSeriesName, setActiveSeriesName] = createSignal<string | null>(null);
-const [activeChapterName, setActiveChapterName] = createSignal<string | null>(null);
-
-export { activeDownloadCount, downloadSpeedBps, activeSeriesName, activeChapterName };
+export { activeDownloadCount, downloadSpeedBps };
 
 export const formatDownloadSpeed = formatSpeed;
 
@@ -42,12 +39,7 @@ export function initGlobalDownloadListener(): void {
       setActiveDownloadCount(activeOrPending.length);
 
       const active = res.items.find((i) => i.status === "downloading") || activeOrPending[0];
-      if (active) {
-        setActiveSeriesName(active.series_title);
-        setActiveChapterName(active.chapter_title);
-      } else {
-        setActiveSeriesName(null);
-        setActiveChapterName(null);
+      if (!active) {
         setDownloadSpeedBps(0);
         speedEMA = 0;
       }

@@ -39,16 +39,11 @@ export const ACCENT_COLOR_PRESETS: readonly AccentColorPreset[] = [
   { id: "slate", label: "Slate", hex: "#64748b" },
   { id: "green-yuri", label: "GreenYuri", hex: "#b1fe00" },
 ] as const;
-export const ACCENT_COLOR_STORAGE_KEY = "ds-accent-color";
-export const ACCENT_COLOR_CHANGE_EVENT = "ds-accent-color-change";
+const ACCENT_COLOR_STORAGE_KEY = "ds-accent-color";
 
 // Re-export helpers for consumers (DisplaySettings etc.) — single source via lib/color.
 export { resolveAccentColorHex, parseHex, toHex, adjustBrightness, rgbToHsl, hslToRgb, getContrastText, getDeepAccentText, getAccessibleLinkColor };
 
-export function hexToRgba(hex: string, alpha: number): string {
-  const [r, g, b] = parseHex(hex);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
 export function computeAccentPalette(rawColor: string, appTheme: AppTheme = "light"): Record<string, string> {
   const hex = resolveAccentColorHex(rawColor);
   const contrastText = getContrastText(hex);
@@ -242,7 +237,6 @@ export function setAccentColor(color: string): void {
   const norm = color.trim().toLowerCase();
   setAccentColorSignal(norm);
   applyAccentColorToDom(norm, theme());
-  window.dispatchEvent(new CustomEvent<{ accentColor: string }>(ACCENT_COLOR_CHANGE_EVENT, { detail: { accentColor: norm } }));
 }
 
 export function initAccentColor(): void {

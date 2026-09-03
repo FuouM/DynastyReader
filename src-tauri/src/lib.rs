@@ -14,8 +14,7 @@ pub fn run() {
 
     let builder = tauri::Builder::default()
         .plugin(log_plugin)
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_dialog::init());
 
     #[cfg(desktop)]
     let builder = builder.plugin(tauri_plugin_window_state::Builder::new().build());
@@ -41,8 +40,6 @@ pub fn run() {
             commands::db::db_query,
             commands::db::db_execute_batch,
             commands::db::db_backup,
-            commands::db::db_list_backups,
-            commands::db::db_restore,
             commands::db::db_restore_from_path,
             commands::fs::file_exists,
             commands::fs::file_exists_batch,

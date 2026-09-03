@@ -13,20 +13,16 @@
 use image::{
     DynamicImage, ExtendedColorType, GenericImageView, ImageEncoder, ImageReader,
     codecs::{
-        bmp::BmpEncoder, gif::GifEncoder, hdr::HdrEncoder, ico::IcoEncoder, jpeg::JpegEncoder,
-        png::PngEncoder, pnm::PnmEncoder, qoi::QoiEncoder, tga::TgaEncoder, tiff::TiffEncoder,
+        bmp::BmpEncoder, gif::GifEncoder, jpeg::JpegEncoder, png::PngEncoder,
     },
     imageops::FilterType,
 };
 use serde_json::json;
-use std::io::Cursor;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 
-const ENCODE_FORMATS: &[&str] = &[
-    "png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "qoi", "tga", "pnm", "hdr", "ico",
-];
+const ENCODE_FORMATS: &[&str] = &["png", "jpg", "jpeg", "webp", "gif", "bmp"];
 
 /// Hard ceiling on a source image dimension, applied to the header before any
 /// decode. Legit covers/pages are well under this; decompression bombs are not.
@@ -72,7 +68,7 @@ pub async fn ephemeral_convert_images(
                     *slot = Some(value);
                 }
             }
-            Err(e) => tracing::error!("convert task failed: {e}"),
+            Err(e) => log::error!("convert task failed: {e}"),
         }
     }
     let converted = ordered.into_iter().flatten().collect::<Vec<_>>();
@@ -258,40 +254,7 @@ fn encode_dynamic(img: &DynamicImage, ext: &str, quality: u8) -> Result<Vec<u8>,
         "bmp" => BmpEncoder::new(&mut buf)
             .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
             .map_err(|e| format!("BMP encode failed: {e}"))?,
-        "tiff" => {
-            let mut cur = Cursor::new(&mut buf);
-            TiffEncoder::new(&mut cur)
-                .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-                .map_err(|e| format!("TIFF encode failed: {e}"))?;
-        }
-        "qoi" => QoiEncoder::new(&mut buf)
-            .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-            .map_err(|e| format!("QOI encode failed: {e}"))?,
-        "tga" => TgaEncoder::new(&mut buf)
-            .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-            .map_err(|e| format!("TGA encode failed: {e}"))?,
-        "pnm" => PnmEncoder::new(&mut buf)
-            .write_image(&as_rgb8_bytes(img), w, h, ExtendedColorType::Rgb8)
-            .map_err(|e| format!("PNM encode failed: {e}"))?,
-        "hdr" => {
-            let rgb32f = img.to_rgb32f();
-            let bytes = f32_bytes(rgb32f.as_raw());
-            HdrEncoder::new(&mut buf)
-                .write_image(&bytes, w, h, ExtendedColorType::Rgb32F)
-                .map_err(|e| format!("HDR encode failed: {e}"))?;
-        }
-        "ico" => IcoEncoder::new(&mut buf)
-            .write_image(&as_rgba8_bytes(img), w, h, ExtendedColorType::Rgba8)
-            .map_err(|e| format!("ICO encode failed: {e}"))?,
         _ => unreachable!("ext was pre-validated against ENCODE_FORMATS"),
     }
     Ok(buf)
-}
-
-fn f32_bytes(raw: &[f32]) -> Vec<u8> {
-    let mut bytes = Vec::with_capacity(raw.len() * 4);
-    for v in raw {
-        bytes.extend_from_slice(&v.to_le_bytes());
-    }
-    bytes
 }

@@ -16,8 +16,9 @@ import type { Route, SessionMangaTab } from "../types/routes";
 export type { Route, ViewName, ChapterRef, SessionMangaTab } from "../types/routes";
 
 export const [route, setRoute] = createSignal<Route>({ view: "browse" });
-export const [historyBackStack, setHistoryBackStack] = createSignal<Route[]>([]);
-export const [historyForwardStack, setHistoryForwardStack] = createSignal<Route[]>([]);
+const [historyBackStack, setHistoryBackStack] = createSignal<Route[]>([]);
+const [historyForwardStack, setHistoryForwardStack] = createSignal<Route[]>([]);
+export { historyBackStack, historyForwardStack };
 export const [sessionTab, setSessionTab] = createSignal<SessionMangaTab | null>(null);
 export const [dbReady, setDbReady] = createSignal(false);
 
@@ -39,7 +40,7 @@ export const isInMangaView = () => {
 let isNavigatingHistory = false;
 
 /** Checks if two routes represent the exact same view and target. */
-export function isSameRoute(a: Route, b: Route): boolean {
+function isSameRoute(a: Route, b: Route): boolean {
   if (a.view !== b.view) return false;
   if (a.view === "reader") {
     return (

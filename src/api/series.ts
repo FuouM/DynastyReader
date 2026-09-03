@@ -1,11 +1,11 @@
 import { SITE_ROOT } from "../constants";
 import { seriesTypeToPath } from "../taxonomy";
-import { getCached, setCached, deleteCached, updateFollowedSeriesCover, touchCached, query } from "../db";
+import { getCached, setCached, deleteCached, touchCached, query } from "../db";
 import { getLocalSeriesByPermalink } from "../db/local.repo";
 import { seriesKey, seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
 import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";
-import { fileExists, fileResolve } from "./fs";
+import { fileResolve } from "./fs";
 import { fetchChapter } from "./chapter";
 import { log } from "../utils/log";
 import type { Series } from "../types/api";
@@ -231,34 +231,6 @@ export async function getSeriesCover(
   });
 }
 
-/**
- * Ensures a followed series' stored cover path still points at a real file.
- * Cache clears delete the cover file but leave `followed_series.cover`
- * stale; when the path is gone, refetch the thumbnail and persist the new
- * path so the Library never renders a dead image.
- */
-export async function refreshFollowedSeriesCover(
-  permalink: string,
-  currentCover: string | null,
-): Promise<string | null> {
-  if (currentCover) {
-    try {
-      if (await fileExists(currentCover)) return currentCover;
-    } catch (checkErr) {
-      log.debug("api/series", `currentCover fileExists check failed for ${currentCover}:`, checkErr);
-    }
-  }
-  const fresh = await getOrHydrateSeriesCover(permalink);
-  if (fresh) {
-    try {
-      await updateFollowedSeriesCover(permalink, fresh);
-    } catch (dbErr) {
-      // The DB write must never break cover rendering; the fresh path still wins.
-      log.warn("api/series", `updateFollowedSeriesCover DB write failed for "${permalink}":`, dbErr);
-    }
-  }
-  return fresh;
-}
 
 /**
  * Checks local SQLite cache for an already-downloaded cover (series, doujin, or standalone chapter).

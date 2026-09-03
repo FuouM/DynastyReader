@@ -21,7 +21,6 @@ export const LONG_PRESS_DELAY_MS = 350;
 export const MOVEMENT_THRESHOLD_PX = 8;
 export const TAP_TIME_THRESHOLD_MS = 450;
 export const TRANSITION_DURATION_MS = 200;
-export const EDGE_BOUNDARY_PX = 5;
 export const VERTICAL_ENGAGE_BOUNDARY_PX = 5;
 
 export type OverscrollActive = {

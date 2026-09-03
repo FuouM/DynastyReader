@@ -160,7 +160,6 @@ const [getReaderNavPosition, _setNavPos] = persistedSignal<ReaderNavPosition>("t
 export { getReaderNavPosition };
 export const setReaderNavPosition = (pos: ReaderNavPosition) => {
   _setNavPos(pos);
-  window.dispatchEvent(new CustomEvent("ds-reader-nav-pos-change", { detail: pos }));
 };
 
 // Prev chapter start page

@@ -28,7 +28,7 @@ export type EntityKind =
   | "tag";
 
 /** Runtime type guard for EntityKind. */
-export function isEntityKind(s: string): s is EntityKind {
+function isEntityKind(s: string): s is EntityKind {
   return s in ENTITY_TAXONOMY;
 }
 
@@ -110,7 +110,7 @@ export function isContentKind(kind?: string | null): boolean {
  * Series, Anthology, and Issue are structured sequential chapter containers.
  * Doujin acts as a container for doujinshi/doujin works when no higher-level container exists.
  */
-export const CHAPTER_CONTAINER_KINDS = ["series", "anthology", "issue", "doujin"] as const;
+const CHAPTER_CONTAINER_KINDS = ["series", "anthology", "issue", "doujin"] as const;
 /** Checks whether a tag type represents a chapter container (Series, Anthology, Issue). */
 export function isContainerKind(type?: string | null): boolean {
   const kind = resolveKind(type);
@@ -164,7 +164,7 @@ export type TagCategory =
  * Canonical ordering rank for browse tag pills:
  * Author -> Scanlator -> Pairing -> Character -> Doujin -> Series -> Anthology -> Issue -> General.
  */
-export const TAG_CATEGORY_RANK: Record<string, number> = {
+const TAG_CATEGORY_RANK: Record<string, number> = {
   author: 0,
   artist: 0,
   scanlator: 1,
@@ -180,7 +180,7 @@ export const TAG_CATEGORY_RANK: Record<string, number> = {
 };
 
 /** Status names rendered as green status pills regardless of tag type. */
-export const STATUS_NAMES: Record<string, true> = {
+const STATUS_NAMES: Record<string, true> = {
   oneshot: true,
   "one-shot": true,
   anthology: true,
@@ -205,17 +205,17 @@ export function isDoujinTag(type?: string | null): boolean {
   return t === "doujin" || t === "doujinshi" || t === "copyright" || t === "parody";
 }
 
-export function isPairingTag(type?: string | null): boolean {
+function isPairingTag(type?: string | null): boolean {
   const t = (type ?? "").toLowerCase();
   return t === "pairing";
 }
 
-export function isCharacterTag(type?: string | null): boolean {
+function isCharacterTag(type?: string | null): boolean {
   const t = (type ?? "").toLowerCase();
   return t === "character";
 }
 
-export function isStatusTag(type?: string | null, name?: string | null): boolean {
+function isStatusTag(type?: string | null, name?: string | null): boolean {
   const t = (type ?? "").toLowerCase();
   const n = (name ?? "").toLowerCase();
   return t === "status" || t === "format" || Boolean(STATUS_NAMES[n]);
@@ -262,7 +262,7 @@ export function tagClass(type: string, name?: string): string {
 }
 
 /** Sorts tags by browse category order (author first), stable within a category. */
-export function sortTagsByCategory<T extends { type: string }>(tags: T[]): T[] {
+function sortTagsByCategory<T extends { type: string }>(tags: T[]): T[] {
   return [...tags].sort((a, b) => {
     const rankA = TAG_CATEGORY_RANK[(a.type ?? "").toLowerCase()] ?? 8;
     const rankB = TAG_CATEGORY_RANK[(b.type ?? "").toLowerCase()] ?? 8;
