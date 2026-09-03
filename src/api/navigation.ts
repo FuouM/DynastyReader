@@ -13,22 +13,38 @@ function normalizeToSeriesKind(kind: string): ParsedDynastyUrl["kind"] {
 }
 
 /**
- * Opens a URL in the user's default browser via the `open_url` Tauri command
- * (which restricts to http/https). Falls back to a new tab if the backend is
- * unavailable or the scheme is rejected.
+ * Opens a URL in the user's default browser.
+ * On Android, routes directly to the native Android Intent to trigger the
+ * user's default browser app (bypassing in-app webview).
+ * On desktop, delegates to the `open_url` Tauri command backed by `tauri-plugin-opener`.
+ * Falls back to a new tab if running in a standalone web environment.
  */
 export async function openExternal(url: string): Promise<void> {
-  const lower = url.trim().toLowerCase();
+  const trimmed = url.trim();
+  const lower = trimmed.toLowerCase();
   if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
     log.warn("navigation", `rejected non-http/https external URL: ${url}`);
     return;
   }
+
+  // 1. Direct native Android intent if running under Android host (opens system default browser)
+  if (typeof window !== "undefined" && window.AndroidThemeBridge?.openUrl) {
+    try {
+      if (window.AndroidThemeBridge.openUrl(trimmed)) {
+        return;
+      }
+    } catch (err) {
+      log.debug("navigation", "AndroidThemeBridge.openUrl failed, falling back to IPC:", err);
+    }
+  }
+
+  // 2. Tauri IPC openUrl command (backed by tauri-plugin-opener)
   try {
-    await ipc.openUrl(url);
+    await ipc.openUrl(trimmed);
     return;
   } catch (err) {
     log.debug("navigation", "openUrl fallback, opening in new tab:", err);
-    window.open(url, "_blank", "noopener");
+    window.open(trimmed, "_blank", "noopener");
   }
 }
 

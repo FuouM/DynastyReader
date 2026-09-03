@@ -1,6 +1,8 @@
 package com.dynasty_scans_reader
 
+import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -108,6 +110,21 @@ class MainActivity : TauriActivity() {
     fun triggerHaptic(style: String?) {
       activity.runOnUiThread {
         activity.performHaptic(style)
+      }
+    }
+
+    @JavascriptInterface
+    fun openUrl(url: String?): Boolean {
+      if (url.isNullOrBlank()) return false
+      val lower = url.trim().lowercase()
+      if (!lower.startsWith("http://") && !lower.startsWith("https://")) return false
+      return try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.trim()))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        activity.startActivity(intent)
+        true
+      } catch (_: Exception) {
+        false
       }
     }
   }

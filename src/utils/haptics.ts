@@ -7,7 +7,9 @@
 import { log } from "./log";
 
 interface AndroidThemeBridge {
-  triggerHaptic(style: string): void;
+  triggerHaptic?(style: string): void;
+  openUrl?(url: string): boolean;
+  updateTheme?(isDark: boolean, color: string): void;
 }
 
 declare global {

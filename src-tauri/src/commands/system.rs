@@ -5,14 +5,17 @@
 //! `http`/`https` are allowed so a hostile link cannot reach the OS shell via
 //! `file://`, `smb:`, `mailto:`, etc. `openLogsDir` reveals the rolling log
 //! folder in Explorer so users can attach the log file to bug reports.
+use tauri_plugin_opener::OpenerExt;
 
 #[tauri::command(rename = "openUrl")]
-pub fn open_url(url: String) -> Result<serde_json::Value, String> {
+pub fn open_url(app: tauri::AppHandle, url: String) -> Result<serde_json::Value, String> {
     let lower = url.to_ascii_lowercase();
     if !(lower.starts_with("http://") || lower.starts_with("https://")) {
         return Err("only http/https URLs may be opened".to_string());
     }
-    open::that(&url).map_err(|e| format!("failed to open url: {e}"))?;
+    app.opener()
+        .open_url(&url, None::<&str>)
+        .map_err(|e| format!("failed to open url: {e}"))?;
     Ok(serde_json::json!({}))
 }
 
