@@ -129,7 +129,7 @@ export interface RevalidateOnlineResult {
 }
 
 export interface ParsedDynastyUrl {
-  kind: "series" | "chapter";
+  kind: "series" | "chapter" | "tag";
   permalink: string;
 }
 

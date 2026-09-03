@@ -4,7 +4,7 @@
  */
 
 import { navigate } from "../stores";
-import { tagClass } from "../taxonomy";
+import { isArtistTag, isContainerKind, isScanlatorTag, tagClass } from "../taxonomy";
 import { t } from "../i18n";
 
 export interface TagPillProps {
@@ -17,7 +17,10 @@ export interface TagPillProps {
 export function TagPill(props: TagPillProps) {
   const activate = (ev: Event) => {
     ev.stopPropagation();
-    if (props.permalink) {
+    if (
+      props.permalink &&
+      (isContainerKind(props.type) || isArtistTag(props.type) || isScanlatorTag(props.type))
+    ) {
       navigate({
         view: "series",
         seriesPermalink: props.permalink,
@@ -29,10 +32,9 @@ export function TagPill(props: TagPillProps) {
     navigate({
       view: "browse",
       browseTab: "search",
-      searchQuery: props.name,
+      withTag: props.name,
     });
   };
-
   return (
     <span
       role="button"

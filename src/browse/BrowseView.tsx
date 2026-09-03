@@ -142,6 +142,12 @@ export function BrowseView() {
         chapterPermalink: parsed.permalink,
         chapterTitle: parsed.permalink,
       });
+    } else if (parsed.kind === "tag") {
+      navigate({
+        view: "browse",
+        browseTab: "search",
+        withTag: parsed.permalink,
+      });
     } else {
       navigate({ view: "series", seriesPermalink: parsed.permalink, seriesName: parsed.permalink });
     }

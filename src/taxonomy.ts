@@ -60,6 +60,7 @@ export const KIND_BY_PATH_SEGMENT: Record<string, EntityKind> = {
   chapters: "chapter",
   series: "series",
   anthologies: "anthology",
+  anthology: "anthology",
   doujins: "doujin",
   doujinshi: "doujin",
   issues: "issue",
@@ -70,7 +71,6 @@ export const KIND_BY_PATH_SEGMENT: Record<string, EntityKind> = {
   pairings: "pairing",
   tags: "tag",
 };
-
 /**
  * Returns the plural API / URL path segment for any series-style entity type string.
  */
@@ -88,6 +88,7 @@ export function seriesTypeToPath(type?: string | null): string {
  */
 function resolveKind(type?: string | null): EntityKind | undefined {
   const clean = (type ?? "").toLowerCase().trim();
+  if (isEntityKind(clean)) return clean;
   return KIND_BY_PATH_SEGMENT[clean] ?? KIND_BY_PATH_SEGMENT[`${clean}s`];
 }
 

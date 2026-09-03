@@ -5,9 +5,11 @@ import type { ParsedDynastyUrl } from "../types/api";
 
 import { KIND_BY_PATH_SEGMENT } from "../taxonomy";
 
-/** Kinds that resolve to a series-style detail page when parsed from a pasted link. */
+/** Kinds that resolve to a series-style detail page or tag search when parsed from a pasted link. */
 function normalizeToSeriesKind(kind: string): ParsedDynastyUrl["kind"] {
-  return kind === "chapter" ? "chapter" : "series";
+  if (kind === "chapter") return "chapter";
+  if (kind === "tag") return "tag";
+  return "series";
 }
 
 /**
