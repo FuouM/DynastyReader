@@ -7,6 +7,7 @@
 //! Phase 2 desktop-only — Android foreground service deferred to Phase 3.
 
 use crate::util::lock_unpoisoned;
+use log;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{
@@ -14,7 +15,8 @@ use std::sync::{
     Mutex,
 };
 use tauri::{AppHandle, Emitter, Manager, State};
-use tokio::sync::{watch, Notify};
+use tokio::sync::Notify;
+use tokio_util::sync::CancellationToken;
 
 /// Shared request timeout for chapter JSON and page image fetches (matches http.rs).
 const FETCH_TIMEOUT_MS: u64 = 30_000;
@@ -79,7 +81,10 @@ pub struct DownloadConstraints {
 pub struct DownloadState {
     pub paused: AtomicBool,
     pub notify: Notify,
-    pub cancel_map: Mutex<HashMap<String, watch::Sender<bool>>>,
+    /// Per-chapter cancellation tokens.  A token is inserted when a chapter
+    /// enters `downloading` state and removed when it completes or is
+    /// cancelled.  `cancel_download` calls `.cancel()` on the matching token.
+    pub cancel_map: Mutex<HashMap<String, CancellationToken>>,
     pub running: AtomicBool,
     pub constraints: Mutex<DownloadConstraints>,
 }
@@ -318,13 +323,13 @@ pub async fn cancel_download(
     state: State<'_, DownloadState>,
     chapter_permalink: String,
 ) -> Result<(), String> {
-    // Signal cancel via watch channel
-    let sender = {
+    // Cancel the in-progress download (if any) for this chapter.
+    let token = {
         let map = lock_unpoisoned(&state.cancel_map);
         map.get(&chapter_permalink).cloned()
     };
-    if let Some(tx) = sender {
-        let _ = tx.send(true);
+    if let Some(token) = token {
+        token.cancel();
     }
     // Also mark queued pending rows as failed/cancelled
     let cp = chapter_permalink.clone();
@@ -653,16 +658,17 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         })
         .await;
 
-        // Create cancel channel for this chapter
-        let (tx, mut rx) = watch::channel(false);
+        // Create a CancellationToken for this chapter and register it so
+        // cancel_download can fire it from the command handler.
+        let token = CancellationToken::new();
         {
             let mut map = lock_unpoisoned(&state.cancel_map);
-            map.insert(req.chapter_permalink.clone(), tx);
+            map.insert(req.chapter_permalink.clone(), token.clone());
         }
 
-        let result = download_chapter(&app, &http_client, &req, &mut rx).await;
+        let result = download_chapter(&app, &http_client, &req, &token).await;
 
-        // Cleanup cancel map
+        // Cleanup cancel map.
         {
             let mut map = lock_unpoisoned(&state.cancel_map);
             map.remove(&req.chapter_permalink);
@@ -769,7 +775,7 @@ async fn download_chapter(
     app: &AppHandle,
     client: &reqwest::Client,
     req: &DownloadRequest,
-    cancel_rx: &mut watch::Receiver<bool>,
+    cancel: &CancellationToken,
 ) -> Result<(usize, usize), String> {
     // Fetch chapter JSON to get page list (uses Dynasty API, with SSRF validation bypass? Need to fetch via http client directly)
     // We fetch via reqwest directly to avoid Tauri IPC; the chapter JSON is at https://dynasty-scans.com/chapters/<permalink>.json
@@ -840,13 +846,13 @@ async fn download_chapter(
     let mut total_bytes_done = 0u64;
     for (idx, page) in pages.iter().enumerate() {
         // Check cancel
-        if *cancel_rx.borrow() {
+        if cancel.is_cancelled() {
             return Err("cancelled".to_string());
         }
         // Check pause (cooperative — wait while paused)
         while state.paused.load(Ordering::SeqCst) {
             state.notify.notified().await;
-            if *cancel_rx.borrow() {
+            if cancel.is_cancelled() {
                 return Err("cancelled".to_string());
             }
         }
@@ -996,16 +1002,16 @@ async fn download_chapter(
                         );
                         tokio::select! {
                             _ = tokio::time::sleep(std::time::Duration::from_millis(backoff)) => {}
-                            _ = cancel_rx.changed() => return Err("cancelled".to_string()),
+                            _ = cancel.cancelled() => return Err("cancelled".to_string()),
                         }
                     }
                 },
-                _ = cancel_rx.changed() => return Err("cancelled".to_string()),
+                _ = cancel.cancelled() => return Err("cancelled".to_string()),
                 // Pause aborts the in-flight fetch; the page restarts on resume.
                 _ = wait_until_paused(&state) => {
                     while state.paused.load(Ordering::SeqCst) {
                         state.notify.notified().await;
-                        if *cancel_rx.borrow() {
+                        if cancel.is_cancelled() {
                             return Err("cancelled".to_string());
                         }
                     }

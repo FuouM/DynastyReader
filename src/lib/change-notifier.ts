@@ -1,10 +1,12 @@
 /**
- * Shared reactive revision counter and listener registry.
+ * Shared reactive revision counter and imperative listener registry.
  * Deduplicates the listener/revision boilerplate across repositories.
+ *
+ * Listener dispatch uses a plain EventTarget — platform-native, zero deps,
+ * guaranteed memory semantics (GC-safe removal via the returned unsub fn).
  */
 
 import { createSignal } from "solid-js";
-import { log } from "../utils/log";
 
 export type ChangeListener = () => void;
 
@@ -14,29 +16,20 @@ export interface ChangeNotifier {
   notifyChanged: () => void;
 }
 
-export function createChangeNotifier(name = "change-notifier"): ChangeNotifier {
+export function createChangeNotifier(_name = "change-notifier"): ChangeNotifier {
   const [revision, setRevision] = createSignal(0);
-  const listeners: ChangeListener[] = [];
+  const target = new EventTarget();
 
   const getRevision = (): number => revision();
 
   const onChanged = (fn: ChangeListener): (() => void) => {
-    listeners.push(fn);
-    return () => {
-      const idx = listeners.indexOf(fn);
-      if (idx !== -1) listeners.splice(idx, 1);
-    };
+    target.addEventListener("change", fn);
+    return () => target.removeEventListener("change", fn);
   };
 
   const notifyChanged = (): void => {
     setRevision((r) => r + 1);
-    for (const fn of [...listeners]) {
-      try {
-        fn();
-      } catch (err) {
-        log.error(name, "listener error:", err);
-      }
-    }
+    target.dispatchEvent(new Event("change"));
   };
 
   return { getRevision, onChanged, notifyChanged };
