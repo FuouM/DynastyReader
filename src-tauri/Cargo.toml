@@ -23,7 +23,7 @@ serde = { version = "1", features = ["derive"] }
 zip = { version = "2", default-features = false, features = ["deflate", "bzip2", "deflate64"] }
 serde_json = "1"
 rusqlite = { version = "0.31", features = ["bundled", "backup"] }
-reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
 tokio = { version = "1", features = ["rt", "fs", "io-util", "sync", "macros", "time"] }
 mimalloc = { version = "0.1", default-features = false }
 tokio-stream = "0.1"
