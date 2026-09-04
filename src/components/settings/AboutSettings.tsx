@@ -1,7 +1,7 @@
 import { Show } from "solid-js";
 import { APP_VERSION, SITE_ROOT } from "../../stores";
 import { t } from "../../i18n";
-import { formatBytes } from "../../lib/format";
+import { formatBytes } from "../../utils/formatting";
 import { openExternal } from "../../api";
 import {
   checkUpdates,

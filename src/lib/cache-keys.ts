@@ -15,3 +15,24 @@ export function seriesKey(permalink: string): string {
   return `series:${permalink}`;
 }
 
+export function chapterKey(permalink: string): string {
+  return `chapter:${permalink}`;
+}
+
+export function searchKey(url: string): string {
+  return `search:${url}`;
+}
+
+export function feedKey(urlPath: string): string {
+  return `feed:${urlPath}`;
+}
+
+export function dirKey(kind: string, page: number): string {
+  return `dir:${kind}:${page}`;
+}
+
+/** Returns true if `cover` looks like an on-disk file path vs a bare cover-key slug. */
+export function isCoverFilePath(cover: string | null | undefined): boolean {
+  if (!cover) return false;
+  return cover.includes("/") || cover.includes("\\");
+}

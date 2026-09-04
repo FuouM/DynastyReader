@@ -16,9 +16,13 @@ fn stat_file(target: &std::path::Path, min_size: u64) -> (bool, u64) {
 }
 
 #[tauri::command(rename = "fileExists")]
-pub fn file_exists(path: String, min_size: Option<u64>) -> Result<serde_json::Value, String> {
+pub async fn file_exists(path: String, min_size: Option<u64>) -> Result<serde_json::Value, String> {
     let target = crate::paths::resolve_in_root(&path)?;
-    let (exists, size) = stat_file(&target, min_size.unwrap_or(1));
+    let min = min_size.unwrap_or(1);
+    let target_for_stat = target.clone();
+    let (exists, size) = tokio::task::spawn_blocking(move || stat_file(&target_for_stat, min))
+        .await
+        .map_err(|e| format!("file exists task failed: {e}"))?;
     Ok(json!({
         "exists": exists,
         "size_bytes": size,
@@ -135,7 +139,7 @@ fn copy_tree(src: &std::path::Path, dst: &std::path::Path) -> Result<(), String>
 }
 
 #[tauri::command(rename = "fileDelete")]
-pub fn file_delete(path: String) -> Result<serde_json::Value, String> {
+pub async fn file_delete(path: String) -> Result<serde_json::Value, String> {
     if path.trim().is_empty() {
         return Err("cannot delete root data directory".to_string());
     }
@@ -143,12 +147,16 @@ pub fn file_delete(path: String) -> Result<serde_json::Value, String> {
     if crate::paths::is_root_dir(&target)? {
         return Err("cannot delete root data directory".to_string());
     }
-    if target.is_dir() {
-        std::fs::remove_dir_all(&target)
-            .map_err(|e| format!("directory delete failed: {e}"))?;
-    } else {
-        std::fs::remove_file(&target).map_err(|e| format!("file delete failed: {e}"))?;
-    }
+    tokio::task::spawn_blocking(move || {
+        if target.is_dir() {
+            std::fs::remove_dir_all(&target).map_err(|e| format!("directory delete failed: {e}"))?;
+        } else {
+            std::fs::remove_file(&target).map_err(|e| format!("file delete failed: {e}"))?;
+        }
+        Ok::<(), String>(())
+    })
+    .await
+    .map_err(|e| format!("file delete task failed: {e}"))??;
     Ok(json!({}))
 }
 

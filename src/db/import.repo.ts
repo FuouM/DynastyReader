@@ -1,10 +1,12 @@
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { query, execute } from "./client";
+import { inClause } from "./paging";
+import { seriesCoverKey, isCoverFilePath } from "../lib/cache-keys";
 import { notifyFollowedChanged, updateFollowedSeriesCover } from "./library.repo";
 import { notifyCollectionsChanged, updateCollectionItemCoverByPermalink } from "./collections.repo";
 import { decodeEntities } from "../utils/html";
-import { KIND_BY_PATH_SEGMENT, type EntityKind } from "../taxonomy";
+import { KIND_BY_PATH_SEGMENT, titleFromPermalink, type EntityKind } from "../taxonomy";
 import { getOrHydrateSeriesCover } from "../api";
 
 export interface ValidatedFollowedItem {
@@ -73,14 +75,7 @@ export function isValidPermalink(p: unknown): p is string {
 }
 
 /**
- * Derives a clean human-readable title from a permalink slug (e.g. "bloom_into_you" -> "Bloom Into You").
- */
-export function titleFromPermalink(permalink: string): string {
-  return permalink
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
+ * Strict validator for Dynasty Scans URLs.
 
 /**
  * Strict validator for Dynasty Scans URLs.
@@ -639,21 +634,20 @@ export async function executeImport(
  */
 async function importFollowedSeriesBatch(items: ValidatedFollowedItem[]): Promise<number> {
   if (items.length === 0) return 0;
-
-  // Look up cached covers in bulk for items that have no cover provided
   const missingPermalinks = items
-    .filter((it) => !it.cover || (!it.cover.includes("/") && !it.cover.includes("\\")))
+    .filter((it) => !it.cover || !isCoverFilePath(it.cover))
     .map((it) => it.permalink);
 
   const cachedCoverMap = new Map<string, string>();
   if (missingPermalinks.length > 0) {
     try {
-      const keys = missingPermalinks.map((p) => `'cover:series:${p.replace(/'/g, "''")}'`).join(",");
+      const keys = missingPermalinks.map((p) => seriesCoverKey(p));
       const cachedRows = await query<{ cache_key: string; json_payload: string }>(
-        `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${keys})`,
+        `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${inClause(keys.length)})`,
+        keys,
       );
       for (const row of cachedRows) {
-        if (row.json_payload && (row.json_payload.includes("/") || row.json_payload.includes("\\"))) {
+        if (row.json_payload && isCoverFilePath(row.json_payload)) {
           const permalink = row.cache_key.replace("cover:series:", "");
           cachedCoverMap.set(permalink, row.json_payload.trim());
         }
@@ -676,11 +670,8 @@ async function importFollowedSeriesBatch(items: ValidatedFollowedItem[]): Promis
   const statements: string[] = [];
   const batchParams: unknown[][] = [];
   const now = Date.now();
-
   for (const item of items) {
-    const resolvedCover = (item.cover && (item.cover.includes("/") || item.cover.includes("\\")))
-      ? item.cover
-      : cachedCoverMap.get(item.permalink) ?? null;
+    const resolvedCover = isCoverFilePath(item.cover) ? item.cover : cachedCoverMap.get(item.permalink) ?? null;
 
     statements.push(sql);
     batchParams.push([
@@ -707,20 +698,20 @@ async function importItemsIntoCollectionBatch(
   items: ValidatedCollectionItem[],
 ): Promise<number> {
   if (items.length === 0) return 0;
-
   const missingPermalinks = items
-    .filter((it) => !it.cover || (!it.cover.includes("/") && !it.cover.includes("\\")))
+    .filter((it) => !it.cover || !isCoverFilePath(it.cover))
     .map((it) => it.permalink);
 
   const cachedCoverMap = new Map<string, string>();
   if (missingPermalinks.length > 0) {
     try {
-      const keys = missingPermalinks.map((p) => `'cover:series:${p.replace(/'/g, "''")}'`).join(",");
+      const keys = missingPermalinks.map((p) => seriesCoverKey(p));
       const cachedRows = await query<{ cache_key: string; json_payload: string }>(
-        `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${keys})`,
+        `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${inClause(keys.length)})`,
+        keys,
       );
       for (const row of cachedRows) {
-        if (row.json_payload && (row.json_payload.includes("/") || row.json_payload.includes("\\"))) {
+        if (row.json_payload && isCoverFilePath(row.json_payload)) {
           const permalink = row.cache_key.replace("cover:series:", "");
           cachedCoverMap.set(permalink, row.json_payload.trim());
         }
@@ -745,9 +736,7 @@ async function importItemsIntoCollectionBatch(
   const now = Date.now();
 
   for (const item of items) {
-    const resolvedCover = (item.cover && (item.cover.includes("/") || item.cover.includes("\\")))
-      ? item.cover
-      : cachedCoverMap.get(item.permalink) ?? null;
+    const resolvedCover = isCoverFilePath(item.cover) ? item.cover : cachedCoverMap.get(item.permalink) ?? null;
 
     statements.push(sql);
     batchParams.push([
@@ -780,7 +769,7 @@ export function triggerBackgroundCoverHydration(items: {
 
     if (items.followed) {
       for (const f of items.followed) {
-        if (!f.cover || (!f.cover.includes("/") && !f.cover.includes("\\"))) {
+        if (!isCoverFilePath(f.cover)) {
           seriesPermalinks.add(f.permalink);
         }
       }
@@ -790,7 +779,7 @@ export function triggerBackgroundCoverHydration(items: {
         for (const item of col.items) {
           const kind = (item.kind ?? "series").toLowerCase();
           if (kind === "series" || kind === "doujin" || kind === "anthology") {
-            if (!item.cover || (!item.cover.includes("/") && !item.cover.includes("\\"))) {
+            if (!isCoverFilePath(item.cover)) {
               seriesPermalinks.add(item.permalink);
             }
           }

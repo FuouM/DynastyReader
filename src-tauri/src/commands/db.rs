@@ -323,28 +323,28 @@ pub async fn db_execute_batch(
     let pool_arc = get_conn(&state.0, &db_name)?;
     let affected = tokio::task::spawn_blocking(move || {
         let conn = lock_unpoisoned(&pool_arc);
-        let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+        let tx = conn.unchecked_transaction().map_err(|e| format!("failed starting transaction: {e}"))?;
         let mut results: Vec<i64> = Vec::with_capacity(statements.len());
         for (idx, sql) in statements.iter().enumerate() {
             let p = params
                 .as_ref()
                 .and_then(|v| v.get(idx).cloned().flatten())
                 .unwrap_or_default();
-            let mut stmt = conn.prepare_cached(sql).map_err(|e| e.to_string())?;
+            let mut stmt = conn.prepare_cached(sql).map_err(|e| format!("failed preparing statement: {e}"))?;
             let bound = p
                 .into_iter()
                 .map(bind_value_owned)
                 .collect::<Result<Vec<_>, _>>()?;
             let n = stmt
                 .execute(params_from_iter(bound))
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| format!("failed executing statement: {e}"))?;
             results.push(n as i64);
         }
-        tx.commit().map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| format!("failed committing batch: {e}"))?;
         Ok::<Vec<i64>, String>(results)
     })
     .await
-    .map_err(|e| e.to_string())??;
+    .map_err(|e| format!("batch task failed: {e}"))??;
     Ok(json!({ "rows_affected": affected }))
 }
 
@@ -370,6 +370,7 @@ pub async fn db_backup(
         let src_conn = open_synced(&src_db_path)?;
         let mut dst_conn = Connection::open(&backup_path)
             .map_err(|e| format!("failed creating backup target: {e}"))?;
+        configure_connection(&dst_conn).map_err(|e| format!("failed configuring backup connection: {e}"))?;
         let backup = rusqlite::backup::Backup::new(&src_conn, &mut dst_conn)
             .map_err(|e| format!("failed initializing backup: {e}"))?;
         backup
@@ -377,11 +378,11 @@ pub async fn db_backup(
             .map_err(|e| format!("backup execution failed: {e}"))?;
         drop(backup);
         drop(dst_conn);
-        let meta = std::fs::metadata(&backup_path).map_err(|e| e.to_string())?;
+        let meta = std::fs::metadata(&backup_path).map_err(|e| format!("failed stating backup file: {e}"))?;
         Ok::<u64, String>(meta.len())
     })
     .await
-    .map_err(|e| e.to_string())??;
+    .map_err(|e| format!("backup task failed: {e}"))??;
     Ok(json!({
         "backup_path": backup_filename,
         "absolute_path": backup_str,
@@ -438,7 +439,7 @@ pub async fn db_restore_from_path(
         }
     })
     .await
-    .map_err(|e| e.to_string())??;
+    .map_err(|e| format!("restore validation failed: {e}"))??;
 
     evict_pool_connection(&state.0, &normalized)?;
     copy_db_file_with_retry(src_path, target_path, wal_path, shm_path).await?;
@@ -484,14 +485,14 @@ async fn copy_db_file_with_retry(
                         std::thread::sleep(std::time::Duration::from_millis(RESTORE_RETRY_BACKOFF_MS * (attempt + 1) as u64));
                         continue;
                     }
-                    return Err(e.to_string());
+                    return Err(format!("failed to restore after {RESTORE_MAX_ATTEMPTS} attempts: {e}"));
                 }
             }
         }
-        Err("failed to restore after retries".to_string())
+        Err(format!("failed to restore after {RESTORE_MAX_ATTEMPTS} attempts"))
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(|e| format!("restore task failed: {e}"))?
 }
 
 #[cfg(test)]

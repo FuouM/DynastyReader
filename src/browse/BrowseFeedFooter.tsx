@@ -6,8 +6,7 @@
  */
 
 import { createSignal, onCleanup, onMount, Show, type JSX } from "solid-js";
-import { formatBytes } from "../lib/format";
-import { formatDateTime } from "../utils/formatting";
+import { formatBytes, formatDateTime } from "../utils/formatting";
 import { t } from "../i18n";
 import { getSessionTraffic, subscribeSessionTraffic } from "../api";
 import { browseCovers } from "./browse-covers";

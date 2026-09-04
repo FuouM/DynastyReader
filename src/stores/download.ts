@@ -2,7 +2,7 @@ import { createSignal } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import { getDownloadQueue, pauseDownloads, resumeDownloads, type DownloadQueueItem } from "../ipc";
 import { isAndroid } from "./platform";
-import { formatSpeed } from "../lib/format";
+import { formatSpeed } from "../utils/formatting";
 import { maybeAutoPruneCache } from "../utils/cache-quota";
 import { pushDownloadConstraints } from "../utils/download-constraints";
 

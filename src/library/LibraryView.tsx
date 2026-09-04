@@ -420,14 +420,14 @@ function LibraryGrid() {
         }}
       />
       <ExportModal
-        open={exportOpen}
+        open={exportOpen()}
         initialScope={exportScope()}
         initialCollectionId={exportCollectionId()}
         collectionName={exportCollectionName()}
         onClose={() => setExportOpen(false)}
       />
       <ImportModal
-        open={importOpen}
+        open={importOpen()}
         initialTarget={importTarget()}
         onClose={() => setImportOpen(false)}
         onImported={() => {

@@ -1,7 +1,6 @@
 /**
- * Date/time formatting helpers.
+ * Date/time and file-size formatting helpers.
  */
-
 import { t } from "../i18n";
 export { dynastyUrl } from "./url";
 
@@ -42,4 +41,34 @@ export function slugify(name: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
+/**
+ * Human-readable file size formatting.
+ * @param bytes    - Raw byte count. null / undefined / NaN are treated as missing and return `fallback`.
+ * @param fallback - Returned when bytes is missing or negative. Defaults to "".
+ * @param decimals - Number of decimal places. Defaults to 2.
+ */
+export function formatBytes(bytes: number | null | undefined, fallback = "", decimals = 2): string {
+  if (bytes == null || isNaN(bytes) || bytes < 0) return fallback;
+  if (bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const value = bytes / Math.pow(1024, i);
+  return `${value.toFixed(decimals)} ${units[i] ?? "B"}`;
+}
+
+export function formatSpeed(bytesPerSec: number): string {
+  if (bytesPerSec <= 0 || !isFinite(bytesPerSec)) return "";
+  return `${formatBytes(bytesPerSec)}/s`;
+}
+
+export function formatEta(seconds: number): string {
+  if (seconds <= 0 || !isFinite(seconds) || seconds > 86400) return "";
+  if (seconds < 60) return `~${Math.round(seconds)}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  if (mins < 60) return `~${mins}m ${secs > 0 ? `${secs}s` : ""}`;
+  const hours = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  return `~${hours}h ${remMins}m`;
+}
 

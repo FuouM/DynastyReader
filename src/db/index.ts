@@ -99,8 +99,8 @@ export {
   fetchExportData,
   formatExportData,
   fetchAndFormatExport,
-  itemKindToPath,
 } from "./export.repo";
+export { itemKindToPath } from "../taxonomy";
 export type {
   ExportScope,
   ExportFormat,
@@ -126,6 +126,8 @@ export type {
 } from "./import.repo";
 export { getLocalSeries, getLocalSeriesByPermalink } from "./local.repo";
 export type { LocalSeriesRow } from "./local.repo";
+export { loadCachedChapterContext, getQueuePageTotals } from "./cache-aggregate";
+export type { CachedChapterContext, ChapterAggRow, ChapterInfo, ChapterMeta } from "./cache-aggregate";
 export type { DbStats, DbFileStats, DbTableCounts } from "./db.manage";
 export type {
   CachedMetadata,

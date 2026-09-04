@@ -7,7 +7,7 @@ import { getLocalSeries } from "../db/local.repo";
 import type { LocalSeriesRow } from "../db/local.repo";
 import * as ipc from "../ipc";
 import { showBanner } from "../stores/topbar";
-import { formatBytes } from "../lib/format";
+import { formatBytes } from "../utils/formatting";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { Button, DsSelect, IconButton } from "../components/Button";

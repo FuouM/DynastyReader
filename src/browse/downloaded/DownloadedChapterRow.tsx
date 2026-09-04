@@ -4,8 +4,7 @@
  */
 
 import { Show } from "solid-js";
-import { formatBytes } from "../../lib/format";
-import { formatDate } from "../../utils/formatting";
+import { formatBytes, formatDate } from "../../utils/formatting";
 import { CheckIcon, BookmarkIcon, TrashIcon } from "../../components/Icon";
 import type { ProcessedCachedChapter } from "./types";
 

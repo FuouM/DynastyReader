@@ -5,11 +5,11 @@ import {
   onCleanup,
   onMount,
   Show,
-  type Accessor,
 } from "solid-js";
 import { t } from "../i18n";
 import { showBanner } from "../stores";
 import { errorMessage } from "../utils/errors";
+import { formatBytes } from "../utils/formatting";
 import { Modal } from "../components/Modal";
 import { IconButton, DsSelect, type SelectOption } from "../components/Button";
 import { Icon, CheckIcon, ClipboardIcon } from "../components/Icon";
@@ -23,17 +23,11 @@ import {
 } from "../db";
 
 export interface ExportModalProps {
-  open: Accessor<boolean>;
+  open: boolean;
   onClose: () => void;
   initialScope?: ExportScope;
   initialCollectionId?: number;
   collectionName?: string;
-}
-
-function formatByteSize(charLength: number): string {
-  if (charLength < 1024) return `${charLength} B`;
-  if (charLength < 1024 * 1024) return `${(charLength / 1024).toFixed(1)} KB`;
-  return `${(charLength / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function ExportModal(props: ExportModalProps) {
@@ -74,7 +68,7 @@ export function ExportModal(props: ExportModalProps) {
 
   // Reset scope and selections when opening
   createEffect(() => {
-    if (props.open()) {
+    if (props.open) {
       setCopied(false);
       void loadCollections().then((cols) => {
         if (props.initialCollectionId !== undefined) {
@@ -90,7 +84,7 @@ export function ExportModal(props: ExportModalProps) {
 
   // Re-fetch and re-format export text whenever open, scope, format, or selected collections change
   createEffect(() => {
-    if (!props.open()) return;
+    if (!props.open) return;
 
     const currentScope = scope();
     const currentFormat = format();
@@ -223,7 +217,7 @@ export function ExportModal(props: ExportModalProps) {
 
   return (
     <Modal
-      open={props.open()}
+      open={props.open}
       backdropId="ds-export-modal-overlay"
       width={560}
       onClose={props.onClose}
@@ -321,7 +315,7 @@ export function ExportModal(props: ExportModalProps) {
                   <span>
                     {t("library.exportSummary", {
                       count: totalItemCount(),
-                      size: formatByteSize(exportedText().length),
+                      size: formatBytes(exportedText().length),
                     })}
                   </span>
                 </Show>

@@ -103,7 +103,7 @@ pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>)
         None,
     )
     .await
-    .map_err(|e| format!("Failed to query GitHub releases: {e}"))?;
+    .map_err(|e| format!("failed to query GitHub releases: {e}"))?;
     if !resp.status().is_success() {
         return Err(format!("GitHub API returned HTTP {}", resp.status()));
     }
@@ -116,7 +116,7 @@ pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>)
 
     let bytes = crate::commands::http::read_body_capped(resp, MAX_RELEASE_API_BODY).await?;
     let json: serde_json::Value = serde_json::from_slice(&bytes)
-        .map_err(|e| format!("Failed to parse GitHub release response: {e}"))?;
+        .map_err(|e| format!("failed to parse GitHub release response: {e}"))?;
     let tag_name = json["tag_name"]
         .as_str()
         .unwrap_or("")
@@ -179,9 +179,9 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
         Some(600_000),
     )
     .await
-    .map_err(|e| format!("Failed to start download: {e}"))?;
+    .map_err(|e| format!("failed to start download: {e}"))?;
     if !response.status().is_success() {
-        return Err(format!("Download failed with HTTP {}", response.status()));
+        return Err(format!("download request failed with HTTP {}", response.status()));
     }
 
     let total_size = response.content_length().unwrap_or(0);
@@ -189,12 +189,12 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
     let temp_update = tempfile::Builder::new()
         .prefix(".tmp-update-")
         .tempfile_in(exe_dir)
-        .map_err(|e| format!("Failed to create temporary update file: {e}"))?;
+        .map_err(|e| format!("failed to create temporary update file: {e}"))?;
     let temp_path = temp_update.path().to_path_buf();
 
     let mut file = tokio::fs::File::create(&temp_path)
         .await
-        .map_err(|e| format!("Failed to open temporary update file: {e}"))?;
+        .map_err(|e| format!("failed to open temporary update file: {e}"))?;
     let mut stream = response.bytes_stream();
     let mut downloaded: u64 = 0;
     let app_for_progress = app.clone();
@@ -234,7 +234,7 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
 
     let (_, new_exe) = temp_update
         .keep()
-        .map_err(|e| format!("Failed to retain temporary update file: {e}"))?;
+        .map_err(|e| format!("failed to retain temporary update file: {e}"))?;
 
     log::info!("Download complete ({downloaded} bytes). Applying self-replacement...");
 
@@ -249,7 +249,7 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
 
         // 2. Windows allows renaming a running binary
         fs::rename(&current_exe, &old_exe)
-            .map_err(|e| format!("Failed to move running executable to .old: {e}"))?;
+            .map_err(|e| format!("failed to move running executable to .old: {e}"))?;
 
         // 3. Move .new into current_exe
         if let Err(e) = fs::rename(&new_exe, &current_exe) {
@@ -257,14 +257,14 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
             if let Err(e) = fs::rename(&old_exe, &current_exe) {
                 log::warn!("rollback rename failed: {e}");
             }
-            return Err(format!("Failed to activate new executable: {e}"));
+            return Err(format!("failed to activate new executable: {e}"));
         }
 
         // 4. Launch the new executable and exit current process
         log::info!("Launching updated binary: {}", current_exe.display());
         std::process::Command::new(&current_exe)
             .spawn()
-            .map_err(|e| format!("Failed to launch updated binary: {e}"))?;
+            .map_err(|e| format!("failed to launch updated binary: {e}"))?;
 
         std::process::exit(0);
     }
@@ -286,13 +286,13 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
             }
         }
         fs::rename(&current_exe, &old_exe)
-            .map_err(|e| format!("Failed to backup executable: {e}"))?;
+            .map_err(|e| format!("failed to backup executable: {e}"))?;
         fs::rename(&new_exe, &current_exe)
-            .map_err(|e| format!("Failed to activate new executable: {e}"))?;
+            .map_err(|e| format!("failed to activate new executable: {e}"))?;
 
         std::process::Command::new(&current_exe)
             .spawn()
-            .map_err(|e| format!("Failed to launch updated binary: {e}"))?;
+            .map_err(|e| format!("failed to launch updated binary: {e}"))?;
 
         std::process::exit(0);
     }

@@ -5,8 +5,7 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { navigate } from "../../stores";
 import { convertFileSrc } from "../../ipc";
-import { formatBytes } from "../../lib/format";
-import { formatDate } from "../../utils/formatting";
+import { formatBytes, formatDate } from "../../utils/formatting";
 import { GroupBox } from "../../components/GroupBox";
 import { ConfirmDeleteButton } from "../../components/Button";
 import {

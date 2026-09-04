@@ -1,6 +1,7 @@
-import { query, execute } from "./client";
+import { query } from "./client";
 import type { DirectoryEntry, DirectoryGroup } from "../types/api";
-
+import { DB_NAME } from "../constants";
+import * as ipc from "../ipc";
 /**
  * Searches directory entries directly in SQLite with `LIKE %query%` or alphabetical sorting.
  */
@@ -51,20 +52,17 @@ export async function saveDirectoryEntries(
 ): Promise<void> {
   if (groups.length === 0) return;
   const now = Date.now();
-
+  const sql =
+    "INSERT INTO directory_entries (kind, letter, permalink, name, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(kind, permalink) DO UPDATE SET letter = excluded.letter, name = excluded.name, updated_at = excluded.updated_at";
+  const statements: string[] = [];
+  const params: unknown[][] = [];
   for (const group of groups) {
     for (const entry of group.entries) {
-      await execute(
-        `INSERT INTO directory_entries (kind, letter, permalink, name, updated_at)
-         VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT(kind, permalink) DO UPDATE SET
-           letter = excluded.letter,
-           name = excluded.name,
-           updated_at = excluded.updated_at`,
-        [kind, group.letter, entry.permalink, entry.name, now],
-      );
+      statements.push(sql);
+      params.push([kind, group.letter, entry.permalink, entry.name, now]);
     }
   }
+  if (statements.length > 0) await ipc.dbExecuteBatch(DB_NAME, statements, params);
 }
 
 /**
@@ -102,28 +100,19 @@ export async function saveSuggestEntries(
 ): Promise<void> {
   if (suggestions.length === 0) return;
   const now = Date.now();
-
+  const sql =
+    "INSERT INTO directory_entries (kind, letter, permalink, name, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(kind, permalink) DO UPDATE SET letter = excluded.letter, name = excluded.name, updated_at = excluded.updated_at";
+  const statements: string[] = [];
+  const params: unknown[][] = [];
   for (const s of suggestions) {
     if (!s.name) continue;
     const kind = s.type?.toLowerCase() === "series" ? "series" : "tags";
-    const permalink = s.name
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "");
+    const permalink = s.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
     if (!permalink) continue;
-
     const firstChar = s.name.trim().charAt(0).toUpperCase();
     const letter = /[A-Z]/.test(firstChar) ? firstChar : "#";
-
-    await execute(
-      `INSERT INTO directory_entries (kind, letter, permalink, name, updated_at)
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(kind, permalink) DO UPDATE SET
-         letter = excluded.letter,
-         name = excluded.name,
-         updated_at = excluded.updated_at`,
-      [kind, letter, permalink, s.name.trim(), now],
-    );
+    statements.push(sql);
+    params.push([kind, letter, permalink, s.name.trim(), now]);
   }
+  if (statements.length > 0) await ipc.dbExecuteBatch(DB_NAME, statements, params);
 }

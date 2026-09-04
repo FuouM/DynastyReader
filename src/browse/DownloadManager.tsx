@@ -10,7 +10,7 @@ import {
   retryFailedDownloads,
   type DownloadQueueItem,
 } from "../ipc";
-import { formatBytes, formatSpeed, formatEta } from "../lib/format";
+import { formatBytes, formatSpeed, formatEta } from "../utils/formatting";
 import { errorMessage } from "../utils/errors";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";

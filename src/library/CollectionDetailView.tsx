@@ -212,14 +212,14 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
         </div>
       </Show>
       <ExportModal
-        open={exportOpen}
+        open={exportOpen()}
         initialScope="collection"
         initialCollectionId={props.collectionId}
         collectionName={collection()?.name}
         onClose={() => setExportOpen(false)}
       />
       <ImportModal
-        open={importOpen}
+        open={importOpen()}
         initialTarget="collection"
         initialCollectionId={props.collectionId}
         collectionName={collection()?.name}

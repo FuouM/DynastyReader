@@ -1,6 +1,6 @@
 import { query } from "./client";
 import { dynastyUrl } from "../utils/formatting";
-import { seriesTypeToPath } from "../taxonomy";
+import { itemKindToPath } from "../taxonomy";
 import { decodeEntities } from "../utils/html";
 
 export type ExportScope = "all" | "followed" | "collections" | "collection" | "selected_collections";
@@ -54,19 +54,6 @@ export interface ExportCounts {
   followed: number;
   collections: number;
   collectionItems: number;
-}
-
-/**
- * Resolves the plural URL path segment for an item kind.
- * One-shots and chapters belong under /chapters/ on Dynasty Scans;
- * series-like entities (series, doujins, anthologies) use their taxonomy paths.
- */
-export function itemKindToPath(kind: string): string {
-  const k = (kind ?? "").toLowerCase().trim();
-  if (k === "chapter" || k === "oneshot") {
-    return "chapters";
-  }
-  return seriesTypeToPath(k);
 }
 
 /**

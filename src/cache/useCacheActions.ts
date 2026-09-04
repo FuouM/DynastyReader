@@ -1,7 +1,7 @@
 import { browseCovers } from "../browse/browse-covers";
 import { t } from "../i18n";
 import { showBanner } from "../stores";
-import { formatBytes } from "../lib/format";
+import { formatBytes } from "../utils/formatting";
 import { errorMessage } from "../utils/errors";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { log } from "../utils/log";

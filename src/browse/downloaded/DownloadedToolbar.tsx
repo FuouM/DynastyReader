@@ -5,7 +5,7 @@
  */
 
 import { Show } from "solid-js";
-import { formatBytes } from "../../lib/format";
+import { formatBytes } from "../../utils/formatting";
 import { t } from "../../i18n";
 import { InputField } from "../../components/InputField";
 import { DsSelect } from "../../components/Button";

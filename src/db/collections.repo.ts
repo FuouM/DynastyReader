@@ -1,12 +1,17 @@
 import { query, execute } from "./client";
+import { isCoverFilePath } from "../lib/cache-keys";
 import { createChangeNotifier } from "../lib/change-notifier";
+import type {
+  CollectionRow,
+  CollectionItemRow,
+  CollectionItemKind,
+} from "../types/db";
 import { log } from "../utils/log";
-import type { CollectionRow, CollectionItemRow, CollectionItemKind } from "../types/db";
 
-const collectionsNotifier = createChangeNotifier("collections.repo");
-export const getCollectionsRevision = collectionsNotifier.getRevision;
-export const onCollectionsChanged = collectionsNotifier.onChanged;
+const collectionsNotifier = createChangeNotifier();
 export const notifyCollectionsChanged = collectionsNotifier.notifyChanged;
+export const onCollectionsChanged = collectionsNotifier.onChanged;
+export const getCollectionsRevision = collectionsNotifier.getRevision;
 
 /**
  * Returns all collections sorted with Favorites (is_default = 1) first, then alphabetical.
@@ -133,8 +138,8 @@ export async function addItemToCollection(
   const now = Date.now();
   let resolvedCover = item.cover || null;
 
-  // If cover is a coverKey (e.g. series:xxx or chapter:xxx), check if actual path is cached
-  if (resolvedCover && !resolvedCover.includes("/") && !resolvedCover.includes("\\")) {
+  // If cover is a bare key (not a file path), resolve via cached_metadata
+  if (resolvedCover && !isCoverFilePath(resolvedCover)) {
     try {
       const rows = await query<{ json_payload: string }>(
         "SELECT json_payload FROM cached_metadata WHERE cache_key = ?",

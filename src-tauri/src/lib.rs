@@ -13,9 +13,8 @@ pub fn run() {
         Ok(c) => c,
         Err(e) => {
             // Fatal: TLS/proxy initialization failed. Log to the rolling file
-            // and stderr, then exit cleanly instead of an opaque panic.
+            // then exit cleanly instead of an opaque panic.
             log::error!("fatal: failed to build http client: {e}");
-            eprintln!("fatal: failed to build http client: {e}");
             std::process::exit(1);
         }
     };
@@ -85,7 +84,6 @@ pub fn run() {
         .run(tauri::generate_context!())
         .unwrap_or_else(|e| {
             log::error!("fatal: error while running Dynasty Scans Reader: {e}");
-            eprintln!("fatal: error while running Dynasty Scans Reader: {e}");
             std::process::exit(1);
         });
 }

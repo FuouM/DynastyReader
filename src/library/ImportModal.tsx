@@ -5,7 +5,6 @@ import {
   For,
   onMount,
   Show,
-  type Accessor,
 } from "solid-js";
 import { t } from "../i18n";
 import { showBanner } from "../stores";
@@ -22,7 +21,7 @@ import {
 } from "../db";
 
 export interface ImportModalProps {
-  open: Accessor<boolean>;
+  open: boolean;
   onClose: () => void;
   initialTarget?: "followed" | "collections" | "collection";
   initialCollectionId?: number;
@@ -60,8 +59,7 @@ export function ImportModal(props: ImportModalProps) {
 
   // Reset state when opening
   createEffect(() => {
-    if (props.open()) {
-      setRawText("");
+    if (props.open) {
       setImporting(false);
       setIsCreatingNewCol(false);
       setNewCollectionName("");
@@ -177,8 +175,7 @@ export function ImportModal(props: ImportModalProps) {
 
   return (
     <Modal
-      open={props.open()}
-      backdropId="ds-import-modal-overlay"
+      open={props.open}
       width={560}
       onClose={props.onClose}
       title={

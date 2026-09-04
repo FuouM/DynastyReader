@@ -83,6 +83,29 @@ export function seriesTypeToPath(type?: string | null): string {
 }
 
 /**
+ * Resolves the plural URL path segment for an item kind.
+ * One-shots and chapters belong under /chapters/ on Dynasty Scans;
+ * series-like entities (series, doujins, anthologies) use their taxonomy paths.
+ */
+export function itemKindToPath(kind: string): string {
+  const k = (kind ?? "").toLowerCase().trim();
+  if (k === "chapter" || k === "oneshot") {
+    return "chapters";
+  }
+  return seriesTypeToPath(k);
+}
+
+/**
+ * Derives a clean human-readable title from a permalink slug (e.g. "bloom_into_you" -> "Bloom Into You").
+ */
+export function titleFromPermalink(permalink: string): string {
+  return permalink
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
  * Resolves a type string to its canonical EntityKind via path segment lookup.
  * Returns `undefined` if the type doesn't match any known entity.
  */

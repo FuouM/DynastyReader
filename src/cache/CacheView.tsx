@@ -18,7 +18,7 @@ import {
 } from "solid-js";
 import { navigate, setActions, showBanner, setSessionTab } from "../stores";
 import { downloadingChapterPermalinks } from "../stores/download";
-import { formatBytes } from "../lib/format";
+import { formatBytes } from "../utils/formatting";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api";
