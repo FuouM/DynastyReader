@@ -764,6 +764,27 @@ fn chrono_like_now() -> i64 {
         .unwrap_or(0)
 }
 
+/// Resolve `<data_root>/local/<slug>` rejecting traversal: the slug must be a
+/// single safe path component (no separators, no dot segments) so a crafted
+/// permalink like `local:..` can never escape the `local/` directory.
+fn resolve_local_series_dir(slug: &str) -> Result<std::path::PathBuf, String> {
+    if slug.is_empty()
+        || slug == "."
+        || slug.contains("..")
+        || slug.contains('/')
+        || slug.contains('\\')
+    {
+        return Err(format!("invalid local series slug '{slug}'"));
+    }
+    crate::paths::resolve_in_root(&format!("local/{slug}"))
+}
+
+/// Escape LIKE wildcards so a raw slug matches literally inside a LIKE pattern
+/// (pair every pattern built with this with `ESCAPE '\\'` in the query).
+fn like_escape(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+}
+
 #[tauri::command(rename = "deleteLocalSeries")]
 pub async fn delete_local_series(permalink: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || -> Result<(), String> {
@@ -772,7 +793,7 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
         }
         let slug = permalink.trim_start_matches("local:");
         let data_root = crate::paths::data_root();
-        let series_dir = data_root.join("local").join(slug);
+        let series_dir = resolve_local_series_dir(slug)?;
         if series_dir.exists() {
             std::fs::remove_dir_all(&series_dir).map_err(|e| format!("failed deleting series dir: {e}"))?;
         }
@@ -783,9 +804,9 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
                 .map_err(|e| format!("busy timeout failed: {e}"))?;
             // Collect chapter permalinks for this series
             let chapter_permalinks: Vec<String> = conn
-                .prepare("SELECT json_payload FROM cached_metadata WHERE cache_key LIKE ?1")
+                .prepare("SELECT json_payload FROM cached_metadata WHERE cache_key LIKE ?1 ESCAPE '\\'")
                 .and_then(|mut stmt| {
-                    let pattern = format!("chapter:local:{}-%", slug);
+                    let pattern = format!("chapter:local:{}-%", like_escape(slug));
                     let rows = stmt.query_map([pattern], |row| row.get::<_, String>(0))?;
                     let mut out = Vec::new();
                     for r in rows {
@@ -806,11 +827,11 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
             tx.execute("DELETE FROM local_series WHERE permalink = ?1", rusqlite::params![permalink])
                 .map_err(|e| format!("delete local_series failed: {e}"))?;
             tx.execute(
-                "DELETE FROM cached_metadata WHERE cache_key = ?1 OR cache_key LIKE ?2 OR cache_key LIKE ?3",
+                "DELETE FROM cached_metadata WHERE cache_key = ?1 OR cache_key LIKE ?2 ESCAPE '\\' OR cache_key LIKE ?3 ESCAPE '\\'",
                 rusqlite::params![
                     format!("series:{}", permalink),
-                    format!("chapter:local:{}-%", slug),
-                    format!("cover:%local:{}%", slug)
+                    format!("chapter:local:{}-%", like_escape(slug)),
+                    format!("cover:%local:{}%", like_escape(slug))
                 ],
             )
             .map_err(|e| format!("delete cached_metadata failed: {e}"))?;
@@ -864,7 +885,7 @@ pub async fn update_local_series(
         }
         let slug = permalink.trim_start_matches("local:").to_string();
         let data_root = crate::paths::data_root();
-        let series_dir = data_root.join("local").join(&slug);
+        let series_dir = resolve_local_series_dir(&slug)?;
         let db_path = data_root.join("dynasty_reader.db");
         let now = chrono_like_now();
 

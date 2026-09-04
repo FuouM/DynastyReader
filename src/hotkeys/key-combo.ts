@@ -55,15 +55,20 @@ export function eventToKeyCombo(ev: KeyboardEvent): string | null {
  * Parses and normalizes any stored key string into the canonical format.
  */
 export function normalizeKeyCombo(combo: string): string {
-  const parts = combo.trim().split("+").map((p) => p.trim()).filter(Boolean);
-  if (parts.length === 0) return "";
+  // A trailing "+" is the key itself, not a separator: "+", "Ctrl++".
+  // Split it off first so the modifier scan below sees only real parts.
+  const trimmed = combo.trim();
+  const hasPlusKey =
+    trimmed.endsWith("+") && (trimmed.length === 1 || trimmed[trimmed.length - 2] === "+");
+  const body = hasPlusKey ? trimmed.slice(0, -1) : trimmed;
+  const parts = body.split("+").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0 && !hasPlusKey) return "";
 
   let ctrl = false;
   let alt = false;
   let shift = false;
   let meta = false;
-  let mainKey = "";
-
+  let mainKey = hasPlusKey ? "+" : "";
   for (const part of parts) {
     const pLower = part.toLowerCase();
     if (pLower === "ctrl" || pLower === "control") ctrl = true;

@@ -159,6 +159,11 @@ export function slideTo(
 
         s.scrollAnimRaf = requestAnimationFrame(step);
       }
+    } else {
+      // Target slot is missing (strip mid-rebuild): never leave the
+      // programmatic-scroll flag stuck on — it would permanently disable
+      // computeCurrentPageFromScroll until the chapter is reopened.
+      s.isProgrammaticScroll = false;
     }
   }
 }

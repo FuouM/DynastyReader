@@ -74,6 +74,9 @@ pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
 pub fn build_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .user_agent(USER_AGENT)
+        // Automatic redirects are disabled: every hop is followed manually via
+        // `send_with_redirects` and re-validated against the SSRF blocklist.
+        .redirect(reqwest::redirect::Policy::none())
         .build()
         .map_err(|e| format!("failed to build http client: {e}"))
 }
@@ -114,6 +117,76 @@ fn apply_timeout(req: reqwest::RequestBuilder, timeout_ms: Option<u64>) -> reqwe
     req.timeout(std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS)))
 }
 
+const MAX_REDIRECTS: usize = 5;
+
+/// Sends a request and follows redirects manually, re-validating every hop
+/// against the SSRF blocklist so a validated public URL cannot redirect into
+/// loopback/private/link-local space (e.g. cloud metadata endpoints).
+pub async fn send_with_redirects(
+    client: &reqwest::Client,
+    method: &str,
+    url: &str,
+    body: Option<String>,
+    content_type: Option<&str>,
+    headers: Option<&serde_json::Map<String, serde_json::Value>>,
+    timeout_ms: Option<u64>,
+) -> Result<reqwest::Response, String> {
+    let mut current = validate_http_url(url)?;
+    let mut method = method.trim().to_ascii_uppercase();
+    let mut body = body;
+    for hop in 0..=MAX_REDIRECTS {
+        let req = build_request(
+            client,
+            current.as_str(),
+            &method,
+            body.as_deref(),
+            content_type,
+            headers,
+        )?;
+        let resp = apply_timeout(req, timeout_ms)
+            .send()
+            .await
+            .map_err(|e| format!("http request failed: {e}"))?;
+        let status = resp.status();
+        if !status.is_redirection() {
+            return Ok(resp);
+        }
+        if hop == MAX_REDIRECTS {
+            return Err(format!("too many redirects (>{MAX_REDIRECTS})"));
+        }
+        let location = resp
+            .headers()
+            .get(reqwest::header::LOCATION)
+            .and_then(|v| v.to_str().ok())
+            .ok_or_else(|| format!("redirect {} without Location header", status.as_u16()))?;
+        let joined = current
+            .join(location)
+            .map_err(|e| format!("invalid redirect target '{location}': {e}"))?;
+        current = validate_http_url(joined.as_str())?;
+        let code = status.as_u16();
+        // 303 always switches to GET; 301/302 downgrade POST per browser convention.
+        if code == 303 || ((code == 301 || code == 302) && method == "POST") {
+            method = "GET".to_string();
+            body = None;
+        }
+    }
+    unreachable!()
+}
+
+/// Reads a full response body with a hard byte cap, failing loudly on overflow.
+pub async fn read_body_capped(resp: reqwest::Response, cap: usize) -> Result<Vec<u8>, String> {
+    let mut stream = resp.bytes_stream();
+    let mut buf: Vec<u8> = Vec::new();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| format!("failed reading response body: {e}"))?;
+        if buf.len() + chunk.len() > cap {
+            return Err(format!("response body exceeds {cap} byte limit"));
+        }
+        buf.extend_from_slice(&chunk);
+    }
+    Ok(buf)
+}
+
 #[tauri::command(rename = "httpGet")]
 pub async fn http_get(
     state: State<'_, HttpState>,
@@ -124,23 +197,20 @@ pub async fn http_get(
     headers: Option<serde_json::Value>,
     timeout_ms: Option<u64>,
 ) -> Result<serde_json::Value, String> {
-    let validated_url = validate_http_url(&url)?;
     let method_str = method.as_deref().unwrap_or("GET");
     let hdrs = headers
         .and_then(|h| h.as_object().cloned())
         .unwrap_or_default();
-    let req = build_request(
+    let resp = send_with_redirects(
         &state.0,
-        validated_url.as_str(),
         method_str,
-        body.as_deref(),
+        &url,
+        body,
         content_type.as_deref(),
         Some(&hdrs),
-    )?;
-    let resp = apply_timeout(req, timeout_ms)
-        .send()
-        .await
-        .map_err(|e| format!("http get failed: {e}"))?;
+        timeout_ms,
+    )
+    .await?;
     let status = resp.status().as_u16();
     let etag = resp
         .headers()
@@ -150,32 +220,9 @@ pub async fn http_get(
 
     let mut body_text = String::new();
     if status != 304 {
-        let mut stream = resp.bytes_stream();
-        let mut buf: Vec<u8> = Vec::new();
-        let mut truncated = false;
-        while buf.len() < MAX_GET_BODY {
-            match stream.next().await {
-                Some(Ok(chunk)) => {
-                    let remaining = MAX_GET_BODY - buf.len();
-                    buf.extend_from_slice(&chunk[..chunk.len().min(remaining)]);
-                    if chunk.len() > remaining {
-                        truncated = true;
-                        break;
-                    }
-                }
-                Some(Err(e)) => {
-                    return Err(format!("failed reading response body: {e}"));
-                }
-                None => break,
-            }
-        }
         // Never hand a truncated body to the caller — that would fail later in
         // `JSON.parse` with a confusing error. Fail loudly instead.
-        if truncated {
-            return Err(format!(
-                "http get failed: response body exceeds {MAX_GET_BODY} byte limit"
-            ));
-        }
+        let buf = read_body_capped(resp, MAX_GET_BODY).await?;
         body_text = String::from_utf8_lossy(&buf).into_owned();
     }
     Ok(json!({ "status": status, "body": body_text, "etag": etag }))
@@ -188,18 +235,12 @@ pub async fn http_download(
     output_path: String,
     timeout_ms: Option<u64>,
 ) -> Result<serde_json::Value, String> {
-    let validated_url = validate_http_url(&url)?;
     let target = crate::paths::resolve_in_root(&output_path)?;
     let parent = target.parent().unwrap_or(&target);
     tokio::fs::create_dir_all(parent)
         .await
         .map_err(|e| format!("failed creating output dir: {e}"))?;
-    let client = &state.0;
-    let req = apply_timeout(client.get(validated_url.as_str()), timeout_ms);
-    let resp = req
-        .send()
-        .await
-        .map_err(|e| format!("http download failed: {e}"))?;
+    let resp = send_with_redirects(&state.0, "GET", &url, None, None, None, timeout_ms).await?;
     if !resp.status().is_success() {
         return Err(format!("http download failed: status {}", resp.status()));
     }

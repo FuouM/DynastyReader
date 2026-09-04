@@ -14,6 +14,15 @@ use std::sync::{
 };
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::{watch, Notify};
+use tokio::io::AsyncWriteExt;
+use tokio_stream::StreamExt;
+
+/// Shared request timeout for chapter JSON and page image fetches (matches http.rs).
+const FETCH_TIMEOUT_MS: u64 = 30_000;
+/// Hard cap on a chapter JSON payload (typical Dynasty payload is ~250 KB).
+const MAX_CHAPTER_JSON_BYTES: usize = 4 * 1024 * 1024;
+/// Hard cap on a single page image (typical scans are a few MB).
+const MAX_PAGE_BYTES: u64 = 64 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadRequest {
@@ -498,15 +507,22 @@ async fn download_chapter(
     // Fetch chapter JSON to get page list (uses Dynasty API, with SSRF validation bypass? Need to fetch via http client directly)
     // We fetch via reqwest directly to avoid Tauri IPC; the chapter JSON is at https://dynasty-scans.com/chapters/<permalink>.json
     let chapter_url = format!("https://dynasty-scans.com/chapters/{}.json", req.chapter_permalink);
-    let resp = client
-        .get(&chapter_url)
-        .send()
-        .await
-        .map_err(|e| format!("fetch chapter failed: {e}"))?;
+    let resp = crate::commands::http::send_with_redirects(
+        client,
+        "GET",
+        &chapter_url,
+        None,
+        None,
+        None,
+        Some(FETCH_TIMEOUT_MS),
+    )
+    .await
+    .map_err(|e| format!("fetch chapter failed: {e}"))?;
     if !resp.status().is_success() {
         return Err(format!("fetch chapter status {}", resp.status()));
     }
-    let body = resp.text().await.map_err(|e| format!("read chapter body: {e}"))?;
+    let body_bytes = crate::commands::http::read_body_capped(resp, MAX_CHAPTER_JSON_BYTES).await?;
+    let body = String::from_utf8_lossy(&body_bytes).into_owned();
     let v: serde_json::Value = serde_json::from_str(&body).map_err(|e| format!("parse chapter: {e}"))?;
     let pages = v
         .get("pages")
@@ -635,21 +651,44 @@ async fn download_chapter(
             if let Some(parent) = target.parent() {
                 tokio::fs::create_dir_all(parent).await.map_err(|e| format!("mkdir: {e}"))?;
             }
-            let resp = client.get(&abs_url).send().await.map_err(|e| format!("http get: {e}"))?;
+            let resp = crate::commands::http::send_with_redirects(
+                client,
+                "GET",
+                &abs_url,
+                None,
+                None,
+                None,
+                Some(FETCH_TIMEOUT_MS),
+            )
+            .await
+            .map_err(|e| format!("http get: {e}"))?;
             if !resp.status().is_success() {
                 return Err(format!("http status {}", resp.status()));
             }
-            let bytes = resp.bytes().await.map_err(|e| format!("read bytes: {e}"))?;
-            // Write via temp file then persist
+            // Stream to a temp file with a hard byte cap, then persist.
             let parent = target.parent().unwrap_or(&target);
             let tmp = tempfile::Builder::new()
                 .prefix(".tmp-download-")
                 .tempfile_in(parent)
                 .map_err(|e| format!("tmp file: {e}"))?;
             let tmp_path = tmp.path().to_path_buf();
-            tokio::fs::write(&tmp_path, &bytes).await.map_err(|e| format!("write tmp: {e}"))?;
+            let mut out = tokio::fs::File::create(&tmp_path)
+                .await
+                .map_err(|e| format!("write tmp: {e}"))?;
+            let mut stream = resp.bytes_stream();
+            let mut size: u64 = 0;
+            while let Some(chunk) = stream.next().await {
+                let chunk = chunk.map_err(|e| format!("read bytes: {e}"))?;
+                size += chunk.len() as u64;
+                if size > MAX_PAGE_BYTES {
+                    return Err(format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes"));
+                }
+                out.write_all(&chunk).await.map_err(|e| format!("write tmp: {e}"))?;
+            }
+            out.flush().await.map_err(|e| format!("write tmp: {e}"))?;
+            drop(out);
             tmp.persist(&target).map_err(|e| format!("persist: {e}"))?;
-            let size = bytes.len() as i64;
+            let size = size as i64;
             let abs_str = target.to_string_lossy().into_owned();
             // Spawn blocking for DB write
             let cp = req.chapter_permalink.clone();

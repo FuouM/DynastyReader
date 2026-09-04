@@ -195,8 +195,8 @@ jobs:
             echo "TAURI_KEY_PASSWORD=$KEY_PASS" >> $GITHUB_ENV
             echo "TAURI_STORE_PASSWORD=$ANDROID_STORE_PASSWORD" >> $GITHUB_ENV
           else
-            echo "::warning ::Keystore or password verification failed for alias '$KEYSTORE_ALIAS'. Falling back to debug signing so the build succeeds with installable APKs."
-            rm -f src-tauri/gen/android/app/release.keystore
+            echo "::error ::Keystore or password verification failed for alias '$KEYSTORE_ALIAS'. Refusing to publish debug-signed release artifacts."
+            exit 1
           fi
       - name: Build Android APK & App Bundle
         run: |

@@ -459,8 +459,11 @@
   flex-direction: column;
   align-items: center;
   padding: 0;
-  background: var(--ds-reader-viewport-bg, #eaeaea);
   user-select: none;
+  /* Allow vertical panning but keep browser pinch-zoom out of the reader —
+     the app implements its own fit/zoom modes. (Horizontal mode below uses
+     touch-action: none for full custom gesture control.) */
+  touch-action: pan-y;
 }
 #ds-reader-viewport.ds-dragging {
   cursor: grabbing !important;

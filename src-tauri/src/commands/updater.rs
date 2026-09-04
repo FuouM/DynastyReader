@@ -88,14 +88,22 @@ pub fn validate_update_download_url(url: &str) -> Result<(), String> {
 pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>) -> Result<UpdateInfo, String> {
     let current_version = app.package_info().version.to_string();
 
-    let resp = http_state
-        .0
-        .get("https://api.github.com/repos/FuouM/DynastyReader/releases/latest")
-        .header("User-Agent", "DynastyReader-Updater")
-        .header("Accept", "application/vnd.github.v3+json")
-        .send()
-        .await
-        .map_err(|e| format!("Failed to query GitHub releases: {e}"))?;
+    let mut headers = serde_json::Map::new();
+    headers.insert(
+        "Accept".to_string(),
+        serde_json::Value::String("application/vnd.github.v3+json".to_string()),
+    );
+    let resp = crate::commands::http::send_with_redirects(
+        &http_state.0,
+        "GET",
+        "https://api.github.com/repos/FuouM/DynastyReader/releases/latest",
+        None,
+        None,
+        Some(&headers),
+        None,
+    )
+    .await
+    .map_err(|e| format!("Failed to query GitHub releases: {e}"))?;
     if !resp.status().is_success() {
         return Err(format!("GitHub API returned HTTP {}", resp.status()));
     }
@@ -106,13 +114,7 @@ pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>)
         }
     }
 
-    let bytes = resp
-        .bytes()
-        .await
-        .map_err(|e| format!("Failed to read response body: {e}"))?;
-    if bytes.len() > MAX_RELEASE_API_BODY {
-        return Err(format!("GitHub API response body too large ({} bytes)", bytes.len()));
-    }
+    let bytes = crate::commands::http::read_body_capped(resp, MAX_RELEASE_API_BODY).await?;
     let json: serde_json::Value = serde_json::from_slice(&bytes)
         .map_err(|e| format!("Failed to parse GitHub release response: {e}"))?;
     let tag_name = json["tag_name"]
@@ -166,13 +168,18 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
     let old_exe: PathBuf = exe_dir.join(format!("{}.old", file_name.to_string_lossy()));
 
     log::info!("Downloading update from: {download_url}");
-    let response = http_state
-        .0
-        .get(&download_url)
-        .header("User-Agent", "DynastyReader-Updater")
-        .send()
-        .await
-        .map_err(|e| format!("Failed to start download: {e}"))?;
+    let response = crate::commands::http::send_with_redirects(
+        &http_state.0,
+        "GET",
+        &download_url,
+        None,
+        None,
+        None,
+        // Large release binaries need a generous total timeout (default is 30s).
+        Some(600_000),
+    )
+    .await
+    .map_err(|e| format!("Failed to start download: {e}"))?;
     if !response.status().is_success() {
         return Err(format!("Download failed with HTTP {}", response.status()));
     }
