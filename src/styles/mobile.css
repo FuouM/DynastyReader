@@ -603,7 +603,7 @@
 }
 
 #ds-root[data-mobile] .ds-library-tab-pane {
-  padding: 0 2px;
+  padding: 0;
 }
 
 #ds-root[data-mobile] #ds-banner,
