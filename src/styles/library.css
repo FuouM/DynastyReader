@@ -464,9 +464,9 @@
   gap: 8px;
 }
 .ds-btn-success {
-  background-color: var(--sys-success-bg, #107c41) !important;
-  color: #fff !important;
-  border-color: var(--sys-success-border, #0e6b37) !important;
+  background-color: var(--ds-status-fresh-text) !important;
+  color: var(--sys-highlight-text, #ffffff) !important;
+  border-color: var(--ds-status-fresh-border) !important;
 }
 
 .ds-collection-checklist-wrap {
@@ -536,16 +536,16 @@
   color: var(--sys-window-text);
 }
 .ds-import-badge--success {
-  color: var(--sys-success-text, #107c41);
-  border-color: var(--sys-success-border, #107c41);
+  color: var(--ds-status-fresh-text);
+  border-color: var(--ds-status-fresh-border);
 }
 .ds-import-badge--warn {
-  color: var(--sys-warning-text, #b45309);
-  border-color: var(--sys-warning-border, #f59e0b);
+  color: var(--ds-warn-text);
+  border-color: var(--ds-warn-border);
 }
 .ds-import-badge--error {
-  color: var(--sys-danger-text, #d13438);
-  border-color: var(--sys-danger-border, #d13438);
+  color: var(--ds-danger-text);
+  border-color: var(--ds-danger-border);
 }
 .ds-import-textarea {
   width: 100%;

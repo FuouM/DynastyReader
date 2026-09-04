@@ -1134,8 +1134,8 @@
   }
 }
 .ds-slot-error {
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--sys-error-text);
+  border-color: color-mix(in srgb, var(--sys-error-text) 30%, transparent);
 }
 .ds-progress-text {
   font-size: var(--font-sm);
@@ -1175,7 +1175,7 @@
   padding: 1px 5px;
   border-radius: 3px;
   background: var(--sys-highlight-bg);
-  color: #ffffff;
+  color: var(--sys-highlight-text, #ffffff);
   margin-left: 2px;
 }
 @keyframes ds-hint-fade {
@@ -1235,8 +1235,8 @@
   height: 64px;
   border-radius: 50%;
   background: var(--sys-control-bg);
-  border: 2px dashed var(--sys-highlight-bg);
-  color: var(--sys-highlight-bg);
+  border: 2px dashed var(--sys-link, var(--sys-highlight-bg));
+  color: var(--sys-link, var(--sys-highlight-bg));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1286,7 +1286,7 @@
   padding: 1px 6px;
   border-radius: 2px;
   background: var(--sys-highlight-bg);
-  color: #ffffff;
+  color: var(--sys-highlight-text, #ffffff);
 }
 
 .ds-overscroll-target-title {
@@ -1361,7 +1361,7 @@
 .ds-tap-zone.is-active .ds-tap-zone-pill {
   background: var(--sys-highlight-bg) !important;
   border-color: var(--sys-primary-border) !important;
-  color: #ffffff !important;
+  color: var(--sys-highlight-text, #ffffff) !important;
 }
 
 /* ── Reader image filter popover & sliders (QoL-R5) ── */

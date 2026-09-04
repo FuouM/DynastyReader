@@ -934,7 +934,7 @@
 [data-theme="windows7"] .ds-segmented-btn.active .ds-btn-icon-wrap,
 [data-theme="windows7"] .ds-segmented-btn.active .bi,
 [data-theme="windows7"] .ds-session-tab.active .ds-truncate,
-[data-theme="windows7"] .ds-session-tab.active > i.bi,
+[data-theme="windows7"] .ds-session-tab.active > i.bi:not(.ds-tab-close),
 [data-theme="windows7"] .ds-subtab.active,
 [data-theme="windows7"] .ds-subtab.active span,
 [data-theme="windows7"] .ds-subtab.active .bi,
@@ -953,6 +953,14 @@
 [data-theme="windows7"] .ds-bn-tab.active svg {
   color: var(--ds-accent-active-text, #0f2440) !important;
   fill: currentColor;
+}
+
+[data-theme="windows7"] .ds-session-tab.active .ds-tab-close {
+  color: var(--ds-accent-active-text, #0f2440) !important;
+}
+[data-theme="windows7"] .ds-session-tab.active .ds-tab-close:hover {
+  background: color-mix(in srgb, var(--ds-accent-active-text, #0f2440) 20%, transparent) !important;
+  color: var(--ds-accent-active-text, #0f2440) !important;
 }
 
 [data-theme="windows7"] .ds-subtab.active:hover,

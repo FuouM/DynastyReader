@@ -116,10 +116,12 @@ body {
 }
 .ds-session-tab.active .ds-tab-close {
   opacity: 0.85;
+  color: var(--sys-highlight-text, #ffffff);
 }
 .ds-session-tab.active .ds-tab-close:hover {
-  background: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+  opacity: 1;
+  background: color-mix(in srgb, var(--sys-highlight-text, #ffffff) 25%, transparent);
+  color: var(--sys-highlight-text, #ffffff);
 }
 .ds-segmented-switch {
   display: inline-flex;

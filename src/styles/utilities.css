@@ -175,10 +175,23 @@
   font-size: 26px;
   color: var(--sys-text-muted);
 }
-.ds-danger {
-  background-color: var(--sys-error-text);
-  border-color: var(--ds-danger-border);
-  color: #ffffff;
+.ds-danger,
+.ds-btn-danger {
+  background-color: var(--ds-danger-btn-bg, #d13438) !important;
+  border-color: var(--ds-danger-btn-border, #e81123) !important;
+  color: var(--ds-danger-btn-text, #ffffff) !important;
+}
+.ds-danger:hover,
+.ds-btn-danger:hover {
+  background-color: var(--ds-danger-btn-hover, #b82c30) !important;
+  border-color: var(--ds-danger-btn-hover, #b82c30) !important;
+  color: var(--ds-danger-btn-text, #ffffff) !important;
+}
+.ds-danger:active,
+.ds-btn-danger:active {
+  background-color: var(--ds-danger-btn-active, #a22428) !important;
+  border-color: var(--ds-danger-btn-active, #a22428) !important;
+  color: var(--ds-danger-btn-text, #ffffff) !important;
 }
 .ds-clickable {
   cursor: pointer;

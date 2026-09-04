@@ -52,6 +52,11 @@
     --ds-danger-bg: #fde7e9;
     --ds-danger-text: #a80000;
     --ds-danger-border: #e81123;
+    --ds-danger-btn-bg: #d13438;
+    --ds-danger-btn-border: #e81123;
+    --ds-danger-btn-hover: #b82c30;
+    --ds-danger-btn-active: #a22428;
+    --ds-danger-btn-text: #ffffff;
     --ds-warn-bg: #fdf3f4;
     --ds-warn-text: #842029;
     --ds-warn-border: #f5c2c7;

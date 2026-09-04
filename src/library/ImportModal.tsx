@@ -273,7 +273,7 @@ export function ImportModal(props: ImportModalProps) {
 
             {/* Warnings list if any */}
             <Show when={parsed().warnings.length > 0}>
-              <div style="color: var(--sys-warning-text, #b45309); margin-top: 4px;">
+              <div style="color: var(--ds-warn-text); margin-top: 4px;">
                 <For each={parsed().warnings}>
                   {(w) => (
                     <div style="display: flex; align-items: center; gap: 4px;">
@@ -287,7 +287,7 @@ export function ImportModal(props: ImportModalProps) {
 
             {/* Errors list if any */}
             <Show when={parsed().errors.length > 0 && rawText().trim().length > 0}>
-              <div style="color: var(--sys-danger-text, #d13438); margin-top: 4px;">
+              <div style="color: var(--ds-danger-text); margin-top: 4px;">
                 <For each={parsed().errors}>
                   {(e) => <div>❌ {e}</div>}
                 </For>
