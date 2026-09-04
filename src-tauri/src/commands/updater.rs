@@ -36,7 +36,9 @@ fn is_version_newer(latest: &str, current: &str) -> bool {
     };
     match (parse(latest), parse(current)) {
         (Ok(l), Ok(c)) => l > c,
-        _ => latest != current && !latest.is_empty(),
+        // Unparsable tags (e.g. "nightly") are never treated as a newer
+        // version — otherwise any malformed tag would prompt a download loop.
+        _ => false,
     }
 }
 

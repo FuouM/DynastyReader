@@ -4,7 +4,6 @@ mod paths;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-#[cfg(any(target_os = "android", target_os = "ios"))]
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -38,6 +37,11 @@ pub fn run() {
             paths::set_root(root);
             let root = paths::ensure_root().map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
             log::info!("dynasty-scans-reader: portable data root = {}", root.display());
+            // The static asset scope in tauri.conf.json is intentionally
+            // narrow; grant the resolved portable data root at runtime (a
+            // portable install's `<exe dir>/.data` cannot be expressed via
+            // static config scope variables).
+            app.asset_protocol_scope().allow_directory(&root, true)?;
             Ok(())
         })
         .manage(commands::db::DbPool(Mutex::new(HashMap::new())))

@@ -25,7 +25,7 @@
       "devCsp": "default-src 'self'; img-src 'self' asset: http://asset.localhost https://asset.localhost http: https: data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' ipc: ws: http:; script-src 'self' 'unsafe-eval'",
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": ["$APPDATA/**", "$DATA/**", "$RESOURCE/**"]
       }
     }
   },

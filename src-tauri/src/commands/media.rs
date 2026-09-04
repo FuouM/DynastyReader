@@ -5,8 +5,8 @@
 //!   * The byte budget uses estimate-then-verify: encoded size scales ~linearly
 //!     with pixel count, so `scale = sqrt(max_bytes / bytes)` lands near the
 //!     target in one re-encode (cheap Triangle filter).
-//!   * The source is header-inspected (`into_dimensions`) before full decode
-//!     so decompression bombs cannot allocate (rejected if exceeding `MAX_SOURCE_DIMENSION`).
+//!   * Decoding runs with hard `Limits` (`MAX_SOURCE_DIMENSION`) so
+//!     decompression bombs are rejected inside the decoder before allocating.
 //!   * Conversions in a batch run concurrently up to `MAX_CONCURRENT_CONVERT_TASKS`
 //!     while preserving input order.
 
@@ -145,18 +145,23 @@ fn encode_image(
     max_dimension: Option<u32>,
     max_bytes: Option<u64>,
 ) -> Result<(), String> {
-    // Header inspection before full decode: reject decompression bombs.
-    let (w, h) = ImageReader::open(source)
-        .map_err(|e| format!("Failed to open source: {e}"))?
-        .into_dimensions()
-        .map_err(|e| format!("Failed to read source dimensions: {e}"))?;
+    // Single open: decode with hard dimension limits so decompression bombs
+    // are rejected by the decoder's allocation guard — no second file open.
+    let mut reader = ImageReader::open(source).map_err(|e| format!("Failed to open source: {e}"))?;
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(MAX_SOURCE_DIMENSION);
+    limits.max_image_height = Some(MAX_SOURCE_DIMENSION);
+    reader.limits(limits);
+    let mut img = reader
+        .decode()
+        .map_err(|e| format!("Failed to open/decode source: {e}"))?;
+    // Belt-and-braces for any decoder that ignores limits.
+    let (w, h) = img.dimensions();
     if w > MAX_SOURCE_DIMENSION || h > MAX_SOURCE_DIMENSION {
         return Err(format!(
             "Source exceeds max dimension {MAX_SOURCE_DIMENSION} (got {w}x{h})"
         ));
     }
-
-    let mut img = image::open(source).map_err(|e| format!("Failed to open/decode source: {e}"))?;
     // Bound the larger side, preserving aspect ratio. Single Lanczos3 resize
     // from the original — no cascading resamples.
     if let Some(md) = max_dimension {
@@ -201,7 +206,11 @@ fn encode_image(
         }
     }
 
-    std::fs::write(output, &bytes).map_err(|e| format!("Failed to write output file: {e}"))
+    // Atomic output: write to a sibling temp file, then rename over the target
+    // so a crash mid-write can never leave a truncated, permanently-cached file.
+    let tmp_output = format!("{output}.tmp");
+    std::fs::write(&tmp_output, &bytes).map_err(|e| format!("Failed to write output file: {e}"))?;
+    std::fs::rename(&tmp_output, output).map_err(|e| format!("Failed to finalize output file: {e}"))
 }
 
 enum BufferRef<'a> {

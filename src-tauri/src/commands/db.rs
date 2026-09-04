@@ -49,9 +49,35 @@ fn validate_db_name(db_name: &str) -> Result<String, String> {
     Ok(normalized)
 }
 
+/// Strip SQL comments (block `/* */` and line `--`) so a statement cannot
+/// hide its leading verb behind a comment (e.g. `/* x */ ATTACH ...`).
+fn strip_sql_comments(sql: &str) -> String {
+    let mut out = String::with_capacity(sql.len());
+    let bytes = sql.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if i + 1 < bytes.len() && bytes[i] == b'-' && bytes[i + 1] == b'-' {
+            while i < bytes.len() && bytes[i] != b'\n' {
+                i += 1;
+            }
+        } else if i + 1 < bytes.len() && bytes[i] == b'/' && bytes[i + 1] == b'*' {
+            i += 2;
+            while i + 1 < bytes.len() && !(bytes[i] == b'*' && bytes[i + 1] == b'/') {
+                i += 1;
+            }
+            i = (i + 2).min(bytes.len());
+        } else {
+            out.push(bytes[i] as char);
+            i += 1;
+        }
+    }
+    out
+}
+
 /// Validates that `sql` does not attempt to attach/detach external files or execute unsafe PRAGMAs.
 pub fn validate_sql(sql: &str) -> Result<(), String> {
-    let upper = sql.trim().to_ascii_uppercase();
+    let cleaned = strip_sql_comments(sql);
+    let upper = cleaned.trim().to_ascii_uppercase();
     for statement in upper.split(';') {
         let stmt = statement.trim();
         if stmt.is_empty() {
@@ -156,23 +182,26 @@ fn get_conn(
     Ok(entry.clone())
 }
 
-fn bind_value_owned(v: Value) -> rusqlite::types::Value {
+fn bind_value_owned(v: Value) -> Result<rusqlite::types::Value, String> {
     match v {
-        Value::Null => rusqlite::types::Value::Null,
-        Value::Bool(b) => rusqlite::types::Value::Integer(b as i64),
+        Value::Null => Ok(rusqlite::types::Value::Null),
+        Value::Bool(b) => Ok(rusqlite::types::Value::Integer(b as i64)),
         Value::Number(n) => {
             if let Some(i) = n.as_i64() {
-                rusqlite::types::Value::Integer(i)
+                Ok(rusqlite::types::Value::Integer(i))
             } else if let Some(u) = n.as_u64() {
-                rusqlite::types::Value::Integer(u as i64)
+                // u64 > i64::MAX would silently wrap negative — refuse instead.
+                i64::try_from(u)
+                    .map(rusqlite::types::Value::Integer)
+                    .map_err(|_| format!("integer parameter {u} exceeds i64 range"))
             } else if let Some(f) = n.as_f64() {
-                rusqlite::types::Value::Real(f)
+                Ok(rusqlite::types::Value::Real(f))
             } else {
-                rusqlite::types::Value::Integer(0)
+                Err("number parameter cannot be represented as i64 or f64".to_string())
             }
         }
-        Value::String(s) => rusqlite::types::Value::Text(s),
-        other => rusqlite::types::Value::Text(other.to_string()),
+        Value::String(s) => Ok(rusqlite::types::Value::Text(s)),
+        other => Ok(rusqlite::types::Value::Text(other.to_string())),
     }
 }
 
@@ -208,7 +237,7 @@ pub async fn db_execute(
         .unwrap_or_default()
         .into_iter()
         .map(bind_value_owned)
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
     let affected = tokio::task::spawn_blocking(move || -> Result<usize, String> {
         let conn = lock_unpoisoned(&conn);
         conn.execute(&sql, params_from_iter(values))
@@ -232,7 +261,7 @@ pub async fn db_query(
         .unwrap_or_default()
         .into_iter()
         .map(bind_value_owned)
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
     let rows = tokio::task::spawn_blocking(move || -> Result<Vec<Value>, String> {
         let conn = lock_unpoisoned(&conn);
         let mut stmt = conn
@@ -273,8 +302,12 @@ pub async fn db_execute_batch(
                 .and_then(|v| v.get(idx).cloned().flatten())
                 .unwrap_or_default();
             let mut stmt = conn.prepare_cached(sql).map_err(|e| e.to_string())?;
+            let bound = p
+                .into_iter()
+                .map(bind_value_owned)
+                .collect::<Result<Vec<_>, _>>()?;
             let n = stmt
-                .execute(params_from_iter(p.into_iter().map(bind_value_owned)))
+                .execute(params_from_iter(bound))
                 .map_err(|e| e.to_string())?;
             results.push(n as i64);
         }
@@ -286,24 +319,26 @@ pub async fn db_execute_batch(
     Ok(json!({ "rows_affected": affected }))
 }
 
-/// Creates a timestamped backup of `db_name` inside the portable data root
-/// using SQLite's `VACUUM INTO` (consistent snapshot even with WAL).
+/// Creates a timestamped (millisecond-resolution) backup of `db_name` inside
+/// the portable data root via SQLite's online backup API.
 #[tauri::command(rename = "dbBackup")]
 pub async fn db_backup(
-    state: State<'_, DbPool>,
+    _state: State<'_, DbPool>,
     db_name: String,
 ) -> Result<serde_json::Value, String> {
     let normalized = validate_db_name(&db_name)?;
-    let pool_arc = get_conn(&state.0, &db_name)?;
+    let src_db_path = crate::paths::data_root().join(&normalized);
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
+        .map(|d| d.as_millis())
         .unwrap_or(0);
     let backup_filename = format!("{}.backup.{}.db", normalized, ts);
     let backup_path = crate::paths::data_root().join(&backup_filename);
     let backup_str = backup_path.to_string_lossy().to_string();
     let size = tokio::task::spawn_blocking(move || {
-        let src_conn = lock_unpoisoned(&pool_arc);
+        // Back up from a dedicated source connection (WAL permits a concurrent
+        // reader) so the pooled connection is never blocked for the duration.
+        let src_conn = open_synced(&src_db_path)?;
         let mut dst_conn = Connection::open(&backup_path)
             .map_err(|e| format!("failed creating backup target: {e}"))?;
         let backup = rusqlite::backup::Backup::new(&src_conn, &mut dst_conn)
@@ -355,6 +390,20 @@ pub async fn db_restore_from_path(
             }
             if meta.len() == 0 {
                 return Err("source file is empty".to_string());
+            }
+            // Reject non-SQLite files: restoring a random file (PDF, image)
+            // would silently brick the database.
+            let mut head = [0u8; 16];
+            {
+                use std::io::Read;
+                let mut f = std::fs::File::open(&src_path)
+                    .map_err(|e| format!("source unreadable: {e}"))?;
+                let n = f
+                    .read(&mut head)
+                    .map_err(|e| format!("source unreadable: {e}"))?;
+                if n < 16 || &head != b"SQLite format 3\0" {
+                    return Err("source is not a SQLite database".to_string());
+                }
             }
             Ok(())
         }
@@ -452,16 +501,19 @@ mod tests {
     #[test]
     fn bind_value_coercion() {
         use rusqlite::types::Value as Rv;
-        assert_eq!(bind_value_owned(Value::Null), Rv::Null);
-        assert_eq!(bind_value_owned(Value::Bool(true)), Rv::Integer(1));
-        assert_eq!(bind_value_owned(Value::Bool(false)), Rv::Integer(0));
-        assert_eq!(bind_value_owned(Value::Number(3.into())), Rv::Integer(3));
+        assert_eq!(bind_value_owned(Value::Null).unwrap(), Rv::Null);
+        assert_eq!(bind_value_owned(Value::Bool(true)).unwrap(), Rv::Integer(1));
+        assert_eq!(bind_value_owned(Value::Bool(false)).unwrap(), Rv::Integer(0));
+        assert_eq!(bind_value_owned(Value::Number(3.into())).unwrap(), Rv::Integer(3));
         assert_eq!(
-            bind_value_owned(Value::Number(serde_json::Number::from_f64(2.5).unwrap())),
+            bind_value_owned(Value::Number(serde_json::Number::from_f64(2.5).unwrap())).unwrap(),
             Rv::Real(2.5)
         );
-        assert_eq!(bind_value_owned(Value::String("x".into())), Rv::Text("x".into()));
-        assert_eq!(bind_value_owned(json!(["a"])), Rv::Text("[\"a\"]".to_string()));
+        assert_eq!(bind_value_owned(Value::String("x".into())).unwrap(), Rv::Text("x".into()));
+        assert_eq!(bind_value_owned(json!(["a"])).unwrap(), Rv::Text("[\"a\"]".to_string()));
+        // Out-of-range integers and unrepresentable numbers are hard errors,
+        // not silent wraps to 0 / negative.
+        assert!(bind_value_owned(json!(u64::MAX)).is_err());
     }
 
     #[test]
@@ -477,5 +529,12 @@ mod tests {
         assert!(validate_sql("DETACH DATABASE evil").is_err());
         assert!(validate_sql("PRAGMA writable_schema = 1").is_err());
         assert!(validate_sql("PRAGMA load_extension('evil.dll')").is_err());
+
+        // Comment-prefixed statements cannot hide forbidden verbs
+        assert!(validate_sql("/* comment */ ATTACH DATABASE 'x' AS y").is_err());
+        assert!(validate_sql("-- note\nATTACH DATABASE 'x' AS y").is_err());
+        assert!(validate_sql("/* multi\nline */ DETACH y").is_err());
+        assert!(validate_sql("SELECT 1 /* trailing */").is_ok());
     }
+
 }

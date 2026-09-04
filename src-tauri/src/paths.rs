@@ -74,6 +74,17 @@ fn reject_unsafe_components(path: &str) -> Result<(), String> {
             if s.contains(':') || s.ends_with('.') || s.ends_with(' ') {
                 return Err("illegal path component (NTFS trick or trailing dot/space)".to_string());
             }
+            // Windows reserved device names fail with confusing OS errors at
+            // write time (even with an extension) — reject them up front.
+            let stem = s.split('.').next().unwrap_or(&s).to_ascii_uppercase();
+            const RESERVED: &[&str] = &[
+                "CON", "PRN", "AUX", "NUL",
+                "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+                "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+            ];
+            if RESERVED.contains(&stem.as_str()) {
+                return Err(format!("illegal path component (reserved device name '{stem}')"));
+            }
         }
     }
     Ok(())
@@ -150,6 +161,15 @@ pub fn resolve_in_root(raw: &str) -> Result<PathBuf, String> {
     let canonical_target = canonicalize_ancestor(&target)?;
     if !canonical_target.starts_with(&canonical_root) {
         return Err("path escapes data directory".to_string());
+    }
+    // Windows MAX_PATH: hand back an extended-length (\\?\) verbatim path for
+    // deep targets so >260-char local slugs don't fail at write time.
+    #[cfg(windows)]
+    {
+        let s = target.to_string_lossy();
+        if s.len() >= 240 && !s.starts_with("\\\\?\\") {
+            return Ok(PathBuf::from(format!("\\\\?\\{s}")));
+        }
     }
     Ok(target)
 }

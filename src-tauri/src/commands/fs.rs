@@ -62,7 +62,15 @@ pub async fn file_exists_batch(
 }
 
 #[tauri::command(rename = "fileMove")]
-pub fn file_move(src: String, dst: String) -> Result<serde_json::Value, String> {
+pub async fn file_move(src: String, dst: String) -> Result<serde_json::Value, String> {
+    // Cross-device fallback copies whole trees — never run that on the caller
+    // thread (non-async Tauri commands execute on the main event loop).
+    tokio::task::spawn_blocking(move || file_move_blocking(src, dst))
+        .await
+        .map_err(|e| format!("file move task failed: {e}"))?
+}
+
+fn file_move_blocking(src: String, dst: String) -> Result<serde_json::Value, String> {
     if src.trim().is_empty() || dst.trim().is_empty() {
         return Err("src and dst cannot be empty".to_string());
     }
