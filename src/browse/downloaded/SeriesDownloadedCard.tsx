@@ -57,6 +57,10 @@ interface SeriesDownloadedCardProps {
   defaultCollapsed?: boolean;
   onDelete?: () => void;
   onDeleteChapter?: (chapterPermalink: string) => void;
+  /** Per-chapter delete disable predicate (e.g. download in progress). */
+  isChapterDeleteDisabled?: (chapterPermalink: string) => boolean;
+  /** Hides the group delete action (e.g. while a download is writing pages). */
+  hideDelete?: () => boolean;
 }
 
 export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
@@ -198,7 +202,7 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
           >
             Series <ChevronRightIcon />
           </button>
-          <Show when={props.onDelete}>
+          <Show when={props.onDelete && !(props.hideDelete?.() ?? false)}>
             <ConfirmDeleteButton
               icon={<TrashIcon />}
               className="ds-btn-sm ds-btn-icon"
@@ -316,6 +320,7 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
                     ch={ch}
                     onClick={() => navigateToChapter(ch)}
                     onDelete={props.onDeleteChapter ? () => props.onDeleteChapter!(ch.chapterPermalink) : undefined}
+                    deleteDisabled={props.isChapterDeleteDisabled ? () => props.isChapterDeleteDisabled!(ch.chapterPermalink) : undefined}
                   />
                 </>
               );

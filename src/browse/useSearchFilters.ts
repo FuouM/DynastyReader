@@ -1,5 +1,15 @@
 import { createSignal, type Accessor, type Setter } from "solid-js";
+import { persistedSignal } from "../lib/persisted-signal";
 import type { SearchClass, SearchSort } from "../types/api";
+
+const parseStringArray = (v: string): string[] => {
+  try {
+    const parsed: unknown = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+};
 
 export interface SearchFilters {
   q: Accessor<string>;
@@ -33,11 +43,24 @@ export interface SearchFilters {
  * `pane.goToPage(1)` after mutations (avoids circular `pane` dependency).
  */
 export function createSearchFilters(): SearchFilters {
-  const [q, setQ] = createSignal("");
-  const [classes, setClasses] = createSignal<Set<SearchClass>>(new Set());
-  const [withTags, setWithTags] = createSignal<string[]>([]);
-  const [withoutTags, setWithoutTags] = createSignal<string[]>([]);
-  const [sort, setSort] = createSignal<SearchSort>("");
+  const [q, setQ] = persistedSignal("", { name: "ds_search_q" });
+  const [classes, setClasses] = persistedSignal<Set<SearchClass>>(new Set(), {
+    name: "ds_search_classes",
+    serialize: (s) => JSON.stringify([...s]),
+    deserialize: (v) => new Set(parseStringArray(v) as SearchClass[]),
+  });
+  const [withTags, setWithTags] = persistedSignal<string[]>([], {
+    name: "ds_search_with_tags",
+    deserialize: parseStringArray,
+  });
+  const [withoutTags, setWithoutTags] = persistedSignal<string[]>([], {
+    name: "ds_search_without_tags",
+    deserialize: parseStringArray,
+  });
+  const [sort, setSort] = persistedSignal<SearchSort>("", {
+    name: "ds_search_sort",
+    deserialize: (v) => (v === "name" || v === "created_at" || v === "released_on" ? v : ""),
+  });
   const [withDraft, setWithDraft] = createSignal("");
   const [withoutDraft, setWithoutDraft] = createSignal("");
 

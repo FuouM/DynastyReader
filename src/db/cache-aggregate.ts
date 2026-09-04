@@ -65,11 +65,30 @@ async function groupCachedPages(limit?: number): Promise<ChapterAggRow[]> {
 }
 
 /**
+ * Batch-reads `download_queue.total_pages` for chapters. The Rust download
+ * worker writes the true page count here once a chapter's page list is known,
+ * making it more trustworthy than chapter metadata cached from a partial fetch.
+ */
+export async function getQueuePageTotals(chapterPermalinks: string[]): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (chapterPermalinks.length === 0) return map;
+  const rows = await query<{ chapter_permalink: string; total_pages: number }>(
+    `SELECT chapter_permalink, MAX(total_pages) AS total_pages FROM download_queue WHERE chapter_permalink IN (${inClause(chapterPermalinks.length)}) AND total_pages > 0 GROUP BY chapter_permalink`,
+    chapterPermalinks,
+  );
+  for (const r of rows) map.set(r.chapter_permalink, Number(r.total_pages) || 0);
+  return map;
+}
+
+/**
  * Loads the full cached-chapter context in ~5 batched queries. Cover rows are
  * key-filtered (only the `cover:series:*` / `cover:chapter:*` keys this page
  * set can use) instead of scanning the whole `cached_metadata` table.
+ *
+ * No row cap by default: silently truncating to the newest 200 chapters hid
+ * older cached chapters from the Cache and Downloaded views.
  */
-export async function loadCachedChapterContext(limit = 200): Promise<CachedChapterContext> {
+export async function loadCachedChapterContext(limit?: number): Promise<CachedChapterContext> {
   const aggs = await groupCachedPages(limit);
   const empty: CachedChapterContext = {
     aggs,
@@ -132,7 +151,7 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
   const placeholders = inClause(permalinks.length);
   const chapterKeys = permalinks.map((cp) => `chapter:${cp}`);
   const chapterKeyPlaceholders = inClause(chapterKeys.length);
-  const [progRows, histRows, metaChapterRows, page0Rows] = await Promise.all([
+  const [progRows, histRows, metaChapterRows, page0Rows, queueTotals] = await Promise.all([
     query<{
       chapter_permalink: string;
       series_permalink: string;
@@ -160,6 +179,7 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
       `SELECT chapter_permalink, file_path FROM cached_pages WHERE page_index = 0 AND chapter_permalink IN (${placeholders})`,
       permalinks,
     ),
+    getQueuePageTotals(permalinks),
   ]);
 
   // Canonical cover keys only (`cover:series:*` / `cover:chapter:*`); the
@@ -215,7 +235,14 @@ export async function loadCachedChapterContext(limit = 200): Promise<CachedChapt
       const containerTag = getChapterContainerTag(parsed.tags);
       chapterMeta.set(pl, {
         title: parsed.title || pl,
-        pagesCount: Array.isArray(parsed.pages) ? parsed.pages.length : 0,
+        // The Rust-side queue total wins when available: cached metadata may
+        // have been written from a partial page-list fetch.
+        pagesCount:
+          (queueTotals.get(pl) ?? 0) > 0
+            ? queueTotals.get(pl)!
+            : Array.isArray(parsed.pages)
+              ? parsed.pages.length
+              : 0,
         seriesPermalink: containerTag?.permalink,
         seriesName: containerTag?.name,
         tags: parsed.tags,

@@ -13,9 +13,15 @@ import { ShowMoreToggle } from "./ShowMoreToggle";
 
 interface OrphanDownloadedCardProps {
   orphans: ProcessedCachedChapter[];
+  /** Total orphan count across all pages (defaults to orphans.length). */
+  totalCount?: number;
   defaultCollapsed?: boolean;
   onDeleteChapter?: (chapterPermalink: string) => void;
   onDeleteAll?: () => void;
+  /** Per-chapter delete disable predicate (e.g. download in progress). */
+  isChapterDeleteDisabled?: (chapterPermalink: string) => boolean;
+  /** Hides the delete-all action (e.g. while a download is writing pages). */
+  hideDeleteAll?: () => boolean;
 }
 
 export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
@@ -36,11 +42,11 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
       title={
         <span class="ds-icon-text">
           <BookIcon />
-          <span>Individual Chapters / Oneshots ({props.orphans.length})</span>
+          <span>Individual Chapters / Oneshots ({props.totalCount ?? props.orphans.length})</span>
         </span>
       }
       actions={
-        <Show when={props.onDeleteAll}>
+        <Show when={props.onDeleteAll && !(props.hideDeleteAll?.() ?? false)}>
           <ConfirmDeleteButton
             icon={<TrashIcon />}
             className="ds-btn-sm ds-btn-icon"
@@ -63,6 +69,7 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
                 })
               }
               onDelete={props.onDeleteChapter ? () => props.onDeleteChapter!(ch.chapterPermalink) : undefined}
+              deleteDisabled={props.isChapterDeleteDisabled ? () => props.isChapterDeleteDisabled!(ch.chapterPermalink) : undefined}
             />
           )}
         </For>

@@ -47,6 +47,7 @@ export class CoverHydrationPipeline {
   private lazyObserver: IntersectionObserver | null = null;
   private _isScrolling = false;
   private scrollTrackingAttached = false;
+  private scrollTrackedEl: Element | null = null;
   private scrollCleanups: (() => void)[] = [];
 
   private readonly onScrollIdle = debounce(() => {
@@ -76,6 +77,13 @@ export class CoverHydrationPipeline {
     if (this.lazyObserver) {
       this.lazyObserver.disconnect();
       this.lazyObserver = null;
+    }
+
+    // Re-attach when #ds-view was unmounted/remounted (view switch) since we
+    // last attached — the listener on the detached node would otherwise stay
+    // dead while scrollTrackingAttached blocks re-attachment.
+    if (this.scrollTrackingAttached && this.scrollTrackedEl !== document.getElementById("ds-view")) {
+      this.detachScrollTracking();
     }
 
     // Attach scroll tracking to #ds-view on first ever feed render.
@@ -178,6 +186,7 @@ export class CoverHydrationPipeline {
   private attachScrollTracking(): void {
     // Primary: attach directly to the scrollable container so the event is guaranteed.
     const dsView = document.getElementById("ds-view");
+    this.scrollTrackedEl = dsView;
     if (dsView) {
       dsView.addEventListener("scroll", this.onScrollActive, { passive: true });
       this.scrollCleanups.push(() => dsView.removeEventListener("scroll", this.onScrollActive));
@@ -193,6 +202,7 @@ export class CoverHydrationPipeline {
     for (const fn of this.scrollCleanups) fn();
     this.scrollCleanups.length = 0;
     this.scrollTrackingAttached = false;
+    this.scrollTrackedEl = null;
   }
 
   private readonly onScrollActive = (): void => {

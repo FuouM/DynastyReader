@@ -34,6 +34,8 @@ import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { fetchChapter, fetchSeries, getSeriesCover } from "../api";
 import { enqueueChapters } from "../ipc";
+import { persistedSignal } from "../lib/persisted-signal";
+import { getQueuePageTotals } from "../db/cache-aggregate";
 import {
   addBlacklistedSeries,
   followSeries,
@@ -87,11 +89,29 @@ function collectChapters(series: Series): ChapterMeta[] {
   return out;
 }
 
+/**
+ * Chapters in chronological release order. Taggings order is not guaranteed
+ * to match release order (anthology series interleave headers/collections),
+ * so sort by released_on with a stable fallback to the original order.
+ */
+function chronologicalChapters(chapters: ChapterMeta[]): ChapterMeta[] {
+  return chapters
+    .map((ch, idx) => {
+      const ts = ch.released_on ? Date.parse(ch.released_on) : NaN;
+      return { ch, idx, ts: Number.isNaN(ts) ? -Infinity : ts };
+    })
+    .sort((a, b) => (a.ts !== b.ts ? a.ts - b.ts : a.idx - b.idx))
+    .map((x) => x.ch);
+}
+
 export function SeriesView() {
   const [forceTick, setForceTick] = createSignal(0);
   const [busyFollow, setBusyFollow] = createSignal(false);
   const [busyBlacklist, setBusyBlacklist] = createSignal(false);
-  const [sortOrder, setSortOrder] = createSignal<"asc" | "desc">("asc");
+  const [sortOrder, setSortOrder] = persistedSignal<"asc" | "desc">("asc", {
+    name: "ds_series_sort_order",
+    deserialize: (v) => (v === "desc" ? "desc" : "asc"),
+  });
   const [followed, setFollowed] = createSignal(false);
   const [blacklisted, setBlacklisted] = createSignal(false);
   const addToCol = useAddToCollection();
@@ -140,21 +160,24 @@ export function SeriesView() {
       let progress = new Map<string, SeriesProgressRow>();
       let cacheCounts = new Map<string, number>();
       let readHistorySet = new Set<string>();
+      let queueTotals = new Map<string, number>();
       try {
-        const [p, c, h] = await Promise.all([
+        const [p, c, h, qt] = await Promise.all([
           getProgressForSeries(permalink),
           getCachedPageCounts(chapterPermalinks),
           getHistoryPermalinks(chapterPermalinks),
+          getQueuePageTotals(chapterPermalinks),
         ]);
         progress = new Map(p.map((r) => [r.chapter_permalink, r]));
         cacheCounts = new Map(c.map((r) => [r.chapter_permalink, r.n]));
         readHistorySet = h;
+        queueTotals = qt;
       } catch (err) {
         const msg = errorMessage(err);
         showBanner(t("series.progressLoadError", { msg }));
       }
 
-      return { series, coverPath, chapters, progress, cacheCounts, readHistorySet };
+      return { series, coverPath, chapters, progress, cacheCounts, readHistorySet, queueTotals };
     },
   );
   const showSpinner = useDelayedSpinner(() => data.loading);
@@ -219,7 +242,8 @@ export function SeriesView() {
     const { series, coverPath, chapters } = d;
     const seriesPermalink = series.permalink;
     const seriesName = series.name;
-    const latest = chapters[chapters.length - 1];
+    const sorted = chronologicalChapters(chapters);
+    const latest = sorted[sorted.length - 1];
     setBusyFollow(true);
     try {
       if (followed()) {
@@ -273,7 +297,7 @@ export function SeriesView() {
     const d = data();
     if (!d) return;
     const { series, chapters } = d;
-    const reqs = chapters.map((ch, idx) => ({
+    const reqs = chronologicalChapters(chapters).map((ch, idx) => ({
       series_permalink: series.permalink,
       series_title: series.name,
       chapter_permalink: ch.permalink,
@@ -281,8 +305,17 @@ export function SeriesView() {
       chapter_index: idx,
     }));
     try {
-      await enqueueChapters(reqs);
-      showBanner(t("series.downloadQueuedBanner", { count: reqs.length }));
+      const result = await enqueueChapters(reqs);
+      if (result.already_queued_count > 0) {
+        showBanner(
+          t("series.downloadQueuedPartialBanner", {
+            count: result.queued_count,
+            skipped: result.already_queued_count,
+          }),
+        );
+      } else {
+        showBanner(t("series.downloadQueuedBanner", { count: result.queued_count }));
+      }
     } catch (err) {
       showBanner(errorMessage(err));
     }
@@ -362,6 +395,7 @@ function SeriesBody(props: {
     progress: Map<string, SeriesProgressRow>;
     cacheCounts: Map<string, number>;
     readHistorySet: Set<string>;
+    queueTotals: Map<string, number>;
   };
   followed: () => boolean;
   blacklisted: () => boolean;
@@ -401,6 +435,7 @@ function SeriesBody(props: {
         progress={props.data.progress}
         cacheCounts={props.data.cacheCounts}
         readHistorySet={props.data.readHistorySet}
+        queueTotals={props.data.queueTotals}
         sortOrder={props.sortOrder}
         setSortOrder={props.setSortOrder}
       />

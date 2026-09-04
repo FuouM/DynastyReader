@@ -17,6 +17,7 @@ import {
   Show,
 } from "solid-js";
 import { navigate, setActions, showBanner, setSessionTab } from "../stores";
+import { downloadingChapterPermalinks } from "../stores/download";
 import { formatBytes } from "../lib/format";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
@@ -134,8 +135,15 @@ export function CacheView() {
     refetch as unknown as () => void,
   );
 
+  // Chapters with an in-flight download must not be purged: the queue keeps
+  // writing pages after the deletion query, leaving stale DB rows (D-M3).
+  const isChapterDownloading = (cp: string): boolean => downloadingChapterPermalinks().has(cp);
+
   const deleteSeries = async (group: DownloadedSeriesGroup): Promise<void> => {
-    const perms = group.chapters.map((c) => c.chapterPermalink);
+    const perms = group.chapters
+      .map((c) => c.chapterPermalink)
+      .filter((cp) => !isChapterDownloading(cp));
+    if (perms.length === 0) return;
     await clearCachedGroupPages(perms);
     setSessionTab((cur) => {
       if (!cur) return null;
@@ -151,6 +159,7 @@ export function CacheView() {
   };
 
   const deleteChapter = async (chapterPermalink: string): Promise<void> => {
+    if (isChapterDownloading(chapterPermalink)) return;
     await clearCachedGroupPages([chapterPermalink]);
     setSessionTab((cur) => {
       if (!cur) return null;
@@ -164,7 +173,8 @@ export function CacheView() {
   };
 
   const deleteAllOrphans = async (orphans: ProcessedCachedChapter[]): Promise<void> => {
-    const perms = orphans.map((o) => o.chapterPermalink);
+    const perms = orphans.map((o) => o.chapterPermalink).filter((cp) => !isChapterDownloading(cp));
+    if (perms.length === 0) return;
     await clearCachedGroupPages(perms);
     setSessionTab((cur) => {
       if (!cur) return null;
@@ -298,6 +308,7 @@ export function CacheView() {
           deleteSeries={deleteSeries}
           deleteChapter={deleteChapter}
           deleteAllOrphans={deleteAllOrphans}
+          isChapterDownloading={isChapterDownloading}
         />
       </Show>
     </div>
@@ -332,6 +343,7 @@ function CacheBody(props: {
   deleteSeries: (group: DownloadedSeriesGroup) => Promise<void>;
   deleteChapter: (chapterPermalink: string) => Promise<void>;
   deleteAllOrphans: (orphans: ProcessedCachedChapter[]) => Promise<void>;
+  isChapterDownloading: (chapterPermalink: string) => boolean;
 }) {
   return (
     <>
@@ -464,6 +476,8 @@ function CacheBody(props: {
                         defaultCollapsed={true}
                         onDelete={() => void props.deleteSeries(g)}
                         onDeleteChapter={(cp) => void props.deleteChapter(cp)}
+                        isChapterDeleteDisabled={props.isChapterDownloading}
+                        hideDelete={() => g.chapters.some((c) => props.isChapterDownloading(c.chapterPermalink))}
                       />
                     )}
                   </For>
@@ -475,6 +489,8 @@ function CacheBody(props: {
                       defaultCollapsed={true}
                       onDeleteAll={() => void props.deleteAllOrphans(props.visibleOrphans)}
                       onDeleteChapter={(cp) => void props.deleteChapter(cp)}
+                      isChapterDeleteDisabled={props.isChapterDownloading}
+                      hideDeleteAll={() => props.visibleOrphans.some((o) => props.isChapterDownloading(o.chapterPermalink))}
                     />
                   </Show>
                 </div>

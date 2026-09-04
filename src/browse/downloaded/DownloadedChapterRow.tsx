@@ -15,6 +15,8 @@ interface DownloadedChapterRowProps {
   seriesName?: string | null;
   onClick: () => void;
   onDelete?: () => void;
+  /** Disables the delete button (e.g. while the chapter is downloading). */
+  deleteDisabled?: () => boolean;
 }
 
 export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
@@ -45,9 +47,15 @@ export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
             type="button"
             class="win-button ds-btn-sm ds-btn-icon"
             style="margin-left:4px;width:18px;height:18px;min-height:18px;padding:0;"
-            title={`Delete cached chapter: ${props.ch.chapterTitle}`}
+            title={
+              props.deleteDisabled?.()
+                ? "Download in progress — deletion disabled"
+                : `Delete cached chapter: ${props.ch.chapterTitle}`
+            }
+            disabled={props.deleteDisabled?.() ?? false}
             onClick={(e) => {
               e.stopPropagation();
+              if (props.deleteDisabled?.()) return;
               props.onDelete?.();
             }}
           >

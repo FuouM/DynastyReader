@@ -19,6 +19,8 @@ function ChapterRow(props: {
   ch: ChapterMeta;
   prog: SeriesProgressRow | undefined;
   cachedCount: number;
+  /** True total pages from the download queue (0 when never queued). */
+  queueTotal: number;
   chapters: ChapterMeta[];
   seriesPermalink: string;
   seriesName: string;
@@ -26,9 +28,12 @@ function ChapterRow(props: {
 }) {
   const isCompleted = () => props.prog?.completed === 1;
   const isRead = () => isCompleted() || props.isReadInHistory;
+  // The fully-cached badge requires a known positive total and full coverage —
+  // any cached page with no progress/queue total is not "fully cached".
+  const totalPages = () =>
+    props.prog && props.prog.page_total > 0 ? props.prog.page_total : props.queueTotal;
   const isFullyCached = () =>
-    props.cachedCount > 0 &&
-    (props.prog && props.prog.page_total > 0 ? props.cachedCount >= props.prog.page_total : true);
+    props.cachedCount > 0 && totalPages() > 0 && props.cachedCount >= totalPages();
 
   const badges = () => {
     const list: string[] = [];
@@ -80,6 +85,7 @@ export interface SeriesChapterListProps {
   ordered: Accessor<ChapterMeta[]>;
   progress: Map<string, SeriesProgressRow>;
   cacheCounts: Map<string, number>;
+  queueTotals: Map<string, number>;
   readHistorySet: Set<string>;
   sortOrder: Accessor<"asc" | "desc">;
   setSortOrder: (v: "asc" | "desc") => void;
@@ -123,6 +129,7 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
                     ch={ch}
                     prog={props.progress.get(ch.permalink)}
                     cachedCount={props.cacheCounts.get(ch.permalink) ?? 0}
+                    queueTotal={props.queueTotals.get(ch.permalink) ?? 0}
                     chapters={props.chapters}
                     seriesPermalink={props.series.permalink}
                     seriesName={props.series.name}

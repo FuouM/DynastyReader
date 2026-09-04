@@ -17,7 +17,13 @@ export class CoverMemoryCache {
   readonly inflight = new Map<string, Promise<string | null>>();
 
   get(key: string): string | undefined {
-    return this.data.get(key);
+    const val = this.data.get(key);
+    if (val !== undefined) {
+      // LRU: refresh recency so hot covers survive eviction.
+      this.data.delete(key);
+      this.data.set(key, val);
+    }
+    return val;
   }
 
   has(key: string): boolean {
@@ -25,7 +31,9 @@ export class CoverMemoryCache {
   }
 
   set(key: string, val: string): void {
-    if (this.data.size >= MAX_MEMORY_CACHE) {
+    if (this.data.has(key)) {
+      this.data.delete(key);
+    } else if (this.data.size >= MAX_MEMORY_CACHE) {
       const oldest = this.data.keys().next().value;
       if (oldest !== undefined) this.data.delete(oldest);
     }

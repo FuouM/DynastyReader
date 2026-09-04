@@ -38,6 +38,8 @@ import {
   buildGroups,
   type DownloadedSortMode,
   type DownloadedModel,
+  type DownloadedSeriesGroup,
+  type ProcessedCachedChapter,
 } from "./downloaded";
 
 const PAGE_SIZE = 15;
@@ -140,32 +142,44 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
       sortMode(),
     );
   });
-  const totalGroupsCount = createMemo(() =>
-    grouped().groups.length + (grouped().orphans.length > 0 ? 1 : 0),
-  );
+  // Unified display list: each series group occupies one slot and each orphan
+  // chapter occupies its own slot, so pages hold PAGE_SIZE items regardless of
+  // how many oneshots exist (previously all orphans rendered on one page).
+  type DisplayItem =
+    | { kind: "group"; group: DownloadedSeriesGroup }
+    | { kind: "orphan"; orphan: ProcessedCachedChapter };
+  const displayItems = createMemo<DisplayItem[]>(() => {
+    const { groups, orphans } = grouped();
+    const items: DisplayItem[] = groups.map((group) => ({ kind: "group", group }));
+    for (const orphan of orphans) items.push({ kind: "orphan", orphan });
+    return items;
+  });
 
   const totalPages = createMemo(() =>
-    Math.max(1, Math.ceil(totalGroupsCount() / PAGE_SIZE)),
+    Math.max(1, Math.ceil(displayItems().length / PAGE_SIZE)),
   );
 
   const pagedData = createMemo(() => {
-    const { groups, orphans } = grouped();
-    const page = currentPage();
-    const start = (page - 1) * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-
-    const visibleGroups = groups.slice(start, end);
-    const orphanIndex = groups.length;
-    const showOrphans = orphans.length > 0 && orphanIndex >= start && orphanIndex < end;
-
-    return {
-      visibleGroups,
-      visibleOrphans: showOrphans ? orphans : [],
-    };
+    const start = (currentPage() - 1) * PAGE_SIZE;
+    const items = displayItems().slice(start, start + PAGE_SIZE);
+    const visibleGroups: DownloadedSeriesGroup[] = [];
+    const visibleOrphans: ProcessedCachedChapter[] = [];
+    for (const item of items) {
+      if (item.kind === "group") visibleGroups.push(item.group);
+      else visibleOrphans.push(item.orphan);
+    }
+    return { visibleGroups, visibleOrphans };
   });
 
   const visibleGroups = () => pagedData().visibleGroups;
   const visibleOrphans = () => pagedData().visibleOrphans;
+
+  // Clamp the current page when deletions/reloads shrink the page count,
+  // otherwise the user is stranded on an empty page with the pager hidden.
+  createEffect(() => {
+    const pages = totalPages();
+    if (currentPage() > pages) setCurrentPage(pages);
+  });
 
   const totalBytes = createMemo(() =>
     filteredRows().reduce((acc: number, r: FullyCachedChapterRow) => acc + r.totalSizeBytes, 0),
@@ -252,6 +266,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
             <Show when={visibleOrphans().length > 0}>
               <OrphanDownloadedCard
                 orphans={visibleOrphans()}
+                totalCount={grouped().orphans.length}
               />
             </Show>
           </div>

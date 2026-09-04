@@ -46,6 +46,7 @@ import { FeedItemRow } from "../components/FeedItemRow";
 import { log } from "../utils/log";
 import {
   revalidateFeedHead,
+  feedHeadTimestamp,
   STALE_REVALIDATION_THRESHOLD_MS,
   FEED_TAB_TO_URL,
   FEED_TAB_TO_KEY,
@@ -80,12 +81,28 @@ async function fetchItemStateSets(permalinks: string[]) {
 }
 
 
+/** Permalinks already shown on earlier pages of the current forward pagination run. */
+const feedSeenByTab = new Map<string, { page: number; seen: Set<string> }>();
+
 async function loadFeedModel(tabId: string, page: number): Promise<FeedModel> {
   const url = `${FEED_TAB_TO_URL[tabId]}?page=${page}`;
   const key = `${FEED_TAB_TO_KEY[tabId]}:${page}`;
   const feedResult = await fetchFeedWithRevalidation(url, key);
-  const feed = feedResult.data;
+  let feed = feedResult.data;
   if (!feed.chapters) feed.chapters = [];
+
+  // Dedupe rows across pages: a chapter inserted server-side between page
+  // fetches shifts boundary rows, re-showing a chapter from the previous page.
+  // Backward/repeat navigation resets the seen set for a fresh run.
+  let seenEntry = feedSeenByTab.get(tabId);
+  if (!seenEntry || page <= seenEntry.page) {
+    seenEntry = { page, seen: new Set() };
+    feedSeenByTab.set(tabId, seenEntry);
+  }
+  const deduped = feed.chapters.filter((c) => !seenEntry!.seen.has(c.permalink));
+  for (const c of deduped) seenEntry.seen.add(c.permalink);
+  seenEntry.page = page;
+  feed = { ...feed, chapters: deduped };
 
   const permalinks = feed.chapters.map((c) => c.permalink);
   const { readHistorySet: readSet, bookmarkSet, fullyCachedSet } =
@@ -93,7 +110,8 @@ async function loadFeedModel(tabId: string, page: number): Promise<FeedModel> {
 
   if (browseCovers.coversEnabled) {
     const coverTargets = feed.chapters.map((c) => browseCovers.getItemCoverInfo(c));
-    await browseCovers.preloadBatch(coverTargets);
+    // Fire-and-forget: covers hydrate lazily via IntersectionObserver anyway.
+    void browseCovers.preloadBatch(coverTargets);
   }
 
   const blMode = getBlacklistMode();
@@ -206,14 +224,20 @@ export function BrowseFeed(props: BrowseFeedProps) {
     if (!revalidatePromise) return;
     const page = pane.page();
     const currentTop = model.feed.chapters?.[0]?.permalink;
+    const currentTopTs = feedHeadTimestamp(model.feed.chapters);
     const preserveEtag = (): string | undefined => footerState().etag;
 
     if (page === 1) {
       void revalidatePromise.then((reval) => {
         if (hostEl !== browseCovers.currentHydrationHost) return;
         if (reval) {
-          const freshTop = reval.data.chapters?.[0]?.permalink;
-          if (freshTop && freshTop !== currentTop) setUpdateBanner(true);
+          const freshTopTs = feedHeadTimestamp(reval.data.chapters);
+          if (freshTopTs !== undefined && currentTopTs !== undefined) {
+            if (freshTopTs > currentTopTs) setUpdateBanner(true);
+          } else {
+            const freshTop = reval.data.chapters?.[0]?.permalink;
+            if (freshTop && freshTop !== currentTop) setUpdateBanner(true);
+          }
           setFooterState({
             cachedAt: Date.now(),
             etag: reval.etag || preserveEtag(),

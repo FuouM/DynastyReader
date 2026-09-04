@@ -21,8 +21,22 @@ export const FEED_TAB_TO_KEY: Record<string, string> = {
   added: "feed:added",
 };
 
-const parseFeedTop = (json: string): string | undefined =>
-  tryParseJson<Feed>(json)?.chapters?.[0]?.permalink;
+/**
+ * Most recent `released_on` timestamp (ms) across a feed page's chapters, or
+ * undefined when no chapter carries a parseable timestamp. Comparing this
+ * instead of the top permalink avoids false "new chapters" positives when the
+ * feed head is merely reordered or a chapter is deleted.
+ */
+export const feedHeadTimestamp = (chapters: Feed["chapters"] | undefined): number | undefined => {
+  if (!chapters || chapters.length === 0) return undefined;
+  let max = 0;
+  for (const c of chapters) {
+    if (!c.released_on) continue;
+    const ts = Date.parse(c.released_on);
+    if (!Number.isNaN(ts) && ts > max) max = ts;
+  }
+  return max > 0 ? max : undefined;
+};
 
 export interface FeedHeadRevalidationResult {
   hasNew: boolean;
@@ -31,26 +45,35 @@ export interface FeedHeadRevalidationResult {
 }
 
 /**
- * Revalidates the feed HEAD (page 1) to detect genuinely new chapters. New
- * releases always land at position 0 of page 1, so only its top permalink can
- * signal "new chapters".
+ * Revalidates the feed HEAD (page 1) to detect genuinely new chapters. The
+ * most recent `released_on` timestamp is compared so chapter reordering or
+ * deletion at the feed head does not raise a false "new chapters" banner.
  */
 export async function revalidateFeedHead(tabId: string): Promise<FeedHeadRevalidationResult> {
   const url = FEED_TAB_TO_URL[tabId];
   const key = `${FEED_TAB_TO_KEY[tabId]}:1`;
   const cached = await getCached(key);
-  const cachedTop = cached ? parseFeedTop(cached.json_payload) : undefined;
+  const cachedFeed = cached ? tryParseJson<Feed>(cached.json_payload) : undefined;
+  const cachedTs = feedHeadTimestamp(cachedFeed?.chapters);
+  const cachedTop = cachedFeed?.chapters?.[0]?.permalink;
   try {
     const res = await checkFeedOnline(url, key, cached?.etag);
     if (res.status === 200 && res.data) {
+      const freshTs = feedHeadTimestamp(res.data.chapters);
       const freshTop = res.data.chapters?.[0]?.permalink;
-      if (cachedTop !== undefined && freshTop && freshTop !== cachedTop) {
+      // Timestamp comparison is authoritative; fall back to top-permalink
+      // identity only when either side lacks parseable timestamps.
+      const hasNew =
+        cachedTs !== undefined && freshTs !== undefined
+          ? freshTs > cachedTs
+          : cachedTop !== undefined && freshTop !== undefined && freshTop !== cachedTop;
+      if (hasNew) {
         return { hasNew: true, etag: res.etag, status: "new-chapters" };
       }
       return {
         hasNew: false,
         etag: res.etag,
-        status: cachedTop === undefined ? "no-baseline" : "unchanged",
+        status: cachedTs === undefined && cachedTop === undefined ? "no-baseline" : "unchanged",
       };
     }
     if (res.status === 304) {
