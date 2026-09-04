@@ -3,7 +3,7 @@
  * Extracted from `ReaderToolbar.tsx` for modularity and maintainability.
  */
 
-import { Show, type Accessor } from "solid-js";
+import { createSignal, Show, type Accessor } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode } from "../types/reader";
 import { theme, isMobile } from "../stores";
@@ -32,9 +32,11 @@ import {
   FullscreenExitIcon,
   DashIcon,
   PlusIcon,
+  SlidersIcon,
 } from "../components/Icon";
 import { ReaderProgressWrap } from "./ReaderProgressWrap";
-import { ReaderFilterControls } from "./ReaderFilterControls";
+import { ReaderFilterPopover } from "./ReaderFilterPopover";
+import { isReaderFilterDefault } from "./ReaderFilterControls";
 export interface NavRowProps {
   session: ReaderSession;
   controlsOpen?: Accessor<boolean>;
@@ -116,6 +118,8 @@ export function ReaderMainRow(props: NavRowProps) {
 
 export function ReaderControlsRow(props: NavRowProps) {
   const s = props.session;
+  const [filterOpen, setFilterOpen] = createSignal(false);
+  const [filterBtnEl, setFilterBtnEl] = createSignal<HTMLElement | null>(null);
   return (
     <div class="ds-reader-nav-row nav-controls">
       <IconButton
@@ -196,6 +200,14 @@ export function ReaderControlsRow(props: NavRowProps) {
         title={t("reader.toolbar.themeToggle")}
         onClick={() => s.toggleTheme()}
       />
+      <IconButton
+        ref={setFilterBtnEl}
+        className="ds-ctrl-btn ds-btn-icon"
+        classList={{ primary: !isReaderFilterDefault() }}
+        icon={<SlidersIcon />}
+        title={t("settings.reader.filterGroup")}
+        onClick={() => setFilterOpen(!filterOpen())}
+      />
       <Show when={!isMobile()}>
         <IconButton
           className="ds-ctrl-btn"
@@ -232,7 +244,11 @@ export function ReaderControlsRow(props: NavRowProps) {
           />
         </div>
       </Show>
-      <ReaderFilterControls />
+      <ReaderFilterPopover
+        open={filterOpen()}
+        anchorEl={filterBtnEl()}
+        onClose={() => setFilterOpen(false)}
+      />
     </div>
   );
 }

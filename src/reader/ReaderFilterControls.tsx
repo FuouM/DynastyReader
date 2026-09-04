@@ -17,20 +17,27 @@ import {
   setReaderFilterSepia,
   resetReaderFilters,
 } from "./settings";
+import { Show } from "solid-js";
 import { IconButton } from "../components/Button";
 import { RefreshIcon } from "../components/Icon";
-
 interface FilterSliderProps {
   label: string;
   value: () => number;
+  defaultValue: number;
   onChange: (v: number) => void;
   min: number;
   max: number;
 }
-
 function FilterSlider(props: FilterSliderProps) {
   return (
-    <label class="ds-filter-slider" title={props.label}>
+    <label
+      class="ds-filter-slider"
+      title={`${props.label} (${props.value()}%) — Double-click to reset`}
+      onDblClick={(e) => {
+        e.preventDefault();
+        props.onChange(props.defaultValue);
+      }}
+    >
       <span class="ds-filter-slider-label">{props.label}</span>
       <input
         type="range"
@@ -46,18 +53,23 @@ function FilterSlider(props: FilterSliderProps) {
   );
 }
 
-export function ReaderFilterControls() {
-  const isDefault = () =>
+export function isReaderFilterDefault(): boolean {
+  return (
     getReaderFilterBrightness() === 100 &&
     getReaderFilterContrast() === 100 &&
     getReaderFilterGrayscale() === 0 &&
-    getReaderFilterSepia() === 0;
+    getReaderFilterSepia() === 0
+  );
+}
+export function ReaderFilterControls(props?: { showReset?: boolean }) {
+  const isDefault = isReaderFilterDefault;
 
   return (
     <div class="ds-reader-filter-controls">
       <FilterSlider
         label={t("settings.reader.filterBrightness")}
         value={getReaderFilterBrightness}
+        defaultValue={100}
         onChange={setReaderFilterBrightness}
         min={10}
         max={200}
@@ -65,6 +77,7 @@ export function ReaderFilterControls() {
       <FilterSlider
         label={t("settings.reader.filterContrast")}
         value={getReaderFilterContrast}
+        defaultValue={100}
         onChange={setReaderFilterContrast}
         min={10}
         max={200}
@@ -72,6 +85,7 @@ export function ReaderFilterControls() {
       <FilterSlider
         label={t("settings.reader.filterGrayscale")}
         value={getReaderFilterGrayscale}
+        defaultValue={0}
         onChange={setReaderFilterGrayscale}
         min={0}
         max={100}
@@ -79,17 +93,22 @@ export function ReaderFilterControls() {
       <FilterSlider
         label={t("settings.reader.filterSepia")}
         value={getReaderFilterSepia}
+        defaultValue={0}
         onChange={setReaderFilterSepia}
         min={0}
         max={100}
       />
-      <IconButton
-        className="ds-btn-icon ds-filter-reset"
-        icon={<RefreshIcon />}
-        title={t("settings.reader.filterResetTooltip")}
-        disabled={isDefault()}
-        onClick={() => resetReaderFilters()}
-      />
+      <Show when={props?.showReset !== false}>
+        <div class="ds-filter-reset-row">
+          <IconButton
+            className="ds-btn-compact ds-filter-reset-btn"
+            icon={<RefreshIcon />}
+            text={t("settings.reader.filterResetTooltip")}
+            disabled={isDefault()}
+            onClick={() => resetReaderFilters()}
+          />
+        </div>
+      </Show>
     </div>
   );
 }

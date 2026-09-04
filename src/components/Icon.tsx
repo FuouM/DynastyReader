@@ -119,3 +119,4 @@ export const PauseIcon = (props: BaseIconProps) => <Icon name="pause-fill" {...p
 export const SpeedIcon = (props: BaseIconProps) => <Icon name="lightning-charge-fill" {...props} />;
 export const HourglassIcon = (props: BaseIconProps) => <Icon name="hourglass-split" {...props} />;
 export const DownloadIcon = (props: BaseIconProps) => <Icon name="download" {...props} />;
+export const SlidersIcon = (props: BaseIconProps) => <Icon name="sliders" {...props} />;
