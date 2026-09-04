@@ -64,6 +64,9 @@ export function ReaderWheel(props: { session: ReaderSession }) {
     // Ignore if event target is an input / textarea / select
     const targetTag = (ev.target as HTMLElement)?.tagName;
     if (targetTag === "INPUT" || targetTag === "TEXTAREA" || targetTag === "SELECT") return;
+    // Never hijack wheel events inside the controls sheet or a modal — those
+    // have their own scroll regions (RD-H7).
+    if ((ev.target as HTMLElement | null)?.closest(".ds-reader-sheet-window, .ds-modal-backdrop")) return;
     if (ev.ctrlKey) {
       // Ctrl + Wheel: Zoom In / Out when in Original Size
       if (c.fitMode() === "original") {

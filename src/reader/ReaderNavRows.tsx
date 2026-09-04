@@ -50,12 +50,15 @@ export function ReaderMainRow(props: NavRowProps) {
   const s = props.session;
   const showText = () => props.showChapterText ?? true;
   const showControls = () => props.showControlsToggle ?? true;
+  // In RTL paged mode the reading direction is mirrored, so the directional
+  // chevrons mirror as well (RD-M4).
+  const rtl = () => s.isHorizontal() && s.direction() === "rtl";
 
   return (
     <div class="ds-reader-nav-row nav-main">
       <IconButton
         className="ds-nav-btn-ch"
-        icon={<ChevronDoubleLeftIcon />}
+        icon={rtl() ? <ChevronDoubleRightIcon /> : <ChevronDoubleLeftIcon />}
         text={showText() ? t("reader.toolbar.chapterShort") : undefined}
         title={t("reader.toolbar.prevChapter")}
         disabled={s.chapterNav().prevDisabled}
@@ -63,13 +66,13 @@ export function ReaderMainRow(props: NavRowProps) {
       />
       <IconButton
         className="ds-nav-btn-jump ds-btn-icon"
-        icon={<ChevronBarLeftIcon />}
+        icon={rtl() ? <ChevronBarRightIcon /> : <ChevronBarLeftIcon />}
         title={t("reader.toolbar.firstPage")}
         onClick={() => s.setPage(0, true)}
       />
       <IconButton
         className="ds-nav-btn-page ds-btn-icon"
-        icon={<ChevronLeftIcon />}
+        icon={rtl() ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         title={t("reader.toolbar.prevPage")}
         disabled={s.progress().prevDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
@@ -77,20 +80,20 @@ export function ReaderMainRow(props: NavRowProps) {
       <ReaderProgressWrap session={s} {...props.progressProps} />
       <IconButton
         className="ds-nav-btn-page ds-btn-icon"
-        icon={<ChevronRightIcon />}
+        icon={rtl() ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         title={t("reader.toolbar.nextPage")}
         disabled={s.progress().nextDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(1) : s.setPage(s.currentIndex() + 1))}
       />
       <IconButton
         className="ds-nav-btn-jump ds-btn-icon"
-        icon={<ChevronBarRightIcon />}
+        icon={rtl() ? <ChevronBarLeftIcon /> : <ChevronBarRightIcon />}
         title={t("reader.toolbar.lastPage", { total: s.pages().length })}
         onClick={() => s.setPage(s.pages().length - 1, true)}
       />
       <IconButton
         className="ds-nav-btn-ch"
-        icon={<ChevronDoubleRightIcon />}
+        icon={rtl() ? <ChevronDoubleLeftIcon /> : <ChevronDoubleRightIcon />}
         text={showText() ? t("reader.toolbar.chapterShort") : undefined}
         reverse
         title={t("reader.toolbar.nextChapter")}

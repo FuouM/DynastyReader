@@ -161,6 +161,13 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   programmaticScrollTimer: number | null = null;
   scrollRaf: number | null = null;
   scrollAnimRaf: number | null = null;
+  // Toolbar show/hide animation lock — separate from isProgrammaticScroll so a
+  // toolbar toggle does not leave page-progress tracking stale (RD-M3).
+  isToolbarAnimating = false;
+  toolbarAnimTimer: number | null = null;
+  /** Invoked when the toolbar animation lock expires (set by useReaderGestures). */
+  toolbarAnimEndHook: (() => void) | null = null;
+  private fullscreenRelayoutTimers: number[] = [];
   private readonly cleanupFns: (() => void)[] = [];
   containerTagPermalink: string | null = null;
   containerTagType: string | null = null;
@@ -189,6 +196,8 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     prevDisabled: boolean;
     nextDisabled: boolean;
   };
+  readonly chapterNavigating: () => boolean;
+  readonly setChapterNavigating: (val: boolean) => void;
 
   constructor(route: Route) {
     this.route = route;
@@ -261,6 +270,8 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.slideIndex = this.state.slideIndex;
     this.progress = this.state.progress;
     this.chapterNav = this.state.chapterNav;
+    this.chapterNavigating = this.state.chapterNavigating;
+    this.setChapterNavigating = this.state.setChapterNavigating;
 
     this.queue = new ReaderQueue(this);
     this.persistence = createReaderPersistence(this.state, this.permalink);
@@ -298,10 +309,12 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       const img = new Image();
       img.src = convertFileSrc(path);
       if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        this.imgErrorCount.delete(index);
         this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
       } else {
         img.onload = () => {
           if (!this.disposedFlag) {
+            this.imgErrorCount.delete(index);
             this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
           }
         };
@@ -346,8 +359,18 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.cancelScrollAnimation();
     this.persistence.dispose();
     this.clearToolbarTimer();
+    if (this.toolbarAnimTimer !== null) {
+      clearTimeout(this.toolbarAnimTimer);
+      this.toolbarAnimTimer = null;
+    }
+    this.isToolbarAnimating = false;
+    this.toolbarAnimEndHook = null;
+    this.clearFullscreenRelayoutTimers();
     for (const fn of this.cleanupFns) fn();
     this.cleanupFns.length = 0;
+    // Drop all slot DOM refs so detached elements are not pinned (RD-H1).
+    this.slotEls.length = 0;
+    this.spreadSlotEls.length = 0;
     if (this.actionsDispose) {
       this.actionsDispose();
       this.actionsDispose = null;
@@ -674,8 +697,16 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       }
     }
     this.resetToCurrentPage(false);
-    setTimeout(() => this.resetToCurrentPage(false), FULLSCREEN_RELAYOUT_FIRST_MS);
-    setTimeout(() => this.resetToCurrentPage(false), FULLSCREEN_RELAYOUT_SECOND_MS);
+    this.clearFullscreenRelayoutTimers();
+    this.fullscreenRelayoutTimers.push(
+      window.setTimeout(() => this.resetToCurrentPage(false), FULLSCREEN_RELAYOUT_FIRST_MS),
+      window.setTimeout(() => this.resetToCurrentPage(false), FULLSCREEN_RELAYOUT_SECOND_MS),
+    );
+  }
+
+  private clearFullscreenRelayoutTimers(): void {
+    for (const id of this.fullscreenRelayoutTimers) clearTimeout(id);
+    this.fullscreenRelayoutTimers.length = 0;
   }
 
   // Chapter navigation — delegates to reader-chapter-nav.ts -----------------
@@ -721,13 +752,16 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
 
   toggleToolbarVisible(): void {
     if (!this.isHorizontal()) {
-      this.isProgrammaticScroll = true;
-      if (this.programmaticScrollTimer !== null) {
-        clearTimeout(this.programmaticScrollTimer);
+      // Lock scroll-driven page tracking for the toolbar animation only, then
+      // recompute the current page once the layout has settled (RD-M3).
+      this.isToolbarAnimating = true;
+      if (this.toolbarAnimTimer !== null) {
+        clearTimeout(this.toolbarAnimTimer);
       }
-      this.programmaticScrollTimer = window.setTimeout(() => {
-        this.isProgrammaticScroll = false;
-        this.programmaticScrollTimer = null;
+      this.toolbarAnimTimer = window.setTimeout(() => {
+        this.isToolbarAnimating = false;
+        this.toolbarAnimTimer = null;
+        this.toolbarAnimEndHook?.();
       }, 260);
     }
     this.setToolbarVisible(!this.toolbarVisible());

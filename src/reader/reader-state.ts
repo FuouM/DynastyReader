@@ -111,6 +111,8 @@ export interface ReaderState {
     nextDisabled: boolean;
   };
   chapterNav: () => { prevDisabled: boolean; nextDisabled: boolean };
+  chapterNavigating: () => boolean;
+  setChapterNavigating: (v: boolean) => void;
 }
 
 export function createReaderState(): ReaderState {
@@ -150,7 +152,23 @@ export function createReaderState(): ReaderState {
 
   const isHorizontal = createMemo(() => mode() === "paged");
   const isSpread = createMemo(() => mode() === "paged" && pagedLayout() === "spread");
-  const spreads = createMemo<SpreadGroup[]>(() => computeSpreads(pages().length, coverOffset(), (i) => widePages().has(i)));
+  // Reuse unchanged SpreadGroup objects across recomputes so ReaderStrip's
+  // identity-keyed <For> keeps existing spread DOM (no full teardown / image
+  // re-decode when widePages or coverOffset changes leave groups identical).
+  const spreads = createMemo<SpreadGroup[]>((prev) => {
+    const next = computeSpreads(pages().length, coverOffset(), (i) => widePages().has(i));
+    return next.map((g, idx) => {
+      const p = prev[idx];
+      return p &&
+        p.spreadIndex === g.spreadIndex &&
+        p.isWide === g.isWide &&
+        p.isStandaloneCover === g.isStandaloneCover &&
+        p.pageIndices.length === g.pageIndices.length &&
+        p.pageIndices.every((v, i) => v === g.pageIndices[i])
+        ? p
+        : g;
+    });
+  }, []);
   const slideIndex = createMemo(() => (isSpread() ? spreadIndexOf(spreads(), currentIndex()) : currentIndex()));
 
   const progress = createMemo(() => {
@@ -202,11 +220,14 @@ export function createReaderState(): ReaderState {
     };
   });
 
+  const [chapterNavigating, setChapterNavigating] = createSignal(false);
+
   const chapterNav = createMemo(() => {
     const { prevCh, nextCh } = getAdjacentChapters(chapterList(), chapterPermalink(), chapterTitle());
+    const navigating = chapterNavigating();
     return {
-      prevDisabled: prevCh === null,
-      nextDisabled: nextCh === null,
+      prevDisabled: prevCh === null || navigating,
+      nextDisabled: nextCh === null || navigating,
     };
   });
 
@@ -278,5 +299,7 @@ export function createReaderState(): ReaderState {
     slideIndex,
     progress,
     chapterNav,
+    chapterNavigating,
+    setChapterNavigating,
   };
 }

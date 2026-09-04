@@ -161,7 +161,7 @@ export function useReaderGestures(s: ReaderSession) {
 
     // Dynamic scroll-position tracking (continuous scroll mode) — O(log N) binary search
     const computeCurrentPageFromScroll = (): void => {
-      if (s.isHorizontal() || s.isProgrammaticScroll) return;
+      if (s.isHorizontal() || s.isProgrammaticScroll || s.isToolbarAnimating) return;
       const vp = s.viewportEl;
       if (!vp) return;
 
@@ -202,13 +202,16 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onViewportScroll = (): void => {
-      if (s.isHorizontal() || s.isProgrammaticScroll) return;
+      if (s.isHorizontal() || s.isProgrammaticScroll || s.isToolbarAnimating) return;
       if (s.scrollRaf !== null) cancelAnimationFrame(s.scrollRaf);
       s.scrollRaf = requestAnimationFrame(() => {
         computeCurrentPageFromScroll();
         s.scrollRaf = null;
       });
     };
+    // Recompute page progress once the toolbar show/hide animation lock lifts (RD-M3).
+    s.toolbarAnimEndHook = () => computeCurrentPageFromScroll();
+
     vpEl.addEventListener("scroll", onViewportScroll, { passive: true });
     s.onDispose(() => {
       vpEl.removeEventListener("scroll", onViewportScroll);
@@ -659,6 +662,16 @@ export function useReaderGestures(s: ReaderSession) {
         clearTimeout(resetTransformTimer);
         resetTransformTimer = null;
       }
+      // Pending long-press timers must not fire into the disposed session (RD-M8).
+      if (touchLongPressTimer !== null) {
+        clearTimeout(touchLongPressTimer);
+        touchLongPressTimer = null;
+      }
+      if (mouseLongPressTimer !== null) {
+        clearTimeout(mouseLongPressTimer);
+        mouseLongPressTimer = null;
+      }
+      s.toolbarAnimEndHook = null;
       vpEl.removeEventListener("touchstart", onTouchStart);
       vpEl.removeEventListener("touchmove", onTouchMove);
       vpEl.removeEventListener("touchend", onTouchEnd);

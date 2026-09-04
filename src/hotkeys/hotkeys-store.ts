@@ -85,3 +85,21 @@ export function isTextInputTarget(target: EventTarget | null): boolean {
   if (target.isContentEditable) return true;
   return false;
 }
+
+/**
+ * Consumed-event coordination between GlobalShortcuts and ReaderShortcuts
+ * (RD-M7): both register independent window keydown listeners; the first
+ * handler that matches marks the event consumed so the other skips it.
+ * (stopImmediatePropagation is avoided so capture-phase recorders and the
+ * event target itself still see the key.)
+ */
+const consumedHotkeyEvents = new WeakSet<KeyboardEvent>();
+
+export function consumeHotkeyEvent(ev: KeyboardEvent): void {
+  consumedHotkeyEvents.add(ev);
+  ev.preventDefault();
+}
+
+export function isHotkeyEventConsumed(ev: KeyboardEvent): boolean {
+  return consumedHotkeyEvents.has(ev);
+}

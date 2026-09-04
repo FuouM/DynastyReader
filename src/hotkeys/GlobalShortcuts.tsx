@@ -14,7 +14,7 @@ import {
   sessionTab,
   closeSessionMangaTab,
 } from "../stores";
-import { isTextInputTarget, matchesHotkey } from "./hotkeys-store";
+import { consumeHotkeyEvent, isHotkeyEventConsumed, isTextInputTarget, matchesHotkey } from "./hotkeys-store";
 
 export function openSettingsDialog(): void {
   window.dispatchEvent(new CustomEvent("ds-open-settings"));
@@ -24,32 +24,34 @@ export function GlobalShortcuts() {
   const onKeyDown = (ev: KeyboardEvent): void => {
     // Ignore if user is currently typing in an input or textarea
     if (isTextInputTarget(ev.target)) return;
+    // Another listener (e.g. ReaderShortcuts) already handled this event.
+    if (isHotkeyEventConsumed(ev)) return;
 
     if (matchesHotkey(ev, "global.goBack")) {
       if (canGoBack()) {
-        ev.preventDefault();
+        consumeHotkeyEvent(ev);
         goBack();
       }
     } else if (matchesHotkey(ev, "global.goForward")) {
       if (canGoForward()) {
-        ev.preventDefault();
+        consumeHotkeyEvent(ev);
         goForward();
       }
     } else if (matchesHotkey(ev, "global.toggleTheme")) {
-      ev.preventDefault();
+      consumeHotkeyEvent(ev);
       toggleTheme();
     } else if (matchesHotkey(ev, "global.openSettings")) {
-      ev.preventDefault();
+      consumeHotkeyEvent(ev);
       openSettingsDialog();
     } else if (matchesHotkey(ev, "global.navBrowse")) {
-      ev.preventDefault();
+      consumeHotkeyEvent(ev);
       navigate({ view: "browse" });
     } else if (matchesHotkey(ev, "global.navLibrary")) {
-      ev.preventDefault();
+      consumeHotkeyEvent(ev);
       navigate({ view: "library" });
     } else if (matchesHotkey(ev, "global.closeTab")) {
       if (sessionTab() !== null) {
-        ev.preventDefault();
+        consumeHotkeyEvent(ev);
         closeSessionMangaTab();
       }
     }

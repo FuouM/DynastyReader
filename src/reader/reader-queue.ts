@@ -121,6 +121,8 @@ export class ReaderQueue {
         sizeBytes = res.sizeBytes;
       }
       await setCachedPage(c.permalink, index, absPath, sizeBytes);
+      // Symmetric with the catch path: never write into a disposed session.
+      if (c.isDisposed()) return;
       c.setCachedPath(index, absPath);
     } catch (err) {
       if (c.isDisposed()) return;

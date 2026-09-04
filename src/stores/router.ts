@@ -39,6 +39,58 @@ export const isInMangaView = () => {
 
 let isNavigatingHistory = false;
 
+// ── Browser-history synchronization (mobile only, RD-M10) ─────────────────
+// Forward navigation pushes a browser history entry per internal back-stack
+// entry (see navigate()). Back/forward navigation initiated from the UI must
+// therefore be delegated to the browser stack so the popstate handler drives
+// the internal pop — otherwise the two stacks drift apart over a session.
+let handlingPopstate = false;
+let historyFallbackTimer: number | null = null;
+
+if (typeof window !== "undefined") {
+  // Registered at module scope so it runs before the App-level popstate
+  // listener that performs the internal goBack().
+  window.addEventListener("popstate", () => {
+    handlingPopstate = true;
+    if (historyFallbackTimer !== null) {
+      clearTimeout(historyFallbackTimer);
+      historyFallbackTimer = null;
+    }
+    // Stays true for the whole synchronous dispatch (all listeners), then resets.
+    queueMicrotask(() => {
+      handlingPopstate = false;
+    });
+  });
+}
+
+/** Delegates one-step back/forward to the browser stack; returns false when internal nav must run directly. */
+function delegateToBrowserHistory(direction: "back" | "forward"): boolean {
+  if (!isMobile() || handlingPopstate) return false;
+  try {
+    if (direction === "back") {
+      window.history.back();
+    } else {
+      window.history.forward();
+    }
+  } catch {
+    return false;
+  }
+  // Safety net: if no popstate arrives (browser stack already exhausted),
+  // fall back to internal navigation so the back button never goes dead.
+  if (historyFallbackTimer !== null) clearTimeout(historyFallbackTimer);
+  historyFallbackTimer = window.setTimeout(() => {
+    historyFallbackTimer = null;
+    if (direction === "back") {
+      const back = historyBackStack();
+      if (back.length > 0) goBackTo(back.length - 1);
+    } else {
+      const forward = historyForwardStack();
+      if (forward.length > 0) goForwardTo(forward.length - 1);
+    }
+  }, 400);
+  return true;
+}
+
 /** Checks if two routes represent the exact same view and target. */
 function isSameRoute(a: Route, b: Route): boolean {
   if (a.view !== b.view) return false;
@@ -108,6 +160,9 @@ export function navigate(r: Route): void {
 export function goBack(): void {
   const back = historyBackStack();
   if (back.length === 0) return;
+  // On mobile, delegate to the browser stack; popstate drives the internal
+  // pop so both histories stay symmetric (RD-M10).
+  if (delegateToBrowserHistory("back")) return;
   goBackTo(back.length - 1);
 }
 
@@ -115,6 +170,10 @@ export function goBack(): void {
 export function goBackTo(index: number): void {
   const back = historyBackStack();
   if (index < 0 || index >= back.length) return;
+  // Single-step UI back on mobile delegates to the browser stack (RD-M10);
+  // multi-step jumps keep internal-only navigation (the popstate handler
+  // resolves exactly one step).
+  if (index === back.length - 1 && delegateToBrowserHistory("back")) return;
   const targetRoute = back[index];
   const popped = back.slice(index + 1);
   const remaining = back.slice(0, index);
@@ -131,6 +190,8 @@ export function goBackTo(index: number): void {
 export function goForward(): void {
   const forward = historyForwardStack();
   if (forward.length === 0) return;
+  // Symmetric with goBack: let popstate drive the internal step (RD-M10).
+  if (delegateToBrowserHistory("forward")) return;
   goForwardTo(forward.length - 1);
 }
 
@@ -138,6 +199,8 @@ export function goForward(): void {
 export function goForwardTo(index: number): void {
   const forward = historyForwardStack();
   if (index < 0 || index >= forward.length) return;
+  // Single-step UI forward on mobile delegates to the browser stack (RD-M10).
+  if (index === forward.length - 1 && delegateToBrowserHistory("forward")) return;
   const targetRoute = forward[index];
   const remaining = forward.slice(0, index);
   const popped = forward.slice(index + 1);

@@ -23,7 +23,7 @@ export function ReaderViewport(props: { session: ReaderSession; children?: JSX.E
   // Pre-fetch pages as they near the viewport boundary across strip changes
   // (initial mount, layout toggles that rebuild the strip).
   createEffect(() => {
-    const stripKey = `${s.pages().length}:${s.isSpread()}:${s.spreads().length}`;
+    const stripKey = `${s.pages().length}:${s.isSpread()}:${s.spreads().length}:${s.isHorizontal()}:${s.mode()}`;
 
     const observer = new IntersectionObserver(
       (entries) => {

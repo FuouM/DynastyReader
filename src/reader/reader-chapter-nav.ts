@@ -102,35 +102,44 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
   return lastCl;
 }
 export async function gotoAdjacent(s: ReaderSession, direction: "prev" | "next"): Promise<void> {
-  if (s.chapterList().length === 0 && s.chapterListPromise) {
-    await s.chapterListPromise;
-  }
-  let adj = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
-  let chapter = direction === "prev" ? adj.prevCh : adj.nextCh;
-  if (!chapter && s.seriesPermalink()) {
-    const needsForce = s.chapterList().length > 0;
-    const cl = await loadChapterList(s, needsForce);
-    if (cl.length > 0) {
-      const reloaded = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
-      chapter = direction === "prev" ? reloaded.prevCh : reloaded.nextCh;
-      // Fallback for new chapter still missing after forced fetch: treat as newest
-      if (!chapter && direction === "prev" && cl.length > 0) {
-        const stillMissing = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
-        if (stillMissing.prevCh === null && stillMissing.nextCh === null) {
-          chapter = cl[cl.length - 1] ?? null;
+  // Atomic guard: rapid double clicks must not trigger two concurrent chapter
+  // transitions (parallel fetches, duplicate history entries). The
+  // chapterNavigating signal also disables the nav buttons while in flight.
+  if (s.chapterNavigating() || s.disposed) return;
+  s.setChapterNavigating(true);
+  try {
+    if (s.chapterList().length === 0 && s.chapterListPromise) {
+      await s.chapterListPromise;
+    }
+    let adj = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
+    let chapter = direction === "prev" ? adj.prevCh : adj.nextCh;
+    if (!chapter && s.seriesPermalink()) {
+      const needsForce = s.chapterList().length > 0;
+      const cl = await loadChapterList(s, needsForce);
+      if (cl.length > 0) {
+        const reloaded = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
+        chapter = direction === "prev" ? reloaded.prevCh : reloaded.nextCh;
+        // Fallback for new chapter still missing after forced fetch: treat as newest
+        if (!chapter && direction === "prev" && cl.length > 0) {
+          const stillMissing = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
+          if (stillMissing.prevCh === null && stillMissing.nextCh === null) {
+            chapter = cl[cl.length - 1] ?? null;
+          }
         }
       }
     }
-  }
-  if (chapter) {
-    const target = direction === "prev" && getPrevChapterStartPage() === "last" ? "last" : 0;
-    gotoChapter(s, chapter, target);
-  } else {
-    showBanner(
-      direction === "prev"
-        ? t("reader.overscrollLock.firstChapterDesc") || "No previous chapter."
-        : t("reader.overscrollLock.endOfSeriesDesc") || "No next chapter.",
-    );
+    if (chapter) {
+      const target = direction === "prev" && getPrevChapterStartPage() === "last" ? "last" : 0;
+      gotoChapter(s, chapter, target);
+    } else {
+      showBanner(
+        direction === "prev"
+          ? t("reader.overscrollLock.firstChapterDesc") || "No previous chapter."
+          : t("reader.overscrollLock.endOfSeriesDesc") || "No next chapter.",
+      );
+    }
+  } finally {
+    s.setChapterNavigating(false);
   }
 }
 

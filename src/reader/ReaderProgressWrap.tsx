@@ -1,4 +1,5 @@
-import { createSignal, createEffect, Show, onCleanup } from "solid-js";
+import { createSignal, createEffect, Show } from "solid-js";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { t } from "../i18n";
 import { CheckIcon } from "../components/Icon";
@@ -64,12 +65,13 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
     }
   };
 
-  if (typeof document !== "undefined") {
-    document.addEventListener("mousedown", handleClickOutside);
-    onCleanup(() => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    });
-  }
+  // Bound only while the page-jump editor is open so the document-level
+  // listener does not fire on every click app-wide (RD-M2). makeEventListener
+  // auto-removes on effect re-run / disposal.
+  createEffect(() => {
+    if (!editing() || typeof document === "undefined") return;
+    makeEventListener(document, "mousedown", handleClickOutside);
+  });
 
   const tooltip = () => {
     if (editing()) return "";

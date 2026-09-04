@@ -220,6 +220,12 @@ export function resetToCurrentPage(s: ReaderSession, smooth = false): void {
 }
 
 export function applyLayoutMode(s: ReaderSession): void {
+  // Drop refs to slot elements torn down by the layout rebuild so detached
+  // DOM is not pinned across layout toggles (RD-H1).
+  if (s.slotEls.length > s.pages().length) s.slotEls.length = s.pages().length;
+  const spreadCount = s.isSpread() ? s.spreads().length : 0;
+  if (s.spreadSlotEls.length > spreadCount) s.spreadSlotEls.length = spreadCount;
+
   if (!s.viewportEl || !s.stripEl) return;
   if (s.isHorizontal()) {
     s.viewportEl.classList.add("horizontal");

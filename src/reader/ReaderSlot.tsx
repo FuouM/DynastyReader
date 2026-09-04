@@ -4,7 +4,7 @@
  * Port of `reader-slots.ts`' render helpers into a reactive JSX component.
  */
 
-import { createSignal, Show, type JSX } from "solid-js";
+import { createSignal, onCleanup, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import type { SlotStateKind } from "./reader-queue";
 import { convertFileSrc } from "../ipc";
@@ -26,6 +26,12 @@ export interface ReaderSlotProps {
 export function ReaderSlot(props: ReaderSlotProps) {
   const s = props.session;
   const cachedPath = (): string | undefined => s.cachedPages[0][props.index];
+  let elRef: HTMLElement | undefined;
+
+  onCleanup(() => {
+    // Release the session's slot ref so disposed elements are not pinned (RD-H1).
+    if (elRef && s.slotEls[props.index] === elRef) s.slotEls[props.index] = null;
+  });
 
   return (
     <div
@@ -33,6 +39,7 @@ export function ReaderSlot(props: ReaderSlotProps) {
       data-index={props.index}
       style={props.style}
       ref={(el) => {
+        elRef = el;
         s.slotEls[props.index] = el;
       }}
     >
