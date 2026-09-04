@@ -41,10 +41,16 @@
   color: var(--sys-window-text) !important;
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-top {
+  height: calc(32px + env(safe-area-inset-top, 0px)) !important;
+  min-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
+  max-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
   padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
   border-bottom: 1px solid var(--ds-reader-nav-border) !important;
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-bottom {
+  height: calc(32px + env(safe-area-inset-bottom, 0px)) !important;
+  min-height: calc(32px + env(safe-area-inset-bottom, 0px)) !important;
+  max-height: calc(32px + env(safe-area-inset-bottom, 0px)) !important;
   padding: 4px calc(8px + env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px)) !important;
   border-top: 1px solid var(--ds-reader-nav-border) !important;
 }
@@ -81,9 +87,9 @@
 }
 .ds-reader-nav.ds-reader-nav-bottom {
   bottom: 0;
-  min-height: 32px;
-  max-height: 32px;
-  height: 32px;
+  min-height: calc(32px + env(safe-area-inset-bottom, 0px));
+  max-height: calc(32px + env(safe-area-inset-bottom, 0px));
+  height: calc(32px + env(safe-area-inset-bottom, 0px));
   padding: 4px calc(8px + env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px));
   border-top: 1px solid var(--ds-reader-nav-border);
   box-sizing: border-box;
@@ -102,6 +108,11 @@
   min-height: calc(60px + env(safe-area-inset-top, 0px));
   max-height: calc(60px + env(safe-area-inset-top, 0px));
   height: calc(60px + env(safe-area-inset-top, 0px));
+}
+.ds-reader-nav.ds-reader-nav-bottom:has(.nav-controls) {
+  min-height: calc(60px + env(safe-area-inset-bottom, 0px));
+  max-height: calc(60px + env(safe-area-inset-bottom, 0px));
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 .ds-reader-nav-row {
   display: flex;
