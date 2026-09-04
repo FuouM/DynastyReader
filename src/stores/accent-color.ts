@@ -61,6 +61,10 @@ export function computeAccentPalette(rawColor: string, appTheme: AppTheme = "lig
   let borderFocus = hex;
   let buttonHover = adjustBrightness(hex, 90);
   let buttonActive = adjustBrightness(hex, 78);
+  const buttonPrimaryBg = highlightBg;
+  const buttonPrimaryBorder = isWin7 ? primaryBorder : adjustBrightness(hex, -15);
+  const buttonPrimaryHover = isDark || isHighContrast ? adjustBrightness(hex, 10) : adjustBrightness(hex, -8);
+  const buttonPrimaryActive = isDark || isHighContrast ? adjustBrightness(hex, -10) : adjustBrightness(hex, -15);
   let link = accessibleLink;
   let linkHover = isDark || isHighContrast ? adjustBrightness(accessibleLink, 15) : adjustBrightness(accessibleLink, -15);
   if (isDark) {
@@ -151,10 +155,10 @@ export function computeAccentPalette(rawColor: string, appTheme: AppTheme = "lig
     "--sys-border-focus": borderFocus,
     "--sys-button-hover": buttonHover,
     "--sys-button-active": buttonActive,
-    "--sys-button-primary-bg": primary,
-    "--sys-button-primary-border": primaryBorder,
-    "--sys-button-primary-hover": primaryHover,
-    "--sys-button-primary-active": primaryActive,
+    "--sys-button-primary-bg": buttonPrimaryBg,
+    "--sys-button-primary-border": buttonPrimaryBorder,
+    "--sys-button-primary-hover": buttonPrimaryHover,
+    "--sys-button-primary-active": buttonPrimaryActive,
     "--sys-link": link,
     "--sys-link-hover": linkHover,
     "--ds-accent-aero-light": aeroLight,

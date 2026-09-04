@@ -127,10 +127,10 @@
     --sys-switch-thumb-border: #666666;
     --sys-switch-thumb-checked-bg: #ffffff;
     /* button primary overrides */
-    --sys-button-primary-bg: var(--sys-primary-active);
-    --sys-button-primary-border: var(--sys-primary-border);
-    --sys-button-primary-hover: var(--sys-primary-hover);
-    --sys-button-primary-active: var(--sys-primary-active);
+    --sys-button-primary-bg: var(--sys-highlight-bg);
+    --sys-button-primary-border: #005a9e;
+    --sys-button-primary-hover: #106ebe;
+    --sys-button-primary-active: #005a9e;
   }
 }
 

@@ -363,16 +363,16 @@
   min-width: 16px;
   padding: 0;
   margin-left: 2px;
-  background: var(--sys-primary);
-  color: #fff;
-  border: 1px solid var(--sys-primary);
+  background: var(--sys-button-primary-bg, var(--sys-highlight-bg));
+  color: var(--sys-highlight-text, #ffffff);
+  border: 1px solid var(--sys-button-primary-border, var(--sys-primary-border));
   border-radius: 2px;
   cursor: pointer;
   box-sizing: border-box;
 }
 .ds-prog-jump-btn:hover {
-  background: var(--sys-primary-hover);
-  border-color: var(--sys-primary-hover);
+  background: var(--sys-button-primary-hover, var(--sys-primary-hover));
+  border-color: var(--sys-button-primary-hover, var(--sys-primary-hover));
 }
 .ds-reader-progress-label {
   display: inline-flex;

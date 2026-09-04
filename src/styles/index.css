@@ -263,8 +263,8 @@ body {
   border-color: var(--sys-highlight-bg);
 }
 .ds-switch.checked:hover:not([disabled]) .ds-switch-track {
-  background: var(--sys-primary-hover);
-  border-color: var(--sys-primary-hover);
+  background: var(--sys-button-primary-hover, var(--sys-primary-hover));
+  border-color: var(--sys-button-primary-hover, var(--sys-primary-hover));
 }
 .ds-switch-thumb {
   position: absolute;

@@ -8,7 +8,7 @@
     --sys-border-dark: #555555;
     --sys-border-medium: #3a3a3a;
     --sys-border-focus: #66b8ff;
-    --sys-highlight-bg: #0064d4;
+    --sys-highlight-bg: #0078d7;
     --sys-highlight-text: #ffffff;
     --sys-button-bg: #111111;
     --sys-button-border: #555555;
@@ -25,7 +25,7 @@
     --sys-bg-active: #0d1a2b;
     --sys-card-bg: #0d0d0d;
     --sys-primary: #66b8ff;
-    --sys-primary-border: #0059cc;
+    --sys-primary-border: #005a9e;
     --sys-primary-hover: #88ccff;
     --sys-primary-active: #4499ee;
     --sys-button-disabled-bg: #111111;
@@ -123,10 +123,10 @@
     --sys-switch-thumb-bg: #cccccc;
     --sys-switch-thumb-border: #555555;
     --sys-switch-thumb-checked-bg: #ffffff;
-    --sys-button-primary-bg: var(--sys-primary-active);
-    --sys-button-primary-border: var(--sys-primary-border);
-    --sys-button-primary-hover: var(--sys-primary-hover);
-    --sys-button-primary-active: var(--sys-primary-active);
+    --sys-button-primary-bg: var(--sys-highlight-bg);
+    --sys-button-primary-border: #005a9e;
+    --sys-button-primary-hover: #106ebe;
+    --sys-button-primary-active: #005a9e;
   }
 }
 
