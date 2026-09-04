@@ -49,10 +49,18 @@ fn should_skip(entry: &str) -> bool {
     false
 }
 
+/// Slug components are capped so deep `local/<slug>/chapters/<ch>/pNNN.ext`
+/// paths stay well under the Windows 260-char MAX_PATH limit.
+const MAX_SLUG_LEN: usize = 64;
+
 fn slugify(input: &str) -> String {
     let mut out = String::new();
     let mut last_dash = true;
     for ch in input.to_lowercase().chars() {
+        // Output is pure ASCII, so byte length == char count.
+        if out.len() >= MAX_SLUG_LEN {
+            break;
+        }
         if ch.is_ascii_alphanumeric() {
             out.push(ch);
             last_dash = false;
@@ -83,7 +91,7 @@ fn natural_key(s: &str) -> Vec<NaturalChunk> {
             cur.push(ch);
         } else {
             if in_digit {
-                chunks.push(NaturalChunk::Num(cur.parse::<u64>().unwrap_or(0)));
+                chunks.push(digit_chunk(&cur));
             } else {
                 chunks.push(NaturalChunk::Str(cur.to_ascii_lowercase()));
             }
@@ -93,7 +101,7 @@ fn natural_key(s: &str) -> Vec<NaturalChunk> {
     }
     if !cur.is_empty() {
         if in_digit {
-            chunks.push(NaturalChunk::Num(cur.parse::<u64>().unwrap_or(0)));
+            chunks.push(digit_chunk(&cur));
         } else {
             chunks.push(NaturalChunk::Str(cur.to_ascii_lowercase()));
         }
@@ -101,9 +109,19 @@ fn natural_key(s: &str) -> Vec<NaturalChunk> {
     chunks
 }
 
+/// Digit runs that overflow u64 keep their true numeric order via
+/// (length, digits) instead of silently collapsing to 0.
+fn digit_chunk(digits: &str) -> NaturalChunk {
+    match digits.parse::<u64>() {
+        Ok(n) => NaturalChunk::Num(n),
+        Err(_) => NaturalChunk::BigNum(digits.len(), digits.to_string()),
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum NaturalChunk {
     Num(u64),
+    BigNum(usize, String),
     Str(String),
 }
 
@@ -147,7 +165,9 @@ fn collect_image_entries(zip_path: &Path) -> Result<Vec<String>, String> {
     let mut entries = Vec::new();
     for i in 0..archive.len() {
         let entry = archive.by_index(i).map_err(|e| format!("zip entry error: {e}"))?;
-        let name = entry.name().to_string();
+        // Older CBZs use non-UTF-8 encodings (CP437/Shift-JIS); decode the raw
+        // name bytes lossily instead of relying on `entry.name()` mojibake.
+        let name = String::from_utf8_lossy(entry.name_raw()).into_owned();
         if should_skip(&name) {
             continue;
         }
@@ -205,16 +225,22 @@ fn group_entries(entries: Vec<String>) -> Vec<(String, Vec<String>)> {
 }
 
 fn derive_chapter_title(fallback_index: usize, entries: &[String]) -> String {
-    // Look for c### token in any filename
+    // Look for a word-boundaried `c###` token in any filename, so names like
+    // `cover001.png` are not misread as "Chapter 1".
     for e in entries {
         let lower = e.to_ascii_lowercase();
-        if let Some(pos) = lower.find('c') {
-            let rest = &lower[pos + 1..];
+        let bytes = lower.as_bytes();
+        for (i, &b) in bytes.iter().enumerate() {
+            if b != b'c' || (i > 0 && bytes[i - 1].is_ascii_alphanumeric()) {
+                continue;
+            }
+            let rest = &lower[i + 1..];
             let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
-            if digits.len() >= 1 && digits.len() <= 4 {
-                if let Ok(n) = digits.parse::<u32>() {
-                    return format!("Chapter {}", n);
-                }
+            if digits.is_empty() || digits.len() > 4 {
+                continue;
+            }
+            if let Ok(n) = digits.parse::<u32>() {
+                return format!("Chapter {}", n);
             }
         }
     }
@@ -293,14 +319,55 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
             groups[0].0 = derived;
         }
 
-        let series_slug = slugify(&meta.title);
-        let series_permalink = format!("local:{}", series_slug);
+        // Never reuse an existing series dir: a colliding title would mix old
+        // page files with new metadata. Auto-disambiguate the slug instead.
+        let base_slug = slugify(&meta.title);
         let data_root = crate::paths::data_root();
-        let series_dir = data_root.join("local").join(&series_slug);
+        let mut series_slug = base_slug.clone();
+        let mut series_dir = data_root.join("local").join(&series_slug);
+        for n in 2.. {
+            if !series_dir.exists() {
+                break;
+            }
+            series_slug = format!("{base_slug}-{n}");
+            series_dir = data_root.join("local").join(&series_slug);
+        }
+        let series_permalink = format!("local:{}", series_slug);
         let chapters_dir = series_dir.join("chapters");
 
         std::fs::create_dir_all(&chapters_dir).map_err(|e| format!("failed creating series dir: {e}"))?;
 
+        // Roll back the partially extracted series dir on any failure so no
+        // orphan files or stale pages remain on disk.
+        let import_result = import_archive_inner(
+            &zip_path,
+            &groups,
+            &series_slug,
+            &series_permalink,
+            &series_dir,
+            &chapters_dir,
+            &meta,
+        );
+        if import_result.is_err() {
+            let _ = std::fs::remove_dir_all(&series_dir);
+        }
+        import_result
+    })
+    .await
+    .map_err(|e| format!("import task failed: {e}"))??;
+    Ok(res)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn import_archive_inner(
+    zip_path: &Path,
+    groups: &[(String, Vec<String>)],
+    series_slug: &str,
+    series_permalink: &str,
+    series_dir: &Path,
+    chapters_dir: &Path,
+    meta: &LocalSeriesMeta,
+) -> Result<String, String> {
         // Open archive once for extraction
         let file = std::fs::File::open(&zip_path).map_err(|e| format!("failed opening archive: {e}"))?;
         let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("invalid zip: {e}"))?;
@@ -314,7 +381,9 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
         let mut name_to_idx: HashMap<String, usize> = HashMap::new();
         for i in 0..archive.len() {
             if let Ok(entry) = archive.by_index(i) {
-                name_to_idx.insert(entry.name().to_string(), i);
+                // Same lossy decode as collect_image_entries so lookups match.
+                let name = String::from_utf8_lossy(entry.name_raw()).into_owned();
+                name_to_idx.insert(name, i);
             }
         }
 
@@ -402,15 +471,11 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
             }
         }
 
-        // Register in SQLite via direct rusqlite (bypass IPC for blocking context)
-        // Use the same DB file as the frontend: dynasty_reader.db
-        register_local_series_in_db(&series_permalink, &meta, &chapter_permalinks, &groups, &series_slug, total_pages)?;
+    // Register in SQLite via direct rusqlite (bypass IPC for blocking context)
+    // Use the same DB file as the frontend: dynasty_reader.db
+    register_local_series_in_db(series_permalink, meta, &chapter_permalinks, groups, series_slug, total_pages)?;
 
-        Ok(series_permalink)
-    })
-    .await
-    .map_err(|e| format!("import task failed: {e}"))??;
-    Ok(res)
+    Ok(series_permalink.to_string())
 }
 /* ---------------------------------------------------------------------------
  * Folder import — an already-unzipped CBZ
@@ -524,6 +589,9 @@ pub async fn import_folder(path: String, meta: FolderImportMeta) -> Result<Strin
         let chapters_dir = series_dir.join("chapters");
         std::fs::create_dir_all(&chapters_dir).map_err(|e| format!("failed creating series dir: {e}"))?;
 
+        // Roll back the partially imported series dir on any failure so no
+        // orphan files remain on disk.
+        let import_result = (|| -> Result<String, String> {
         // One chapter only.
         let ch_slug = slugify(&chapter_title);
         let ch_slug = if ch_slug.is_empty() { "chapter-1".to_string() } else { ch_slug };
@@ -595,7 +663,12 @@ pub async fn import_folder(path: String, meta: FolderImportMeta) -> Result<Strin
             files.len(),
         )?;
 
-        Ok(series_permalink)
+        Ok(series_permalink.clone())
+        })();
+        if import_result.is_err() {
+            let _ = std::fs::remove_dir_all(&series_dir);
+        }
+        import_result
     })
     .await
     .map_err(|e| format!("import task failed: {e}"))??;
@@ -835,27 +908,10 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
         let db_path = data_root.join("dynasty_reader.db");
         if db_path.exists() {
             let conn = crate::commands::db::open_synced(&db_path)?;
-            // Collect chapter permalinks for this series
-            let chapter_permalinks: Vec<String> = conn
-                .prepare("SELECT json_payload FROM cached_metadata WHERE cache_key LIKE ?1 ESCAPE '\\'")
-                .and_then(|mut stmt| {
-                    let pattern = format!("chapter:local:{}-%", like_escape(slug));
-                    let rows = stmt.query_map([pattern], |row| row.get::<_, String>(0))?;
-                    let mut out = Vec::new();
-                    for r in rows {
-                        if let Ok(payload) = r {
-                            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&payload) {
-                                if let Some(perm) = v.get("permalink").and_then(|p| p.as_str()) {
-                                    out.push(perm.to_string());
-                                }
-                            }
-                        }
-                    }
-                    Ok(out)
-                })
-                .unwrap_or_default();
-
-            // Delete rows in transaction
+            // Delete rows in transaction. Chapter permalinks for this series
+            // always match `local:<slug>-…`, so prefix-match directly instead
+            // of discovering chapters via cached_metadata (which misses rows
+            // when the metadata cache is absent).
             let tx = conn.unchecked_transaction().map_err(|e| format!("tx failed: {e}"))?;
             tx.execute("DELETE FROM local_series WHERE permalink = ?1", rusqlite::params![permalink])
                 .map_err(|e| format!("delete local_series failed: {e}"))?;
@@ -869,15 +925,13 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
             )
             .map_err(|e| format!("delete cached_metadata failed: {e}"))?;
 
-            for cp in &chapter_permalinks {
-                tx.execute("DELETE FROM cached_pages WHERE chapter_permalink = ?1", rusqlite::params![cp])
-                    .map_err(|e| format!("delete cached_pages failed: {e}"))?;
-                tx.execute("DELETE FROM reading_progress WHERE chapter_permalink = ?1", rusqlite::params![cp])
-                    .map_err(|e| format!("delete progress failed: {e}"))?;
-                tx.execute("DELETE FROM reading_history WHERE chapter_permalink = ?1", rusqlite::params![cp])
-                    .map_err(|e| format!("delete history failed: {e}"))?;
-                tx.execute("DELETE FROM bookmarks WHERE chapter_permalink = ?1", rusqlite::params![cp])
-                    .map_err(|e| format!("delete bookmark failed: {e}"))?;
+            let chapter_pattern = format!("local:{}-%", like_escape(slug));
+            for table in ["cached_pages", "reading_progress", "reading_history", "bookmarks"] {
+                tx.execute(
+                    &format!("DELETE FROM {table} WHERE chapter_permalink LIKE ?1 ESCAPE '\\'"),
+                    rusqlite::params![chapter_pattern],
+                )
+                .map_err(|e| format!("delete {table} failed: {e}"))?;
             }
             // Also delete any cover metadata for this series
             tx.execute(

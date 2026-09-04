@@ -14,13 +14,14 @@ import { ListItem } from "../components/ListItem";
 import { Cover } from "../components/Cover";
 import { OfflineBadge } from "../components/OfflineBadge";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
-import { ConfirmDeleteButton, IconButton } from "../components/Button";
-import { TrashIcon } from "../components/Icon";
+import { ConfirmDeleteButton, IconButton, IconText } from "../components/Button";
+import { BlacklistIcon, TrashIcon } from "../components/Icon";
 
 export interface LibraryItemRowProps {
   title: string;
   subtitle?: string;
   badge?: string;
+  blacklisted?: boolean;
   cover?: string | null;
   coverAlt?: string;
   icon?: string;
@@ -68,6 +69,11 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
           <Show when={props.badge}>
             <span class="ds-muted ds-kind-badge">
               {props.badge}
+            </span>
+          </Show>
+          <Show when={props.blacklisted}>
+            <span class="ds-muted ds-warn-badge">
+              <IconText icon={<BlacklistIcon filled={true} />}>{t("series.blacklistedBadge")}</IconText>
             </span>
           </Show>
         </div>

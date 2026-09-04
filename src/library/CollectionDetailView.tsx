@@ -25,9 +25,12 @@ import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api";
 import {
+  getBlacklistMode,
+  getBlacklistRevision,
   getCollectionById,
   getCollectionItems,
   getCollectionsRevision,
+  isSeriesBlacklisted,
   onCollectionsChanged,
   removeItemFromCollection,
   updateCollectionItemCover,
@@ -48,6 +51,17 @@ import { LibraryItemRow } from "./LibraryItemRow";
 
 export interface CollectionDetailViewProps {
   collectionId: number;
+}
+
+/** Blacklist check for a collection item: series items match directly,
+ * chapter-like items match via their parent series. Tracks the blacklist
+ * revision so callers re-evaluate reactively when the blacklist changes. */
+function isItemBl(it: CollectionItemRow): boolean {
+  getBlacklistRevision();
+  return (
+    isSeriesBlacklisted(it.item_permalink, it.item_title) ||
+    isSeriesBlacklisted(it.parent_series_permalink ?? undefined, it.parent_series_name ?? undefined)
+  );
 }
 
 export function CollectionDetailView(props: CollectionDetailViewProps) {
@@ -109,9 +123,14 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
   const filteredItems = createMemo<CollectionItemRow[]>(() => {
     const m = data();
     if (!m) return [];
+    // Consistent with Browse/Directory views: hide blacklisted items unless
+    // the user chose "warn" mode (which shows them with a badge instead).
+    const blMode = getBlacklistMode();
+    const visible =
+      blMode === "hide" || blMode === "ghost" ? m.items.filter((it) => !isItemBl(it)) : m.items;
     const q = filter().trim().toLowerCase();
-    if (!q) return m.items;
-    return m.items.filter(
+    if (!q) return visible;
+    return visible.filter(
       (it) =>
         it.item_title.toLowerCase().includes(q) ||
         (it.parent_series_name !== null && it.parent_series_name.toLowerCase().includes(q)) ||
@@ -254,6 +273,7 @@ function CollectionItemCard(props: {
           : t("library.addedOn", { date: formatDate(Number(props.it.created_at)) })
       }
       badge={kindLabel()}
+      blacklisted={isItemBl(props.it)}
       cover={cover()}
       coverAlt={props.it.item_title}
       onOpen={onOpen}

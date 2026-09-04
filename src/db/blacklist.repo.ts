@@ -87,7 +87,7 @@ export async function removeBlacklistedTag(name: string): Promise<void> {
   const trimmed = name.trim();
   if (!trimmed) return;
 
-  await execute("DELETE FROM tag_blacklist WHERE tag_name = ?", [trimmed]);
+  await execute("DELETE FROM tag_blacklist WHERE tag_name = ? COLLATE NOCASE", [trimmed]);
   cachedBlacklistNames.delete(trimmed.toLowerCase());
   await initBlacklistCache();
   notifyBlacklistChanged();
@@ -129,7 +129,7 @@ export async function removeBlacklistedSeries(permalink: string): Promise<void> 
   const cleanPerm = permalink.trim();
   if (!cleanPerm) return;
 
-  await execute("DELETE FROM series_blacklist WHERE series_permalink = ?", [cleanPerm]);
+  await execute("DELETE FROM series_blacklist WHERE series_permalink = ? COLLATE NOCASE", [cleanPerm]);
   cachedBlacklistSeriesPermalinks.delete(cleanPerm.toLowerCase());
   await initBlacklistCache();
   notifyBlacklistChanged();

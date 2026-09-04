@@ -97,7 +97,9 @@ export async function updateCollectionItemCover(
   coverPath: string,
 ): Promise<void> {
   await execute("UPDATE collection_items SET cover = ? WHERE id = ?", [coverPath, id]);
-  notifyCollectionsChanged();
+  // Deliberately no notifyCollectionsChanged(): the hydrating card updates its
+  // own cover signal, and a revision bump would refetch the entire collection
+  // list once per hydrated cover (N full-list refetches per view).
 }
 
 /**
@@ -144,8 +146,9 @@ export async function addItemToCollection(
        item_kind = excluded.item_kind,
        cover = excluded.cover,
        parent_series_permalink = excluded.parent_series_permalink,
-       parent_series_name = excluded.parent_series_name,
-       created_at = excluded.created_at`,
+       parent_series_name = excluded.parent_series_name`,
+    // created_at is intentionally NOT updated on conflict: re-adding an
+    // existing item must not silently promote it in the created_at ordering.
     [
       collectionId,
       item.item_permalink.trim(),
@@ -188,8 +191,14 @@ export async function getItemCollectionIds(itemPermalink: string): Promise<numbe
 /**
  * Toggles an item in a collection: removes if present, adds if missing.
  * Returns true if added, false if removed.
+ *
+ * Toggles for the same (collection, item) pair are serialized through a
+ * promise chain so a rapid double-click cannot race the read-then-write
+ * sequence into a stuck state (both reads seeing "absent" → double add).
  */
-export async function toggleItemInCollection(
+const toggleChains = new Map<string, Promise<boolean>>();
+
+export function toggleItemInCollection(
   collectionId: number,
   item: {
     item_permalink: string;
@@ -200,12 +209,23 @@ export async function toggleItemInCollection(
     parent_series_name?: string | null;
   },
 ): Promise<boolean> {
-  const ids = await getItemCollectionIds(item.item_permalink);
-  if (ids.includes(collectionId)) {
-    await removeItemFromCollection(collectionId, item.item_permalink);
-    return false;
-  } else {
-    await addItemToCollection(collectionId, item);
-    return true;
-  }
+  const key = `${collectionId}:${item.item_permalink.trim()}`;
+  const prev = toggleChains.get(key) ?? Promise.resolve(false);
+  const next = prev
+    .catch(() => false)
+    .then(async () => {
+      const ids = await getItemCollectionIds(item.item_permalink);
+      if (ids.includes(collectionId)) {
+        await removeItemFromCollection(collectionId, item.item_permalink);
+        return false;
+      }
+      await addItemToCollection(collectionId, item);
+      return true;
+    });
+  toggleChains.set(key, next);
+  const cleanup = (): void => {
+    if (toggleChains.get(key) === next) toggleChains.delete(key);
+  };
+  next.then(cleanup, cleanup);
+  return next;
 }

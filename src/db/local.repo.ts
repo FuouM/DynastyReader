@@ -35,15 +35,29 @@ export async function getLocalSeries(): Promise<LocalSeriesRow[]> {
       // non-fatal fallback
     }
 
+    // Batch-resolve relative cover paths in one IPC round-trip (was N+1).
+    const relCoverPaths = rows
+      .map((r) => r.cover_path)
+      .filter((p): p is string => !!p && !p.includes(":") && !p.startsWith("/"));
+    const absCoverByPath = new Map<string, string>();
+    if (relCoverPaths.length > 0) {
+      try {
+        const fileResp = await ipc.fileExistsBatch(relCoverPaths);
+        for (const item of fileResp.items ?? []) {
+          if (item.exists && item.absolute_path) absCoverByPath.set(item.path, String(item.absolute_path));
+        }
+      } catch {
+        // non-fatal fallback
+      }
+    }
+
     for (const r of rows) {
       const slug = r.permalink.replace(/^local:/, "");
       r.total_size_bytes = dirBytesByPath.get(`local/${slug}`) ?? 0;
 
-      if (r.cover_path && !r.cover_path.includes(":") && !r.cover_path.startsWith("/")) {
-        try {
-          const res = await ipc.fileExists(r.cover_path);
-          if (res.exists) r.cover_path = String(res.absolute_path);
-        } catch {}
+      if (r.cover_path) {
+        const abs = absCoverByPath.get(r.cover_path);
+        if (abs) r.cover_path = abs;
       }
     }
     return rows;

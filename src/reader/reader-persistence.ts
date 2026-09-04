@@ -19,10 +19,15 @@ export interface ReaderPersistence {
 
 export function createReaderPersistence(state: ReaderState, permalink: string): ReaderPersistence {
   let lastPersistedIndex = -1;
+  let lastPersistedCompleted = false;
 
   const persistNow = async (): Promise<void> => {
-    if (lastPersistedIndex === state.currentIndex() && !state.atEnd()) return;
+    const completed = state.atEnd();
+    // Skip only when neither the page index nor the completion flag moved —
+    // re-opening a finished chapter and scrolling back must un-complete it.
+    if (lastPersistedIndex === state.currentIndex() && lastPersistedCompleted === completed) return;
     lastPersistedIndex = state.currentIndex();
+    lastPersistedCompleted = completed;
     try {
       await setReadingProgress({
         chapterPermalink: permalink,
@@ -31,7 +36,7 @@ export function createReaderPersistence(state: ReaderState, permalink: string): 
         chapterTitle: state.chapterTitle(),
         pageIndex: state.currentIndex(),
         pageTotal: state.pages().length,
-        completed: state.atEnd(),
+        completed,
       });
     } catch (err) {
       log.error("reader-persistence", "failed to persist reading progress:", err);
@@ -45,6 +50,9 @@ export function createReaderPersistence(state: ReaderState, permalink: string): 
   };
 
   const dispose = (): void => {
+    // Flush pending progress before dropping the debounce so closing a
+    // chapter inside the debounce window keeps the last-seen page position.
+    void persistNow();
     persistDebounced.clear();
   };
 

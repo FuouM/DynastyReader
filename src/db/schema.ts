@@ -405,10 +405,19 @@ export async function initDb(): Promise<void> {
         for (const migration of MIGRATIONS) {
           if (migration.version <= current) continue;
           log.debug("db/schema", `applying migration v${migration.version}: ${migration.name}`);
-          await migration.up();
-          await setSchemaVersion(migration.version);
+          // Each version block runs in one explicit transaction (statements +
+          // user_version bump commit atomically) so a crash mid-migration
+          // cannot leave partial schema at the old version.
+          await execute("BEGIN", []);
+          try {
+            await migration.up();
+            await setSchemaVersion(migration.version);
+            await execute("COMMIT", []);
+          } catch (err) {
+            await execute("ROLLBACK", []).catch(() => {});
+            throw err;
+          }
         }
-        await initBlacklistCache();
       } catch (err) {
         initDbPromise = null;
         log.error("db/schema", "initDb failed — user_version not advanced:", err);
