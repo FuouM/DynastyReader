@@ -16,7 +16,7 @@ import { errorMessage } from "../utils/errors";
 import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import { useCopyLink } from "../hooks/useCopyLink";
-import { getReaderNavPosition } from "./settings";
+import { getReaderNavPosition, getReaderFilterCss } from "./settings";
 import { IconButton } from "../components/Button";
 import { ReaderMainRow, ReaderControlsRow } from "./ReaderNavRows";
 import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
@@ -45,6 +45,12 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
     const z = s.zoomScale();
     if (s.containerEl) {
       s.containerEl.style.setProperty("--ds-zoom-scale", String(z));
+    }
+  });
+  createEffect(() => {
+    const f = getReaderFilterCss();
+    if (s.containerEl) {
+      s.containerEl.style.setProperty("--ds-reader-filter", f === "" ? "none" : f);
     }
   });
 

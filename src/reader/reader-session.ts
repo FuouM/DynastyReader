@@ -167,6 +167,8 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   toolbarAnimTimer: number | null = null;
   /** Invoked when the toolbar animation lock expires (set by useReaderGestures). */
   toolbarAnimEndHook: (() => void) | null = null;
+  /** Registered by ReaderProgressWrap; focuses the page-jump input (QoL-R2). */
+  pageJumpFocusHook: (() => void) | null = null;
   private fullscreenRelayoutTimers: number[] = [];
   private readonly cleanupFns: (() => void)[] = [];
   containerTagPermalink: string | null = null;
@@ -604,13 +606,17 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     }
   }
 
-  setFitMode(fit: FitMode): void {
-    this.setFitModeSignal(fit);
-    setDefaultFitMode(fit);
+  private applyFitClass(fit: FitMode): void {
     if (this.containerEl) {
       this.containerEl.classList.remove("fit-width", "fit-height", "fit-original");
       this.containerEl.classList.add(`fit-${fit}`);
     }
+  }
+
+  setFitMode(fit: FitMode): void {
+    this.setFitModeSignal(fit);
+    setDefaultFitMode(fit);
+    this.applyFitClass(fit);
     if (fit !== "original") {
       this.setZoomScaleSignal(1.0);
     }
@@ -618,6 +624,73 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       this.updateSlotClearances();
     } else {
       this.resetToCurrentPage(false);
+    }
+  }
+
+  /**
+   * On-screen scale of the current page image relative to its natural size.
+   * Used to keep visual size continuous when pinch/ctrl+wheel transitions a
+   * fit mode into the zoomed (original-size) rendering state.
+   */
+  private displayScaleFactor(): number {
+    const slot = this.slotEls[this.currentIndex()];
+    const img = slot?.querySelector("img.ds-page-img") as HTMLImageElement | null | undefined;
+    if (img && img.naturalWidth > 0 && img.clientWidth > 0) {
+      const f = img.clientWidth / img.naturalWidth;
+      if (isFinite(f) && f > 0) return f;
+    }
+    return 1;
+  }
+
+  /** Current effective on-screen zoom (fit modes report their display scale). */
+  effectiveZoomScale(): number {
+    return this.fitMode() === "original" ? this.zoomScale() : this.displayScaleFactor();
+  }
+
+  /**
+   * Switch to the zoomed (original-size) rendering state without persisting a
+   * new default fit mode, preserving the current on-screen page size.
+   */
+  private enterZoomedFit(): void {
+    if (this.fitMode() === "original") return;
+    const factor = Math.max(0.25, Math.min(4, this.displayScaleFactor()));
+    this.setFitModeSignal("original");
+    this.applyFitClass("original");
+    this.setZoomScaleSignal(factor);
+    if (!this.isHorizontal()) {
+      requestAnimationFrame(() => this.updateSlotClearances());
+    } else {
+      this.resetToCurrentPage(false);
+    }
+  }
+
+  /** Multiplicative zoom (trackpad ctrl+wheel / pinch) in any fit mode. */
+  zoomByFactor(f: number): void {
+    if (!isFinite(f) || f <= 0) return;
+    if (this.fitMode() !== "original") {
+      // Already at (or below) fitted size — zooming out further is a no-op.
+      if (f <= 1) return;
+      this.enterZoomedFit();
+    }
+    this.setZoomScaleClamped(this.zoomScale() * f);
+  }
+
+  /** Absolute zoom target for two-finger pinch in any fit mode. */
+  applyPinchZoom(target: number): void {
+    if (!isFinite(target)) return;
+    if (this.fitMode() !== "original") {
+      if (target <= this.displayScaleFactor()) return;
+      this.enterZoomedFit();
+    }
+    this.setZoomScaleClamped(target);
+  }
+
+  setZoomScaleClamped(scale: number): void {
+    const clamped = Math.max(0.25, Math.min(4, scale));
+    if (Math.abs(clamped - this.zoomScale()) < 0.0001) return;
+    this.setZoomScaleSignal(clamped);
+    if (!this.isHorizontal()) {
+      requestAnimationFrame(() => this.updateSlotClearances());
     }
   }
 
@@ -766,6 +839,12 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     }
     this.setToolbarVisible(!this.toolbarVisible());
     this.clearToolbarTimer();
+  }
+
+  /** Reveal the toolbar (if hidden) and focus the page-jump input (QoL-R2). */
+  focusPageJump(): void {
+    if (!this.toolbarVisible()) this.setToolbarVisible(true);
+    requestAnimationFrame(() => this.pageJumpFocusHook?.());
   }
 
   // Publish topbar actions — must run inside a Solid root so

@@ -19,7 +19,8 @@ function isNavigationHotkey(ev: KeyboardEvent): boolean {
     matchesHotkey(ev, "reader.firstPage") ||
     matchesHotkey(ev, "reader.lastPage") ||
     matchesHotkey(ev, "reader.nextChapter") ||
-    matchesHotkey(ev, "reader.prevChapter")
+    matchesHotkey(ev, "reader.prevChapter") ||
+    matchesHotkey(ev, "reader.jumpToPercent")
   );
 }
 
@@ -71,6 +72,16 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
     } else if (matchesHotkey(ev, "reader.prevChapter")) {
       consumeHotkeyEvent(ev);
       c.gotoPrevChapter();
+    } else if (matchesHotkey(ev, "reader.jumpToPage")) {
+      consumeHotkeyEvent(ev);
+      c.focusPageJump();
+    } else if (matchesHotkey(ev, "reader.jumpToPercent")) {
+      consumeHotkeyEvent(ev);
+      const digit = parseInt(ev.key, 10);
+      const total = c.pages().length;
+      if (digit >= 1 && digit <= 9 && total > 0) {
+        c.setPage(Math.round((digit / 10) * (total - 1)), true);
+      }
     } else if (matchesHotkey(ev, "reader.toggleMode")) {
       consumeHotkeyEvent(ev);
       if (c.mode() === "scroll") {

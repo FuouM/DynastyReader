@@ -68,16 +68,12 @@ export function ReaderWheel(props: { session: ReaderSession }) {
     // have their own scroll regions (RD-H7).
     if ((ev.target as HTMLElement | null)?.closest(".ds-reader-sheet-window, .ds-modal-backdrop")) return;
     if (ev.ctrlKey) {
-      // Ctrl + Wheel: Zoom In / Out when in Original Size
-      if (c.fitMode() === "original") {
-        ev.preventDefault();
-        if (ev.deltaY < 0) {
-          c.zoomIn();
-        } else if (ev.deltaY > 0) {
-          c.zoomOut();
-        }
-        return;
-      }
+      // Ctrl + Wheel (trackpad pinch): smooth zoom in any fit mode. Zooming in
+      // beyond the fitted size transitions to the zoomed (original-size)
+      // rendering state without breaking the fit layout (QoL-R1).
+      ev.preventDefault();
+      c.zoomByFactor(Math.pow(1.0015, -ev.deltaY));
+      return;
     }
 
     const now = Date.now();

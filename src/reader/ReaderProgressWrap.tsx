@@ -1,4 +1,4 @@
-import { createSignal, createEffect, Show } from "solid-js";
+import { createSignal, createEffect, onMount, onCleanup, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { t } from "../i18n";
@@ -19,12 +19,24 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
 
   const totalPages = () => s.pages().length;
 
-  const startEditing = (e: MouseEvent | KeyboardEvent) => {
-    e.stopPropagation();
+  const openEditor = () => {
     if (totalPages() <= 1) return;
     setInputVal(`${s.currentIndex() + 1}`);
     setEditing(true);
   };
+
+  const startEditing = (e: MouseEvent | KeyboardEvent) => {
+    e.stopPropagation();
+    openEditor();
+  };
+
+  // Expose keyboard-driven page-jump focus to the session (QoL-R2).
+  onMount(() => {
+    s.pageJumpFocusHook = openEditor;
+  });
+  onCleanup(() => {
+    if (s.pageJumpFocusHook === openEditor) s.pageJumpFocusHook = null;
+  });
 
   createEffect(() => {
     if (editing() && inputRef) {

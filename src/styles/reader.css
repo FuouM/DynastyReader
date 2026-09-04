@@ -479,6 +479,8 @@
 .fit-original #ds-reader-viewport:not(.horizontal) {
   overflow-x: auto !important;
   overflow-y: auto !important;
+  /* Zoomed (original-size) pages pan freely in both axes on touch (QoL-R1). */
+  touch-action: pan-x pan-y;
 }
 .fit-original #ds-reader-viewport:not(.horizontal) #ds-reader-strip {
   width: max-content !important;
@@ -600,6 +602,8 @@
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
+  /* Reader brightness/contrast/grayscale/sepia filter overlay (QoL-R5). */
+  filter: var(--ds-reader-filter, none);
 }
 .ds-snap-indicator {
   position: absolute;
@@ -1347,5 +1351,57 @@
   background: var(--sys-highlight-bg) !important;
   border-color: var(--sys-primary-border) !important;
   color: #ffffff !important;
+}
+
+/* ── Reader image filter sliders (QoL-R5) ── */
+.ds-reader-filter-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ds-filter-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--sys-fg, #333);
+}
+.ds-filter-slider-label {
+  white-space: nowrap;
+}
+.ds-filter-slider input[type="range"] {
+  width: 64px;
+  height: 14px;
+  accent-color: var(--sys-primary);
+}
+.ds-filter-slider-val {
+  min-width: 32px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--sys-muted, #777);
+}
+/* Mobile controls sheet: full-width stacked sliders */
+.ds-reader-sheet-window .ds-reader-filter-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+}
+.ds-reader-sheet-window .ds-filter-slider {
+  display: flex;
+  width: 100%;
+  font-size: var(--font-sm);
+}
+.ds-reader-sheet-window .ds-filter-slider-label {
+  min-width: 72px;
+}
+.ds-reader-sheet-window .ds-filter-slider input[type="range"] {
+  flex: 1;
+  width: auto;
+}
+.ds-reader-sheet-window .ds-filter-reset {
+  align-self: flex-end;
 }
 }

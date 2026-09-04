@@ -22,7 +22,9 @@ export type ReaderActionId =
   | "reader.toggleToolbar"
   | "reader.zoomIn"
   | "reader.zoomOut"
-  | "reader.resetZoom";
+  | "reader.resetZoom"
+  | "reader.jumpToPage"
+  | "reader.jumpToPercent";
 
 export type GlobalActionId =
   | "global.goBack"

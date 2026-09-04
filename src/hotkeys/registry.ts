@@ -9,7 +9,7 @@ export const HOTKEY_DEFINITIONS: HotkeyDefinition[] = [
     get description() { return t("settings.hotkeys.actions.readerNextPageDesc"); },
     get category() { return t("settings.hotkeys.categories.reader") as HotkeyCategory; },
     scope: "reader",
-    defaultKeys: ["ArrowRight", "Space"],
+    defaultKeys: ["ArrowRight", "Space", "j"],
   },
   {
     id: "reader.prevPage",
@@ -17,7 +17,7 @@ export const HOTKEY_DEFINITIONS: HotkeyDefinition[] = [
     get description() { return t("settings.hotkeys.actions.readerPrevPageDesc"); },
     get category() { return t("settings.hotkeys.categories.reader") as HotkeyCategory; },
     scope: "reader",
-    defaultKeys: ["ArrowLeft"],
+    defaultKeys: ["ArrowLeft", "k"],
   },
   {
     id: "reader.firstPage",
@@ -130,6 +130,22 @@ export const HOTKEY_DEFINITIONS: HotkeyDefinition[] = [
     get category() { return t("settings.hotkeys.categories.reader") as HotkeyCategory; },
     scope: "reader",
     defaultKeys: ["0", "Ctrl+0"],
+  },
+  {
+    id: "reader.jumpToPage",
+    get label() { return t("settings.hotkeys.actions.readerJumpToPage"); },
+    get description() { return t("settings.hotkeys.actions.readerJumpToPageDesc"); },
+    get category() { return t("settings.hotkeys.categories.reader") as HotkeyCategory; },
+    scope: "reader",
+    defaultKeys: ["g", "/"],
+  },
+  {
+    id: "reader.jumpToPercent",
+    get label() { return t("settings.hotkeys.actions.readerJumpToPercent"); },
+    get description() { return t("settings.hotkeys.actions.readerJumpToPercentDesc"); },
+    get category() { return t("settings.hotkeys.categories.reader") as HotkeyCategory; },
+    scope: "reader",
+    defaultKeys: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
   },
 
   // ── Navigation & Global Controls ─────────────────────────────────────────────

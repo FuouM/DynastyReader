@@ -435,6 +435,66 @@ export function useReaderGestures(s: ReaderSession) {
       }
     };
 
+    // ── Two-Finger Pinch-to-Zoom (pointer events; QoL-R1) ──
+    // touch-action stays `pan-y` (vertical) / `none` (horizontal) so the
+    // browser never pinch-zooms the page itself; while two pointers are
+    // active we force `touch-action: none` inline to suspend native panning.
+    const activePointers = new Map<number, { x: number; y: number }>();
+    let pinchActive = false;
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+
+    const pinchDistance = (): number => {
+      const pts = [...activePointers.values()];
+      if (pts.length < 2) return 0;
+      return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    };
+
+    const onPinchPointerDown = (ev: PointerEvent): void => {
+      if (ev.pointerType !== "touch") return;
+      activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (activePointers.size === 2) {
+        pinchActive = true;
+        pinchStartDist = pinchDistance();
+        pinchStartScale = s.effectiveZoomScale();
+        vpEl.style.touchAction = "none";
+        s.cancelScrollAnimation();
+      }
+    };
+
+    const onPinchPointerMove = (ev: PointerEvent): void => {
+      if (ev.pointerType !== "touch" || !activePointers.has(ev.pointerId)) return;
+      activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (pinchActive && activePointers.size >= 2 && pinchStartDist > 0) {
+        const d = pinchDistance();
+        if (d > 0) {
+          s.applyPinchZoom(pinchStartScale * (d / pinchStartDist));
+        }
+      }
+    };
+
+    const onPinchPointerUp = (ev: PointerEvent): void => {
+      if (!activePointers.delete(ev.pointerId)) return;
+      if (pinchActive && activePointers.size < 2) {
+        pinchActive = false;
+        vpEl.style.touchAction = "";
+        // Re-baseline the single-touch tracker to the remaining finger so its
+        // continued movement pans (while zoomed) instead of jumping, and
+        // lifting it does not register as a tap.
+        const remaining = [...activePointers.values()][0];
+        if (remaining) {
+          touchStartX = remaining.x;
+          touchStartY = remaining.y;
+          touchStartTime = Date.now();
+          touchMoved = true;
+          if (touchLongPressTimer !== null) {
+            clearTimeout(touchLongPressTimer);
+            touchLongPressTimer = null;
+          }
+        }
+      }
+    };
+
     // ── Desktop Mouse Drag Engine (Panning when zoomed, Mouse swipe, Tap & Overscroll when enabled) ──
     let isMouseDown = false;
     let mouseStartX = 0;
@@ -657,6 +717,11 @@ export function useReaderGestures(s: ReaderSession) {
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
 
+    vpEl.addEventListener("pointerdown", onPinchPointerDown, { passive: true });
+    vpEl.addEventListener("pointermove", onPinchPointerMove, { passive: true });
+    vpEl.addEventListener("pointerup", onPinchPointerUp, { passive: true });
+    vpEl.addEventListener("pointercancel", onPinchPointerUp, { passive: true });
+
     s.onDispose(() => {
       if (resetTransformTimer !== null) {
         clearTimeout(resetTransformTimer);
@@ -680,6 +745,15 @@ export function useReaderGestures(s: ReaderSession) {
       vpEl.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      vpEl.removeEventListener("pointerdown", onPinchPointerDown);
+      vpEl.removeEventListener("pointermove", onPinchPointerMove);
+      vpEl.removeEventListener("pointerup", onPinchPointerUp);
+      vpEl.removeEventListener("pointercancel", onPinchPointerUp);
+      activePointers.clear();
+      if (pinchActive) {
+        pinchActive = false;
+        vpEl.style.touchAction = "";
+      }
     });
   });
 

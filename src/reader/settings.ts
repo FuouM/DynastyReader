@@ -184,3 +184,59 @@ const [isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled] = pe
   deserialize: boolDeserialize,
 });
 export { isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled };
+
+// ── Reader image filters (brightness/contrast/grayscale/sepia) ─────────────
+const clampNum = (v: string, def: number, min: number, max: number) => {
+  const n = parseFloat(v);
+  if (isNaN(n)) return def;
+  return Math.max(min, Math.min(max, n));
+};
+
+const [getReaderFilterBrightness, setReaderFilterBrightness] = persistedSignal(100, {
+  name: "ds-reader-filter-brightness",
+  serialize: String,
+  deserialize: (v) => clampNum(v, 100, 10, 200),
+});
+export { getReaderFilterBrightness, setReaderFilterBrightness };
+
+const [getReaderFilterContrast, setReaderFilterContrast] = persistedSignal(100, {
+  name: "ds-reader-filter-contrast",
+  serialize: String,
+  deserialize: (v) => clampNum(v, 100, 10, 200),
+});
+export { getReaderFilterContrast, setReaderFilterContrast };
+
+const [getReaderFilterGrayscale, setReaderFilterGrayscale] = persistedSignal(0, {
+  name: "ds-reader-filter-grayscale",
+  serialize: String,
+  deserialize: (v) => clampNum(v, 0, 0, 100),
+});
+export { getReaderFilterGrayscale, setReaderFilterGrayscale };
+
+const [getReaderFilterSepia, setReaderFilterSepia] = persistedSignal(0, {
+  name: "ds-reader-filter-sepia",
+  serialize: String,
+  deserialize: (v) => clampNum(v, 0, 0, 100),
+});
+export { getReaderFilterSepia, setReaderFilterSepia };
+
+/** Builds the CSS `filter` value for reader page images ("" when all defaults). */
+export function getReaderFilterCss(): string {
+  const parts: string[] = [];
+  const b = getReaderFilterBrightness();
+  const c = getReaderFilterContrast();
+  const g = getReaderFilterGrayscale();
+  const s = getReaderFilterSepia();
+  if (b !== 100) parts.push(`brightness(${b / 100})`);
+  if (c !== 100) parts.push(`contrast(${c / 100})`);
+  if (g !== 0) parts.push(`grayscale(${g / 100})`);
+  if (s !== 0) parts.push(`sepia(${s / 100})`);
+  return parts.join(" ");
+}
+
+export function resetReaderFilters(): void {
+  setReaderFilterBrightness(100);
+  setReaderFilterContrast(100);
+  setReaderFilterGrayscale(0);
+  setReaderFilterSepia(0);
+}

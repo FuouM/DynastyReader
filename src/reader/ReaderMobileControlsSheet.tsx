@@ -15,6 +15,7 @@ import { getPrevChapterStartPage, setPrevChapterStartPage, type PrevChapterStart
 import { Button, IconButton, IconText, SegmentedSwitch } from "../components/Button";
 import { SettingsRow } from "../components/SettingsRow";
 import { useCopyLink } from "../hooks/useCopyLink";
+import { ReaderFilterControls } from "./ReaderFilterControls";
 import {
   ToolIcon,
   LockIcon,
@@ -194,6 +195,11 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                     { id: "ds-ctrl-fit-orig", value: "original", text: t("reader.toolbar.fitModes.original") },
                   ]}
                 />
+              </SettingsRow>
+
+              {/* Image Filters */}
+              <SettingsRow label={t("settings.reader.filterGroup")} divider stacked>
+                <ReaderFilterControls />
               </SettingsRow>
 
               {/* Previous Chapter Landing Page */}

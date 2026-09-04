@@ -34,6 +34,7 @@ import {
   PlusIcon,
 } from "../components/Icon";
 import { ReaderProgressWrap } from "./ReaderProgressWrap";
+import { ReaderFilterControls } from "./ReaderFilterControls";
 export interface NavRowProps {
   session: ReaderSession;
   controlsOpen?: Accessor<boolean>;
@@ -231,6 +232,7 @@ export function ReaderControlsRow(props: NavRowProps) {
           />
         </div>
       </Show>
+      <ReaderFilterControls />
     </div>
   );
 }
