@@ -10,7 +10,16 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let log_plugin = build_log_plugin();
-    let http_client = commands::http::build_client().expect("failed to build http client");
+    let http_client = match commands::http::build_client() {
+        Ok(c) => c,
+        Err(e) => {
+            // Fatal: TLS/proxy initialization failed. Log to the rolling file
+            // and stderr, then exit cleanly instead of an opaque panic.
+            log::error!("fatal: failed to build http client: {e}");
+            eprintln!("fatal: failed to build http client: {e}");
+            std::process::exit(1);
+        }
+    };
 
     let builder = tauri::Builder::default()
         .plugin(log_plugin)
@@ -68,7 +77,11 @@ pub fn run() {
             commands::updater::install_update,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Dynasty Scans Reader");
+        .unwrap_or_else(|e| {
+            log::error!("fatal: error while running Dynasty Scans Reader: {e}");
+            eprintln!("fatal: error while running Dynasty Scans Reader: {e}");
+            std::process::exit(1);
+        });
 }
 
 /// Data root selection:

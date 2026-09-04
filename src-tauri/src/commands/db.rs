@@ -100,6 +100,15 @@ fn open(db_name: &str) -> Result<Connection, String> {
             .map_err(|e| format!("failed creating database directory: {e}"))?;
     }
     let conn = Connection::open(&path).map_err(|e| format!("failed opening database: {e}"))?;
+    configure_connection(&conn)?;
+    Ok(conn)
+}
+
+/// Applies the app-wide connection tuning. Every connection touching the app
+/// database MUST go through this so background workers cannot regress to
+/// rollback-journal defaults (SQLITE_BUSY against the pool) or silently drop
+/// `ON DELETE CASCADE` behavior (foreign_keys off by default).
+fn configure_connection(conn: &Connection) -> Result<(), String> {
     // WAL tuned for the app's read-heavy, single-writer workload: NORMAL
     // synchronous keeps commit latency low without sacrificing durability on
     // checkpoint, journal_size_limit bounds the WAL growth, and
@@ -118,6 +127,15 @@ fn open(db_name: &str) -> Result<Connection, String> {
         .map_err(|e| format!("failed enabling foreign keys: {e}"))?;
     conn.busy_timeout(std::time::Duration::from_millis(SQLITE_BUSY_TIMEOUT_MS))
         .map_err(|e| format!("failed setting busy timeout: {e}"))?;
+    Ok(())
+}
+
+/// Opens a one-off connection to an absolute database path with the same
+/// tuning as pooled connections. Background workers (download queue, local
+/// import) MUST use this instead of naked `Connection::open`.
+pub fn open_synced(path: &std::path::Path) -> Result<Connection, String> {
+    let conn = Connection::open(path).map_err(|e| format!("failed opening database: {e}"))?;
+    configure_connection(&conn)?;
     Ok(conn)
 }
 

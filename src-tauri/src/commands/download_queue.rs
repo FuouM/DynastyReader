@@ -72,9 +72,8 @@ fn db_path() -> std::path::PathBuf {
 }
 
 fn ensure_download_queue_table() -> Result<(), String> {
-    let conn = rusqlite::Connection::open(db_path()).map_err(|e| format!("open db: {e}"))?;
-    conn.busy_timeout(std::time::Duration::from_millis(5000))
-        .map_err(|e| format!("busy timeout: {e}"))?;
+    let conn = crate::commands::db::open_synced(&db_path()).map_err(|e| format!("open db: {e}"))?;
+    // busy_timeout/WAL/foreign_keys already applied by open_synced.
     conn.execute(
         "CREATE TABLE IF NOT EXISTS download_queue (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,16 +106,49 @@ fn ensure_processor_running(
     state: &DownloadState,
     http_client: &reqwest::Client,
 ) {
-    if !state.running.load(Ordering::SeqCst) {
-        state.running.store(true, Ordering::SeqCst);
-        let app_clone = app.clone();
-        let client_clone = http_client.clone();
-        tokio::spawn(async move {
-            run_processor(app_clone, client_clone).await;
-        });
-    } else {
+    // Single-spawn invariant: only one caller may flip running false -> true.
+    if state
+        .running
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
         state.notify.notify_one();
+        return;
     }
+    let app_clone = app.clone();
+    let client_clone = http_client.clone();
+    tokio::spawn(async move {
+        // Watchdog: run the processor in a child task so a panic is observed
+        // here instead of orphaning the queue with `running` stuck true
+        // (downloads would silently stall until app restart).
+        let app2 = app_clone.clone();
+        let client2 = client_clone.clone();
+        let join = tokio::spawn(async move { run_processor(app2, client2).await });
+        if let Err(e) = join.await {
+            log::error!("download processor task panicked: {e}");
+        }
+        let state: State<DownloadState> = app_clone.state();
+        state.running.store(false, Ordering::SeqCst);
+        // Restart if pending work survived (e.g. panic mid-queue).
+        let pending = tokio::task::spawn_blocking(|| {
+            crate::commands::db::open_synced(&db_path())
+                .and_then(|conn| {
+                    conn.query_row(
+                        "SELECT COUNT(*) FROM download_queue WHERE status = 'pending'",
+                        [],
+                        |row| row.get::<_, i64>(0),
+                    )
+                    .map_err(|e| format!("count pending: {e}"))
+                })
+                .unwrap_or(0)
+        })
+        .await
+        .unwrap_or(0);
+        if pending > 0 {
+            log::warn!("download processor exited with {pending} pending rows; restarting");
+            ensure_processor_running(&app_clone, &state, &client_clone);
+        }
+    });
 }
 
 #[tauri::command(rename = "enqueueChapters")]
@@ -130,9 +162,8 @@ pub async fn enqueue_chapters(
     let chapters_clone = chapters.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
         ensure_download_queue_table()?;
-        let conn = rusqlite::Connection::open(db_path()).map_err(|e| format!("open db: {e}"))?;
-        conn.busy_timeout(std::time::Duration::from_millis(5000))
-            .map_err(|e| format!("busy timeout: {e}"))?;
+        let conn = crate::commands::db::open_synced(&db_path()).map_err(|e| format!("open db: {e}"))?;
+        // busy_timeout/WAL/foreign_keys already applied by open_synced.
         for ch in &chapters_clone {
             conn.execute(
                 "INSERT OR IGNORE INTO download_queue (series_permalink, series_title, chapter_permalink, chapter_title, chapter_index, status, queued_at)
@@ -191,7 +222,7 @@ pub async fn cancel_download(
     // Also mark queued pending rows as failed/cancelled
     let cp = chapter_permalink.clone();
     tokio::task::spawn_blocking(move || {
-        if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+        if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
             let _ = conn.execute(
                 "UPDATE download_queue SET status = 'failed', error_msg = 'cancelled' WHERE chapter_permalink = ?1 AND status = 'pending'",
                 rusqlite::params![cp],
@@ -212,7 +243,7 @@ pub async fn retry_failed_downloads(
 ) -> Result<(), String> {
     let sp = series_permalink.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
-        let conn = rusqlite::Connection::open(db_path()).map_err(|e| format!("open db: {e}"))?;
+        let conn = crate::commands::db::open_synced(&db_path()).map_err(|e| format!("open db: {e}"))?;
         let now = chrono_now();
         if sp.is_empty() || sp == "_singles" {
             conn.execute(
@@ -241,7 +272,7 @@ pub async fn retry_failed_downloads(
 pub async fn clear_completed_downloads(series_permalink: String) -> Result<(), String> {
     let sp = series_permalink.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
-        let conn = rusqlite::Connection::open(db_path()).map_err(|e| format!("open db: {e}"))?;
+        let conn = crate::commands::db::open_synced(&db_path()).map_err(|e| format!("open db: {e}"))?;
         if sp.is_empty() || sp == "_singles" {
             conn.execute(
                 "DELETE FROM download_queue WHERE (series_permalink = '' OR series_permalink IS NULL OR series_permalink = '_singles') AND status IN ('done', 'failed', 'skipped')",
@@ -270,7 +301,7 @@ pub async fn get_download_queue(
 ) -> Result<serde_json::Value, String> {
     let (items, has_pending) = tokio::task::spawn_blocking(|| -> Result<(Vec<serde_json::Value>, bool), String> {
         ensure_download_queue_table()?;
-        let conn = rusqlite::Connection::open(db_path()).map_err(|e| format!("open db: {e}"))?;
+        let conn = crate::commands::db::open_synced(&db_path()).map_err(|e| format!("open db: {e}"))?;
         let mut stmt = conn
             .prepare("SELECT series_permalink, series_title, chapter_permalink, chapter_title, chapter_index, status, progress, total_pages, error_msg, queued_at, completed_at FROM download_queue ORDER BY queued_at ASC")
             .map_err(|e| format!("prepare failed: {e}"))?;
@@ -336,11 +367,11 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         // Pick next pending row — run blocking DB work without holding
         // non-Send rusqlite types across an await.
         let next: Option<DownloadRequest> = tokio::task::spawn_blocking(|| {
-            let conn = match rusqlite::Connection::open(db_path()) {
+            let conn = match crate::commands::db::open_synced(&db_path()) {
                 Ok(c) => c,
                 Err(_) => return None,
             };
-            let _ = conn.busy_timeout(std::time::Duration::from_millis(5000));
+            // busy_timeout/WAL/foreign_keys already applied by open_synced.
             let mut stmt = match conn.prepare(
                 "SELECT series_permalink, series_title, chapter_permalink, chapter_title, chapter_index FROM download_queue WHERE status = 'pending' ORDER BY queued_at ASC LIMIT 1",
             ) {
@@ -389,7 +420,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         // Mark downloading (blocking)
         let chapter_permalink = req.chapter_permalink.clone();
         let _ = tokio::task::spawn_blocking(move || {
-            if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+            if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
                 let _ = conn.execute(
                     "UPDATE download_queue SET status = 'downloading', progress = 0, total_pages = 0 WHERE chapter_permalink = ?1",
                     rusqlite::params![chapter_permalink],
@@ -420,7 +451,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         match result {
             Ok((done, total)) => {
                 let _ = tokio::task::spawn_blocking(move || {
-                    if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+                    if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
                         let status = if done == total && total > 0 { "done" } else { "failed" };
                         let _ = conn.execute(
                             "UPDATE download_queue SET status = ?1, progress = ?2, total_pages = ?3, completed_at = ?4 WHERE chapter_permalink = ?5",
@@ -445,7 +476,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
             Err(e) if e == "cancelled" => {
                 let cp = req.chapter_permalink.clone();
                 let _ = tokio::task::spawn_blocking(move || {
-                    if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+                    if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
                         let _ = conn.execute(
                             "UPDATE download_queue SET status = 'failed', error_msg = 'cancelled' WHERE chapter_permalink = ?1",
                             rusqlite::params![cp],
@@ -470,7 +501,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                 let cp = req.chapter_permalink.clone();
                 let err_msg = e.clone();
                 let _ = tokio::task::spawn_blocking(move || {
-                    if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+                    if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
                         let _ = conn.execute(
                             "UPDATE download_queue SET status = 'failed', error_msg = ?1 WHERE chapter_permalink = ?2",
                             rusqlite::params![err_msg, cp],
@@ -535,7 +566,7 @@ async fn download_chapter(
         let cp = req.chapter_permalink.clone();
         let body_clone = body.clone();
         tokio::task::spawn_blocking(move || {
-            if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+            if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
                 let now = chrono_now();
                 let key = format!("chapter:{}", cp);
                 let _ = conn.execute(
@@ -557,7 +588,7 @@ async fn download_chapter(
     {
         let cp = req.chapter_permalink.clone();
         tokio::task::spawn_blocking(move || {
-            if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+            if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
                 let _ = conn.execute(
                     "UPDATE download_queue SET total_pages = ?1 WHERE chapter_permalink = ?2",
                     rusqlite::params![total as i64, cp],
@@ -616,7 +647,7 @@ async fn download_chapter(
                     let cp = req.chapter_permalink.clone();
                     let size = meta.len() as i64;
                     tokio::task::spawn_blocking(move || {
-                        if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+                        if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
                             let now = chrono_now();
                             let _ = conn.execute(
                                 "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -665,37 +696,49 @@ async fn download_chapter(
             if !resp.status().is_success() {
                 return Err(format!("http status {}", resp.status()));
             }
-            // Stream to a temp file with a hard byte cap, then persist.
+            // Stream to a temp file with a hard byte cap, then atomically rename.
+            // Write through the temp file's own handle (`into_file`) — a second
+            // `File::create` on the same path risks Windows sharing violations.
             let parent = target.parent().unwrap_or(&target);
             let tmp = tempfile::Builder::new()
                 .prefix(".tmp-download-")
                 .tempfile_in(parent)
                 .map_err(|e| format!("tmp file: {e}"))?;
             let tmp_path = tmp.path().to_path_buf();
-            let mut out = tokio::fs::File::create(&tmp_path)
-                .await
-                .map_err(|e| format!("write tmp: {e}"))?;
-            let mut stream = resp.bytes_stream();
-            let mut size: u64 = 0;
-            while let Some(chunk) = stream.next().await {
-                let chunk = chunk.map_err(|e| format!("read bytes: {e}"))?;
-                size += chunk.len() as u64;
-                if size > MAX_PAGE_BYTES {
-                    return Err(format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes"));
+            let write_res: Result<u64, String> = async {
+                let mut out = tokio::fs::File::from_std(tmp.into_file());
+                let mut stream = resp.bytes_stream();
+                let mut size: u64 = 0;
+                while let Some(chunk) = stream.next().await {
+                    let chunk = chunk.map_err(|e| format!("read bytes: {e}"))?;
+                    size += chunk.len() as u64;
+                    if size > MAX_PAGE_BYTES {
+                        return Err(format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes"));
+                    }
+                    out.write_all(&chunk).await.map_err(|e| format!("write tmp: {e}"))?;
                 }
-                out.write_all(&chunk).await.map_err(|e| format!("write tmp: {e}"))?;
+                out.flush().await.map_err(|e| format!("write tmp: {e}"))?;
+                Ok(size)
             }
-            out.flush().await.map_err(|e| format!("write tmp: {e}"))?;
-            drop(out);
-            tmp.persist(&target).map_err(|e| format!("persist: {e}"))?;
+            .await;
+            let size = match write_res {
+                Ok(s) => s,
+                Err(e) => {
+                    let _ = tokio::fs::remove_file(&tmp_path).await;
+                    return Err(e);
+                }
+            };
+            tokio::fs::rename(&tmp_path, &target)
+                .await
+                .map_err(|e| format!("persist: {e}"))?;
             let size = size as i64;
             let abs_str = target.to_string_lossy().into_owned();
             // Spawn blocking for DB write
             let cp = req.chapter_permalink.clone();
             let abs_clone = abs_str.clone();
             tokio::task::spawn_blocking(move || {
-                if let Ok(conn) = rusqlite::Connection::open(db_path()) {
-                    let _ = conn.busy_timeout(std::time::Duration::from_millis(5000));
+                if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
+                    // busy_timeout/WAL/foreign_keys already applied by open_synced.
                     let now = chrono_now();
                     let _ = conn.execute(
                         "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -719,7 +762,7 @@ async fn download_chapter(
                 total_bytes_done += page_size as u64;
                 let cp = req.chapter_permalink.clone();
                 tokio::task::spawn_blocking(move || {
-                    if let Ok(conn) = rusqlite::Connection::open(db_path()) {
+                    if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
                         let _ = conn.execute(
                             "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
                             rusqlite::params![done as i64, cp],

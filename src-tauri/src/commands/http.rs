@@ -245,8 +245,9 @@ pub async fn http_download(
         return Err(format!("http download failed: status {}", resp.status()));
     }
 
-    // Write through a unique RAII temp file in the parent dir, then persist to target.
-    // If dropped on error/panic, tempfile deletes the unfinalized temp file automatically.
+    // Write through the temp file's own handle (`into_file`) — opening the same
+    // path twice can hit Windows sharing violations. `into_file` detaches the
+    // RAII guard, so the error path below removes the partial file manually.
     let temp_file = tempfile::Builder::new()
         .prefix(".tmp-download-")
         .tempfile_in(parent)
@@ -254,9 +255,7 @@ pub async fn http_download(
 
     let temp_path = temp_file.path().to_path_buf();
     let write_result: Result<u64, String> = async {
-        let mut out = tokio::fs::File::create(&temp_path)
-            .await
-            .map_err(|e| format!("failed writing download: {e}"))?;
+        let mut out = tokio::fs::File::from_std(temp_file.into_file());
         let mut stream = resp.bytes_stream();
         let mut total: u64 = 0;
         while let Some(chunk) = stream.next().await {
@@ -277,10 +276,15 @@ pub async fn http_download(
         Ok(total)
     }
     .await;
-
-    let _ = write_result?;
-    temp_file
-        .persist(&target)
+    let _ = match write_result {
+        Ok(total) => total,
+        Err(e) => {
+            let _ = tokio::fs::remove_file(&temp_path).await;
+            return Err(e);
+        }
+    };
+    tokio::fs::rename(&temp_path, &target)
+        .await
         .map_err(|e| format!("failed finalizing download: {e}"))?;
     let size = std::fs::metadata(&target).map(|m| m.len()).unwrap_or(0);
     Ok(json!({

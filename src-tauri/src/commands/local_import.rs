@@ -14,6 +14,12 @@ const IMAGE_EXTS: &[&str] = &["jpg", "jpeg", "png", "webp", "avif", "gif", "bmp"
 const SKIP_PREFIXES: &[&str] = &["__macosx", "__MACOSX"];
 const SKIP_FILES: &[&str] = &["thumbs.db", ".ds_store", "comicinfo.xml"];
 
+/// Zip-bomb guards for archive import.
+const MAX_ARCHIVE_ENTRIES: usize = 2000;
+const MAX_DECOMPRESSED_TOTAL: u64 = 2 * 1024 * 1024 * 1024;
+const MAX_COVER_BYTES: u64 = 32 * 1024 * 1024;
+/// Mirrors media.rs MAX_SOURCE_DIMENSION — reject decompression-bomb covers.
+const MAX_COVER_DIMENSION: u32 = 8192;
 fn is_image(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
     if lower.ends_with('/') {
@@ -132,6 +138,12 @@ pub struct LocalSeriesMeta {
 fn collect_image_entries(zip_path: &Path) -> Result<Vec<String>, String> {
     let file = std::fs::File::open(zip_path).map_err(|e| format!("failed opening archive: {e}"))?;
     let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("invalid zip archive: {e}"))?;
+    if archive.len() > MAX_ARCHIVE_ENTRIES {
+        return Err(format!(
+            "archive has {} entries (max {MAX_ARCHIVE_ENTRIES})",
+            archive.len()
+        ));
+    }
     let mut entries = Vec::new();
     for i in 0..archive.len() {
         let entry = archive.by_index(i).map_err(|e| format!("zip entry error: {e}"))?;
@@ -292,7 +304,12 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
         // Open archive once for extraction
         let file = std::fs::File::open(&zip_path).map_err(|e| format!("failed opening archive: {e}"))?;
         let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("invalid zip: {e}"))?;
-
+        if archive.len() > MAX_ARCHIVE_ENTRIES {
+            return Err(format!(
+                "archive has {} entries (max {MAX_ARCHIVE_ENTRIES})",
+                archive.len()
+            ));
+        }
         // Build name -> index map for fast extraction
         let mut name_to_idx: HashMap<String, usize> = HashMap::new();
         for i in 0..archive.len() {
@@ -303,7 +320,7 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
 
         let mut chapter_permalinks: Vec<String> = Vec::new();
         let mut total_pages = 0usize;
-
+        let mut total_decompressed: u64 = 0;
         for (ch_idx, (ch_title, pages)) in groups.iter().enumerate() {
             let ch_slug = slugify(ch_title);
             // Ensure uniqueness
@@ -323,7 +340,15 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
                 let out_name = format!("p{:03}.{}", page_idx, ext);
                 let out_path = ch_dir.join(&out_name);
                 let mut out_file = std::fs::File::create(&out_path).map_err(|e| format!("failed creating page file: {e}"))?;
-                std::io::copy(&mut entry, &mut out_file).map_err(|e| format!("failed extracting page: {e}"))?;
+                let remaining = MAX_DECOMPRESSED_TOTAL.saturating_sub(total_decompressed);
+                let mut limited = (&mut entry).take(remaining + 1);
+                let copied = std::io::copy(&mut limited, &mut out_file).map_err(|e| format!("failed extracting page: {e}"))?;
+                total_decompressed += copied;
+                if total_decompressed > MAX_DECOMPRESSED_TOTAL {
+                    return Err(format!(
+                        "archive exceeds decompressed size cap ({MAX_DECOMPRESSED_TOTAL} bytes)"
+                    ));
+                }
             }
 
             // Write chapter.json
@@ -363,7 +388,10 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
                 if let Some(idx) = name_to_idx.get(first_entry) {
                     if let Ok(mut entry) = archive.by_index(*idx) {
                         let mut buf = Vec::new();
-                        let _ = entry.read_to_end(&mut buf);
+                        let mut limited = (&mut entry).take(MAX_COVER_BYTES + 1);
+                        if limited.read_to_end(&mut buf).is_err() || buf.len() as u64 > MAX_COVER_BYTES {
+                            buf.clear();
+                        }
                         if !buf.is_empty() {
                             // Try to create a webp cover; best-effort, ignore errors
                             let cover_path = series_dir.join("cover.webp");
@@ -575,6 +603,17 @@ pub async fn import_folder(path: String, meta: FolderImportMeta) -> Result<Strin
 }
 
 fn create_cover_webp(src_bytes: &[u8], out_path: &Path) -> Result<(), String> {
+    // Header inspection before full decode: reject decompression bombs.
+    let (w0, h0) = image::ImageReader::new(std::io::Cursor::new(src_bytes))
+        .with_guessed_format()
+        .map_err(|e| format!("cover format probe failed: {e}"))?
+        .into_dimensions()
+        .map_err(|e| format!("cover dimension probe failed: {e}"))?;
+    if w0 > MAX_COVER_DIMENSION || h0 > MAX_COVER_DIMENSION {
+        return Err(format!(
+            "cover exceeds max dimension {MAX_COVER_DIMENSION} (got {w0}x{h0})"
+        ));
+    }
     // Try to decode with image crate, then encode as webp at 80 quality
     let img = image::load_from_memory(src_bytes).map_err(|e| format!("cover decode failed: {e}"))?;
     let (w, h) = (img.width(), img.height());
@@ -604,11 +643,7 @@ fn register_local_series_in_db(
     total_pages: usize,
 ) -> Result<(), String> {
     let db_path = crate::paths::data_root().join("dynasty_reader.db");
-    let conn = rusqlite::Connection::open(&db_path).map_err(|e| format!("failed opening db: {e}"))?;
-    conn.pragma_update(None, "journal_mode", "WAL")
-        .map_err(|e| format!("failed enabling WAL: {e}"))?;
-    conn.busy_timeout(std::time::Duration::from_millis(5000))
-        .map_err(|e| format!("failed busy timeout: {e}"))?;
+    let conn = crate::commands::db::open_synced(&db_path)?;
 
     // Ensure local_series table exists (idempotent)
     conn.execute(
@@ -799,9 +834,7 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
         }
         let db_path = data_root.join("dynasty_reader.db");
         if db_path.exists() {
-            let conn = rusqlite::Connection::open(&db_path).map_err(|e| format!("failed opening db: {e}"))?;
-            conn.busy_timeout(std::time::Duration::from_millis(5000))
-                .map_err(|e| format!("busy timeout failed: {e}"))?;
+            let conn = crate::commands::db::open_synced(&db_path)?;
             // Collect chapter permalinks for this series
             let chapter_permalinks: Vec<String> = conn
                 .prepare("SELECT json_payload FROM cached_metadata WHERE cache_key LIKE ?1 ESCAPE '\\'")
@@ -900,12 +933,7 @@ pub async fn update_local_series(
         }
 
         // --- DB update ---
-        let conn = rusqlite::Connection::open(&db_path)
-            .map_err(|e| format!("failed opening db: {e}"))?;
-        conn.pragma_update(None, "journal_mode", "WAL")
-            .map_err(|e| format!("WAL pragma failed: {e}"))?;
-        conn.busy_timeout(std::time::Duration::from_millis(5000))
-            .map_err(|e| format!("busy timeout failed: {e}"))?;
+        let conn = crate::commands::db::open_synced(&db_path)?;
 
         let tx = conn.unchecked_transaction()
             .map_err(|e| format!("tx failed: {e}"))?;
