@@ -99,7 +99,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
   createEffect(() => {
     if (!props.open) return;
     const scale = uiScale() || 1;
-    const baseStyle = `width:290px;max-width:94vw;zoom:${scale};`;
+    const baseStyle = "width:290px;max-width:94vw;";
 
     const anchor = props.anchorEl;
     if (!anchor || isMobile()) {

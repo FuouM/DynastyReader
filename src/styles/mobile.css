@@ -601,7 +601,9 @@
   padding: 0 2px;
 }
 
-#ds-root[data-mobile] #ds-banner {
+#ds-root[data-mobile] #ds-banner,
+#ds-banner.ds-banner--mobile,
+body:has(#ds-root[data-mobile]) #ds-banner {
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 /* Reader HUD & Overlay on mobile */

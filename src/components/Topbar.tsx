@@ -17,6 +17,8 @@ import {
   activeDownloadCount,
   downloadSpeedBps,
   formatDownloadSpeed,
+  isMobile,
+  uiScale,
 } from "../stores";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
@@ -236,7 +238,13 @@ export function Topbar() {
       </Show>
       <Show when={banner() !== null}>
         <Portal mount={document.body}>
-          <div id="ds-banner">{banner()}</div>
+          <div
+            id="ds-banner"
+            classList={{ "ds-banner--mobile": isMobile() }}
+            style={uiScale() !== 1.0 ? { zoom: String(uiScale()) } : undefined}
+          >
+            {banner()}
+          </div>
         </Portal>
       </Show>
     </>

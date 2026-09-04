@@ -46,7 +46,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
   createEffect(() => {
     if (props.open === false) return;
     const scale = uiScale() || 1;
-    const baseStyle = `width:240px;max-width:90vw;zoom:${scale};`;
+    const baseStyle = "width:240px;max-width:90vw;";
     const anchor = props.anchorEl;
     if (!anchor) {
       setPositionStyle(`${baseStyle}top:36px;left:80px;`);

@@ -88,7 +88,14 @@ export function App() {
     });
   });
   return (
-    <div id="ds-root" data-mobile={isMobile() ? "1" : undefined} style={!isMobile() && uiScale() !== 1.0 ? { zoom: String(uiScale()) } : undefined}>
+    <div
+      id="ds-root"
+      data-mobile={isMobile() ? "1" : undefined}
+      style={{
+        ...(uiScale() !== 1.0 ? { zoom: String(uiScale()) } : {}),
+        "--ds-ui-scale": String(uiScale()),
+      }}
+    >
       <GlobalShortcuts />
       <a href="#ds-main-content" class="ds-skip-link">{t("common.skipToContent")}</a>
       <Topbar />
