@@ -19,6 +19,7 @@ export {
   getProgressForSeries,
   addHistory,
   removeHistory,
+  removeHistoryBatch,
   clearHistory,
   getHistoryPage,
   getHistoryMap,
@@ -34,6 +35,7 @@ export {
   notifyBookmarksChanged,
   addBookmark,
   removeBookmark,
+  removeBookmarksBatch,
 } from "./library.repo";
 export {
   getCachedPages,
@@ -47,8 +49,9 @@ export {
   clearAllCacheStorage,
   getFullyCachedChapters,
   getFullyCachedChapterPermalinks,
+  pruneOldestReadCachedPages,
 } from "./cache.repo";
-export type { FullyCachedChapterRow } from "./cache.repo";
+export type { FullyCachedChapterRow, CachePruneResult } from "./cache.repo";
 export {
   getBlacklistedTags,
   addBlacklistedTag,

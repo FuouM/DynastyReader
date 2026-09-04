@@ -1,5 +1,6 @@
-import { createEffect, createMemo, createResource, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createResource, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { open } from "@tauri-apps/plugin-dialog";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { navigate, dbReady, route, setSessionTab } from "../stores";
 import { getLocalSeries } from "../db/local.repo";
@@ -9,13 +10,22 @@ import { showBanner } from "../stores/topbar";
 import { formatBytes } from "../lib/format";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
-import { Button, IconButton } from "../components/Button";
+import { Button, DsSelect, IconButton } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import type { ArchiveScanResult, FolderScanResult } from "../ipc";
 import { Loading } from "../components/Loading";
 import { AddIcon, FolderIcon, StorageIcon } from "../components/Icon";
 import { LibraryItemRow } from "./LibraryItemRow";
+import { persistedSignal } from "../lib/persisted-signal";
+
+type LocalSortMode = "updated_desc" | "alphabetical" | "page_count" | "date_added";
+
+interface ImportProgressPayload {
+  current: number;
+  total: number;
+  phase: "extract" | "register" | "done";
+}
 import type { LibraryPaneApi } from "./panes";
 export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const [tick, setTick] = createSignal(0);
@@ -37,6 +47,57 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const [scanPath, setScanPath] = createSignal<string | null>(null);
   const [editTitle, setEditTitle] = createSignal("");
   const [importing, setImporting] = createSignal(false);
+
+  // QoL-L1: determinate import progress driven by `local://import-progress`.
+  const [importProgress, setImportProgress] = createSignal<ImportProgressPayload | null>(null);
+
+  // QoL-L2: transient client-side search filter + persisted sort mode.
+  const [searchQuery, setSearchQuery] = createSignal("");
+  const [sortMode, setSortMode] = persistedSignal<LocalSortMode>("updated_desc", {
+    name: "ds_local_sort",
+    deserialize: (v) =>
+      v === "alphabetical" || v === "page_count" || v === "date_added" ? v : "updated_desc",
+  });
+
+  let importListenMounted = true;
+  let importUnlisten: UnlistenFn | null = null;
+  onMount(() => {
+    void listen<ImportProgressPayload>("local://import-progress", (event) => {
+      if (event.payload) setImportProgress(event.payload);
+    })
+      .then((fn) => {
+        if (importListenMounted) importUnlisten = fn;
+        else fn();
+      })
+      .catch(() => {});
+  });
+  onCleanup(() => {
+    importListenMounted = false;
+    importUnlisten?.();
+    importUnlisten = null;
+  });
+
+  const visibleRows = createMemo(() => {
+    const rows = data();
+    if (!rows) return undefined;
+    const q = searchQuery().trim().toLowerCase();
+    const filtered = q
+      ? rows.filter((r) =>
+          r.title.toLowerCase().includes(q) || (r.author ?? "").toLowerCase().includes(q)
+        )
+      : [...rows];
+    const mode = sortMode();
+    if (mode === "alphabetical") {
+      filtered.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (mode === "page_count") {
+      filtered.sort((a, b) => b.total_pages - a.total_pages);
+    } else if (mode === "date_added") {
+      filtered.sort((a, b) => b.created_at - a.created_at);
+    } else {
+      filtered.sort((a, b) => b.updated_at - a.updated_at);
+    }
+    return filtered;
+  });
 
   // Edit modal state
   const [editRow, setEditRow] = createSignal<LocalSeriesRow | null>(null);
@@ -102,6 +163,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
     if (!p || !sr) return;
     const title = editTitle().trim() || sr.series_title;
     setImporting(true);
+    setImportProgress(null);
     try {
       const permalink = await ipc.importArchive(p, { title });
       showBanner(t("local.importedBanner", { title }));
@@ -114,6 +176,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       showBanner(errorMessage(err));
     } finally {
       setImporting(false);
+      setImportProgress(null);
     }
   };
   const pickAndScanFolder = async (): Promise<void> => {
@@ -279,6 +342,24 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
           <Show when={scanning()}>
             <span class="ds-muted" style="align-self:center;">{t("local.scanning")}</span>
           </Show>
+          <Show when={data() && data()!.length > 0}>
+            <InputField
+              value={searchQuery()}
+              onInput={setSearchQuery}
+              placeholder={t("local.searchPlaceholder")}
+              style="width:180px;"
+            />
+            <DsSelect
+              value={sortMode()}
+              onChange={(v) => setSortMode(v as LocalSortMode)}
+              options={[
+                { value: "updated_desc", label: t("local.sortUpdated") },
+                { value: "alphabetical", label: t("local.sortAlphabetical") },
+                { value: "page_count", label: t("local.sortPageCount") },
+                { value: "date_added", label: t("local.sortDateAdded") },
+              ]}
+            />
+          </Show>
         </div>
         <Show when={data() && data()!.length > 0}>
           <span class="ds-muted" style="font-size:11.5px;display:inline-flex;align-items:center;gap:4px;">
@@ -340,6 +421,36 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
                   )}
                 </For>
               </div>
+              <Show when={importing()}>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <div class="ds-muted" style="font-size:12px;">
+                    {importProgress()?.phase === "register"
+                      ? t("local.importProgressRegister")
+                      : t("local.importProgressExtract", {
+                          current: importProgress()?.current ?? 0,
+                          total: importProgress()?.total ?? scanResult()!.total_pages,
+                        })}
+                  </div>
+                  <div class="ds-progress-track" role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={importProgress()?.total ?? scanResult()!.total_pages}
+                    aria-valuenow={importProgress()?.current ?? 0}
+                  >
+                    <div
+                      class="ds-progress-fill"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.round(
+                            ((importProgress()?.current ?? 0) /
+                              Math.max(1, importProgress()?.total ?? scanResult()!.total_pages)) * 100,
+                          ),
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </Show>
             </div>
           }
           footer={
@@ -474,8 +585,8 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
           <div class="ds-muted">{t("local.emptyHint")}</div>
         </div>
       </Show>
-      <Show when={data() !== undefined && data()!.length > 0}>
-        <For each={data()!}>
+      <Show when={visibleRows() !== undefined && visibleRows()!.length > 0}>
+        <For each={visibleRows()!}>
           {(row) => (
             <LibraryItemRow
               title={row.title}
@@ -493,6 +604,9 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
             />
           )}
         </For>
+      </Show>
+      <Show when={data() !== undefined && data()!.length > 0 && visibleRows() !== undefined && visibleRows()!.length === 0}>
+        <div class="ds-muted" style="padding:12px;text-align:center;">{t("local.noSearchResults")}</div>
       </Show>
     </div>
   );

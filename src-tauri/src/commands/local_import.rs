@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use tauri::{AppHandle, Emitter};
 
 const IMAGE_EXTS: &[&str] = &["jpg", "jpeg", "png", "webp", "avif", "gif", "bmp"];
 const SKIP_PREFIXES: &[&str] = &["__macosx", "__MACOSX"];
@@ -20,6 +21,23 @@ const MAX_DECOMPRESSED_TOTAL: u64 = 2 * 1024 * 1024 * 1024;
 const MAX_COVER_BYTES: u64 = 32 * 1024 * 1024;
 /// Mirrors media.rs MAX_SOURCE_DIMENSION — reject decompression-bomb covers.
 const MAX_COVER_DIMENSION: u32 = 8192;
+
+/// Throttle for extraction progress events: emit at most every N pages.
+const IMPORT_PROGRESS_EVERY: usize = 8;
+
+/// Progress payload for `local://import-progress` events during CBZ import.
+#[derive(Debug, Clone, Serialize)]
+pub struct ImportProgressPayload {
+    pub current: usize,
+    pub total: usize,
+    /// "extract" | "register" | "done"
+    pub phase: &'static str,
+}
+
+fn emit_import_progress(app: &AppHandle, current: usize, total: usize, phase: &'static str) {
+    let _ = app.emit("local://import-progress", ImportProgressPayload { current, total, phase });
+}
+
 fn is_image(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
     if lower.ends_with('/') {
@@ -300,7 +318,7 @@ pub async fn scan_archive(path: String) -> Result<ArchiveScanResult, String> {
 }
 
 #[tauri::command(rename = "importArchive")]
-pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<String, String> {
+pub async fn import_archive(app: AppHandle, path: String, meta: LocalSeriesMeta) -> Result<String, String> {
     let res = tokio::task::spawn_blocking(move || -> Result<String, String> {
         let zip_path = PathBuf::from(&path);
         if !zip_path.is_file() {
@@ -340,6 +358,7 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
         // Roll back the partially extracted series dir on any failure so no
         // orphan files or stale pages remain on disk.
         let import_result = import_archive_inner(
+            &app,
             &zip_path,
             &groups,
             &series_slug,
@@ -360,6 +379,7 @@ pub async fn import_archive(path: String, meta: LocalSeriesMeta) -> Result<Strin
 
 #[allow(clippy::too_many_arguments)]
 fn import_archive_inner(
+    app: &AppHandle,
     zip_path: &Path,
     groups: &[(String, Vec<String>)],
     series_slug: &str,
@@ -390,6 +410,9 @@ fn import_archive_inner(
         let mut chapter_permalinks: Vec<String> = Vec::new();
         let mut total_pages = 0usize;
         let mut total_decompressed: u64 = 0;
+        let planned_total_pages: usize = groups.iter().map(|(_, pages)| pages.len()).sum();
+        let mut extracted_pages = 0usize;
+        emit_import_progress(app, 0, planned_total_pages, "extract");
         for (ch_idx, (ch_title, pages)) in groups.iter().enumerate() {
             let ch_slug = slugify(ch_title);
             // Ensure uniqueness
@@ -417,6 +440,10 @@ fn import_archive_inner(
                     return Err(format!(
                         "archive exceeds decompressed size cap ({MAX_DECOMPRESSED_TOTAL} bytes)"
                     ));
+                }
+                extracted_pages += 1;
+                if extracted_pages % IMPORT_PROGRESS_EVERY == 0 {
+                    emit_import_progress(app, extracted_pages, planned_total_pages, "extract");
                 }
             }
 
@@ -473,8 +500,10 @@ fn import_archive_inner(
 
     // Register in SQLite via direct rusqlite (bypass IPC for blocking context)
     // Use the same DB file as the frontend: dynasty_reader.db
+    emit_import_progress(app, planned_total_pages, planned_total_pages, "register");
     register_local_series_in_db(series_permalink, meta, &chapter_permalinks, groups, series_slug, total_pages)?;
 
+    emit_import_progress(app, planned_total_pages, planned_total_pages, "done");
     Ok(series_permalink.to_string())
 }
 /* ---------------------------------------------------------------------------

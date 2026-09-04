@@ -35,15 +35,30 @@ export interface LibraryItemRowProps {
   onEdit?: () => void;
   deleteTitle?: string;
   onDelete?: () => Promise<void> | void;
+  /** QoL-L3: bulk-select mode — row click toggles selection, actions hidden. */
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export function LibraryItemRow(props: LibraryItemRowProps) {
   return (
     <ListItem
       class="ds-flex-row ds-clickable ds-library-item"
-      onClick={props.onOpen}
+      cssText={props.selectionMode && props.selected ? "background:var(--sys-hover-bg);" : undefined}
+      onClick={props.selectionMode ? () => props.onToggleSelect?.() : props.onOpen}
       leading={
         <>
+          <Show when={props.selectionMode}>
+            <input
+              type="checkbox"
+              checked={!!props.selected}
+              aria-label={t("library.selectRowLabel", { title: props.title })}
+              style="width:16px;height:16px;flex-shrink:0;align-self:center;accent-color:var(--sys-primary, #0078d4);cursor:pointer;"
+              onClick={(ev) => ev.stopPropagation()}
+              onChange={() => props.onToggleSelect?.()}
+            />
+          </Show>
           <Show when={props.cover !== undefined}>
             <div class="ds-cover-wrap--shrink">
               <Cover
@@ -84,6 +99,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
         </Show>
       }
       actions={
+        props.selectionMode ? undefined : (
         <>
           <Show when={props.actionLabel}>
             <IconButton
@@ -130,6 +146,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
             />
           </Show>
         </>
+        )
       }
     />
   );

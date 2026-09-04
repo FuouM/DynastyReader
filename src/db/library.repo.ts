@@ -1,5 +1,7 @@
 import { query, execute } from "./client";
 import { inClause, queryPaged } from "./paging";
+import { DB_NAME } from "../constants";
+import * as ipc from "../ipc";
 import { createChangeNotifier } from "../lib/change-notifier";
 import type {
   FollowedSeriesRow,
@@ -188,6 +190,17 @@ export async function removeHistory(id: number): Promise<void> {
   notifyHistoryChanged();
 }
 
+/** Bulk-delete history rows in a single dbExecuteBatch (one transaction). */
+export async function removeHistoryBatch(ids: number[]): Promise<void> {
+  if (ids.length === 0) return;
+  await ipc.dbExecuteBatch(
+    DB_NAME,
+    [`DELETE FROM reading_history WHERE id IN (${inClause(ids.length)})`],
+    [ids],
+  );
+  notifyHistoryChanged();
+}
+
 export async function clearHistory(): Promise<void> {
   await execute(`DELETE FROM reading_history`);
   notifyHistoryChanged();
@@ -277,5 +290,16 @@ export async function addBookmark(p: {
 
 export async function removeBookmark(chapterPermalink: string): Promise<void> {
   await execute(`DELETE FROM bookmarks WHERE chapter_permalink = ?`, [chapterPermalink]);
+  notifyBookmarksChanged();
+}
+
+/** Bulk-delete bookmarks in a single dbExecuteBatch (one transaction). */
+export async function removeBookmarksBatch(chapterPermalinks: string[]): Promise<void> {
+  if (chapterPermalinks.length === 0) return;
+  await ipc.dbExecuteBatch(
+    DB_NAME,
+    [`DELETE FROM bookmarks WHERE chapter_permalink IN (${inClause(chapterPermalinks.length)})`],
+    [chapterPermalinks],
+  );
   notifyBookmarksChanged();
 }
