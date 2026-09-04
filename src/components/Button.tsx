@@ -7,7 +7,7 @@
 import { For, createSignal, type JSX } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { t } from "../i18n";
-import { CheckIcon, Icon } from "./Icon";
+import { CheckIcon } from "./Icon";
 export interface ButtonProps {
   id?: string;
   className?: string;
@@ -17,6 +17,8 @@ export interface ButtonProps {
   title?: string;
   "aria-label"?: string;
   "aria-pressed"?: boolean | "true" | "false";
+  /** Shows a spinner, sets aria-busy, and disables interaction during async work. */
+  loading?: boolean;
   "aria-selected"?: boolean | "true" | "false";
   disabled?: boolean;
   icon?: JSX.Element;
@@ -44,7 +46,11 @@ export function Button(props: ButtonProps) {
     return hasExplicitSize ? props.className : `${defaultClass()} ${props.className}`;
   };
 
-  const iconSpan = () => (props.icon ? (
+  const iconSpan = () => (props.loading ? (
+    <span class="ds-btn-icon-wrap">
+      <span class="ds-btn-spinner" aria-hidden="true" />
+    </span>
+  ) : props.icon ? (
     <span class="ds-btn-icon-wrap">
       {props.icon}
     </span>
@@ -61,13 +67,14 @@ export function Button(props: ButtonProps) {
       type="button"
       id={props.id}
       class={`win-button ${resolvedClass()}`.trim()}
-      classList={props.classList}
+      classList={{ "ds-btn-loading": !!props.loading, ...props.classList }}
       style={props.style ?? props.cssText}
       title={props.title}
       aria-label={props["aria-label"] ?? (typeof props.text === "string" && props.text ? props.text : props.title)}
       aria-pressed={props["aria-pressed"]}
       aria-selected={props["aria-selected"]}
-      disabled={props.disabled}
+      aria-busy={props.loading ? true : undefined}
+      disabled={props.disabled || props.loading}
       onClick={props.onClick}
     >
       {props.reverse ? <>{content()}{iconSpan()}</> : <>{iconSpan()}{content()}</>}
@@ -109,9 +116,8 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
       setBusy(false);
     }
   };
-
   const currentIcon = () => {
-    if (busy()) return <Icon name="hourglass-split" />;
+    if (busy()) return undefined;
     if (confirming()) return <CheckIcon />;
     return props.icon;
   };
@@ -137,7 +143,7 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
       className={currentClassName()}
       style={props.style ?? props.cssText}
       title={confirming() ? t("common.confirm") : props.title}
-      disabled={busy()}
+      loading={busy()}
       icon={currentIcon()}
       text={currentText()}
       textClass={props.textClass}

@@ -85,10 +85,16 @@
     --ds-accent-box-bg-2: #f4f8fd;
     --ds-accent-box-border: #b8cde6;
     --ds-accent-divider: #d6e3f2;
-    --z-dropdown: 100;
-    --z-modal: 9999;
-    --z-viewer: 10000;
-    --z-tooltip: 99999;
+    /* Canonical stacking scale — all global z-index values must use these. */
+    --z-topbar: 10;
+    --z-bottom-nav: 1000;
+    --z-reader-nav: 1100;
+    --z-sheet: 1200;
+    --z-reader-fullscreen: 9000;
+    --z-modal: 10000;
+    --z-banner: 10010;
+    --z-dropdown: 10020;
+    --z-tooltip: 10030;
     /* spacing scale */
     --space-0: 0;
     --space-1: 2px;

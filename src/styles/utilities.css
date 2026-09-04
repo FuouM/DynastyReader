@@ -73,13 +73,13 @@
   white-space: nowrap;
 }
 .ds-external-link {
-  color: var(--sys-link, #0078d4);
+  color: var(--sys-link);
   text-decoration: underline;
   cursor: pointer;
   word-break: break-all;
 }
 .ds-search-title-link {
-  color: var(--sys-window-text, #111);
+  color: var(--sys-window-text);
   font-weight: 600;
   font-size: var(--font-md);
   text-decoration: none;
@@ -103,7 +103,7 @@
 .ds-offline-icon {
   margin-left: 2px;
   vertical-align: middle;
-  color: var(--sys-link, #0078d4);
+  color: var(--sys-link);
   font-size: var(--font-sm);
 }
 .ds-cover-xs {
@@ -137,7 +137,7 @@
 .win-textbox {
   background-color: var(--sys-window-bg);
   color: var(--sys-window-text);
-  border: 1px solid var(--sys-button-border, #7a7a7a);
+  border: 1px solid var(--sys-button-border);
   padding: 0 8px;
   height: 24px;
   line-height: 24px;
@@ -163,16 +163,16 @@
   padding: 48px 16px;
   text-align: center;
   gap: 8px;
-  color: var(--sys-text-muted, #666);
+  color: var(--sys-text-muted);
   font-size: var(--font-md);
 }
 .ds-empty-state > i {
   font-size: 26px;
-  color: var(--sys-text-muted, #888);
+  color: var(--sys-text-muted);
 }
 .ds-danger {
-  background-color: var(--sys-error-text, #d13438);
-  border-color: var(--ds-danger-border, #a80000);
+  background-color: var(--sys-error-text);
+  border-color: var(--ds-danger-border);
   color: #ffffff;
 }
 .ds-clickable {
@@ -180,16 +180,16 @@
 }
 .ds-popup-card {
   position: fixed;
-  background: var(--sys-window-bg, #fff);
-  border: 1px solid var(--sys-border-dark, #999);
+  background: var(--sys-window-bg);
+  border: 1px solid var(--sys-border-dark);
   border-radius: var(--radius-2);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   font-size: var(--font-md);
-  color: var(--sys-window-text, #222);
-  z-index: 10001;
+  color: var(--sys-window-text);
+  z-index: var(--z-dropdown);
 }
 
 /* ── Inline sweep — extracted static recipes (keep dynamic values in JS) ── */
@@ -269,7 +269,7 @@
 .ds-warn-badge {
   font-size: var(--font-xs);
   margin-left: 6px;
-  color: var(--ds-warn-text, #d97706);
+  color: var(--ds-warn-text);
   font-weight: 600;
 }
 .ds-filter-count {
@@ -279,7 +279,7 @@
 }
 .ds-kind-badge {
   font-size: var(--font-xs);
-  background: var(--sys-hover-bg, #eaeaea);
+  background: var(--sys-hover-bg);
   padding: 1px 5px;
   border-radius: var(--radius-1);
   text-transform: capitalize;
@@ -309,7 +309,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 4px 2px;
-  border-bottom: 1px solid var(--sys-border-light, #ddd);
+  border-bottom: 1px solid var(--sys-border-light);
   margin-bottom: 6px;
 }
 .ds-results-title {
@@ -380,7 +380,7 @@
 }
 .ds-pager-label {
   font-size: var(--font-sm);
-  color: var(--sys-text-muted, #666);
+  color: var(--sys-text-muted);
 }
 .ds-icon-inline {
   display: inline-flex;
@@ -454,8 +454,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--sys-bg-active, #f8f9fa);
-  border: 1px solid var(--sys-border-medium, #ccc);
+  background: var(--sys-bg-active);
+  border: 1px solid var(--sys-border-medium);
   border-radius: var(--radius-2);
   padding: 8px 10px;
   margin-top: 8px;
@@ -463,7 +463,7 @@
 .ds-update-version {
   font-size: var(--font-md);
   font-weight: bold;
-  color: var(--sys-window-text, #222);
+  color: var(--sys-window-text);
 }
 .ds-update-etag {
   font-size: var(--font-xs);
@@ -479,11 +479,11 @@
   font-size: var(--font-xs);
   line-height: 1.4;
   white-space: pre-wrap;
-  background: var(--sys-window-bg, #fff);
+  background: var(--sys-window-bg);
   padding: 6px 8px;
-  border: 1px solid var(--sys-border-light, #e2e2e2);
+  border: 1px solid var(--sys-border-light);
   border-radius: var(--radius-1);
-  color: var(--sys-window-text, #333);
+  color: var(--sys-window-text);
 }
 .ds-progress-col {
   display: flex;
@@ -501,14 +501,14 @@
 .ds-progress-track {
   width: 100%;
   height: 10px;
-  background: var(--sys-border-light, #e2e2e2);
+  background: var(--sys-border-light);
   border-radius: var(--radius-1);
   overflow: hidden;
-  border: 1px solid var(--sys-border-medium, #ccc);
+  border: 1px solid var(--sys-border-medium);
 }
 .ds-progress-fill {
   height: 100%;
-  background: var(--sys-primary, #0078d4);
+  background: var(--sys-primary);
   transition: width 0.2s ease;
 }
 .ds-update-actions {
@@ -537,11 +537,11 @@
   flex-direction: column;
   gap: 4px;
   padding: 8px 10px;
-  background: var(--ds-status-stale-bg, #fffbeb);
-  border: 1px solid var(--ds-status-stale-border, #fde68a);
+  background: var(--ds-status-stale-bg);
+  border: 1px solid var(--ds-status-stale-border);
   border-radius: var(--radius-2);
   font-size: var(--font-sm);
-  color: var(--ds-status-stale-text, #92400e);
+  color: var(--ds-status-stale-text);
 }
 .ds-conflict-title {
   display: flex;
@@ -569,7 +569,7 @@
   text-align: center;
   padding: 24px;
   font-size: var(--font-md);
-  color: var(--sys-text-muted, #666);
+  color: var(--sys-text-muted);
 }
 .ds-reader-toolbar-grid {
   display: grid;
@@ -636,8 +636,8 @@
 }
 .ds-taggable-card {
   padding: 5px 8px;
-  background: var(--sys-bg-active, #f5f5f5);
-  border: 1px solid var(--sys-border-light, #e0e0e0);
+  background: var(--sys-bg-active);
+  border: 1px solid var(--sys-border-light);
   border-radius: var(--radius-2);
   cursor: pointer;
   align-items: flex-start;
@@ -662,7 +662,7 @@
 }
 .ds-chapter-list-header {
   padding: 4px 2px;
-  border-bottom: 1px solid var(--sys-border-light, #ddd);
+  border-bottom: 1px solid var(--sys-border-light);
 }
 .ds-chapter-list {
   display: flex;
@@ -685,7 +685,7 @@
 .ds-form-label-sm {
   font-size: var(--font-sm);
   font-weight: 600;
-  color: var(--sys-window-text, #111);
+  color: var(--sys-window-text);
 }
 .ds-form-stack {
   padding: 10px 12px 8px;
@@ -695,13 +695,13 @@
 }
 .ds-add-col-header {
   padding: 4px 8px;
-  border-bottom: 1px solid var(--sys-border-light, #eee);
-  background: var(--sys-window-bg, #fafafa);
+  border-bottom: 1px solid var(--sys-border-light);
+  background: var(--sys-window-bg);
 }
 .ds-add-col-title {
   font-weight: 600;
   font-size: var(--font-sm);
-  color: var(--sys-window-text, #111);
+  color: var(--sys-window-text);
 }
 .ds-add-col-list {
   max-height: 180px;
@@ -730,7 +730,7 @@
 }
 .ds-add-col-footer {
   padding: 5px 6px;
-  background: var(--sys-control-bg, #f9f9f9);
+  background: var(--sys-control-bg);
   display: flex;
   gap: 4px;
 }
@@ -739,11 +739,11 @@
   align-items: center;
   justify-content: space-between;
   padding: 4px 8px;
-  background: var(--sys-control-bg, #f0f0f0);
-  border-bottom: 1px solid var(--sys-border-light, #ddd);
+  background: var(--sys-control-bg);
+  border-bottom: 1px solid var(--sys-border-light);
   font-weight: 600;
   font-size: var(--font-xs);
-  color: var(--sys-text-secondary, #555);
+  color: var(--sys-text-secondary);
 }
 .ds-history-header-label {
   display: flex;
@@ -764,12 +764,12 @@
   padding: 5px 8px;
   cursor: pointer;
   border: none;
-  border-bottom: 1px solid var(--sys-border-light, #f0f0f0);
+  border-bottom: 1px solid var(--sys-border-light);
   margin-bottom: 0;
 }
 .ds-history-icon {
   font-size: var(--font-lg);
-  color: var(--sys-link, #0078d4);
+  color: var(--sys-link);
   flex-shrink: 0;
 }
 .ds-history-item-main {
@@ -779,11 +779,11 @@
 .ds-history-item-title {
   font-weight: 600;
   font-size: var(--font-sm);
-  color: var(--sys-text-primary, #111);
+  color: var(--sys-text-primary);
 }
 .ds-history-item-sub {
   font-size: var(--font-xs);
-  color: var(--sys-text-muted, #777);
+  color: var(--sys-text-muted);
 }
 .ds-feed-title-row {
   display: flex;
@@ -835,7 +835,7 @@
 }
 .ds-trigger-proceed {
   font-size: var(--font-sm);
-  color: var(--sys-text-muted, #777);
+  color: var(--sys-text-muted);
   margin-top: 2px;
 }
 .ds-bl-view-stack {
@@ -890,14 +890,14 @@
   flex-wrap: wrap;
 }
 .ds-trigger-title--warn {
-  color: var(--ds-danger-text, #d9534f);
+  color: var(--ds-danger-text);
 }
 .ds-trigger-label {
   word-break: break-word;
 }
 .ds-trigger-message {
   font-size: var(--font-sm);
-  color: var(--sys-text-muted, #555);
+  color: var(--sys-text-muted);
   line-height: 1.4;
 }
 .ds-status-icon {
@@ -981,17 +981,17 @@
   color: var(--ds-danger-text);
 }
 .ds-add-col-icon--active {
-  color: var(--sys-link, #0078d4);
+  color: var(--sys-link);
   font-size: var(--font-md);
   flex-shrink: 0;
 }
 .ds-add-col-icon--inactive {
-  color: var(--sys-text-muted, #888);
+  color: var(--sys-text-muted);
   font-size: var(--font-md);
   flex-shrink: 0;
 }
 .ds-add-col-star {
-  color: var(--ds-status-stale-text, #d97706);
+  color: var(--ds-status-stale-text);
   font-size: var(--font-xs);
   margin-right: 2px;
 }
@@ -1037,7 +1037,7 @@
 /* Blacklist dimming modifier for ListItem rows */
 .ds-item-blacklisted {
   opacity: 0.8;
-  background: var(--sys-bg-active, #fcf8f8);
+  background: var(--sys-bg-active);
 }
 
 /* Collapsible group-box title cursor hint */
@@ -1046,7 +1046,7 @@
   user-select: none;
 }
 .group-box-title--collapsible:hover {
-  border-color: var(--sys-border-focus, #3c7fb1);
+  border-color: var(--sys-border-focus);
 }
 
 /* Chip remove (x) icon in BrowseSearch tag chips */
@@ -1057,7 +1057,7 @@
 
 /* Icon in series taggable cards */
 .ds-taggable-icon {
-  color: var(--sys-link, #0078d4);
+  color: var(--sys-link);
   margin-top: 1px;
   flex-shrink: 0;
 }
@@ -1069,7 +1069,7 @@
 
 /* Warning-colored icon (star / blacklist) */
 .ds-icon-warning {
-  color: var(--ds-status-stale-text, #d97706);
+  color: var(--ds-status-stale-text);
   font-size: var(--font-lg);
 }
 

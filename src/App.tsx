@@ -34,6 +34,7 @@ import { GlobalShortcuts } from "./hotkeys";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
 import { Loading } from "./components/Loading";
+import { t } from "./i18n";
 import type { ViewName, Route } from "./types/routes";
 
 const SeriesView = lazy(() => import("./series/SeriesView").then((m) => ({ default: m.SeriesView })));
@@ -89,7 +90,9 @@ export function App() {
   return (
     <div id="ds-root" data-mobile={isMobile() ? "1" : undefined} style={!isMobile() && uiScale() !== 1.0 ? { zoom: String(uiScale()) } : undefined}>
       <GlobalShortcuts />
+      <a href="#ds-main-content" class="ds-skip-link">{t("common.skipToContent")}</a>
       <Topbar />
+      <main id="ds-main-content" tabIndex={-1}>
       <div id="ds-view">
         <div id="ds-pane-browse" classList={{ "ds-pane-hidden": route().view !== "browse" }}>
           <Dynamic component={viewComponents.browse} route={route()} />
@@ -109,6 +112,7 @@ export function App() {
           }
         </Show>
       </div>
+      </main>
       <BottomNav />
     </div>
   );

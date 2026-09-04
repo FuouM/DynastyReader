@@ -15,14 +15,15 @@ export interface BlacklistNoticeProps {
 }
 
 export function BlacklistNotice(props: BlacklistNoticeProps) {
+  const message = (): string =>
+    props.noun === "chapter"
+      ? t("dialogs.blacklistNotice.hiddenChapter", { count: props.count })
+      : t("dialogs.blacklistNotice.hiddenResult", { count: props.count });
   return (
     <div class="ds-row ds-blacklist-notice">
       <div class="ds-flex-row">
         <BlacklistIcon filled={true} color="var(--ds-danger-text)" />
-        <span>
-          <b>{props.count}</b> {props.noun}
-          {props.count === 1 ? "" : "s"} {t("browse.search.hiddenByBlacklist", { count: props.count }).replace(/^[0-9]+\s+/, "").replace(/results\s+/, "")}
-        </span>
+        <span>{message()}</span>
       </div>
       <IconButton
         className="ds-btn-sm"

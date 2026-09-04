@@ -26,6 +26,7 @@ export const en = {
     bottom: "Bottom",
     in: "in",
     of: "of",
+    skipToContent: "Skip to content",
   },
   cover: {
     noCover: "No cover available",
@@ -53,6 +54,7 @@ export const en = {
     browse: "Browse",
     library: "Library",
     reading: "Reading",
+    ariaLabel: "Primary navigation",
   },
   actionBar: {
     back: "Back",
@@ -213,7 +215,6 @@ export const en = {
       emptyBlacklist: "All results on this page were hidden by your blacklist.",
       searchError: "Search request failed: {{msg}}",
       searching: "Searching...",
-      hiddenByBlacklist: "{{count}} results hidden by blacklist.",
       releasedOn: "· released {{date}}",
       openExternalTooltip: "Open {{kind}} \"{{title}}\" on Dynasty Scans",
       searchFailedBanner: "Search failed: {{msg}}",
@@ -260,6 +261,7 @@ export const en = {
     sortDescending: "Sort: Descending",
     emptyChapters: "This entry has no chapters or series listed here.",
     downloadQueuedBanner: "Queued {{count}} chapters for download",
+    downloadQueuedPartialBanner: "Queued {{count}} chapters for download ({{skipped}} already queued)",
     downloadAll: "Download All",
     downloadAllTooltip: "Download all chapters for offline reading",
   },
@@ -861,6 +863,10 @@ export const en = {
     blacklistNotice: {
       hideButton: "Hide Blacklisted",
       showButton: "Show Blacklisted ({{count}})",
+      hiddenChapter_one: "{{count}} chapter hidden by blacklist.",
+      hiddenChapter_other: "{{count}} chapters hidden by blacklist.",
+      hiddenResult_one: "{{count}} result hidden by blacklist.",
+      hiddenResult_other: "{{count}} results hidden by blacklist.",
     },
   },
   main: {

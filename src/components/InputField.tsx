@@ -24,6 +24,12 @@ export interface InputFieldProps {
   autofocus?: boolean;
   inputmode?: "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
   enterkeyhint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
+  /** ARIA overrides for composite widgets (e.g. combobox/typeahead). */
+  role?: JSX.IntrinsicElements["input"]["role"];
+  "aria-autocomplete"?: "none" | "inline" | "list" | "both";
+  "aria-expanded"?: boolean;
+  "aria-controls"?: string;
+  "aria-activedescendant"?: string;
   onInput?: (value: string) => void;
   onEnter?: () => void;
   onEscape?: () => void;
@@ -54,6 +60,11 @@ export function InputField(props: InputFieldProps) {
         autocomplete={props.autocomplete}
         autofocus={props.autofocus}
         inputmode={props.inputmode}
+        role={props.role}
+        aria-autocomplete={props["aria-autocomplete"]}
+        aria-expanded={props["aria-expanded"]}
+        aria-controls={props["aria-controls"]}
+        aria-activedescendant={props["aria-activedescendant"]}
         enterkeyhint={props.enterkeyhint}
         value={value()}
         onFocus={props.onFocus}

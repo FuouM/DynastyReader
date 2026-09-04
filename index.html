@@ -6,14 +6,154 @@
     <meta name="theme-color" content="#f5f5f5" id="ds-theme-color-meta" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <title>DynastyReader</title>
-    <!-- HEAD_SCRIPT_SYNC: Theme bootstrap — synchronous pre-paint script.
-         Mirrors src/stores/theme.ts#THEME_REGISTRY and src/lib/color.ts helpers.
-         Any change to THEME_REGISTRY (meta/bg/text/colorScheme) or to
-         computeAccentPalette() must be reflected here to prevent flashbang
-         before the app bundle loads. Keep maps and color math in sync. -->
+    <!-- HEAD_SCRIPT_SYNC: Theme + accent bootstrap — synchronous pre-paint scripts.
+         Script 1 defines window.DSColorBootstrap: the SINGLE SOURCE OF TRUTH for
+         accent color math. src/lib/color.ts is a typed adapter over this global —
+         do not duplicate the math there. Script 2 applies the saved theme/accent
+         before first paint (flashbang prevention); its metaColors/bgColors/
+         textColors/colorSchemes maps mirror src/stores/theme.ts#THEME_REGISTRY.
+         Keep both scripts synchronous and ahead of the app bundle. -->
+    <script>
+      window.DSColorBootstrap = (function() {
+        var DEFAULT_RGB = [0, 120, 212];
+        var PRESET_HEX_MAP = {
+          "default": "#0078d4",
+          "purple": "#8b5cf6",
+          "pink": "#ec4899",
+          "red": "#ef4444",
+          "orange": "#f97316",
+          "amber": "#d97706",
+          "green": "#10b981",
+          "teal": "#06b6d4",
+          "slate": "#64748b",
+          "green-yuri": "#b1fe00"
+        };
+        function resolveAccentColorHex(color) {
+          if (!color || color === "default") return "#0078d4";
+          var norm = String(color).trim().toLowerCase();
+          if (PRESET_HEX_MAP[norm]) return PRESET_HEX_MAP[norm];
+          var clean = norm.replace("#", "");
+          if (/^[0-9a-f]{3,6}$/i.test(clean)) {
+            return "#" + clean;
+          }
+          return "#0078d4";
+        }
+        function parseHex(color) {
+          var hex = resolveAccentColorHex(color);
+          var clean = hex.replace("#", "").trim();
+          if (clean.length === 3) clean = clean.split("").map(function(x){return x+x;}).join("");
+          if (clean.length !== 6) return DEFAULT_RGB.slice();
+          var num = parseInt(clean, 16);
+          if (isNaN(num)) return DEFAULT_RGB.slice();
+          return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+        }
+        function toHex(r, g, b) {
+          var clamp = function(v) { return Math.max(0, Math.min(255, Math.round(v))); };
+          var h = ((clamp(r) << 16) | (clamp(g) << 8) | clamp(b)).toString(16);
+          return "#" + "000000".slice(h.length) + h;
+        }
+        function adjustBrightnessFactor(hex, factor) {
+          var rgb = parseHex(hex);
+          var r = rgb[0], g = rgb[1], b = rgb[2];
+          if (factor >= 0) {
+            return toHex(r + (255 - r) * factor, g + (255 - g) * factor, b + (255 - b) * factor);
+          }
+          var mult = 1 + factor;
+          return toHex(r * mult, g * mult, b * mult);
+        }
+        function rgbToHsl(r, g, b) {
+          r /= 255; g /= 255; b /= 255;
+          var max = Math.max(r, g, b), min = Math.min(r, g, b);
+          var h = 0, s = 0, l = (max + min) / 2;
+          if (max !== min) {
+            var d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+              case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+              case g: h = (b - r) / d + 2; break;
+              case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+          }
+          return [h * 360, s, l];
+        }
+        function hslToRgb(h, s, l) {
+          h = (h % 360) / 360;
+          if (h < 0) h += 1;
+          var r, g, b;
+          if (s === 0) {
+            r = g = b = l;
+          } else {
+            var hue2rgb = function(p, q, t) {
+              if (t < 0) t += 1;
+              if (t > 1) t -= 1;
+              if (t < 1/6) return p + (q - p) * 6 * t;
+              if (t < 1/2) return q;
+              if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+              return p;
+            };
+            var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            var p = 2 * l - q;
+            r = hue2rgb(p, q, h + 1/3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1/3);
+          }
+          return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+        function getContrastText(hex) {
+          var rgb = parseHex(hex);
+          var yiq = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
+          return yiq >= 150 ? "#000000" : "#ffffff";
+        }
+        function getDeepAccentText(hex, targetLightness, maxSaturation) {
+          if (targetLightness === undefined) targetLightness = 0.14;
+          if (maxSaturation === undefined) maxSaturation = 0.75;
+          var rgb = parseHex(hex);
+          var hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+          var isYG = hsl[0] >= 45 && hsl[0] <= 95;
+          var effL = isYG ? Math.min(targetLightness, 0.11) : targetLightness;
+          var cappedS = Math.min(hsl[1], maxSaturation);
+          var out = hslToRgb(hsl[0], cappedS, effL);
+          return toHex(out[0], out[1], out[2]);
+        }
+        function getAccessibleLinkColor(hex, isDark) {
+          var rgb = parseHex(hex);
+          var hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+          var h = hsl[0], s = hsl[1], targetL, targetS, out;
+          if (isDark) {
+            var isYG = h >= 45 && h <= 95;
+            targetL = isYG ? 0.60 : 0.70;
+            targetS = Math.max(0.65, Math.min(s, 0.90));
+            out = hslToRgb(h, targetS, targetL);
+            return toHex(out[0], out[1], out[2]);
+          }
+          targetL = 0.35;
+          if (h >= 45 && h <= 95) targetL = 0.22;
+          else if (h > 95 && h < 190) targetL = 0.28;
+          else if (h >= 190 && h <= 250) targetL = 0.36;
+          else targetL = 0.34;
+          targetS = Math.max(0.60, Math.min(s, 0.95));
+          out = hslToRgb(h, targetS, targetL);
+          return toHex(out[0], out[1], out[2]);
+        }
+        return {
+          PRESET_HEX_MAP: PRESET_HEX_MAP,
+          resolveAccentColorHex: resolveAccentColorHex,
+          parseHex: parseHex,
+          toHex: toHex,
+          adjustBrightnessFactor: adjustBrightnessFactor,
+          rgbToHsl: rgbToHsl,
+          hslToRgb: hslToRgb,
+          getContrastText: getContrastText,
+          getDeepAccentText: getDeepAccentText,
+          getAccessibleLinkColor: getAccessibleLinkColor
+        };
+      })();
+    </script>
     <script>
       (function() {
         try {
+          var bs = window.DSColorBootstrap;
           var raw = localStorage.getItem("ds-theme");
           var theme = "light";
           if (raw) {
@@ -48,115 +188,33 @@
           if (meta) meta.setAttribute("content", metaColors[theme] || "#f5f5f5");
           if (window.AndroidThemeBridge && window.AndroidThemeBridge.updateTheme) {
             try {
-              var isDark = (colorSchemes[theme] || "light") === "dark";
-              window.AndroidThemeBridge.updateTheme(isDark, metaColors[theme] || "#f5f5f5");
+              var isDarkBridge = (colorSchemes[theme] || "light") === "dark";
+              window.AndroidThemeBridge.updateTheme(isDarkBridge, metaColors[theme] || "#f5f5f5");
             } catch (_) {}
           }
-          var presetMap = {
-            "default": "#0078d4",
-            "purple": "#8b5cf6",
-            "pink": "#ec4899",
-            "red": "#ef4444",
-            "orange": "#f97316",
-            "amber": "#d97706",
-            "green": "#10b981",
-            "teal": "#06b6d4",
-            "slate": "#64748b",
-            "green-yuri": "#b1fe00"
-          };
+          var presetMap = bs.PRESET_HEX_MAP;
           var rawAccent = localStorage.getItem("ds-accent-color");
           var accent = "default";
           if (rawAccent) {
             try { accent = JSON.parse(rawAccent); } catch (_) { accent = rawAccent.replace(/^["']|["']$/g, "").trim().toLowerCase(); }
           }
-          var hexVal = (accent && accent !== "default") ? (presetMap[accent.toLowerCase()] || accent) : null;
+          var hexVal = (accent && accent !== "default") ? (presetMap[String(accent).toLowerCase()] || accent) : null;
           if (hexVal && /^#?[0-9a-f]{3,6}$/i.test(hexVal)) {
-            var c = hexVal.replace("#", "");
+            var c = String(hexVal).replace("#", "");
             if (c.length === 3) c = c.split("").map(function(x){return x+x;}).join("");
             accent = "#" + c;
-            var num = parseInt(c, 16);
-            var r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+            var rgb = bs.parseHex(accent);
+            var r = rgb[0], g = rgb[1], b = rgb[2];
             var isDark = (colorSchemes[theme] || "light") === "dark";
-            var adj = function(f) {
-              var nr = f >= 0 ? Math.round(r + (255 - r) * f) : Math.round(r * (1 + f));
-              var ng = f >= 0 ? Math.round(g + (255 - g) * f) : Math.round(g * (1 + f));
-              var nb = f >= 0 ? Math.round(b + (255 - b) * f) : Math.round(b * (1 + f));
-              return "#" + ((1 << 24) + (nr << 16) + (ng << 8) + nb).toString(16).slice(1);
-            };
-            var rgbToHsl = function(r, g, b) {
-              r /= 255; g /= 255; b /= 255;
-              var max = Math.max(r, g, b), min = Math.min(r, g, b);
-              var h = 0, s = 0, l = (max + min) / 2;
-              if (max !== min) {
-                var d = max - min;
-                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                switch (max) {
-                  case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                  case g: h = (b - r) / d + 2; break;
-                  case b: h = (r - g) / d + 4; break;
-                }
-                h /= 6;
-              }
-              return [h * 360, s, l];
-            };
-            var hslToRgb = function(h, s, l) {
-              h = (h % 360) / 360;
-              if (h < 0) h += 1;
-              var r, g, b;
-              if (s === 0) {
-                r = g = b = l;
-              } else {
-                var hue2rgb = function(p, q, t) {
-                  if (t < 0) t += 1;
-                  if (t > 1) t -= 1;
-                  if (t < 1/6) return p + (q - p) * 6 * t;
-                  if (t < 1/2) return q;
-                  if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                  return p;
-                };
-                var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                var p = 2 * l - q;
-                r = hue2rgb(p, q, h + 1/3);
-                g = hue2rgb(p, q, h);
-                b = hue2rgb(p, q, h - 1/3);
-              }
-              return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-            };
-            var deepText = function(targetL, maxS) {
-              var hsl = rgbToHsl(r, g, b);
-              var isYG = hsl[0] >= 45 && hsl[0] <= 95;
-              var effL = isYG ? Math.min(targetL, 0.11) : targetL;
-              var cappedS = Math.min(hsl[1], maxS !== undefined ? maxS : 0.75);
-              var rgb = hslToRgb(hsl[0], cappedS, effL);
-              return "#" + ((1 << 24) + (rgb[0] << 16) + (rgb[1] << 8) + rgb[2]).toString(16).slice(1);
-            };
+            var adj = function(f) { return bs.adjustBrightnessFactor(accent, f); };
+            var deepText = function(targetL, maxS) { return bs.getDeepAccentText(accent, targetL, maxS); };
             var yiq = (r * 299 + g * 587 + b * 114) / 1000;
-            var contrast = yiq >= 150 ? "#000000" : "#ffffff";
+            var contrast = bs.getContrastText(accent);
             var activeTxt = deepText(0.14, 0.75);
             var badgeTxt = deepText(0.16, 0.70);
-            var getAccessibleLink = function(dark) {
-              var hsl = rgbToHsl(r, g, b);
-              var h = hsl[0], s = hsl[1];
-              if (dark) {
-                var isYG = h >= 45 && h <= 95;
-                var targetL = isYG ? 0.60 : 0.70;
-                var targetS = Math.max(0.65, Math.min(s, 0.90));
-                var rgb = hslToRgb(h, targetS, targetL);
-                return "#" + ((1 << 24) + (rgb[0] << 16) + (rgb[1] << 8) + rgb[2]).toString(16).slice(1);
-              } else {
-                var targetL = 0.35;
-                if (h >= 45 && h <= 95) targetL = 0.22;
-                else if (h > 95 && h < 190) targetL = 0.28;
-                else if (h >= 190 && h <= 250) targetL = 0.36;
-                else targetL = 0.34;
-                var targetS = Math.max(0.60, Math.min(s, 0.95));
-                var rgb = hslToRgb(h, targetS, targetL);
-                return "#" + ((1 << 24) + (rgb[0] << 16) + (rgb[1] << 8) + rgb[2]).toString(16).slice(1);
-              }
-            };
-            var accLink = getAccessibleLink(isDark);
+            var accLink = bs.getAccessibleLinkColor(accent, isDark);
             var accLinkHover = isDark ? adj(0.15) : adj(-0.15);
-            var aeroDark = getAccessibleLink(false);
+            var aeroDark = bs.getAccessibleLinkColor(accent, false);
             root.style.setProperty("--sys-accent", accent);
             root.style.setProperty("--sys-primary", isDark ? adj(0.18) : accent);
             root.style.setProperty("--sys-link", accLink);

@@ -6,12 +6,13 @@ import { Icon, StorageIcon, DoublePageIcon } from "./Icon";
 export function BottomNav() {
   return (
     <Show when={isMobile() && route().view !== "reader"}>
-      <nav id="ds-bottom-nav">
+      <nav id="ds-bottom-nav" aria-label={t("bottomNav.ariaLabel")}>
         <button
           type="button"
           class="win-button ds-bn-tab"
           classList={{ active: route().view === "browse" }}
           onClick={() => navigate({ view: "browse" })}
+          aria-current={route().view === "browse" ? "page" : undefined}
         >
           <span class="ds-btn-icon-wrap"><Icon name="compass" /></span>
           <span class="ds-btn-text">{t("bottomNav.browse")}</span>
@@ -21,6 +22,7 @@ export function BottomNav() {
           class="win-button ds-bn-tab"
           classList={{ active: route().view === "library" }}
           onClick={() => navigate({ view: "library" })}
+          aria-current={route().view === "library" ? "page" : undefined}
         >
           <span class="ds-btn-icon-wrap"><StorageIcon /></span>
           <span class="ds-btn-text">{t("bottomNav.library")}</span>
@@ -34,6 +36,7 @@ export function BottomNav() {
               const tab = sessionTab();
               if (tab) navigate(tab.route);
             }}
+            aria-current={isInMangaView() ? "page" : undefined}
           >
             <span class="ds-btn-icon-wrap"><DoublePageIcon /></span>
             <span class="ds-btn-text">{t("bottomNav.reading")}</span>

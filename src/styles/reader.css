@@ -34,12 +34,12 @@
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  z-index: 99999 !important;
+  z-index: var(--z-reader-fullscreen) !important;
   background: var(--ds-reader-bg) !important;
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav {
   background: var(--ds-reader-bg) !important;
-  color: var(--sys-window-text, #333) !important;
+  color: var(--sys-window-text) !important;
 }
 #ds-reader-container.ds-fullscreen .ds-reader-nav.ds-reader-nav-top {
   padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
@@ -59,7 +59,7 @@
   flex-direction: column;
   gap: 4px;
   font-size: var(--font-sm);
-  color: var(--sys-text-muted, #666);
+  color: var(--sys-text-muted);
   width: 100%;
   max-width: 100vw;
   box-sizing: border-box;
@@ -274,13 +274,13 @@
   min-height: 20px;
   max-height: 20px;
   padding: 0 6px;
-  background: var(--sys-control-bg, #ececec);
-  border: 1px solid var(--sys-button-border, #bbb);
+  background: var(--sys-control-bg);
+  border: 1px solid var(--sys-button-border);
   border-radius: 2px;
   font-size: var(--font-sm);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: var(--sys-window-text, #333);
+  color: var(--sys-window-text);
   white-space: nowrap;
   max-width: 100%;
   box-sizing: border-box;
@@ -290,7 +290,7 @@
   transition: background 0.1s ease, border-color 0.1s ease;
 }
 .ds-reader-progress-pill:not(.ds-reader-progress-pill--editing):hover {
-  background: var(--sys-button-hover, var(--sys-button-hover-bg, #e2e2e2));
+  background: var(--sys-button-hover);
   border-color: var(--sys-button-hover-border, #999);
 }
 .ds-reader-progress-pill:not(.ds-reader-progress-pill--editing):focus-visible {
@@ -300,9 +300,9 @@
 .ds-reader-progress-pill.ds-reader-progress-pill--editing {
   cursor: default;
   padding: 0 4px;
-  background: var(--sys-window-bg, #fff);
-  border-color: var(--sys-primary, #0078d4);
-  box-shadow: 0 0 0 1px var(--sys-primary, #0078d4);
+  background: var(--sys-window-bg);
+  border-color: var(--sys-primary);
+  box-shadow: 0 0 0 1px var(--sys-primary);
 }
 .ds-prog-jump-form {
   display: inline-flex;
@@ -322,10 +322,10 @@
   max-width: 48px;
   padding: 0 2px;
   margin: 0;
-  border: 1px solid var(--sys-border-light, #ccc);
+  border: 1px solid var(--sys-border-light);
   border-radius: 2px;
-  background: var(--sys-window-bg, #fff);
-  color: var(--sys-window-text, #333);
+  background: var(--sys-window-bg);
+  color: var(--sys-window-text);
   font-family: inherit;
   font-size: var(--font-sm);
   font-weight: 600;
@@ -341,10 +341,10 @@
   margin: 0;
 }
 .ds-prog-jump-input:focus {
-  border-color: var(--sys-primary, #0078d4);
+  border-color: var(--sys-primary);
 }
 .ds-prog-jump-sep {
-  color: var(--sys-text-muted, #888);
+  color: var(--sys-text-muted);
   font-size: var(--font-sm);
   font-weight: normal;
   margin: 0 1px;
@@ -353,7 +353,7 @@
   font-size: var(--font-sm);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--sys-text-muted, #666);
+  color: var(--sys-text-muted);
 }
 .ds-prog-jump-btn {
   display: inline-flex;
@@ -364,16 +364,16 @@
   min-width: 16px;
   padding: 0;
   margin-left: 2px;
-  background: var(--sys-primary, #0078d4);
+  background: var(--sys-primary);
   color: #fff;
-  border: 1px solid var(--sys-primary, #0078d4);
+  border: 1px solid var(--sys-primary);
   border-radius: 2px;
   cursor: pointer;
   box-sizing: border-box;
 }
 .ds-prog-jump-btn:hover {
-  background: var(--sys-primary-hover, #106ebe);
-  border-color: var(--sys-primary-hover, #106ebe);
+  background: var(--sys-primary-hover);
+  border-color: var(--sys-primary-hover);
 }
 .ds-reader-progress-label {
   display: inline-flex;
@@ -394,7 +394,7 @@
 }
 .ds-prog-prefix {
   margin-right: 2px;
-  color: var(--sys-window-text, #333);
+  color: var(--sys-window-text);
   font-weight: normal;
   line-height: normal;
 }
@@ -404,7 +404,7 @@
   line-height: normal;
 }
 .ds-prog-sep {
-  color: var(--sys-text-muted, #888);
+  color: var(--sys-text-muted);
   margin: 0 1px;
   font-weight: normal;
   line-height: normal;
@@ -416,19 +416,19 @@
 }
 .ds-prog-pct {
   font-variant-numeric: tabular-nums;
-  color: var(--sys-text-muted, #666);
+  color: var(--sys-text-muted);
   font-weight: normal;
   margin-left: 2px;
   line-height: normal;
 }
 .ds-prog-cached-dot {
-  color: var(--sys-text-muted, #999);
+  color: var(--sys-text-muted);
   margin: 0 1px;
   line-height: normal;
 }
 .ds-prog-cached {
   font-variant-numeric: tabular-nums;
-  color: var(--sys-text-muted, #666);
+  color: var(--sys-text-muted);
   font-size: 10.5px;
   font-weight: normal;
   line-height: normal;
@@ -437,14 +437,14 @@
 .ds-reader-progress-track {
   width: 100%;
   height: 2px;
-  background: var(--sys-border-light, #d8d8d8);
+  background: var(--sys-border-light);
   border-radius: 1px;
   overflow: hidden;
 }
 .ds-reader-progress-fill {
   height: 100%;
   width: 100%;
-  background: var(--sys-primary, #0078d4);
+  background: var(--sys-primary);
   border-radius: 1px;
   transform-origin: left center;
   will-change: transform;
@@ -633,7 +633,7 @@
 }
 .ds-slot-loading {
   min-height: 200px;
-  background: linear-gradient(90deg, var(--sys-control-bg, #e0e0e0) 25%, var(--sys-hover-bg, #d0d0d0) 50%, var(--sys-control-bg, #e0e0e0) 75%);
+  background: linear-gradient(90deg, var(--sys-control-bg) 25%, var(--sys-hover-bg) 50%, var(--sys-control-bg) 75%);
   background-size: 200% 100%;
   animation: ds-shimmer 1.2s ease-in-out infinite;
 }
@@ -1079,7 +1079,7 @@
   justify-content: center;
   gap: 8px;
   font-size: var(--font-sm);
-  color: var(--sys-text-muted, #888);
+  color: var(--sys-text-muted);
   padding: 40px 20px;
   min-height: 240px;
   width: 100%;
@@ -1099,7 +1099,7 @@
 .ds-slot-pulse-bar {
   width: 35%;
   height: 100%;
-  background: var(--sys-primary, #0078d4);
+  background: var(--sys-primary);
   border-radius: 2px;
   position: absolute;
   left: 0;
@@ -1125,7 +1125,7 @@
 .ds-progress-text {
   font-size: var(--font-sm);
   font-weight: 500;
-  color: var(--sys-window-text, #333);
+  color: var(--sys-window-text);
 }
 
 /* Smart Direction Hint Overlay */
@@ -1143,9 +1143,9 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: var(--sys-control-bg, #ececec);
-  color: var(--sys-window-text, #000000);
-  border: 1px solid var(--sys-highlight-bg, #0078d4);
+  background: var(--sys-control-bg);
+  color: var(--sys-window-text);
+  border: 1px solid var(--sys-highlight-bg);
   border-radius: 16px;
   font-size: var(--font-md);
   font-weight: 600;
@@ -1159,7 +1159,7 @@
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 3px;
-  background: var(--sys-highlight-bg, #0078d4);
+  background: var(--sys-highlight-bg);
   color: #ffffff;
   margin-left: 2px;
 }
@@ -1192,9 +1192,9 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--sys-control-bg, #ececec);
-  color: var(--sys-window-text, #000000);
-  border: 2px solid var(--sys-highlight-bg, #0078d4);
+  background: var(--sys-control-bg);
+  color: var(--sys-window-text);
+  border: 2px solid var(--sys-highlight-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1219,9 +1219,9 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: var(--sys-control-bg, #ececec);
-  border: 2px dashed var(--sys-highlight-bg, #0078d4);
-  color: var(--sys-highlight-bg, #0078d4);
+  background: var(--sys-control-bg);
+  border: 2px dashed var(--sys-highlight-bg);
+  color: var(--sys-highlight-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1245,9 +1245,9 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--sys-control-bg, #ececec);
-  color: var(--sys-window-text, #000000);
-  border: 1px solid var(--sys-border-dark, #707070);
+  background: var(--sys-control-bg);
+  color: var(--sys-window-text);
+  border: 1px solid var(--sys-border-dark);
   border-radius: 2px;
   padding: 8px 12px;
   display: flex;
@@ -1270,7 +1270,7 @@
   letter-spacing: 0.5px;
   padding: 1px 6px;
   border-radius: 2px;
-  background: var(--sys-highlight-bg, #0078d4);
+  background: var(--sys-highlight-bg);
   color: #ffffff;
 }
 
@@ -1283,7 +1283,7 @@
 
 .ds-overscroll-target-hint {
   font-size: var(--font-sm);
-  color: var(--sys-text-muted, #666666);
+  color: var(--sys-text-muted);
   font-weight: 500;
 }
 /* Tap Zone Visual Guide Overlay — Clean Flat Translucent Guide */
@@ -1344,8 +1344,8 @@
 }
 
 .ds-tap-zone.is-active .ds-tap-zone-pill {
-  background: var(--sys-highlight-bg, #0078d7) !important;
-  border-color: var(--sys-primary-border, #005a9e) !important;
+  background: var(--sys-highlight-bg) !important;
+  border-color: var(--sys-primary-border) !important;
   color: #ffffff !important;
 }
 }

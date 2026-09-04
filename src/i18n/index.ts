@@ -10,7 +10,10 @@ import {
 } from "./types";
 
 export type { Locale, LocaleInfo, TranslationParams };
-export type TranslationKey = NestedKeyOf<Dict>;
+/** Plural families (`key_one`/`key_other`/…) are also addressable by their base path — t() resolves the CLDR category at runtime. */
+type StripPluralSuffix<K extends string> =
+  K extends `${infer Base}_${"one" | "other" | "few" | "many" | "zero" | "two"}` ? Base : K;
+export type TranslationKey = StripPluralSuffix<NestedKeyOf<Dict>>;
 export { SUPPORTED_LOCALES };
 
 const dictionaries: Record<Locale, Dict> = {
@@ -45,6 +48,37 @@ export function interpolate(template: string, params?: TranslationParams): strin
   });
 }
 
+/** Resolves a dot-separated path against a dictionary; undefined when absent. */
+function resolvePath(dict: unknown, path: string): unknown {
+  let cur: unknown = dict;
+  for (const part of path.split(".")) {
+    if (cur && typeof cur === "object" && part in cur) {
+      cur = (cur as Record<string, unknown>)[part];
+    } else {
+      return undefined;
+    }
+  }
+  return cur;
+}
+
+/** Intl.PluralRules instances are expensive; cache one per locale. */
+const pluralRulesCache: Partial<Record<Locale, Intl.PluralRules>> = {};
+
+/**
+ * When `params.count` is a number, selects the CLDR plural form by resolving
+ * `<path>_<category>` (e.g. `key_one` / `key_other`) when such a key exists in
+ * the active or fallback dictionary. Otherwise the base path is used.
+ */
+function resolvePluralPath(locale: Locale, path: string, params?: TranslationParams): string {
+  if (typeof params?.count !== "number") return path;
+  const rules = (pluralRulesCache[locale] ??= new Intl.PluralRules(locale));
+  const pluralPath = `${path}_${rules.select(params.count)}`;
+  const activeDict = dictionaries[locale] ?? en;
+  if (typeof resolvePath(activeDict, pluralPath) === "string") return pluralPath;
+  if (typeof resolvePath(en, pluralPath) === "string") return pluralPath;
+  return path;
+}
+
 /**
  * Type-safe translation lookup function.
  * Automatically tracks the current locale signal in Solid reactive contexts.
@@ -52,37 +86,24 @@ export function interpolate(template: string, params?: TranslationParams): strin
 export function t(path: TranslationKey, params?: TranslationParams): string {
   const currentLocale = localeSignal();
   const activeDict = dictionaries[currentLocale] ?? en;
+  const resolvedPath = resolvePluralPath(currentLocale, path as string, params);
 
-  const parts = (path as string).split(".");
-  let cur: unknown = activeDict;
-
-  for (const part of parts) {
-    if (cur && typeof cur === "object" && part in cur) {
-      cur = (cur as Record<string, unknown>)[part];
-    } else {
-      // Fallback to English dictionary if key missing in active locale
-      let fallbackCur: unknown = en;
-      for (const fallbackPart of parts) {
-        if (fallbackCur && typeof fallbackCur === "object" && fallbackPart in fallbackCur) {
-          fallbackCur = (fallbackCur as Record<string, unknown>)[fallbackPart];
-        } else {
-          fallbackCur = undefined;
-          break;
-        }
-      }
-      if (typeof fallbackCur === "string") {
-        return interpolate(fallbackCur, params);
-      }
-      log.warn("i18n", `Missing translation for key: "${path}"`);
-      return String(path);
-    }
-  }
-
+  const cur = resolvePath(activeDict, resolvedPath);
   if (typeof cur === "string") {
     return interpolate(cur, params);
   }
 
-  log.warn("i18n", `Translation path does not resolve to a string: "${path}"`);
+  // Fallback to English dictionary if key missing in active locale
+  const fallbackCur = resolvePath(en, resolvedPath);
+  if (typeof fallbackCur === "string") {
+    return interpolate(fallbackCur, params);
+  }
+
+  if (cur === undefined && fallbackCur === undefined) {
+    log.warn("i18n", `Missing translation for key: "${resolvedPath}"`);
+  } else {
+    log.warn("i18n", `Translation path does not resolve to a string: "${resolvedPath}"`);
+  }
   return String(path);
 }
 

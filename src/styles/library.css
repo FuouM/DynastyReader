@@ -48,7 +48,7 @@
   flex: 1 1 auto;
   overflow-y: auto;
   background: var(--sys-window-bg);
-  border: 1px solid var(--sys-border-dark, #888);
+  border: 1px solid var(--sys-border-dark);
   border-radius: 2px;
   padding: 2px;
   display: flex;
@@ -69,7 +69,7 @@
   min-height: 26px;
   font-size: 11.5px;
   font-family: inherit;
-  color: var(--sys-window-text, #111);
+  color: var(--sys-window-text);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 2px;
@@ -83,15 +83,15 @@
 
 .win-listbox-item:hover,
 .ds-library-nav-item:hover {
-  background: var(--sys-button-hover, #e5f1fb);
-  border-color: var(--sys-border-focus, #0078d7);
+  background: var(--sys-button-hover);
+  border-color: var(--sys-border-focus);
 }
 
 .win-listbox-item.active,
 .ds-library-nav-item.active {
-  background: var(--sys-highlight-bg, #0078d7);
-  color: var(--sys-highlight-text, #ffffff) !important;
-  border-color: var(--sys-primary-border, #005499);
+  background: var(--sys-highlight-bg);
+  color: var(--sys-highlight-text) !important;
+  border-color: var(--sys-primary-border);
 }
 
 .win-listbox-item .ds-nav-icon,
@@ -252,7 +252,7 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--sys-window-text, #111);
+  color: var(--sys-window-text);
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -261,7 +261,7 @@
 }
 .ds-library-panel .ds-item-meta {
   font-size: 11px;
-  color: var(--sys-text-muted, #666);
+  color: var(--sys-text-muted);
   line-height: 1.35;
   margin-top: 3px;
 }
@@ -289,7 +289,7 @@
 }
 .ds-library-panel-footer {
   flex-shrink: 0;
-  border-top: 1px solid var(--sys-border-light, #e0e0e0);
+  border-top: 1px solid var(--sys-border-light);
   padding-top: 4px;
   margin-top: 4px;
   margin-right: 8px;
@@ -315,9 +315,9 @@
   min-width: 42px;
   max-width: 42px;
   object-fit: cover;
-  border: 1px solid var(--sys-border-light, #ccc);
+  border: 1px solid var(--sys-border-light);
   border-radius: 2px;
-  background: var(--sys-control-bg, #eee);
+  background: var(--sys-control-bg);
   flex-shrink: 0;
   box-sizing: border-box;
   display: block;
@@ -332,10 +332,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--sys-control-bg, #eee);
-  border: 1px solid var(--sys-border-light, #ccc);
+  background: var(--sys-control-bg);
+  border: 1px solid var(--sys-border-light);
   border-radius: 2px;
-  color: var(--sys-text-muted, #888);
+  color: var(--sys-text-muted);
   font-size: 14px;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -357,15 +357,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 4px 8px;
-  background: var(--sys-control-bg, #f4f4f4);
-  border: 1px solid var(--sys-border-light, #ddd);
+  background: var(--sys-control-bg);
+  border: 1px solid var(--sys-border-light);
   border-radius: 3px;
   gap: 8px;
   flex-wrap: wrap;
 }
 .ds-collection-stats {
   font-size: 11px;
-  color: var(--sys-window-text, #333);
+  color: var(--sys-window-text);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -379,11 +379,11 @@
 .ds-collection-section-header {
   font-size: 12px;
   font-weight: 700;
-  color: var(--sys-window-text, #111);
+  color: var(--sys-window-text);
   padding: 3px 6px;
-  background: var(--sys-control-bg, #eee);
+  background: var(--sys-control-bg);
   border-radius: 2px;
-  border-left: 3px solid var(--sys-primary, #0078d4);
+  border-left: 3px solid var(--sys-primary);
   margin-bottom: 2px;
   display: flex;
   align-items: center;

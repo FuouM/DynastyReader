@@ -8,7 +8,7 @@
  * in the input.
  */
 
-import { createEffect, createSignal, onCleanup, For, Show } from "solid-js";
+import { createEffect, createSignal, createUniqueId, onCleanup, For, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { decodeEntities } from "../utils/html";
 import { InputField } from "./InputField";
@@ -39,6 +39,11 @@ export function Typeahead(props: TypeaheadProps) {
   const [isFocused, setIsFocused] = createSignal(false);
   const maxItems = props.maxItems ?? 8;
   const debounceMs = props.debounceMs ?? 200;
+
+  const listboxId = createUniqueId();
+  const optionId = (index: number): string => `${listboxId}-option-${index}`;
+  const activeDescendant = (): string | undefined =>
+    open() && selectedIndex() >= 0 ? optionId(selectedIndex()) : undefined;
 
   let dropdownRef: HTMLDivElement | undefined;
   let blurTimer: number | null = null;
@@ -129,12 +134,15 @@ export function Typeahead(props: TypeaheadProps) {
 
   const dropdown = (
     <Show when={open()}>
-      <div ref={dropdownRef} class="ds-typeahead">
+      <div ref={dropdownRef} class="ds-typeahead" role="listbox" id={listboxId}>
         <For each={suggestions()}>
           {(item, idx) => (
             <div
               class="ds-typeahead-item"
               classList={{ selected: selectedIndex() === idx() }}
+              role="option"
+              id={optionId(idx())}
+              aria-selected={selectedIndex() === idx()}
               onMouseDown={() => {
                 props.onSelect(item);
                 setOpen(false);
@@ -163,6 +171,11 @@ export function Typeahead(props: TypeaheadProps) {
           setInputValue(v);
           props.onInputValue?.(v);
         }}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={open()}
+        aria-controls={open() ? listboxId : undefined}
+        aria-activedescendant={activeDescendant()}
         onKeyDown={handleKeyDown}
         onEnter={() => {
           if (inputValue().trim()) props.onEnter?.(inputValue());

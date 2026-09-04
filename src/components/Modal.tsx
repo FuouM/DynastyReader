@@ -15,7 +15,7 @@
  * within the visible viewport.
  */
 
-import { createEffect, Show, type JSX } from "solid-js";
+import { createEffect, createUniqueId, onCleanup, Show, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
 import { t } from "../i18n";
 import { makeEventListener } from "@solid-primitives/event-listener";
@@ -46,10 +46,24 @@ export function Modal(props: ModalProps) {
   let backdropEl: HTMLDivElement | undefined;
   let windowEl: HTMLDivElement | undefined;
 
+  const titleId = createUniqueId();
+
   const close = (): void => {
     if (props.canClose && !props.canClose()) return;
     props.onClose?.();
   };
+
+  // Capture the element that had focus when the modal opened and restore it
+  // on close (WCAG 2.4.3). Cleanup runs when `open` flips false or on dispose.
+  createEffect(() => {
+    if (!props.open) return;
+    const triggerEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    onCleanup(() => {
+      if (triggerEl && triggerEl.isConnected) {
+        triggerEl.focus();
+      }
+    });
+  });
 
   createEffect(() => {
     if (!props.open) return;
@@ -113,13 +127,13 @@ export function Modal(props: ModalProps) {
             class="ds-modal-window"
             role="dialog"
             aria-modal="true"
-            aria-labelledby={props.title !== undefined ? "ds-modal-title" : undefined}
+            aria-labelledby={props.title !== undefined ? titleId : undefined}
             tabIndex={-1}
             style={props.width ? { width: `${props.width}px` } : undefined}
           >
             <Show when={props.title !== undefined}>
               <div class="ds-modal-header">
-                <span class="ds-modal-title" id="ds-modal-title">{props.title}</span>
+                <span class="ds-modal-title" id={titleId}>{props.title}</span>
                 <IconButton
                   className="ds-modal-close"
                   title={`${t("common.close")} (Esc)`}
