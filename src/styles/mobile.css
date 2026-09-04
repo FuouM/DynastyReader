@@ -341,6 +341,11 @@
   box-sizing: border-box;
 }
 
+#ds-root[data-mobile] .ds-item-actions .win-button .ds-btn-text,
+#ds-root[data-mobile] .ds-feed-actions .win-button .ds-btn-text {
+  display: none !important;
+}
+
 #ds-root[data-mobile] .ds-subtab i {
   margin-right: 4px;
   font-size: 11px;

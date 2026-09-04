@@ -69,6 +69,11 @@
   font-size: var(--font-xs);
   box-sizing: border-box;
 }
+.ds-btn-icon .ds-btn-text,
+.ds-btn-icon-sm .ds-btn-text,
+.ds-btn-icon-xs .ds-btn-text {
+  display: none !important;
+}
 .ds-btn-text {
   white-space: nowrap;
 }

@@ -4,11 +4,13 @@
  * views. Port of `button.ts`.
  */
 
-import { For, createSignal, type JSX } from "solid-js";
+import { For, createSignal, createEffect, type JSX } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../i18n";
 import { CheckIcon } from "./Icon";
 export interface ButtonProps {
+  ref?: HTMLButtonElement | ((el: HTMLButtonElement) => void);
   id?: string;
   className?: string;
   classList?: Record<string, boolean>;
@@ -65,6 +67,7 @@ export function Button(props: ButtonProps) {
   return (
     <button
       type="button"
+      ref={props.ref}
       id={props.id}
       class={`win-button ${resolvedClass()}`.trim()}
       classList={{ "ds-btn-loading": !!props.loading, ...props.classList }}
@@ -96,9 +99,29 @@ export interface ConfirmDeleteButtonProps extends Omit<ButtonProps, "onClick"> {
  * invokes `onConfirm()`.
  */
 export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
+  let buttonRef: HTMLButtonElement | undefined;
   const [confirming, setConfirming] = createSignal(false);
   const [busy, setBusy] = createSignal(false);
   const resetConfirming = debounce(() => setConfirming(false), 3000);
+
+  const cancel = () => {
+    resetConfirming.clear();
+    setConfirming(false);
+  };
+
+  createEffect(() => {
+    if (!confirming() || typeof document === "undefined") return;
+
+    const handleClickOutside = (ev: Event) => {
+      const target = ev.target as Node | null;
+      if (buttonRef && target && !buttonRef.contains(target)) {
+        cancel();
+      }
+    };
+
+    makeEventListener(document, "pointerdown", handleClickOutside);
+    makeEventListener(document, "click", handleClickOutside);
+  });
 
   const handleClick = async (): Promise<void> => {
     if (busy()) return;
@@ -116,6 +139,8 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
       setBusy(false);
     }
   };
+  const isIconOnly = () => !props.text && !props.children;
+
   const currentIcon = () => {
     if (busy()) return undefined;
     if (confirming()) return <CheckIcon />;
@@ -124,12 +149,18 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
 
   const currentText = () => {
     if (busy()) return undefined;
-    if (confirming()) return t("common.delete") + "?";
+    if (confirming()) {
+      if (isIconOnly()) return undefined;
+      return t("common.delete") + "?";
+    }
     return props.text;
   };
 
   const currentClassName = () => {
     if (confirming()) {
+      if (isIconOnly()) {
+        return (props.className ? `${props.className} ds-btn-danger ds-confirming` : "ds-btn-icon ds-btn-danger ds-confirming");
+      }
       return (props.className ? `${props.className} ds-btn-danger` : "ds-btn-compact ds-btn-danger")
         .replace("ds-btn-icon-sm", "ds-btn-compact")
         .replace("ds-btn-icon", "ds-btn-compact");
@@ -139,6 +170,7 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
 
   return (
     <Button
+      ref={(el) => { buttonRef = el; }}
       id={props.id}
       className={currentClassName()}
       style={props.style ?? props.cssText}
