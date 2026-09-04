@@ -3,7 +3,7 @@ import { dynastyUrl } from "../utils/formatting";
 import { seriesTypeToPath } from "../taxonomy";
 import { decodeEntities } from "../utils/html";
 
-export type ExportScope = "all" | "followed" | "collections" | "collection";
+export type ExportScope = "all" | "followed" | "collections" | "collection" | "selected_collections";
 export type ExportFormat = "json-pretty" | "json-compact" | "text" | "markdown" | "urls";
 
 export interface ExportFollowedItem {
@@ -105,7 +105,7 @@ export async function getAllFollowedSeries(): Promise<ExportFollowedItem[]> {
  * along with all their items.
  * Uses two fast queries without N+1 loops.
  */
-export async function getAllCollections(collectionId?: number): Promise<ExportCollection[]> {
+export async function getAllCollections(collectionIds?: number | number[]): Promise<ExportCollection[]> {
   interface CollectionDbRow {
     id: number;
     name: string;
@@ -125,22 +125,29 @@ export async function getAllCollections(collectionId?: number): Promise<ExportCo
     created_at: number;
   }
 
-  const colQuery = collectionId !== undefined
-    ? `SELECT id, name, is_default, created_at FROM collections WHERE id = ?`
-    : `SELECT id, name, is_default, created_at FROM collections ORDER BY is_default DESC, name COLLATE NOCASE ASC`;
-  const colParams = collectionId !== undefined ? [collectionId] : [];
+  const ids = collectionIds !== undefined
+    ? (Array.isArray(collectionIds) ? collectionIds : [collectionIds])
+    : undefined;
 
-  const itemQuery = collectionId !== undefined
+  const hasFilter = ids !== undefined && ids.length > 0;
+  const inPlaceholders = hasFilter ? ids.map(() => "?").join(",") : "";
+
+  const colQuery = hasFilter
+    ? `SELECT id, name, is_default, created_at FROM collections WHERE id IN (${inPlaceholders}) ORDER BY is_default DESC, name COLLATE NOCASE ASC`
+    : `SELECT id, name, is_default, created_at FROM collections ORDER BY is_default DESC, name COLLATE NOCASE ASC`;
+  const colParams = hasFilter ? ids : [];
+
+  const itemQuery = hasFilter
     ? `SELECT id, collection_id, item_permalink, item_title, item_kind, cover,
               parent_series_permalink, parent_series_name, created_at
        FROM collection_items
-       WHERE collection_id = ?
+       WHERE collection_id IN (${inPlaceholders})
        ORDER BY created_at DESC`
     : `SELECT id, collection_id, item_permalink, item_title, item_kind, cover,
               parent_series_permalink, parent_series_name, created_at
        FROM collection_items
        ORDER BY created_at DESC`;
-  const itemParams = collectionId !== undefined ? [collectionId] : [];
+  const itemParams = hasFilter ? ids : [];
 
   const [cols, items] = await Promise.all([
     query<CollectionDbRow>(colQuery, colParams),
@@ -186,7 +193,7 @@ export async function getAllCollections(collectionId?: number): Promise<ExportCo
  */
 export async function fetchExportData(
   scope: ExportScope,
-  collectionId?: number,
+  collectionIds?: number | number[],
 ): Promise<{
   followed?: ExportFollowedItem[];
   collections?: ExportCollection[];
@@ -199,10 +206,10 @@ export async function fetchExportData(
     followed = await getAllFollowedSeries();
   }
 
-  if (scope === "all" || scope === "collections" || scope === "collection") {
-    collections = await getAllCollections(scope === "collection" ? collectionId : undefined);
+  if (scope === "all" || scope === "collections" || scope === "collection" || scope === "selected_collections") {
+    const ids = scope === "all" ? undefined : collectionIds;
+    collections = await getAllCollections(ids);
   }
-
   const followedCount = followed ? followed.length : 0;
   const collectionsCount = collections ? collections.length : 0;
   const collectionItemsCount = collections
@@ -286,12 +293,12 @@ export function formatExportData(
     }
 
     if (collections && collections.length > 0) {
-      if (scope === "all") {
+      if (scope === "all" || (scope === "collections" && collections.length > 1) || (scope === "selected_collections" && collections.length > 1)) {
         lines.push(`# Collections (${collections.length})`);
         lines.push("");
       }
       for (const col of collections) {
-        const heading = scope === "all" ? "##" : "#";
+        const heading = (scope === "all" || collections.length > 1) ? "##" : "#";
         lines.push(`${heading} ${col.name} (${col.items.length})`);
         lines.push("");
         if (col.items.length === 0) {
@@ -304,13 +311,12 @@ export function formatExportData(
         }
         lines.push("");
       }
-    } else if (scope === "collections" || scope === "collection") {
+    } else if (scope === "collections" || scope === "collection" || scope === "selected_collections") {
       lines.push("# Collections (0)");
       lines.push("");
       lines.push("*(No collections found)*");
       lines.push("");
     }
-
     return lines.join("\n").trimEnd();
   }
 
@@ -344,7 +350,7 @@ export function formatExportData(
       }
       lines.push("");
     }
-  } else if (scope === "collections" || scope === "collection") {
+  } else if (scope === "collections" || scope === "collection" || scope === "selected_collections") {
     lines.push("(No collections found)");
   }
 
@@ -357,12 +363,14 @@ export function formatExportData(
 export async function fetchAndFormatExport(opts: {
   scope: ExportScope;
   collectionId?: number;
+  collectionIds?: number[];
   format: ExportFormat;
 }): Promise<{
   text: string;
   counts: ExportCounts;
 }> {
-  const data = await fetchExportData(opts.scope, opts.collectionId);
+  const ids = opts.collectionIds ?? (opts.collectionId !== undefined ? [opts.collectionId] : undefined);
+  const data = await fetchExportData(opts.scope, ids);
   const text = formatExportData(
     {
       scope: opts.scope,

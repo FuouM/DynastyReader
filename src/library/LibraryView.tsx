@@ -120,9 +120,13 @@ function LibraryGrid() {
   const [creating, setCreating] = createSignal(false);
   const [exportOpen, setExportOpen] = createSignal(false);
   const [exportScope, setExportScope] = createSignal<ExportScope>("followed");
+  const [exportCollectionId, setExportCollectionId] = createSignal<number | undefined>();
+  const [exportCollectionName, setExportCollectionName] = createSignal<string | undefined>();
 
-  const openExport = (s: ExportScope): void => {
+  const openExport = (s: ExportScope, collectionId?: number, collectionName?: string): void => {
     setExportScope(s);
+    setExportCollectionId(collectionId);
+    setExportCollectionName(collectionName);
     setExportOpen(true);
   };
   const [importOpen, setImportOpen] = createSignal(false);
@@ -210,6 +214,7 @@ function LibraryGrid() {
           register={register("collections")}
           onOpenDetail={openDetail}
           onCreateNew={() => setCreating(true)}
+          onExportCollection={(id, name) => openExport("selected_collections", id, name)}
         />
       </div>
       <div
@@ -417,6 +422,8 @@ function LibraryGrid() {
       <ExportModal
         open={exportOpen}
         initialScope={exportScope()}
+        initialCollectionId={exportCollectionId()}
+        collectionName={exportCollectionName()}
         onClose={() => setExportOpen(false)}
       />
       <ImportModal

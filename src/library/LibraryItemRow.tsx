@@ -33,6 +33,8 @@ export interface LibraryItemRowProps {
   externalUrl?: string;
   editTitle?: string;
   onEdit?: () => void;
+  exportTitle?: string;
+  onExport?: () => void;
   deleteTitle?: string;
   onDelete?: () => Promise<void> | void;
   /** QoL-L3: bulk-select mode — row click toggles selection, actions hidden. */
@@ -132,6 +134,17 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
               onClick={(ev) => {
                 ev.stopPropagation();
                 props.onEdit!();
+              }}
+            />
+          </Show>
+          <Show when={props.onExport}>
+            <IconButton
+              icon={<i class="bi bi-box-arrow-up" />}
+              className="ds-btn-icon"
+              title={props.exportTitle || t("library.exportTooltip")}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                props.onExport!();
               }}
             />
           </Show>

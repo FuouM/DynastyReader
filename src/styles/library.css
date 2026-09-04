@@ -469,6 +469,50 @@
   border-color: var(--sys-success-border, #0e6b37) !important;
 }
 
+.ds-collection-checklist-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ds-collection-check-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+.ds-collection-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 130px;
+  overflow-y: auto;
+  border: 1px solid var(--sys-border-light);
+  border-radius: 3px;
+  background: var(--sys-control-bg);
+  padding: 4px 6px;
+  box-sizing: border-box;
+}
+.ds-collection-check-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--sys-window-text);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 2px;
+  user-select: none;
+}
+.ds-collection-check-item:hover {
+  background: var(--sys-hover-bg, rgba(0, 120, 212, 0.08));
+}
+.ds-collection-check-title {
+  font-weight: 500;
+}
+.ds-collection-check-count {
+  font-size: 10px;
+}
+
 /* Library Import Dialog */
 .ds-import-form {
   gap: 10px;

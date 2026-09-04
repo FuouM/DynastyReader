@@ -20,6 +20,7 @@ import { useLibraryPaneResource, type LibraryPaneProps } from "../useLibraryPane
 export interface CollectionsPaneProps extends LibraryPaneProps {
   onOpenDetail: (id: number) => void;
   onCreateNew: () => void;
+  onExportCollection?: (id: number, name: string) => void;
 }
 
 export function CollectionsPane(props: CollectionsPaneProps) {
@@ -55,6 +56,12 @@ export function CollectionsPane(props: CollectionsPaneProps) {
               onOpen={() => openDetail(col)}
               actionLabel={t("common.open")}
               actionIcon="bi-folder2-open"
+              exportTitle={t("library.exportCollectionTooltip")}
+              onExport={
+                props.onExportCollection
+                  ? () => props.onExportCollection!(col.id, col.name)
+                  : undefined
+              }
               deleteTitle={t("library.deleteCollectionTooltip")}
               onDelete={
                 !col.is_default

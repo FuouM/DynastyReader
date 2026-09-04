@@ -1,7 +1,9 @@
 import {
   createEffect,
   createSignal,
+  For,
   onCleanup,
+  onMount,
   Show,
   type Accessor,
 } from "solid-js";
@@ -13,9 +15,11 @@ import { IconButton, DsSelect, type SelectOption } from "../components/Button";
 import { Icon, CheckIcon, ClipboardIcon } from "../components/Icon";
 import {
   fetchAndFormatExport,
+  getCollections,
   type ExportScope,
   type ExportFormat,
   type ExportCounts,
+  type CollectionRow,
 } from "../db";
 
 export interface ExportModalProps {
@@ -38,6 +42,8 @@ export function ExportModal(props: ExportModalProps) {
   const [exportedText, setExportedText] = createSignal("");
   const [loading, setLoading] = createSignal(false);
   const [copied, setCopied] = createSignal(false);
+  const [collections, setCollections] = createSignal<CollectionRow[]>([]);
+  const [selectedColIds, setSelectedColIds] = createSignal<Set<number>>(new Set());
   const [counts, setCounts] = createSignal<ExportCounts>({
     followed: 0,
     collections: 0,
@@ -52,26 +58,54 @@ export function ExportModal(props: ExportModalProps) {
     if (copyTimer !== null) window.clearTimeout(copyTimer);
   });
 
-  // Reset scope to initial when opening
+  const loadCollections = async (): Promise<CollectionRow[]> => {
+    try {
+      const cols = await getCollections();
+      setCollections(cols);
+      return cols;
+    } catch {
+      return [];
+    }
+  };
+
+  onMount(() => {
+    void loadCollections();
+  });
+
+  // Reset scope and selections when opening
   createEffect(() => {
     if (props.open()) {
-      setScope(props.initialScope ?? "followed");
       setCopied(false);
+      void loadCollections().then((cols) => {
+        if (props.initialCollectionId !== undefined) {
+          setSelectedColIds(new Set([props.initialCollectionId]));
+          setScope("selected_collections");
+        } else {
+          setSelectedColIds(new Set(cols.map((c) => c.id)));
+          setScope(props.initialScope ?? "followed");
+        }
+      });
     }
   });
 
-  // Re-fetch and re-format export text whenever open, scope, or format changes
+  // Re-fetch and re-format export text whenever open, scope, format, or selected collections change
   createEffect(() => {
     if (!props.open()) return;
 
     const currentScope = scope();
     const currentFormat = format();
+    const currentSelectedIds = selectedColIds();
     const token = ++fetchToken;
+
+    let targetIds: number[] | undefined;
+    if (currentScope === "selected_collections" || currentScope === "collection") {
+      targetIds = Array.from(currentSelectedIds);
+    }
 
     setLoading(true);
     void fetchAndFormatExport({
       scope: currentScope,
-      collectionId: currentScope === "collection" ? props.initialCollectionId : undefined,
+      collectionIds: targetIds,
       format: currentFormat,
     })
       .then((result) => {
@@ -95,7 +129,9 @@ export function ExportModal(props: ExportModalProps) {
     const c = counts();
     const s = scope();
     if (s === "followed") return c.followed;
-    if (s === "collections" || s === "collection") return c.collectionItems;
+    if (s === "collections" || s === "collection" || s === "selected_collections") {
+      return c.collectionItems;
+    }
     return c.followed + c.collectionItems;
   };
 
@@ -139,26 +175,38 @@ export function ExportModal(props: ExportModalProps) {
     }
   };
 
-  const handleSelectAll = (): void => {
+  const handleSelectAllText = (): void => {
     if (textareaRef) {
       textareaRef.focus();
       textareaRef.select();
     }
   };
 
-  const scopeOptions = (): SelectOption[] => {
-    const opts: SelectOption[] = [];
-    if (props.initialCollectionId !== undefined) {
-      const label = props.collectionName
-        ? `${t("library.exportScopeCurrentCollection")} (${props.collectionName})`
-        : t("library.exportScopeCurrentCollection");
-      opts.push({ value: "collection", label });
+  const toggleCollection = (id: number): void => {
+    const next = new Set(selectedColIds());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
     }
-    opts.push(
+    setSelectedColIds(next);
+  };
+
+  const selectAllCollections = (): void => {
+    setSelectedColIds(new Set(collections().map((c) => c.id)));
+  };
+
+  const deselectAllCollections = (): void => {
+    setSelectedColIds(new Set<number>());
+  };
+
+  const scopeOptions = (): SelectOption[] => {
+    const opts: SelectOption[] = [
       { value: "followed", label: t("library.exportScopeFollowed") },
+      { value: "selected_collections", label: t("library.exportScopeSelectedCollections") },
       { value: "collections", label: t("library.exportScopeCollections") },
       { value: "all", label: t("library.exportScopeAll") },
-    );
+    ];
     return opts;
   };
 
@@ -169,6 +217,9 @@ export function ExportModal(props: ExportModalProps) {
     { value: "markdown", label: t("library.exportFormatMarkdown") },
     { value: "urls", label: t("library.exportFormatUrls") },
   ];
+
+  const isSelectedCollectionsScope = () =>
+    scope() === "selected_collections" || scope() === "collection";
 
   return (
     <Modal
@@ -188,7 +239,7 @@ export function ExportModal(props: ExportModalProps) {
             <div class="ds-export-field">
               <label class="ds-form-label-sm">{t("library.exportScopeLabel")}</label>
               <DsSelect
-                value={scope()}
+                value={scope() === "collection" ? "selected_collections" : scope()}
                 options={scopeOptions()}
                 disabled={loading()}
                 onChange={(val) => setScope(val as ExportScope)}
@@ -204,6 +255,58 @@ export function ExportModal(props: ExportModalProps) {
               />
             </div>
           </div>
+
+          {/* Collection Checklist when Specific or Selected Collections is active */}
+          <Show when={isSelectedCollectionsScope()}>
+            <div class="ds-collection-checklist-wrap">
+              <div class="ds-collection-check-actions">
+                <span class="ds-form-label-sm" style="margin: 0;">
+                  {t("library.exportSelectedCollectionsCount", {
+                    selected: selectedColIds().size,
+                    total: collections().length,
+                  })}
+                </span>
+                <div style="display: flex; gap: 6px;">
+                  <button
+                    type="button"
+                    class="win-button ds-btn-sm"
+                    style="font-size: 10px; padding: 1px 6px;"
+                    onClick={selectAllCollections}
+                  >
+                    {t("common.selectAll") ?? "Select All"}
+                  </button>
+                  <button
+                    type="button"
+                    class="win-button ds-btn-sm"
+                    style="font-size: 10px; padding: 1px 6px;"
+                    onClick={deselectAllCollections}
+                  >
+                    {t("library.exportDeselectAll")}
+                  </button>
+                </div>
+              </div>
+              <div class="ds-collection-checklist">
+                <For each={collections()}>
+                  {(col) => (
+                    <label class="ds-collection-check-item">
+                      <input
+                        type="checkbox"
+                        checked={selectedColIds().has(col.id)}
+                        onChange={() => toggleCollection(col.id)}
+                      />
+                      <span class="ds-collection-check-title">{col.name}</span>
+                      <Show when={col.is_default}>
+                        <span class="ds-muted" style="font-size: 10px;">(Default)</span>
+                      </Show>
+                      <span class="ds-collection-check-count ds-muted">
+                        ({col.itemCount ?? 0} {col.itemCount === 1 ? t("library.nounItem") : t("library.nounItems")})
+                      </span>
+                    </label>
+                  )}
+                </For>
+              </div>
+            </div>
+          </Show>
 
           <div class="ds-export-summary-bar">
             <span class="ds-export-summary-text">
@@ -228,7 +331,7 @@ export function ExportModal(props: ExportModalProps) {
               type="button"
               class="win-button ds-btn-sm"
               disabled={loading() || !exportedText()}
-              onClick={handleSelectAll}
+              onClick={handleSelectAllText}
             >
               {t("common.selectAll") ?? "Select All"}
             </button>
@@ -239,7 +342,7 @@ export function ExportModal(props: ExportModalProps) {
               ref={textareaRef}
               class="input-field ds-export-textarea"
               readOnly={true}
-              rows={12}
+              rows={isSelectedCollectionsScope() ? 9 : 12}
               value={exportedText()}
               onClick={(ev) => ev.currentTarget.select()}
               placeholder={t("library.exportLoading")}
