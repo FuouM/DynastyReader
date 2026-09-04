@@ -6,15 +6,17 @@
  */
 import { log } from "./log";
 
-interface AndroidThemeBridge {
-  triggerHaptic?(style: string): void;
-  openUrl?(url: string): boolean;
-  updateTheme?(isDark: boolean, color: string): void;
-  /** ConnectivityManager.isActiveNetworkMetered (QoL-D5 Wi-Fi-only mode). */
-  isConnectionMetered?(): boolean;
-}
-
 declare global {
+  interface AndroidThemeBridge {
+    triggerHaptic?(style: string): void;
+    openUrl?(url: string): boolean;
+    updateTheme?(isDark: boolean, color: string): void;
+    /** ConnectivityManager.isActiveNetworkMetered (QoL-D5 Wi-Fi-only mode). */
+    isConnectionMetered?(): boolean;
+    setStatusBarVisible?(visible: boolean): void;
+    setStatusBarHidden?(hidden: boolean): void;
+  }
+
   interface Window {
     AndroidThemeBridge?: AndroidThemeBridge;
   }

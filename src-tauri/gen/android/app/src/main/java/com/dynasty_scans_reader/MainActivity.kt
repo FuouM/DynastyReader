@@ -13,11 +13,20 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 class MainActivity : TauriActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
     configureSystemBars(isDark = isNightModeActive())
+  }
+
+  override fun onResume() {
+    super.onResume()
+    if (isStatusBarHidden) {
+      setStatusBarVisible(false)
+    }
   }
 
   override fun onWebViewCreate(webView: WebView) {
@@ -29,6 +38,21 @@ class MainActivity : TauriActivity() {
   private fun isNightModeActive(): Boolean {
     val currentNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
     return currentNightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
+  }
+
+  private var isStatusBarHidden: Boolean = false
+
+  fun setStatusBarVisible(visible: Boolean) {
+    val currentWindow = window ?: return
+    val insetsController = WindowCompat.getInsetsController(currentWindow, currentWindow.decorView)
+    isStatusBarHidden = !visible
+    if (visible) {
+      insetsController.show(WindowInsetsCompat.Type.statusBars())
+      insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+    } else {
+      insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+      insetsController.hide(WindowInsetsCompat.Type.statusBars())
+    }
   }
 
   fun configureSystemBars(isDark: Boolean) {
@@ -44,6 +68,11 @@ class MainActivity : TauriActivity() {
 
     currentWindow.statusBarColor = Color.TRANSPARENT
     currentWindow.navigationBarColor = Color.TRANSPARENT
+
+    if (isStatusBarHidden) {
+      insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+      insetsController.hide(WindowInsetsCompat.Type.statusBars())
+    }
   }
   fun performHaptic(style: String?) {
     val view = window?.decorView ?: return
@@ -103,6 +132,20 @@ class MainActivity : TauriActivity() {
     fun updateTheme(isDark: Boolean, colorHex: String?) {
       activity.runOnUiThread {
         activity.configureSystemBars(isDark)
+      }
+    }
+
+    @JavascriptInterface
+    fun setStatusBarVisible(visible: Boolean) {
+      activity.runOnUiThread {
+        activity.setStatusBarVisible(visible)
+      }
+    }
+
+    @JavascriptInterface
+    fun setStatusBarHidden(hidden: Boolean) {
+      activity.runOnUiThread {
+        activity.setStatusBarVisible(!hidden)
       }
     }
 

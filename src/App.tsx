@@ -14,7 +14,7 @@
  * remounts per route.
  */
 
-import { createEffect, lazy, onMount, Show, Suspense, type Component } from "solid-js";
+import { createEffect, lazy, onCleanup, onMount, Show, Suspense, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import {
@@ -36,6 +36,8 @@ import { LibraryView } from "./library/LibraryView";
 import { Loading } from "./components/Loading";
 import { t } from "./i18n";
 import type { ViewName, Route } from "./types/routes";
+import { isHideStatusBarEnabled } from "./reader/settings";
+import { syncReaderStatusBar } from "./utils/status-bar";
 
 const SeriesView = lazy(() => import("./series/SeriesView").then((m) => ({ default: m.SeriesView })));
 const ReaderView = lazy(() => import("./reader/ReaderView").then((m) => ({ default: m.ReaderView })));
@@ -65,6 +67,16 @@ export function App() {
       delete document.documentElement.dataset.mobile;
       delete document.body.dataset.mobile;
     }
+  });
+
+  createEffect(() => {
+    const inReader = route().view === "reader";
+    const hidePref = isHideStatusBarEnabled();
+    syncReaderStatusBar(inReader, hidePref);
+  });
+
+  onCleanup(() => {
+    syncReaderStatusBar(false, false);
   });
 
   onMount(() => {

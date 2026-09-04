@@ -26,6 +26,8 @@ import {
   setCoverOffsetDefaultEnabled,
   isMobileGesturesOnDesktopEnabled,
   setMobileGesturesOnDesktopEnabled,
+  isHideStatusBarEnabled,
+  setHideStatusBarEnabled,
   getDefaultFitMode,
   setDefaultFitMode,
   getPrevChapterStartPage,
@@ -82,6 +84,7 @@ export function ReaderSettings() {
   const [directionPref, setDirectionPref] = createSignal<ReadingDirectionSetting>(getDefaultReadingDirection());
   const [coverOffsetPref, setCoverOffsetPref] = createSignal<boolean>(isCoverOffsetDefaultEnabled());
   const [mobileGesturesDesktopPref, setMobileGesturesDesktopPref] = createSignal<boolean>(isMobileGesturesOnDesktopEnabled());
+  const [hideStatusBarPref, setHideStatusBarPref] = createSignal<boolean>(isHideStatusBarEnabled());
   const [fitModePref, setFitModePref] = createSignal<FitMode>(getDefaultFitMode());
   const [prevChapterPagePref, setPrevChapterPagePref] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
   const [scrollLockPref, setScrollLockPref] = createSignal<boolean>(getScrollLock());
@@ -223,6 +226,17 @@ export function ReaderSettings() {
           checked={mobileGesturesDesktopPref()}
           title={t("settings.reader.mobileGesturesDesktopTooltip")}
           onChange={(next) => { setMobileGesturesOnDesktopEnabled(next); setMobileGesturesDesktopPref(next); }}
+        />
+
+        {/* Hide Status Bar (Android) */}
+        <ToggleSettingRow
+          divider
+          label={t("settings.reader.hideStatusBar")}
+          desc={t("settings.reader.hideStatusBarDesc")}
+          id="ds-settings-hide-statusbar-toggle"
+          checked={hideStatusBarPref()}
+          title={t("settings.reader.hideStatusBarTooltip")}
+          onChange={(next) => { setHideStatusBarEnabled(next); setHideStatusBarPref(next); }}
         />
 
         {/* Paged Mode: Slide Animation */}

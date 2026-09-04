@@ -11,8 +11,14 @@ import { theme, setTheme, isMobile, navigate } from "../stores";
 import { openExternal } from "../api";
 import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
-import { getPrevChapterStartPage, setPrevChapterStartPage, type PrevChapterStartPage } from "./settings";
-import { Button, IconButton, IconText, SegmentedSwitch } from "../components/Button";
+import {
+  getPrevChapterStartPage,
+  setPrevChapterStartPage,
+  isHideStatusBarEnabled,
+  setHideStatusBarEnabled,
+  type PrevChapterStartPage,
+} from "./settings";
+import { Button, IconButton, IconText, SegmentedSwitch, DsSwitch } from "../components/Button";
 import { SettingsRow } from "../components/SettingsRow";
 import { useCopyLink } from "../hooks/useCopyLink";
 import { ReaderFilterControls } from "./ReaderFilterControls";
@@ -41,6 +47,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   const [mounted, setMounted] = createSignal(false);
   const [closing, setClosing] = createSignal(false);
   const [prevChapterPage, setPrevChapterPage] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
+  const [hideStatusBar, setHideStatusBar] = createSignal(isHideStatusBarEnabled());
   const { copied, handleCopyLink } = useCopyLink({
     getUrl: () => dynastyUrl("chapters", s.permalink),
     namespace: "mobile-controls",
@@ -229,6 +236,18 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 />
               </SettingsRow>
 
+              {/* Hide Status Bar (Android) */}
+              <SettingsRow label={t("settings.reader.hideStatusBar")} divider>
+                <DsSwitch
+                  id="ds-ctrl-hide-statusbar-toggle"
+                  checked={hideStatusBar()}
+                  title={hideStatusBar() ? t("settings.reader.hideStatusBarOn") : t("settings.reader.hideStatusBarOff")}
+                  onChange={(next) => {
+                    setHideStatusBarEnabled(next);
+                    setHideStatusBar(next);
+                  }}
+                />
+              </SettingsRow>
               {/* Chapter Actions */}
               <div class="ds-reader-toolbar-grid">
                 <Button

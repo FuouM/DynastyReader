@@ -185,6 +185,14 @@ const [isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled] = pe
 });
 export { isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled };
 
+// Hide status bar in reader (Android)
+const [isHideStatusBarEnabled, setHideStatusBarEnabled] = persistedSignal(false, {
+  name: "ds-reader-hide-status-bar",
+  serialize: String,
+  deserialize: boolDeserialize,
+});
+export { isHideStatusBarEnabled, setHideStatusBarEnabled };
+
 // ── Reader image filters (brightness/contrast/grayscale/sepia) ─────────────
 const clampNum = (v: string, def: number, min: number, max: number) => {
   const n = parseFloat(v);
