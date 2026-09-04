@@ -30,19 +30,22 @@ function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {
       } else if (tag === "a") {
         const href = htmlEl.getAttribute("href") || "";
         const text = decodeEntities(htmlEl.textContent?.trim() || "");
-        if (href) {
+        // Scheme-validate before rendering: javascript:/file:/custom protocols
+        // must never reach openExternal (Tauri shell open → OS handler).
+        const safeHref = /^https?:\/\//i.test(href) ? href : "";
+        if (safeHref) {
           out.push(
             el(
               <a
                 class="ds-external-link"
-                title={href}
+                title={safeHref}
                 onClick={(ev) => {
                   ev.preventDefault();
                   ev.stopPropagation();
-                  void openExternal(href);
+                  void openExternal(safeHref);
                 }}
               >
-                {text && text !== href ? `${text} — ${href}` : href}
+                {text && text !== safeHref ? `${text} — ${safeHref}` : safeHref}
               </a>,
             ),
           );

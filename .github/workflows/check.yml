@@ -50,6 +50,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
+          # PR jobs may read but never write the cache — PR-controlled code
+          # must not poison entries reused by release builds.
+          save-if: github.ref == 'refs/heads/main'
 
       - name: Install Node dependencies
         run: npm ci

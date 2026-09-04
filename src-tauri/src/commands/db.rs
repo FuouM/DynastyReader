@@ -118,6 +118,35 @@ pub fn validate_sql(sql: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// First-keyword allowlists per IPC path. `dbQuery` is strictly read-only;
+/// the execute paths permit exactly the DML/DDL the app uses (schema
+/// migrations, cache writes, wipes) but never DROP — no app flow drops
+/// tables, and blocking it removes the worst one-statement XSS payload.
+const QUERY_VERBS: &[&str] = &["SELECT", "WITH", "EXPLAIN", "PRAGMA"];
+const EXECUTE_VERBS: &[&str] = &[
+    "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "VACUUM",
+    "BEGIN", "COMMIT", "ROLLBACK", "PRAGMA",
+];
+
+fn validate_verbs(sql: &str, allowed: &[&str], cmd: &str) -> Result<(), String> {
+    let cleaned = strip_sql_comments(sql);
+    for statement in cleaned.split(';') {
+        let stmt = statement.trim();
+        if stmt.is_empty() {
+            continue;
+        }
+        let first = stmt
+            .split_whitespace()
+            .next()
+            .unwrap_or("")
+            .to_ascii_uppercase();
+        if !allowed.contains(&first.as_str()) {
+            return Err(format!("{cmd}: statement verb '{first}' is not permitted over IPC"));
+        }
+    }
+    Ok(())
+}
+
 fn open(db_name: &str) -> Result<Connection, String> {
     let normalized = validate_db_name(db_name)?;
     let path = crate::paths::data_root().join(&normalized);
@@ -232,6 +261,7 @@ pub async fn db_execute(
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
     validate_sql(&sql)?;
+    validate_verbs(&sql, EXECUTE_VERBS, "dbExecute")?;
     let conn = get_conn(&state.0, &db_name)?;
     let values: Vec<rusqlite::types::Value> = params
         .unwrap_or_default()
@@ -256,6 +286,7 @@ pub async fn db_query(
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
     validate_sql(&sql)?;
+    validate_verbs(&sql, QUERY_VERBS, "dbQuery")?;
     let conn = get_conn(&state.0, &db_name)?;
     let values: Vec<rusqlite::types::Value> = params
         .unwrap_or_default()
@@ -290,6 +321,7 @@ pub async fn db_execute_batch(
 ) -> Result<serde_json::Value, String> {
     for s in &statements {
         validate_sql(s)?;
+        validate_verbs(s, EXECUTE_VERBS, "dbExecuteBatch")?;
     }
     let pool_arc = get_conn(&state.0, &db_name)?;
     let affected = tokio::task::spawn_blocking(move || {
@@ -535,6 +567,22 @@ mod tests {
         assert!(validate_sql("-- note\nATTACH DATABASE 'x' AS y").is_err());
         assert!(validate_sql("/* multi\nline */ DETACH y").is_err());
         assert!(validate_sql("SELECT 1 /* trailing */").is_ok());
+    }
+
+    #[test]
+    fn test_validate_verbs() {
+        // dbQuery is read-only
+        assert!(validate_verbs("SELECT 1", QUERY_VERBS, "dbQuery").is_ok());
+        assert!(validate_verbs("WITH x AS (SELECT 1) SELECT * FROM x", QUERY_VERBS, "dbQuery").is_ok());
+        assert!(validate_verbs("DELETE FROM t", QUERY_VERBS, "dbQuery").is_err());
+        assert!(validate_verbs("/* c */ DROP TABLE t", QUERY_VERBS, "dbQuery").is_err());
+        // dbExecute permits app DML/DDL but never DROP
+        assert!(validate_verbs("DELETE FROM cached_pages", EXECUTE_VERBS, "dbExecute").is_ok());
+        assert!(validate_verbs("CREATE TABLE IF NOT EXISTS t (id INTEGER)", EXECUTE_VERBS, "dbExecute").is_ok());
+        assert!(validate_verbs("ALTER TABLE t ADD COLUMN c INTEGER", EXECUTE_VERBS, "dbExecute").is_ok());
+        assert!(validate_verbs("VACUUM", EXECUTE_VERBS, "dbExecute").is_ok());
+        assert!(validate_verbs("BEGIN", EXECUTE_VERBS, "dbExecute").is_ok());
+        assert!(validate_verbs("DROP TABLE cached_pages", EXECUTE_VERBS, "dbExecute").is_err());
     }
 
 }

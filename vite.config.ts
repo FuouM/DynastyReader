@@ -7,7 +7,7 @@ export default defineConfig({
   clearScreen: false,
   plugins: [solid()],
   server: {
-    host: host || "0.0.0.0",
+    host: host || "localhost",
     port: 1420,
     strictPort: true,
     hmr: host

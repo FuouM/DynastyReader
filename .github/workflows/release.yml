@@ -25,6 +25,8 @@ jobs:
     if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'desktop'
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -67,6 +69,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
+          prefix-key: "release-desktop"
 
       - name: Install Node dependencies
         run: npm ci
@@ -100,6 +103,17 @@ jobs:
           find src-tauri/target/release/bundle/appimage -name "*.AppImage" -exec cp {} staging/DynastyReader-x86_64.AppImage \;
           find src-tauri/target/release/bundle/deb -name "*.deb" -exec cp {} staging/ \;
 
+      - name: Generate Checksums
+        shell: bash
+        run: |
+          cd staging
+          sha256sum * | tee checksums.txt
+
+      - name: Attest Build Provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: staging/*
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
@@ -115,6 +129,8 @@ jobs:
     if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'android'
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -159,7 +175,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
-
+          prefix-key: "release-android"
       - name: Install Node dependencies
         run: npm ci
 
@@ -223,6 +239,17 @@ jobs:
             done
           fi
           ls -la staging/
+
+      - name: Generate Checksums
+        shell: bash
+        run: |
+          cd staging
+          sha256sum * | tee checksums.txt
+
+      - name: Attest Build Provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: staging/*
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
