@@ -321,8 +321,13 @@ export interface DownloadRequest {
   chapter_index: number;
 }
 
-export async function enqueueChapters(chapters: DownloadRequest[]): Promise<void> {
-  await invoke("enqueueChapters", { chapters });
+export interface EnqueueResult {
+  queued_count: number;
+  already_queued_count: number;
+}
+
+export async function enqueueChapters(chapters: DownloadRequest[]): Promise<EnqueueResult> {
+  return invoke<EnqueueResult>("enqueueChapters", { chapters });
 }
 
 export async function pauseDownloads(): Promise<void> {

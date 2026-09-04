@@ -68,9 +68,21 @@ export function DownloadManager(props: { onComplete?: () => void }) {
 
   let unlisten: UnlistenFn | null = null;
   let pollTimer: number | null = null;
-  let lastSampleTime = Date.now();
+  let mounted = true;
+  let lastSampleTime = 0;
+  let lastChapterPermalink = "";
   let totalDownloadedBytes = 0;
   let totalDownloadedPages = 0;
+  let sessionBytesTotal = 0;
+
+  // Speed/ETA accumulators are only meaningful within one uninterrupted
+  // download run; reset them on pause/resume and chapter transitions.
+  const resetSpeedAccumulators = () => {
+    lastSampleTime = 0;
+    lastChapterPermalink = "";
+    totalDownloadedBytes = 0;
+    totalDownloadedPages = 0;
+  };
 
   const refreshQueue = async () => {
     try {
@@ -79,58 +91,73 @@ export function DownloadManager(props: { onComplete?: () => void }) {
       if (!res.items.some((i) => i.status === "downloading")) {
         setSpeedBps(0);
         setEtaSeconds(0);
+        resetSpeedAccumulators();
       }
     } catch {
       // Best-effort
     }
   };
 
-  onMount(async () => {
-    await refreshQueue();
+  onMount(() => {
+    void refreshQueue();
 
     try {
-      unlisten = await listen<DownloadProgressPayload>("download://progress", (event) => {
+      void listen<DownloadProgressPayload>("download://progress", (event) => {
         const payload = event.payload;
         if (payload) {
           const now = Date.now();
           const pageBytes = payload.last_page_bytes || 200_000;
 
           if (pageBytes > 0 && payload.status === "downloading") {
-            const dt = (now - lastSampleTime) / 1000;
-            if (dt > 0.15) {
-              const instantSpeed = pageBytes / dt;
-              const prev = speedBps();
-              const ema = prev === 0 ? instantSpeed : prev * 0.7 + instantSpeed * 0.3;
-              setSpeedBps(ema);
+            if (payload.chapter_permalink !== lastChapterPermalink) {
+              resetSpeedAccumulators();
+              lastChapterPermalink = payload.chapter_permalink;
+            }
+            sessionBytesTotal += pageBytes;
+            setSessionBytes(sessionBytesTotal);
+
+            // The first sample after a reset only seeds the clock; measuring
+            // dt from mount/resume would poison the EMA with a stale interval.
+            if (lastSampleTime === 0) {
               lastSampleTime = now;
+            } else {
+              const dt = (now - lastSampleTime) / 1000;
+              if (dt > 0.15) {
+                const instantSpeed = pageBytes / dt;
+                const prev = speedBps();
+                const ema = prev === 0 ? instantSpeed : prev * 0.7 + instantSpeed * 0.3;
+                setSpeedBps(ema);
+                lastSampleTime = now;
 
-              totalDownloadedBytes += pageBytes;
-              setSessionBytes(totalDownloadedBytes);
+                // Bytes and pages are gated on the same dt condition so
+                // avgBytesPerPage is not systematically underestimated.
+                totalDownloadedBytes += pageBytes;
+                totalDownloadedPages += 1;
 
-              const currentQueue = items();
-              const pendingItems = currentQueue.filter((i) => i.status === "pending" || i.status === "downloading");
-              const currentActive = currentQueue.find((i) => i.chapter_permalink === payload.chapter_permalink);
-              const remainingPagesInCurrent = Math.max(0, payload.total_pages - payload.pages_done);
-              const otherPendingPages = pendingItems
-                .filter((i) => i.chapter_permalink !== payload.chapter_permalink)
-                .reduce((acc, i) => acc + (i.total_pages > 0 ? i.total_pages : 20), 0);
-              const totalRemainingPages = remainingPagesInCurrent + otherPendingPages;
+                const currentQueue = items();
+                const pendingItems = currentQueue.filter((i) => i.status === "pending" || i.status === "downloading");
+                const currentActive = currentQueue.find((i) => i.chapter_permalink === payload.chapter_permalink);
+                const remainingPagesInCurrent = Math.max(0, payload.total_pages - payload.pages_done);
+                const otherPendingPages = pendingItems
+                  .filter((i) => i.chapter_permalink !== payload.chapter_permalink)
+                  .reduce((acc, i) => acc + (i.total_pages > 0 ? i.total_pages : 20), 0);
+                const totalRemainingPages = remainingPagesInCurrent + otherPendingPages;
 
-              if (totalDownloadedPages > 0) {
-                const avgBytesPerPage = totalDownloadedBytes / totalDownloadedPages;
-                const remainingBytesEst = totalRemainingPages * avgBytesPerPage;
-                if (ema > 1000) {
-                  setEtaSeconds(remainingBytesEst / ema);
-                }
-              } else if (currentActive && payload.total_pages > 0) {
-                const estTotalBytes = payload.total_pages * pageBytes;
-                const estRemaining = Math.max(0, estTotalBytes - (payload.bytes_done || payload.pages_done * pageBytes));
-                if (ema > 1000) {
-                  setEtaSeconds(estRemaining / ema);
+                if (totalDownloadedPages > 0) {
+                  const avgBytesPerPage = totalDownloadedBytes / totalDownloadedPages;
+                  const remainingBytesEst = totalRemainingPages * avgBytesPerPage;
+                  if (ema > 1000) {
+                    setEtaSeconds(remainingBytesEst / ema);
+                  }
+                } else if (currentActive && payload.total_pages > 0) {
+                  const estTotalBytes = payload.total_pages * pageBytes;
+                  const estRemaining = Math.max(0, estTotalBytes - (payload.bytes_done || payload.pages_done * pageBytes));
+                  if (ema > 1000) {
+                    setEtaSeconds(estRemaining / ema);
+                  }
                 }
               }
             }
-            totalDownloadedPages += 1;
           }
 
           setActiveProgress((prev) => ({
@@ -157,12 +184,33 @@ export function DownloadManager(props: { onComplete?: () => void }) {
           );
 
           if (payload.status === "done" || payload.status === "failed" || payload.status === "cancelled") {
+            // Let the final state render once, then evict the entry so the
+            // map does not grow for the whole session.
+            const key = payload.chapter_permalink;
+            window.setTimeout(() => {
+              if (!mounted) return;
+              setActiveProgress((prev) => {
+                if (!(key in prev)) return prev;
+                const next = { ...prev };
+                delete next[key];
+                return next;
+              });
+            }, 0);
             void refreshQueue();
             if (payload.status === "done") {
               props.onComplete?.();
             }
           }
         }
+      }).then((fn) => {
+        if (mounted) {
+          unlisten = fn;
+        } else {
+          // Unmounted before registration resolved — release immediately.
+          fn();
+        }
+      }).catch(() => {
+        // Listener registration failed
       });
     } catch {
       // Outside Tauri
@@ -179,6 +227,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
   });
 
   onCleanup(() => {
+    mounted = false;
     if (unlisten) unlisten();
     if (pollTimer !== null) clearInterval(pollTimer);
   });
@@ -294,14 +343,15 @@ export function DownloadManager(props: { onComplete?: () => void }) {
 
   const handlePauseResume = async () => {
     try {
+      resetSpeedAccumulators();
+      setSpeedBps(0);
+      setEtaSeconds(0);
       if (isPaused()) {
         await resumeDownloads();
         setIsPaused(false);
       } else {
         await pauseDownloads();
         setIsPaused(true);
-        setSpeedBps(0);
-        setEtaSeconds(0);
       }
       await refreshQueue();
     } catch (err) {

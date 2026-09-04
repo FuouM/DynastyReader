@@ -16,7 +16,10 @@ export interface DownloadProgressPayload {
 
 const [activeDownloadCount, setActiveDownloadCount] = createSignal(0);
 const [downloadSpeedBps, setDownloadSpeedBps] = createSignal(0);
-export { activeDownloadCount, downloadSpeedBps };
+const [downloadingChapterPermalinks, setDownloadingChapterPermalinks] = createSignal<Set<string>>(
+  new Set(),
+);
+export { activeDownloadCount, downloadSpeedBps, downloadingChapterPermalinks };
 
 export const formatDownloadSpeed = formatSpeed;
 
@@ -38,6 +41,10 @@ export function initGlobalDownloadListener(): void {
       );
       setActiveDownloadCount(activeOrPending.length);
 
+      setDownloadingChapterPermalinks(
+        new Set(res.items.filter((i) => i.status === "downloading").map((i) => i.chapter_permalink)),
+      );
+
       const active = res.items.find((i) => i.status === "downloading") || activeOrPending[0];
       if (!active) {
         setDownloadSpeedBps(0);
@@ -56,6 +63,15 @@ export function initGlobalDownloadListener(): void {
       if (payload) {
         const now = Date.now();
         const pageBytes = payload.last_page_bytes || 200_000;
+
+        if (payload.status === "downloading") {
+          setDownloadingChapterPermalinks((prev) => {
+            if (prev.has(payload.chapter_permalink)) return prev;
+            const next = new Set(prev);
+            next.add(payload.chapter_permalink);
+            return next;
+          });
+        }
 
         if (pageBytes > 0 && payload.status === "downloading") {
           const dt = (now - lastSampleTime) / 1000;

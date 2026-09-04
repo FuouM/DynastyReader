@@ -24,6 +24,10 @@ const MAX_CHAPTER_JSON_BYTES: usize = 4 * 1024 * 1024;
 /// Hard cap on a single page image (typical scans are a few MB).
 const MAX_PAGE_BYTES: u64 = 64 * 1024 * 1024;
 
+/// Per-page fetch retry budget: two retries with fixed backoff before the
+/// whole chapter is failed.
+const PAGE_RETRY_BACKOFF_MS: [u64; 2] = [500, 1500];
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadRequest {
     pub series_permalink: String,
@@ -42,6 +46,12 @@ pub struct DownloadProgressPayload {
     pub bytes_done: u64,
     pub last_page_bytes: u64,
     pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct EnqueueResult {
+    pub queued_count: usize,
+    pub already_queued_count: usize,
 }
 
 pub struct DownloadState {
@@ -69,6 +79,40 @@ fn lock_unpoisoned<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 
 fn db_path() -> std::path::PathBuf {
     crate::paths::data_root().join("dynasty_reader.db")
+}
+
+/// Directory (relative to the data root) that holds a chapter's downloaded
+/// pages. Shared by `download_chapter` (writes) and the cancellation path
+/// (prunes partial downloads).
+fn chapter_pages_rel_dir(req: &DownloadRequest) -> String {
+    let clean_series = if req.series_permalink.is_empty() {
+        "_singles".to_string()
+    } else {
+        req.series_permalink
+            .replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_")
+    };
+    let clean_chapter = req
+        .chapter_permalink
+        .replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_");
+    format!("pages/{}/{}", clean_series, clean_chapter)
+}
+
+/// Resolves once downloads are paused. The notify waiter is registered before
+/// the flag is re-checked so a pause landing between check and registration
+/// is not lost.
+async fn wait_until_paused(state: &DownloadState) {
+    loop {
+        if state.paused.load(Ordering::SeqCst) {
+            return;
+        }
+        let notified = state.notify.notified();
+        tokio::pin!(notified);
+        notified.as_mut().enable();
+        if state.paused.load(Ordering::SeqCst) {
+            return;
+        }
+        notified.await;
+    }
 }
 
 fn ensure_download_queue_table() -> Result<(), String> {
@@ -157,41 +201,75 @@ pub async fn enqueue_chapters(
     state: State<'_, DownloadState>,
     http_state: State<'_, crate::commands::http::HttpState>,
     chapters: Vec<DownloadRequest>,
-) -> Result<(), String> {
+) -> Result<EnqueueResult, String> {
     let now = chrono_now();
-    let chapters_clone = chapters.clone();
-    tokio::task::spawn_blocking(move || -> Result<(), String> {
+    let result = tokio::task::spawn_blocking(move || -> Result<EnqueueResult, String> {
         ensure_download_queue_table()?;
-        let conn = crate::commands::db::open_synced(&db_path()).map_err(|e| format!("open db: {e}"))?;
+        let mut conn = crate::commands::db::open_synced(&db_path()).map_err(|e| format!("open db: {e}"))?;
         // busy_timeout/WAL/foreign_keys already applied by open_synced.
-        for ch in &chapters_clone {
-            conn.execute(
-                "INSERT OR IGNORE INTO download_queue (series_permalink, series_title, chapter_permalink, chapter_title, chapter_index, status, queued_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, 'pending', ?6)",
-                rusqlite::params![
-                    ch.series_permalink,
-                    ch.series_title,
-                    ch.chapter_permalink,
-                    ch.chapter_title,
-                    ch.chapter_index as i64,
-                    now
-                ],
-            )
-            .map_err(|e| format!("enqueue failed: {e}"))?;
+        // Single transaction: one fsync for the whole batch instead of one
+        // per chapter.
+        let tx = conn.transaction().map_err(|e| format!("begin tx: {e}"))?;
+        let mut queued_count = 0usize;
+        let mut already_queued_count = 0usize;
+        for ch in &chapters {
+            let inserted = tx
+                .execute(
+                    "INSERT OR IGNORE INTO download_queue (series_permalink, series_title, chapter_permalink, chapter_title, chapter_index, status, queued_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, 'pending', ?6)",
+                    rusqlite::params![
+                        ch.series_permalink,
+                        ch.series_title,
+                        ch.chapter_permalink,
+                        ch.chapter_title,
+                        ch.chapter_index as i64,
+                        now
+                    ],
+                )
+                .map_err(|e| format!("enqueue failed: {e}"))?;
+            if inserted > 0 {
+                queued_count += 1;
+                continue;
+            }
+            // Row exists: failed/cancelled rows are re-queued; rows that are
+            // pending, downloading, or done count as already queued.
+            let status: String = tx
+                .query_row(
+                    "SELECT status FROM download_queue WHERE chapter_permalink = ?1",
+                    rusqlite::params![ch.chapter_permalink],
+                    |row| row.get(0),
+                )
+                .map_err(|e| format!("enqueue status lookup failed: {e}"))?;
+            if status == "failed" {
+                tx.execute(
+                    "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE chapter_permalink = ?2",
+                    rusqlite::params![now, ch.chapter_permalink],
+                )
+                .map_err(|e| format!("enqueue requeue failed: {e}"))?;
+                queued_count += 1;
+            } else {
+                already_queued_count += 1;
+            }
         }
-        Ok(())
+        tx.commit().map_err(|e| format!("commit tx: {e}"))?;
+        Ok(EnqueueResult {
+            queued_count,
+            already_queued_count,
+        })
     })
     .await
     .map_err(|e| format!("enqueue task failed: {e}"))??;
 
     // Wake processor if not running
     ensure_processor_running(&app, &state, &http_state.0);
-    Ok(())
+    Ok(result)
 }
 
 #[tauri::command(rename = "pauseDownloads")]
 pub async fn pause_downloads(state: State<'_, DownloadState>) -> Result<(), String> {
     state.paused.store(true, Ordering::SeqCst);
+    // Wake mid-page fetch observers so pause aborts in-flight requests.
+    state.notify.notify_waiters();
     Ok(())
 }
 
@@ -475,12 +553,24 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
             }
             Err(e) if e == "cancelled" => {
                 let cp = req.chapter_permalink.clone();
+                let rel_dir = chapter_pages_rel_dir(&req);
                 let _ = tokio::task::spawn_blocking(move || {
                     if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
                         let _ = conn.execute(
                             "UPDATE download_queue SET status = 'failed', error_msg = 'cancelled' WHERE chapter_permalink = ?1",
                             rusqlite::params![cp],
                         );
+                        // Drop partial page rows so a re-enqueue starts clean.
+                        let _ = conn.execute(
+                            "DELETE FROM cached_pages WHERE chapter_permalink = ?1",
+                            rusqlite::params![cp],
+                        );
+                    }
+                    // Remove partially downloaded page files for this chapter.
+                    if let Ok(dir) = crate::paths::resolve_in_root(&rel_dir) {
+                        if dir.is_dir() {
+                            let _ = std::fs::remove_dir_all(&dir);
+                        }
                     }
                 })
                 .await;
@@ -598,6 +688,8 @@ async fn download_chapter(
         .await
         .ok();
     }
+    let state: State<DownloadState> = app.state();
+    let rel_dir = chapter_pages_rel_dir(req);
     let mut done = 0usize;
     let mut total_bytes_done = 0u64;
     for (idx, page) in pages.iter().enumerate() {
@@ -606,7 +698,6 @@ async fn download_chapter(
             return Err("cancelled".to_string());
         }
         // Check pause (cooperative — wait while paused)
-        let state: State<DownloadState> = app.state();
         while state.paused.load(Ordering::SeqCst) {
             state.notify.notified().await;
             if *cancel_rx.borrow() {
@@ -625,17 +716,9 @@ async fn download_chapter(
         };
 
         // Compute output path like ReaderQueue: pages/<series>/<chapter>/page_0001.ext
-        let clean_series = if req.series_permalink.is_empty() {
-            "_singles".to_string()
-        } else {
-            req.series_permalink.replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_")
-        };
-        let clean_chapter = req
-            .chapter_permalink
-            .replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_");
         let ext = abs_url.rsplit('.').next().and_then(|e| e.split('?').next()).unwrap_or("webp");
         let pad = format!("{:04}", idx + 1);
-        let rel_path = format!("pages/{}/{}/page_{}.{}", clean_series, clean_chapter, pad, ext);
+        let rel_path = format!("{}/page_{}.{}", rel_dir, pad, ext);
 
         // Skip if already exists and non-empty (resume safety)
         let target = crate::paths::resolve_in_root(&rel_path).map_err(|e| format!("resolve path: {e}"))?;
@@ -676,84 +759,116 @@ async fn download_chapter(
             }
         }
 
-        // Fetch page with cancel select
-        let fetch_fut = async {
-            // Ensure parent dir
-            if let Some(parent) = target.parent() {
-                tokio::fs::create_dir_all(parent).await.map_err(|e| format!("mkdir: {e}"))?;
-            }
-            let resp = crate::commands::http::send_with_redirects(
-                client,
-                "GET",
-                &abs_url,
-                None,
-                None,
-                None,
-                Some(FETCH_TIMEOUT_MS),
-            )
-            .await
-            .map_err(|e| format!("http get: {e}"))?;
-            if !resp.status().is_success() {
-                return Err(format!("http status {}", resp.status()));
-            }
-            // Stream to a temp file with a hard byte cap, then atomically rename.
-            // Write through the temp file's own handle (`into_file`) — a second
-            // `File::create` on the same path risks Windows sharing violations.
-            let parent = target.parent().unwrap_or(&target);
-            let tmp = tempfile::Builder::new()
-                .prefix(".tmp-download-")
-                .tempfile_in(parent)
-                .map_err(|e| format!("tmp file: {e}"))?;
-            let tmp_path = tmp.path().to_path_buf();
-            let write_res: Result<u64, String> = async {
-                let mut out = tokio::fs::File::from_std(tmp.into_file());
-                let mut stream = resp.bytes_stream();
-                let mut size: u64 = 0;
-                while let Some(chunk) = stream.next().await {
-                    let chunk = chunk.map_err(|e| format!("read bytes: {e}"))?;
-                    size += chunk.len() as u64;
-                    if size > MAX_PAGE_BYTES {
-                        return Err(format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes"));
-                    }
-                    out.write_all(&chunk).await.map_err(|e| format!("write tmp: {e}"))?;
+        // Fetch page with cancel/pause select. Transient failures get two
+        // retries (500 ms, 1500 ms backoff) before the chapter is failed.
+        let mut attempt = 0usize;
+        let size_res: Result<i64, String> = loop {
+            let fetch_fut = async {
+                // Ensure parent dir
+                if let Some(parent) = target.parent() {
+                    tokio::fs::create_dir_all(parent).await.map_err(|e| format!("mkdir: {e}"))?;
                 }
-                out.flush().await.map_err(|e| format!("write tmp: {e}"))?;
-                Ok(size)
-            }
-            .await;
-            let size = match write_res {
-                Ok(s) => s,
-                Err(e) => {
-                    let _ = tokio::fs::remove_file(&tmp_path).await;
-                    return Err(e);
-                }
-            };
-            tokio::fs::rename(&tmp_path, &target)
+                let resp = crate::commands::http::send_with_redirects(
+                    client,
+                    "GET",
+                    &abs_url,
+                    None,
+                    None,
+                    None,
+                    Some(FETCH_TIMEOUT_MS),
+                )
                 .await
-                .map_err(|e| format!("persist: {e}"))?;
-            let size = size as i64;
-            let abs_str = target.to_string_lossy().into_owned();
-            // Spawn blocking for DB write
-            let cp = req.chapter_permalink.clone();
-            let abs_clone = abs_str.clone();
-            tokio::task::spawn_blocking(move || {
-                if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
-                    // busy_timeout/WAL/foreign_keys already applied by open_synced.
-                    let now = chrono_now();
-                    let _ = conn.execute(
-                        "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-                        rusqlite::params![cp, idx as i64, abs_clone, size, now],
-                    );
+                .map_err(|e| format!("http get: {e}"))?;
+                if !resp.status().is_success() {
+                    return Err(format!("http status {}", resp.status()));
                 }
-            })
-            .await
-            .ok();
-            Ok::<i64, String>(size)
-        };
+                // Stream to a temp file with a hard byte cap, then atomically rename.
+                // Write through the temp file's own handle (`into_file`) — a second
+                // `File::create` on the same path risks Windows sharing violations.
+                let parent = target.parent().unwrap_or(&target);
+                let tmp = tempfile::Builder::new()
+                    .prefix(".tmp-download-")
+                    .tempfile_in(parent)
+                    .map_err(|e| format!("tmp file: {e}"))?;
+                let tmp_path = tmp.path().to_path_buf();
+                let write_res: Result<u64, String> = async {
+                    let mut out = tokio::fs::File::from_std(tmp.into_file());
+                    let mut stream = resp.bytes_stream();
+                    let mut size: u64 = 0;
+                    while let Some(chunk) = stream.next().await {
+                        let chunk = chunk.map_err(|e| format!("read bytes: {e}"))?;
+                        size += chunk.len() as u64;
+                        if size > MAX_PAGE_BYTES {
+                            return Err(format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes"));
+                        }
+                        out.write_all(&chunk).await.map_err(|e| format!("write tmp: {e}"))?;
+                    }
+                    out.flush().await.map_err(|e| format!("write tmp: {e}"))?;
+                    Ok(size)
+                }
+                .await;
+                let size = match write_res {
+                    Ok(s) => s,
+                    Err(e) => {
+                        let _ = tokio::fs::remove_file(&tmp_path).await;
+                        return Err(e);
+                    }
+                };
+                tokio::fs::rename(&tmp_path, &target)
+                    .await
+                    .map_err(|e| format!("persist: {e}"))?;
+                let size = size as i64;
+                let abs_str = target.to_string_lossy().into_owned();
+                // Spawn blocking for DB write
+                let cp = req.chapter_permalink.clone();
+                let abs_clone = abs_str.clone();
+                tokio::task::spawn_blocking(move || {
+                    if let Ok(conn) = crate::commands::db::open_synced(&db_path()) {
+                        // busy_timeout/WAL/foreign_keys already applied by open_synced.
+                        let now = chrono_now();
+                        let _ = conn.execute(
+                            "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                            rusqlite::params![cp, idx as i64, abs_clone, size, now],
+                        );
+                    }
+                })
+                .await
+                .ok();
+                Ok::<i64, String>(size)
+            };
 
-        let size_res = tokio::select! {
-            r = fetch_fut => r,
-            _ = cancel_rx.changed() => return Err("cancelled".to_string()),
+            tokio::select! {
+                r = fetch_fut => match r {
+                    Ok(size) => break Ok(size),
+                    Err(e) => {
+                        if attempt >= PAGE_RETRY_BACKOFF_MS.len() {
+                            break Err(e);
+                        }
+                        let backoff = PAGE_RETRY_BACKOFF_MS[attempt];
+                        attempt += 1;
+                        log::warn!(
+                            "page {}/{} of {} failed ({e}); retrying in {backoff}ms",
+                            idx + 1,
+                            total,
+                            req.chapter_permalink,
+                        );
+                        tokio::select! {
+                            _ = tokio::time::sleep(std::time::Duration::from_millis(backoff)) => {}
+                            _ = cancel_rx.changed() => return Err("cancelled".to_string()),
+                        }
+                    }
+                },
+                _ = cancel_rx.changed() => return Err("cancelled".to_string()),
+                // Pause aborts the in-flight fetch; the page restarts on resume.
+                _ = wait_until_paused(&state) => {
+                    while state.paused.load(Ordering::SeqCst) {
+                        state.notify.notified().await;
+                        if *cancel_rx.borrow() {
+                            return Err("cancelled".to_string());
+                        }
+                    }
+                }
+            }
         };
 
         match size_res {
@@ -785,7 +900,7 @@ async fn download_chapter(
                 );
             }
             Err(e) => {
-                // Log and continue? For now fail the chapter if a page fails
+                // Retries exhausted — fail the chapter.
                 return Err(e);
             }
         }

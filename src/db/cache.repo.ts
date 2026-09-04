@@ -49,29 +49,20 @@ export async function getCachedPageCounts(
 }
 
 export async function getCacheOverviewStats(): Promise<CacheOverviewStats> {
-  const [pageRows, metaRows, diskStat] = await Promise.all([
+  // SQLite is the single source of truth for storage accounting:
+  // SUM(size_bytes) renders instantly instead of blocking the view on a
+  // full-tree dirStat walk of the data root.
+  const [pageRows, metaRows] = await Promise.all([
     query<{ pages: number; chapters: number; total_bytes: number }>(
       `SELECT COUNT(*) as pages, COUNT(DISTINCT chapter_permalink) as chapters, SUM(COALESCE(size_bytes, 0)) as total_bytes FROM cached_pages`,
     ),
     query<{ count: number }>(`SELECT COUNT(*) as count FROM cached_metadata`),
-    (async () => {
-      try {
-        const diskStat = await ipc.dirStat("");
-        return Number(diskStat.total_bytes ?? 0);
-      } catch (err) {
-        log.debug("cache.repo", "dirStat failed:", err);
-        return 0;
-      }
-    })(),
   ]);
 
-  const pages = Number(pageRows[0]?.pages ?? 0);
-  const bytes = diskStat > 0 ? diskStat : Number(pageRows[0]?.total_bytes ?? 0);
-
   return {
-    totalCachedPages: pages,
+    totalCachedPages: Number(pageRows[0]?.pages ?? 0),
     totalCachedChapters: Number(pageRows[0]?.chapters ?? 0),
-    totalSizeBytes: bytes,
+    totalSizeBytes: Number(pageRows[0]?.total_bytes ?? 0),
     totalMetadataEntries: Number(metaRows[0]?.count ?? 0),
   };
 }
@@ -200,26 +191,51 @@ async function deleteFiles(paths: string[]): Promise<Set<string>> {
   return deleted;
 }
 
+/**
+ * Deletes cached_pages rows scoped by chapter. `file_path` is not unique in
+ * the schema, so a bare `file_path IN (...)` delete could drop rows owned by
+ * other chapters; every statement pins both the chapter and the paths whose
+ * files were actually removed.
+ */
+async function deleteCachedPageRows(
+  rows: { chapter_permalink: string; file_path: string }[],
+  deleted: Set<string>,
+): Promise<void> {
+  const byChapter = new Map<string, string[]>();
+  for (const r of rows) {
+    if (!deleted.has(r.file_path)) continue;
+    const paths = byChapter.get(r.chapter_permalink);
+    if (paths) paths.push(r.file_path);
+    else byChapter.set(r.chapter_permalink, [r.file_path]);
+  }
+  if (byChapter.size === 0) return;
+  const statements: string[] = [];
+  const batchParams: unknown[][] = [];
+  for (const [chapterPermalink, paths] of byChapter) {
+    statements.push(
+      `DELETE FROM cached_pages WHERE chapter_permalink = ? AND file_path IN (${inClause(paths.length)})`,
+    );
+    batchParams.push([chapterPermalink, ...paths]);
+  }
+  await ipc.dbExecuteBatch(DB_NAME, statements, batchParams);
+}
+
 export async function clearCachedGroupPages(chapterPermalinks: string[]): Promise<void> {
   if (chapterPermalinks.length === 0) return;
-  const rows = await query<{ file_path: string }>(
-    `SELECT file_path FROM cached_pages WHERE chapter_permalink IN (${inClause(chapterPermalinks.length)})`,
+  const rows = await query<{ chapter_permalink: string; file_path: string }>(
+    `SELECT chapter_permalink, file_path FROM cached_pages WHERE chapter_permalink IN (${inClause(chapterPermalinks.length)})`,
     chapterPermalinks,
   );
   const deleted = await deleteFiles(rows.map((r) => r.file_path));
-  if (deleted.size === 0) return;
-  const pathPlaceholders = inClause(deleted.size);
-  await execute(
-    `DELETE FROM cached_pages WHERE file_path IN (${pathPlaceholders})`,
-    Array.from(deleted),
-  );
+  await deleteCachedPageRows(rows, deleted);
 }
 
 export async function clearAllCachedPages(): Promise<void> {
-  const rows = await query<{ file_path: string }>(`SELECT file_path FROM cached_pages`);
+  const rows = await query<{ chapter_permalink: string; file_path: string }>(
+    `SELECT chapter_permalink, file_path FROM cached_pages`,
+  );
   const deleted = await deleteFiles(rows.map((r) => r.file_path));
-  if (deleted.size === 0) return;
-  await execute(`DELETE FROM cached_pages WHERE file_path IN (${inClause(deleted.size)})`, Array.from(deleted));
+  await deleteCachedPageRows(rows, deleted);
 }
 
 export async function clearAllCachedCovers(): Promise<void> {
@@ -239,26 +255,41 @@ export async function clearAllCacheStorage(): Promise<void> {
   // deleted for files that were actually removed, so a failed deletion never
   // orphans a file the DB has already forgotten.
   const [pageRows, coverRows] = await Promise.all([
-    query<{ file_path: string }>(`SELECT file_path FROM cached_pages`),
+    query<{ chapter_permalink: string; file_path: string }>(
+      `SELECT chapter_permalink, file_path FROM cached_pages`,
+    ),
     query<{ json_payload: string }>(
       `SELECT json_payload FROM cached_metadata WHERE data_type = 'cover'`,
     ),
   ]);
   const pagePaths = pageRows.map((r) => r.file_path);
   const coverPaths = coverRows.map((r) => r.json_payload);
-  const deletedPaths = Array.from(await deleteFiles([...pagePaths, ...coverPaths]));
+  const deletedPaths = await deleteFiles([...pagePaths, ...coverPaths]);
 
   // The row deletion is atomic: every statement commits or none do, so a crash
-  // between statements can never leave a half-cleared cache.
+  // between statements can never leave a half-cleared cache. Page deletes are
+  // chapter-scoped because file_path is not unique across chapters.
   const statements: string[] = [];
   const batchParams: unknown[][] = [];
-  if (deletedPaths.length > 0) {
-    statements.push(`DELETE FROM cached_pages WHERE file_path IN (${inClause(deletedPaths.length)})`);
-    batchParams.push(deletedPaths);
+  const pagesByChapter = new Map<string, string[]>();
+  for (const r of pageRows) {
+    if (!deletedPaths.has(r.file_path)) continue;
+    const paths = pagesByChapter.get(r.chapter_permalink);
+    if (paths) paths.push(r.file_path);
+    else pagesByChapter.set(r.chapter_permalink, [r.file_path]);
+  }
+  for (const [chapterPermalink, paths] of pagesByChapter) {
     statements.push(
-      `DELETE FROM cached_metadata WHERE data_type = 'cover' AND json_payload IN (${inClause(deletedPaths.length)})`,
+      `DELETE FROM cached_pages WHERE chapter_permalink = ? AND file_path IN (${inClause(paths.length)})`,
     );
-    batchParams.push(deletedPaths);
+    batchParams.push([chapterPermalink, ...paths]);
+  }
+  const deletedCoverPaths = coverPaths.filter((p) => deletedPaths.has(p));
+  if (deletedCoverPaths.length > 0) {
+    statements.push(
+      `DELETE FROM cached_metadata WHERE data_type = 'cover' AND json_payload IN (${inClause(deletedCoverPaths.length)})`,
+    );
+    batchParams.push(deletedCoverPaths);
   }
   statements.push(`DELETE FROM cached_metadata WHERE data_type = 'chapter'`);
   batchParams.push([]);
