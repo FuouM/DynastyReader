@@ -7,10 +7,9 @@
  * in the setter, quota-safe, no createEffect race.
  *
  * Migration note: the default serializer is now JSON.stringify/parse (same as
- * the primitives default).  All call-sites that store non-string primitives
- * (numbers, booleans, objects) are unaffected.  String-valued signals without
- * explicit serialize options will re-encode on first write post-migration
- * (harmless one-time preference reset for search/sort settings).
+ * the primitives default), wrapped in a legacy-tolerant deserialize that
+ * returns the raw string for string-typed signals when JSON.parse fails
+ * (plain-string values written by the pre-migration implementation).
  */
 import { createSignal, type Signal } from "solid-js";
 import { makePersisted, type PersistenceOptions } from "@solid-primitives/storage";
@@ -30,6 +29,16 @@ export function persistedSignal<T>(
     storage: localStorage,
   };
   if (options.serialize) opts.serialize = options.serialize;
-  if (options.deserialize) opts.deserialize = options.deserialize;
+  // Tolerate legacy plain-string values written before the makePersisted
+  // migration (e.g. `ds_downloaded_sort_mode = name-asc` without JSON quotes).
+  // Default JSON.parse would throw on those, crashing the component mount.
+  opts.deserialize = options.deserialize ?? ((data: string): T => {
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      if (typeof defaultValue === "string") return data as unknown as T;
+      return defaultValue;
+    }
+  });
   return makePersisted(createSignal<T>(defaultValue), opts) as unknown as Signal<T>;
 }
