@@ -1,9 +1,21 @@
+import { Show } from "solid-js";
 import { navigate } from "../../stores";
 import { t } from "../../i18n";
 import * as ipc from "../../ipc";
-import { StorageIcon, BlacklistIcon, ExternalLinkIcon, Icon } from "../Icon";
+import {
+  downloadWifiOnly,
+  setDownloadWifiOnly,
+  downloadScheduleEnabled,
+  setDownloadScheduleEnabled,
+  downloadScheduleStart,
+  setDownloadScheduleStart,
+  downloadScheduleEnd,
+  setDownloadScheduleEnd,
+  pushDownloadConstraints,
+} from "../../utils/download-constraints";
+import { StorageIcon, BlacklistIcon, ExternalLinkIcon, Icon, DownloadIcon } from "../Icon";
 import { GroupBox } from "../GroupBox";
-import { IconText, IconButton } from "../Button";
+import { IconText, IconButton, DsSwitch } from "../Button";
 import { SettingsRow } from "../SettingsRow";
 export interface StorageSettingsProps {
   onClose: () => void;
@@ -52,6 +64,76 @@ export function StorageSettings(props: StorageSettingsProps) {
           />
         </SettingsRow>
       </div>
+
+      <fieldset class="group-box" style="margin-top:8px;">
+        <legend class="group-box-title">
+          <IconText icon={<DownloadIcon />}>{t("settings.downloads.title")}</IconText>
+        </legend>
+        <div class="ds-col">
+          <SettingsRow
+            label={<>{t("settings.downloads.wifiOnly")}:</>}
+            desc={t("settings.downloads.wifiOnlyDesc")}
+          >
+            <DsSwitch
+              id="ds-settings-download-wifi-only"
+              checked={downloadWifiOnly()}
+              title={t("settings.downloads.wifiOnlyTooltip")}
+              onChange={(next) => {
+                setDownloadWifiOnly(next);
+                void pushDownloadConstraints();
+              }}
+            />
+          </SettingsRow>
+
+          <SettingsRow
+            divider
+            label={<>{t("settings.downloads.scheduleEnabled")}:</>}
+            desc={t("settings.downloads.scheduleEnabledDesc")}
+          >
+            <DsSwitch
+              id="ds-settings-download-schedule-enabled"
+              checked={downloadScheduleEnabled()}
+              title={t("settings.downloads.scheduleEnabledTooltip")}
+              onChange={(next) => {
+                setDownloadScheduleEnabled(next);
+                void pushDownloadConstraints();
+              }}
+            />
+          </SettingsRow>
+
+          <Show when={downloadScheduleEnabled()}>
+            <SettingsRow
+              divider
+              label={<>{t("settings.downloads.scheduleWindow")}:</>}
+              desc={t("settings.downloads.scheduleWindowDesc")}
+            >
+              <div class="ds-row" style="gap:6px;align-items:center;">
+                <input
+                  id="ds-settings-download-schedule-start"
+                  type="time"
+                  class="input-field ds-select"
+                  value={downloadScheduleStart()}
+                  onChange={(ev) => {
+                    setDownloadScheduleStart(ev.currentTarget.value);
+                    void pushDownloadConstraints();
+                  }}
+                />
+                <span class="ds-muted">–</span>
+                <input
+                  id="ds-settings-download-schedule-end"
+                  type="time"
+                  class="input-field ds-select"
+                  value={downloadScheduleEnd()}
+                  onChange={(ev) => {
+                    setDownloadScheduleEnd(ev.currentTarget.value);
+                    void pushDownloadConstraints();
+                  }}
+                />
+              </div>
+            </SettingsRow>
+          </Show>
+        </div>
+      </fieldset>
     </GroupBox>
   );
 }

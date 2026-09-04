@@ -6,6 +6,7 @@ import {
   getDownloadQueue,
   pauseDownloads,
   resumeDownloads,
+  retryChapterDownload,
   retryFailedDownloads,
   type DownloadQueueItem,
 } from "../ipc";
@@ -26,7 +27,14 @@ import {
   CheckIcon,
   ChevronDownIcon,
 } from "../components/Icon";
-import type { DownloadProgressPayload } from "../stores/download";
+import {
+  downloadSpeedBps as speedBps,
+  downloadEtaSeconds as etaSeconds,
+  sessionDownloadedBytes as sessionBytes,
+  resetDownloadSpeedAccumulators,
+  updateDownloadQueueSnapshot,
+  type DownloadProgressPayload,
+} from "../stores/download";
 
 export interface SeriesDownloadGroup {
   series_permalink: string;
@@ -52,9 +60,10 @@ export function DownloadManager(props: { onComplete?: () => void }) {
   const [isPaused, setIsPaused] = createSignal(false);
   const [expandedSeries, setExpandedSeries] = createSignal<Set<string>>(new Set());
   const [activeProgress, setActiveProgress] = createSignal<Record<string, { done: number; total: number; bytes: number }>>({});
-  const [speedBps, setSpeedBps] = createSignal(0);
-  const [etaSeconds, setEtaSeconds] = createSignal(0);
-  const [sessionBytes, setSessionBytes] = createSignal(0);
+  // Speed/ETA/session-bytes come from the single store stream (QoL-D4);
+  // pause/resume and queue drains reset them centrally.
+  // Per-row in-flight guards for retry/cancel buttons (QoL-D2).
+  const [rowBusy, setRowBusy] = createSignal<Set<string>>(new Set());
 
   const handleToggleCollapse = () => {
     setIsCollapsed((prev) => {
@@ -66,32 +75,33 @@ export function DownloadManager(props: { onComplete?: () => void }) {
     });
   };
 
+  const withRowGuard = async (key: string, fn: () => Promise<void>) => {
+    if (rowBusy().has(key)) return;
+    setRowBusy((prev) => new Set(prev).add(key));
+    try {
+      await fn();
+    } catch (err) {
+      showBanner(errorMessage(err));
+    } finally {
+      setRowBusy((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
   let unlisten: UnlistenFn | null = null;
   let pollTimer: number | null = null;
   let mounted = true;
-  let lastSampleTime = 0;
-  let lastChapterPermalink = "";
-  let totalDownloadedBytes = 0;
-  let totalDownloadedPages = 0;
-  let sessionBytesTotal = 0;
-
-  // Speed/ETA accumulators are only meaningful within one uninterrupted
-  // download run; reset them on pause/resume and chapter transitions.
-  const resetSpeedAccumulators = () => {
-    lastSampleTime = 0;
-    lastChapterPermalink = "";
-    totalDownloadedBytes = 0;
-    totalDownloadedPages = 0;
-  };
 
   const refreshQueue = async () => {
     try {
       const res = await getDownloadQueue();
       setItems(res.items);
+      updateDownloadQueueSnapshot(res.items);
       if (!res.items.some((i) => i.status === "downloading")) {
-        setSpeedBps(0);
-        setEtaSeconds(0);
-        resetSpeedAccumulators();
+        resetDownloadSpeedAccumulators();
       }
     } catch {
       // Best-effort
@@ -105,60 +115,6 @@ export function DownloadManager(props: { onComplete?: () => void }) {
       void listen<DownloadProgressPayload>("download://progress", (event) => {
         const payload = event.payload;
         if (payload) {
-          const now = Date.now();
-          const pageBytes = payload.last_page_bytes || 200_000;
-
-          if (pageBytes > 0 && payload.status === "downloading") {
-            if (payload.chapter_permalink !== lastChapterPermalink) {
-              resetSpeedAccumulators();
-              lastChapterPermalink = payload.chapter_permalink;
-            }
-            sessionBytesTotal += pageBytes;
-            setSessionBytes(sessionBytesTotal);
-
-            // The first sample after a reset only seeds the clock; measuring
-            // dt from mount/resume would poison the EMA with a stale interval.
-            if (lastSampleTime === 0) {
-              lastSampleTime = now;
-            } else {
-              const dt = (now - lastSampleTime) / 1000;
-              if (dt > 0.15) {
-                const instantSpeed = pageBytes / dt;
-                const prev = speedBps();
-                const ema = prev === 0 ? instantSpeed : prev * 0.7 + instantSpeed * 0.3;
-                setSpeedBps(ema);
-                lastSampleTime = now;
-
-                // Bytes and pages are gated on the same dt condition so
-                // avgBytesPerPage is not systematically underestimated.
-                totalDownloadedBytes += pageBytes;
-                totalDownloadedPages += 1;
-
-                const currentQueue = items();
-                const pendingItems = currentQueue.filter((i) => i.status === "pending" || i.status === "downloading");
-                const currentActive = currentQueue.find((i) => i.chapter_permalink === payload.chapter_permalink);
-                const remainingPagesInCurrent = Math.max(0, payload.total_pages - payload.pages_done);
-                const otherPendingPages = pendingItems
-                  .filter((i) => i.chapter_permalink !== payload.chapter_permalink)
-                  .reduce((acc, i) => acc + (i.total_pages > 0 ? i.total_pages : 20), 0);
-                const totalRemainingPages = remainingPagesInCurrent + otherPendingPages;
-
-                if (totalDownloadedPages > 0) {
-                  const avgBytesPerPage = totalDownloadedBytes / totalDownloadedPages;
-                  const remainingBytesEst = totalRemainingPages * avgBytesPerPage;
-                  if (ema > 1000) {
-                    setEtaSeconds(remainingBytesEst / ema);
-                  }
-                } else if (currentActive && payload.total_pages > 0) {
-                  const estTotalBytes = payload.total_pages * pageBytes;
-                  const estRemaining = Math.max(0, estTotalBytes - (payload.bytes_done || payload.pages_done * pageBytes));
-                  if (ema > 1000) {
-                    setEtaSeconds(estRemaining / ema);
-                  }
-                }
-              }
-            }
-          }
 
           setActiveProgress((prev) => ({
             ...prev,
@@ -343,9 +299,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
 
   const handlePauseResume = async () => {
     try {
-      resetSpeedAccumulators();
-      setSpeedBps(0);
-      setEtaSeconds(0);
+      resetDownloadSpeedAccumulators();
       if (isPaused()) {
         await resumeDownloads();
         setIsPaused(false);
@@ -360,12 +314,17 @@ export function DownloadManager(props: { onComplete?: () => void }) {
   };
 
   const handleCancelChapter = async (chapterPermalink: string) => {
-    try {
+    await withRowGuard(`cancel:${chapterPermalink}`, async () => {
       await cancelDownload(chapterPermalink);
       await refreshQueue();
-    } catch (err) {
-      showBanner(errorMessage(err));
-    }
+    });
+  };
+
+  const handleRetryChapter = async (chapterPermalink: string) => {
+    await withRowGuard(`retry:${chapterPermalink}`, async () => {
+      await retryChapterDownload(chapterPermalink);
+      await refreshQueue();
+    });
   };
 
   const handleCancelSeries = async (group: SeriesDownloadGroup) => {
@@ -651,10 +610,23 @@ export function DownloadManager(props: { onComplete?: () => void }) {
                                 </span>
                               </div>
 
+                              <Show when={isChFail()}>
+                                <button
+                                  type="button"
+                                  class="win-button ds-btn-sm ds-btn-icon ds-chapter-retry-btn"
+                                  disabled={rowBusy().has(`retry:${ch.chapter_permalink}`)}
+                                  onClick={() => void handleRetryChapter(ch.chapter_permalink)}
+                                  title={t("download.retryChapterTooltip")}
+                                  style="color:var(--ds-warn-text);"
+                                >
+                                  <RefreshIcon size={10} />
+                                </button>
+                              </Show>
                               <Show when={!isChDone()}>
                                 <button
                                   type="button"
                                   class="win-button ds-btn-sm ds-btn-icon ds-chapter-cancel-btn"
+                                  disabled={rowBusy().has(`cancel:${ch.chapter_permalink}`)}
                                   onClick={() => void handleCancelChapter(ch.chapter_permalink)}
                                   title={t("download.cancelChapterTooltip")}
                                 >

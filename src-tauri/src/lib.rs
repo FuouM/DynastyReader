@@ -72,6 +72,8 @@ pub fn run() {
             commands::download_queue::pause_downloads,
             commands::download_queue::resume_downloads,
             commands::download_queue::cancel_download,
+            commands::download_queue::retry_chapter_download,
+            commands::download_queue::set_download_constraints,
             commands::download_queue::retry_failed_downloads,
             commands::download_queue::clear_completed_downloads,
             commands::download_queue::get_download_queue,

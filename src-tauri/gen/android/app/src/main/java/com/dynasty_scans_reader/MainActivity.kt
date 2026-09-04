@@ -114,6 +114,17 @@ class MainActivity : TauriActivity() {
     }
 
     @JavascriptInterface
+    fun isConnectionMetered(): Boolean {
+      return try {
+        val cm = activity.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+          ?: return false
+        cm.isActiveNetworkMetered
+      } catch (_: Exception) {
+        false
+      }
+    }
+
+    @JavascriptInterface
     fun openUrl(url: String?): Boolean {
       if (url.isNullOrBlank()) return false
       val lower = url.trim().lowercase()

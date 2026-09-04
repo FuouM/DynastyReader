@@ -10,6 +10,8 @@ interface AndroidThemeBridge {
   triggerHaptic?(style: string): void;
   openUrl?(url: string): boolean;
   updateTheme?(isDark: boolean, color: string): void;
+  /** ConnectivityManager.isActiveNetworkMetered (QoL-D5 Wi-Fi-only mode). */
+  isConnectionMetered?(): boolean;
 }
 
 declare global {

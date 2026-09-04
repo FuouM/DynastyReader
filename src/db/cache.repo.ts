@@ -238,6 +238,54 @@ export async function clearAllCachedPages(): Promise<void> {
   await deleteCachedPageRows(rows, deleted);
 }
 
+export interface CachePruneResult {
+  prunedChapters: number;
+  freedBytes: number;
+}
+
+/**
+ * "Prune oldest read" eviction sweep (QoL-D3): deletes the least-recently-read
+ * cached chapters' pages until the total page cache is at or below
+ * `ceilingBytes`. Chapters never opened count as oldest (last_read = 0).
+ * `excludePermalinks` protects chapters with an in-flight download — the
+ * queue is still writing their pages, so purging them would orphan rows.
+ */
+export async function pruneOldestReadCachedPages(
+  ceilingBytes: number,
+  excludePermalinks?: ReadonlySet<string>,
+): Promise<CachePruneResult> {
+  if (ceilingBytes <= 0) return { prunedChapters: 0, freedBytes: 0 };
+  const stats = await getCacheOverviewStats();
+  let excess = stats.totalSizeBytes - ceilingBytes;
+  if (excess <= 0) return { prunedChapters: 0, freedBytes: 0 };
+
+  const rows = await query<{ chapter_permalink: string; bytes: number; last_read: number }>(
+    `SELECT cp.chapter_permalink,
+            SUM(COALESCE(cp.size_bytes, 0)) AS bytes,
+            COALESCE((
+              SELECT MAX(rh.read_at) FROM reading_history rh
+              WHERE rh.chapter_permalink = cp.chapter_permalink
+            ), 0) AS last_read
+     FROM cached_pages cp
+     GROUP BY cp.chapter_permalink
+     ORDER BY last_read ASC, bytes DESC`,
+  );
+
+  const toDelete: string[] = [];
+  let freedBytes = 0;
+  for (const row of rows) {
+    if (excess <= 0) break;
+    if (excludePermalinks?.has(row.chapter_permalink)) continue;
+    toDelete.push(row.chapter_permalink);
+    freedBytes += Number(row.bytes) || 0;
+    excess -= Number(row.bytes) || 0;
+  }
+  if (toDelete.length > 0) {
+    await clearCachedGroupPages(toDelete);
+  }
+  return { prunedChapters: toDelete.length, freedBytes };
+}
+
 export async function clearAllCachedCovers(): Promise<void> {
   const coverRows = await query<{ json_payload: string }>(
     `SELECT json_payload FROM cached_metadata WHERE data_type = 'cover'`,

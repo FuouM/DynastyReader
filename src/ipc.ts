@@ -342,6 +342,10 @@ export async function cancelDownload(chapterPermalink: string): Promise<void> {
   await invoke("cancelDownload", { chapterPermalink });
 }
 
+export async function retryChapterDownload(chapterPermalink: string): Promise<void> {
+  await invoke("retryChapterDownload", { chapterPermalink });
+}
+
 export async function retryFailedDownloads(seriesPermalink: string): Promise<void> {
   await invoke("retryFailedDownloads", { seriesPermalink });
 }
@@ -366,6 +370,24 @@ export interface DownloadQueueItem {
 
 export async function getDownloadQueue(): Promise<{ items: DownloadQueueItem[] }> {
   return invoke<{ items: DownloadQueueItem[] }>("getDownloadQueue");
+}
+
+export interface DownloadConstraintsArgs {
+  wifiOnly: boolean;
+  /** Current connection metered status (Android bridge; desktop always false). */
+  metered: boolean;
+  scheduleEnabled: boolean;
+  /** `"HH:mm"` local time. */
+  scheduleStart: string;
+  /** `"HH:mm"` local time. */
+  scheduleEnd: string;
+  /** Minutes east of UTC (`-new Date().getTimezoneOffset()`). */
+  tzOffsetMinutes: number;
+}
+
+/** Pushes download scheduling / Wi-Fi-only constraints into the Rust processor state. */
+export async function setDownloadConstraints(args: DownloadConstraintsArgs): Promise<void> {
+  await invoke("setDownloadConstraints", { ...args });
 }
 
 /* ---------------------------------------------------------------------------

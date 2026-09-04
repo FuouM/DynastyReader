@@ -54,11 +54,35 @@ pub struct EnqueueResult {
     pub already_queued_count: usize,
 }
 
+/// Download scheduling / connection constraints pushed from the frontend via
+/// `setDownloadConstraints`. Kept in-memory so the processor loop never has
+/// to hit the DB to evaluate them.
+///
+/// Wi-Fi-only note: there is no reliable desktop metered-connection API
+/// without extra dependencies, so desktop always reports `metered = false`
+/// (unmetered). On Android the frontend reads `ConnectivityManager` via the
+/// `AndroidThemeBridge.isConnectionMetered()` JS bridge and pushes the result
+/// here.
+#[derive(Debug, Clone, Default)]
+pub struct DownloadConstraints {
+    pub wifi_only: bool,
+    pub metered: bool,
+    pub schedule_enabled: bool,
+    /// Window start, `"HH:mm"` local time.
+    pub schedule_start: String,
+    /// Window end, `"HH:mm"` local time.
+    pub schedule_end: String,
+    /// Minutes east of UTC (i.e. `-new Date().getTimezoneOffset()`), used to
+    /// derive local time-of-day from the system clock without a chrono dep.
+    pub tz_offset_minutes: i32,
+}
+
 pub struct DownloadState {
     pub paused: AtomicBool,
     pub notify: Notify,
     pub cancel_map: Mutex<HashMap<String, watch::Sender<bool>>>,
     pub running: AtomicBool,
+    pub constraints: Mutex<DownloadConstraints>,
 }
 
 impl Default for DownloadState {
@@ -68,6 +92,7 @@ impl Default for DownloadState {
             notify: Notify::new(),
             cancel_map: Mutex::new(HashMap::new()),
             running: AtomicBool::new(false),
+            constraints: Mutex::new(DownloadConstraints::default()),
         }
     }
 }
@@ -312,6 +337,66 @@ pub async fn cancel_download(
     Ok(())
 }
 
+#[tauri::command(rename = "retryChapterDownload")]
+pub async fn retry_chapter_download(
+    app: AppHandle,
+    state: State<'_, DownloadState>,
+    http_state: State<'_, crate::commands::http::HttpState>,
+    chapter_permalink: String,
+) -> Result<(), String> {
+    let cp = chapter_permalink.clone();
+    tokio::task::spawn_blocking(move || -> Result<(), String> {
+        let conn = crate::commands::db::open_synced(&db_path()).map_err(|e| format!("open db: {e}"))?;
+        let now = chrono_now();
+        let updated = conn
+            .execute(
+                "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE chapter_permalink = ?2 AND status = 'failed'",
+                rusqlite::params![now, cp],
+            )
+            .map_err(|e| format!("retry chapter failed: {e}"))?;
+        if updated == 0 {
+            return Err("chapter is not in a failed state".to_string());
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("retry chapter task failed: {e}"))??;
+
+    state.paused.store(false, Ordering::SeqCst);
+    ensure_processor_running(&app, &state, &http_state.0);
+    Ok(())
+}
+
+#[tauri::command(rename = "setDownloadConstraints")]
+pub async fn set_download_constraints(
+    app: AppHandle,
+    state: State<'_, DownloadState>,
+    http_state: State<'_, crate::commands::http::HttpState>,
+    wifi_only: bool,
+    metered: bool,
+    schedule_enabled: bool,
+    schedule_start: String,
+    schedule_end: String,
+    tz_offset_minutes: i32,
+) -> Result<(), String> {
+    {
+        let mut c = lock_unpoisoned(&state.constraints);
+        *c = DownloadConstraints {
+            wifi_only,
+            metered,
+            schedule_enabled,
+            schedule_start,
+            schedule_end,
+            tz_offset_minutes,
+        };
+    }
+    // Wake a parked processor immediately so newly-allowed work resumes and
+    // newly-blocked work is re-evaluated on the next loop iteration.
+    state.notify.notify_waiters();
+    ensure_processor_running(&app, &state, &http_state.0);
+    Ok(())
+}
+
 #[tauri::command(rename = "retryFailedDownloads")]
 pub async fn retry_failed_downloads(
     app: AppHandle,
@@ -429,6 +514,53 @@ fn chrono_now() -> i64 {
         .unwrap_or(0)
 }
 
+/// Parses `"HH:mm"` into minutes since midnight; `None` when malformed.
+fn parse_hhmm(s: &str) -> Option<i32> {
+    let (h, m) = s.split_once(':')?;
+    let h: i32 = h.trim().parse().ok()?;
+    let m: i32 = m.trim().parse().ok()?;
+    if !(0..24).contains(&h) || !(0..60).contains(&m) {
+        return None;
+    }
+    Some(h * 60 + m)
+}
+
+/// Local time-of-day in minutes, derived from the system clock and the
+/// frontend-pushed timezone offset.
+fn local_minutes_of_day(tz_offset_minutes: i32) -> i32 {
+    let epoch_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    let local_mins = (epoch_secs / 60) + tz_offset_minutes as i64;
+    local_mins.rem_euclid(1440) as i32
+}
+
+/// Whether the current constraints forbid starting the next chapter:
+/// Wi-Fi-only on a metered connection, or outside the configured schedule
+/// window (supports overnight windows where start > end).
+fn constraints_blocked(state: &DownloadState) -> bool {
+    let c = lock_unpoisoned(&state.constraints).clone();
+    if c.wifi_only && c.metered {
+        return true;
+    }
+    if c.schedule_enabled {
+        if let (Some(start), Some(end)) = (parse_hhmm(&c.schedule_start), parse_hhmm(&c.schedule_end))
+        {
+            let now = local_minutes_of_day(c.tz_offset_minutes);
+            let in_window = if start <= end {
+                now >= start && now < end
+            } else {
+                now >= start || now < end
+            };
+            if !in_window {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
     let state: State<DownloadState> = app.state();
     // Ensure stuck rows are reset (blocking, so offload)
@@ -440,6 +572,16 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         if state.paused.load(Ordering::SeqCst) {
             state.notify.notified().await;
             continue;
+        }
+
+        // Constraint gate (QoL-D5): Wi-Fi-only on a metered connection or
+        // outside the user schedule window. Park with a 60s poll; a settings
+        // change wakes us early via `notify`.
+        if constraints_blocked(&state) {
+            tokio::select! {
+                _ = state.notify.notified() => continue,
+                _ = tokio::time::sleep(std::time::Duration::from_secs(60)) => continue,
+            }
         }
 
         // Pick next pending row — run blocking DB work without holding

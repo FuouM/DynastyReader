@@ -33,6 +33,7 @@ import {
   type FullyCachedChapterRow,
   type DbStats,
   type CacheOverviewStats,
+  pruneOldestReadCachedPages,
 } from "../db";
 import {
   SeriesDownloadedCard,
@@ -49,8 +50,15 @@ import { Pager } from "../components/Pager";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
 import { GroupBox } from "../components/GroupBox";
-import { ConfirmDeleteButton, IconText, IconButton, StatCard } from "../components/Button";
+import { ConfirmDeleteButton, IconText, IconButton, StatCard, DsSelect, DsSwitch } from "../components/Button";
 import { useCacheActions } from "./useCacheActions";
+import {
+  CACHE_CEILING_OPTIONS,
+  cacheCeilingBytes,
+  setCacheCeilingBytes,
+  cacheAutoPruneEnabled,
+  setCacheAutoPruneEnabled,
+} from "../utils/cache-quota";
 import { Loading } from "../components/Loading";
 import { ErrorRetryRow } from "../components/ErrorRetryRow";
 import {
@@ -309,6 +317,7 @@ export function CacheView() {
           deleteChapter={deleteChapter}
           deleteAllOrphans={deleteAllOrphans}
           isChapterDownloading={isChapterDownloading}
+          onPruned={() => void refetch()}
         />
       </Show>
     </div>
@@ -344,7 +353,37 @@ function CacheBody(props: {
   deleteChapter: (chapterPermalink: string) => Promise<void>;
   deleteAllOrphans: (orphans: ProcessedCachedChapter[]) => Promise<void>;
   isChapterDownloading: (chapterPermalink: string) => boolean;
+  onPruned: () => void;
 }) {
+  const [pruning, setPruning] = createSignal(false);
+
+  const ceilingUsage = (): string => {
+    const ceiling = cacheCeilingBytes();
+    const used = formatBytes(props.stats.totalSizeBytes);
+    return ceiling > 0
+      ? t("cache.ceilingUsageLimited", { used, ceiling: formatBytes(ceiling) })
+      : t("cache.ceilingUsageUnlimited", { used });
+  };
+
+  const handlePruneNow = async () => {
+    const ceiling = cacheCeilingBytes();
+    if (ceiling <= 0 || pruning()) return;
+    setPruning(true);
+    try {
+      const res = await pruneOldestReadCachedPages(ceiling, downloadingChapterPermalinks());
+      showBanner(
+        res.prunedChapters > 0
+          ? t("cache.pruneDone", { count: res.prunedChapters, freed: formatBytes(res.freedBytes) })
+          : t("cache.pruneNoop"),
+      );
+      props.onPruned();
+    } catch (err) {
+      showBanner(errorMessage(err));
+    } finally {
+      setPruning(false);
+    }
+  };
+
   return (
     <>
       <GroupBox title={<IconText icon={<ChartIcon />}>{t("cache.overviewTitle")}</IconText>}>
@@ -353,6 +392,41 @@ function CacheBody(props: {
           <StatCard value={props.stats.totalCachedPages} label={t("cache.pagesCached")} />
           <StatCard value={props.stats.totalCachedChapters} label={t("cache.chaptersCached")} />
           <StatCard value={props.totalWorks} label={t("cache.seriesCached")} />
+        </div>
+      </GroupBox>
+
+      <GroupBox title={<IconText icon={<StorageIcon />}>{t("cache.ceilingTitle")}</IconText>}>
+        <div class="ds-col" style="gap:8px;">
+          <div class="ds-cache-actions" style="align-items:center;">
+            <span class="ds-muted">{t("cache.ceilingLabel")}</span>
+            <DsSelect
+              id="ds-cache-ceiling-select"
+              value={String(cacheCeilingBytes())}
+              options={CACHE_CEILING_OPTIONS.map((o) => ({
+                value: String(o.value),
+                label: t(o.labelKey),
+              }))}
+              onChange={(v) => setCacheCeilingBytes(Number(v) || 0)}
+            />
+          </div>
+          <div class="ds-muted">{ceilingUsage()}</div>
+          <div class="ds-cache-actions" style="align-items:center;">
+            <DsSwitch
+              id="ds-cache-auto-prune"
+              checked={cacheAutoPruneEnabled()}
+              disabled={cacheCeilingBytes() <= 0}
+              title={t("cache.autoPruneTooltip")}
+              onChange={(next) => setCacheAutoPruneEnabled(next)}
+            />
+            <span class="ds-muted">{t("cache.autoPruneLabel")}</span>
+            <IconButton
+              icon={<RefreshIcon />}
+              text={pruning() ? t("cache.pruneRunning") : t("cache.pruneNow")}
+              title={t("cache.pruneNowTooltip")}
+              disabled={cacheCeilingBytes() <= 0 || pruning()}
+              onClick={() => void handlePruneNow()}
+            />
+          </div>
         </div>
       </GroupBox>
 
