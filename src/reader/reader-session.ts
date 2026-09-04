@@ -138,6 +138,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   readonly controlsOpen: () => boolean;
   readonly setControlsOpen: (val: boolean) => void;
   private toolbarHideTimer: number | null = null;
+  private priorFitMode: FitMode | null = null;
   // Reactive cache / slot state (index -> path / {kind, message}) -----------
   readonly cachedPages: ReturnType<typeof createStore<Record<number, string | undefined>>>;
   readonly slotStates: ReturnType<typeof createStore<Record<number, SlotStateRecord | undefined>>>;
@@ -614,6 +615,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   }
 
   setFitMode(fit: FitMode): void {
+    this.priorFitMode = null;
     this.setFitModeSignal(fit);
     setDefaultFitMode(fit);
     this.applyFitClass(fit);
@@ -653,6 +655,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
    */
   private enterZoomedFit(): void {
     if (this.fitMode() === "original") return;
+    this.priorFitMode = this.fitMode();
     const factor = Math.max(0.25, Math.min(4, this.displayScaleFactor()));
     this.setFitModeSignal("original");
     this.applyFitClass("original");
@@ -664,23 +667,48 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     }
   }
 
+  private exitZoomedFit(): void {
+    const prior = this.priorFitMode;
+    this.priorFitMode = null;
+    if (prior && prior !== "original") {
+      this.setFitModeSignal(prior);
+      this.applyFitClass(prior);
+      this.setZoomScaleSignal(1.0);
+      if (!this.isHorizontal()) {
+        requestAnimationFrame(() => this.updateSlotClearances());
+      } else {
+        this.resetToCurrentPage(false);
+      }
+    }
+  }
+
   /** Multiplicative zoom (trackpad ctrl+wheel / pinch) in any fit mode. */
   zoomByFactor(f: number): void {
     if (!isFinite(f) || f <= 0) return;
+    const baseScale = this.displayScaleFactor();
     if (this.fitMode() !== "original") {
       // Already at (or below) fitted size — zooming out further is a no-op.
       if (f <= 1) return;
       this.enterZoomedFit();
     }
-    this.setZoomScaleClamped(this.zoomScale() * f);
+    const newScale = this.zoomScale() * f;
+    if (this.priorFitMode && newScale <= baseScale) {
+      this.exitZoomedFit();
+      return;
+    }
+    this.setZoomScaleClamped(newScale);
   }
 
   /** Absolute zoom target for two-finger pinch in any fit mode. */
   applyPinchZoom(target: number): void {
     if (!isFinite(target)) return;
+    const baseScale = this.displayScaleFactor();
     if (this.fitMode() !== "original") {
-      if (target <= this.displayScaleFactor()) return;
+      if (target <= baseScale) return;
       this.enterZoomedFit();
+    } else if (this.priorFitMode && target <= baseScale) {
+      this.exitZoomedFit();
+      return;
     }
     this.setZoomScaleClamped(target);
   }
@@ -736,6 +764,10 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
 
   resetZoom(): void {
     if (this.fitMode() !== "original") return;
+    if (this.priorFitMode) {
+      this.exitZoomedFit();
+      return;
+    }
     this.setZoomScaleSignal(1.0);
     if (!this.isHorizontal()) {
       requestAnimationFrame(() => this.updateSlotClearances());

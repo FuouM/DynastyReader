@@ -89,7 +89,10 @@ fn slugify(input: &str) -> String {
     }
     let trimmed = out.trim_matches('-').to_string();
     if trimmed.is_empty() {
-        "local".to_string()
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        input.hash(&mut hasher);
+        format!("series-{:08x}", hasher.finish() as u32)
     } else {
         trimmed
     }
@@ -916,11 +919,6 @@ fn resolve_local_series_dir(slug: &str) -> Result<std::path::PathBuf, String> {
     crate::paths::resolve_in_root(&format!("local/{slug}"))
 }
 
-/// Escape LIKE wildcards so a raw slug matches literally inside a LIKE pattern
-/// (pair every pattern built with this with `ESCAPE '\\'` in the query).
-fn like_escape(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
-}
 
 #[tauri::command(rename = "deleteLocalSeries")]
 pub async fn delete_local_series(permalink: String) -> Result<(), String> {
@@ -931,43 +929,73 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
         let slug = permalink.trim_start_matches("local:");
         let data_root = crate::paths::data_root();
         let series_dir = resolve_local_series_dir(slug)?;
+        // Discover exact chapter permalinks from disk and metadata before
+        // removing files, so we never rely on a broad prefix LIKE that could
+        // match sibling/sequel series (e.g. deleting 'manga' matching 'manga-2').
+        let mut chapter_permalinks = Vec::new();
+        let chapters_dir = series_dir.join("chapters");
+        if chapters_dir.is_dir() {
+            if let Ok(rd) = std::fs::read_dir(&chapters_dir) {
+                for ent in rd.flatten() {
+                    if ent.path().is_dir() {
+                        if let Some(ch_slug) = ent.file_name().to_str() {
+                            chapter_permalinks.push(format!("local:{}-{}", slug, ch_slug));
+                        }
+                    }
+                }
+            }
+        }
+
         if series_dir.exists() {
             std::fs::remove_dir_all(&series_dir).map_err(|e| format!("failed deleting series dir: {e}"))?;
         }
         let db_path = data_root.join("dynasty_reader.db");
         if db_path.exists() {
             let conn = crate::commands::db::open_synced(&db_path)?;
-            // Delete rows in transaction. Chapter permalinks for this series
-            // always match `local:<slug>-…`, so prefix-match directly instead
-            // of discovering chapters via cached_metadata (which misses rows
-            // when the metadata cache is absent).
+            // Also harvest any chapter permalinks explicitly declared in cached_metadata
+            let stmt = conn.prepare(
+                "SELECT cache_key FROM cached_metadata WHERE data_type = 'chapter' AND json_extract(json_payload, '$.series_permalink') = ?1",
+            );
+            if let Ok(mut s) = stmt {
+                if let Ok(rows) = s.query_map(rusqlite::params![permalink], |r| r.get::<_, String>(0)) {
+                    for key in rows.flatten() {
+                        let cp = key.trim_start_matches("chapter:").to_string();
+                        if !chapter_permalinks.contains(&cp) {
+                            chapter_permalinks.push(cp);
+                        }
+                    }
+                }
+            }
+
             let tx = conn.unchecked_transaction().map_err(|e| format!("tx failed: {e}"))?;
             tx.execute("DELETE FROM local_series WHERE permalink = ?1", rusqlite::params![permalink])
                 .map_err(|e| format!("delete local_series failed: {e}"))?;
             tx.execute(
-                "DELETE FROM cached_metadata WHERE cache_key = ?1 OR cache_key LIKE ?2 ESCAPE '\\' OR cache_key LIKE ?3 ESCAPE '\\'",
+                "DELETE FROM cached_metadata WHERE cache_key = ?1 OR cache_key = ?2",
                 rusqlite::params![
                     format!("series:{}", permalink),
-                    format!("chapter:local:{}-%", like_escape(slug)),
-                    format!("cover:%local:{}%", like_escape(slug))
+                    format!("cover:series:{}", permalink),
                 ],
             )
-            .map_err(|e| format!("delete cached_metadata failed: {e}"))?;
-
-            let chapter_pattern = format!("local:{}-%", like_escape(slug));
-            for table in ["cached_pages", "reading_progress", "reading_history", "bookmarks"] {
-                tx.execute(
-                    &format!("DELETE FROM {table} WHERE chapter_permalink LIKE ?1 ESCAPE '\\'"),
-                    rusqlite::params![chapter_pattern],
-                )
-                .map_err(|e| format!("delete {table} failed: {e}"))?;
-            }
-            // Also delete any cover metadata for this series
-            tx.execute(
-                "DELETE FROM cached_metadata WHERE cache_key = ?1 OR cache_key = ?2",
-                rusqlite::params![format!("cover:series:{}", permalink), format!("cover:chapter:{}", permalink)],
-            )
             .ok();
+
+            for cp in &chapter_permalinks {
+                for table in ["cached_pages", "reading_progress", "reading_history", "bookmarks"] {
+                    tx.execute(
+                        &format!("DELETE FROM {table} WHERE chapter_permalink = ?1"),
+                        rusqlite::params![cp],
+                    )
+                    .map_err(|e| format!("delete {table} failed: {e}"))?;
+                }
+                tx.execute(
+                    "DELETE FROM cached_metadata WHERE cache_key = ?1 OR cache_key = ?2",
+                    rusqlite::params![
+                        format!("chapter:{}", cp),
+                        format!("cover:chapter:{}", cp),
+                    ],
+                )
+                .ok();
+            }
             tx.commit().map_err(|e| format!("commit failed: {e}"))?;
         }
         Ok(())
@@ -1077,4 +1105,24 @@ pub async fn update_local_series(
     .await
     .map_err(|e| format!("update task failed: {e}"))??;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_slugify_ascii_and_non_ascii() {
+        assert_eq!(slugify("My Cute Kitten"), "my-cute-kitten");
+        assert_eq!(slugify("Chapter 1: The Beginning!"), "chapter-1-the-beginning");
+        
+        // Non-ASCII/CJK titles must not produce empty strings
+        let slug_jp = slugify("ゆりめいと");
+        assert!(!slug_jp.is_empty(), "CJK slug must not be empty");
+        assert!(slug_jp.starts_with("series-"), "CJK slug must have series- prefix");
+
+        let slug_cn = slugify("小猫咪");
+        assert!(!slug_cn.is_empty(), "Chinese slug must not be empty");
+        assert_ne!(slug_jp, slug_cn, "Different CJK titles must produce distinct slugs");
+    }
 }

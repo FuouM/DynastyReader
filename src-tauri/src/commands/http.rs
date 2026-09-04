@@ -148,7 +148,12 @@ pub async fn send_with_redirects(
             .await
             .map_err(|e| format!("http request failed: {e}"))?;
         let status = resp.status();
-        if !status.is_redirection() {
+        let code = status.as_u16();
+        // Only 301, 302, 303, 307, 308 are redirects with a Location target to
+        // follow. 304 Not Modified is a caching revalidation response (RFC 9110)
+        // that carries no Location header, and 300 Multiple Choices is not an
+        // automatic redirect.
+        if !matches!(code, 301 | 302 | 303 | 307 | 308) {
             return Ok(resp);
         }
         if hop == MAX_REDIRECTS {
@@ -245,17 +250,20 @@ pub async fn http_download(
         return Err(format!("http download failed: status {}", resp.status()));
     }
 
-    // Write through the temp file's own handle (`into_file`) — opening the same
-    // path twice can hit Windows sharing violations. `into_file` detaches the
-    // RAII guard, so the error path below removes the partial file manually.
+    // Write through the temp file's own handle (`keep()`) — opening the same
+    // path twice can hit Windows sharing violations. `keep()` detaches the
+    // RAII auto-delete guard so the file remains on disk for atomic rename,
+    // and the error path below removes the partial file manually if write fails.
     let temp_file = tempfile::Builder::new()
         .prefix(".tmp-download-")
         .tempfile_in(parent)
         .map_err(|e| format!("failed creating temp download file: {e}"))?;
 
-    let temp_path = temp_file.path().to_path_buf();
+    let (std_file, temp_path) = temp_file
+        .keep()
+        .map_err(|e| format!("failed keeping temp download file: {e}"))?;
     let write_result: Result<u64, String> = async {
-        let mut out = tokio::fs::File::from_std(temp_file.into_file());
+        let mut out = tokio::fs::File::from_std(std_file);
         let mut stream = resp.bytes_stream();
         let mut total: u64 = 0;
         while let Some(chunk) = stream.next().await {
@@ -273,6 +281,7 @@ pub async fn http_download(
         out.flush()
             .await
             .map_err(|e| format!("failed writing download: {e}"))?;
+        drop(out);
         Ok(total)
     }
     .await;
@@ -324,5 +333,65 @@ mod tests {
         assert!(validate_http_url("http://169.254.169.254/metadata").is_err());
         assert!(validate_http_url("http://0.0.0.0/").is_err());
         assert!(validate_http_url("http://[::1]/").is_err());
+    }
+
+    #[tokio::test]
+    async fn test_tempfile_download_lifecycle() {
+        use tokio::io::AsyncWriteExt;
+        let dir = std::env::temp_dir();
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+
+        // 1. Successful download flow: keep -> from_std -> write -> flush -> drop -> rename
+        let tmp = tempfile::Builder::new()
+            .prefix(".tmp-test-")
+            .tempfile_in(&dir)
+            .unwrap();
+        let target = dir.join(format!(".tmp-target-test-{}", nonce));
+        let (std_file, tmp_path) = tmp.keep().expect("keep temp file");
+        assert!(tmp_path.exists(), "temp file must exist on disk after keep()");
+
+        let mut out = tokio::fs::File::from_std(std_file);
+        out.write_all(b"cover image data").await.unwrap();
+        out.flush().await.unwrap();
+        drop(out);
+
+        tokio::fs::rename(&tmp_path, &target).await.unwrap();
+        assert!(target.exists(), "target must exist after atomic rename");
+        assert!(!tmp_path.exists(), "temp path must not exist after rename");
+        let content = tokio::fs::read(&target).await.unwrap();
+        assert_eq!(content, b"cover image data");
+        let _ = tokio::fs::remove_file(&target).await;
+
+        // 2. Error cleanup flow: keep -> simulated failure -> remove_file
+        let tmp_err = tempfile::Builder::new()
+            .prefix(".tmp-test-err-")
+            .tempfile_in(&dir)
+            .unwrap();
+        let (_std_file_err, tmp_err_path) = tmp_err.keep().expect("keep temp file");
+        assert!(tmp_err_path.exists());
+        // Simulated failure clean up
+        let _ = tokio::fs::remove_file(&tmp_err_path).await;
+        assert!(!tmp_err_path.exists(), "temp file must be deleted on error path");
+    }
+
+    #[test]
+    fn test_status_code_redirect_classification() {
+        // True HTTP redirects with a Location header to follow
+        for code in [301, 302, 303, 307, 308] {
+            assert!(
+                matches!(code, 301 | 302 | 303 | 307 | 308),
+                "code {code} must be classified as redirect"
+            );
+        }
+        // Status codes that must NOT be treated as redirects (304 Not Modified, etc.)
+        for code in [200, 204, 300, 304, 305, 306, 400, 404, 500] {
+            assert!(
+                !matches!(code, 301 | 302 | 303 | 307 | 308),
+                "code {code} must not be classified as redirect"
+            );
+        }
     }
 }

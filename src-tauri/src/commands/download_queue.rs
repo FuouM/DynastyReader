@@ -140,6 +140,17 @@ async fn wait_until_paused(state: &DownloadState) {
     }
 }
 
+static RESET_STUCK_ONCE: std::sync::Once = std::sync::Once::new();
+
+fn reset_stuck_downloads_once(conn: &rusqlite::Connection) {
+    RESET_STUCK_ONCE.call_once(|| {
+        let _ = conn.execute(
+            "UPDATE download_queue SET status = 'pending' WHERE status = 'downloading'",
+            [],
+        );
+    });
+}
+
 fn ensure_download_queue_table() -> Result<(), String> {
     let conn = crate::commands::db::open_synced(&db_path()).map_err(|e| format!("open db: {e}"))?;
     // busy_timeout/WAL/foreign_keys already applied by open_synced.
@@ -161,12 +172,9 @@ fn ensure_download_queue_table() -> Result<(), String> {
         [],
     )
     .map_err(|e| format!("create download_queue failed: {e}"))?;
-    // Reset stuck downloading rows to pending on boot
-    conn.execute(
-        "UPDATE download_queue SET status = 'pending' WHERE status = 'downloading'",
-        [],
-    )
-    .ok();
+    // Reset stuck downloading rows to pending strictly once on boot,
+    // never while downloads are actively running in flight.
+    reset_stuck_downloads_once(&conn);
     Ok(())
 }
 
@@ -925,16 +933,19 @@ async fn download_chapter(
                     return Err(format!("http status {}", resp.status()));
                 }
                 // Stream to a temp file with a hard byte cap, then atomically rename.
-                // Write through the temp file's own handle (`into_file`) — a second
+                // Write through the temp file's own handle (`keep()`) — a second
                 // `File::create` on the same path risks Windows sharing violations.
+                // `keep()` detaches the auto-delete guard so the file remains for rename.
                 let parent = target.parent().unwrap_or(&target);
                 let tmp = tempfile::Builder::new()
                     .prefix(".tmp-download-")
                     .tempfile_in(parent)
                     .map_err(|e| format!("tmp file: {e}"))?;
-                let tmp_path = tmp.path().to_path_buf();
+                let (std_file, tmp_path) = tmp
+                    .keep()
+                    .map_err(|e| format!("keep tmp file: {e}"))?;
                 let write_res: Result<u64, String> = async {
-                    let mut out = tokio::fs::File::from_std(tmp.into_file());
+                    let mut out = tokio::fs::File::from_std(std_file);
                     let mut stream = resp.bytes_stream();
                     let mut size: u64 = 0;
                     while let Some(chunk) = stream.next().await {
@@ -946,6 +957,7 @@ async fn download_chapter(
                         out.write_all(&chunk).await.map_err(|e| format!("write tmp: {e}"))?;
                     }
                     out.flush().await.map_err(|e| format!("write tmp: {e}"))?;
+                    drop(out);
                     Ok(size)
                 }
                 .await;

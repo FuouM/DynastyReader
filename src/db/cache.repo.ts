@@ -54,9 +54,11 @@ export async function getCacheOverviewStats(): Promise<CacheOverviewStats> {
   // full-tree dirStat walk of the data root.
   const [pageRows, metaRows] = await Promise.all([
     query<{ pages: number; chapters: number; total_bytes: number }>(
-      `SELECT COUNT(*) as pages, COUNT(DISTINCT chapter_permalink) as chapters, SUM(COALESCE(size_bytes, 0)) as total_bytes FROM cached_pages`,
+      `SELECT COUNT(*) as pages, COUNT(DISTINCT chapter_permalink) as chapters, SUM(COALESCE(size_bytes, 0)) as total_bytes FROM cached_pages WHERE chapter_permalink NOT LIKE 'local:%'`,
     ),
-    query<{ count: number }>(`SELECT COUNT(*) as count FROM cached_metadata`),
+    query<{ count: number }>(
+      `SELECT COUNT(*) as count FROM cached_metadata WHERE cache_key NOT LIKE 'series:local:%' AND cache_key NOT LIKE 'chapter:local:%' AND cache_key NOT LIKE 'cover:%local:%'`,
+    ),
   ]);
 
   return {
@@ -232,7 +234,7 @@ export async function clearCachedGroupPages(chapterPermalinks: string[]): Promis
 
 export async function clearAllCachedPages(): Promise<void> {
   const rows = await query<{ chapter_permalink: string; file_path: string }>(
-    `SELECT chapter_permalink, file_path FROM cached_pages`,
+    `SELECT chapter_permalink, file_path FROM cached_pages WHERE chapter_permalink NOT LIKE 'local:%'`,
   );
   const deleted = await deleteFiles(rows.map((r) => r.file_path));
   await deleteCachedPageRows(rows, deleted);
@@ -267,6 +269,7 @@ export async function pruneOldestReadCachedPages(
               WHERE rh.chapter_permalink = cp.chapter_permalink
             ), 0) AS last_read
      FROM cached_pages cp
+     WHERE cp.chapter_permalink NOT LIKE 'local:%'
      GROUP BY cp.chapter_permalink
      ORDER BY last_read ASC, bytes DESC`,
   );
@@ -304,10 +307,10 @@ export async function clearAllCacheStorage(): Promise<void> {
   // orphans a file the DB has already forgotten.
   const [pageRows, coverRows] = await Promise.all([
     query<{ chapter_permalink: string; file_path: string }>(
-      `SELECT chapter_permalink, file_path FROM cached_pages`,
+      `SELECT chapter_permalink, file_path FROM cached_pages WHERE chapter_permalink NOT LIKE 'local:%'`,
     ),
     query<{ json_payload: string }>(
-      `SELECT json_payload FROM cached_metadata WHERE data_type = 'cover'`,
+      `SELECT json_payload FROM cached_metadata WHERE data_type = 'cover' AND cache_key NOT LIKE 'cover:%local:%'`,
     ),
   ]);
   const pagePaths = pageRows.map((r) => r.file_path);
@@ -339,7 +342,7 @@ export async function clearAllCacheStorage(): Promise<void> {
     );
     batchParams.push(deletedCoverPaths);
   }
-  statements.push(`DELETE FROM cached_metadata WHERE data_type = 'chapter'`);
+  statements.push(`DELETE FROM cached_metadata WHERE data_type = 'chapter' AND cache_key NOT LIKE 'chapter:local:%'`);
   batchParams.push([]);
   await ipc.dbExecuteBatch(DB_NAME, statements, batchParams);
 }
