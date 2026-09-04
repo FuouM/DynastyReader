@@ -101,9 +101,10 @@ export async function unfollowSeries(permalink: string): Promise<void> {
 export async function updateFollowedSeriesCover(
   permalink: string,
   cover: string | null,
+  notify = false,
 ): Promise<void> {
   await execute(`UPDATE followed_series SET cover = ? WHERE permalink = ?`, [cover, permalink]);
-  notifyFollowedChanged();
+  if (notify) notifyFollowedChanged();
 }
 
 export async function getReadingProgress(

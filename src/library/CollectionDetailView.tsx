@@ -44,7 +44,10 @@ import {
   StarIcon,
   ArrowLeftIcon,
   RefreshIcon,
+  Icon,
 } from "../components/Icon";
+import { ExportModal } from "./ExportModal";
+import { ImportModal } from "./ImportModal";
 import { IconButton } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { LibraryItemRow } from "./LibraryItemRow";
@@ -73,6 +76,8 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
   });
 
   const [filter, setFilter] = createSignal("");
+  const [exportOpen, setExportOpen] = createSignal(false);
+  const [importOpen, setImportOpen] = createSignal(false);
   const [data] = createResource(
     () => ({ id: props.collectionId, tick: tick(), rev: rev() }),
     async ({ id }) => {
@@ -92,6 +97,18 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
           text={t("library.backToLibrary")}
           title={t("library.backToLibrary")}
           onClick={() => navigate({ view: "library" })}
+        />
+        <IconButton
+          icon={<Icon name="box-arrow-in-down" />}
+          text={t("library.importButton")}
+          title={t("library.importCollectionTooltip")}
+          onClick={() => setImportOpen(true)}
+        />
+        <IconButton
+          icon={<Icon name="box-arrow-up" />}
+          text={t("library.exportButton")}
+          title={t("library.exportCollectionTooltip")}
+          onClick={() => setExportOpen(true)}
         />
         <IconButton
           icon={<RefreshIcon />}
@@ -194,6 +211,21 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
           </Show>
         </div>
       </Show>
+      <ExportModal
+        open={exportOpen}
+        initialScope="collection"
+        initialCollectionId={props.collectionId}
+        collectionName={collection()?.name}
+        onClose={() => setExportOpen(false)}
+      />
+      <ImportModal
+        open={importOpen}
+        initialTarget="collection"
+        initialCollectionId={props.collectionId}
+        collectionName={collection()?.name}
+        onClose={() => setImportOpen(false)}
+        onImported={() => setTick((t) => t + 1)}
+      />
     </div>
   );
 }
@@ -205,8 +237,12 @@ function CollectionItemCard(props: {
 }) {
   const isChapterLike = () =>
     props.it.item_kind === "chapter" ||
-    props.it.item_kind === "oneshot" ||
-    props.it.item_kind === "doujin";
+    props.it.item_kind === "oneshot";
+
+  const isSeriesLike = () =>
+    props.it.item_kind === "series" ||
+    props.it.item_kind === "doujin" ||
+    props.it.item_kind === "anthology";
 
   const [cover, setCover] = createSignal(props.it.cover);
 
@@ -218,8 +254,8 @@ function CollectionItemCard(props: {
     const c = props.it.cover;
     if (c && (c.includes("/") || c.includes("\\"))) return;
     const task =
-      !isChapterLike() && props.it.item_kind === "series"
-        ? getOrHydrateSeriesCover(props.it.item_permalink)
+      isSeriesLike()
+        ? getOrHydrateSeriesCover(props.it.item_permalink, props.it.item_kind)
         : getOrHydrateItemCover({
             coverKey: props.it.cover || `chapter:${props.it.item_permalink}`,
             chapterPermalink: props.it.item_permalink,

@@ -54,6 +54,9 @@ import {
 } from "./panes";
 import { LocalPane } from "./LocalPane";
 import { CollectionDetailView } from "./CollectionDetailView";
+import { ExportModal } from "./ExportModal";
+import { ImportModal } from "./ImportModal";
+import type { ExportScope } from "../db";
 export function LibraryView() {
   return (
     <Show
@@ -115,6 +118,20 @@ function LibraryGrid() {
   const [refreshing, setRefreshing] = createSignal(false);
   const [justUpdated, setJustUpdated] = createSignal(false);
   const [creating, setCreating] = createSignal(false);
+  const [exportOpen, setExportOpen] = createSignal(false);
+  const [exportScope, setExportScope] = createSignal<ExportScope>("followed");
+
+  const openExport = (s: ExportScope): void => {
+    setExportScope(s);
+    setExportOpen(true);
+  };
+  const [importOpen, setImportOpen] = createSignal(false);
+  const [importTarget, setImportTarget] = createSignal<"followed" | "collections">("followed");
+
+  const openImport = (target: "followed" | "collections"): void => {
+    setImportTarget(target);
+    setImportOpen(true);
+  };
   const isNarrow = createMediaQuery("(max-width: 680px)");
 
   const isNarrowOrMobile = () => isNarrow() || isMobile();
@@ -273,7 +290,33 @@ function LibraryGrid() {
               }
               actions={
                 <div class="ds-library-detail-actions">
+                  <Show when={activeTab() === "followed"}>
+                    <IconButton
+                      icon={<Icon name="box-arrow-in-down" />}
+                      text={t("library.importButton")}
+                      title={t("library.importFollowedTooltip")}
+                      onClick={() => openImport("followed")}
+                    />
+                    <IconButton
+                      icon={<Icon name="box-arrow-up" />}
+                      text={t("library.exportButton")}
+                      title={t("library.exportFollowedTooltip")}
+                      onClick={() => openExport("followed")}
+                    />
+                  </Show>
                   <Show when={activeTab() === "collections"}>
+                    <IconButton
+                      icon={<Icon name="box-arrow-in-down" />}
+                      text={t("library.importButton")}
+                      title={t("library.importCollectionsTooltip")}
+                      onClick={() => openImport("collections")}
+                    />
+                    <IconButton
+                      icon={<Icon name="box-arrow-up" />}
+                      text={t("library.exportButton")}
+                      title={t("library.exportCollectionsTooltip")}
+                      onClick={() => openExport("collections")}
+                    />
                     <IconButton
                       icon={<AddIcon />}
                       text={t("library.newCollectionButton")}
@@ -307,7 +350,37 @@ function LibraryGrid() {
           compact={isNarrowOrMobile()}
           right={
             <>
+              <Show when={activeTab() === "followed"}>
+                <IconButton
+                  icon={<Icon name="box-arrow-in-down" />}
+                  text={t("library.importButton")}
+                  className="ds-btn-sm"
+                  title={t("library.importFollowedTooltip")}
+                  onClick={() => openImport("followed")}
+                />
+                <IconButton
+                  icon={<Icon name="box-arrow-up" />}
+                  text={t("library.exportButton")}
+                  className="ds-btn-sm"
+                  title={t("library.exportFollowedTooltip")}
+                  onClick={() => openExport("followed")}
+                />
+              </Show>
               <Show when={activeTab() === "collections"}>
+                <IconButton
+                  icon={<Icon name="box-arrow-in-down" />}
+                  text={t("library.importButton")}
+                  className="ds-btn-sm"
+                  title={t("library.importCollectionsTooltip")}
+                  onClick={() => openImport("collections")}
+                />
+                <IconButton
+                  icon={<Icon name="box-arrow-up" />}
+                  text={t("library.exportButton")}
+                  className="ds-btn-sm"
+                  title={t("library.exportCollectionsTooltip")}
+                  onClick={() => openExport("collections")}
+                />
                 <IconButton
                   icon={<AddIcon />}
                   text={t("library.newCollectionButton")}
@@ -337,6 +410,22 @@ function LibraryGrid() {
         open={creating}
         onClose={() => setCreating(false)}
         onCreated={() => {
+          paneApis.collections?.reset();
+          void paneApis.collections?.refetch();
+        }}
+      />
+      <ExportModal
+        open={exportOpen}
+        initialScope={exportScope()}
+        onClose={() => setExportOpen(false)}
+      />
+      <ImportModal
+        open={importOpen}
+        initialTarget={importTarget()}
+        onClose={() => setImportOpen(false)}
+        onImported={() => {
+          paneApis.followed?.reset();
+          void paneApis.followed?.refetch();
           paneApis.collections?.reset();
           void paneApis.collections?.refetch();
         }}

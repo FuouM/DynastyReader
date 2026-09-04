@@ -82,6 +82,7 @@ export {
   getItemCollectionIds,
   toggleItemInCollection,
   updateCollectionItemCover,
+  updateCollectionItemCoverByPermalink,
 } from "./collections.repo";
 export { searchDirectoryEntries, saveDirectoryEntries, suggestDirectoryEntries, saveSuggestEntries } from "./directory.repo";
 export {
@@ -92,6 +93,37 @@ export {
   backupDatabase,
   restoreDatabaseFromPath,
 } from "./db.manage";
+export {
+  getAllFollowedSeries,
+  getAllCollections,
+  fetchExportData,
+  formatExportData,
+  fetchAndFormatExport,
+  itemKindToPath,
+} from "./export.repo";
+export type {
+  ExportScope,
+  ExportFormat,
+  ExportFollowedItem,
+  ExportCollectionItem,
+  ExportCollection,
+  ExportPayload,
+  ExportCounts,
+} from "./export.repo";
+export {
+  validateAndParseImport,
+  executeImport,
+  isValidPermalink,
+  parseValidDynastyUrl,
+} from "./import.repo";
+export type {
+  ValidatedImportPayload,
+  ValidatedFollowedItem,
+  ValidatedCollectionItem,
+  ValidatedCollection,
+  ExecuteImportOptions,
+  ImportExecutionResult,
+} from "./import.repo";
 export { getLocalSeries, getLocalSeriesByPermalink } from "./local.repo";
 export type { LocalSeriesRow } from "./local.repo";
 export type { DbStats, DbFileStats, DbTableCounts } from "./db.manage";

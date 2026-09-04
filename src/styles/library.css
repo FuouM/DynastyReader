@@ -411,4 +411,118 @@
 .ds-library-tab-pane.ds-hidden {
   display: none !important;
 }
+
+/* Library Export Dialog */
+.ds-export-form {
+  gap: 10px;
+}
+.ds-export-row {
+  display: flex;
+  gap: 12px;
+}
+.ds-export-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ds-export-field .ds-select {
+  width: 100%;
+}
+.ds-export-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 11px;
+}
+.ds-export-summary-text {
+  color: var(--sys-window-text-muted, #666);
+}
+.ds-export-preview-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.ds-export-textarea {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 180px;
+  max-height: 360px;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+  tab-size: 2;
+}
+.ds-export-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ds-btn-success {
+  background-color: var(--sys-success-bg, #107c41) !important;
+  color: #fff !important;
+  border-color: var(--sys-success-border, #0e6b37) !important;
+}
+
+/* Library Import Dialog */
+.ds-import-form {
+  gap: 10px;
+}
+.ds-import-actions-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ds-import-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  border-radius: 3px;
+  background: var(--sys-control-bg);
+  border: 1px solid var(--sys-border-light);
+  color: var(--sys-window-text);
+}
+.ds-import-badge--success {
+  color: var(--sys-success-text, #107c41);
+  border-color: var(--sys-success-border, #107c41);
+}
+.ds-import-badge--warn {
+  color: var(--sys-warning-text, #b45309);
+  border-color: var(--sys-warning-border, #f59e0b);
+}
+.ds-import-badge--error {
+  color: var(--sys-danger-text, #d13438);
+  border-color: var(--sys-danger-border, #d13438);
+}
+.ds-import-textarea {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 140px;
+  max-height: 280px;
+  tab-size: 2;
+}
+.ds-import-feedback {
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  background: var(--sys-control-bg);
+  border: 1px solid var(--sys-border-light);
+}
 }

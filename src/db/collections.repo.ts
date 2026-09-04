@@ -103,6 +103,20 @@ export async function updateCollectionItemCover(
 }
 
 /**
+ * Updates stored cover path for all collection items matching a permalink.
+ * Deliberately does not notify to avoid cascading list refetches.
+ */
+export async function updateCollectionItemCoverByPermalink(
+  permalink: string,
+  coverPath: string,
+): Promise<void> {
+  await execute(
+    "UPDATE collection_items SET cover = ? WHERE item_permalink = ? AND (cover IS NULL OR cover = '')",
+    [coverPath, permalink],
+  );
+}
+
+/**
  * Adds an item to a collection.
  */
 export async function addItemToCollection(
