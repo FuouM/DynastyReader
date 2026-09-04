@@ -65,6 +65,12 @@ pub fn ensure_root() -> Result<PathBuf, String> {
     Ok(root)
 }
 
+/// Absolute path to the primary SQLite database.
+pub fn db_path() -> PathBuf {
+    data_root().join("dynasty_reader.db")
+}
+
+
 /// Reject NTFS tricks and trailing dot/space in every component of an absolute
 /// path. Containment is enforced separately by the canonical-root check.
 fn reject_unsafe_components(path: &str) -> Result<(), String> {

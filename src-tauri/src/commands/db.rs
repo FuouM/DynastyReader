@@ -16,6 +16,7 @@ use serde_json::{json, Map, Value};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tauri::State;
+use crate::util::lock_unpoisoned;
 
 pub struct DbPool(pub Mutex<HashMap<String, Arc<Mutex<Connection>>>>);
 
@@ -31,10 +32,6 @@ const RESTORE_RETRY_INITIAL_DELAY_MS: u64 = 150;
 const RESTORE_RETRY_BACKOFF_MS: u64 = 200;
 const RESTORE_MAX_ATTEMPTS: usize = 5;
 
-#[inline]
-fn lock_unpoisoned<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
-    m.lock().unwrap_or_else(|e| e.into_inner())
-}
 fn validate_db_name(db_name: &str) -> Result<String, String> {
     let normalized = db_name.trim().to_ascii_lowercase();
     if normalized.is_empty() {

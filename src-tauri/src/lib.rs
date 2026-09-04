@@ -1,6 +1,6 @@
 mod commands;
 mod paths;
-
+pub mod util;
 use std::collections::HashMap;
 use std::sync::Mutex;
 

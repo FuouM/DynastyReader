@@ -1,5 +1,21 @@
+import { createSignal } from "solid-js";
 import { log } from "../utils/log";
 
+/**
+ * Bridges a module-level `persistedSignal` getter/setter pair into a
+ * locally-reactive signal so SolidJS re-renders when the setting changes.
+ * The returned setter writes through to the persisted setter *and* updates
+ * the local mirror in one step — call-sites collapse from two setter calls
+ * to one.
+ */
+export function usePersistedSetting<T>(getter: () => T, setter: (v: T) => void) {
+  const [val, setVal] = createSignal(getter());
+  const set = (next: T) => {
+    setter(next);
+    setVal(() => next);
+  };
+  return [val, set] as const;
+}
 /** Parse a value persisted via JSON.stringify-or-raw string (legacy quote-wrapped). */
 export function parsePersistedString(raw: string, fallback: string): string {
   try {

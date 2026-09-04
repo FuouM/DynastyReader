@@ -192,6 +192,36 @@ pub async fn read_body_capped(resp: reqwest::Response, cap: usize) -> Result<Vec
     Ok(buf)
 }
 
+/// Streams a `bytes_stream` into `file` with a hard byte cap, invoking `on_chunk` per chunk.
+/// Returns total bytes written. Flushes the file before returning.
+pub async fn stream_to_file_capped<S>(
+    stream: &mut S,
+    file: &mut tokio::fs::File,
+    cap: u64,
+    mut on_chunk: impl FnMut(u64),
+) -> Result<u64, String>
+where
+    S: tokio_stream::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Unpin,
+{
+    let mut total: u64 = 0;
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| format!("failed reading download stream: {e}"))?;
+        total += chunk.len() as u64;
+        if total > cap {
+            return Err(format!("download exceeds size cap of {cap} bytes"));
+        }
+        on_chunk(chunk.len() as u64);
+        file.write_all(&chunk)
+            .await
+            .map_err(|e| format!("failed writing download: {e}"))?;
+    }
+    file.flush()
+        .await
+        .map_err(|e| format!("failed writing download: {e}"))?;
+    Ok(total)
+}
+
+
 #[tauri::command(rename = "httpGet")]
 pub async fn http_get(
     state: State<'_, HttpState>,
@@ -262,29 +292,10 @@ pub async fn http_download(
     let (std_file, temp_path) = temp_file
         .keep()
         .map_err(|e| format!("failed keeping temp download file: {e}"))?;
-    let write_result: Result<u64, String> = async {
-        let mut out = tokio::fs::File::from_std(std_file);
-        let mut stream = resp.bytes_stream();
-        let mut total: u64 = 0;
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk.map_err(|e| format!("failed reading download stream: {e}"))?;
-            total += chunk.len() as u64;
-            if total > MAX_DOWNLOAD_BYTES {
-                return Err(format!(
-                    "download exceeds size cap of {MAX_DOWNLOAD_BYTES} bytes"
-                ));
-            }
-            out.write_all(&chunk)
-                .await
-                .map_err(|e| format!("failed writing download: {e}"))?;
-        }
-        out.flush()
-            .await
-            .map_err(|e| format!("failed writing download: {e}"))?;
-        drop(out);
-        Ok(total)
-    }
-    .await;
+    let mut out = tokio::fs::File::from_std(std_file);
+    let mut stream = resp.bytes_stream();
+    let write_result = stream_to_file_capped(&mut stream, &mut out, MAX_DOWNLOAD_BYTES, |_| {}).await;
+    drop(out);
     let _ = match write_result {
         Ok(total) => total,
         Err(e) => {

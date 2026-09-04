@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { usePersistedSetting } from "../../lib/persisted-helpers";
 import {
   isAutoCacheChapterEnabled,
   setAutoCacheChapterEnabled,
@@ -71,23 +71,23 @@ function ToggleSettingRow(props: ToggleSettingRowProps) {
 }
 
 export function ReaderSettings() {
-  const [autoCacheEnabled, setAutoCacheEnabled] = createSignal(isAutoCacheChapterEnabled());
-  const [prefetchBuffer, setPrefetchBufferLocal] = createSignal(getPrefetchBuffer());
-  const [navPosition, setNavPosition] = createSignal(getReaderNavPosition());
-  const [readerModePref, setReaderModePref] = createSignal<ReaderMode>(getDefaultReaderMode());
-  const [pagedLayoutPref, setPagedLayoutPref] = createSignal<PagedLayout>(getDefaultPagedLayout());
-  const [mobileLandscapeModePref, setMobileLandscapeModePref] = createSignal<MobileLandscapeReaderModeSetting>(getMobileLandscapeReaderMode());
-  const [mobileLandscapeLayoutPref, setMobileLandscapeLayoutPref] = createSignal<MobileLandscapePagedLayoutSetting>(getMobileLandscapePagedLayout());
-  const [mobileLandscapeFitPref, setMobileLandscapeFitPref] = createSignal<MobileLandscapeFitModeSetting>(getMobileLandscapeFitMode());
-  const [longStripOverride, setLongStripOverride] = createSignal<boolean>(isLongStripSpreadOverrideEnabled());
-  const [longStripFitWidth, setLongStripFitWidth] = createSignal<boolean>(isLongStripFitWidthEnabled());
-  const [directionPref, setDirectionPref] = createSignal<ReadingDirectionSetting>(getDefaultReadingDirection());
-  const [coverOffsetPref, setCoverOffsetPref] = createSignal<boolean>(isCoverOffsetDefaultEnabled());
-  const [mobileGesturesDesktopPref, setMobileGesturesDesktopPref] = createSignal<boolean>(isMobileGesturesOnDesktopEnabled());
-  const [hideStatusBarPref, setHideStatusBarPref] = createSignal<boolean>(isHideStatusBarEnabled());
-  const [fitModePref, setFitModePref] = createSignal<FitMode>(getDefaultFitMode());
-  const [prevChapterPagePref, setPrevChapterPagePref] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
-  const [scrollLockPref, setScrollLockPref] = createSignal<boolean>(getScrollLock());
+  const [autoCacheEnabled, setAutoCacheEnabled] = usePersistedSetting(isAutoCacheChapterEnabled, setAutoCacheChapterEnabled);
+  const [prefetchBuffer, setPrefetchBufferLocal] = usePersistedSetting(getPrefetchBuffer, setPrefetchBuffer as (v: number) => void);
+  const [navPosition, setNavPosition] = usePersistedSetting(getReaderNavPosition, setReaderNavPosition as (v: string) => void) as [() => string, (v: string) => void];
+  const [readerModePref, setReaderModePref] = usePersistedSetting(getDefaultReaderMode, setDefaultReaderMode);
+  const [pagedLayoutPref, setPagedLayoutPref] = usePersistedSetting(getDefaultPagedLayout, setDefaultPagedLayout);
+  const [mobileLandscapeModePref, setMobileLandscapeModePref] = usePersistedSetting(getMobileLandscapeReaderMode, setMobileLandscapeReaderMode);
+  const [mobileLandscapeLayoutPref, setMobileLandscapeLayoutPref] = usePersistedSetting(getMobileLandscapePagedLayout, setMobileLandscapePagedLayout);
+  const [mobileLandscapeFitPref, setMobileLandscapeFitPref] = usePersistedSetting(getMobileLandscapeFitMode, setMobileLandscapeFitMode);
+  const [longStripOverride, setLongStripOverride] = usePersistedSetting(isLongStripSpreadOverrideEnabled, setLongStripSpreadOverrideEnabled);
+  const [longStripFitWidth, setLongStripFitWidth] = usePersistedSetting(isLongStripFitWidthEnabled, setLongStripFitWidthEnabled);
+  const [directionPref, setDirectionPref] = usePersistedSetting(getDefaultReadingDirection, setDefaultReadingDirection);
+  const [coverOffsetPref, setCoverOffsetPref] = usePersistedSetting(isCoverOffsetDefaultEnabled, setCoverOffsetDefaultEnabled);
+  const [mobileGesturesDesktopPref, setMobileGesturesDesktopPref] = usePersistedSetting(isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled);
+  const [hideStatusBarPref, setHideStatusBarPref] = usePersistedSetting(isHideStatusBarEnabled, setHideStatusBarEnabled);
+  const [fitModePref, setFitModePref] = usePersistedSetting(getDefaultFitMode, setDefaultFitMode);
+  const [prevChapterPagePref, setPrevChapterPagePref] = usePersistedSetting(getPrevChapterStartPage, setPrevChapterStartPage);
+  const [scrollLockPref, setScrollLockPref] = usePersistedSetting(getScrollLock, setScrollLock);
   return (
     <GroupBox id="ds-settings-sec-reading" title={<IconText icon={<DoublePageIcon />}>{t("settings.reader.title")}</IconText>}>
       <div class="ds-col">
@@ -96,7 +96,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-direction-switch"
             value={directionPref()}
-            onChange={(val) => { setDefaultReadingDirection(val as ReadingDirectionSetting); setDirectionPref(val as ReadingDirectionSetting); }}
+            onChange={(val) => setDirectionPref(val as ReadingDirectionSetting)}
             options={[
               { id: "ds-settings-dir-auto", value: "auto", icon: <Icon name="magic" />, text: t("settings.reader.dirAutoLabel"), title: t("settings.reader.dirAutoTooltip") },
               { id: "ds-settings-dir-rtl", value: "rtl", icon: <Icon name="arrow-left" />, text: t("settings.reader.dirRtlLabel"), title: t("settings.reader.dirRtlTooltip") },
@@ -110,7 +110,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-mode-switch"
             value={readerModePref()}
-            onChange={(val) => { setDefaultReaderMode(val as ReaderMode); setReaderModePref(val as ReaderMode); }}
+            onChange={(val) => setReaderModePref(val as ReaderMode)}
             options={[
               { id: "ds-settings-mode-scroll", value: "scroll", icon: <Icon name="view-stacked" />, text: t("settings.reader.modeScrollLabel"), title: t("settings.reader.modeScrollTooltip") },
               { id: "ds-settings-mode-paged", value: "paged", icon: <Icon name="book" />, text: t("settings.reader.modePagedLabel"), title: t("settings.reader.modePagedTooltip") },
@@ -123,7 +123,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-layout-switch"
             value={pagedLayoutPref()}
-            onChange={(val) => { setDefaultPagedLayout(val as PagedLayout); setPagedLayoutPref(val as PagedLayout); }}
+            onChange={(val) => setPagedLayoutPref(val as PagedLayout)}
             options={[
               { id: "ds-settings-layout-single", value: "single", icon: <Icon name="file-earmark" />, text: t("settings.reader.layoutSingleLabel"), title: t("settings.reader.layoutSingleTooltip") },
               { id: "ds-settings-layout-spread", value: "spread", icon: <Icon name="columns-gap" />, text: t("settings.reader.layoutSpreadLabel"), title: t("settings.reader.layoutSpreadTooltip") },
@@ -139,11 +139,7 @@ export function ReaderSettings() {
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-mode-switch"
                 value={mobileLandscapeModePref()}
-                onChange={(val) => {
-                  const next = val as MobileLandscapeReaderModeSetting;
-                  setMobileLandscapeReaderMode(next);
-                  setMobileLandscapeModePref(next);
-                }}
+                onChange={(val) => setMobileLandscapeModePref(val as MobileLandscapeReaderModeSetting)}
                 options={[
                   { id: "ds-settings-ml-mode-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeModeDefault"), title: t("settings.reader.mobileLandscapeModeDefaultTooltip") },
                   { id: "ds-settings-ml-mode-scroll", value: "scroll", icon: <Icon name="view-stacked" />, text: t("settings.reader.mobileLandscapeModeScroll"), title: t("settings.reader.mobileLandscapeModeScrollTooltip") },
@@ -155,11 +151,7 @@ export function ReaderSettings() {
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-layout-switch"
                 value={mobileLandscapeLayoutPref()}
-                onChange={(val) => {
-                  const next = val as MobileLandscapePagedLayoutSetting;
-                  setMobileLandscapePagedLayout(next);
-                  setMobileLandscapeLayoutPref(next);
-                }}
+                onChange={(val) => setMobileLandscapeLayoutPref(val as MobileLandscapePagedLayoutSetting)}
                 options={[
                   { id: "ds-settings-ml-layout-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeLayoutDefault"), title: t("settings.reader.mobileLandscapeLayoutDefaultTooltip") },
                   { id: "ds-settings-ml-layout-single", value: "single", icon: <Icon name="file-earmark" />, text: t("settings.reader.mobileLandscapeLayoutSingle"), title: t("settings.reader.mobileLandscapeLayoutSingleTooltip") },
@@ -171,11 +163,7 @@ export function ReaderSettings() {
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-fit-switch"
                 value={mobileLandscapeFitPref()}
-                onChange={(val) => {
-                  const next = val as MobileLandscapeFitModeSetting;
-                  setMobileLandscapeFitMode(next);
-                  setMobileLandscapeFitPref(next);
-                }}
+                onChange={(val) => setMobileLandscapeFitPref(val as MobileLandscapeFitModeSetting)}
                 options={[
                   { id: "ds-settings-ml-fit-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeFitDefault"), title: t("settings.reader.mobileLandscapeFitDefaultTooltip") },
                   { id: "ds-settings-ml-fit-height", value: "height", icon: <Icon name="arrows-expand" />, text: t("settings.reader.mobileLandscapeFitHeight"), title: t("settings.reader.mobileLandscapeFitHeightTooltip") },
@@ -192,7 +180,7 @@ export function ReaderSettings() {
           id="ds-settings-longstrip-toggle"
           checked={longStripOverride()}
           title={t("settings.reader.longStripOverrideTooltip")}
-          onChange={(next) => { setLongStripSpreadOverrideEnabled(next); setLongStripOverride(next); }}
+          onChange={setLongStripOverride}
         />
 
         {/* Long Strip Auto Fit Width */}
@@ -203,7 +191,7 @@ export function ReaderSettings() {
           id="ds-settings-longstrip-fit-toggle"
           checked={longStripFitWidth()}
           title={t("settings.reader.longStripFitWidthTooltip")}
-          onChange={(next) => { setLongStripFitWidthEnabled(next); setLongStripFitWidth(next); }}
+          onChange={setLongStripFitWidth}
         />
 
         {/* Spread Standalone Cover */}
@@ -214,7 +202,7 @@ export function ReaderSettings() {
           id="ds-settings-cover-offset-toggle"
           checked={coverOffsetPref()}
           title={t("settings.reader.coverOffsetTooltip")}
-          onChange={(next) => { setCoverOffsetDefaultEnabled(next); setCoverOffsetPref(next); }}
+          onChange={setCoverOffsetPref}
         />
 
         {/* Mobile Gestures on Desktop */}
@@ -225,7 +213,7 @@ export function ReaderSettings() {
           id="ds-settings-mobile-gestures-desktop-toggle"
           checked={mobileGesturesDesktopPref()}
           title={t("settings.reader.mobileGesturesDesktopTooltip")}
-          onChange={(next) => { setMobileGesturesOnDesktopEnabled(next); setMobileGesturesDesktopPref(next); }}
+          onChange={setMobileGesturesDesktopPref}
         />
 
         {/* Hide Status Bar (Android) */}
@@ -236,7 +224,7 @@ export function ReaderSettings() {
           id="ds-settings-hide-statusbar-toggle"
           checked={hideStatusBarPref()}
           title={t("settings.reader.hideStatusBarTooltip")}
-          onChange={(next) => { setHideStatusBarEnabled(next); setHideStatusBarPref(next); }}
+          onChange={setHideStatusBarPref}
         />
 
         {/* Paged Mode: Slide Animation */}
@@ -244,11 +232,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-slide-anim-switch"
             value={scrollLockPref() ? "smooth" : "instant"}
-            onChange={(val) => {
-              const isSmooth = val === "smooth";
-              setScrollLock(isSmooth);
-              setScrollLockPref(isSmooth);
-            }}
+            onChange={(val) => setScrollLockPref(val === "smooth")}
             options={[
               { id: "ds-settings-anim-smooth", value: "smooth", icon: <Icon name="arrow-left-right" />, text: t("settings.reader.scrollAnimationSmooth"), title: t("settings.reader.scrollAnimationSmoothTooltip") },
               { id: "ds-settings-anim-instant", value: "instant", icon: <Icon name="lightning" />, text: t("settings.reader.scrollAnimationInstant"), title: t("settings.reader.scrollAnimationInstantTooltip") },
@@ -261,11 +245,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-scroll-lock-switch"
             value={scrollLockPref() ? "locked" : "free"}
-            onChange={(val) => {
-              const isLocked = val === "locked";
-              setScrollLock(isLocked);
-              setScrollLockPref(isLocked);
-            }}
+            onChange={(val) => setScrollLockPref(val === "locked")}
             options={[
               { id: "ds-settings-lock-free", value: "free", icon: <Icon name="unlock" />, text: t("settings.reader.scrollLockFree"), title: t("settings.reader.scrollLockFreeTooltip") },
               { id: "ds-settings-lock-locked", value: "locked", icon: <Icon name="lock" />, text: t("settings.reader.scrollLockLocked"), title: t("settings.reader.scrollLockLockedTooltip") },
@@ -277,10 +257,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-prev-page-switch"
             value={prevChapterPagePref()}
-            onChange={(val) => {
-              setPrevChapterStartPage(val as PrevChapterStartPage);
-              setPrevChapterPagePref(val as PrevChapterStartPage);
-            }}
+            onChange={(val) => setPrevChapterPagePref(val as PrevChapterStartPage)}
             options={[
               { id: "ds-settings-prev-first", value: "first", icon: <Icon name="file-earmark-arrow-up" />, text: t("settings.reader.prevChapterPageFirst"), title: t("settings.reader.prevChapterPageFirstTooltip") },
               { id: "ds-settings-prev-last", value: "last", icon: <Icon name="file-earmark-arrow-down" />, text: t("settings.reader.prevChapterPageLast"), title: t("settings.reader.prevChapterPageLastTooltip") },
@@ -294,10 +271,7 @@ export function ReaderSettings() {
             id="ds-settings-fit-select"
             className="ds-select--w130"
             value={fitModePref()}
-            onChange={(val) => {
-              setDefaultFitMode(val as FitMode);
-              setFitModePref(val as FitMode);
-            }}
+            onChange={(val) => setFitModePref(val as FitMode)}
             options={[
               { value: "width", label: t("settings.reader.fitModes.width") },
               { value: "height", label: t("settings.reader.fitModes.height") },
@@ -312,7 +286,7 @@ export function ReaderSettings() {
             id="ds-settings-autocache-toggle"
             checked={autoCacheEnabled()}
             title={autoCacheEnabled() ? t("settings.reader.autoCacheTooltipOn") : t("settings.reader.autoCacheTooltipOff")}
-            onChange={(next) => { setAutoCacheChapterEnabled(next); setAutoCacheEnabled(next); }}
+            onChange={setAutoCacheEnabled}
           />
         </SettingsRow>
 
@@ -324,7 +298,7 @@ export function ReaderSettings() {
               id="ds-settings-prefetch-dec"
               icon={<Icon name="dash-lg" />}
               title="−"
-              onClick={() => { const next = Math.max(0, prefetchBuffer() - 1); setPrefetchBuffer(next); setPrefetchBufferLocal(next); }}
+              onClick={() => setPrefetchBufferLocal(Math.max(0, prefetchBuffer() - 1))}
             />
             <span id="ds-settings-prefetch-val" class="ds-prefetch-val">
               {prefetchBuffer() === 0 ? t("settings.reader.prefetchBufferOff") : prefetchBuffer() === 1 ? t("settings.reader.prefetchBufferPage", { count: prefetchBuffer() }) : t("settings.reader.prefetchBufferPages", { count: prefetchBuffer() })}
@@ -334,7 +308,7 @@ export function ReaderSettings() {
               id="ds-settings-prefetch-inc"
               icon={<Icon name="plus-lg" />}
               title="+"
-              onClick={() => { const next = Math.min(10, prefetchBuffer() + 1); setPrefetchBuffer(next); setPrefetchBufferLocal(next); }}
+              onClick={() => setPrefetchBufferLocal(Math.min(10, prefetchBuffer() + 1))}
             />
           </div>
         </SettingsRow>
@@ -344,7 +318,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-nav-pos-switch"
             value={navPosition()}
-            onChange={(val) => { setReaderNavPosition(val as "top" | "bottom"); setNavPosition(val as "top" | "bottom"); }}
+            onChange={(val) => setNavPosition(val as "top" | "bottom")}
             options={[
               { id: "ds-settings-nav-pos-top", value: "top", icon: <Icon name="align-top" />, text: t("settings.reader.navPosTopLabel"), title: t("settings.reader.navPosTopTooltip") },
               { id: "ds-settings-nav-pos-bottom", value: "bottom", icon: <Icon name="align-bottom" />, text: t("settings.reader.navPosBottomLabel"), title: t("settings.reader.navPosBottomTooltip") },

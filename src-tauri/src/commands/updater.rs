@@ -9,8 +9,6 @@ use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Emitter, State};
 use crate::commands::http::HttpState;
-use tokio::io::AsyncWriteExt;
-use tokio_stream::StreamExt;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateInfo {
@@ -199,38 +197,39 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
         .map_err(|e| format!("Failed to open temporary update file: {e}"))?;
     let mut stream = response.bytes_stream();
     let mut downloaded: u64 = 0;
-
-    while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result.map_err(|e| format!("Error downloading chunk: {e}"))?;
-        if downloaded + chunk.len() as u64 > MAX_UPDATE_DOWNLOAD_BYTES {
-            return Err(format!(
-                "Update download exceeded safety limit of {MAX_UPDATE_DOWNLOAD_BYTES} bytes"
-            ));
-        }
-        file.write_all(&chunk)
-            .await
-            .map_err(|e| format!("Failed to write chunk to file: {e}"))?;
-        downloaded += chunk.len() as u64;
-        let percentage = if total_size > 0 {
-            (downloaded as f64 / total_size as f64) * 100.0
-        } else {
-            0.0
-        };
-
-        if let Err(e) = app.emit(
-            "update-progress",
-            DownloadProgress {
-                downloaded_bytes: downloaded,
-                total_bytes: total_size,
-                percentage,
-            },
-        ) {
-            log::warn!("failed emitting update-progress: {e}");
-        }
-    }
-    file.flush()
-        .await
-        .map_err(|e| format!("Failed to finalize update file: {e}"))?;
+    let app_for_progress = app.clone();
+    let stream_result = crate::commands::http::stream_to_file_capped(
+        &mut stream,
+        &mut file,
+        MAX_UPDATE_DOWNLOAD_BYTES,
+        |len| {
+            downloaded += len;
+            let percentage = if total_size > 0 {
+                (downloaded as f64 / total_size as f64) * 100.0
+            } else {
+                0.0
+            };
+            if let Err(e) = app_for_progress.emit(
+                "update-progress",
+                DownloadProgress {
+                    downloaded_bytes: downloaded,
+                    total_bytes: total_size,
+                    percentage,
+                },
+            ) {
+                log::warn!("failed emitting update-progress: {e}");
+            }
+        },
+    )
+    .await;
+    // Preserve original updater cap error wording
+    let stream_result = match stream_result {
+        Err(e) if e.contains("exceeds size cap") => Err(format!(
+            "Update download exceeded safety limit of {MAX_UPDATE_DOWNLOAD_BYTES} bytes"
+        )),
+        other => other,
+    };
+    stream_result.map_err(|e| e)?;
     drop(file);
 
     let (_, new_exe) = temp_update

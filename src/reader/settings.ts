@@ -79,24 +79,25 @@ export function isMobileLandscape(): boolean {
   return window.innerWidth > window.innerHeight;
 }
 
+function effectiveLandscape<T extends string>(
+  pref: string,
+  valid: (v: string) => boolean,
+  current: T | undefined,
+  getDefault: () => T,
+  fallback: T,
+): T {
+  if (!isMobileLandscape()) return current ?? getDefault();
+  if (valid(pref)) return pref as T;
+  if (pref === "default") return current ?? getDefault();
+  return fallback;
+}
+
 export function getEffectiveDefaultReaderMode(currentMode?: ReaderMode): ReaderMode {
-  if (isMobileLandscape()) {
-    const pref = getMobileLandscapeReaderMode();
-    if (pref === "scroll" || pref === "paged") return pref;
-    if (pref === "default") return currentMode ?? getDefaultReaderMode();
-    return "paged";
-  }
-  return currentMode ?? getDefaultReaderMode();
+  return effectiveLandscape(getMobileLandscapeReaderMode(), (v) => v === "scroll" || v === "paged", currentMode, getDefaultReaderMode, "paged");
 }
 
 export function getEffectiveDefaultPagedLayout(currentLayout?: PagedLayout): PagedLayout {
-  if (isMobileLandscape()) {
-    const pref = getMobileLandscapePagedLayout();
-    if (pref === "single" || pref === "spread") return pref;
-    if (pref === "default") return currentLayout ?? getDefaultPagedLayout();
-    return "spread";
-  }
-  return currentLayout ?? getDefaultPagedLayout();
+  return effectiveLandscape(getMobileLandscapePagedLayout(), (v) => v === "single" || v === "spread", currentLayout, getDefaultPagedLayout, "spread");
 }
 export function getEffectiveFitMode(currentFit?: FitMode): FitMode {
   if (isMobileLandscape()) {

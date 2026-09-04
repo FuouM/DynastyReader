@@ -32,7 +32,7 @@ export function standardizeCachePaths(session: ReaderSession): void {
       if (alreadyThere) {
         if (session.getCachedPath(i) !== alreadyThere.absolutePath) {
           await setCachedPage(session.permalink, i, alreadyThere.absolutePath, alreadyThere.sizeBytes);
-          session.setCachedPage(i, alreadyThere.absolutePath);
+          session.setCachedPath(i, alreadyThere.absolutePath);
         }
         continue;
       }
@@ -61,7 +61,7 @@ export function standardizeCachePaths(session: ReaderSession): void {
           const newAbsPath = await fileMove(found, targetPath);
           const moveStat = await fileResolveWithStat(targetPath);
           await setCachedPage(session.permalink, i, newAbsPath, moveStat?.sizeBytes ?? 0);
-          session.setCachedPage(i, newAbsPath);
+          session.setCachedPath(i, newAbsPath);
         } catch (e) {
           log.warn("path-migration", `could not move page ${i + 1} to canonical path:`, e);
         }
