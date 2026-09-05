@@ -393,6 +393,20 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 6,
+    name: "add index on reading_history(series_permalink)",
+    up: async () => {
+      await runStep(
+        "CREATE INDEX IF NOT EXISTS idx_reading_history_series ON reading_history(series_permalink)",
+        "index reading_history.series",
+      );
+      await runStep(
+        "CREATE INDEX IF NOT EXISTS idx_reading_history_read_at ON reading_history(read_at DESC, id DESC)",
+        "index reading_history.read_at",
+      );
+    },
+  },
 ];
 
 let initDbPromise: Promise<void> | null = null;

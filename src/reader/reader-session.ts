@@ -181,6 +181,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.queue = new ReaderQueue(this);
     this.persistence = createReaderPersistence(this.state, this.permalink);
   }
+  // ReaderQueueHost interface implementation (method wrappers for signal accessors)
   getPages(): ChapterPage[] {
     return this.pages();
   }
@@ -197,6 +198,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     return this.disposedFlag;
   }
 
+  /** Internal property accessor used by reader lifecycle guards (RD-M3). */
   get disposed(): boolean {
     return this.disposedFlag;
   }
@@ -739,8 +741,14 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   applyLayoutMode(): void { vp.applyLayoutMode(this); }
 
   // Toolbar visibility (toggled on tap outside) -----------------------------
-  scheduleToolbarAutoHide(): void {
+  scheduleToolbarAutoHide(delayMs = 3000): void {
     this.clearToolbarTimer();
+    this.toolbarHideTimer = window.setTimeout(() => {
+      if (!this.disposedFlag && this.toolbarVisible()) {
+        this.setToolbarVisible(false);
+      }
+      this.toolbarHideTimer = null;
+    }, delayMs);
   }
 
   clearToolbarTimer(): void {

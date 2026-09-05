@@ -271,6 +271,10 @@ export async function importArchive(path: string, meta: LocalSeriesMeta): Promis
   return invoke<string>("importArchive", { path, meta });
 }
 
+export async function cancelImport(): Promise<void> {
+  await invoke("cancelImport");
+}
+
 export async function deleteLocalSeries(permalink: string): Promise<void> {
   await invoke("deleteLocalSeries", { permalink });
 }
@@ -368,8 +372,8 @@ export interface DownloadQueueItem {
   completed_at: number | null;
 }
 
-export async function getDownloadQueue(): Promise<{ items: DownloadQueueItem[] }> {
-  return invoke<{ items: DownloadQueueItem[] }>("getDownloadQueue");
+export async function getDownloadQueue(): Promise<{ items: DownloadQueueItem[]; paused?: boolean }> {
+  return invoke<{ items: DownloadQueueItem[]; paused?: boolean }>("getDownloadQueue");
 }
 
 export interface DownloadConstraintsArgs {

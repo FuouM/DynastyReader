@@ -514,7 +514,8 @@ pub async fn get_download_queue(
         ensure_processor_running(&app, &state, &http_state.0);
     }
 
-    Ok(serde_json::json!({ "items": items }))
+    let is_paused = state.paused.load(Ordering::SeqCst);
+    Ok(serde_json::json!({ "items": items, "paused": is_paused }))
 }
 fn chrono_now() -> i64 {
     std::time::SystemTime::now()
@@ -859,6 +860,20 @@ async fn download_chapter(
 
         let url = page.get("url").and_then(|u| u.as_str()).unwrap_or("");
         if url.is_empty() {
+            // Server-side missing/stub page URL: count as processed so skipped empty pages
+            // do not cause the chapter to fail and loop retries indefinitely.
+            done += 1;
+            let cp = req.chapter_permalink.clone();
+            tokio::task::spawn_blocking(move || {
+                if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
+                    let _ = conn.execute(
+                        "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
+                        rusqlite::params![done as i64, cp],
+                    );
+                }
+            })
+            .await
+            .ok();
             continue;
         }
         let abs_url = if url.starts_with("http") {
@@ -877,10 +892,12 @@ async fn download_chapter(
         if target.is_file() {
             if let Ok(meta) = std::fs::metadata(&target) {
                 if meta.len() > 0 {
-                    // Register in cached_pages if not already
+                    // Register in cached_pages if not already and update progress in single DB connection
                     let abs_str = target.to_string_lossy().into_owned();
                     let cp = req.chapter_permalink.clone();
                     let size = meta.len() as i64;
+                    done += 1;
+                    total_bytes_done += size as u64;
                     tokio::task::spawn_blocking(move || {
                         if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
                             let now = chrono_now();
@@ -888,12 +905,14 @@ async fn download_chapter(
                                 "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
                                 rusqlite::params![cp, idx as i64, abs_str, size, now],
                             );
+                            let _ = conn.execute(
+                                "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
+                                rusqlite::params![done as i64, cp],
+                            );
                         }
                     })
                     .await
                     .ok();
-                    done += 1;
-                    total_bytes_done += size as u64;
                     let _ = app.emit(
                         "download://progress",
                         DownloadProgressPayload {
@@ -966,22 +985,6 @@ async fn download_chapter(
                     .await
                     .map_err(|e| format!("persist: {e}"))?;
                 let size = size as i64;
-                let abs_str = target.to_string_lossy().into_owned();
-                // Spawn blocking for DB write
-                let cp = req.chapter_permalink.clone();
-                let abs_clone = abs_str.clone();
-                tokio::task::spawn_blocking(move || {
-                    if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                        // busy_timeout/WAL/foreign_keys already applied by open_synced.
-                        let now = chrono_now();
-                        let _ = conn.execute(
-                            "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-                            rusqlite::params![cp, idx as i64, abs_clone, size, now],
-                        );
-                    }
-                })
-                .await
-                .ok();
                 Ok::<i64, String>(size)
             };
 
@@ -1024,8 +1027,14 @@ async fn download_chapter(
                 done += 1;
                 total_bytes_done += page_size as u64;
                 let cp = req.chapter_permalink.clone();
+                let abs_clone = target.to_string_lossy().into_owned();
                 tokio::task::spawn_blocking(move || {
                     if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
+                        let now = chrono_now();
+                        let _ = conn.execute(
+                            "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                            rusqlite::params![cp, idx as i64, abs_clone, page_size, now],
+                        );
                         let _ = conn.execute(
                             "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
                             rusqlite::params![done as i64, cp],

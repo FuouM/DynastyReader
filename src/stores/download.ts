@@ -65,13 +65,67 @@ export function updateDownloadQueueSnapshot(items: DownloadQueueItem[]): void {
 }
 
 let initialized = false;
-
+let pollIntervalId: number | null = null;
+let unlistenProgress: (() => void) | null = null;
 let wasAutoPausedByVisibility = false;
+
+let boundRefreshState: (() => Promise<void>) | null = null;
+
+const onVisibilityChange = () => {
+  if (!isAndroid()) return;
+  if (document.hidden) {
+    if (activeDownloadCount() > 0) {
+      wasAutoPausedByVisibility = true;
+      void pauseDownloads();
+    }
+  } else {
+    if (wasAutoPausedByVisibility) {
+      wasAutoPausedByVisibility = false;
+      void resumeDownloads();
+      if (boundRefreshState) void boundRefreshState();
+    }
+  }
+};
+
+const onPageHide = () => {
+  if (!isAndroid()) return;
+  if (activeDownloadCount() > 0) {
+    wasAutoPausedByVisibility = true;
+    void pauseDownloads();
+  }
+};
+
+const onPageShow = () => {
+  if (!isAndroid()) return;
+  if (wasAutoPausedByVisibility) {
+    wasAutoPausedByVisibility = false;
+    void resumeDownloads();
+    if (boundRefreshState) void boundRefreshState();
+  }
+};
+
+export function disposeGlobalDownloadListener(): void {
+  if (!initialized) return;
+  if (pollIntervalId !== null) {
+    window.clearInterval(pollIntervalId);
+    pollIntervalId = null;
+  }
+  if (unlistenProgress) {
+    unlistenProgress();
+    unlistenProgress = null;
+  }
+  if (typeof document !== "undefined") {
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+    window.removeEventListener("pagehide", onPageHide);
+    window.removeEventListener("pageshow", onPageShow);
+  }
+  boundRefreshState = null;
+  initialized = false;
+}
 
 export function initGlobalDownloadListener(): void {
   if (initialized) return;
   initialized = true;
-
   const refreshState = async () => {
     try {
       const res = await getDownloadQueue();
@@ -93,6 +147,7 @@ export function initGlobalDownloadListener(): void {
     }
   };
 
+  boundRefreshState = refreshState;
   void refreshState();
   // Seed the Rust processor with the user's scheduling / Wi-Fi-only
   // constraints (QoL-D5); re-pushed below while downloads are active.
@@ -188,13 +243,15 @@ export function initGlobalDownloadListener(): void {
           }
         }
       }
+    }).then((unlisten) => {
+      unlistenProgress = unlisten;
     });
   } catch {
     // Outside Tauri
   }
 
   // Poll every 3 seconds while downloads exist
-  window.setInterval(() => {
+  pollIntervalId = window.setInterval(() => {
     if (activeDownloadCount() > 0) {
       void refreshState();
       // Keep metered status / timezone offset fresh while downloading so a
@@ -204,37 +261,8 @@ export function initGlobalDownloadListener(): void {
   }, 3000);
 
   if (typeof document !== "undefined") {
-    document.addEventListener("visibilitychange", () => {
-      if (!isAndroid()) return;
-      if (document.hidden) {
-        if (activeDownloadCount() > 0) {
-          wasAutoPausedByVisibility = true;
-          void pauseDownloads();
-        }
-      } else {
-        if (wasAutoPausedByVisibility) {
-          wasAutoPausedByVisibility = false;
-          void resumeDownloads();
-          void refreshState();
-        }
-      }
-    });
-
-    window.addEventListener("pagehide", () => {
-      if (!isAndroid()) return;
-      if (activeDownloadCount() > 0) {
-        wasAutoPausedByVisibility = true;
-        void pauseDownloads();
-      }
-    });
-
-    window.addEventListener("pageshow", () => {
-      if (!isAndroid()) return;
-      if (wasAutoPausedByVisibility) {
-        wasAutoPausedByVisibility = false;
-        void resumeDownloads();
-        void refreshState();
-      }
-    });
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
   }
 }

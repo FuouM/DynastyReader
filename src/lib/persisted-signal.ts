@@ -35,8 +35,18 @@ export function persistedSignal<T>(
   opts.deserialize = options.deserialize ?? ((data: string): T => {
     try {
       return JSON.parse(data) as T;
-    } catch {
+    } catch (err) {
       if (typeof defaultValue === "string") return data as unknown as T;
+      if (options.name && typeof localStorage !== "undefined") {
+        console.warn(
+          `[persistedSignal] failed deserializing key "${options.name}", evicting corrupt value:`,
+          data,
+          err,
+        );
+        try {
+          localStorage.removeItem(options.name);
+        } catch {}
+      }
       return defaultValue;
     }
   });

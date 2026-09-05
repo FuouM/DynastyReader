@@ -1,4 +1,4 @@
-import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   cancelDownload,
@@ -99,6 +99,9 @@ export function DownloadManager(props: { onComplete?: () => void }) {
     try {
       const res = await getDownloadQueue();
       setItems(res.items);
+      if (typeof res.paused === "boolean") {
+        setIsPaused(res.paused);
+      }
       updateDownloadQueueSnapshot(res.items);
       if (!res.items.some((i) => i.status === "downloading")) {
         resetDownloadSpeedAccumulators();
@@ -194,7 +197,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
   const allCompletedCount = () => items().filter((i) => i.status === "done").length;
 
   // Group items by Series, sorted by most recent activity (active first, then latestQueuedAt DESC)
-  const seriesGroups = (): SeriesDownloadGroup[] => {
+  const seriesGroups = createMemo((): SeriesDownloadGroup[] => {
     const list = items();
     const map = new Map<string, DownloadQueueItem[]>();
     for (const item of list) {
@@ -283,7 +286,7 @@ export function DownloadManager(props: { onComplete?: () => void }) {
       if (priA !== priB) return priA - priB;
       return b.latestQueuedAt - a.latestQueuedAt;
     });
-  };
+  });
 
   const toggleExpand = (seriesPerm: string) => {
     setExpandedSeries((prev) => {

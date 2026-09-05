@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use tauri::{AppHandle, Emitter};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use tauri::{AppHandle, Emitter, State};
 
 const IMAGE_EXTS: &[&str] = &["jpg", "jpeg", "png", "webp", "avif", "gif", "bmp"];
 const SKIP_PREFIXES: &[&str] = &["__macosx", "__MACOSX"];
@@ -32,6 +34,14 @@ pub struct ImportProgressPayload {
     pub total: usize,
     /// "extract" | "register" | "done"
     pub phase: &'static str,
+}
+#[derive(Clone, Default)]
+pub struct ImportState(pub Arc<AtomicBool>);
+
+#[tauri::command(rename = "cancelImport")]
+pub fn cancel_import(state: State<'_, ImportState>) -> Result<(), String> {
+    state.0.store(true, Ordering::SeqCst);
+    Ok(())
 }
 
 fn emit_import_progress(app: &AppHandle, current: usize, total: usize, phase: &'static str) {
@@ -321,7 +331,14 @@ pub async fn scan_archive(path: String) -> Result<ArchiveScanResult, String> {
 }
 
 #[tauri::command(rename = "importArchive")]
-pub async fn import_archive(app: AppHandle, path: String, meta: LocalSeriesMeta) -> Result<String, String> {
+pub async fn import_archive(
+    app: AppHandle,
+    state: State<'_, ImportState>,
+    path: String,
+    meta: LocalSeriesMeta,
+) -> Result<String, String> {
+    state.0.store(false, Ordering::SeqCst);
+    let cancel = state.0.clone();
     let res = tokio::task::spawn_blocking(move || -> Result<String, String> {
         let zip_path = PathBuf::from(&path);
         if !zip_path.is_file() {
@@ -362,6 +379,7 @@ pub async fn import_archive(app: AppHandle, path: String, meta: LocalSeriesMeta)
         // orphan files or stale pages remain on disk.
         let import_result = import_archive_inner(
             &app,
+            &cancel,
             &zip_path,
             &groups,
             &series_slug,
@@ -383,6 +401,7 @@ pub async fn import_archive(app: AppHandle, path: String, meta: LocalSeriesMeta)
 #[allow(clippy::too_many_arguments)]
 fn import_archive_inner(
     app: &AppHandle,
+    cancel: &Arc<AtomicBool>,
     zip_path: &Path,
     groups: &[(String, Vec<String>)],
     series_slug: &str,
@@ -417,6 +436,9 @@ fn import_archive_inner(
         let mut extracted_pages = 0usize;
         emit_import_progress(app, 0, planned_total_pages, "extract");
         for (ch_idx, (ch_title, pages)) in groups.iter().enumerate() {
+            if cancel.load(Ordering::SeqCst) {
+                return Err("import cancelled".to_string());
+            }
             let ch_slug = slugify(ch_title);
             // Ensure uniqueness
             let ch_slug = if chapter_permalinks.iter().any(|p| p.ends_with(&format!("-{}", ch_slug)) || p == &format!("local:{}-{}", series_slug, ch_slug)) {
@@ -429,6 +451,9 @@ fn import_archive_inner(
             std::fs::create_dir_all(&ch_dir).map_err(|e| format!("failed creating chapter dir: {e}"))?;
 
             for (page_idx, entry_name) in pages.iter().enumerate() {
+                if cancel.load(Ordering::SeqCst) {
+                    return Err("import cancelled".to_string());
+                }
                 let idx = *name_to_idx.get(entry_name).ok_or_else(|| format!("entry not found: {entry_name}"))?;
                 let mut entry = archive.by_index(idx).map_err(|e| format!("zip read error: {e}"))?;
                 let ext = entry_name.rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
@@ -590,7 +615,13 @@ pub async fn scan_folder(path: String) -> Result<FolderScanResult, String> {
 }
 
 #[tauri::command(rename = "importFolder")]
-pub async fn import_folder(path: String, meta: FolderImportMeta) -> Result<String, String> {
+pub async fn import_folder(
+    state: State<'_, ImportState>,
+    path: String,
+    meta: FolderImportMeta,
+) -> Result<String, String> {
+    state.0.store(false, Ordering::SeqCst);
+    let cancel = state.0.clone();
     let res = tokio::task::spawn_blocking(move || -> Result<String, String> {
         let dir = PathBuf::from(&path);
         if !dir.is_dir() {
@@ -634,6 +665,9 @@ pub async fn import_folder(path: String, meta: FolderImportMeta) -> Result<Strin
         // Copy + rename pages to p000.ext … preserving lowercased extension.
         let mut page_file_names: Vec<String> = Vec::with_capacity(files.len());
         for (idx, (orig_name, src_path)) in files.iter().enumerate() {
+            if cancel.load(Ordering::SeqCst) {
+                return Err("import cancelled".to_string());
+            }
             let ext = orig_name.rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
             let out_name = format!("p{:03}.{}", idx, ext);
             let out_path = ch_dir.join(&out_name);

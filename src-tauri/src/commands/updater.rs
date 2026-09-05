@@ -190,11 +190,11 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
         .prefix(".tmp-update-")
         .tempfile_in(exe_dir)
         .map_err(|e| format!("failed to create temporary update file: {e}"))?;
-    let temp_path = temp_update.path().to_path_buf();
+    let (std_file, new_exe) = temp_update
+        .keep()
+        .map_err(|e| format!("failed to retain temporary update file: {e}"))?;
 
-    let mut file = tokio::fs::File::create(&temp_path)
-        .await
-        .map_err(|e| format!("failed to open temporary update file: {e}"))?;
+    let mut file = tokio::fs::File::from_std(std_file);
     let mut stream = response.bytes_stream();
     let mut downloaded: u64 = 0;
     let app_for_progress = app.clone();
@@ -229,13 +229,11 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
         )),
         other => other,
     };
-    stream_result.map_err(|e| e)?;
     drop(file);
-
-    let (_, new_exe) = temp_update
-        .keep()
-        .map_err(|e| format!("failed to retain temporary update file: {e}"))?;
-
+    if let Err(err) = stream_result {
+        let _ = tokio::fs::remove_file(&new_exe).await;
+        return Err(err);
+    }
     log::info!("Download complete ({downloaded} bytes). Applying self-replacement...");
 
     #[cfg(target_os = "windows")]

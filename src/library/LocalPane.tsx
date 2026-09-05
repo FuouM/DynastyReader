@@ -173,7 +173,10 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       // Navigate to series view for imported local series
       navigate({ view: "series", seriesPermalink: permalink, seriesName: title });
     } catch (err) {
-      showBanner(errorMessage(err));
+      const msg = errorMessage(err);
+      if (!msg.toLowerCase().includes("cancelled")) {
+        showBanner(msg);
+      }
     } finally {
       setImporting(false);
       setImportProgress(null);
@@ -231,7 +234,10 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       void refetch();
       navigate({ view: "series", seriesPermalink: permalink, seriesName: title });
     } catch (err) {
-      showBanner(errorMessage(err));
+      const msg = errorMessage(err);
+      if (!msg.toLowerCase().includes("cancelled")) {
+        showBanner(msg);
+      }
     } finally {
       setImporting(false);
     }
@@ -455,7 +461,17 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
           }
           footer={
             <div class="ds-modal-footer-actions">
-              <Button text={t("common.cancel")} onClick={() => { setScanResult(null); setScanPath(null); }} disabled={importing()} />
+              <Button
+                text={t("common.cancel")}
+                onClick={() => {
+                  if (importing()) {
+                    void ipc.cancelImport();
+                  } else {
+                    setScanResult(null);
+                    setScanPath(null);
+                  }
+                }}
+              />
               <IconButton icon={<AddIcon />} text={importing() ? t("local.importing") : t("local.importButton")} onClick={() => void doImport()} disabled={importing()} className="primary" />
             </div>
           }
@@ -518,8 +534,15 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
             <div class="ds-modal-footer-actions">
               <Button
                 text={t("common.cancel")}
-                onClick={() => { setFolderScanResult(null); setFolderScanPath(null); setFolderCoverPath(null); }}
-                disabled={importing()}
+                onClick={() => {
+                  if (importing()) {
+                    void ipc.cancelImport();
+                  } else {
+                    setFolderScanResult(null);
+                    setFolderScanPath(null);
+                    setFolderCoverPath(null);
+                  }
+                }}
               />
               <IconButton
                 icon={<AddIcon />}

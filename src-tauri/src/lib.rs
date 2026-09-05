@@ -46,6 +46,7 @@ pub fn run() {
         .manage(commands::db::DbPool(Mutex::new(HashMap::new())))
         .manage(commands::http::HttpState(http_client))
         .manage(commands::download_queue::DownloadState::default())
+        .manage(commands::local_import::ImportState::default())
         .invoke_handler(tauri::generate_handler![
             commands::http::http_get,
             commands::http::http_download,
@@ -67,6 +68,7 @@ pub fn run() {
             commands::local_import::import_folder,
             commands::local_import::delete_local_series,
             commands::local_import::update_local_series,
+            commands::local_import::cancel_import,
             commands::download_queue::enqueue_chapters,
             commands::download_queue::pause_downloads,
             commands::download_queue::resume_downloads,

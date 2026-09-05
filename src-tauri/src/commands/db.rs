@@ -46,41 +46,100 @@ fn validate_db_name(db_name: &str) -> Result<String, String> {
     Ok(normalized)
 }
 
-/// Strip SQL comments (block `/* */` and line `--`) so a statement cannot
-/// hide its leading verb behind a comment (e.g. `/* x */ ATTACH ...`).
-fn strip_sql_comments(sql: &str) -> String {
-    let mut out = String::with_capacity(sql.len());
+/// Strips comments (while preserving string literals) and splits SQL into individual statements
+/// by `;`, ensuring that semicolons and comment markers inside quotes are not treated as delimiters.
+pub fn split_sql_statements(sql: &str) -> Vec<String> {
+    let mut statements = Vec::new();
+    let mut current = String::with_capacity(sql.len());
     let bytes = sql.as_bytes();
     let mut i = 0;
     while i < bytes.len() {
-        if i + 1 < bytes.len() && bytes[i] == b'-' && bytes[i + 1] == b'-' {
+        let b = bytes[i];
+        if b == b'\'' {
+            current.push('\'');
+            i += 1;
+            while i < bytes.len() {
+                if bytes[i] == b'\\' && i + 1 < bytes.len() {
+                    current.push(bytes[i] as char);
+                    current.push(bytes[i + 1] as char);
+                    i += 2;
+                } else if bytes[i] == b'\'' {
+                    current.push('\'');
+                    i += 1;
+                    if i < bytes.len() && bytes[i] == b'\'' {
+                        current.push('\'');
+                        i += 1;
+                    } else {
+                        break;
+                    }
+                } else {
+                    current.push(bytes[i] as char);
+                    i += 1;
+                }
+            }
+        } else if b == b'"' {
+            current.push('"');
+            i += 1;
+            while i < bytes.len() {
+                if bytes[i] == b'\\' && i + 1 < bytes.len() {
+                    current.push(bytes[i] as char);
+                    current.push(bytes[i + 1] as char);
+                    i += 2;
+                } else if bytes[i] == b'"' {
+                    current.push('"');
+                    i += 1;
+                    if i < bytes.len() && bytes[i] == b'"' {
+                        current.push('"');
+                        i += 1;
+                    } else {
+                        break;
+                    }
+                } else {
+                    current.push(bytes[i] as char);
+                    i += 1;
+                }
+            }
+        } else if b == b'-' && i + 1 < bytes.len() && bytes[i + 1] == b'-' {
+            i += 2;
             while i < bytes.len() && bytes[i] != b'\n' {
                 i += 1;
             }
-        } else if i + 1 < bytes.len() && bytes[i] == b'/' && bytes[i + 1] == b'*' {
+            current.push(' ');
+        } else if b == b'/' && i + 1 < bytes.len() && bytes[i + 1] == b'*' {
             i += 2;
             while i + 1 < bytes.len() && !(bytes[i] == b'*' && bytes[i + 1] == b'/') {
                 i += 1;
             }
-            i = (i + 2).min(bytes.len());
+            if i + 1 < bytes.len() {
+                i += 2;
+            } else {
+                i = bytes.len();
+            }
+            current.push(' ');
+        } else if b == b';' {
+            let stmt = current.trim().to_string();
+            if !stmt.is_empty() {
+                statements.push(stmt);
+            }
+            current.clear();
+            i += 1;
         } else {
-            out.push(bytes[i] as char);
+            current.push(b as char);
             i += 1;
         }
     }
-    out
+    let stmt = current.trim().to_string();
+    if !stmt.is_empty() {
+        statements.push(stmt);
+    }
+    statements
 }
 
 /// Validates that `sql` does not attempt to attach/detach external files or execute unsafe PRAGMAs.
 pub fn validate_sql(sql: &str) -> Result<(), String> {
-    let cleaned = strip_sql_comments(sql);
-    let upper = cleaned.trim().to_ascii_uppercase();
-    for statement in upper.split(';') {
-        let stmt = statement.trim();
-        if stmt.is_empty() {
-            continue;
-        }
-        let words: Vec<&str> = stmt.split_whitespace().collect();
+    for statement in split_sql_statements(sql) {
+        let upper = statement.trim().to_ascii_uppercase();
+        let words: Vec<&str> = upper.split_whitespace().collect();
         if words.is_empty() {
             continue;
         }
@@ -126,8 +185,7 @@ const EXECUTE_VERBS: &[&str] = &[
 ];
 
 fn validate_verbs(sql: &str, allowed: &[&str], cmd: &str) -> Result<(), String> {
-    let cleaned = strip_sql_comments(sql);
-    for statement in cleaned.split(';') {
+    for statement in split_sql_statements(sql) {
         let stmt = statement.trim();
         if stmt.is_empty() {
             continue;
@@ -565,6 +623,11 @@ mod tests {
         assert!(validate_sql("-- note\nATTACH DATABASE 'x' AS y").is_err());
         assert!(validate_sql("/* multi\nline */ DETACH y").is_err());
         assert!(validate_sql("SELECT 1 /* trailing */").is_ok());
+        assert!(validate_sql("SELECT 'foo;bar'").is_ok());
+        assert!(validate_sql("SELECT '/* not a comment */'").is_ok());
+        assert!(validate_sql("SELECT '-- not a comment'").is_ok());
+        assert!(validate_sql("SELECT 'ATTACH evil'").is_ok());
+        assert!(validate_sql("SELECT 1; ATTACH evil").is_err());
     }
 
     #[test]
@@ -581,6 +644,8 @@ mod tests {
         assert!(validate_verbs("VACUUM", EXECUTE_VERBS, "dbExecute").is_ok());
         assert!(validate_verbs("BEGIN", EXECUTE_VERBS, "dbExecute").is_ok());
         assert!(validate_verbs("DROP TABLE cached_pages", EXECUTE_VERBS, "dbExecute").is_err());
+        assert!(validate_verbs("SELECT 'foo;bar'", QUERY_VERBS, "dbQuery").is_ok());
+        assert!(validate_verbs("INSERT INTO t VALUES ('foo;bar')", EXECUTE_VERBS, "dbExecute").is_ok());
+        assert!(validate_verbs("SELECT 1; ATTACH evil", QUERY_VERBS, "dbQuery").is_err());
     }
-
 }
