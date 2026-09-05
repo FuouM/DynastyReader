@@ -51,9 +51,13 @@ export function formatBytes(bytes: number | null | undefined, fallback = "", dec
   if (bytes == null || isNaN(bytes) || bytes < 0) return fallback;
   if (bytes === 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const value = bytes / Math.pow(1024, i);
-  return `${value.toFixed(decimals)} ${units[i] ?? "B"}`;
+  let value = bytes;
+  let i = 0;
+  while (value >= 1024 && i < units.length - 1) {
+    value /= 1024;
+    i++;
+  }
+  return `${value.toFixed(decimals)} ${units[i]}`;
 }
 
 export function formatSpeed(bytesPerSec: number): string {

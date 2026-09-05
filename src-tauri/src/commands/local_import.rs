@@ -108,56 +108,53 @@ fn slugify(input: &str) -> String {
     }
 }
 
-/// Natural sort key: split into (text, number) chunks for human ordering.
-fn natural_key(s: &str) -> Vec<NaturalChunk> {
-    let mut chunks = Vec::new();
-    let mut cur = String::new();
-    let mut in_digit = false;
-    for ch in s.chars() {
-        let is_digit = ch.is_ascii_digit();
-        if cur.is_empty() {
-            cur.push(ch);
-            in_digit = is_digit;
-        } else if is_digit == in_digit {
-            cur.push(ch);
-        } else {
-            if in_digit {
-                chunks.push(digit_chunk(&cur));
-            } else {
-                chunks.push(NaturalChunk::Str(cur.to_ascii_lowercase()));
+/// Zero-allocation natural/alphanumeric comparator for human file ordering (e.g. `page_2` < `page_10`).
+fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    let mut a_bytes = a.as_bytes();
+    let mut b_bytes = b.as_bytes();
+
+    while !a_bytes.is_empty() && !b_bytes.is_empty() {
+        if a_bytes[0].is_ascii_digit() && b_bytes[0].is_ascii_digit() {
+            let a_end = a_bytes.iter().position(|b| !b.is_ascii_digit()).unwrap_or(a_bytes.len());
+            let b_end = b_bytes.iter().position(|b| !b.is_ascii_digit()).unwrap_or(b_bytes.len());
+
+            let a_digits = &a_bytes[..a_end];
+            let b_digits = &b_bytes[..b_end];
+
+            // Strip leading zeros for numeric magnitude comparison
+            let a_num = a_digits.iter().position(|&b| b != b'0').unwrap_or(a_digits.len());
+            let b_num = b_digits.iter().position(|&b| b != b'0').unwrap_or(b_digits.len());
+
+            let a_sig = &a_digits[a_num..];
+            let b_sig = &b_digits[b_num..];
+
+            let ord = a_sig.len().cmp(&b_sig.len()).then_with(|| a_sig.cmp(b_sig));
+            if ord != std::cmp::Ordering::Equal {
+                return ord;
             }
-            cur = ch.to_string();
-            in_digit = is_digit;
-        }
-    }
-    if !cur.is_empty() {
-        if in_digit {
-            chunks.push(digit_chunk(&cur));
+            // Deterministic tie-break: fewer leading zeros sorts first
+            let zero_ord = a_digits.len().cmp(&b_digits.len());
+            if zero_ord != std::cmp::Ordering::Equal {
+                return zero_ord;
+            }
+
+            a_bytes = &a_bytes[a_end..];
+            b_bytes = &b_bytes[b_end..];
         } else {
-            chunks.push(NaturalChunk::Str(cur.to_ascii_lowercase()));
+            let ca = a_bytes[0].to_ascii_lowercase();
+            let cb = b_bytes[0].to_ascii_lowercase();
+            if ca != cb {
+                return ca.cmp(&cb);
+            }
+            a_bytes = &a_bytes[1..];
+            b_bytes = &b_bytes[1..];
         }
     }
-    chunks
-}
-
-/// Digit runs that overflow u64 keep their true numeric order via
-/// (length, digits) instead of silently collapsing to 0.
-fn digit_chunk(digits: &str) -> NaturalChunk {
-    match digits.parse::<u64>() {
-        Ok(n) => NaturalChunk::Num(n),
-        Err(_) => NaturalChunk::BigNum(digits.len(), digits.to_string()),
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-enum NaturalChunk {
-    Num(u64),
-    BigNum(usize, String),
-    Str(String),
+    a_bytes.len().cmp(&b_bytes.len())
 }
 
 fn natural_sort(paths: &mut [String]) {
-    paths.sort_by(|a, b| natural_key(a).cmp(&natural_key(b)));
+    paths.sort_by(|a, b| natural_cmp(a, b));
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -238,7 +235,7 @@ fn group_entries(entries: Vec<String>) -> Vec<(String, Vec<String>)> {
     }
     let mut groups: Vec<(String, Vec<String>)> = map.into_iter().collect();
     // Sort groups by first entry path (natural sort already applied globally)
-    groups.sort_by(|a, b| natural_key(&a.0).cmp(&natural_key(&b.0)));
+    groups.sort_by(|a, b| natural_cmp(&a.0, &b.0));
 
     // Clean chapter titles: strip leading index junk like "01 - "
     let mut out = Vec::new();
@@ -593,7 +590,7 @@ pub async fn scan_folder(path: String) -> Result<FolderScanResult, String> {
             return Err("no images found in folder".to_string());
         }
         // Natural-sort by filename string, keep PathBuf coupled.
-        files.sort_by(|a, b| natural_key(&a.0).cmp(&natural_key(&b.0)));
+        files.sort_by(|a, b| natural_cmp(&a.0, &b.0));
         let folder_name = dir
             .file_name()
             .and_then(|s| s.to_str())
@@ -631,7 +628,7 @@ pub async fn import_folder(
         if files.is_empty() {
             return Err("no images found in folder".to_string());
         }
-        files.sort_by(|a, b| natural_key(&a.0).cmp(&natural_key(&b.0)));
+        files.sort_by(|a, b| natural_cmp(&a.0, &b.0));
 
         let title = meta.title.trim().to_string();
         if title.is_empty() {
@@ -1158,5 +1155,29 @@ mod tests {
         let slug_cn = slugify("小猫咪");
         assert!(!slug_cn.is_empty(), "Chinese slug must not be empty");
         assert_ne!(slug_jp, slug_cn, "Different CJK titles must produce distinct slugs");
+    }
+
+    #[test]
+    fn test_natural_sort() {
+        let mut files = vec![
+            "page_10.jpg".to_string(),
+            "page_1.jpg".to_string(),
+            "page_2.jpg".to_string(),
+            "page_20.jpg".to_string(),
+            "page_02.jpg".to_string(),
+            "page_100.jpg".to_string(),
+        ];
+        natural_sort(&mut files);
+        assert_eq!(
+            files,
+            vec![
+                "page_1.jpg",
+                "page_2.jpg",
+                "page_02.jpg",
+                "page_10.jpg",
+                "page_20.jpg",
+                "page_100.jpg",
+            ]
+        );
     }
 }

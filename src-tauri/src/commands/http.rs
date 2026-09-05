@@ -74,9 +74,15 @@ pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
 pub fn build_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .user_agent(USER_AGENT)
-        // Automatic redirects are disabled: every hop is followed manually via
-        // `send_with_redirects` and re-validated against the SSRF blocklist.
-        .redirect(reqwest::redirect::Policy::none())
+        .redirect(reqwest::redirect::Policy::custom(|attempt| {
+            if attempt.previous().len() >= MAX_REDIRECTS {
+                attempt.error(format!("too many redirects (>{MAX_REDIRECTS})"))
+            } else if let Err(e) = validate_http_url(attempt.url().as_str()) {
+                attempt.error(e)
+            } else {
+                attempt.follow()
+            }
+        }))
         .build()
         .map_err(|e| format!("failed to build http client: {e}"))
 }
@@ -119,9 +125,7 @@ fn apply_timeout(req: reqwest::RequestBuilder, timeout_ms: Option<u64>) -> reqwe
 
 const MAX_REDIRECTS: usize = 5;
 
-/// Sends a request and follows redirects manually, re-validating every hop
-/// against the SSRF blocklist so a validated public URL cannot redirect into
-/// loopback/private/link-local space (e.g. cloud metadata endpoints).
+/// Sends a request with automatic redirect following and SSRF validation on every hop.
 pub async fn send_with_redirects(
     client: &reqwest::Client,
     method: &str,
@@ -131,51 +135,19 @@ pub async fn send_with_redirects(
     headers: Option<&serde_json::Map<String, serde_json::Value>>,
     timeout_ms: Option<u64>,
 ) -> Result<reqwest::Response, String> {
-    let mut current = validate_http_url(url)?;
-    let mut method = method.trim().to_ascii_uppercase();
-    let mut body = body;
-    for hop in 0..=MAX_REDIRECTS {
-        let req = build_request(
-            client,
-            current.as_str(),
-            &method,
-            body.as_deref(),
-            content_type,
-            headers,
-        )?;
-        let resp = apply_timeout(req, timeout_ms)
-            .send()
-            .await
-            .map_err(|e| format!("http request failed: {e}"))?;
-        let status = resp.status();
-        let code = status.as_u16();
-        // Only 301, 302, 303, 307, 308 are redirects with a Location target to
-        // follow. 304 Not Modified is a caching revalidation response (RFC 9110)
-        // that carries no Location header, and 300 Multiple Choices is not an
-        // automatic redirect.
-        if !matches!(code, 301 | 302 | 303 | 307 | 308) {
-            return Ok(resp);
-        }
-        if hop == MAX_REDIRECTS {
-            return Err(format!("too many redirects (>{MAX_REDIRECTS})"));
-        }
-        let location = resp
-            .headers()
-            .get(reqwest::header::LOCATION)
-            .and_then(|v| v.to_str().ok())
-            .ok_or_else(|| format!("redirect {} without Location header", status.as_u16()))?;
-        let joined = current
-            .join(location)
-            .map_err(|e| format!("invalid redirect target '{location}': {e}"))?;
-        current = validate_http_url(joined.as_str())?;
-        let code = status.as_u16();
-        // 303 always switches to GET; 301/302 downgrade POST per browser convention.
-        if code == 303 || ((code == 301 || code == 302) && method == "POST") {
-            method = "GET".to_string();
-            body = None;
-        }
-    }
-    unreachable!()
+    let current = validate_http_url(url)?;
+    let req = build_request(
+        client,
+        current.as_str(),
+        method,
+        body.as_deref(),
+        content_type,
+        headers,
+    )?;
+    apply_timeout(req, timeout_ms)
+        .send()
+        .await
+        .map_err(|e| format!("http request failed: {e}"))
 }
 
 /// Reads a full response body with a hard byte cap, failing loudly on overflow.
