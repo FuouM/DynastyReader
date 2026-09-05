@@ -7,7 +7,8 @@ import type { ReaderSession } from "./reader-session";
 import type { CachedPageRow } from "../types/db";
 import type { Chapter } from "../types/api";
 import { convertFileSrc } from "../ipc";
-import { fetchChapter, fetchSeries } from "../api";
+import { fetchChapter } from "../api/chapter";
+import { fetchSeries } from "../api/series";
 import {
   addHistory,
   getBookmark,

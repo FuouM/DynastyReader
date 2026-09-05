@@ -1,5 +1,7 @@
 import { absUrl } from "../stores";
-import { fileResolveWithStat, httpDownloadFull, pageOutputPath } from "../api";
+import { fileResolveWithStat } from "../api/fs";
+import { httpDownloadFull } from "../api/http";
+import { pageOutputPath } from "../api/navigation";
 import { setCachedPage } from "../db";
 import type { ChapterPage } from "../types/api";
 import { t } from "../i18n";

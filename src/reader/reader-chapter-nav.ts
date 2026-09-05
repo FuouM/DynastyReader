@@ -6,7 +6,7 @@
 import type { ReaderSession } from "./reader-session";
 import type { ChapterRef } from "../types/routes";
 import type { Series } from "../types/api";
-import { fetchSeries } from "../api";
+import { fetchSeries } from "../api/series";
 import { navigate, showBanner } from "../stores";
 import { t } from "../i18n";
 import { getPrevChapterStartPage } from "./settings";

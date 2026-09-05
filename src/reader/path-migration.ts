@@ -7,7 +7,8 @@
 
 import type { ReaderSession } from "./reader-session";
 import { PAGES_PREFIX } from "../stores";
-import { fileMove, fileResolve, fileResolveWithStat, pageOutputPath } from "../api";
+import { fileMove, fileResolve, fileResolveWithStat } from "../api/fs";
+import { pageOutputPath } from "../api/navigation";
 import { setCachedPage } from "../db";
 import { log } from "../utils/log";
 

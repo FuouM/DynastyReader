@@ -8,7 +8,7 @@ import { Portal } from "solid-js/web";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode, ReaderMode, PagedLayout, ReadingDirection } from "../types/reader";
 import { theme, setTheme, isMobile, navigate } from "../stores";
-import { openExternal } from "../api";
+import { openExternal } from "../api/navigation";
 import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import {

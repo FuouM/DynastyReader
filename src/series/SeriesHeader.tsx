@@ -5,7 +5,7 @@
 import { createMemo, Show } from "solid-js";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
-import { openExternal } from "../api";
+import { openExternal } from "../api/navigation";
 import { groupSeriesTags } from "../taxonomy";
 import type { GroupedSeriesTags } from "../types/taxonomy";
 import type { Series } from "../types/api";

@@ -21,7 +21,7 @@ import { downloadingChapterPermalinks } from "../stores/download";
 import { formatBytes } from "../utils/formatting";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
-import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api";
+import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api/traffic";
 import {
   clearCachedGroupPages,
   getCacheOverviewStats,
