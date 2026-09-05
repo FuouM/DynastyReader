@@ -1,6 +1,6 @@
 [package]
 name = "dynasty-scans-reader"
-version = "0.3.4"
+version = "0.4.0"
 description = "Portable standalone Dynasty Scans reader"
 authors = ["DynastyReader"]
 edition = "2021"
