@@ -45,163 +45,83 @@ fn validate_db_name(db_name: &str) -> Result<String, String> {
     }
     Ok(normalized)
 }
-
-/// Strips comments (while preserving string literals) and splits SQL into individual statements
-/// by `;`, ensuring that semicolons and comment markers inside quotes are not treated as delimiters.
-pub fn split_sql_statements(sql: &str) -> Vec<String> {
-    let mut statements = Vec::new();
-    let mut current = String::with_capacity(sql.len());
-    let bytes = sql.as_bytes();
-    let mut i = 0;
-    while i < bytes.len() {
-        let b = bytes[i];
-        if b == b'\'' {
-            current.push('\'');
-            i += 1;
-            while i < bytes.len() {
-                if bytes[i] == b'\\' && i + 1 < bytes.len() {
-                    current.push(bytes[i] as char);
-                    current.push(bytes[i + 1] as char);
-                    i += 2;
-                } else if bytes[i] == b'\'' {
-                    current.push('\'');
-                    i += 1;
-                    if i < bytes.len() && bytes[i] == b'\'' {
-                        current.push('\'');
-                        i += 1;
-                    } else {
-                        break;
-                    }
-                } else {
-                    current.push(bytes[i] as char);
-                    i += 1;
-                }
-            }
-        } else if b == b'"' {
-            current.push('"');
-            i += 1;
-            while i < bytes.len() {
-                if bytes[i] == b'\\' && i + 1 < bytes.len() {
-                    current.push(bytes[i] as char);
-                    current.push(bytes[i + 1] as char);
-                    i += 2;
-                } else if bytes[i] == b'"' {
-                    current.push('"');
-                    i += 1;
-                    if i < bytes.len() && bytes[i] == b'"' {
-                        current.push('"');
-                        i += 1;
-                    } else {
-                        break;
-                    }
-                } else {
-                    current.push(bytes[i] as char);
-                    i += 1;
-                }
-            }
-        } else if b == b'-' && i + 1 < bytes.len() && bytes[i + 1] == b'-' {
-            i += 2;
-            while i < bytes.len() && bytes[i] != b'\n' {
-                i += 1;
-            }
-            current.push(' ');
-        } else if b == b'/' && i + 1 < bytes.len() && bytes[i + 1] == b'*' {
-            i += 2;
-            while i + 1 < bytes.len() && !(bytes[i] == b'*' && bytes[i + 1] == b'/') {
-                i += 1;
-            }
-            if i + 1 < bytes.len() {
-                i += 2;
-            } else {
-                i = bytes.len();
-            }
-            current.push(' ');
-        } else if b == b';' {
-            let stmt = current.trim().to_string();
-            if !stmt.is_empty() {
-                statements.push(stmt);
-            }
-            current.clear();
-            i += 1;
-        } else {
-            current.push(b as char);
-            i += 1;
-        }
-    }
-    let stmt = current.trim().to_string();
-    if !stmt.is_empty() {
-        statements.push(stmt);
-    }
-    statements
-}
-
-/// Validates that `sql` does not attempt to attach/detach external files or execute unsafe PRAGMAs.
-pub fn validate_sql(sql: &str) -> Result<(), String> {
-    for statement in split_sql_statements(sql) {
-        let upper = statement.trim().to_ascii_uppercase();
-        let words: Vec<&str> = upper.split_whitespace().collect();
-        if words.is_empty() {
-            continue;
-        }
-        let first = words[0];
-        if first == "ATTACH" || first == "DETACH" {
-            return Err("ATTACH/DETACH DATABASE statements are forbidden over IPC".to_string());
-        }
-        if first == "PRAGMA" && words.len() > 1 {
-            let raw_pragma = words[1];
-            let pragma_base = raw_pragma.split('(').next().unwrap_or(raw_pragma);
-            let pragma_base = pragma_base.split('=').next().unwrap_or(pragma_base);
-            let pragma_name = pragma_base.trim_matches(|c: char| !c.is_alphanumeric() && c != '_');
-            let allowed_pragmas = [
-                "USER_VERSION",
-                "TABLE_INFO",
-                "JOURNAL_MODE",
-                "SYNCHRONOUS",
-                "FOREIGN_KEYS",
-                "BUSY_TIMEOUT",
-                "WAL_CHECKPOINT",
-                "PAGE_COUNT",
-                "PAGE_SIZE",
-                "FREELIST_COUNT",
-                "INDEX_LIST",
-                "INDEX_INFO",
-            ];
-            if !allowed_pragmas.contains(&pragma_name) {
-                return Err(format!("PRAGMA '{pragma_name}' is not permitted over IPC"));
-            }
-        }
-    }
-    Ok(())
-}
-
-/// First-keyword allowlists per IPC path. `dbQuery` is strictly read-only;
-/// the execute paths permit exactly the DML/DDL the app uses (schema
-/// migrations, cache writes, wipes) but never DROP — no app flow drops
-/// tables, and blocking it removes the worst one-statement XSS payload.
-const QUERY_VERBS: &[&str] = &["SELECT", "WITH", "EXPLAIN", "PRAGMA"];
-const EXECUTE_VERBS: &[&str] = &[
-    "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "VACUUM",
-    "BEGIN", "COMMIT", "ROLLBACK", "PRAGMA",
+pub const ALLOWED_PRAGMAS: &[&str] = &[
+    "user_version",
+    "table_info",
+    "journal_mode",
+    "synchronous",
+    "foreign_keys",
+    "busy_timeout",
+    "wal_checkpoint",
+    "page_count",
+    "page_size",
+    "freelist_count",
+    "index_list",
+    "index_info",
 ];
 
-fn validate_verbs(sql: &str, allowed: &[&str], cmd: &str) -> Result<(), String> {
-    for statement in split_sql_statements(sql) {
-        let stmt = statement.trim();
-        if stmt.is_empty() {
-            continue;
+/// SQLite native authorizer callback for `dbQuery`.
+/// Strictly enforces read-only access: only SELECT, column reads, scalar functions,
+/// and allowlisted inspection PRAGMAs are permitted.
+pub fn authorize_query(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authorization {
+    use rusqlite::hooks::{AuthAction, Authorization};
+    match ctx.action {
+        AuthAction::Select | AuthAction::Read { .. } | AuthAction::Function { .. } | AuthAction::Recursive => {
+            Authorization::Allow
         }
-        let first = stmt
-            .split_whitespace()
-            .next()
-            .unwrap_or("")
-            .to_ascii_uppercase();
-        if !allowed.contains(&first.as_str()) {
-            return Err(format!("{cmd}: statement verb '{first}' is not permitted over IPC"));
+        AuthAction::Pragma { pragma_name, .. } => {
+            let name = pragma_name.to_ascii_lowercase();
+            if ALLOWED_PRAGMAS.contains(&name.as_str()) {
+                Authorization::Allow
+            } else {
+                Authorization::Deny
+            }
         }
+        _ => Authorization::Deny,
     }
-    Ok(())
 }
 
+/// SQLite native authorizer callback for `dbExecute` and `dbExecuteBatch`.
+/// Permits application DML/DDL (INSERT, UPDATE, DELETE, CREATE, ALTER, VACUUM)
+/// but strictly denies ATTACH/DETACH (arbitrary file access), DROP TABLE (accidental/malicious wipe),
+/// and unauthorized PRAGMAs (e.g. writable_schema, load_extension).
+pub fn authorize_execute(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authorization {
+    use rusqlite::hooks::{AuthAction, Authorization};
+    match ctx.action {
+        AuthAction::Attach { filename } => {
+            // VACUUM internally issues Attach with an empty filename to create its temp database.
+            // External ATTACH statements always specify a non-empty filename.
+            if filename.is_empty() {
+                Authorization::Allow
+            } else {
+                Authorization::Deny
+            }
+        }
+        AuthAction::Detach { database_name } => {
+            // VACUUM internally issues Detach on "vacuum_db".
+            if database_name == "vacuum_db" {
+                Authorization::Allow
+            } else {
+                Authorization::Deny
+            }
+        }
+        AuthAction::DropTable { .. }
+        | AuthAction::DropView { .. }
+        | AuthAction::DropTrigger { .. }
+        | AuthAction::DropVtable { .. }
+        | AuthAction::CreateVtable { .. } => Authorization::Deny,
+        AuthAction::Pragma { pragma_name, .. } => {
+            let name = pragma_name.to_ascii_lowercase();
+            if ALLOWED_PRAGMAS.contains(&name.as_str()) {
+                Authorization::Allow
+            } else {
+                Authorization::Deny
+            }
+        }
+
+        _ => Authorization::Allow,
+    }
+}
 fn open(db_name: &str) -> Result<Connection, String> {
     let normalized = validate_db_name(db_name)?;
     let path = crate::paths::data_root().join(&normalized);
@@ -315,8 +235,6 @@ pub async fn db_execute(
     sql: String,
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
-    validate_sql(&sql)?;
-    validate_verbs(&sql, EXECUTE_VERBS, "dbExecute")?;
     let conn = get_conn(&state.0, &db_name)?;
     let values: Vec<rusqlite::types::Value> = params
         .unwrap_or_default()
@@ -325,6 +243,7 @@ pub async fn db_execute(
         .collect::<Result<Vec<_>, _>>()?;
     let affected = tokio::task::spawn_blocking(move || -> Result<usize, String> {
         let conn = lock_unpoisoned(&conn);
+        conn.authorizer(Some(authorize_execute));
         conn.execute(&sql, params_from_iter(values))
             .map_err(|e| format!("db execute failed: {e}"))
     })
@@ -340,8 +259,6 @@ pub async fn db_query(
     sql: String,
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
-    validate_sql(&sql)?;
-    validate_verbs(&sql, QUERY_VERBS, "dbQuery")?;
     let conn = get_conn(&state.0, &db_name)?;
     let values: Vec<rusqlite::types::Value> = params
         .unwrap_or_default()
@@ -350,6 +267,7 @@ pub async fn db_query(
         .collect::<Result<Vec<_>, _>>()?;
     let rows = tokio::task::spawn_blocking(move || -> Result<Vec<Value>, String> {
         let conn = lock_unpoisoned(&conn);
+        conn.authorizer(Some(authorize_query));
         let mut stmt = conn
             .prepare_cached(&sql)
             .map_err(|e| format!("db query prepare failed: {e}"))?;
@@ -374,13 +292,10 @@ pub async fn db_execute_batch(
     statements: Vec<String>,
     params: Option<Vec<Option<Vec<Value>>>>,
 ) -> Result<serde_json::Value, String> {
-    for s in &statements {
-        validate_sql(s)?;
-        validate_verbs(s, EXECUTE_VERBS, "dbExecuteBatch")?;
-    }
     let pool_arc = get_conn(&state.0, &db_name)?;
     let affected = tokio::task::spawn_blocking(move || {
         let conn = lock_unpoisoned(&pool_arc);
+        conn.authorizer(Some(authorize_execute));
         let tx = conn.unchecked_transaction().map_err(|e| format!("failed starting transaction: {e}"))?;
         let mut results: Vec<i64> = Vec::with_capacity(statements.len());
         for (idx, sql) in statements.iter().enumerate() {
@@ -560,6 +475,46 @@ mod tests {
     use crate::paths::temp_root;
 
     #[test]
+    fn test_authorizer_rules() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, val TEXT)", []).unwrap();
+
+        // 1. Query authorizer allows SELECT and functions
+        conn.authorizer(Some(authorize_query));
+        assert!(conn.query_row("SELECT 1", [], |r| r.get::<_, i64>(0)).is_ok());
+        assert!(conn.query_row("SELECT 'foo;bar'", [], |r| r.get::<_, String>(0)).is_ok());
+        assert!(conn.query_row("WITH x AS (SELECT 1 AS a) SELECT * FROM x", [], |r| r.get::<_, i64>(0)).is_ok());
+        assert!(conn.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).is_ok());
+        assert!(conn.query_row("PRAGMA table_info(test)", [], |_| Ok(())).is_ok());
+
+        // Query authorizer denies INSERT, UPDATE, DELETE, DROP, ATTACH
+        assert!(conn.execute("INSERT INTO test (val) VALUES ('x')", []).is_err());
+        assert!(conn.execute("DELETE FROM test", []).is_err());
+        assert!(conn.execute("DROP TABLE test", []).is_err());
+        assert!(conn.execute("ATTACH DATABASE 'evil.db' AS evil", []).is_err());
+        assert!(conn.execute("PRAGMA writable_schema = 1", []).is_err());
+
+        // 2. Execute authorizer allows INSERT, UPDATE, DELETE, CREATE, ALTER, VACUUM
+        conn.authorizer(Some(authorize_execute));
+        assert!(conn.execute("INSERT INTO test (val) VALUES ('x')", []).is_ok());
+        assert!(conn.execute("UPDATE test SET val = 'y' WHERE id = 1", []).is_ok());
+        assert!(conn.execute("DELETE FROM test WHERE id = 1", []).is_ok());
+        assert!(conn.execute("CREATE TABLE test2 (id INTEGER)", []).is_ok());
+        assert!(conn.execute("VACUUM", []).is_ok());
+
+        // Execute authorizer denies DROP TABLE, ATTACH, DETACH, unsafe PRAGMAs
+        assert!(conn.execute("DROP TABLE test2", []).is_err());
+        assert!(conn.execute("ATTACH DATABASE 'evil.db' AS evil", []).is_err());
+        assert!(conn.execute("DETACH DATABASE evil", []).is_err());
+        assert!(conn.execute("PRAGMA writable_schema = 1", []).is_err());
+        assert!(conn.execute("PRAGMA load_extension('evil.dll')", []).is_err());
+
+        // 3. execute_batch is also checked by the authorizer
+        assert!(conn.execute_batch("SELECT 1; ATTACH 'evil.db' AS evil;").is_err());
+        assert!(conn.execute_batch("SELECT 1; DROP TABLE test2;").is_err());
+    }
+
+    #[test]
     fn db_open_normalizes_and_sets_pragmas() {
         let root = temp_root("shared");
         crate::paths::set_root(root.clone());
@@ -604,48 +559,4 @@ mod tests {
         assert!(bind_value_owned(json!(u64::MAX)).is_err());
     }
 
-    #[test]
-    fn test_validate_sql() {
-        assert!(validate_sql("SELECT * FROM cached_pages WHERE page_index = 0").is_ok());
-        assert!(validate_sql("INSERT INTO history (id) VALUES (1)").is_ok());
-        assert!(validate_sql("PRAGMA user_version = 2").is_ok());
-        assert!(validate_sql("PRAGMA table_info(cached_pages)").is_ok());
-
-        // Forbidden statements
-        assert!(validate_sql("ATTACH DATABASE '/etc/passwd' AS pwned").is_err());
-        assert!(validate_sql("ATTACH 'c:\\windows\\system32\\evil.db' AS evil").is_err());
-        assert!(validate_sql("DETACH DATABASE evil").is_err());
-        assert!(validate_sql("PRAGMA writable_schema = 1").is_err());
-        assert!(validate_sql("PRAGMA load_extension('evil.dll')").is_err());
-
-        // Comment-prefixed statements cannot hide forbidden verbs
-        assert!(validate_sql("/* comment */ ATTACH DATABASE 'x' AS y").is_err());
-        assert!(validate_sql("-- note\nATTACH DATABASE 'x' AS y").is_err());
-        assert!(validate_sql("/* multi\nline */ DETACH y").is_err());
-        assert!(validate_sql("SELECT 1 /* trailing */").is_ok());
-        assert!(validate_sql("SELECT 'foo;bar'").is_ok());
-        assert!(validate_sql("SELECT '/* not a comment */'").is_ok());
-        assert!(validate_sql("SELECT '-- not a comment'").is_ok());
-        assert!(validate_sql("SELECT 'ATTACH evil'").is_ok());
-        assert!(validate_sql("SELECT 1; ATTACH evil").is_err());
-    }
-
-    #[test]
-    fn test_validate_verbs() {
-        // dbQuery is read-only
-        assert!(validate_verbs("SELECT 1", QUERY_VERBS, "dbQuery").is_ok());
-        assert!(validate_verbs("WITH x AS (SELECT 1) SELECT * FROM x", QUERY_VERBS, "dbQuery").is_ok());
-        assert!(validate_verbs("DELETE FROM t", QUERY_VERBS, "dbQuery").is_err());
-        assert!(validate_verbs("/* c */ DROP TABLE t", QUERY_VERBS, "dbQuery").is_err());
-        // dbExecute permits app DML/DDL but never DROP
-        assert!(validate_verbs("DELETE FROM cached_pages", EXECUTE_VERBS, "dbExecute").is_ok());
-        assert!(validate_verbs("CREATE TABLE IF NOT EXISTS t (id INTEGER)", EXECUTE_VERBS, "dbExecute").is_ok());
-        assert!(validate_verbs("ALTER TABLE t ADD COLUMN c INTEGER", EXECUTE_VERBS, "dbExecute").is_ok());
-        assert!(validate_verbs("VACUUM", EXECUTE_VERBS, "dbExecute").is_ok());
-        assert!(validate_verbs("BEGIN", EXECUTE_VERBS, "dbExecute").is_ok());
-        assert!(validate_verbs("DROP TABLE cached_pages", EXECUTE_VERBS, "dbExecute").is_err());
-        assert!(validate_verbs("SELECT 'foo;bar'", QUERY_VERBS, "dbQuery").is_ok());
-        assert!(validate_verbs("INSERT INTO t VALUES ('foo;bar')", EXECUTE_VERBS, "dbExecute").is_ok());
-        assert!(validate_verbs("SELECT 1; ATTACH evil", QUERY_VERBS, "dbQuery").is_err());
-    }
 }
