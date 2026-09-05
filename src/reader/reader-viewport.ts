@@ -17,7 +17,7 @@ import { setStripAnimated, setStripInstant, stripTranslateX } from "./reader-tra
 // ---------------------------------------------------------------------------
 
 /** Duration budget for the eased scroll animation in continuous-scroll mode. */
-export const SCROLL_ANIMATION_DURATION_MS = 280;
+export const SCROLL_ANIMATION_DURATION_MS = 220;
 
 /** How long to hold `isProgrammaticScroll = true` after a non-animated jump. */
 export const PROGRAMMATIC_SCROLL_LOCK_MS = 350;
@@ -30,7 +30,7 @@ export function updateViewportHeight(s: ReaderSession): void {
   const h = s.viewportEl?.clientHeight;
   if (h && h > 50 && s.containerEl) {
     s.containerEl.style.setProperty("--ds-viewport-full", `${h}px`);
-    s.containerEl.style.setProperty("--ds-viewport-height", `${h - 20}px`);
+    s.containerEl.style.setProperty("--ds-viewport-height", `${h}px`);
     updateSlotClearances(s);
   }
 }
@@ -141,13 +141,13 @@ export function slideTo(
           Math.round(SCROLL_ANIMATION_DURATION_MS * Math.sqrt(normalizedDist)),
         );
 
-        const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
+        const easeInOutQuad = (t: number): number =>
+          t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
         const step = (currentTime: number) => {
           const elapsed = currentTime - startTime;
           const progress = Math.min(1, elapsed / duration);
-          vp.scrollTop = startScrollTop + distance * easeOutCubic(progress);
-
+          vp.scrollTop = startScrollTop + distance * easeInOutQuad(progress);
           if (progress < 1) {
             s.scrollAnimRaf = requestAnimationFrame(step);
           } else {

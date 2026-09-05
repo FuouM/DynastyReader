@@ -6,12 +6,12 @@
  */
 
 const MOMENTUM_INDICATOR_TIMEOUT_MS = 1200;
-const MOMENTUM_PAGE_FLIP_COOLDOWN_MS = 280;
+const MOMENTUM_PAGE_FLIP_COOLDOWN_MS = 220;
 const WHEEL_DELTA_THRESHOLD = 10;
 const PAGE_FLIP_COOLDOWN_MS = 220;
 const WHEEL_IDLE_RESET_MS = 350;
 
-import { onCleanup } from "solid-js";
+import { createEffect, onCleanup } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { spreadIndexOf } from "./reader-spread";
@@ -67,11 +67,14 @@ export function ReaderWheel(props: { session: ReaderSession }) {
     // Never hijack wheel events inside the controls sheet or a modal — those
     // have their own scroll regions (RD-H7).
     if ((ev.target as HTMLElement | null)?.closest(".ds-reader-sheet-window, .ds-modal-backdrop")) return;
+
+    // When Scroll Lock is active, in horizontal mode, or during Ctrl+Zoom:
+    // We completely own the wheel. Prevent browser native scroll IMMEDIATELY
+    // so sub-threshold ticks or cooldown intervals never leak a native scroll jerk.
+    ev.preventDefault();
+
     if (ev.ctrlKey) {
-      // Ctrl + Wheel (trackpad pinch): smooth zoom in any fit mode. Zooming in
-      // beyond the fitted size transitions to the zoomed (original-size)
-      // rendering state without breaking the fit layout (QoL-R1).
-      ev.preventDefault();
+      // Ctrl + Wheel (trackpad pinch): smooth zoom in any fit mode.
       c.zoomByFactor(Math.pow(1.0015, -ev.deltaY));
       return;
     }
@@ -97,7 +100,6 @@ export function ReaderWheel(props: { session: ReaderSession }) {
     // Throttle repeated flips in the SAME direction to prevent skipping multiple pages on one trackpad flick.
     // When the user deliberately reverses scroll direction, waive cooldown for immediate responsive turnaround.
     if (!isDirectionReversal && now < wheelCooldown) {
-      ev.preventDefault();
       return;
     }
 
@@ -212,7 +214,7 @@ export function ReaderWheel(props: { session: ReaderSession }) {
 
     // In Continuous Scroll mode, wheel scrolling turns pages when Scroll Lock is active
     if (!c.scrollLock()) return;
-    ev.preventDefault();
+
     lastWheelDirection = currentDirection;
     wheelCooldown = Date.now() + PAGE_FLIP_COOLDOWN_MS;
     const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
@@ -225,6 +227,12 @@ export function ReaderWheel(props: { session: ReaderSession }) {
   };
 
   makeEventListener(window, "wheel", onWheel, { passive: false });
-
+  createEffect(() => {
+    const vp = c.viewportEl;
+    if (vp) {
+      vp.addEventListener("wheel", onWheel, { passive: false });
+      onCleanup(() => vp.removeEventListener("wheel", onWheel));
+    }
+  });
   return null;
 }
