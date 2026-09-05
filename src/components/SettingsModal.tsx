@@ -191,7 +191,7 @@ export function SettingsModal(props: SettingsModalProps) {
               {t("settings.advanced.subpageNotice")}
             </span>
           </div>
-          <div class="ds-settings-subpage-content" style={{ "overflow-y": "auto", height: "100%", padding: "4px 8px", "box-sizing": "border-box" }}>
+          <div class="ds-settings-subpage-content">
             <AdvancedSettings />
           </div>
         </div>

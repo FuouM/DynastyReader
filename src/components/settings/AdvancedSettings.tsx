@@ -104,6 +104,8 @@ export function AdvancedSettings() {
   const engineStatus = getHapticsEngineStatus();
 
   return (
+    <div class="ds-advanced-view">
+      <div class="ds-advanced-scroll">
     <GroupBox
       id="ds-settings-sec-advanced-view"
       title={<IconText icon={<Icon name="sliders" />}>{t("settings.advanced.title")}</IconText>}
@@ -365,6 +367,8 @@ export function AdvancedSettings() {
           </div>
         </SettingsRow>
       </div>
-    </GroupBox>
+        </GroupBox>
+      </div>
+    </div>
   );
 }

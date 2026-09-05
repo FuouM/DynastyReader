@@ -979,6 +979,20 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 
 #ds-root[data-mobile] .ds-hotkey-scroll {
   padding: 0 max(14px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)) !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+}
+
+#ds-root[data-mobile] .ds-advanced-scroll {
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow-y: scroll !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+  padding: 10px max(14px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)) !important;
+  box-sizing: border-box !important;
 }
 
 #ds-root[data-mobile] .ds-settings-content {
@@ -996,7 +1010,8 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   box-sizing: border-box !important;
 }
 
-#ds-root[data-mobile] .ds-settings-content .group-box {
+#ds-root[data-mobile] .ds-settings-content .group-box,
+#ds-root[data-mobile] .ds-advanced-scroll .group-box {
   margin: 0 !important;
   width: 100% !important;
   box-sizing: border-box !important;
