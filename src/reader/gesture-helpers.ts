@@ -6,6 +6,8 @@
 
 import type { ChapterRef } from "../types/routes";
 import type { ReaderSession } from "./reader-session";
+import { isMobile } from "../stores";
+import { triggerHaptic } from "../utils/haptics";
 import {
   OVERSCROLL_ENGAGE_THRESHOLD_PX,
   OVERSCROLL_MAX_PULL_PX,
@@ -30,6 +32,8 @@ export type OverscrollActive = {
   targetY: number;
   ready: boolean;
   dist: number;
+  startX: number;
+  startY: number;
 } | null;
 
 export interface TryEngageOverscrollResult {
@@ -83,7 +87,7 @@ export function tryEngageOverscroll(opts: {
     const vp = s.viewportEl;
     if (vp) {
       const isAtTop = vp.scrollTop <= VERTICAL_ENGAGE_BOUNDARY_PX;
-      const isAtBottom = vp.scrollTop + vp.clientHeight >= vp.scrollHeight - VERTICAL_ENGAGE_BOUNDARY_PX;
+      const isAtBottom = Math.ceil(vp.scrollTop + vp.clientHeight) >= vp.scrollHeight - VERTICAL_ENGAGE_BOUNDARY_PX;
 
       if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * DIRECTION_ANGLE_RATIO) {
         return buildVerticalOverscroll(s, "prev", prevCh, startX, startY, fingerX, fingerY, dy);
@@ -113,7 +117,7 @@ function buildHorizontalOverscroll(
   const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, DAMPING_EXPONENT));
 
   return {
-    engaged: { direction, chapter, targetX, targetY, ready, dist },
+    engaged: { direction, chapter, targetX, targetY, ready, dist, startX, startY },
     overscrollState: { fingerX, fingerY, targetX, targetY, direction, chapter, ready },
     dampedPullPx: damped,
   };
@@ -136,7 +140,7 @@ function buildVerticalOverscroll(
     : -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, DAMPING_EXPONENT));
 
   return {
-    engaged: { direction, chapter, targetX, targetY, ready, dist },
+    engaged: { direction, chapter, targetX, targetY, ready, dist, startX, startY },
     overscrollState: { fingerX, fingerY, targetX, targetY, direction, chapter, ready },
     dampedPullPx: damped,
   };
@@ -164,16 +168,33 @@ export function applyOverscrollTransform(
  * Returns haptic trigger info and the new overscroll state.
  */
 export function updateActiveOverscroll(
+  s: ReaderSession,
   active: NonNullable<OverscrollActive>,
   fingerX: number,
   fingerY: number,
   hasVibrated: boolean,
-): { state: NonNullable<OverscrollActive>; triggerHaptic: boolean } {
+): { state: NonNullable<OverscrollActive>; triggerHaptic: boolean; dampedPullPx: number } {
   const ready = isOverscrollReady(fingerX, fingerY, active.targetX, active.targetY);
   const shouldHaptic = ready && !hasVibrated;
+  let rawDist: number;
+  let damped: number;
+
+  if (s.isHorizontal()) {
+    const isRtl = s.direction() === "rtl";
+    rawDist = Math.abs(fingerX - active.startX);
+    const pullSign = active.direction === "prev" ? (isRtl ? -1 : 1) : (isRtl ? 1 : -1);
+    damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(rawDist, DAMPING_EXPONENT));
+  } else {
+    rawDist = Math.abs(fingerY - active.startY);
+    damped = active.direction === "prev"
+      ? Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(rawDist, DAMPING_EXPONENT))
+      : -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(rawDist, DAMPING_EXPONENT));
+  }
+
   return {
-    state: { ...active, ready },
+    state: { ...active, dist: rawDist, ready },
     triggerHaptic: shouldHaptic,
+    dampedPullPx: damped,
   };
 }
 
@@ -205,6 +226,7 @@ export function resolveTapZone(
     const step = isRtl ? 1 : -1;
     const targetPage = s.currentIndex() + step;
     if (targetPage >= 0 && targetPage < s.pages().length) {
+      if (isMobile()) triggerHaptic("page-turn");
       if (s.isSpread()) s.stepSpread(step as 1 | -1);
       else s.setPage(targetPage);
     }
@@ -212,6 +234,7 @@ export function resolveTapZone(
     const step = isRtl ? -1 : 1;
     const targetPage = s.currentIndex() + step;
     if (targetPage >= 0 && targetPage < s.pages().length) {
+      if (isMobile()) triggerHaptic("page-turn");
       if (s.isSpread()) s.stepSpread(step as 1 | -1);
       else s.setPage(targetPage);
     }
@@ -248,6 +271,7 @@ export function resolveSwipe(
     const total = s.pages().length;
     const targetPage = cur + step;
     if (targetPage >= 0 && targetPage < total) {
+      if (isMobile()) triggerHaptic("page-turn");
       if (s.isHorizontal() && s.isSpread()) {
         s.stepSpread(step as 1 | -1);
       } else {

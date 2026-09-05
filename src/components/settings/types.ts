@@ -7,6 +7,7 @@ export type SettingsSectionId =
   | "reading"
   | "hotkeys"
   | "storage"
+  | "advanced"
   | "about";
 
 export interface SettingsSection {
@@ -21,6 +22,7 @@ export const getSettingsSections = (): SettingsSection[] => [
   { id: "reading", get label() { return t("settings.sections.reading"); }, icon: "book" },
   { id: "hotkeys", get label() { return t("settings.sections.hotkeys"); }, icon: "keyboard" },
   { id: "storage", get label() { return t("settings.sections.storage"); }, icon: "hdd-stack" },
+  { id: "advanced", get label() { return t("settings.sections.advanced"); }, icon: "sliders" },
   { id: "about", get label() { return t("settings.sections.about"); }, icon: "info-circle" },
 ];
 

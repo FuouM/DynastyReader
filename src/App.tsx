@@ -58,16 +58,6 @@ export function App() {
     setTitle(routeTitle(r));
   });
 
-  createEffect(() => {
-    const mob = isMobile();
-    if (mob) {
-      document.documentElement.dataset.mobile = "1";
-      document.body.dataset.mobile = "1";
-    } else {
-      delete document.documentElement.dataset.mobile;
-      delete document.body.dataset.mobile;
-    }
-  });
 
   createEffect(() => {
     const inReader = route().view === "reader";

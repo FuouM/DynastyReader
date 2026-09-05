@@ -37,10 +37,37 @@ export const [downloadScheduleEnd, setDownloadScheduleEnd] = persistedSignal<str
  * dependencies, so desktop is always treated as unmetered.
  * Android: reads `ConnectivityManager.isActiveNetworkMetered` through the
  * `AndroidThemeBridge` JavascriptInterface when present.
+ *
+ * Caches result with a 15 s TTL and invalidates on network/visibility change (M-09)
+ * to avoid synchronous main-thread JNI bridge calls every 3 s during active downloads.
  */
+let cachedMetered: boolean | null = null;
+let lastMeteredCheckTime = 0;
+const METERED_CACHE_TTL_MS = 15000;
+
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    cachedMetered = null;
+  });
+  window.addEventListener("offline", () => {
+    cachedMetered = null;
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      cachedMetered = null;
+    }
+  });
+}
+
 export function isConnectionMetered(): boolean {
+  const now = Date.now();
+  if (cachedMetered !== null && now - lastMeteredCheckTime < METERED_CACHE_TTL_MS) {
+    return cachedMetered;
+  }
   try {
-    return window.AndroidThemeBridge?.isConnectionMetered?.() === true;
+    cachedMetered = window.AndroidThemeBridge?.isConnectionMetered?.() === true;
+    lastMeteredCheckTime = now;
+    return cachedMetered;
   } catch (err) {
     log.debug("download-constraints", "isConnectionMetered failed:", err);
     return false;

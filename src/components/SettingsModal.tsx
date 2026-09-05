@@ -23,6 +23,7 @@ import {
   ReaderSettings,
   HotkeysSection,
   StorageSettings,
+  AdvancedSettings,
   AboutSettings,
   type SettingsSectionId,
 } from "./settings";
@@ -33,7 +34,7 @@ export interface SettingsModalProps {
 }
 
 export function SettingsModal(props: SettingsModalProps) {
-  const [currentPage, setCurrentPage] = createSignal<"main" | "hotkeys">("main");
+  const [currentPage, setCurrentPage] = createSignal<"main" | "hotkeys" | "advanced">("main");
   const [activeSection, setActiveSection] = createSignal<SettingsSectionId>("display");
 
   let contentRef: HTMLDivElement | undefined;
@@ -106,43 +107,60 @@ export function SettingsModal(props: SettingsModalProps) {
         </div>
       }
     >
-      <Show
-        when={currentPage() === "hotkeys"}
-        fallback={
-          <div class="ds-settings-layout">
-            <SettingsSidebar
-              activeSection={activeSection()}
-              onSelect={scrollToSection}
-            />
+      <Show when={currentPage() === "main"}>
+        <div class="ds-settings-layout">
+          <SettingsSidebar
+            activeSection={activeSection()}
+            onSelect={scrollToSection}
+          />
 
-            <div class="ds-settings-content" ref={contentRef} onScroll={handleScroll}>
-              <DisplaySettings />
-              <BlacklistSettings />
-              <ReaderSettings />
+          <div class="ds-settings-content" ref={contentRef} onScroll={handleScroll}>
+            <DisplaySettings />
+            <BlacklistSettings />
+            <ReaderSettings />
 
-              {/* Hotkeys Section trigger banner */}
-              <GroupBox id="ds-settings-sec-hotkeys" title={<IconText icon={<Icon name="keyboard" />}>{t("settings.sections.hotkeys")}</IconText>}>
-                <div class="ds-row-between">
-                  <div class="ds-label">
-                    {t("settings.hotkeys.bannerTitle")}
-                  </div>
-                  <IconButton
-                    className=""
-                    id="ds-settings-open-hotkeys"
-                    cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
-                    icon={<Icon name="keyboard" />}
-                    text={t("settings.openHotkeysModal")}
-                    onClick={() => setCurrentPage("hotkeys")}
-                  />
+            {/* Hotkeys Section trigger banner */}
+            <GroupBox id="ds-settings-sec-hotkeys" title={<IconText icon={<Icon name="keyboard" />}>{t("settings.sections.hotkeys")}</IconText>}>
+              <div class="ds-row-between">
+                <div class="ds-label">
+                  {t("settings.hotkeys.bannerTitle")}
                 </div>
-              </GroupBox>
+                <IconButton
+                  className=""
+                  id="ds-settings-open-hotkeys"
+                  cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
+                  icon={<Icon name="keyboard" />}
+                  text={t("settings.openHotkeysModal")}
+                  onClick={() => setCurrentPage("hotkeys")}
+                />
+              </div>
+            </GroupBox>
 
-              <StorageSettings onClose={props.onClose} />
-              <AboutSettings />
-            </div>
+            <StorageSettings onClose={props.onClose} />
+
+            {/* Advanced Section trigger banner */}
+            <GroupBox id="ds-settings-sec-advanced" title={<IconText icon={<Icon name="sliders" />}>{t("settings.sections.advanced")}</IconText>}>
+              <div class="ds-row-between">
+                <div class="ds-label">
+                  {t("settings.advanced.bannerTitle")}
+                </div>
+                <IconButton
+                  className=""
+                  id="ds-settings-open-advanced"
+                  cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
+                  icon={<Icon name="sliders" />}
+                  text={t("settings.advanced.openAdvancedButton")}
+                  onClick={() => setCurrentPage("advanced")}
+                />
+              </div>
+            </GroupBox>
+
+            <AboutSettings />
           </div>
-        }
-      >
+        </div>
+      </Show>
+
+      <Show when={currentPage() === "hotkeys"}>
         <div class="ds-settings-subpage">
           <div class="ds-settings-subpage-header">
             <IconButton
@@ -158,6 +176,26 @@ export function SettingsModal(props: SettingsModalProps) {
           </div>
           <div class="ds-settings-subpage-content">
             <HotkeysSection active={props.open && currentPage() === "hotkeys"} />
+          </div>
+        </div>
+      </Show>
+
+      <Show when={currentPage() === "advanced"}>
+        <div class="ds-settings-subpage">
+          <div class="ds-settings-subpage-header">
+            <IconButton
+              className="ds-btn-sm"
+              cssText="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
+              icon={<Icon name="arrow-left" />}
+              text={t("settings.backToSettings")}
+              onClick={() => setCurrentPage("main")}
+            />
+            <span class="ds-muted">
+              {t("settings.advanced.subpageNotice")}
+            </span>
+          </div>
+          <div class="ds-settings-subpage-content" style={{ "overflow-y": "auto", height: "100%", padding: "4px 8px", "box-sizing": "border-box" }}>
+            <AdvancedSettings />
           </div>
         </div>
       </Show>

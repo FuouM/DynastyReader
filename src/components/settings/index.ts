@@ -6,4 +6,5 @@ export { BlacklistSettings } from "./BlacklistSettings";
 export { ReaderSettings } from "./ReaderSettings";
 export { HotkeysSection } from "./HotkeySettings";
 export { StorageSettings } from "./StorageSettings";
+export { AdvancedSettings } from "./AdvancedSettings";
 export { AboutSettings } from "./AboutSettings";

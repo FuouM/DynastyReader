@@ -208,6 +208,7 @@ export function BrowseView() {
   let pullStartY = 0;
   let pulling = false;
   const PULL_THRESHOLD_PX = 48;
+  const PULL_RELEASE_PX = 36;
 
   onMount(() => {
     const paneEl = document.getElementById("ds-pane-browse") as HTMLElement | null;
@@ -235,10 +236,12 @@ export function BrowseView() {
           const damped = Math.min(56, Math.pow(dy, 0.82));
           setPullOffset(damped);
           const ready = damped >= PULL_THRESHOLD_PX;
-          if (ready && !pullReady()) {
+          const stillReady = pullReady() && damped >= PULL_RELEASE_PX;
+          const newReady = ready || stillReady;
+          if (newReady && !pullReady()) {
             triggerHaptic("snap");
           }
-          setPullReady(ready);
+          setPullReady(newReady);
           if (damped > 10) ev.preventDefault();
         } else {
           setPullOffset(0);
@@ -247,7 +250,7 @@ export function BrowseView() {
       }
     };
     const onTouchEnd = (): void => {
-      if (pulling && pullReady() && pullOffset() >= PULL_THRESHOLD_PX) {
+      if (pulling && pullReady() && pullOffset() >= PULL_RELEASE_PX) {
         triggerHaptic("confirm");
         void checkUpdates();
       }

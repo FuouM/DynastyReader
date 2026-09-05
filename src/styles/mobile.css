@@ -216,7 +216,7 @@
   display: none !important;
 }
 /* Landscape / Wide mobile: layout adjustments */
-@media (orientation: landscape), (min-width: 600px) {
+@media (orientation: landscape) {
   /* landscape OR tablet-wide (≥600px): restore desktop-style inline layout */
   #ds-root[data-mobile] #ds-topbar {
     padding: calc(4px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) 4px calc(8px + env(safe-area-inset-left, 0px)) !important;
@@ -266,8 +266,9 @@
 
 .ds-bn-tab {
   flex: 1;
-  height: 50px !important;
-  min-height: 50px !important;
+  align-self: stretch;
+  height: auto !important;
+  min-height: 44px !important;
   max-height: none !important;
   display: flex;
   flex-direction: column;
@@ -703,7 +704,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   background: var(--sys-control-bg, #ececec);
   border-top: 1px solid var(--sys-border-dark, #707070);
   border-radius: 4px 4px 0 0;
-  padding: 8px max(14px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+  padding: 8px calc(14px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -717,6 +718,13 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 }
 .ds-reader-sheet-window.ds-sheet-closing {
   animation: ds-sheet-slide-down 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Narrow mobile overscroll target card cap (OS-07) */
+#ds-root[data-mobile] .ds-overscroll-target-card {
+  min-width: unset !important;
+  width: calc(100vw - 48px) !important;
+  max-width: 260px !important;
 }
 
 .ds-reader-sheet-header {

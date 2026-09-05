@@ -4,6 +4,8 @@
  */
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
+import { isMobile } from "../stores";
+import { triggerHaptic } from "../utils/haptics";
 import {
   consumeHotkeyEvent,
   isHotkeyEventConsumed,
@@ -48,6 +50,7 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
 
     if (matchesHotkey(ev, "reader.nextPage")) {
       consumeHotkeyEvent(ev);
+      if (isMobile()) triggerHaptic("page-turn");
       if (c.isSpread()) {
         c.stepSpread(1);
       } else {
@@ -55,6 +58,7 @@ export function ReaderShortcuts(props: { session: ReaderSession }) {
       }
     } else if (matchesHotkey(ev, "reader.prevPage")) {
       consumeHotkeyEvent(ev);
+      if (isMobile()) triggerHaptic("page-turn");
       if (c.isSpread()) {
         c.stepSpread(-1);
       } else {

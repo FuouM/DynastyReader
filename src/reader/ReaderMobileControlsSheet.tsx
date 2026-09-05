@@ -18,6 +18,7 @@ import {
   setHideStatusBarEnabled,
   type PrevChapterStartPage,
 } from "./settings";
+import { isHapticsEnabled, setHapticsEnabled } from "../utils/haptics";
 import { Button, IconButton, IconText, SegmentedSwitch, DsSwitch } from "../components/Button";
 import { SettingsRow } from "../components/SettingsRow";
 import { useCopyLink } from "../hooks/useCopyLink";
@@ -46,8 +47,6 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   const s = props.session;
   const [mounted, setMounted] = createSignal(false);
   const [closing, setClosing] = createSignal(false);
-  const [prevChapterPage, setPrevChapterPage] = createSignal<PrevChapterStartPage>(getPrevChapterStartPage());
-  const [hideStatusBar, setHideStatusBar] = createSignal(isHideStatusBarEnabled());
   const { copied, handleCopyLink } = useCopyLink({
     getUrl: () => dynastyUrl("chapters", s.permalink),
     namespace: "mobile-controls",
@@ -83,7 +82,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
 
   return (
     <Show when={mounted()}>
-      <Portal mount={document.getElementById("ds-root") ?? document.body}>
+      <Portal mount={document.body}>
         <div
           class="ds-reader-sheet-backdrop"
           classList={{ "ds-sheet-closing": closing() }}
@@ -212,11 +211,8 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               {/* Previous Chapter Landing Page */}
               <SettingsRow label={t("settings.reader.prevChapterPage")} divider>
                 <SegmentedSwitch
-                  value={prevChapterPage()}
-                  onChange={(val) => {
-                    setPrevChapterStartPage(val as PrevChapterStartPage);
-                    setPrevChapterPage(val as PrevChapterStartPage);
-                  }}
+                  value={getPrevChapterStartPage()}
+                  onChange={(val) => setPrevChapterStartPage(val as PrevChapterStartPage)}
                   options={[
                     { id: "ds-ctrl-prev-first", value: "first", text: t("settings.reader.prevChapterPageFirst") },
                     { id: "ds-ctrl-prev-last", value: "last", text: t("settings.reader.prevChapterPageLast") },
@@ -240,12 +236,19 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               <SettingsRow label={t("settings.reader.hideStatusBar")} divider>
                 <DsSwitch
                   id="ds-ctrl-hide-statusbar-toggle"
-                  checked={hideStatusBar()}
-                  title={hideStatusBar() ? t("settings.reader.hideStatusBarOn") : t("settings.reader.hideStatusBarOff")}
-                  onChange={(next) => {
-                    setHideStatusBarEnabled(next);
-                    setHideStatusBar(next);
-                  }}
+                  checked={isHideStatusBarEnabled()}
+                  title={isHideStatusBarEnabled() ? t("settings.reader.hideStatusBarOn") : t("settings.reader.hideStatusBarOff")}
+                  onChange={setHideStatusBarEnabled}
+                />
+              </SettingsRow>
+
+              {/* Haptic Feedback (H-01) */}
+              <SettingsRow label={t("settings.reader.haptics")} divider>
+                <DsSwitch
+                  id="ds-ctrl-haptics-toggle"
+                  checked={isHapticsEnabled()}
+                  title={isHapticsEnabled() ? t("settings.reader.hapticsOn") : t("settings.reader.hapticsOff")}
+                  onChange={setHapticsEnabled}
                 />
               </SettingsRow>
               {/* Chapter Actions */}

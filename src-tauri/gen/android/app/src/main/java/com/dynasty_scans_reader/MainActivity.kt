@@ -74,57 +74,78 @@ class MainActivity : TauriActivity() {
       insetsController.hide(WindowInsetsCompat.Type.statusBars())
     }
   }
-  fun performHaptic(style: String?) {
+  fun performHaptic(style: String?, durationMs: Int = 0, amplitude: Int = 0) {
     val view = window?.decorView ?: return
     view.isHapticFeedbackEnabled = true
 
-    when (style) {
-      "confirm", "success" -> {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-          view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-        } else {
-          view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-        }
-      }
-      "snap", "lock" -> {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-          view.performHapticFeedback(HapticFeedbackConstants.DRAG_START)
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-          view.performHapticFeedback(HapticFeedbackConstants.GESTURE_END)
-        } else {
-          view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-        }
-      }
-      else -> {
-        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-      }
+    val effectiveDur = if (durationMs > 0) durationMs.coerceIn(5, 500) else when (style) {
+      "confirm", "success" -> 25
+      "snap", "lock" -> 40
+      "page-turn" -> 20
+      else -> 15
     }
 
+    val effectiveAmp = if (amplitude > 0) amplitude.coerceIn(1, 255) else 255
+
+    // 1. Hardware vibrator with precise amplitude (strength) and duration
     try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-        val vibrator = vibratorManager?.defaultVibrator
-        if (vibrator?.hasVibrator() == true) {
-          val effect = if (style == "confirm") {
-            VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK)
-          } else {
-            VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
-          }
-          vibrator.vibrate(effect)
-        }
-      } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        vibratorManager?.defaultVibrator
+      } else {
         @Suppress("DEPRECATION")
-        val vibrator = getSystemService(VIBRATOR_SERVICE) as? Vibrator
-        if (vibrator?.hasVibrator() == true) {
-          val effect = if (style == "confirm") {
-            VibrationEffect.createOneShot(45, VibrationEffect.DEFAULT_AMPLITUDE)
+        getSystemService(VIBRATOR_SERVICE) as? Vibrator
+      }
+
+      if (vibrator?.hasVibrator() == true) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          val effect = if (style == "confirm" || style == "success") {
+            val d = effectiveDur.toLong()
+            val timings = longArrayOf(0, d, 40, d)
+            if (vibrator.hasAmplitudeControl()) {
+              val amps = intArrayOf(0, effectiveAmp, 0, effectiveAmp)
+              VibrationEffect.createWaveform(timings, amps, -1)
+            } else {
+              VibrationEffect.createWaveform(timings, -1)
+            }
           } else {
-            VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE)
+            val d = effectiveDur.toLong()
+            if (vibrator.hasAmplitudeControl()) {
+              VibrationEffect.createOneShot(d, effectiveAmp)
+            } else {
+              VibrationEffect.createOneShot(d, VibrationEffect.DEFAULT_AMPLITUDE)
+            }
           }
           vibrator.vibrate(effect)
+          return
+        } else {
+          @Suppress("DEPRECATION")
+          if (style == "confirm" || style == "success") {
+            val d = effectiveDur.toLong()
+            vibrator.vibrate(longArrayOf(0, d, 40, d), -1)
+          } else {
+            vibrator.vibrate(effectiveDur.toLong())
+          }
+          return
         }
       }
     } catch (_: Exception) {}
+
+    // 2. Fallback: View.performHapticFeedback with FLAG_IGNORE_VIEW_SETTING / FLAG_IGNORE_GLOBAL_SETTING
+    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING
+    } else {
+      @Suppress("DEPRECATION")
+      HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+    }
+
+    val constant = when (style) {
+      "confirm", "success" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.LONG_PRESS
+      "snap", "lock" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) HapticFeedbackConstants.DRAG_START else HapticFeedbackConstants.CONTEXT_CLICK
+      "page-turn" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) HapticFeedbackConstants.CLOCK_TICK else HapticFeedbackConstants.KEYBOARD_TAP
+      else -> HapticFeedbackConstants.KEYBOARD_TAP
+    }
+    view.performHapticFeedback(constant, flags)
   }
 
   class ThemeBridge(private val activity: MainActivity) {
@@ -153,6 +174,13 @@ class MainActivity : TauriActivity() {
     fun triggerHaptic(style: String?) {
       activity.runOnUiThread {
         activity.performHaptic(style)
+      }
+    }
+
+    @JavascriptInterface
+    fun triggerHapticAdvanced(style: String?, durationMs: Int, amplitude: Int) {
+      activity.runOnUiThread {
+        activity.performHaptic(style, durationMs, amplitude)
       }
     }
 

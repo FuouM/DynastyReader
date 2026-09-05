@@ -1189,6 +1189,17 @@
   }
 }
 
+:root {
+  --ds-overscroll-ready-bg: #107c41;
+  --ds-overscroll-ready-border: #0c592e;
+  --ds-overscroll-ready-text: #ffffff;
+}
+
+@keyframes ds-overscroll-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* In-Gesture Finger-Tracking Circle-to-Circle Unlock (WinForms Desktop Aesthetic) */
 .ds-overscroll-gesture-overlay {
   position: fixed;
@@ -1197,6 +1208,7 @@
   z-index: 2000;
   user-select: none;
   background: rgba(0, 0, 0, 0.35);
+  animation: ds-overscroll-in 120ms ease-out both;
 }
 
 /* Finger Cursor Token (Tracks finger/pointer in real-time) */
@@ -1221,9 +1233,9 @@
 }
 
 .ds-overscroll-finger-circle.ds-snap-ready {
-  background: #107c41 !important;
-  border-color: #0c592e !important;
-  color: #ffffff !important;
+  background: var(--ds-overscroll-ready-bg) !important;
+  border-color: var(--ds-overscroll-ready-border) !important;
+  color: var(--ds-overscroll-ready-text) !important;
 }
 
 /* Center Lock Target Ring (Adaptive Position) */
@@ -1249,9 +1261,9 @@
 
 
 .ds-overscroll-target-ring.ds-snap-ready {
-  background: #107c41 !important;
-  border: 2px solid #0c592e !important;
-  color: #ffffff !important;
+  background: var(--ds-overscroll-ready-bg) !important;
+  border: 2px solid var(--ds-overscroll-ready-border) !important;
+  color: var(--ds-overscroll-ready-text) !important;
 }
 
 /* Floating Info Card (Always Centered) */

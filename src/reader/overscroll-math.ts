@@ -12,6 +12,12 @@ export const OVERSCROLL_COLLISION_RADIUS_PX = 48;
 export const OVERSCROLL_CARD_AVOID_H_PX = 96; // Card half-height + ring radius + safety margin
 export const OVERSCROLL_CARD_AVOID_W_PX = 185; // Card half-width + ring radius + safety margin
 
+/** Computes the card avoidance half-width + ring radius dynamically based on viewport width (OS-07). */
+export function getOverscrollCardAvoidW(winW: number): number {
+  const cardW = Math.min(260, Math.max(160, winW - 48));
+  return Math.round(cardW / 2 + 32 + 16);
+}
+
 /**
  * Adaptive overscroll lock positioning with Guaranteed Radial Orbit & Corner Deflection:
  * - The info card is anchored at the exact viewport center (cx, cy).
@@ -33,7 +39,7 @@ export const getOverscrollTarget = (
   const winH = typeof window !== "undefined" ? window.innerHeight : 600;
   const cx = winW / 2;
   const cy = winH / 2;
-
+  const cardAvoidW = getOverscrollCardAvoidW(winW);
   const EDGE_MARGIN_X = Math.max(56, Math.min(100, winW * 0.08));
   const EDGE_MARGIN_Y = Math.max(56, Math.min(100, winH * 0.08));
 
@@ -78,11 +84,11 @@ export const getOverscrollTarget = (
     }
 
     // Secondary card avoidance check
-    if (Math.abs(targetX - cx) < OVERSCROLL_CARD_AVOID_W_PX && Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
+    if (Math.abs(targetX - cx) < cardAvoidW && Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
       if (Math.abs(targetY - cy) < Math.abs(targetX - cx)) {
         targetY = targetY < cy ? cy - OVERSCROLL_CARD_AVOID_H_PX - 20 : cy + OVERSCROLL_CARD_AVOID_H_PX + 20;
       } else {
-        targetX = targetX < cx ? cx - OVERSCROLL_CARD_AVOID_W_PX - 20 : cx + OVERSCROLL_CARD_AVOID_W_PX + 20;
+        targetX = targetX < cx ? cx - cardAvoidW - 20 : cx + cardAvoidW + 20;
       }
     }
 
@@ -108,10 +114,10 @@ export const getOverscrollTarget = (
       targetY = isPullingUp ? EDGE_MARGIN_Y : winH - EDGE_MARGIN_Y;
 
       targetX = engagedX;
-      if (Math.abs(targetX - cx) < OVERSCROLL_CARD_AVOID_W_PX) {
+      if (Math.abs(targetX - cx) < cardAvoidW) {
         targetX = engagedX < cx
-          ? cx - OVERSCROLL_CARD_AVOID_W_PX - 20
-          : cx + OVERSCROLL_CARD_AVOID_W_PX + 20;
+          ? cx - cardAvoidW - 20
+          : cx + cardAvoidW + 20;
       }
     } else {
       // Started near top/bottom destination margin: deflect into opposite horizontal corner
@@ -119,17 +125,17 @@ export const getOverscrollTarget = (
 
       if (engagedX < cx) {
         // Left quadrant -> deflect to right destination corner
-        targetX = Math.min(winW - EDGE_MARGIN_X, Math.max(cx + OVERSCROLL_CARD_AVOID_W_PX + 20, winW * 0.76));
+        targetX = Math.min(winW - EDGE_MARGIN_X, Math.max(cx + cardAvoidW + 20, winW * 0.76));
       } else {
         // Right quadrant -> deflect to left destination corner
-        targetX = Math.max(EDGE_MARGIN_X, Math.min(cx - OVERSCROLL_CARD_AVOID_W_PX - 20, winW * 0.24));
+        targetX = Math.max(EDGE_MARGIN_X, Math.min(cx - cardAvoidW - 20, winW * 0.24));
       }
     }
 
     // Secondary card avoidance check
-    if (Math.abs(targetX - cx) < OVERSCROLL_CARD_AVOID_W_PX && Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
+    if (Math.abs(targetX - cx) < cardAvoidW && Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
       if (Math.abs(targetX - cx) < Math.abs(targetY - cy)) {
-        targetX = targetX < cx ? cx - OVERSCROLL_CARD_AVOID_W_PX - 20 : cx + OVERSCROLL_CARD_AVOID_W_PX + 20;
+        targetX = targetX < cx ? cx - cardAvoidW - 20 : cx + cardAvoidW + 20;
       } else {
         targetY = targetY < cy ? cy - OVERSCROLL_CARD_AVOID_H_PX - 20 : cy + OVERSCROLL_CARD_AVOID_H_PX + 20;
       }
