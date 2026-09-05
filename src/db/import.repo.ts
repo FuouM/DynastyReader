@@ -7,7 +7,7 @@ import { notifyFollowedChanged, updateFollowedSeriesCover } from "./library.repo
 import { notifyCollectionsChanged, updateCollectionItemCoverByPermalink } from "./collections.repo";
 import { decodeEntities } from "../utils/html";
 import { KIND_BY_PATH_SEGMENT, titleFromPermalink, type EntityKind } from "../taxonomy";
-import { getOrHydrateSeriesCover } from "../api";
+import { getOrHydrateSeriesCover } from "../api/series";
 
 export interface ValidatedFollowedItem {
   permalink: string;

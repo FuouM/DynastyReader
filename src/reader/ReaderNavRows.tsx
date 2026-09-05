@@ -6,7 +6,8 @@
 import { createSignal, Show, type Accessor } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode } from "../types/reader";
-import { theme, isMobile } from "../stores";
+import { theme } from "../stores/theme";
+import { isMobile } from "../stores/platform";
 import { t } from "../i18n";
 import { DsButton, DsSelect, IconButton } from "../components/Button";
 import {

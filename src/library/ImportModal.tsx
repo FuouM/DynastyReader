@@ -7,18 +7,15 @@ import {
   Show,
 } from "solid-js";
 import { t } from "../i18n";
-import { showBanner } from "../stores";
+import { showBanner } from "../stores/topbar";
 import { errorMessage } from "../utils/errors";
 import { Modal } from "../components/Modal";
 import { IconButton, DsSelect, type SelectOption } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Icon, CheckIcon, ClipboardIcon, WarningIcon } from "../components/Icon";
-import {
-  validateAndParseImport,
-  executeImport,
-  getCollections,
-  type CollectionRow,
-} from "../db";
+import { validateAndParseImport, executeImport } from "../db/import.repo";
+import { getCollections } from "../db/collections.repo";
+import type { CollectionRow } from "../types/db";
 
 export interface ImportModalProps {
   open: boolean;

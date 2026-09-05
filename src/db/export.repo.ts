@@ -1,5 +1,5 @@
 import { query } from "./client";
-import { dynastyUrl } from "../utils/formatting";
+import { dynastyUrl } from "../utils/url";
 import { itemKindToPath } from "../taxonomy";
 import { decodeEntities } from "../utils/html";
 

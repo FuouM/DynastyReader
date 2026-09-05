@@ -2,7 +2,7 @@
  * Shared types for the downloaded chapters feature.
  */
 
-import type { FullyCachedChapterRow } from "../../db";
+import type { FullyCachedChapterRow } from "../../db/cache.repo";
 
 export type DownloadedSortMode = "download-desc" | "name-asc" | "read-desc" | "size-desc" | "size-asc";
 

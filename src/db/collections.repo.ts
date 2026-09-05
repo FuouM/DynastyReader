@@ -1,11 +1,7 @@
 import { query, execute } from "./client";
 import { isCoverFilePath } from "../lib/cache-keys";
 import { createChangeNotifier } from "../lib/change-notifier";
-import type {
-  CollectionRow,
-  CollectionItemRow,
-  CollectionItemKind,
-} from "../types/db";
+import type { CollectionRow, CollectionItemRow, CollectionItemKind } from "../types/db";
 import { log } from "../utils/log";
 
 const collectionsNotifier = createChangeNotifier();

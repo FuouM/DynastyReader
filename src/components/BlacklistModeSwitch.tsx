@@ -1,6 +1,6 @@
 import { type Accessor } from "solid-js";
 import { t } from "../i18n";
-import { type BlacklistMode } from "../db";
+import type { BlacklistMode } from "../types/blacklist";
 import { Icon } from "./Icon";
 import { SegmentedSwitch } from "./Button";
 

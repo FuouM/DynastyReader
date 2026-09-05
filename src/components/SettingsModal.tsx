@@ -15,18 +15,15 @@ import { Icon } from "./Icon";
 import { IconText, IconButton } from "./Button";
 import { GroupBox } from "./GroupBox";
 import { t } from "../i18n";
-import {
-  SETTINGS_SECTIONS,
-  SettingsSidebar,
-  DisplaySettings,
-  BlacklistSettings,
-  ReaderSettings,
-  HotkeysSection,
-  StorageSettings,
-  AdvancedSettings,
-  AboutSettings,
-  type SettingsSectionId,
-} from "./settings";
+import { SETTINGS_SECTIONS, type SettingsSectionId } from "./settings/types";
+import { SettingsSidebar } from "./settings/SettingsSidebar";
+import { DisplaySettings } from "./settings/DisplaySettings";
+import { BlacklistSettings } from "./settings/BlacklistSettings";
+import { ReaderSettings } from "./settings/ReaderSettings";
+import { HotkeysSection } from "./settings/HotkeySettings";
+import { StorageSettings } from "./settings/StorageSettings";
+import { AdvancedSettings } from "./settings/AdvancedSettings";
+import { AboutSettings } from "./settings/AboutSettings";
 
 export interface SettingsModalProps {
   open: boolean;

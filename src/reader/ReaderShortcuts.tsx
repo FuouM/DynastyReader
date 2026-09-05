@@ -4,14 +4,14 @@
  */
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
-import { isMobile } from "../stores";
+import { isMobile } from "../stores/platform";
 import { triggerHaptic } from "../utils/haptics";
 import {
   consumeHotkeyEvent,
   isHotkeyEventConsumed,
   isTextInputTarget,
   matchesHotkey,
-} from "../hotkeys";
+} from "../hotkeys/hotkeys-store";
 
 /** Navigation actions must not auto-repeat at the OS key-repeat rate (RD-M6). */
 function isNavigationHotkey(ev: KeyboardEvent): boolean {

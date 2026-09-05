@@ -8,17 +8,13 @@
  */
 
 import { createEffect, createMemo, createSignal, For, Show, type Accessor } from "solid-js";
-import { route } from "../stores";
+import { route } from "../stores/router";
 import { t } from "../i18n";
 import { persistedSignal } from "../lib/persisted-signal";
 import { DownloadManager } from "./DownloadManager";
-import {
-  getFullyCachedChapters,
-  getBookmarkPermalinks,
-  getHistoryMap,
-  getBatchCached,
-  type FullyCachedChapterRow,
-} from "../db";
+import { getFullyCachedChapters, type FullyCachedChapterRow } from "../db/cache.repo";
+import { getBookmarkPermalinks, getHistoryMap } from "../db/library.repo";
+import { getBatchCached } from "../db/metadata.repo";
 import { isVolumeOrSectionHeader } from "../utils/volume";
 import {
   scrollBrowseToTop,
@@ -30,17 +26,17 @@ import {
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
 import { EmptyState } from "../components/EmptyState";
-import {
-  SeriesDownloadedCard,
-  OrphanDownloadedCard,
-  DownloadedLegend,
-  DownloadedToolbar,
-  buildGroups,
-  type DownloadedSortMode,
-  type DownloadedModel,
-  type DownloadedSeriesGroup,
-  type ProcessedCachedChapter,
-} from "./downloaded";
+import { SeriesDownloadedCard } from "./downloaded/SeriesDownloadedCard";
+import { OrphanDownloadedCard } from "./downloaded/OrphanDownloadedCard";
+import { DownloadedLegend } from "./downloaded/DownloadedLegend";
+import { DownloadedToolbar } from "./downloaded/DownloadedToolbar";
+import { buildGroups } from "./downloaded/buildGroups";
+import type {
+  DownloadedSortMode,
+  DownloadedModel,
+  DownloadedSeriesGroup,
+  ProcessedCachedChapter,
+} from "./downloaded/types";
 
 const PAGE_SIZE = 15;
 

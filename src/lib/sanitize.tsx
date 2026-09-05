@@ -7,7 +7,7 @@
 
 import { createMemo, type JSX } from "solid-js";
 import { decodeEntities } from "../utils/html";
-import { openExternal } from "../api";
+import { openExternal } from "../api/navigation";
 
 /** Wraps a value as a JSX.Element (SolidJS requires this coercion for mixed text/element arrays). */
 const el = (v: JSX.Element): JSX.Element => v as JSX.Element;

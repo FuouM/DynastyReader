@@ -1,7 +1,7 @@
 import { absUrl } from "../utils/url";
 import { COVERS_PREFIX } from "../constants";
-import { isMobile } from "../stores";
-import { getCached, setCached, deleteCached } from "../db";
+import { isMobile } from "../stores/platform";
+import { getCached, setCached, deleteCached } from "../db/metadata.repo";
 import { httpDownloadFull } from "./http";
 import { fileDelete, fileExists } from "./fs";
 import * as ipc from "../ipc";

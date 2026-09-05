@@ -162,15 +162,8 @@
             } catch (_) {
               theme = raw.replace(/^["']|["']$/g, "").trim().toLowerCase();
             }
-          } else {
-            var legacy = localStorage.getItem("ds-reader-theme");
-            if (typeof legacy === "string" && legacy) {
-              var norm = legacy.replace(/^["']|["']$/g, "").trim().toLowerCase();
-              if (/^[a-z0-9-]+$/.test(norm)) theme = norm;
-            }
-            if (theme === "light" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-              if (!raw && !legacy) theme = "dark";
-            }
+          } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            theme = "dark";
           }
           if (!/^[a-z0-9-]+$/.test(theme)) {
             theme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";

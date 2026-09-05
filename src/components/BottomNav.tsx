@@ -1,5 +1,6 @@
 import { Show } from "solid-js";
-import { isMobile, navigate, route, sessionTab, isInMangaView } from "../stores";
+import { isMobile } from "../stores/platform";
+import { navigate, route, sessionTab, isInMangaView } from "../stores/router";
 import { t } from "../i18n";
 import { Icon, StorageIcon, DoublePageIcon } from "./Icon";
 

@@ -4,11 +4,11 @@
  */
 
 import { Show } from "solid-js";
-import { navigate } from "../stores";
+import { navigate } from "../stores/router";
 import { decodeEntities } from "../utils/html";
 import { isContentKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
-import { dynastyUrl } from "../utils/formatting";
+import { dynastyUrl } from "../utils/url";
 import { ListItem } from "../components/ListItem";
 import { WarningChip } from "../components/WarningChip";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
@@ -16,7 +16,7 @@ import { FeedItemRow } from "../components/FeedItemRow";
 import { EntityIcon } from "../components/Icon";
 import type { AddToCollectionItem } from "../components/AddToCollectionModal";
 import type { SearchResultItem } from "../types/api";
-import type { BlacklistMode } from "../db";
+import type { BlacklistMode } from "../types/blacklist";
 
 export interface SearchRow {
   item: SearchResultItem;

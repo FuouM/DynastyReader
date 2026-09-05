@@ -9,12 +9,8 @@ import type { Chapter } from "../types/api";
 import { convertFileSrc } from "../ipc";
 import { fetchChapter } from "../api/chapter";
 import { fetchSeries } from "../api/series";
-import {
-  addHistory,
-  getBookmark,
-  getCachedPages,
-  getReadingProgress,
-} from "../db";
+import { addHistory, getBookmark, getReadingProgress } from "../db/library.repo";
+import { getCachedPages } from "../db/cache.repo";
 import { getChapterContainerTag } from "../taxonomy";
 import {
   detectIsLongStrip,
@@ -32,8 +28,9 @@ import {
   isLongStripSpreadOverrideEnabled,
   getScrollLock,
 } from "./settings";
-import { standardizeCachePaths } from "./path-migration";
-import { showBanner, isOnline, setTitle, setSessionTab } from "../stores";
+import { showBanner, setTitle } from "../stores/topbar";
+import { isOnline } from "../stores/platform";
+import { setSessionTab } from "../stores/router";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
@@ -316,7 +313,6 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   }
 
   s.setLoading(false);
-  standardizeCachePaths(s);
 
   // History + bookmarked state
   try {

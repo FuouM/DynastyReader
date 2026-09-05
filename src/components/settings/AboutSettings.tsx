@@ -1,8 +1,8 @@
 import { Show } from "solid-js";
-import { APP_VERSION, SITE_ROOT } from "../../stores";
+import { APP_VERSION, SITE_ROOT } from "../../constants";
 import { t } from "../../i18n";
 import { formatBytes } from "../../utils/formatting";
-import { openExternal } from "../../api";
+import { openExternal } from "../../api/navigation";
 import {
   checkUpdates,
   installUpdate,

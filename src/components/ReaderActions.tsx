@@ -6,12 +6,13 @@
 
 import { createEffect, createSignal, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
-import { navigate, showBanner, closeSessionMangaTab } from "../stores";
+import { navigate, closeSessionMangaTab } from "../stores/router";
+import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
-import { dynastyUrl } from "../utils/formatting";
-import { addBookmark, removeBookmark } from "../db";
-import { openExternal } from "../api";
+import { dynastyUrl } from "../utils/url";
+import { addBookmark, removeBookmark } from "../db/library.repo";
+import { openExternal } from "../api/navigation";
 import type { ChapterPage } from "../types/api";
 import { Button } from "./Button";
 import {

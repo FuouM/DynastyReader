@@ -14,7 +14,7 @@ import { createEffect, createResource, createSignal } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { createStore } from "solid-js/store";
 import type { Accessor } from "solid-js";
-import { getBlacklistRevision, onBlacklistChanged } from "../db";
+import { getBlacklistRevision, onBlacklistChanged } from "../db/blacklist.repo";
 
 export interface TopPagerConfig {
   totalPages: number;

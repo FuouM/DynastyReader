@@ -1,9 +1,13 @@
 import { render } from "solid-js/web";
 import { restoreStateCurrent, saveWindowState, StateFlags } from "@tauri-apps/plugin-window-state";
 import { attachConsole } from "@tauri-apps/plugin-log";
-import { initAppTheme, initAccentColor, showBanner, setDbReady, initGlobalDownloadListener } from "./stores";
+import { initAppTheme } from "./stores/theme";
+import { initAccentColor } from "./stores/accent-color";
+import { showBanner } from "./stores/topbar";
+import { setDbReady } from "./stores/router";
+import { initGlobalDownloadListener } from "./stores/download";
 import { t } from "./i18n";
-import { initDb } from "./db";
+import { initDb } from "./db/schema";
 import { errorMessage } from "./utils/errors";
 import { log } from "./utils/log";
 import { App } from "./App";

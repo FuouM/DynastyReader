@@ -1,8 +1,8 @@
-import { absUrl } from "../stores";
+import { absUrl } from "../utils/url";
 import { fileResolveWithStat } from "../api/fs";
 import { httpDownloadFull } from "../api/http";
 import { pageOutputPath } from "../api/navigation";
-import { setCachedPage } from "../db";
+import { setCachedPage } from "../db/cache.repo";
 import type { ChapterPage } from "../types/api";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";

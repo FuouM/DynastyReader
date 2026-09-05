@@ -44,7 +44,7 @@ export async function searchAllDirectoryEntries(
   kind: "series" | "tags",
   query: string,
 ): Promise<DirectoryGroup[]> {
-  const { searchDirectoryEntries } = await import("../db");
+  const { searchDirectoryEntries } = await import("../db/directory.repo");
   return searchDirectoryEntries(kind, query);
 }
 
@@ -74,7 +74,7 @@ export async function suggest(query: string): Promise<SuggestResult[]> {
 
   // 1. Try local SQLite directory entries first (zero network latency)
   try {
-    const { suggestDirectoryEntries } = await import("../db");
+    const { suggestDirectoryEntries } = await import("../db/directory.repo");
     const local = await suggestDirectoryEntries(q, 8);
     if (local.length > 0) {
       setSuggestCache(cacheKey, local);

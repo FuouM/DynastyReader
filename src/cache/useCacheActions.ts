@@ -1,18 +1,12 @@
 import { browseCovers } from "../browse/browse-covers";
 import { t } from "../i18n";
-import { showBanner } from "../stores";
+import { showBanner } from "../stores/topbar";
 import { formatBytes } from "../utils/formatting";
 import { errorMessage } from "../utils/errors";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { log } from "../utils/log";
-import {
-  backupDatabase,
-  clearAllCacheStorage,
-  clearAllCachedCovers,
-  clearAllCachedPages,
-  restoreDatabaseFromPath,
-  wipeDatabase,
-} from "../db";
+import { backupDatabase, restoreDatabaseFromPath, wipeDatabase } from "../db/db.manage";
+import { clearAllCacheStorage, clearAllCachedCovers, clearAllCachedPages } from "../db/cache.repo";
 
 export function useCacheActions(refetch: () => void) {
   const withRefresh = async (action: () => Promise<void>, successKey: Parameters<typeof t>[0]) => {

@@ -17,20 +17,13 @@
 import { createEffect, lazy, onCleanup, onMount, Show, Suspense, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import {
-  route,
-  routeTitle,
-  setTitle,
-  navigate,
-  uiScale,
-  isPersistentView,
-  isMobile,
-  canGoBack,
-  goBack,
-} from "./stores";
+import { route, routeTitle, navigate, isPersistentView, canGoBack, goBack } from "./stores/router";
+import { setTitle } from "./stores/topbar";
+import { uiScale } from "./stores/ui-scale";
+import { isMobile } from "./stores/platform";
 import { Topbar } from "./components/Topbar";
 import { BottomNav } from "./components/BottomNav";
-import { GlobalShortcuts } from "./hotkeys";
+import { GlobalShortcuts } from "./hotkeys/GlobalShortcuts";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
 import { Loading } from "./components/Loading";

@@ -18,15 +18,11 @@ import {
   type JSX,
 } from "solid-js";
 import { t } from "../i18n";
-import { fetchFeedWithRevalidation } from "../api";
-import {
-  getBlacklistMode,
-  isItemBlacklisted,
-  getHistoryPermalinks,
-  getBookmarkPermalinks,
-  getFullyCachedChapterPermalinks,
-  type BlacklistMode,
-} from "../db";
+import { fetchFeedWithRevalidation } from "../api/feed";
+import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
+import { getHistoryPermalinks, getBookmarkPermalinks } from "../db/library.repo";
+import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
+import type { BlacklistMode } from "../types/blacklist";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import {
   setPaneError,

@@ -3,7 +3,7 @@
  */
 
 import { createMemo, createSignal, For, Show } from "solid-js";
-import { navigate } from "../../stores";
+import { navigate } from "../../stores/router";
 import { convertFileSrc } from "../../ipc";
 import { formatBytes, formatDate } from "../../utils/formatting";
 import { GroupBox } from "../../components/GroupBox";

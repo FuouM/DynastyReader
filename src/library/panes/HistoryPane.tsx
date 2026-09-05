@@ -3,20 +3,14 @@
  */
 
 import { createSignal, For, Show } from "solid-js";
-import { navigate } from "../../stores";
+import { navigate } from "../../stores/router";
 import { decodeEntities } from "../../utils/html";
-import { formatDate, dynastyUrl } from "../../utils/formatting";
+import { formatDate } from "../../utils/formatting";
+import { dynastyUrl } from "../../utils/url";
 import { t } from "../../i18n";
-import {
-  getHistoryPage,
-  getHistoryRevision,
-  onHistoryChanged,
-  getFullyCachedChapterPermalinks,
-  removeHistory,
-  removeHistoryBatch,
-  type HistoryRow,
-  type HistoryPageResult,
-} from "../../db";
+import { getHistoryPage, getHistoryRevision, onHistoryChanged, removeHistory, removeHistoryBatch } from "../../db/library.repo";
+import { getFullyCachedChapterPermalinks } from "../../db/cache.repo";
+import type { HistoryRow, HistoryPageResult } from "../../types/db";
 import { Loading } from "../../components/Loading";
 import { Pager } from "../../components/Pager";
 import { LibraryItemRow } from "../LibraryItemRow";

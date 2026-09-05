@@ -5,19 +5,15 @@
  */
 
 import { createEffect, createResource, createSignal, For, Show } from "solid-js";
-import { navigate, setActions, showBanner } from "../stores";
+import { navigate } from "../stores/router";
+import { setActions, showBanner } from "../stores/topbar";
 import { decodeEntities } from "../utils/html";
-import { formatDate, dynastyUrl } from "../utils/formatting";
+import { formatDate } from "../utils/formatting";
+import { dynastyUrl } from "../utils/url";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
-import {
-  getBlacklistMode,
-  getBlacklistedSeries,
-  removeBlacklistedSeries,
-  setBlacklistMode,
-  type BlacklistedSeries,
-  type BlacklistMode,
-} from "../db";
+import { getBlacklistMode, getBlacklistedSeries, removeBlacklistedSeries, setBlacklistMode } from "../db/blacklist.repo";
+import type { BlacklistedSeries, BlacklistMode } from "../types/blacklist";
 import { useDelayedSpinner } from "../browse/browse-state";
 import { BackRefreshActions } from "../components/ActionBar";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";

@@ -8,7 +8,7 @@
  */
 
 import type { ReaderSession } from "./reader-session";
-import { isMobile } from "../stores";
+import { isMobile } from "../stores/platform";
 import { spreadIndexOf } from "./reader-spread";
 import { setStripAnimated, setStripInstant, stripTranslateX } from "./reader-transform";
 

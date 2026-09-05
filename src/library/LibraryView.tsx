@@ -14,21 +14,14 @@ import {
   Show,
   type Accessor,
 } from "solid-js";
-import {
-  navigate,
-  route,
-  setActions,
-  setRoute,
-  showBanner,
-  isMobile,
-} from "../stores";
+import { navigate, route, setRoute } from "../stores/router";
+import { setActions, showBanner } from "../stores/topbar";
+import { isMobile } from "../stores/platform";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { createMediaQuery } from "@solid-primitives/media";
-import {
-  clearHistory,
-  createCollection,
-} from "../db";
+import { clearHistory } from "../db/library.repo";
+import { createCollection } from "../db/collections.repo";
 import { Button, ConfirmDeleteButton, IconText, IconButton } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
@@ -45,18 +38,16 @@ import {
   TrashIcon,
   Icon,
 } from "../components/Icon";
-import {
-  FollowedPane,
-  CollectionsPane,
-  BookmarksPane,
-  HistoryPane,
-  type LibraryPaneApi,
-} from "./panes";
+import { FollowedPane } from "./panes/FollowedPane";
+import { CollectionsPane } from "./panes/CollectionsPane";
+import { BookmarksPane } from "./panes/BookmarksPane";
+import { HistoryPane } from "./panes/HistoryPane";
+import type { LibraryPaneApi } from "./useLibraryPaneResource";
 import { LocalPane } from "./LocalPane";
 import { CollectionDetailView } from "./CollectionDetailView";
 import { ExportModal } from "./ExportModal";
 import { ImportModal } from "./ImportModal";
-import type { ExportScope } from "../db";
+import type { ExportScope } from "../db/export.repo";
 export function LibraryView() {
   return (
     <Show

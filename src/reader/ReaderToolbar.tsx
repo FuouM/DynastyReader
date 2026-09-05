@@ -8,12 +8,14 @@
 import { createEffect, createSignal, onCleanup, Show, on } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
-import { isMobile, goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, showBanner, navigate } from "../stores";
+import { isMobile } from "../stores/platform";
+import { goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, navigate } from "../stores/router";
+import { showBanner } from "../stores/topbar";
 import { HistoryDropdown } from "../components/HistoryDropdown";
 import { decodeEntities } from "../utils/html";
-import { addBookmark, removeBookmark } from "../db";
+import { addBookmark, removeBookmark } from "../db/library.repo";
 import { errorMessage } from "../utils/errors";
-import { dynastyUrl } from "../utils/formatting";
+import { dynastyUrl } from "../utils/url";
 import { t } from "../i18n";
 import { useCopyLink } from "../hooks/useCopyLink";
 import { getReaderNavPosition, getReaderFilterCss } from "./settings";

@@ -3,7 +3,7 @@
  * Extracted from BrowseDownloaded.tsx for modularity.
  */
 
-import type { FullyCachedChapterRow } from "../../db";
+import type { FullyCachedChapterRow } from "../../db/cache.repo";
 import { extractVolumeHeader } from "../../utils/volume";
 import type { DownloadedSeriesGroup, DownloadedSortMode, ProcessedCachedChapter } from "./types";
 

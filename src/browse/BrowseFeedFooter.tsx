@@ -8,7 +8,7 @@
 import { createSignal, onCleanup, onMount, Show, type JSX } from "solid-js";
 import { formatBytes, formatDateTime } from "../utils/formatting";
 import { t } from "../i18n";
-import { getSessionTraffic, subscribeSessionTraffic } from "../api";
+import { getSessionTraffic, subscribeSessionTraffic } from "../api/traffic";
 import { browseCovers } from "./browse-covers";
 import { IconText, IconButton } from "../components/Button";
 import {

@@ -7,20 +7,15 @@ import {
   Show,
 } from "solid-js";
 import { t } from "../i18n";
-import { showBanner } from "../stores";
+import { showBanner } from "../stores/topbar";
 import { errorMessage } from "../utils/errors";
 import { formatBytes } from "../utils/formatting";
 import { Modal } from "../components/Modal";
 import { IconButton, DsSelect, type SelectOption } from "../components/Button";
 import { Icon, CheckIcon, ClipboardIcon } from "../components/Icon";
-import {
-  fetchAndFormatExport,
-  getCollections,
-  type ExportScope,
-  type ExportFormat,
-  type ExportCounts,
-  type CollectionRow,
-} from "../db";
+import { fetchAndFormatExport, type ExportScope, type ExportFormat, type ExportCounts } from "../db/export.repo";
+import { getCollections } from "../db/collections.repo";
+import type { CollectionRow } from "../types/db";
 
 export interface ExportModalProps {
   open: boolean;

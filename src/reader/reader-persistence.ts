@@ -5,8 +5,8 @@
  */
 
 import { debounce } from "@solid-primitives/scheduled";
-import { isMobile } from "../stores";
-import { setReadingProgress } from "../db";
+import { isMobile } from "../stores/platform";
+import { setReadingProgress } from "../db/library.repo";
 import { log } from "../utils/log";
 import type { ReaderState } from "./reader-state";
 

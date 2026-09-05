@@ -1,5 +1,5 @@
 import { absUrl } from "../utils/url";
-import { getCached, setCached, touchCached } from "../db";
+import { getCached, setCached, touchCached } from "../db/metadata.repo";
 import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";
 import { tryParseJson } from "../utils/json";

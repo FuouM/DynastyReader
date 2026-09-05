@@ -4,11 +4,9 @@ import { t } from "../../i18n";
 import { Icon, AddIcon, RefreshIcon } from "../Icon";
 import { InputField } from "../InputField";
 import { IconText, Button } from "../Button";
+import { HOTKEY_DEFINITIONS, HOTKEY_DEFINITIONS_MAP } from "../../hotkeys/registry";
+import type { HotkeyActionId, HotkeyDefinition } from "../../hotkeys/types";
 import {
-  HOTKEY_DEFINITIONS,
-  HOTKEY_DEFINITIONS_MAP,
-  type HotkeyActionId,
-  type HotkeyDefinition,
   hotkeysMap,
   getHotkeys,
   addKeyToHotkey,
@@ -16,11 +14,13 @@ import {
   resetHotkey,
   resetAllHotkeys,
   setIsRecordingHotkeys,
+} from "../../hotkeys/hotkeys-store";
+import {
   eventToKeyCombo,
   formatKeyCombo,
   findConflict,
   type HotkeyConflict,
-} from "../../hotkeys";
+} from "../../hotkeys/key-combo";
 
 interface PendingConflict {
   combo: string;

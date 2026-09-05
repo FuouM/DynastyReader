@@ -2,7 +2,7 @@ import { createEffect, createMemo, createResource, createSignal, For, onCleanup,
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import { navigate, dbReady, route, setSessionTab } from "../stores";
+import { navigate, dbReady, route, setSessionTab } from "../stores/router";
 import { getLocalSeries } from "../db/local.repo";
 import type { LocalSeriesRow } from "../db/local.repo";
 import * as ipc from "../ipc";
@@ -26,7 +26,7 @@ interface ImportProgressPayload {
   total: number;
   phase: "extract" | "register" | "done";
 }
-import type { LibraryPaneApi } from "./panes";
+import type { LibraryPaneApi } from "./useLibraryPaneResource";
 export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const [tick, setTick] = createSignal(0);
   // Defer the first fetch until migrations have run; otherwise the resource

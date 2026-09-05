@@ -4,7 +4,7 @@
  * BlacklistView, SeriesView topbar, SettingsModal, reader-actions).
  */
 
-import { openExternal } from "../api";
+import { openExternal } from "../api/navigation";
 import { Button } from "./Button";
 import { ExternalLinkIcon } from "./Icon";
 import type { ButtonProps } from "./Button";

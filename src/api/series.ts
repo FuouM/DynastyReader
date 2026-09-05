@@ -1,6 +1,7 @@
 import { SITE_ROOT } from "../constants";
 import { seriesTypeToPath } from "../taxonomy";
-import { getCached, setCached, deleteCached, touchCached, query } from "../db";
+import { getCached, setCached, deleteCached, touchCached } from "../db/metadata.repo";
+import { query } from "../db/client";
 import { getLocalSeriesByPermalink } from "../db/local.repo";
 import { seriesKey, seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
 import { httpGetText } from "./http";

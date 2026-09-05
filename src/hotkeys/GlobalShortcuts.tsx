@@ -4,16 +4,8 @@
  */
 
 import { makeEventListener } from "@solid-primitives/event-listener";
-import {
-  canGoBack,
-  canGoForward,
-  goBack,
-  goForward,
-  navigate,
-  toggleTheme,
-  sessionTab,
-  closeSessionMangaTab,
-} from "../stores";
+import { canGoBack, canGoForward, goBack, goForward, navigate, sessionTab, closeSessionMangaTab } from "../stores/router";
+import { toggleTheme } from "../stores/theme";
 import { consumeHotkeyEvent, isHotkeyEventConsumed, isTextInputTarget, matchesHotkey } from "./hotkeys-store";
 
 export function openSettingsDialog(): void {

@@ -16,35 +16,28 @@ import {
   For,
   Show,
 } from "solid-js";
-import { navigate, setActions, showBanner, setSessionTab } from "../stores";
+import { navigate, setSessionTab } from "../stores/router";
+import { setActions, showBanner } from "../stores/topbar";
 import { downloadingChapterPermalinks } from "../stores/download";
 import { formatBytes } from "../utils/formatting";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api/traffic";
-import {
-  clearCachedGroupPages,
-  getCacheOverviewStats,
-  getFullyCachedChapters,
-  getBookmarkPermalinks,
-  getHistoryMap,
-  getBatchCached,
-  getDbStats,
-  type FullyCachedChapterRow,
-  type DbStats,
-  type CacheOverviewStats,
-  pruneOldestReadCachedPages,
-} from "../db";
-import {
-  SeriesDownloadedCard,
-  OrphanDownloadedCard,
-  DownloadedLegend,
-  DownloadedToolbar,
-  buildGroups,
-  type DownloadedSortMode,
-  type DownloadedSeriesGroup,
-  type ProcessedCachedChapter,
-} from "../browse/downloaded";
+import { clearCachedGroupPages, getCacheOverviewStats, getFullyCachedChapters, pruneOldestReadCachedPages, type FullyCachedChapterRow } from "../db/cache.repo";
+import { getBookmarkPermalinks, getHistoryMap } from "../db/library.repo";
+import { getBatchCached } from "../db/metadata.repo";
+import { getDbStats, type DbStats } from "../db/db.manage";
+import type { CacheOverviewStats } from "../types/db";
+import { SeriesDownloadedCard } from "../browse/downloaded/SeriesDownloadedCard";
+import { OrphanDownloadedCard } from "../browse/downloaded/OrphanDownloadedCard";
+import { DownloadedLegend } from "../browse/downloaded/DownloadedLegend";
+import { DownloadedToolbar } from "../browse/downloaded/DownloadedToolbar";
+import { buildGroups } from "../browse/downloaded/buildGroups";
+import type {
+  DownloadedSortMode,
+  DownloadedSeriesGroup,
+  ProcessedCachedChapter,
+} from "../browse/downloaded/types";
 import { isVolumeOrSectionHeader } from "../utils/volume";
 import { Pager } from "../components/Pager";
 import { BackRefreshActions } from "../components/ActionBar";

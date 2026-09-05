@@ -1,25 +1,11 @@
 import { createSignal, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import {
-  route,
-  navigate,
-  goBack,
-  goForward,
-  canGoBack,
-  canGoForward,
-  closeSessionMangaTab,
-  isInMangaView,
-  sessionTab,
-  title,
-  banner,
-  actions,
-  activeDownloadCount,
-  downloadSpeedBps,
-  formatDownloadSpeed,
-  isMobile,
-  uiScale,
-} from "../stores";
+import { route, navigate, goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, isInMangaView, sessionTab } from "../stores/router";
+import { title, banner, actions } from "../stores/topbar";
+import { activeDownloadCount, downloadSpeedBps, formatDownloadSpeed } from "../stores/download";
+import { isMobile } from "../stores/platform";
+import { uiScale } from "../stores/ui-scale";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { SettingsModal } from "./SettingsModal";

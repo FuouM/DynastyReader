@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
-import { getBatchCached, deleteCached } from "../db";
+import { getBatchCached, deleteCached } from "../db/metadata.repo";
 import { log } from "../utils/log";
 import { isSeriesKind, isDoujinTag, getChapterContainerTag } from "../taxonomy";
 import { CoverMemoryCache, MAX_MEMORY_CACHE, type CoverState } from "./browse-covers-memory-cache";

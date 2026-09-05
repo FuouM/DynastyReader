@@ -1,5 +1,6 @@
 import { type Accessor } from "solid-js";
 import { createMediaQuery } from "@solid-primitives/media";
+import { createConnectivitySignal } from "@solid-primitives/connectivity";
 import { persistedSignal } from "../lib/persisted-signal";
 
 export type UiMode = "auto" | "desktop" | "mobile";
@@ -36,3 +37,6 @@ export const isMobile: Accessor<boolean> = () => {
   if (mode === "desktop") return false;
   return isNativeMobileDevice() || matchesMediaQuery();
 };
+
+/** Reactive signal for whether the webview has a network connection. */
+export const isOnline = createConnectivitySignal();

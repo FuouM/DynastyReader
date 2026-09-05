@@ -3,8 +3,8 @@
  * Extracted from `BrowseFeed.tsx` for modularity.
  */
 
-import { getCached } from "../db";
-import { checkFeedOnline } from "../api";
+import { getCached } from "../db/metadata.repo";
+import { checkFeedOnline } from "../api/feed";
 import { tryParseJson } from "../utils/json";
 import { log } from "../utils/log";
 import type { Feed } from "../types/api";

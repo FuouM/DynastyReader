@@ -12,22 +12,17 @@
  */
 
 import { createEffect, createSignal, onMount, Show, type JSX } from "solid-js";
-import {
-  navigate,
-  showBanner,
-} from "../stores";
+import { navigate } from "../stores/router";
+import { showBanner } from "../stores/topbar";
 import { decodeEntities } from "../utils/html";
 import { categorizeChapterTags, isSeriesKind, seriesTypeToPath, getChapterContainerTag, isDoujinTag } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
-import { slugify, dynastyUrl } from "../utils/formatting";
-import {
-  addBookmark,
-  getBlacklistMode,
-  getBookmark,
-  removeBookmark,
-  type CollectionItemKind,
-} from "../db";
+import { slugify } from "../utils/formatting";
+import { dynastyUrl } from "../utils/url";
+import { addBookmark, getBookmark, removeBookmark } from "../db/library.repo";
+import { getBlacklistMode } from "../db/blacklist.repo";
+import type { CollectionItemKind } from "../types/db";
 import { browseCovers } from "../browse/browse-covers";
 import { BookmarkIcon, CheckIcon, Icon } from "./Icon";
 import { IconButton } from "./Button";

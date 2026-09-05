@@ -1,20 +1,9 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import {
-  theme,
-  setTheme,
-  THEME_REGISTRY,
-  accentColor,
-  setAccentColor,
-  ACCENT_COLOR_PRESETS,
-  getContrastText,
-  uiScale,
-  setUiScale,
-  uiMode,
-  setUiMode,
-  type UiMode,
-  type AppTheme,
-} from "../../stores";
+import { theme, setTheme, THEME_REGISTRY, type AppTheme } from "../../stores/theme";
+import { accentColor, setAccentColor, ACCENT_COLOR_PRESETS, getContrastText } from "../../stores/accent-color";
+import { uiScale, setUiScale } from "../../stores/ui-scale";
+import { uiMode, setUiMode, type UiMode } from "../../stores/platform";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";

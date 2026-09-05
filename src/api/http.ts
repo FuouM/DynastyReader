@@ -1,5 +1,5 @@
 import type { GetTextOptions, HttpResponseText } from "../types/api";
-import { getCached, setCached } from "../db";
+import { getCached, setCached } from "../db/metadata.repo";
 import { recordNetworkTraffic, recordCacheHit } from "./traffic";
 import { tryParseJson } from "../utils/json";
 import * as ipc from "../ipc";

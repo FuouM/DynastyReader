@@ -13,30 +13,17 @@ import {
   onMount,
   Show,
 } from "solid-js";
-import {
-  navigate,
-  setActions,
-  setTitle,
-  showBanner,
-} from "../stores";
+import { navigate } from "../stores/router";
+import { setActions, setTitle, showBanner } from "../stores/topbar";
 import { decodeEntities } from "../utils/html";
-import { formatDate, dynastyUrl } from "../utils/formatting";
+import { formatDate } from "../utils/formatting";
+import { dynastyUrl } from "../utils/url";
 import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
-import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api";
-import {
-  getBlacklistMode,
-  getBlacklistRevision,
-  getCollectionById,
-  getCollectionItems,
-  getCollectionsRevision,
-  isSeriesBlacklisted,
-  onCollectionsChanged,
-  removeItemFromCollection,
-  updateCollectionItemCover,
-  type CollectionItemRow,
-  type CollectionRow,
-} from "../db";
+import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api/series";
+import { getBlacklistMode, getBlacklistRevision, isSeriesBlacklisted } from "../db/blacklist.repo";
+import { getCollectionById, getCollectionItems, getCollectionsRevision, onCollectionsChanged, removeItemFromCollection, updateCollectionItemCover } from "../db/collections.repo";
+import type { CollectionItemRow, CollectionRow } from "../types/db";
 import { useDelayedSpinner } from "../browse/browse-state";
 import { Loading } from "../components/Loading";
 import {

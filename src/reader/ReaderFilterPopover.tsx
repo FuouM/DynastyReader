@@ -5,7 +5,7 @@
 
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { uiScale } from "../stores";
+import { uiScale } from "../stores/ui-scale";
 import { t } from "../i18n";
 import { IconButton } from "../components/Button";
 import { SlidersIcon, RefreshIcon, CloseIcon } from "../components/Icon";

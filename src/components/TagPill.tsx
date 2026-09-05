@@ -3,7 +3,7 @@
  * type→URL routing. Port of `tag-pill.ts`.
  */
 
-import { navigate } from "../stores";
+import { navigate } from "../stores/router";
 import { isArtistTag, isContainerKind, isScanlatorTag, tagClass } from "../taxonomy";
 import { t } from "../i18n";
 

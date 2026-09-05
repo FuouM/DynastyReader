@@ -19,17 +19,15 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import { showBanner } from "../stores";
+import { showBanner } from "../stores/topbar";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
-import { searchDynasty, suggest } from "../api";
-import {
-  getBlacklistMode,
-  getFullyCachedChapterPermalinks,
-  isItemBlacklisted,
-  type BlacklistMode,
-} from "../db";
+import { searchDynasty } from "../api/search";
+import { suggest } from "../api/directory";
+import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
+import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
+import type { BlacklistMode } from "../types/blacklist";
 import {
   setPaneError,
   setPaneLoading,

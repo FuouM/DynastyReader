@@ -18,17 +18,11 @@ import {
   type JSX,
 } from "solid-js";
 import { extractVolumeHeader } from "../utils/volume";
-import {
-  isMobile,
-  navigate,
-  route,
-  setActions,
-  setSessionTab,
-  setTitle,
-  showBanner,
-} from "../stores";
+import { isMobile } from "../stores/platform";
+import { navigate, route, setSessionTab } from "../stores/router";
+import { setActions, setTitle, showBanner } from "../stores/topbar";
 import { decodeEntities } from "../utils/html";
-import { dynastyUrl } from "../utils/formatting";
+import { dynastyUrl } from "../utils/url";
 import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
@@ -37,18 +31,10 @@ import { fetchSeries, getSeriesCover } from "../api/series";
 import { enqueueChapters } from "../ipc";
 import { persistedSignal } from "../lib/persisted-signal";
 import { getQueuePageTotals } from "../db/cache-aggregate";
-import {
-  addBlacklistedSeries,
-  followSeries,
-  getCachedPageCounts,
-  getFollowedSeriesRow,
-  getHistoryPermalinks,
-  getProgressForSeries,
-  isSeriesBlacklisted,
-  removeBlacklistedSeries,
-  unfollowSeries,
-  type SeriesProgressRow,
-} from "../db";
+import { addBlacklistedSeries, isSeriesBlacklisted, removeBlacklistedSeries } from "../db/blacklist.repo";
+import { followSeries, getFollowedSeriesRow, getHistoryPermalinks, getProgressForSeries, unfollowSeries } from "../db/library.repo";
+import { getCachedPageCounts } from "../db/cache.repo";
+import type { SeriesProgressRow } from "../types/db";
 import type { Series } from "../types/api";
 import { useDelayedSpinner } from "../browse/browse-state";
 import { Loading } from "../components/Loading";

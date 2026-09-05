@@ -5,7 +5,7 @@
  * reads these during render) does not need to import from the controller,
  * breaking the controller ↔ viewport import cycle.
  */
-import { isMobile } from "../stores";
+import { isMobile } from "../stores/platform";
 import { persistedSignal } from "../lib/persisted-signal";
 import { log } from "../utils/log";
 import type { FitMode, ReaderMode, PagedLayout } from "../types/reader";

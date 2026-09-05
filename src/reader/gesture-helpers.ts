@@ -6,7 +6,7 @@
 
 import type { ChapterRef } from "../types/routes";
 import type { ReaderSession } from "./reader-session";
-import { isMobile } from "../stores";
+import { isMobile } from "../stores/platform";
 import { triggerHaptic } from "../utils/haptics";
 import {
   OVERSCROLL_ENGAGE_THRESHOLD_PX,

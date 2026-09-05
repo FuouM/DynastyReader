@@ -5,14 +5,8 @@
 
 import { createEffect, createSignal, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import {
-  goBackTo,
-  goForwardTo,
-  historyBackStack,
-  historyForwardStack,
-  routeLabel,
-  uiScale,
-} from "../stores";
+import { goBackTo, goForwardTo, historyBackStack, historyForwardStack, routeLabel } from "../stores/router";
+import { uiScale } from "../stores/ui-scale";
 import { t } from "../i18n";
 import { ArrowLeftIcon, ArrowRightIcon, Icon, type BootstrapIconName } from "./Icon";
 

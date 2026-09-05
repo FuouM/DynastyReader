@@ -7,9 +7,11 @@ import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { ReaderSession } from "./reader-session";
 import type { FitMode, ReaderMode, PagedLayout, ReadingDirection } from "../types/reader";
-import { theme, setTheme, isMobile, navigate } from "../stores";
+import { theme, setTheme } from "../stores/theme";
+import { isMobile } from "../stores/platform";
+import { navigate } from "../stores/router";
 import { openExternal } from "../api/navigation";
-import { dynastyUrl } from "../utils/formatting";
+import { dynastyUrl } from "../utils/url";
 import { t } from "../i18n";
 import {
   getPrevChapterStartPage,

@@ -6,7 +6,7 @@
 
 import { createSignal } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
-import { showBanner } from "../stores";
+import { showBanner } from "../stores/topbar";
 import { errorMessage } from "../utils/errors";
 import { t } from "../i18n";
 import { log } from "../utils/log";

@@ -5,13 +5,15 @@
  */
 
 import { createEffect, createMemo, createResource, createSignal, For, Show, type Accessor } from "solid-js";
-import { navigate, SITE_ROOT } from "../stores";
+import { navigate } from "../stores/router";
+import { SITE_ROOT } from "../constants";
 import { decodeEntities } from "../utils/html";
-import { dynastyUrl } from "../utils/formatting";
+import { dynastyUrl } from "../utils/url";
 import { t } from "../i18n";
-import { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages } from "../api";
+import { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages } from "../api/directory";
 import { directoryGroups } from "../utils/directory";
-import { getBlacklistMode, isSeriesBlacklisted, type BlacklistMode } from "../db";
+import { getBlacklistMode, isSeriesBlacklisted } from "../db/blacklist.repo";
+import type { BlacklistMode } from "../types/blacklist";
 import {
   setPaneLoading,
   setTopPagerFor,

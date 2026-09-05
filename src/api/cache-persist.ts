@@ -14,7 +14,7 @@ export async function persistSuggestEntries(
 ): Promise<void> {
   if (entries.length === 0) return;
   try {
-    const { saveSuggestEntries } = await import("../db");
+    const { saveSuggestEntries } = await import("../db/directory.repo");
     void saveSuggestEntries(entries).catch((err) => {
       log.warn(`api/${label}`, "saveSuggestEntries failed:", err);
     });
@@ -30,7 +30,7 @@ export async function persistDirectoryEntries(
 ): Promise<void> {
   if (groups.length === 0) return;
   try {
-    const { saveDirectoryEntries } = await import("../db");
+    const { saveDirectoryEntries } = await import("../db/directory.repo");
     void saveDirectoryEntries(kind, groups).catch((err) => {
       log.warn(`api/${label}`, `saveDirectoryEntries failed for ${kind}:`, err);
     });

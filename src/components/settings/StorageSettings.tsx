@@ -1,5 +1,5 @@
 import { Show } from "solid-js";
-import { navigate } from "../../stores";
+import { navigate } from "../../stores/router";
 import { t } from "../../i18n";
 import * as ipc from "../../ipc";
 import {

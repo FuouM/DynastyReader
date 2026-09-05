@@ -3,20 +3,16 @@
  */
 
 import { createEffect, createSignal, For, Show } from "solid-js";
-import { navigate, showBanner } from "../../stores";
+import { navigate } from "../../stores/router";
+import { showBanner } from "../../stores/topbar";
 import { decodeEntities } from "../../utils/html";
-import { formatDate, dynastyUrl } from "../../utils/formatting";
+import { formatDate } from "../../utils/formatting";
+import { dynastyUrl } from "../../utils/url";
 import { t } from "../../i18n";
 import { errorMessage } from "../../utils/errors";
-import { getOrHydrateSeriesCover } from "../../api";
-import {
-  getFollowedSeriesPage,
-  getFollowedRevision,
-  onFollowedChanged,
-  unfollowSeries,
-  updateFollowedSeriesCover,
-  type FollowedSeriesRow,
-} from "../../db";
+import { getOrHydrateSeriesCover } from "../../api/series";
+import { getFollowedSeriesPage, getFollowedRevision, onFollowedChanged, unfollowSeries, updateFollowedSeriesCover } from "../../db/library.repo";
+import type { FollowedSeriesRow } from "../../types/db";
 import { Loading } from "../../components/Loading";
 import { Pager } from "../../components/Pager";
 import { LibraryItemRow } from "../LibraryItemRow";

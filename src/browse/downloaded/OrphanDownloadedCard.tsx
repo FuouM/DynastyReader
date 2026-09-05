@@ -3,7 +3,7 @@
  */
 
 import { createMemo, createSignal, For, Show } from "solid-js";
-import { navigate } from "../../stores";
+import { navigate } from "../../stores/router";
 import { BookIcon, TrashIcon } from "../../components/Icon";
 import { GroupBox } from "../../components/GroupBox";
 import { ConfirmDeleteButton } from "../../components/Button";

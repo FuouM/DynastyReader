@@ -3,16 +3,7 @@ import { inClause, queryPaged } from "./paging";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { createChangeNotifier } from "../lib/change-notifier";
-import type {
-  FollowedSeriesRow,
-  FollowedSeriesPageResult,
-  ReadingProgressRow,
-  SeriesProgressRow,
-  HistoryRow,
-  HistoryPageResult,
-  BookmarkRow,
-  BookmarkPageResult,
-} from "../types/db";
+import type { FollowedSeriesRow, FollowedSeriesPageResult, ReadingProgressRow, SeriesProgressRow, HistoryRow, HistoryPageResult, BookmarkRow, BookmarkPageResult } from "../types/db";
 const followedNotifier = createChangeNotifier("library.repo:followed");
 export const getFollowedRevision = followedNotifier.getRevision;
 export const onFollowedChanged = followedNotifier.onChanged;

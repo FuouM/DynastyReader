@@ -2,12 +2,12 @@
  * Volume-grouped chapter list with sort toggle, reading progress badges, and offline indicators.
  */
 import { For, Show, type Accessor } from "solid-js";
-import { navigate } from "../stores";
+import { navigate } from "../stores/router";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import type { ChapterRef } from "../types/routes";
 import type { Series } from "../types/api";
-import type { SeriesProgressRow } from "../db";
+import type { SeriesProgressRow } from "../types/db";
 import { OfflineBadge } from "../components/OfflineBadge";
 import { Icon } from "../components/Icon";
 import { IconButton } from "../components/Button";

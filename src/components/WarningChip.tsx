@@ -6,7 +6,7 @@
 
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
-import type { BlacklistMode } from "../db";
+import type { BlacklistMode } from "../types/blacklist";
 import { WarningIcon } from "./Icon";
 
 export interface WarningChipProps {

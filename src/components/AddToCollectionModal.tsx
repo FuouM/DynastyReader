@@ -18,14 +18,11 @@ import { FolderIcon,
 } from "./Icon";
 import { Button, IconText } from "./Button";
 import { InputField } from "./InputField";
-import {
-  getCollections,
-  createCollection,
-  getItemCollectionIds,
-  toggleItemInCollection,
-  type CollectionItemKind,
-} from "../db";
-import { isMobile, showBanner, uiScale } from "../stores";
+import { getCollections, createCollection, getItemCollectionIds, toggleItemInCollection } from "../db/collections.repo";
+import type { CollectionItemKind } from "../types/db";
+import { isMobile } from "../stores/platform";
+import { showBanner } from "../stores/topbar";
+import { uiScale } from "../stores/ui-scale";
 import { log } from "../utils/log";
 
 export interface AddToCollectionItem {

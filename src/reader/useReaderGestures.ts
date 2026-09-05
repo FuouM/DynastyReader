@@ -6,7 +6,7 @@
 import { createSignal, onMount } from "solid-js";
 import { createResizeObserver } from "@solid-primitives/resize-observer";
 import type { ReaderSession } from "./reader-session";
-import { isMobile } from "../stores";
+import { isMobile } from "../stores/platform";
 import {
   isMobileGesturesOnDesktopEnabled,
   getDefaultReaderMode,

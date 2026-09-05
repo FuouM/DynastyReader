@@ -14,10 +14,13 @@ const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, type JSX } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
-import { isMobile, navigate, route, setRoute, showBanner } from "../stores";
+import { isMobile } from "../stores/platform";
+import { navigate, route, setRoute } from "../stores/router";
+import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
 import { triggerHaptic } from "../utils/haptics";
-import { parseDynastyUrl, suggest } from "../api";
+import { parseDynastyUrl } from "../api/navigation";
+import { suggest } from "../api/directory";
 import { Pager } from "../components/Pager";
 import { SubTabs } from "../components/SubTabs";
 import { GroupBox } from "../components/GroupBox";

@@ -1,13 +1,7 @@
 import { createResource, createSignal, For, Show } from "solid-js";
-import {
-  addBlacklistedTag,
-  getBlacklistedTags,
-  removeBlacklistedTag,
-  getBlacklistMode,
-  setBlacklistMode,
-  type BlacklistedTag,
-} from "../../db";
-import { suggest } from "../../api";
+import { addBlacklistedTag, getBlacklistedTags, removeBlacklistedTag, getBlacklistMode, setBlacklistMode } from "../../db/blacklist.repo";
+import type { BlacklistedTag } from "../../types/blacklist";
+import { suggest } from "../../api/directory";
 import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { GroupBox } from "../GroupBox";

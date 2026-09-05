@@ -1,7 +1,7 @@
 import { SITE_ROOT } from "../constants";
 import { httpGetText } from "./http";
 import { parseSearchHtml } from "./search-parser";
-import { getCached, setCached } from "../db";
+import { getCached, setCached } from "../db/metadata.repo";
 import { recordCacheHit } from "./traffic";
 import { persistSuggestEntries } from "./cache-persist";
 import type { SearchParams, SearchResultPage } from "../types/api";

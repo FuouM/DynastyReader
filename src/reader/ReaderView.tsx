@@ -13,7 +13,7 @@ import { ReaderWheel } from "./ReaderWheel";
 import { Loading } from "../components/Loading";
 import { IconButton } from "../components/Button";
 import { RefreshIcon } from "../components/Icon";
-import { theme } from "../stores";
+import { theme } from "../stores/theme";
 import { t } from "../i18n";
 
 export function ReaderView(props: { route: Route }) {

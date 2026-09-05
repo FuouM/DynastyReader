@@ -1,10 +1,9 @@
 /**
  * Reactive theme store for DynastyReader.
  *
- * Owns the signal, localStorage persistence (`ds-theme`, with legacy
- * `ds-reader-theme` migration), DOM application (`data-theme` attribute +
- * `ds-<theme>` body/root class), and the legacy `THEME_CHANGE_EVENT`
- * dispatch so non-Solid listeners keep working.
+ * Owns the signal, localStorage persistence (`ds-theme`), DOM application
+ * (`data-theme` attribute + `ds-<theme>` body/root class), and the
+ * `THEME_CHANGE_EVENT` dispatch.
  *
  * Adding a new theme (e.g. windows-xp): add one entry to `THEME_REGISTRY`
  * and one file `src/styles/themes/<name>.css` with `:root[data-theme="<name>"]` vars.
@@ -32,7 +31,6 @@ const THEME_META: Record<AppTheme, string> = Object.fromEntries(
 ) as Record<AppTheme, string>;
 
 const STORAGE_KEY = "ds-theme";
-const LEGACY_STORAGE_KEY = "ds-reader-theme";
 export const THEME_CHANGE_EVENT = "ds-theme-change";
 
 function isAppTheme(value: unknown): value is AppTheme {
@@ -128,17 +126,7 @@ export function toggleTheme(): void {
   setTheme(VALID_THEMES[(idx + 1) % VALID_THEMES.length]);
 }
 
-/** Applies the persisted theme on startup, migrating the legacy reader key. */
+/** Applies the persisted theme on startup. */
 export function initAppTheme(): void {
-  try {
-    if (localStorage.getItem(STORAGE_KEY) == null) {
-      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-      if (isAppTheme(legacy)) {
-        localStorage.setItem(STORAGE_KEY, legacy);
-      }
-    }
-  } catch (err) {
-    log.debug("theme", "legacy theme migration check failed:", err);
-  }
   applyThemeToDom(theme());
 }

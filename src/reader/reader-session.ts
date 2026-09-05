@@ -9,7 +9,7 @@
 
 import { batch, createComponent, createRoot, getOwner, runWithOwner } from "solid-js";
 import { createStore } from "solid-js/store";
-import { showBanner, setActions } from "../stores";
+import { showBanner, setActions } from "../stores/topbar";
 import { convertFileSrc } from "../ipc";
 import { t } from "../i18n";
 import { toggleTheme as toggleThemeStore } from "../stores/theme";

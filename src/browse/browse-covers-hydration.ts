@@ -1,5 +1,5 @@
 import { debounce } from "@solid-primitives/scheduled";
-import { getOrHydrateItemCover } from "../api";
+import { getOrHydrateItemCover } from "../api/series";
 import { log } from "../utils/log";
 import type { CoverState, CoverMemoryCache } from "./browse-covers-memory-cache";
 
