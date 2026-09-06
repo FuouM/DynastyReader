@@ -30,6 +30,8 @@ import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import { IconText } from "../components/Button";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import type { Directory, DirectoryGroup } from "../types/api";
+import { ErrorRetryRow } from "../components/ErrorRetryRow";
+import { errorMessage } from "../utils/errors";
 
 interface DirectoryModel {
   dir: Directory;
@@ -254,7 +256,14 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
         <div class="ds-muted">{t("browse.directory.emptyPage")}</div>
       </Show>
 
-      <Show when={showSpinner() && model() === undefined}>
+      <Show when={pane.error() !== undefined && model() === undefined}>
+        <ErrorRetryRow
+          message={errorMessage(pane.error())}
+          onRetry={() => pane.reload()}
+        />
+      </Show>
+
+      <Show when={showSpinner() && model() === undefined && pane.error() === undefined}>
         <Loading message={t("browse.directory.loading")} />
       </Show>
 

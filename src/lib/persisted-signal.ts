@@ -39,19 +39,6 @@ export function persistedSignal<T>(
   }
 
   let initial = defaultValue;
-  if (options.name && typeof localStorage !== "undefined") {
-    try {
-      const stored = localStorage.getItem(options.name);
-      if (stored === null && options.deserialize) {
-        const migrated = options.deserialize("");
-        if (migrated !== defaultValue && migrated != null) {
-          initial = migrated;
-          const canonical = opts.serialize ? opts.serialize(migrated) : (isStringType ? String(migrated) : JSON.stringify(migrated));
-          localStorage.setItem(options.name, canonical);
-        }
-      }
-    } catch {}
-  }
 
   const customDeserialize = options.deserialize;
   opts.deserialize = (data: string): T => {

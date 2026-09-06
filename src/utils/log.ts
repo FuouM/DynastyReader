@@ -11,9 +11,12 @@ function prefix(ns: string): string {
   return `[dynasty-reader/${ns}]`;
 }
 
-export const log: { debug: LogFn; warn: LogFn; error: LogFn } = {
+export const log: { debug: LogFn; info: LogFn; warn: LogFn; error: LogFn } = {
   debug(ns, ...args) {
     console.debug(prefix(ns), ...args);
+  },
+  info(ns, ...args) {
+    console.log(prefix(ns), ...args);
   },
   warn(ns, ...args) {
     console.warn(prefix(ns), ...args);

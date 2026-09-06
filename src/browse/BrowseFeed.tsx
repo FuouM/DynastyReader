@@ -39,6 +39,8 @@ import { BlacklistNotice } from "../components/BlacklistNotice";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
 import { FeedItemRow } from "../components/FeedItemRow";
+import { ErrorRetryRow } from "../components/ErrorRetryRow";
+import { errorMessage } from "../utils/errors";
 import { log } from "../utils/log";
 import {
   revalidateFeedHead,
@@ -106,8 +108,7 @@ async function loadFeedModel(tabId: string, page: number): Promise<FeedModel> {
 
   if (browseCovers.coversEnabled) {
     const coverTargets = feed.chapters.map((c) => browseCovers.getItemCoverInfo(c));
-    // Fire-and-forget: covers hydrate lazily via IntersectionObserver anyway.
-    void browseCovers.preloadBatch(coverTargets);
+    await browseCovers.preloadBatch(coverTargets);
   }
 
   const blMode = getBlacklistMode();
@@ -160,16 +161,14 @@ export function BrowseFeed(props: BrowseFeedProps) {
   const triggerWarning = useTriggerWarning();
   const addToCol = useAddToCollection();
 
-  let hostEl: HTMLElement | null = null;
+  const [hostEl, setHostEl] = createSignal<HTMLElement | null>(null);
 
   createEffect(() => {
     setPaneLoading(props.tabId, pane.loading());
     setPaneError(props.tabId, pane.error() !== undefined);
   });
 
-  // Model change: refresh top pager, footer state, banners, and re-arm cover
-  // hydration for the freshly rendered page (beginPage resets the observer,
-  // reobserve re-attaches every placeholder wrap).
+  // Model change: refresh top pager, footer state, banners
   createEffect(() => {
     const model = pane.data();
     if (!model) return;
@@ -192,22 +191,18 @@ export function BrowseFeed(props: BrowseFeedProps) {
     });
     setUpdateBanner(false);
     setShowHidden(false);
-    if (hostEl) {
-      browseCovers.beginPage(hostEl);
-      browseCovers.reobserveUnloadedCovers(hostEl);
-    }
   });
 
-  // Covers toggle: re-arm hydration when the setting is turned on.
-  // Solid's reactive Show primitive in HydratedCover automatically manages
-  // mounting/unmounting cover images when coversEnabledSignal() changes.
+  // Reactive cover hydration arming: triggers whenever this tab is active,
+  // has mounted its DOM host, covers are enabled, and data is loaded.
   createEffect(() => {
+    const el = hostEl();
+    const active = props.active();
     const enabled = coversEnabledSignal();
-    if (!hostEl) return;
-    if (enabled) {
-      browseCovers.beginPage(hostEl);
-      browseCovers.reobserveUnloadedCovers(hostEl);
-    }
+    const model = pane.data();
+    if (!el || !active || !enabled || !model) return;
+    browseCovers.beginPage(el);
+    browseCovers.reobserveUnloadedCovers(el);
   });
 
   // Background revalidation (stale-while-revalidate). Page 1's promise may
@@ -225,7 +220,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
 
     if (page === 1) {
       void revalidatePromise.then((reval) => {
-        if (hostEl !== browseCovers.currentHydrationHost) return;
+        if (hostEl() !== browseCovers.currentHydrationHost) return;
         if (reval) {
           const freshTopTs = feedHeadTimestamp(reval.data.chapters);
           if (freshTopTs !== undefined && currentTopTs !== undefined) {
@@ -253,7 +248,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
       });
     } else {
       void revalidatePromise.then((reval) => {
-        if (hostEl !== browseCovers.currentHydrationHost) return;
+        if (hostEl() !== browseCovers.currentHydrationHost) return;
         if (reval) {
           setFooterState({
             cachedAt: Date.now(),
@@ -273,7 +268,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
         }
       });
       void revalidateFeedHead(props.tabId).then((head) => {
-        if (hostEl !== browseCovers.currentHydrationHost) return;
+        if (hostEl() !== browseCovers.currentHydrationHost) return;
         if (head.hasNew) setUpdateBanner(true);
       });
     }
@@ -352,7 +347,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
   );
 
   return (
-    <div ref={(el) => { hostEl = el; }}>
+    <div ref={setHostEl}>
       <Show when={model() !== undefined && model()!.feed.chapters.length > 0}>
         <Show when={updateBanner()}>
           <div class="ds-feed-update-banner">
@@ -401,7 +396,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
               cssText="margin:0;"
             />
           }
-          getHost={() => hostEl}
+          getHost={() => hostEl()}
           onCheckUpdates={handleFooterCheck}
         />
       </Show>
@@ -410,7 +405,14 @@ export function BrowseFeed(props: BrowseFeedProps) {
         <div class="ds-muted">{t("browse.feed.emptyPage")}</div>
       </Show>
 
-      <Show when={showSpinner() && model() === undefined}>
+      <Show when={pane.error() !== undefined && model() === undefined}>
+        <ErrorRetryRow
+          message={errorMessage(pane.error())}
+          onRetry={() => pane.reload()}
+        />
+      </Show>
+
+      <Show when={showSpinner() && model() === undefined && pane.error() === undefined}>
         <Loading message={t("browse.feed.loadingChapters")} />
       </Show>
 

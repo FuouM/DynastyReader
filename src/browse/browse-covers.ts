@@ -6,9 +6,17 @@ import { slugify } from "../utils/formatting";
 import { isSeriesKind, isDoujinTag, getChapterContainerTag } from "../taxonomy";
 import { CoverMemoryCache, MAX_MEMORY_CACHE, type CoverState } from "./browse-covers-memory-cache";
 import { CoverHydrationPipeline, type CoverTarget, type ItemCoverInfo } from "./browse-covers-hydration";
+import * as ipc from "../ipc";
 
 export type { CoverState } from "./browse-covers-memory-cache";
 export type { CoverTarget, ItemCoverInfo } from "./browse-covers-hydration";
+
+// Heal ds_covers_enabled if it was inadvertently set to "false" by the
+// legacy persistedSignal missing-key deserialize bug on clean install.
+if (typeof localStorage !== "undefined" && !localStorage.getItem("ds_covers_migrated_v2")) {
+  localStorage.setItem("ds_covers_migrated_v2", "true");
+  localStorage.setItem("ds_covers_enabled", "true");
+}
 
 /**
  * Module-level reactive signal that mirrors `BrowseCovers.enabled`. Any Solid
@@ -18,9 +26,8 @@ export type { CoverTarget, ItemCoverInfo } from "./browse-covers-hydration";
  */
 const [coversEnabledSignal, setCoversEnabledSignal] = persistedSignal(true, {
   name: "ds_covers_enabled",
-  deserialize: (v) => v !== null ? v === "true" : true,
+  deserialize: (v) => v !== null && v !== "" ? v === "true" : true,
 });
-
 const [coverPathMap, setCoverPathMap] = createSignal<Map<string, string>>(new Map(), { equals: false });
 const [coverStateMap, setCoverStateMap] = createSignal<Map<string, CoverState>>(new Map(), { equals: false });
 
@@ -228,25 +235,36 @@ export class BrowseCovers {
     if (keysToQuery.length > 0) {
       try {
         const cachedMap = await getBatchCached(keysToQuery);
-        let changed = false;
-        const currentMap = coverPathMap();
-        for (const [fullKey, payload] of cachedMap) {
-          const rawKey = fullKey.replace(/^cover:/, "");
-          if (payload) {
-            this.cache.set(rawKey, payload);
-            if (currentMap.get(rawKey) !== payload) {
-              currentMap.set(rawKey, payload);
-              changed = true;
+        const entries = Array.from(cachedMap.entries()).filter(([_, p]) => Boolean(p));
+        if (entries.length > 0) {
+          const paths = entries.map(([_, p]) => p!);
+          const statResp = await ipc.fileExistsBatch(paths);
+          const existingPaths = new Set(
+            statResp.items?.filter((it) => it.exists).map((it) => it.path) ?? []
+          );
+          let changed = false;
+          const currentMap = coverPathMap();
+          for (const [fullKey, payload] of entries) {
+            const rawKey = fullKey.replace(/^cover:/, "");
+            if (payload && existingPaths.has(payload)) {
+              this.cache.set(rawKey, payload);
+              if (currentMap.get(rawKey) !== payload) {
+                currentMap.set(rawKey, payload);
+                changed = true;
+              }
+            } else if (payload) {
+              log.debug("browse-covers", "preloadBatch: purging stale DB cache for missing file", fullKey, payload);
+              void deleteCached(fullKey);
             }
           }
-        }
-        if (changed) {
-          while (currentMap.size > MAX_MEMORY_CACHE) {
-            const oldest = currentMap.keys().next().value;
-            if (oldest !== undefined) currentMap.delete(oldest);
-            else break;
+          if (changed) {
+            while (currentMap.size > MAX_MEMORY_CACHE) {
+              const oldest = currentMap.keys().next().value;
+              if (oldest !== undefined) currentMap.delete(oldest);
+              else break;
+            }
+            setCoverPathMap(new Map(currentMap));
           }
-          setCoverPathMap(new Map(currentMap));
         }
       } catch (err) {
         log.warn("browse-covers", "preloadBatch failed:", err);
@@ -255,8 +273,8 @@ export class BrowseCovers {
   }
 
   /** Observes a cover wrap; enqueues hydration when it nears the viewport. */
-  observe(wrap: HTMLElement): void {
-    this.pipeline.observe(wrap);
+  observe(wrap: HTMLElement, explicitKey?: string): void {
+    this.pipeline.observe(wrap, explicitKey);
   }
 
   /** Pauses hydration pumps during the scroll-to-top animation. */

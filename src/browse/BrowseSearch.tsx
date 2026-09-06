@@ -36,7 +36,7 @@ import {
   useTabPane,
 } from "./browse-state";
 import { createSearchFilters } from "./useSearchFilters";
-import { browseCovers } from "./browse-covers";
+import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import { Pager } from "../components/Pager";
 import { Loading } from "../components/Loading";
 import { Typeahead } from "../components/Typeahead";
@@ -177,7 +177,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
     pane.goToPage(1);
   };
 
-  let hostEl: HTMLElement | null = null;
+  const [hostEl, setHostEl] = createSignal<HTMLElement | null>(null);
 
   createEffect(() => {
     const model = pane.data();
@@ -187,10 +187,16 @@ export function BrowseSearch(props: BrowseSearchProps) {
       currentPage: model.pageData.currentPage,
       onPage: (p) => pane.goToPage(p),
     });
-    if (hostEl) {
-      browseCovers.beginPage(hostEl);
-      browseCovers.reobserveUnloadedCovers(hostEl);
-    }
+  });
+
+  createEffect(() => {
+    const el = hostEl();
+    const active = props.active();
+    const enabled = coversEnabledSignal();
+    const model = pane.data();
+    if (!el || !active || !enabled || !model) return;
+    browseCovers.beginPage(el);
+    browseCovers.reobserveUnloadedCovers(el);
   });
 
   const model = (): SearchModel | undefined => pane.data();
@@ -227,7 +233,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
   );
 
   return (
-    <div ref={(el) => { hostEl = el; }}>
+    <div ref={setHostEl}>
       <GroupBox
         class="ds-search-panel"
         title={<IconText icon={<SearchIcon />}>{t("browse.search.panelTitle")}</IconText>}

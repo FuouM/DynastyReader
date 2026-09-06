@@ -241,12 +241,17 @@ export async function getLocalCover(coverKey: string): Promise<string | null> {
   if (!coverKey) return null;
   const key = `cover:${coverKey}`;
   const cached = await getCached(key);
-  if (!cached || !cached.json_payload) return null;
+  if (!cached || !cached.json_payload) {
+    return null;
+  }
 
   // Verify file still exists on disk and return absolute path
   const resolved = await fileResolve(cached.json_payload);
-  if (resolved) return resolved;
+  if (resolved) {
+    return resolved;
+  }
   // File is missing or deleted from disk; clean up stale database entry
+  log.debug("api/series", "getLocalCover: cache entry file missing on disk, purging:", key, cached.json_payload);
   await deleteCached(key);
   return null;
 }
@@ -334,15 +339,21 @@ export async function getOrHydrateItemCover(opts: HydrateItemCoverOpts): Promise
   const { coverKey, chapterPermalink, seriesOrGroupPermalink, seriesType, onPhase } = opts;
   if (!coverKey) return null;
   const local = await getLocalCover(coverKey);
-  if (local) return local;
+  if (local) {
+    return local;
+  }
 
   // 1. If it has a series cover key and series permalink, try fetching series cover
   if (coverKey.startsWith("series:") && seriesOrGroupPermalink) {
-    const seriesCover = await getOrHydrateSeriesCover(seriesOrGroupPermalink, seriesType, onPhase);
-    if (seriesCover) {
-      onPhase?.("processing");
-      await setCached(`cover:${coverKey}`, "cover", seriesCover);
-      return seriesCover;
+    try {
+      const seriesCover = await getOrHydrateSeriesCover(seriesOrGroupPermalink, seriesType, onPhase);
+      if (seriesCover) {
+        onPhase?.("processing");
+        await setCached(`cover:${coverKey}`, "cover", seriesCover);
+        return seriesCover;
+      }
+    } catch (seriesErr) {
+      log.debug("api/series", `getOrHydrateItemCover series cover fetch failed for "${seriesOrGroupPermalink}":`, seriesErr);
     }
   }
 
@@ -357,9 +368,11 @@ export async function getOrHydrateItemCover(opts: HydrateItemCoverOpts): Promise
         await setCached(`cover:${coverKey}`, "cover", page1Cover);
         return page1Cover;
       }
+    } else {
+      log.debug("api/series", `Chapter ${chapterPermalink} has no pages`);
     }
   } catch (err) {
-    log.warn("api/series", `getOrHydrateItemCover fallback failed for chapter "${chapterPermalink}":`, err);
+    log.debug("api/series", `getOrHydrateItemCover fallback failed for chapter "${chapterPermalink}":`, err);
   }
   return null;
 }

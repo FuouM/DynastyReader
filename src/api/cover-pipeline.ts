@@ -39,9 +39,11 @@ async function transcodeCover(url: string, rawOutPath: string, webpOutPath: stri
       } catch (delErr) {
         log.debug("api/cover-pipeline", `raw cover delete failed for ${rawOutPath}:`, delErr);
       }
+    } else if (results && results[0]?.error) {
+      log.debug("api/cover-pipeline", "ephemeralConvertImages reported error:", results[0].error);
     }
   } catch (err) {
-    log.warn("api/cover-pipeline", "Failed to transcode cover to WebP, keeping raw download:", err);
+    log.debug("api/cover-pipeline", "Failed to transcode cover to WebP, keeping raw download:", err);
   }
   return finalPath;
 }
@@ -62,7 +64,10 @@ export async function fetchAndCacheCover(opts: {
   const cached = await getCached(cacheKey);
   if (cached && cached.json_payload) {
     try {
-      if (await fileExists(cached.json_payload)) return cached.json_payload;
+      if (await fileExists(cached.json_payload)) {
+        return cached.json_payload;
+      }
+      log.debug("api/cover-pipeline", "fetchAndCacheCover: cached file missing on disk:", cached.json_payload);
     } catch (checkErr) {
       log.debug("api/cover-pipeline", `cover file existence check failed for ${cached.json_payload}:`, checkErr);
     }

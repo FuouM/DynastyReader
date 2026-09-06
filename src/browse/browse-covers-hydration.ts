@@ -74,11 +74,6 @@ export class CoverHydrationPipeline {
     this._hydrationHost = host;
     this.queue.length = 0;
     this.queuedKeys.clear();
-    if (this.lazyObserver) {
-      this.lazyObserver.disconnect();
-      this.lazyObserver = null;
-    }
-
     // Re-attach when #ds-view was unmounted/remounted (view switch) since we
     // last attached — the listener on the detached node would otherwise stay
     // dead while scrollTrackingAttached blocks re-attachment.
@@ -94,11 +89,15 @@ export class CoverHydrationPipeline {
   }
 
   /** Observes a cover wrap; enqueues hydration when it nears the viewport. */
-  observe(wrap: HTMLElement): void {
-    if (!this.ctx.coversEnabled()) return;
+  observe(wrap: HTMLElement, explicitKey?: string): void {
+    if (explicitKey && !wrap.dataset.feedCover) {
+      wrap.dataset.feedCover = explicitKey;
+    }
+    if (!this.ctx.coversEnabled()) {
+      return;
+    }
     this.getLazyObserver().observe(wrap);
   }
-
   /** Pauses hydration pumps during the scroll-to-top animation. */
   scrollToTop(): void {
     // Keep hydration paused for the whole animation. We must NOT arm the idle
@@ -131,11 +130,11 @@ export class CoverHydrationPipeline {
   reobserveUnloadedCovers(host: HTMLElement): void {
     if (!this.ctx.coversEnabled()) return;
     const observer = this.getLazyObserver();
-    const unmountedWraps = host.querySelectorAll<HTMLElement>(
-      ".ds-feed-cover-wrap:not(:has(img.ds-feed-cover))",
-    );
-    for (const wrap of unmountedWraps) {
-      observer.observe(wrap);
+    const wraps = host.querySelectorAll<HTMLElement>(".ds-feed-cover-wrap");
+    for (const wrap of wraps) {
+      if (!wrap.querySelector("img.ds-feed-cover")) {
+        observer.observe(wrap);
+      }
     }
   }
 
@@ -221,11 +220,11 @@ export class CoverHydrationPipeline {
       this.lazyObserver = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
+            const el = entry.target as HTMLElement;
+            const coverKey = el.dataset.feedCover;
             if (entry.isIntersecting) {
-              const el = entry.target as HTMLElement;
               if (!this.ctx.coversEnabled()) continue;
 
-              const coverKey = el.dataset.feedCover;
               const chapterPermalink = el.dataset.chapterPermalink;
               const seriesPermalink = el.dataset.seriesPermalink;
               const seriesType = el.dataset.seriesType;
@@ -267,20 +266,20 @@ export class CoverHydrationPipeline {
   // ---------------------------------------------------------------------------
 
   private pumpCoverHydration(): void {
-    if (
-      !this.ctx.coversEnabled() ||
-      this._isScrolling ||
-      !this._hydrationHost ||
-      this._hydrationHost.offsetParent === null ||
-      this.queue.length === 0 ||
-      (typeof document !== "undefined" && document.hidden)
-    ) {
+    const coversEnabled = this.ctx.coversEnabled();
+    const isScrolling = this._isScrolling;
+    const queueLen = this.queue.length;
+    const docHidden = typeof document !== "undefined" && document.hidden;
+    const browsePane = typeof document !== "undefined" ? document.getElementById("ds-pane-browse") : null;
+    const browseHidden = browsePane ? browsePane.classList.contains("ds-pane-hidden") : false;
+
+    if (!coversEnabled || isScrolling || browseHidden || queueLen === 0 || docHidden) {
       return;
     }
     while (
       !this._isScrolling &&
       !(typeof document !== "undefined" && document.hidden) &&
-      this._hydrationHost?.offsetParent !== null &&
+      (!browsePane || !browsePane.classList.contains("ds-pane-hidden")) &&
       this.activeWorkers < MAX_CONCURRENCY &&
       this.queue.length > 0
     ) {
@@ -310,6 +309,7 @@ export class CoverHydrationPipeline {
           if (coverPath) {
             this.ctx.updateCoverPath(target.coverKey, coverPath);
           } else {
+            log.debug("browse-covers", "Worker returned null for", target.coverKey);
             this.ctx.setCoverState(target.coverKey, "no-cover");
             this.ctx.cache.delete(target.coverKey);
             const prevFail = this.ctx.cache.getFailedAttempt(target.coverKey);
@@ -317,7 +317,7 @@ export class CoverHydrationPipeline {
             this.ctx.cache.setFailedAttempt(target.coverKey, { count, lastTried: Date.now() });
           }
         } catch (err) {
-          log.warn("browse-covers", `worker error: ${target.coverKey}`, err);
+          log.debug("browse-covers", "Worker exception for", target.coverKey, err);
           this.ctx.cache.delete(target.coverKey);
           const prevFail = this.ctx.cache.getFailedAttempt(target.coverKey);
           const count = (prevFail?.count ?? 0) + 1;

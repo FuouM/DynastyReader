@@ -11,13 +11,13 @@
  * - `size` maps to the 42×58 feed or 36×50 cache dimensions.
  */
 
-import { createEffect, on, Show } from "solid-js";
+import { createEffect, on, onMount, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { browseCovers, coversEnabledSignal, type CoverState } from "../browse/browse-covers";
 import { BookIcon, Icon, ImageIcon } from "./Icon";
 import { t } from "../i18n";
 import { useImageRetry } from "../hooks/useImageRetry";
-
+import { log } from "../utils/log";
 export interface HydratedCoverProps {
   /** Local file path; when absent the cover is lazy-hydrated instead. */
   path?: string | null;
@@ -64,8 +64,16 @@ export function HydratedCover(props: HydratedCoverProps) {
 
   // Keep unhydrated element observed whenever covers are enabled
   createEffect(() => {
+    const p = resolvedPath();
+    const enabled = coversEnabledSignal();
+    if (wrapEl && !p && enabled) {
+      browseCovers.observe(wrapEl, props.coverKey);
+    }
+  });
+
+  onMount(() => {
     if (wrapEl && !resolvedPath() && coversEnabledSignal()) {
-      browseCovers.observe(wrapEl);
+      browseCovers.observe(wrapEl, props.coverKey);
     }
   });
 
@@ -80,11 +88,16 @@ export function HydratedCover(props: HydratedCoverProps) {
     }
   };
 
-  const handleImageError = () => {
+  const handleImageError = (ev: Event) => {
+    const target = ev.currentTarget as HTMLImageElement | null;
+    log.debug("cover-ui", "cover img onError for", props.coverKey, target?.src);
+    // Immediately purge the broken/missing file path from memory and SQLite
     if (props.coverKey) {
       browseCovers.evict(props.coverKey);
     }
-    handleError(() => triggerRetry());
+    handleError(() => {
+      triggerRetry();
+    });
   };
 
   const handleClick = (ev: MouseEvent) => {
@@ -117,7 +130,6 @@ export function HydratedCover(props: HydratedCoverProps) {
     <div
       ref={(el) => {
         wrapEl = el;
-        if (!resolvedPath() && el) browseCovers.observe(el);
       }}
       class={`ds-feed-cover-wrap${size().wrapClass ? ` ${size().wrapClass}` : ""}`}
       data-feed-cover={props.coverKey}

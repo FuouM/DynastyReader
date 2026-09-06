@@ -288,11 +288,9 @@ export async function clearAllCachedCovers(): Promise<void> {
   const coverRows = await query<{ json_payload: string }>(
     `SELECT json_payload FROM cached_metadata WHERE data_type = 'cover'`,
   );
-  const deleted = await deleteFiles(coverRows.map((r) => r.json_payload));
-  if (deleted.size === 0) return;
+  await deleteFiles(coverRows.map((r) => r.json_payload));
   await execute(
-    `DELETE FROM cached_metadata WHERE data_type = 'cover' AND json_payload IN (${inClause(deleted.size)})`,
-    Array.from(deleted),
+    `DELETE FROM cached_metadata WHERE data_type = 'cover'`,
   );
 }
 

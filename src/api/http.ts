@@ -3,6 +3,11 @@ import { getCached, setCached } from "../db/metadata.repo";
 import { recordNetworkTraffic, recordCacheHit } from "./traffic";
 import { tryParseJson } from "../utils/json";
 import * as ipc from "../ipc";
+import { log } from "../utils/log";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /** Fetches a text/JSON payload via the service. Throws on service error. */
 export async function httpGetText(
@@ -21,14 +26,23 @@ export async function httpGetText(
   if (opts.headers) {
     params.headers = opts.headers;
   }
-  const resp = await ipc.httpGet(params);
-  const status = Number(resp.status ?? 0);
-  const body = String(resp.body ?? "");
-  const etag = resp.etag ? String(resp.etag) : undefined;
-  if (status === 200 && body) {
-    recordNetworkTraffic(body.length);
+  const maxRetries = opts.method === "POST" ? 0 : 2;
+  let attempt = 0;
+  while (true) {
+    const resp = await ipc.httpGet(params);
+    const status = Number(resp.status ?? 0);
+    const body = String(resp.body ?? "");
+    const etag = resp.etag ? String(resp.etag) : undefined;
+    if (status === 200 && body) {
+      recordNetworkTraffic(body.length);
+    }
+    if (attempt < maxRetries && (status === 502 || status === 503 || status === 504 || status === 429)) {
+      attempt++;
+      await sleep(attempt * 600);
+      continue;
+    }
+    return { status, body, etag };
   }
-  return { status, body, etag };
 }
 
 /**
@@ -40,13 +54,27 @@ export async function httpDownloadFull(
   outputPath: string,
   timeoutMs = 30000,
 ): Promise<{ absolutePath: string; sizeBytes: number }> {
-  const resp = await ipc.httpDownload({ url, outputPath, timeoutMs });
-  const sizeBytes = Number(resp.size_bytes ?? 0);
-  if (sizeBytes > 0) recordNetworkTraffic(sizeBytes);
-  return {
-    absolutePath: String(resp.absolute_path ?? ""),
-    sizeBytes,
-  };
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      const resp = await ipc.httpDownload({ url, outputPath, timeoutMs });
+      const sizeBytes = Number(resp.size_bytes ?? 0);
+      if (sizeBytes > 0) recordNetworkTraffic(sizeBytes);
+      const result = {
+        absolutePath: String(resp.absolute_path ?? ""),
+        sizeBytes,
+      };
+      return result;
+    } catch (err) {
+      lastErr = err;
+      log.debug("http", `httpDownloadFull attempt ${attempt + 1} failed for ${url}:`, err);
+      if (attempt < 2) {
+        await sleep((attempt + 1) * 600);
+      }
+    }
+  }
+  log.warn("http", `httpDownloadFull failed for ${url}:`, lastErr);
+  throw lastErr;
 }
 
 /** Cache-first JSON getter: returns a fresh non-expired copy or fetches + stores with ETag revalidation. */

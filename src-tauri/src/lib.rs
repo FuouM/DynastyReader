@@ -41,6 +41,10 @@ pub fn run() {
             // portable install's `<exe dir>/.data` cannot be expressed via
             // static config scope variables).
             app.asset_protocol_scope().allow_directory(&root, true)?;
+            #[cfg(windows)]
+            if let Ok(canon) = root.canonicalize() {
+                let _ = app.asset_protocol_scope().allow_directory(&canon, true);
+            }
             Ok(())
         })
         .manage(commands::db::DbPool(Mutex::new(HashMap::new())))
