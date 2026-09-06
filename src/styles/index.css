@@ -87,7 +87,7 @@ body {
 }
 .ds-session-tab.active {
   background: var(--sys-highlight-bg, #0078d7);
-  color: var(--sys-highlight-text, #ffffff) !important;
+  color: var(--sys-highlight-text) !important;
   border-color: var(--sys-primary-border, #005499);
   font-weight: 500;
 }
@@ -116,12 +116,12 @@ body {
 }
 .ds-session-tab.active .ds-tab-close {
   opacity: 0.85;
-  color: var(--sys-highlight-text, #ffffff);
+  color: var(--sys-highlight-text);
 }
 .ds-session-tab.active .ds-tab-close:hover {
   opacity: 1;
-  background: color-mix(in srgb, var(--sys-highlight-text, #ffffff) 25%, transparent);
-  color: var(--sys-highlight-text, #ffffff);
+  background: color-mix(in srgb, var(--sys-highlight-text) 25%, transparent);
+  color: var(--sys-highlight-text);
 }
 .ds-segmented-switch {
   display: inline-flex;
@@ -189,7 +189,7 @@ body {
 }
 .ds-segmented-btn.active {
   background: var(--sys-highlight-bg, #0078d7);
-  color: var(--sys-highlight-text, #ffffff) !important;
+  color: var(--sys-highlight-text) !important;
 }
 .ds-segmented-btn + .ds-segmented-btn {
   border-left: 1px solid var(--sys-border-dark, #b0b0b0) !important;
@@ -642,7 +642,7 @@ body {
 }
 .ds-subtab.active {
   background: var(--sys-highlight-bg, #0078d7);
-  color: var(--sys-highlight-text, #ffffff) !important;
+  color: var(--sys-highlight-text) !important;
   border-color: var(--sys-primary-border, #005499);
   font-weight: 500;
 }
@@ -945,7 +945,7 @@ body {
   font-size: var(--font-sm);
   padding: 2px 8px;
   background: var(--sys-highlight-bg, #0078d7);
-  color: var(--sys-highlight-text, #fff);
+  color: var(--sys-highlight-text);
   border-radius: var(--radius-2);
   animation: ds-pulse 1.5s infinite;
 }
@@ -1058,8 +1058,7 @@ code,
 }
 .ds-settings-nav-item.active {
   background: var(--sys-highlight-bg, #0078d7);
-  color: var(--sys-highlight-text, #ffffff) !important;
-  font-weight: 600;
+  color: var(--sys-highlight-text) !important;
 }
 .ds-settings-content {
   flex: 1;
@@ -1353,7 +1352,7 @@ code,
 
 .ds-haptic-preset-btn.active {
   background: var(--sys-highlight-bg, #0078d7) !important;
-  color: var(--sys-highlight-text, #ffffff) !important;
+  color: var(--sys-highlight-text) !important;
   border-color: var(--sys-highlight-bg, #0078d7) !important;
   font-weight: 600;
 }

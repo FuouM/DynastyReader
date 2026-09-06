@@ -103,7 +103,7 @@
         function getContrastText(hex) {
           var rgb = parseHex(hex);
           var yiq = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
-          return yiq >= 150 ? "#000000" : "#ffffff";
+          return yiq >= 125 ? "#000000" : "#ffffff";
         }
         function getDeepAccentText(hex, targetLightness, maxSaturation) {
           if (targetLightness === undefined) targetLightness = 0.14;
@@ -201,7 +201,6 @@
             var isDark = (colorSchemes[theme] || "light") === "dark";
             var adj = function(f) { return bs.adjustBrightnessFactor(accent, f); };
             var deepText = function(targetL, maxS) { return bs.getDeepAccentText(accent, targetL, maxS); };
-            var yiq = (r * 299 + g * 587 + b * 114) / 1000;
             var contrast = bs.getContrastText(accent);
             var activeTxt = deepText(0.14, 0.75);
             var badgeTxt = deepText(0.16, 0.70);
@@ -254,7 +253,7 @@
             root.style.setProperty("--ds-accent-wall-1", adj(0.60));
             root.style.setProperty("--ds-accent-wall-2", adj(0.42));
             root.style.setProperty("--ds-accent-wall-3", adj(0.25));
-            var isLightTopbar = yiq >= 125;
+            var isLightTopbar = contrast === "#000000";
             var topbarTxt = isLightTopbar ? deepText(0.12, 0.75) : "#ffffff";
             var topbarShd = isLightTopbar
               ? "0 0 8px rgba(255, 255, 255, 0.95), 0 0 3px #ffffff, 0 1px 0 #ffffff"

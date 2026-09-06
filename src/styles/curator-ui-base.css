@@ -79,7 +79,7 @@
 }
 .win-button.primary {
   background-color: var(--sys-button-primary-bg);
-  color: var(--sys-highlight-text, #ffffff);
+  color: var(--sys-highlight-text);
   border-color: var(--sys-button-primary-border);
 }
 .win-button.primary:hover {
@@ -92,7 +92,7 @@
 }
 .win-button.active {
   background-color: var(--sys-button-primary-bg);
-  color: var(--sys-highlight-text, #ffffff);
+  color: var(--sys-highlight-text);
   border-color: var(--sys-button-primary-border);
   font-weight: 600;
 }

@@ -5,13 +5,13 @@
  * writes back through session control methods.
  */
 
-import { createEffect, createSignal, onCleanup, Show, on } from "solid-js";
+import { createEffect, Show, on } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { isMobile } from "../stores/platform";
-import { goBack, goForward, canGoBack, canGoForward, closeSessionMangaTab, navigate } from "../stores/router";
+import { closeSessionMangaTab, navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
-import { HistoryDropdown } from "../components/HistoryDropdown";
+import { HistoryNavButtons } from "../components/HistoryDropdown";
 import { decodeEntities } from "../utils/html";
 import { addBookmark, removeBookmark } from "../db/library.repo";
 import { errorMessage } from "../utils/errors";
@@ -24,8 +24,6 @@ import { ReaderMainRow, ReaderControlsRow } from "./ReaderNavRows";
 import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
 import {
   ToolIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
   BookmarkIcon,
   CloseIcon,
   StorageIcon,
@@ -66,35 +64,6 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
   };
   makeEventListener(document, "fullscreenchange", onFullscreenChange);
 
-  const [historyMenu, setHistoryMenu] = createSignal<{
-    direction: "back" | "forward";
-    anchorEl: HTMLElement;
-  } | null>(null);
-  let holdTimer: number | null = null;
-  let didHold = false;
-
-  const startHold = (direction: "back" | "forward", anchorEl: HTMLElement): void => {
-    didHold = false;
-    if (holdTimer !== null) window.clearTimeout(holdTimer);
-    holdTimer = window.setTimeout(() => {
-      didHold = true;
-      setHistoryMenu({ direction, anchorEl });
-    }, 450);
-  };
-
-  const cancelHold = (): void => {
-    if (holdTimer !== null) {
-      clearTimeout(holdTimer);
-      holdTimer = null;
-    }
-    if (didHold) {
-      window.setTimeout(() => {
-        didHold = false;
-      }, 200);
-    }
-  };
-
-  onCleanup(() => cancelHold());
 
   // When resizing across mobile/desktop boundary, close controls so desktop row doesn't open mobile sheet
   createEffect(
@@ -160,70 +129,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
                 <span class="ds-btn-icon-wrap"><StorageIcon /></span>
               </button>
             </div>
-            <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
-              <button
-                type="button"
-                class="win-button ds-segmented-btn ds-nav-history-btn"
-                id="ds-nav-back"
-                title={t("topbar.navBackTooltip")}
-                disabled={!canGoBack()}
-                onPointerDown={(ev) => {
-                  if (ev.button === 0 && canGoBack()) {
-                    startHold("back", ev.currentTarget);
-                  }
-                }}
-                onPointerUp={(ev) => {
-                  if (didHold) ev.preventDefault();
-                  cancelHold();
-                }}
-                onPointerCancel={() => cancelHold()}
-                onPointerLeave={() => cancelHold()}
-                onContextMenu={(ev) => {
-                  ev.preventDefault();
-                  if (canGoBack()) {
-                    setHistoryMenu({ direction: "back", anchorEl: ev.currentTarget });
-                  }
-                }}
-                onClick={() => {
-                  if (!didHold && canGoBack()) {
-                    goBack();
-                  }
-                }}
-              >
-                <span class="ds-btn-icon-wrap"><ArrowLeftIcon /></span>
-              </button>
-              <button
-                type="button"
-                class="win-button ds-segmented-btn ds-nav-history-btn"
-                id="ds-nav-forward"
-                title={t("topbar.navForwardTooltip")}
-                disabled={!canGoForward()}
-                onPointerDown={(ev) => {
-                  if (ev.button === 0 && canGoForward()) {
-                    startHold("forward", ev.currentTarget);
-                  }
-                }}
-                onPointerUp={(ev) => {
-                  if (didHold) ev.preventDefault();
-                  cancelHold();
-                }}
-                onPointerCancel={() => cancelHold()}
-                onPointerLeave={() => cancelHold()}
-                onContextMenu={(ev) => {
-                  ev.preventDefault();
-                  if (canGoForward()) {
-                    setHistoryMenu({ direction: "forward", anchorEl: ev.currentTarget });
-                  }
-                }}
-                onClick={() => {
-                  if (!didHold && canGoForward()) {
-                    goForward();
-                  }
-                }}
-              >
-                <span class="ds-btn-icon-wrap"><ArrowRightIcon /></span>
-              </button>
-            </div>
+            <HistoryNavButtons />
             <div class="ds-reader-mobile-title--flex" onClick={handleOpenSeries} title={s.seriesPermalink() ? t("reader.toolbar.viewSeries") : undefined}>
               <span class="ds-truncate ds-text-13-600">
                 {decodeEntities(s.chapterTitle() || s.permalink)}
@@ -303,15 +209,6 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
 
       <Show when={isMobile()}>
         <ReaderMobileControlsSheet session={s} />
-      </Show>
-      <Show when={historyMenu()}>
-        {(menu) => (
-          <HistoryDropdown
-            direction={menu().direction}
-            anchorEl={menu().anchorEl}
-            onClose={() => setHistoryMenu(null)}
-          />
-        )}
       </Show>
     </>
   );

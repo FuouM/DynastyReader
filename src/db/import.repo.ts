@@ -6,8 +6,9 @@ import { seriesCoverKey, isCoverFilePath } from "../lib/cache-keys";
 import { notifyFollowedChanged, updateFollowedSeriesCover } from "./library.repo";
 import { notifyCollectionsChanged, updateCollectionItemCoverByPermalink } from "./collections.repo";
 import { decodeEntities } from "../utils/html";
-import { KIND_BY_PATH_SEGMENT, titleFromPermalink, type EntityKind } from "../taxonomy";
+import { titleFromPermalink } from "../taxonomy";
 import { getOrHydrateSeriesCover } from "../api/series";
+import { isValidPermalink, parseDynastyEntityUrl as parseValidDynastyUrl } from "../api/navigation";
 
 export interface ValidatedFollowedItem {
   permalink: string;
@@ -63,53 +64,7 @@ export interface ImportExecutionResult {
   totalImported: number;
 }
 
-const PERMALINK_REGEX = /^[a-zA-Z0-9_\-]+$/;
-
-/**
- * Checks if a candidate string is a safe, valid Dynasty Scans permalink slug.
- */
-export function isValidPermalink(p: unknown): p is string {
-  if (typeof p !== "string") return false;
-  const clean = p.trim();
-  return clean.length > 0 && clean.length <= 256 && PERMALINK_REGEX.test(clean);
-}
-
-/**
- * Strict validator for Dynasty Scans URLs.
-
-/**
- * Strict validator for Dynasty Scans URLs.
- * Ensures protocol is http/https, host is dynasty-scans.com, and path matches a valid domain entity.
- */
-export function parseValidDynastyUrl(input: string): {
-  kind: EntityKind;
-  permalink: string;
-} | null {
-  try {
-    const trimmed = input.trim();
-    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-      return null;
-    }
-    const url = new URL(trimmed);
-    const host = url.hostname.toLowerCase();
-    if (host !== "dynasty-scans.com" && host !== "www.dynasty-scans.com") {
-      return null;
-    }
-    const parts = url.pathname.split("/").filter(Boolean);
-    if (parts.length < 2) return null;
-
-    const endpoint = parts[0].toLowerCase();
-    const rawKind = KIND_BY_PATH_SEGMENT[endpoint];
-    if (!rawKind) return null;
-
-    const rawPermalink = parts[1].replace(/\.json$/i, "").trim();
-    if (!isValidPermalink(rawPermalink)) return null;
-
-    return { kind: rawKind, permalink: rawPermalink };
-  } catch {
-    return null;
-  }
-}
+export { isValidPermalink, parseValidDynastyUrl };
 
 /**
  * Validates and parses raw import text into a structured, validated payload.

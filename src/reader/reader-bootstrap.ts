@@ -164,7 +164,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
         if (isLongStripFitWidthEnabled()) {
           const isLong = detectIsLongStrip(chapter.tags ?? [], seriesData.tags ?? []);
           if (isLong && s.fitMode() !== "width") {
-            s.setFitMode("width");
+            s.setFitModeSignal("width");
           }
         }
       } catch (err) {

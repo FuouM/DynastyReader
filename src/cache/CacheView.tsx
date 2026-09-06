@@ -24,8 +24,7 @@ import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api/traffic";
 import { clearCachedGroupPages, getCacheOverviewStats, getFullyCachedChapters, pruneOldestReadCachedPages, type FullyCachedChapterRow } from "../db/cache.repo";
-import { getBookmarkPermalinks, getHistoryMap } from "../db/library.repo";
-import { getBatchCached } from "../db/metadata.repo";
+import { enrichCachedChapters } from "../db/cache-aggregate";
 import { getDbStats, type DbStats } from "../db/db.manage";
 import type { CacheOverviewStats } from "../types/db";
 import { SeriesDownloadedCard } from "../browse/downloaded/SeriesDownloadedCard";
@@ -38,7 +37,6 @@ import type {
   DownloadedSeriesGroup,
   ProcessedCachedChapter,
 } from "../browse/downloaded/types";
-import { isVolumeOrSectionHeader } from "../utils/volume";
 import { Pager } from "../components/Pager";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState } from "../components/EmptyState";
@@ -88,32 +86,8 @@ export function CacheView() {
       getFullyCachedChapters(),
     ]);
 
-    const perms = rows.map((r) => r.chapterPermalink);
-    const seriesPerms = Array.from(new Set(rows.map((r) => r.seriesPermalink).filter(Boolean)));
-    const seriesKeys = seriesPerms.map((p) => `series:${p}`);
-
-    const [bookmarkSet, readHistoryMap, seriesMetaMap] = await Promise.all([
-      getBookmarkPermalinks(perms),
-      getHistoryMap(perms),
-      getBatchCached(seriesKeys),
-    ]);
-
-    const volumeMap = new Map<string, string>();
-    for (const payload of seriesMetaMap.values()) {
-      try {
-        const seriesData = JSON.parse(payload);
-        let curVolume: string | undefined;
-        for (const t of seriesData.taggings ?? []) {
-          if (t.header) {
-            curVolume = isVolumeOrSectionHeader(t.header) ? t.header : undefined;
-          } else if (t.permalink && curVolume) {
-            volumeMap.set(t.permalink, curVolume);
-          }
-        }
-      } catch {}
-    }
-
-    return { stats, dbStats, rows, bookmarkSet, readHistoryMap, volumeMap };
+    const enriched = await enrichCachedChapters(rows);
+    return { stats, dbStats, rows, ...enriched };
   });
 
   const PAGE_SIZE = 15;

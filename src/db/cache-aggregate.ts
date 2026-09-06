@@ -5,6 +5,9 @@ import { getChapterContainerTag } from "../taxonomy";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
+import { getBookmarkPermalinks, getHistoryMap } from "./library.repo";
+import { getBatchCached } from "./metadata.repo";
+import { isVolumeOrSectionHeader } from "../utils/volume";
 export interface ChapterAggRow {
   chapterPermalink: string;
   pageCount: number;
@@ -253,4 +256,48 @@ export async function loadCachedChapterContext(limit?: number): Promise<CachedCh
   }
 
   return { aggs, chapterInfo, coverMap, page0Map, chapterMeta };
+}
+
+export interface EnrichedCachedChapters {
+  bookmarkSet: Set<string>;
+  readHistoryMap: Map<string, number>;
+  readHistorySet: Set<string>;
+  volumeMap: Map<string, string>;
+}
+
+/**
+ * Enriches a list of cached chapter rows with user bookmarks, read history,
+ * and volume/section header mappings derived from cached series metadata.
+ * Single source of truth shared by BrowseDownloaded and CacheView.
+ */
+export async function enrichCachedChapters(
+  rows: readonly { chapterPermalink: string; seriesPermalink?: string | null }[],
+): Promise<EnrichedCachedChapters> {
+  const perms = rows.map((r) => r.chapterPermalink);
+  const seriesPerms = Array.from(new Set(rows.map((r) => r.seriesPermalink).filter(Boolean))) as string[];
+  const seriesKeys = seriesPerms.map((p) => `series:${p}`);
+
+  const [bookmarkSet, readHistoryMap, seriesMetaMap] = await Promise.all([
+    getBookmarkPermalinks(perms),
+    getHistoryMap(perms),
+    getBatchCached(seriesKeys),
+  ]);
+
+  const volumeMap = new Map<string, string>();
+  for (const payload of seriesMetaMap.values()) {
+    try {
+      const seriesData = JSON.parse(payload);
+      let curVolume: string | undefined;
+      for (const t of seriesData.taggings ?? []) {
+        if (t.header) {
+          curVolume = isVolumeOrSectionHeader(t.header) ? t.header : undefined;
+        } else if (t.permalink && curVolume) {
+          volumeMap.set(t.permalink, curVolume);
+        }
+      }
+    } catch {}
+  }
+
+  const readHistorySet = new Set(readHistoryMap.keys());
+  return { bookmarkSet, readHistoryMap, readHistorySet, volumeMap };
 }

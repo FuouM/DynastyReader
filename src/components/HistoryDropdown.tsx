@@ -3,9 +3,9 @@
  * Allows quick jumping to any previous or forward history entry.
  */
 
-import { createEffect, createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { goBackTo, goForwardTo, historyBackStack, historyForwardStack, routeLabel } from "../stores/router";
+import { canGoBack, canGoForward, goBack, goForward, goBackTo, goForwardTo, historyBackStack, historyForwardStack, routeLabel } from "../stores/router";
 import { uiScale } from "../stores/ui-scale";
 import { t } from "../i18n";
 import { ArrowLeftIcon, ArrowRightIcon, Icon, type BootstrapIconName } from "./Icon";
@@ -15,6 +15,39 @@ export interface HistoryDropdownProps {
   anchorEl: HTMLElement | null;
   open?: boolean;
   onClose: () => void;
+}
+export function useHistoryHoldMenu() {
+  const [historyMenu, setHistoryMenu] = createSignal<{
+    direction: "back" | "forward";
+    anchorEl: HTMLElement;
+  } | null>(null);
+  let holdTimer: number | null = null;
+  let didHold = false;
+
+  const startHold = (direction: "back" | "forward", anchorEl: HTMLElement): void => {
+    didHold = false;
+    if (holdTimer !== null) window.clearTimeout(holdTimer);
+    holdTimer = window.setTimeout(() => {
+      didHold = true;
+      setHistoryMenu({ direction, anchorEl });
+    }, 450);
+  };
+
+  const cancelHold = (): void => {
+    if (holdTimer !== null) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    if (didHold) {
+      window.setTimeout(() => {
+        didHold = false;
+      }, 200);
+    }
+  };
+
+  onCleanup(() => cancelHold());
+
+  return { historyMenu, setHistoryMenu, startHold, cancelHold, didHold: () => didHold };
 }
 export function HistoryDropdown(props: HistoryDropdownProps) {
   const mountTime = Date.now();
@@ -142,5 +175,85 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
         </div>
       </Portal>
     </Show>
+  );
+}
+
+export function HistoryNavButtons() {
+  const { historyMenu, setHistoryMenu, startHold, cancelHold, didHold } = useHistoryHoldMenu();
+
+  return (
+    <>
+      <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
+        <button
+          type="button"
+          class="win-button ds-segmented-btn ds-nav-history-btn"
+          id="ds-nav-back"
+          title={t("topbar.navBackTooltip")}
+          disabled={!canGoBack()}
+          onPointerDown={(ev) => {
+            if (ev.button === 0 && canGoBack()) {
+              startHold("back", ev.currentTarget);
+            }
+          }}
+          onPointerUp={(ev) => {
+            if (didHold()) ev.preventDefault();
+            cancelHold();
+          }}
+          onPointerCancel={() => cancelHold()}
+          onPointerLeave={() => cancelHold()}
+          onContextMenu={(ev) => {
+            ev.preventDefault();
+            if (canGoBack()) {
+              setHistoryMenu({ direction: "back", anchorEl: ev.currentTarget });
+            }
+          }}
+          onClick={() => {
+            if (!didHold() && canGoBack()) {
+              goBack();
+            }
+          }}
+        >
+          <span class="ds-btn-icon-wrap"><ArrowLeftIcon /></span>
+        </button>
+        <button
+          type="button"
+          class="win-button ds-segmented-btn ds-nav-history-btn"
+          id="ds-nav-forward"
+          title={t("topbar.navForwardTooltip")}
+          disabled={!canGoForward()}
+          onPointerDown={(ev) => {
+            if (ev.button === 0 && canGoForward()) {
+              startHold("forward", ev.currentTarget);
+            }
+          }}
+          onPointerUp={(ev) => {
+            if (didHold()) ev.preventDefault();
+            cancelHold();
+          }}
+          onPointerCancel={() => cancelHold()}
+          onPointerLeave={() => cancelHold()}
+          onContextMenu={(ev) => {
+            ev.preventDefault();
+            if (canGoForward()) {
+              setHistoryMenu({ direction: "forward", anchorEl: ev.currentTarget });
+            }
+          }}
+          onClick={() => {
+            if (!didHold() && canGoForward()) {
+              goForward();
+            }
+          }}
+        >
+          <span class="ds-btn-icon-wrap"><ArrowRightIcon /></span>
+        </button>
+      </div>
+      <Show when={historyMenu() !== null}>
+        <HistoryDropdown
+          direction={historyMenu()!.direction}
+          anchorEl={historyMenu()!.anchorEl}
+          onClose={() => setHistoryMenu(null)}
+        />
+      </Show>
+    </>
   );
 }

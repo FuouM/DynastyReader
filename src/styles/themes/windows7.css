@@ -6,9 +6,7 @@
  * design specifications.
  */
 @layer themes {
-  :root[data-theme="windows7"],
-  [data-theme="windows7"],
-  body.ds-windows7 {
+  :root[data-theme="windows7"] {
     /* core surfaces */
     --sys-control-bg: var(--ds-accent-box-bg-1, #eef2f8);
     --sys-control-text: var(--ds-accent-badge-text, #0f1e32);
@@ -728,9 +726,12 @@
   }
 
   [data-theme="windows7"] .ds-reader-progress-fill {
-    background: linear-gradient(90deg, var(--ds-accent-aero-mid, #2a6cb6), var(--ds-accent-aero-light, #3a8be6)) !important;
+    background: linear-gradient(90deg, var(--ds-accent-aero-dark, #205da8), var(--sys-link, #2a6cb6)) !important;
     border-radius: 1px;
     box-shadow: none;
+  }
+  [data-theme="windows7"] .ds-slot-pulse-bar {
+    background: linear-gradient(90deg, var(--ds-accent-aero-dark, #205da8), var(--sys-link, #2a6cb6));
   }
   [data-theme="windows7"] .skeleton,
   [data-theme="windows7"] .skeleton-pulse,

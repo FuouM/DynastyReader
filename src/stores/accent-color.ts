@@ -135,9 +135,7 @@ export function computeAccentPalette(rawColor: string, appTheme: AppTheme = "lig
   const topbar4 = adjustBrightness(hex, 24);
   const taskbar1 = adjustBrightness(hex, 35);
   const taskbar2 = adjustBrightness(hex, 20);
-  const [r, g, b] = parseHex(hex);
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  const isLightTopbar = yiq >= 125;
+  const isLightTopbar = contrastText === "#000000";
   const topbarText = isLightTopbar ? getDeepAccentText(hex, 0.12, 0.75) : "#ffffff";
   const topbarShadow = isLightTopbar
     ? "0 0 8px rgba(255, 255, 255, 0.95), 0 0 3px #ffffff, 0 1px 0 #ffffff"

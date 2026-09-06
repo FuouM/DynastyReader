@@ -3,7 +3,7 @@ import * as ipc from "../ipc";
 import { log } from "../utils/log";
 import type { ParsedDynastyUrl } from "../types/api";
 
-import { KIND_BY_PATH_SEGMENT } from "../taxonomy";
+import { KIND_BY_PATH_SEGMENT, type EntityKind } from "../taxonomy";
 
 /** Kinds that resolve to a series-style detail page or tag search when parsed from a pasted link. */
 function normalizeToSeriesKind(kind: string): ParsedDynastyUrl["kind"] {
@@ -48,21 +48,57 @@ export async function openExternal(url: string): Promise<void> {
   }
 }
 
-/** Extracts a series/chapter permalink from a dynasty-scans.com URL. */
-export function parseDynastyUrl(input: string): ParsedDynastyUrl | null {
+const PERMALINK_REGEX = /^[a-zA-Z0-9_\-]+$/;
+
+/**
+ * Checks if a candidate string is a safe, valid Dynasty Scans permalink slug.
+ */
+export function isValidPermalink(p: unknown): p is string {
+  if (typeof p !== "string") return false;
+  const clean = p.trim();
+  return clean.length > 0 && clean.length <= 256 && PERMALINK_REGEX.test(clean);
+}
+
+/**
+ * Strict validator and parser for Dynasty Scans URLs.
+ * Extracts the canonical EntityKind and validated permalink slug.
+ */
+export function parseDynastyEntityUrl(input: string): {
+  kind: EntityKind;
+  permalink: string;
+} | null {
   try {
-    const url = new URL(input.trim());
-    if (!url.hostname.endsWith("dynasty-scans.com")) return null;
+    let trimmed = input.trim();
+    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+      trimmed = `https://${trimmed}`;
+    }
+    const url = new URL(trimmed);
+    const host = url.hostname.toLowerCase();
+    if (host !== "dynasty-scans.com" && !host.endsWith(".dynasty-scans.com")) {
+      return null;
+    }
     const parts = url.pathname.split("/").filter(Boolean);
     if (parts.length < 2) return null;
-    const rawKind = KIND_BY_PATH_SEGMENT[parts[0].toLowerCase()];
+
+    const endpoint = parts[0].toLowerCase();
+    const rawKind = KIND_BY_PATH_SEGMENT[endpoint];
     if (!rawKind) return null;
-    const permalink = parts[1].replace(/\.json$/i, "");
-    return { kind: normalizeToSeriesKind(rawKind), permalink };
+
+    const rawPermalink = parts[1].replace(/\.json$/i, "").trim();
+    if (!isValidPermalink(rawPermalink)) return null;
+
+    return { kind: rawKind, permalink: rawPermalink };
   } catch (err) {
-    log.debug("navigation", "parseDynastyUrl failed for", input, err);
+    log.debug("navigation", "parseDynastyEntityUrl failed for", input, err);
     return null;
   }
+}
+
+/** Extracts a series/chapter permalink from a dynasty-scans.com URL. */
+export function parseDynastyUrl(input: string): ParsedDynastyUrl | null {
+  const entity = parseDynastyEntityUrl(input);
+  if (!entity) return null;
+  return { kind: normalizeToSeriesKind(entity.kind), permalink: entity.permalink };
 }
 
 /** Builds the on-disk output path for a chapter page image. */

@@ -311,7 +311,7 @@
 
 .ds-bn-tab.active {
   background: var(--sys-highlight-bg, #0078d4);
-  color: var(--sys-highlight-text, #ffffff);
+  color: var(--sys-highlight-text);
   font-weight: 600;
   border-radius: 0;
 }

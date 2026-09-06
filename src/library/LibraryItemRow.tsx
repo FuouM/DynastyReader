@@ -48,7 +48,13 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
     <ListItem
       class="ds-flex-row ds-clickable ds-library-item"
       cssText={props.selectionMode && props.selected ? "background:var(--sys-hover-bg);" : undefined}
-      onClick={props.selectionMode ? () => props.onToggleSelect?.() : props.onOpen}
+      onClick={() => {
+        if (props.selectionMode) {
+          props.onToggleSelect?.();
+        } else {
+          props.onOpen();
+        }
+      }}
       leading={
         <>
           <Show when={props.selectionMode}>
@@ -101,8 +107,8 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
         </Show>
       }
       actions={
-        props.selectionMode ? undefined : (
-        <>
+        <Show when={!props.selectionMode}>
+          <>
           <Show when={props.actionLabel}>
             <IconButton
               icon={
@@ -159,7 +165,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
             />
           </Show>
         </>
-        )
+        </Show>
       }
     />
   );

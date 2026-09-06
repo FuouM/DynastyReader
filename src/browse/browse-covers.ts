@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
 import { getBatchCached, deleteCached } from "../db/metadata.repo";
 import { log } from "../utils/log";
+import { slugify } from "../utils/formatting";
 import { isSeriesKind, isDoujinTag, getChapterContainerTag } from "../taxonomy";
 import { CoverMemoryCache, MAX_MEMORY_CACHE, type CoverState } from "./browse-covers-memory-cache";
 import { CoverHydrationPipeline, type CoverTarget, type ItemCoverInfo } from "./browse-covers-hydration";
@@ -173,12 +174,7 @@ export class BrowseCovers {
     if (hasSeriesContainer) {
       const seriesPermalink =
         containerTag?.permalink ||
-        (ch.series
-          ? ch.series
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "_")
-              .replace(/^_+|_+$/g, "")
-          : ch.permalink);
+        (ch.series ? slugify(ch.series) : ch.permalink);
       const seriesName = containerTag?.name || ch.series || "";
       const seriesType = containerTag?.type?.toLowerCase() === "anthology" ? "anthology" : (containerTag?.type || "series");
 

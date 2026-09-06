@@ -465,7 +465,7 @@
 }
 .ds-btn-success {
   background-color: var(--ds-status-fresh-text) !important;
-  color: var(--sys-highlight-text, #ffffff) !important;
+  color: var(--sys-highlight-text) !important;
   border-color: var(--ds-status-fresh-border) !important;
 }
 

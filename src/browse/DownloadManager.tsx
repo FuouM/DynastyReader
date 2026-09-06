@@ -103,9 +103,6 @@ export function DownloadManager(props: { onComplete?: () => void }) {
         setIsPaused(res.paused);
       }
       updateDownloadQueueSnapshot(res.items);
-      if (!res.items.some((i) => i.status === "downloading")) {
-        resetDownloadSpeedAccumulators();
-      }
     } catch {
       // Best-effort
     }

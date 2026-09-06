@@ -59,9 +59,12 @@ export function resetDownloadSpeedAccumulators(): void {
   setDownloadEtaSeconds(0);
 }
 
-/** Feeds the store's ETA estimator with the freshest queue snapshot. */
+/** Feeds the store's ETA estimator with the freshest queue snapshot and resets speed if idle. */
 export function updateDownloadQueueSnapshot(items: DownloadQueueItem[]): void {
   queueSnapshot = items;
+  if (!items.some((i) => i.status === "downloading")) {
+    resetDownloadSpeedAccumulators();
+  }
 }
 
 let initialized = false;
@@ -129,7 +132,7 @@ export function initGlobalDownloadListener(): void {
   const refreshState = async () => {
     try {
       const res = await getDownloadQueue();
-      queueSnapshot = res.items;
+      updateDownloadQueueSnapshot(res.items);
       const activeOrPending = res.items.filter(
         (i) => i.status === "downloading" || i.status === "pending",
       );
@@ -139,9 +142,6 @@ export function initGlobalDownloadListener(): void {
         new Set(res.items.filter((i) => i.status === "downloading").map((i) => i.chapter_permalink)),
       );
 
-      if (!res.items.some((i) => i.status === "downloading")) {
-        resetDownloadSpeedAccumulators();
-      }
     } catch {
       // Best-effort
     }

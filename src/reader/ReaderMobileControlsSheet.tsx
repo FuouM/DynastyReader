@@ -42,6 +42,8 @@ import {
   CloudDownloadIcon,
   CheckIcon,
   ExternalLinkIcon,
+  DashIcon,
+  PlusIcon,
   Icon,
 } from "../components/Icon";
 
@@ -204,6 +206,37 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   ]}
                 />
               </SettingsRow>
+
+              {/* Zoom Controls (when Original Size) */}
+              <Show when={s.fitMode() === "original"}>
+                <SettingsRow label={t("reader.toolbar.zoom")} divider>
+                  <div class="ds-prefetch-row ds-ctrl-zoom-row">
+                    <IconButton
+                      className="ds-btn-icon"
+                      icon={<DashIcon />}
+                      title={t("reader.toolbar.zoomOutTooltip")}
+                      disabled={s.zoomScale() <= 0.25}
+                      onClick={() => s.zoomOut()}
+                    />
+                    <button
+                      type="button"
+                      class="win-button ds-btn-sm"
+                      style="min-width: 54px; font-variant-numeric: tabular-nums; text-align: center;"
+                      title={t("reader.toolbar.zoomResetTooltip")}
+                      onClick={() => s.resetZoom()}
+                    >
+                      {Math.round(s.zoomScale() * 100)}%
+                    </button>
+                    <IconButton
+                      className="ds-btn-icon"
+                      icon={<PlusIcon />}
+                      title={t("reader.toolbar.zoomInTooltip")}
+                      disabled={s.zoomScale() >= 3.0}
+                      onClick={() => s.zoomIn()}
+                    />
+                  </div>
+                </SettingsRow>
+              </Show>
 
               {/* Image Filters */}
               <SettingsRow label={t("settings.reader.filterGroup")} divider stacked>

@@ -442,6 +442,7 @@ export const en = {
       fullscreen: "Toggle Fullscreen (F)",
       fullscreenLabel: "Fullscreen",
       exitFullscreenLabel: "Exit",
+      zoom: "Zoom",
       zoomDisabledTooltip: "Zoom disabled when Fit mode is active (set to Original Size to zoom)",
       zoomOutTooltip: "Zoom Out (Ctrl - / -)",
       zoomResetTooltip: "Reset Zoom (Ctrl 0)",

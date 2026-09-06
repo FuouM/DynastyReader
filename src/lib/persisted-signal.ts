@@ -13,6 +13,7 @@
  */
 import { createSignal, type Signal } from "solid-js";
 import { makePersisted, type PersistenceOptions } from "@solid-primitives/storage";
+import { parsePersistedString } from "./persisted-helpers";
 
 export interface PersistedSignalOptions<T> {
   name?: string;
@@ -24,31 +25,84 @@ export function persistedSignal<T>(
   defaultValue: T,
   options: PersistedSignalOptions<T>,
 ): Signal<T> {
+  const isStringType = typeof defaultValue === "string";
   const opts: PersistenceOptions<T, undefined> = {
     name: options.name,
     storage: localStorage,
   };
-  if (options.serialize) opts.serialize = options.serialize;
-  // Tolerate legacy plain-string values written before the makePersisted
-  // migration (e.g. `ds_downloaded_sort_mode = name-asc` without JSON quotes).
-  // Default JSON.parse would throw on those, crashing the component mount.
-  opts.deserialize = options.deserialize ?? ((data: string): T => {
+  if (options.serialize) {
+    opts.serialize = options.serialize;
+  } else if (isStringType) {
+    opts.serialize = (v: T) => (v != null ? String(v) : "");
+  } else if (typeof defaultValue === "boolean" || typeof defaultValue === "number") {
+    opts.serialize = (v: T) => String(v);
+  }
+
+  let initial = defaultValue;
+  if (options.name && typeof localStorage !== "undefined") {
     try {
-      return JSON.parse(data) as T;
-    } catch (err) {
-      if (typeof defaultValue === "string") return data as unknown as T;
-      if (options.name && typeof localStorage !== "undefined") {
+      const stored = localStorage.getItem(options.name);
+      if (stored === null && options.deserialize) {
+        const migrated = options.deserialize("");
+        if (migrated !== defaultValue && migrated != null) {
+          initial = migrated;
+          const canonical = opts.serialize ? opts.serialize(migrated) : (isStringType ? String(migrated) : JSON.stringify(migrated));
+          localStorage.setItem(options.name, canonical);
+        }
+      }
+    } catch {}
+  }
+
+  const customDeserialize = options.deserialize;
+  opts.deserialize = (data: string): T => {
+    const normalized = isStringType ? parsePersistedString(data, "") : data;
+    let val: T;
+    if (customDeserialize) {
+      try {
+        val = customDeserialize(normalized);
+      } catch (err) {
         console.warn(
-          `[persistedSignal] failed deserializing key "${options.name}", evicting corrupt value:`,
+          `[persistedSignal] custom deserialize failed for key "${options.name}":`,
           data,
           err,
         );
-        try {
-          localStorage.removeItem(options.name);
-        } catch {}
+        val = defaultValue;
       }
-      return defaultValue;
+    } else {
+      try {
+        val = JSON.parse(data) as T;
+      } catch (err) {
+        if (isStringType) {
+          val = normalized as unknown as T;
+        } else {
+          if (options.name && typeof localStorage !== "undefined") {
+            console.warn(
+              `[persistedSignal] failed deserializing key "${options.name}", evicting corrupt value:`,
+              data,
+              err,
+            );
+            try {
+              localStorage.removeItem(options.name);
+            } catch {}
+          }
+          val = defaultValue;
+        }
+      }
     }
-  });
-  return makePersisted(createSignal<T>(defaultValue), opts) as unknown as Signal<T>;
+
+    // Heal legacy storage: if the stored value is in a legacy format
+    // (e.g. JSON-quoted string '"paged"' instead of clean 'paged'), write back
+    // the canonical format immediately so localStorage stays clean.
+    if (options.name && typeof localStorage !== "undefined") {
+      try {
+        const canonical = opts.serialize ? opts.serialize(val) : (isStringType ? String(val ?? "") : JSON.stringify(val));
+        if (canonical != null && canonical !== data) {
+          localStorage.setItem(options.name, canonical);
+        }
+      } catch {}
+    }
+
+    return val;
+  };
+  return makePersisted(createSignal<T>(initial), opts) as unknown as Signal<T>;
 }

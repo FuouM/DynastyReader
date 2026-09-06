@@ -2,6 +2,7 @@ import { query } from "./client";
 import type { DirectoryEntry, DirectoryGroup } from "../types/api";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
+import { slugify } from "../utils/formatting";
 /**
  * Searches directory entries directly in SQLite with `LIKE %query%` or alphabetical sorting.
  */
@@ -107,7 +108,7 @@ export async function saveSuggestEntries(
   for (const s of suggestions) {
     if (!s.name) continue;
     const kind = s.type?.toLowerCase() === "series" ? "series" : "tags";
-    const permalink = s.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const permalink = slugify(s.name);
     if (!permalink) continue;
     const firstChar = s.name.trim().charAt(0).toUpperCase();
     const letter = /[A-Z]/.test(firstChar) ? firstChar : "#";

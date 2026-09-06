@@ -2,7 +2,7 @@
  * Library Reading History panel.
  */
 
-import { createSignal, For, Show } from "solid-js";
+import { For, Show } from "solid-js";
 import { navigate } from "../../stores/router";
 import { decodeEntities } from "../../utils/html";
 import { formatDate } from "../../utils/formatting";
@@ -15,6 +15,7 @@ import { Loading } from "../../components/Loading";
 import { Pager } from "../../components/Pager";
 import { LibraryItemRow } from "../LibraryItemRow";
 import { useLibraryPaneResource, type LibraryPaneProps } from "../useLibraryPaneResource";
+import { useBulkSelection } from "../../hooks/useBulkSelection";
 import { Button, ConfirmDeleteButton } from "../../components/Button";
 import { TrashIcon } from "../../components/Icon";
 
@@ -37,31 +38,8 @@ export function HistoryPane(props: LibraryPaneProps) {
   });
 
   // QoL-L3: bulk-select mode for deleting multiple history rows at once.
-  const [selectMode, setSelectMode] = createSignal(false);
-  const [selected, setSelected] = createSignal<Set<number>>(new Set());
-
-  const toggleSelectMode = (): void => {
-    setSelectMode((v) => !v);
-    setSelected(new Set<number>());
-  };
-
-  const toggleRow = (id: number): void => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const deleteSelected = async (): Promise<void> => {
-    const ids = [...selected()];
-    if (ids.length === 0) return;
-    await removeHistoryBatch(ids);
-    setSelected(new Set<number>());
-    setSelectMode(false);
-    refetch();
-  };
+  const { selectMode, selected, toggleSelectMode, toggleRow, deleteSelected } =
+    useBulkSelection<number>(removeHistoryBatch, refetch);
 
   return (
     <>

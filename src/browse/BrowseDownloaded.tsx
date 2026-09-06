@@ -13,9 +13,7 @@ import { t } from "../i18n";
 import { persistedSignal } from "../lib/persisted-signal";
 import { DownloadManager } from "./DownloadManager";
 import { getFullyCachedChapters, type FullyCachedChapterRow } from "../db/cache.repo";
-import { getBookmarkPermalinks, getHistoryMap } from "../db/library.repo";
-import { getBatchCached } from "../db/metadata.repo";
-import { isVolumeOrSectionHeader } from "../utils/volume";
+import { enrichCachedChapters } from "../db/cache-aggregate";
 import {
   scrollBrowseToTop,
   setPaneLoading,
@@ -79,33 +77,8 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     forceTick: props.forceTick,
     load: async () => {
       const rows = await getFullyCachedChapters();
-      const perms = rows.map((r) => r.chapterPermalink);
-      const seriesPerms = Array.from(new Set(rows.map((r) => r.seriesPermalink).filter(Boolean)));
-      const seriesKeys = seriesPerms.map((p) => `series:${p}`);
-
-      const [bookmarkSet, readHistoryMap, seriesMetaMap] = await Promise.all([
-        getBookmarkPermalinks(perms),
-        getHistoryMap(perms),
-        getBatchCached(seriesKeys),
-      ]);
-
-      const volumeMap = new Map<string, string>();
-      for (const payload of seriesMetaMap.values()) {
-        try {
-          const seriesData = JSON.parse(payload);
-          let curVolume: string | undefined;
-          for (const t of seriesData.taggings ?? []) {
-            if (t.header) {
-              curVolume = isVolumeOrSectionHeader(t.header) ? t.header : undefined;
-            } else if (t.permalink && curVolume) {
-              volumeMap.set(t.permalink, curVolume);
-            }
-          }
-        } catch {}
-      }
-
-      const readHistorySet = new Set(readHistoryMap.keys());
-      return { rows, bookmarkSet, readHistorySet, readHistoryMap, volumeMap };
+      const enriched = await enrichCachedChapters(rows);
+      return { rows, ...enriched };
     },
   });
   const showSpinner = useDelayedSpinner(() => pane.loading());

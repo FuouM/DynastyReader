@@ -2,7 +2,7 @@
  * Library Bookmarks panel.
  */
 
-import { createSignal, For, Show } from "solid-js";
+import { For, Show } from "solid-js";
 import { navigate } from "../../stores/router";
 import { decodeEntities } from "../../utils/html";
 import { formatDate } from "../../utils/formatting";
@@ -15,6 +15,7 @@ import { Loading } from "../../components/Loading";
 import { Pager } from "../../components/Pager";
 import { LibraryItemRow } from "../LibraryItemRow";
 import { useLibraryPaneResource, type LibraryPaneProps } from "../useLibraryPaneResource";
+import { useBulkSelection } from "../../hooks/useBulkSelection";
 import { Button, ConfirmDeleteButton } from "../../components/Button";
 import { TrashIcon } from "../../components/Icon";
 
@@ -37,31 +38,8 @@ export function BookmarksPane(props: LibraryPaneProps) {
   });
 
   // QoL-L3: bulk-select mode for deleting multiple bookmarks at once.
-  const [selectMode, setSelectMode] = createSignal(false);
-  const [selected, setSelected] = createSignal<Set<string>>(new Set());
-
-  const toggleSelectMode = (): void => {
-    setSelectMode((v) => !v);
-    setSelected(new Set<string>());
-  };
-
-  const toggleRow = (chapterPermalink: string): void => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(chapterPermalink)) next.delete(chapterPermalink);
-      else next.add(chapterPermalink);
-      return next;
-    });
-  };
-
-  const deleteSelected = async (): Promise<void> => {
-    const permalinks = [...selected()];
-    if (permalinks.length === 0) return;
-    await removeBookmarksBatch(permalinks);
-    setSelected(new Set<string>());
-    setSelectMode(false);
-    refetch();
-  };
+  const { selectMode, selected, toggleSelectMode, toggleRow, deleteSelected } =
+    useBulkSelection<string>(removeBookmarksBatch, refetch);
 
   return (
     <>

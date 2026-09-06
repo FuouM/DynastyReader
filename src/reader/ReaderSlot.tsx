@@ -129,12 +129,12 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
           <Icon
             name="cloud-arrow-down"
             size="20px"
-            color="var(--sys-primary,#0078d4)"
+            color="var(--sys-link, var(--sys-primary, #0078d4))"
           />
           <div class="ds-slot-pulse-wrap">
             <div class="ds-slot-pulse-bar"></div>
           </div>
-          <span>
+          <span class="ds-progress-text">
             {t("reader.session.slot.downloadingProgress", {
               current: props.index + 1,
               total: s.pages().length,
