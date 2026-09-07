@@ -318,6 +318,7 @@ export class CoverHydrationPipeline {
           }
         } catch (err) {
           log.debug("browse-covers", "Worker exception for", target.coverKey, err);
+          this.ctx.setCoverState(target.coverKey, "no-cover");
           this.ctx.cache.delete(target.coverKey);
           const prevFail = this.ctx.cache.getFailedAttempt(target.coverKey);
           const count = (prevFail?.count ?? 0) + 1;

@@ -77,11 +77,16 @@ export async function fetchAndCacheCover(opts: {
   if (cacheKey.startsWith("cover:chapter:")) {
     // Chapter covers may have stale raw download — purge implied via delete above
   }
-  onPhase?.("downloading");
-  const finalPath = await transcodeCover(absUrl(coverUrl), rawOutPath, webpOutPath);
-  onPhase?.("processing");
-  await setCached(cacheKey, "cover", finalPath);
-  return finalPath;
+  try {
+    onPhase?.("downloading");
+    const finalPath = await transcodeCover(absUrl(coverUrl), rawOutPath, webpOutPath);
+    onPhase?.("processing");
+    await setCached(cacheKey, "cover", finalPath);
+    return finalPath;
+  } catch (err) {
+    log.debug("api/cover-pipeline", `fetchAndCacheCover failed for ${coverUrl}:`, err);
+    return null;
+  }
 }
 
 export function coverPathsForSeries(permalink: string, coverUrl: string): { rawOutPath: string; webpOutPath: string } {

@@ -23,6 +23,8 @@ import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api/series";
 import { getBlacklistMode, getBlacklistRevision, isSeriesBlacklisted } from "../db/blacklist.repo";
 import { getCollectionById, getCollectionItems, getCollectionsRevision, onCollectionsChanged, removeItemFromCollection, updateCollectionItemCover } from "../db/collections.repo";
+import { deleteCached } from "../db/metadata.repo";
+import { seriesCoverKey } from "../lib/cache-keys";
 import type { CollectionItemRow, CollectionRow } from "../types/db";
 import { useDelayedSpinner } from "../browse/browse-state";
 import { Loading } from "../components/Loading";
@@ -236,26 +238,44 @@ function CollectionItemCard(props: {
   createEffect(() => {
     setCover(props.it.cover);
   });
-  // Lazy cover hydration when no local file path is cached yet.
-  createEffect(() => {
-    const c = props.it.cover;
-    if (c && (c.includes("/") || c.includes("\\"))) return;
-    const task =
-      isSeriesLike()
-        ? getOrHydrateSeriesCover(props.it.item_permalink, props.it.item_kind)
-        : getOrHydrateItemCover({
-            coverKey: props.it.cover || `chapter:${props.it.item_permalink}`,
-            chapterPermalink: props.it.item_permalink,
-            seriesOrGroupPermalink: props.it.parent_series_permalink,
-            seriesType: props.it.item_kind,
-          });
-    void task.then((freshPath) => {
+
+  const hydrate = async () => {
+    try {
+      const task =
+        isSeriesLike()
+          ? getOrHydrateSeriesCover(props.it.item_permalink, props.it.item_kind)
+          : getOrHydrateItemCover({
+              coverKey: `chapter:${props.it.item_permalink}`,
+              chapterPermalink: props.it.item_permalink,
+              seriesOrGroupPermalink: props.it.parent_series_permalink,
+              seriesType: props.it.item_kind,
+            });
+      const freshPath = await task;
       if (freshPath) {
         setCover(freshPath);
         void updateCollectionItemCover(props.it.id, freshPath);
       }
-    });
+    } catch {
+      // Keep placeholder
+    }
+  };
+
+  createEffect(() => {
+    const c = cover();
+    if (c && (c.includes("/") || c.includes("\\"))) return;
+    void hydrate();
   });
+
+  const handleCoverError = async () => {
+    await updateCollectionItemCover(props.it.id, "");
+    if (isSeriesLike()) {
+      await deleteCached(seriesCoverKey(props.it.item_permalink));
+    } else {
+      await deleteCached(`cover:chapter:${props.it.item_permalink}`);
+    }
+    setCover(null);
+    void hydrate();
+  };
 
   const onOpen = (): void => {
     if (isChapterLike()) {
@@ -300,6 +320,8 @@ function CollectionItemCard(props: {
       cover={cover()}
       coverAlt={props.it.item_title}
       onOpen={onOpen}
+      onCoverError={handleCoverError}
+      onCoverRetry={handleCoverError}
       actionLabel={isChapterLike() ? t("common.read") : t("common.open")}
       actionIcon={isChapterLike() ? "bi-book" : "bi-folder2-open"}
       externalUrl={dynastyUrl(endpoint(), props.it.item_permalink)}

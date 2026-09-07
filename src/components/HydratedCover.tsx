@@ -11,12 +11,12 @@
  * - `size` maps to the 42×58 feed or 36×50 cache dimensions.
  */
 
-import { createEffect, on, onMount, Show } from "solid-js";
-import { convertFileSrc } from "../ipc";
+import { createEffect, createSignal, on, onMount, Show } from "solid-js";
 import { browseCovers, coversEnabledSignal, type CoverState } from "../browse/browse-covers";
 import { BookIcon, Icon, ImageIcon } from "./Icon";
 import { t } from "../i18n";
 import { useImageRetry } from "../hooks/useImageRetry";
+import { resolveCoverSrc } from "./Cover";
 import { log } from "../utils/log";
 export interface HydratedCoverProps {
   /** Local file path; when absent the cover is lazy-hydrated instead. */
@@ -48,20 +48,43 @@ const SIZES = {
 } as const;
 
 export function HydratedCover(props: HydratedCoverProps) {
-  const { error, handleError, retry, reset, retryNonce } = useImageRetry();
+  const { error, isRetrying, handleError, retry, reset, retryNonce } = useImageRetry();
   let wrapEl: HTMLDivElement | undefined;
+  const [failedPath, setFailedPath] = createSignal<string | null>(null);
 
-  const resolvedPath = () => props.path || (props.coverKey ? browseCovers.getCover(props.coverKey) : undefined);
-  const isLoaded = () => Boolean(resolvedPath()) && !error() && coversEnabledSignal();
+  const resolvedPath = () => {
+    const p = props.path;
+    if (p && p !== failedPath()) return p;
+    return props.coverKey ? browseCovers.getCover(props.coverKey) : undefined;
+  };
+
+  const baseSrc = () => resolveCoverSrc(resolvedPath());
+
+  const imgSrc = () => {
+    const src = baseSrc();
+    if (!src) return "";
+    const nonce = retryNonce();
+    if (nonce <= 0) return src;
+    const sep = src.includes("?") ? "&" : "?";
+    return `${src}${sep}v=${nonce}`;
+  };
+
+  const isLoaded = () =>
+    Boolean(resolvedPath()) &&
+    Boolean(baseSrc()) &&
+    !error() &&
+    coversEnabledSignal();
 
   createEffect(
     on(
-      () => [resolvedPath(), retryNonce()] as const,
-      () => reset(),
+      () => [props.path, props.coverKey] as const,
+      () => {
+        setFailedPath(null);
+        reset();
+      },
       { defer: true },
     ),
   );
-
   // Keep unhydrated element observed whenever covers are enabled
   createEffect(() => {
     const p = resolvedPath();
@@ -91,6 +114,10 @@ export function HydratedCover(props: HydratedCoverProps) {
   const handleImageError = (ev: Event) => {
     const target = ev.currentTarget as HTMLImageElement | null;
     log.debug("cover-ui", "cover img onError for", props.coverKey, target?.src);
+    const broken = resolvedPath();
+    if (broken) {
+      setFailedPath(broken);
+    }
     // Immediately purge the broken/missing file path from memory and SQLite
     if (props.coverKey) {
       browseCovers.evict(props.coverKey);
@@ -102,6 +129,7 @@ export function HydratedCover(props: HydratedCoverProps) {
 
   const handleClick = (ev: MouseEvent) => {
     if (!isLoaded()) {
+      setFailedPath(null);
       retry(() => triggerRetry());
     }
     props.onClick?.(ev);
@@ -112,11 +140,11 @@ export function HydratedCover(props: HydratedCoverProps) {
 
   const currentState = (): CoverState => {
     if (!coversEnabledSignal()) return "no-cover";
+    if (isRetrying()) return "loading";
     if (error()) return "no-cover";
     if (resolvedPath()) return "loaded";
     return browseCovers.getCoverState(props.coverKey);
   };
-
   const stateTitle = (): string => {
     const st = currentState();
     if (st === "downloading") return t("cover.downloading");
@@ -167,7 +195,7 @@ export function HydratedCover(props: HydratedCoverProps) {
           width={isCache() ? 36 : 42}
           height={isCache() ? 50 : 58}
           decoding="async"
-          src={convertFileSrc(resolvedPath()!)}
+          src={imgSrc()}
           onError={handleImageError}
         />
       </Show>

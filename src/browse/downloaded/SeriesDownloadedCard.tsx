@@ -4,9 +4,9 @@
 
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { navigate } from "../../stores/router";
-import { convertFileSrc } from "../../ipc";
 import { formatBytes, formatDate } from "../../utils/formatting";
 import { GroupBox } from "../../components/GroupBox";
+import { Cover } from "../../components/Cover";
 import { ConfirmDeleteButton } from "../../components/Button";
 import {
   BookIcon,
@@ -215,13 +215,11 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
       {/* Series Summary Strip */}
       <div class="ds-downloaded-summary-strip">
         <Show when={props.group.coverPath}>
-          <img
-            src={convertFileSrc(props.group.coverPath!)}
-            alt=""
-            decoding="async"
-            width="32"
-            height="44"
-            class="ds-downloaded-cover"
+          <Cover
+            path={props.group.coverPath}
+            alt={props.group.seriesName ?? ""}
+            imgClass="ds-downloaded-cover"
+            placeholderClass="ds-downloaded-cover ds-downloaded-cover-placeholder"
             onClick={navigateToSeries}
           />
         </Show>

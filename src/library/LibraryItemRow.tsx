@@ -41,8 +41,9 @@ export interface LibraryItemRowProps {
   selectionMode?: boolean;
   selected?: boolean;
   onToggleSelect?: () => void;
+  onCoverError?: () => void;
+  onCoverRetry?: () => void;
 }
-
 export function LibraryItemRow(props: LibraryItemRowProps) {
   return (
     <ListItem
@@ -74,6 +75,8 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
                 alt={props.coverAlt || props.title}
                 imgClass="ds-collection-cover"
                 placeholderClass="ds-collection-cover-placeholder"
+                onError={props.onCoverError}
+                onRetry={props.onCoverRetry}
               />
             </div>
           </Show>

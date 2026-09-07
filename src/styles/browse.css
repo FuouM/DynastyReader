@@ -693,6 +693,14 @@
   cursor: pointer;
 }
 
+.ds-downloaded-cover-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sys-control-bg);
+  color: var(--sys-text-muted);
+}
+
 .ds-downloaded-summary-text {
   font-size: var(--font-sm);
   font-style: normal;

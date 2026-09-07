@@ -2,7 +2,7 @@
  * Series header: metadata, categorized tag rows, sanitized description, and cover image.
  */
 
-import { createMemo, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, Show } from "solid-js";
 import { decodeEntities } from "../utils/html";
 import { t } from "../i18n";
 import { openExternal } from "../api/navigation";
@@ -12,6 +12,9 @@ import type { Series } from "../types/api";
 import { TagRow } from "../components/TagRow";
 import { Cover } from "../components/Cover";
 import { SanitizedDescription } from "../lib/sanitize";
+import { deleteCached } from "../db/metadata.repo";
+import { seriesCoverKey } from "../lib/cache-keys";
+import { getSeriesCover } from "../api/series";
 function groupTags(series: Series): GroupedSeriesTags {
   return groupSeriesTags(series.tags, series.taggings);
 }
@@ -23,6 +26,22 @@ export interface SeriesHeaderProps {
 }
 
 export function SeriesHeader(props: SeriesHeaderProps) {
+  const [cover, setCover] = createSignal(props.coverPath);
+  createEffect(() => setCover(props.coverPath));
+
+  const handleCoverRecover = async () => {
+    if (!props.series.cover) return;
+    try {
+      await deleteCached(seriesCoverKey(props.series.permalink));
+      const fresh = await getSeriesCover(props.series.permalink, props.series.cover);
+      if (fresh) {
+        setCover(fresh);
+      }
+    } catch {
+      // Kept as null/placeholder
+    }
+  };
+
   const tags = createMemo(() => groupTags(props.series));
   const hasMetaRows = createMemo(() => {
     const t = tags();
@@ -40,10 +59,12 @@ export function SeriesHeader(props: SeriesHeaderProps) {
   return (
     <div class="ds-series-head">
       <Cover
-        path={props.coverPath}
+        path={cover()}
         alt={props.series.name}
         imgClass="ds-cover"
         placeholderClass="ds-cover-placeholder"
+        onError={handleCoverRecover}
+        onRetry={handleCoverRecover}
       />
       <div class="ds-fill">
         <div class="ds-series-name">{decodeEntities(props.series.name)}</div>

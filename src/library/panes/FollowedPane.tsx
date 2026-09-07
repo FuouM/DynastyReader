@@ -12,6 +12,8 @@ import { t } from "../../i18n";
 import { errorMessage } from "../../utils/errors";
 import { getOrHydrateSeriesCover } from "../../api/series";
 import { getFollowedSeriesPage, getFollowedRevision, onFollowedChanged, unfollowSeries, updateFollowedSeriesCover } from "../../db/library.repo";
+import { deleteCached } from "../../db/metadata.repo";
+import { seriesCoverKey } from "../../lib/cache-keys";
 import type { FollowedSeriesRow } from "../../types/db";
 import { Loading } from "../../components/Loading";
 import { Pager } from "../../components/Pager";
@@ -70,18 +72,30 @@ function FollowedSeriesRowCard(props: {
     setCover(props.row.cover);
   });
 
-  createEffect(() => {
-    const c = cover();
-    if (c && (c.includes("/") || c.includes("\\"))) return;
-
-    void getOrHydrateSeriesCover(props.row.permalink).then((freshPath) => {
+  const hydrate = async () => {
+    try {
+      const freshPath = await getOrHydrateSeriesCover(props.row.permalink);
       if (freshPath) {
         setCover(freshPath);
         void updateFollowedSeriesCover(props.row.permalink, freshPath, false);
       }
-    });
+    } catch {
+      // Keep placeholder
+    }
+  };
+
+  createEffect(() => {
+    const c = cover();
+    if (c && (c.includes("/") || c.includes("\\"))) return;
+    void hydrate();
   });
 
+  const handleCoverError = async () => {
+    await updateFollowedSeriesCover(props.row.permalink, null, false);
+    await deleteCached(seriesCoverKey(props.row.permalink));
+    setCover(null);
+    void hydrate();
+  };
   const openSeries = (): void => {
     navigate({ view: "series", seriesPermalink: props.row.permalink, seriesName: props.row.name });
   };
@@ -97,6 +111,8 @@ function FollowedSeriesRowCard(props: {
       cover={cover()}
       coverAlt={props.row.name}
       onOpen={openSeries}
+      onCoverError={handleCoverError}
+      onCoverRetry={handleCoverError}
       actionLabel={t("common.open")}
       actionIcon="bi-folder2-open"
       externalUrl={dynastyUrl("series", props.row.permalink)}

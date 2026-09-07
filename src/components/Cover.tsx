@@ -11,15 +11,31 @@ export interface CoverProps {
   glyphClass?: string;
   iconName?: BootstrapIconName;
   onClick?: (ev: MouseEvent) => void;
+  onError?: () => void;
+  onRetry?: () => void;
+}
+
+export function resolveCoverSrc(path: string | null | undefined): string {
+  if (!path) return "";
+  if (
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("data:") ||
+    path.startsWith("blob:") ||
+    path.startsWith("asset:")
+  ) {
+    return path;
+  }
+  return convertFileSrc(path);
 }
 
 /** A cover <img> that falls back to a placeholder on load error, with automatic and manual retry. */
 export function Cover(props: CoverProps) {
-  const { retryNonce, handleError, retry, reset, showImage } = useImageRetry();
+  const { retryNonce, isRetrying, handleError, retry, reset, showImage, error } = useImageRetry();
 
   createEffect(
     on(
-      () => [props.path, retryNonce()] as const,
+      () => props.path,
       () => reset(),
       { defer: true },
     ),
@@ -31,11 +47,23 @@ export function Cover(props: CoverProps) {
     !props.path!.startsWith("series:") &&
     !props.path!.startsWith("chapter:");
 
-  const showCover = () => showImage(isValidLocalPath() && props.path !== undefined && props.path !== null);
+  const baseSrc = () => resolveCoverSrc(props.path);
+
+  const imgSrc = () => {
+    const src = baseSrc();
+    if (!src) return "";
+    const nonce = retryNonce();
+    if (nonce <= 0) return src;
+    const sep = src.includes("?") ? "&" : "?";
+    return `${src}${sep}v=${nonce}`;
+  };
+
+  const showCover = () =>
+    showImage(isValidLocalPath() && Boolean(props.path) && Boolean(baseSrc()));
 
   const handlePlaceholderClick = (ev: MouseEvent) => {
-    if (props.path) {
-      retry();
+    if (error() || props.path) {
+      retry(() => props.onRetry?.());
     }
     props.onClick?.(ev);
   };
@@ -48,6 +76,7 @@ export function Cover(props: CoverProps) {
           placeholderClass={props.placeholderClass}
           glyphClass={props.glyphClass}
           iconName={props.iconName}
+          isLoading={isRetrying()}
           onClick={handlePlaceholderClick}
         />
       }
@@ -56,8 +85,11 @@ export function Cover(props: CoverProps) {
         class={props.imgClass ?? "ds-cover"}
         title={props.alt}
         alt={props.alt}
-        src={convertFileSrc(props.path!)}
-        onError={() => handleError()}
+        src={imgSrc()}
+        onError={() => {
+          handleError(() => props.onRetry?.());
+          props.onError?.();
+        }}
         onClick={props.onClick}
       />
     </Show>
