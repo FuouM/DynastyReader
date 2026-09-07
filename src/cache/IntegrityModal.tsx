@@ -149,9 +149,9 @@ export function IntegrityModal(props: IntegrityModalProps) {
                   </div>
                   <div class="ds-stats-grid ds-stats-grid--4" style="margin-top:12px;">
                     <StatCard value={report()!.totalScanned} label={t("cache.integrityStatScanned")} />
-                    <StatCard value={report()!.totalHealthy} label={t("cache.integrityStatHealthy")} variant="success" />
-                    <StatCard value={0} label={t("cache.integrityStatMissing")} variant="neutral" />
-                    <StatCard value={0} label={t("cache.integrityStatCorrupted")} variant="neutral" />
+                    <StatCard value={report()!.totalHealthy} label={t("cache.integrityStatHealthy")} />
+                    <StatCard value={0} label={t("cache.integrityStatMissing")} />
+                    <StatCard value={0} label={t("cache.integrityStatCorrupted")} />
                   </div>
                 </div>
               }
@@ -174,9 +174,9 @@ export function IntegrityModal(props: IntegrityModalProps) {
 
                 <div class="ds-stats-grid ds-stats-grid--4" style="margin-top:12px;">
                   <StatCard value={report()!.totalScanned} label={t("cache.integrityStatScanned")} />
-                  <StatCard value={report()!.totalHealthy} label={t("cache.integrityStatHealthy")} variant="success" />
-                  <StatCard value={report()!.totalMissing} label={t("cache.integrityStatMissing")} variant={report()!.totalMissing > 0 ? "warning" : "neutral"} />
-                  <StatCard value={report()!.totalCorrupted} label={t("cache.integrityStatCorrupted")} variant={report()!.totalCorrupted > 0 ? "danger" : "neutral"} />
+                  <StatCard value={report()!.totalHealthy} label={t("cache.integrityStatHealthy")} />
+                  <StatCard value={report()!.totalMissing} label={t("cache.integrityStatMissing")} />
+                  <StatCard value={report()!.totalCorrupted} label={t("cache.integrityStatCorrupted")} />
                 </div>
 
                 <div class="ds-integrity-details-header">
@@ -230,10 +230,10 @@ export function IntegrityModal(props: IntegrityModalProps) {
                 </div>
               </div>
               <div class="ds-stats-grid ds-stats-grid--4" style="margin-top:12px;">
-                <StatCard value={recoveryResult()!.recoveredCovers} label={t("cache.integrityStatCoversRecovered")} variant="success" />
-                <StatCard value={recoveryResult()!.queuedChapters} label={t("cache.integrityStatChaptersQueued")} variant="primary" />
-                <StatCard value={recoveryResult()!.cleanedRecords} label={t("cache.integrityStatRecordsCleaned")} variant="neutral" />
-                <StatCard value={recoveryResult()!.deletedFiles} label={t("cache.integrityStatFilesDeleted")} variant="neutral" />
+                <StatCard value={recoveryResult()!.recoveredCovers} label={t("cache.integrityStatCoversRecovered")} />
+                <StatCard value={recoveryResult()!.queuedChapters} label={t("cache.integrityStatChaptersQueued")} />
+                <StatCard value={recoveryResult()!.cleanedRecords} label={t("cache.integrityStatRecordsCleaned")} />
+                <StatCard value={recoveryResult()!.deletedFiles} label={t("cache.integrityStatFilesDeleted")} />
               </div>
             </div>
           </Show>
@@ -271,7 +271,7 @@ export function IntegrityModal(props: IntegrityModalProps) {
             />
             <Button
               text={t("cache.integrityNoIssuesAction")}
-              className="ds-btn-sm primary ds-modal-done"
+              className="ds-btn-sm"
               onClick={props.onClose}
             />
           </Show>
