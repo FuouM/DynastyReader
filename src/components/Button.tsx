@@ -279,12 +279,15 @@ export function SegmentedSwitch(props: SegmentedSwitchProps) {
 export interface StatCardProps {
   value: string | number;
   label: string;
+  variant?: "primary" | "success" | "warning" | "danger" | "neutral";
+  valueClass?: string;
 }
 
 export function StatCard(props: StatCardProps) {
+  const variantClass = () => (props.variant ? `ds-stat-card--${props.variant}` : "");
   return (
-    <div class="ds-stat-card">
-      <span class="ds-stat-val">{props.value}</span>
+    <div class={`ds-stat-card ${variantClass()}`.trim()}>
+      <span class={`ds-stat-val ${props.valueClass ?? ""}`.trim()}>{props.value}</span>
       <span class="ds-stat-lbl">{props.label}</span>
     </div>
   );

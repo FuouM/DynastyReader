@@ -1,6 +1,6 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
 import { Modal } from "../components/Modal";
-import { StatCard, IconButton } from "../components/Button";
+import { StatCard, Button } from "../components/Button";
 import { Icon, CheckIcon, WarningIcon, RefreshIcon } from "../components/Icon";
 import { t } from "../i18n";
 import {
@@ -147,10 +147,11 @@ export function IntegrityModal(props: IntegrityModalProps) {
                       </div>
                     </div>
                   </div>
-                  <div class="ds-stats-grid ds-stats-grid--3" style="margin-top:12px;">
+                  <div class="ds-stats-grid ds-stats-grid--4" style="margin-top:12px;">
                     <StatCard value={report()!.totalScanned} label={t("cache.integrityStatScanned")} />
-                    <StatCard value={report()!.totalHealthy} label={t("cache.integrityStatHealthy")} />
-                    <StatCard value={0} label={t("cache.integrityStatMissing")} />
+                    <StatCard value={report()!.totalHealthy} label={t("cache.integrityStatHealthy")} variant="success" />
+                    <StatCard value={0} label={t("cache.integrityStatMissing")} variant="neutral" />
+                    <StatCard value={0} label={t("cache.integrityStatCorrupted")} variant="neutral" />
                   </div>
                 </div>
               }
@@ -173,9 +174,9 @@ export function IntegrityModal(props: IntegrityModalProps) {
 
                 <div class="ds-stats-grid ds-stats-grid--4" style="margin-top:12px;">
                   <StatCard value={report()!.totalScanned} label={t("cache.integrityStatScanned")} />
-                  <StatCard value={report()!.totalHealthy} label={t("cache.integrityStatHealthy")} />
-                  <StatCard value={report()!.totalMissing} label={t("cache.integrityStatMissing")} />
-                  <StatCard value={report()!.totalCorrupted} label={t("cache.integrityStatCorrupted")} />
+                  <StatCard value={report()!.totalHealthy} label={t("cache.integrityStatHealthy")} variant="success" />
+                  <StatCard value={report()!.totalMissing} label={t("cache.integrityStatMissing")} variant={report()!.totalMissing > 0 ? "warning" : "neutral"} />
+                  <StatCard value={report()!.totalCorrupted} label={t("cache.integrityStatCorrupted")} variant={report()!.totalCorrupted > 0 ? "danger" : "neutral"} />
                 </div>
 
                 <div class="ds-integrity-details-header">
@@ -229,43 +230,48 @@ export function IntegrityModal(props: IntegrityModalProps) {
                 </div>
               </div>
               <div class="ds-stats-grid ds-stats-grid--4" style="margin-top:12px;">
-                <StatCard value={recoveryResult()!.recoveredCovers} label={t("cache.integrityStatCoversRecovered")} />
-                <StatCard value={recoveryResult()!.queuedChapters} label={t("cache.integrityStatChaptersQueued")} />
-                <StatCard value={recoveryResult()!.cleanedRecords} label={t("cache.integrityStatRecordsCleaned")} />
-                <StatCard value={recoveryResult()!.deletedFiles} label={t("cache.integrityStatFilesDeleted")} />
+                <StatCard value={recoveryResult()!.recoveredCovers} label={t("cache.integrityStatCoversRecovered")} variant="success" />
+                <StatCard value={recoveryResult()!.queuedChapters} label={t("cache.integrityStatChaptersQueued")} variant="primary" />
+                <StatCard value={recoveryResult()!.cleanedRecords} label={t("cache.integrityStatRecordsCleaned")} variant="neutral" />
+                <StatCard value={recoveryResult()!.deletedFiles} label={t("cache.integrityStatFilesDeleted")} variant="neutral" />
               </div>
             </div>
           </Show>
         </div>
       }
       footer={
-        <div class="ds-modal-actions">
+        <div class="ds-modal-footer-actions">
           <Show when={stage() === "scanned" && hasIssues()}>
-            <IconButton
+            <Button
               icon={<RefreshIcon />}
               text={t("cache.integrityRecheck")}
+              className="ds-btn-sm"
               onClick={() => void startScan()}
             />
-            <IconButton
+            <Button
               icon={<Icon name="wrench-adjustable-circle" />}
               text={t("cache.integrityRecoverNow")}
               title={t("cache.integrityRecoverTooltip")}
+              className="ds-btn-sm primary"
               onClick={() => void handleRecover()}
             />
-            <IconButton
+            <Button
               text={t("common.cancel")}
+              className="ds-btn-sm ds-modal-cancel"
               onClick={props.onClose}
             />
           </Show>
 
           <Show when={(stage() === "scanned" && !hasIssues()) || stage() === "recovered"}>
-            <IconButton
+            <Button
               icon={<RefreshIcon />}
               text={t("cache.integrityRecheck")}
+              className="ds-btn-sm"
               onClick={() => void startScan()}
             />
-            <IconButton
+            <Button
               text={t("cache.integrityNoIssuesAction")}
+              className="ds-btn-sm primary ds-modal-done"
               onClick={props.onClose}
             />
           </Show>

@@ -159,4 +159,7 @@
     border-color: #ffffff !important;
     color: #000000 !important;
   }
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .ds-stat-val {
+    color: var(--sys-primary, #66b8ff) !important;
+  }
 }

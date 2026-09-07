@@ -21,11 +21,23 @@
 .ds-stat-val {
   font-size: 16px;
   font-weight: 700;
-  color: var(--sys-primary);
+  color: var(--ds-accent-aero-dark, var(--sys-link, var(--sys-text-primary, #005a9e)));
 }
 .ds-stat-lbl {
   font-size: var(--font-sm);
-  color: var(--sys-text-muted);
+  color: var(--sys-text-secondary, var(--sys-text-muted));
+}
+.ds-stat-card--success .ds-stat-val {
+  color: var(--sys-success, #198754) !important;
+}
+.ds-stat-card--warning .ds-stat-val {
+  color: var(--ds-warning-text, #c67d00) !important;
+}
+.ds-stat-card--danger .ds-stat-val {
+  color: var(--ds-danger-text, #d32f2f) !important;
+}
+.ds-stat-card--neutral .ds-stat-val {
+  color: var(--sys-text-secondary, #666666) !important;
 }
 .ds-cache-actions {
   display: flex;
@@ -87,7 +99,7 @@
 .ds-integrity-status-text {
   font-size: var(--font-base);
   font-weight: 600;
-  color: var(--sys-text);
+  color: var(--sys-text-primary);
   text-align: center;
 }
 .ds-integrity-progress-track {
@@ -138,11 +150,11 @@
 .ds-integrity-title {
   font-size: 15px;
   font-weight: 700;
-  color: var(--sys-text);
+  color: var(--sys-text-primary);
 }
 .ds-integrity-subtitle {
   font-size: var(--font-sm);
-  color: var(--sys-text-muted);
+  color: var(--sys-text-secondary, var(--sys-text-muted));
   margin-top: 2px;
 }
 .ds-integrity-details-header {

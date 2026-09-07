@@ -541,7 +541,7 @@
     box-shadow: 0 1px 0 #ffffff;
   }
   [data-theme="windows7"] .ds-prefetch-val {
-    color: var(--sys-primary, #1b3555);
+    color: var(--ds-accent-aero-dark, var(--sys-link, #1b3555));
     font-weight: 600;
   }
   /* Nested GroupBox (e.g. Mobile Landscape Overrides inside Reading & Cache) */
@@ -570,11 +570,11 @@
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.95), 0 1px 2px rgba(16, 42, 74, 0.05);
   }
   [data-theme="windows7"] .ds-stat-val {
-    color: var(--sys-primary, #1a5ea5);
+    color: var(--ds-accent-aero-dark, var(--sys-link, #1a5ea5));
     font-weight: 700;
   }
   [data-theme="windows7"] .ds-stat-lbl {
-    color: #4a6382;
+    color: var(--ds-accent-badge-text, #4a6382);
   }
 
   [data-theme="windows7"] .ds-db-details {

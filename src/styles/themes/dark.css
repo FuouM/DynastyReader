@@ -255,4 +255,7 @@
     border-color: rgba(255, 255, 255, 0.45) !important;
     color: #ffffff !important;
   }
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-stat-val {
+    color: var(--sys-primary, #4da6ff) !important;
+  }
 }

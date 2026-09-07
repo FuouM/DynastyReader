@@ -703,12 +703,18 @@
 .ds-modal-footer-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
   width: 100%;
+}
+.ds-modal-footer-actions .win-button,
+.ds-modal-footer-end .win-button {
+  min-width: 75px;
 }
 .ds-modal-footer-end {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   width: 100%;
 }
 .ds-form-label-sm {
