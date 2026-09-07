@@ -444,3 +444,90 @@ export async function getFullyCachedChapterPermalinks(permalinks?: string[]): Pr
   }
   return fullyCached;
 }
+
+export interface IntegrityCachedPageRecord {
+  chapter_permalink: string;
+  page_index: number;
+  file_path: string;
+  size_bytes: number;
+}
+
+export interface IntegrityCachedCoverRecord {
+  cache_key: string;
+  json_payload: string;
+}
+
+export interface IntegrityFollowedRecord {
+  permalink: string;
+  name: string;
+  cover: string;
+}
+
+export interface IntegrityCollectionRecord {
+  id: number;
+  item_permalink: string;
+  cover: string;
+}
+
+/** Queries all non-local cached pages for integrity verification. */
+export async function getAllCachedPagesForIntegrity(): Promise<IntegrityCachedPageRecord[]> {
+  return query<IntegrityCachedPageRecord>(
+    `SELECT chapter_permalink, page_index, file_path, COALESCE(size_bytes, 0) as size_bytes
+     FROM cached_pages
+     WHERE chapter_permalink NOT LIKE 'local:%'
+     ORDER BY chapter_permalink, page_index`,
+  );
+}
+
+/** Queries all non-local cached cover metadata for integrity verification. */
+export async function getAllCachedCoversForIntegrity(): Promise<IntegrityCachedCoverRecord[]> {
+  return query<IntegrityCachedCoverRecord>(
+    `SELECT cache_key, json_payload
+     FROM cached_metadata
+     WHERE data_type = 'cover'
+       AND cache_key NOT LIKE '%local:%'`,
+  );
+}
+
+/** Queries followed series covers pointing to on-disk files for integrity verification. */
+export async function getFollowedCoversForIntegrity(): Promise<IntegrityFollowedRecord[]> {
+  return query<IntegrityFollowedRecord>(
+    `SELECT permalink, name, cover
+     FROM followed_series
+     WHERE cover IS NOT NULL
+       AND (cover LIKE '%/%' OR cover LIKE '%\\\\%')
+       AND permalink NOT LIKE 'local:%'`,
+  );
+}
+
+/** Queries collection item covers pointing to on-disk files for integrity verification. */
+export async function getCollectionCoversForIntegrity(): Promise<IntegrityCollectionRecord[]> {
+  return query<IntegrityCollectionRecord>(
+    `SELECT id, item_permalink, cover
+     FROM collection_items
+     WHERE cover IS NOT NULL
+       AND (cover LIKE '%/%' OR cover LIKE '%\\\\%')
+       AND item_permalink NOT LIKE 'local:%'`,
+  );
+}
+
+/** Removes corrupted/missing cached pages rows from SQLite. */
+export async function removeCorruptedCachedPages(
+  items: Array<{ chapterPermalink: string; pageIndex: number }>,
+): Promise<void> {
+  if (items.length === 0) return;
+  for (const item of items) {
+    await execute(
+      `DELETE FROM cached_pages WHERE chapter_permalink = ? AND page_index = ?`,
+      [item.chapterPermalink, item.pageIndex],
+    );
+  }
+}
+
+/** Removes corrupted/missing cover metadata rows from SQLite. */
+export async function removeCorruptedCachedCovers(cacheKeys: string[]): Promise<void> {
+  if (cacheKeys.length === 0) return;
+  for (const key of cacheKeys) {
+    await execute(`DELETE FROM cached_metadata WHERE cache_key = ?`, [key]);
+  }
+}

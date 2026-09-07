@@ -61,8 +61,9 @@ import {
   RefreshIcon,
   DatabaseIcon,
   TrafficIcon,
+  Icon,
 } from "../components/Icon";
-
+import { IntegrityModal } from "./IntegrityModal";
 type CacheData = {
   stats: CacheOverviewStats;
   dbStats: DbStats;
@@ -323,7 +324,7 @@ function CacheBody(props: {
   onPruned: () => void;
 }) {
   const [pruning, setPruning] = createSignal(false);
-
+  const [integrityOpen, setIntegrityOpen] = createSignal(false);
   const ceilingUsage = (): string => {
     const ceiling = cacheCeilingBytes();
     const used = formatBytes(props.stats.totalSizeBytes);
@@ -466,7 +467,18 @@ function CacheBody(props: {
             title={t("cache.clearCoversOnlyTooltip")}
             onConfirm={props.purgeCovers}
           />
+          <IconButton
+            icon={<Icon name="shield-check" />}
+            text={t("cache.verifyIntegrity")}
+            title={t("cache.verifyIntegrityTooltip")}
+            onClick={() => setIntegrityOpen(true)}
+          />
         </div>
+        <IntegrityModal
+          open={integrityOpen()}
+          onClose={() => setIntegrityOpen(false)}
+          onRepaired={props.onPruned}
+        />
       </GroupBox>
       <GroupBox
         class="ds-flex-col"

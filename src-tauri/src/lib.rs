@@ -63,6 +63,8 @@ pub fn run() {
             commands::fs::file_exists_batch,
             commands::fs::file_move,
             commands::fs::file_delete,
+            commands::fs::file_delete_batch,
+            commands::fs::verify_file_integrity_batch,
             commands::fs::dir_stat,
             commands::fs::dir_stat_batch,
             commands::media::ephemeral_convert_images,

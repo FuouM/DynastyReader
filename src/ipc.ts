@@ -185,6 +185,32 @@ export async function fileDelete(path: string): Promise<void> {
   await invoke("fileDelete", { path });
 }
 
+/** Deletes multiple files in batch inside the portable data root. Returns count deleted. */
+export async function fileDeleteBatch(paths: string[]): Promise<number> {
+  return invoke<number>("fileDeleteBatch", { paths });
+}
+
+export interface IntegrityCheckRequestItem {
+  id: string;
+  path: string;
+}
+
+export interface IntegrityCheckResultItem {
+  id: string;
+  path: string;
+  exists: boolean;
+  size_bytes: number;
+  is_valid: boolean;
+  error?: string | null;
+}
+
+/** Fast batch verification of cached files (existence, non-zero size, valid image header). */
+export async function verifyFileIntegrityBatch(
+  items: IntegrityCheckRequestItem[],
+): Promise<IntegrityCheckResultItem[]> {
+  return invoke<IntegrityCheckResultItem[]>("verifyFileIntegrityBatch", { items });
+}
+
 export interface DirStatResult {
   total_bytes: number;
   file_count: number;
