@@ -96,12 +96,10 @@ export function createSearchFilters(): SearchFilters {
       setClasses(new Set<SearchClass>());
       setWithTags([]);
       setWithoutTags([]);
-      setSort("");
     }
     if (t.withTag) {
       setQ("");
       setWithoutTags([]);
-      setSort("");
       setWithTags([t.withTag]);
     }
     if (t.searchClass !== undefined) {

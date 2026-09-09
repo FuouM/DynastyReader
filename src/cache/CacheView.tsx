@@ -43,6 +43,7 @@ import { EmptyState } from "../components/EmptyState";
 import { GroupBox } from "../components/GroupBox";
 import { ConfirmDeleteButton, IconText, IconButton, StatCard, DsSelect, DsSwitch } from "../components/Button";
 import { useCacheActions } from "./useCacheActions";
+import { persistedSignal } from "../lib/persisted-signal";
 import {
   CACHE_CEILING_PRESETS,
   cacheCeilingBytes,
@@ -97,7 +98,13 @@ export function CacheView() {
   const [currentPage, setCurrentPage] = createSignal(1);
   const [filterText, setFilterText] = createSignal("");
   const [inputVal, setInputVal] = createSignal("");
-  const [sortMode, setSortMode] = createSignal<DownloadedSortMode>("size-desc");
+  const [sortMode, setSortMode] = persistedSignal<DownloadedSortMode>("size-desc", {
+    name: "ds_cache_sort_mode",
+    deserialize: (v) =>
+      v === "size-desc" || v === "size-asc" || v === "download-desc" || v === "name-asc" || v === "read-desc"
+        ? v
+        : "size-desc",
+  });
   let debounceTimer: number | undefined;
 
   const handleInput = (val: string) => {

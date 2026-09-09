@@ -49,6 +49,10 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
   const [currentPage, setCurrentPage] = createSignal(1);
   const [sortMode, setSortMode] = persistedSignal<DownloadedSortMode>("download-desc", {
     name: "ds_downloaded_sort_mode",
+    deserialize: (v) =>
+      v === "download-desc" || v === "name-asc" || v === "read-desc" || v === "size-desc" || v === "size-asc"
+        ? v
+        : "download-desc",
   });
   const [query, setQuery] = createSignal("");
   const [inputVal, setInputVal] = createSignal("");
@@ -195,6 +199,8 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
           { value: "download-desc", label: t("browse.downloaded.sorts.lastDownloaded") },
           { value: "name-asc", label: t("browse.downloaded.sorts.alphabetical") },
           { value: "read-desc", label: t("browse.downloaded.sorts.lastRead") },
+          { value: "size-desc", label: t("cache.sorts.sizeDesc") },
+          { value: "size-asc", label: t("cache.sorts.sizeAsc") },
         ]}
         totalChapters={totalChapters()}
         totalBytes={totalBytes()}
