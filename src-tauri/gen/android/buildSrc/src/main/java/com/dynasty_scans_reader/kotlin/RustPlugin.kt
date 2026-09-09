@@ -17,13 +17,23 @@ open class RustPlugin : Plugin<Project> {
     override fun apply(project: Project) = with(project) {
         config = extensions.create("rust", Config::class.java)
 
-        val defaultAbiList = listOf("arm64-v8a", "armeabi-v7a", "x86_64");
-        val abiList = (findProperty("abiList") as? String)?.split(',') ?: defaultAbiList
+        val defaultAbiList = listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        val defaultArchList = listOf("arm64", "arm", "x86_64")
+        val defaultTargetsList = listOf("aarch64", "armv7", "x86_64")
 
-        val defaultArchList = listOf("arm64", "arm", "x86_64");
-        val archList = (findProperty("archList") as? String)?.split(',') ?: defaultArchList
+        val rawAbiList = (findProperty("abiList") as? String)?.split(',') ?: defaultAbiList
+        val rawArchList = (findProperty("archList") as? String)?.split(',') ?: defaultArchList
+        val rawTargetsList = (findProperty("targetList") as? String)?.split(',') ?: defaultTargetsList
 
-        val targetsList = (findProperty("targetList") as? String)?.split(',') ?: listOf("aarch64", "armv7", "x86_64")
+        // Exclude 32-bit x86 / i686 if passed by Tauri CLI default all-targets invocation
+        val indicesToKeep = rawArchList.indices.filter {
+            val arch = rawArchList[it]
+            val target = if (it < rawTargetsList.size) rawTargetsList[it] else ""
+            arch != "x86" && target != "i686"
+        }
+        val abiList = indicesToKeep.map { rawAbiList.getOrElse(it) { "" } }.filter { it.isNotEmpty() }
+        val archList = indicesToKeep.map { rawArchList[it] }
+        val targetsList = indicesToKeep.map { rawTargetsList.getOrElse(it) { "" } }.filter { it.isNotEmpty() }
 
         extensions.configure<ApplicationExtension> {
             @Suppress("UnstableApiUsage")
@@ -35,11 +45,13 @@ open class RustPlugin : Plugin<Project> {
                         abiFilters += abiList
                     }
                 }
-                defaultArchList.forEachIndexed { index, arch ->
+                archList.forEachIndexed { index, arch ->
                     create(arch) {
                         dimension = "abi"
                         ndk {
-                            abiFilters.add(defaultAbiList[index])
+                            if (index < abiList.size) {
+                                abiFilters.add(abiList[index])
+                            }
                         }
                     }
                 }
@@ -57,7 +69,7 @@ open class RustPlugin : Plugin<Project> {
                     description = "Build dynamic library in $profile mode for all targets"
                 }
 
-                tasks["mergeUniversal${profileCapitalized}JniLibFolders"].dependsOn(buildTask)
+                tasks.findByName("mergeUniversal${profileCapitalized}JniLibFolders")?.dependsOn(buildTask)
 
                 for (targetPair in targetsList.withIndex()) {
                     val targetName = targetPair.value
@@ -75,7 +87,7 @@ open class RustPlugin : Plugin<Project> {
                     }
 
                     buildTask.dependsOn(targetBuildTask)
-                    tasks["merge$targetArchCapitalized${profileCapitalized}JniLibFolders"].dependsOn(
+                    tasks.findByName("merge$targetArchCapitalized${profileCapitalized}JniLibFolders")?.dependsOn(
                         targetBuildTask
                     )
                 }
