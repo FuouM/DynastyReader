@@ -224,6 +224,7 @@ jobs:
       - name: Build Android APK & App Bundle
         run: |
           npm run tauri android build -- --target aarch64 --target x86_64 --apk --aab
+          (cd src-tauri/gen/android && chmod +x gradlew && TAURI_SKIP_RUST_BUILD=true ./gradlew assembleArm64Release -x rustBuildArm64Release -x rustBuildUniversalRelease)
 
       - name: Stage Android Artifacts
         shell: bash

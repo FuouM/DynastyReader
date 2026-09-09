@@ -67,6 +67,9 @@ open class RustPlugin : Plugin<Project> {
                 ).apply {
                     group = TASK_GROUP
                     description = "Build dynamic library in $profile mode for all targets"
+                    onlyIf {
+                        System.getenv("TAURI_SKIP_RUST_BUILD") != "true"
+                    }
                 }
 
                 tasks.findByName("mergeUniversal${profileCapitalized}JniLibFolders")?.dependsOn(buildTask)
@@ -78,13 +81,16 @@ open class RustPlugin : Plugin<Project> {
                     val targetBuildTask = project.tasks.maybeCreate(
                         "rustBuild$targetArchCapitalized$profileCapitalized",
                         BuildTask::class.java
-                    ).apply {
-                        group = TASK_GROUP
-                        description = "Build dynamic library in $profile mode for $targetArch"
-                        rootDirRel = config.rootDirRel
-                        target = targetName
-                        release = profile == "release"
+                ).apply {
+                    group = TASK_GROUP
+                    description = "Build dynamic library in $profile mode for $targetArch"
+                    rootDirRel = config.rootDirRel
+                    target = targetName
+                    release = profile == "release"
+                    onlyIf {
+                        System.getenv("TAURI_SKIP_RUST_BUILD") != "true"
                     }
+                }
 
                     buildTask.dependsOn(targetBuildTask)
                     tasks.findByName("merge$targetArchCapitalized${profileCapitalized}JniLibFolders")?.dependsOn(
