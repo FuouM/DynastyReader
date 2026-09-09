@@ -500,14 +500,17 @@ function CacheBody(props: {
           </div>
           <div class="ds-muted">{ceilingUsage()}</div>
           <div class="ds-cache-actions" style="align-items:center;">
-            <DsSwitch
-              id="ds-cache-auto-prune"
-              checked={cacheAutoPruneEnabled()}
-              disabled={cacheCeilingBytes() <= 0}
-              title={t("cache.autoPruneTooltip")}
-              onChange={(next) => setCacheAutoPruneEnabled(next)}
-            />
-            <span class="ds-muted">{t("cache.autoPruneLabel")}</span>
+            <label class="ds-flex-row ds-items-center" style="gap:6px;cursor:pointer;">
+              <DsSwitch
+                id="ds-cache-auto-prune"
+                ariaLabel={t("cache.autoPruneLabel")}
+                checked={cacheAutoPruneEnabled()}
+                disabled={cacheCeilingBytes() <= 0}
+                title={t("cache.autoPruneTooltip")}
+                onChange={(next) => setCacheAutoPruneEnabled(next)}
+              />
+              <span class="ds-muted">{t("cache.autoPruneLabel")}</span>
+            </label>
             <IconButton
               icon={<RefreshIcon />}
               text={pruning() ? t("cache.pruneRunning") : t("cache.pruneNow")}

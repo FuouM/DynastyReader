@@ -123,8 +123,14 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
     makeEventListener(document, "click", handleClickOutside);
   });
 
+  createEffect(() => {
+    if (props.disabled && confirming()) {
+      cancel();
+    }
+  });
+
   const handleClick = async (): Promise<void> => {
-    if (busy()) return;
+    if (busy() || props.disabled) return;
     if (!confirming()) {
       setConfirming(true);
       resetConfirming();
@@ -175,6 +181,7 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
       className={currentClassName()}
       style={props.style ?? props.cssText}
       title={confirming() ? t("common.confirm") : props.title}
+      disabled={props.disabled}
       loading={busy()}
       icon={currentIcon()}
       text={currentText()}
@@ -304,8 +311,8 @@ export interface DsSwitchProps {
   title?: string;
   label?: JSX.Element;
   name?: string;
+  ariaLabel?: string;
 }
-
 /**
  * WinForms-styled mobile-friendly toggle switch with rectangular track & thumb.
  */
@@ -331,6 +338,7 @@ export function DsSwitch(props: DsSwitchProps) {
       class={`ds-switch ${props.checked ? "checked" : ""} ${props.className ?? ""}`.trim()}
       style={props.style}
       role="switch"
+      aria-label={props.ariaLabel ?? (typeof props.label === "string" ? props.label : undefined)}
       aria-checked={props.checked}
       aria-disabled={props.disabled}
       disabled={props.disabled}

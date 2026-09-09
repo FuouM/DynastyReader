@@ -38,9 +38,23 @@ export function HistoryPane(props: LibraryPaneProps) {
   });
 
   // QoL-L3: bulk-select mode for deleting multiple history rows at once.
-  const { selectMode, selected, toggleSelectMode, toggleRow, deleteSelected } =
+  const { selectMode, selected, toggleSelectMode, toggleRow, deleteSelected, selectAll, clearSelection } =
     useBulkSelection<number>(removeHistoryBatch, refetch);
 
+  const allSelected = () => {
+    const rows = data()?.res.rows;
+    return Boolean(rows && rows.length > 0 && selected().size === rows.length);
+  };
+
+  const handleToggleSelectAll = () => {
+    const rows = data()?.res.rows;
+    if (!rows) return;
+    if (allSelected()) {
+      clearSelection();
+    } else {
+      selectAll(rows.map((r) => r.id));
+    }
+  };
   return (
     <>
       <Show
@@ -56,6 +70,10 @@ export function HistoryPane(props: LibraryPaneProps) {
               <Button text={t("library.selectModeButton")} onClick={toggleSelectMode} />
             </Show>
             <Show when={selectMode()}>
+              <Button
+                text={allSelected() ? t("common.deselectAll") : t("common.selectAll")}
+                onClick={handleToggleSelectAll}
+              />
               <span class="ds-muted" style="font-size:12px;">{t("library.selectedCount", { count: selected().size })}</span>
               <ConfirmDeleteButton
                 icon={<TrashIcon />}

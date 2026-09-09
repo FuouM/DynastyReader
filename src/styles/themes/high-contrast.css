@@ -164,4 +164,19 @@
   :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .ds-stat-val {
     color: var(--sys-primary, #66b8ff) !important;
   }
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .win-button:disabled,
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .win-button[aria-disabled="true"],
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) button:disabled {
+    color: #666666 !important;
+    border-color: #444444 !important;
+    background-color: #000000 !important;
+    opacity: 0.45 !important;
+    cursor: not-allowed !important;
+  }
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .win-button:disabled i,
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .win-button:disabled .bi,
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .win-button:disabled svg {
+    color: #666666 !important;
+    fill: #666666 !important;
+  }
 }

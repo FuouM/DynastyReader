@@ -39,6 +39,7 @@ export interface IntegrityReport {
   pageCount: number;
   coverCount: number;
   issues: IntegrityIssue[];
+  error?: string;
 }
 
 export interface RecoveryResult {
@@ -113,11 +114,12 @@ export async function runIntegrityCheck(
   let totalCorrupted = 0;
   const issues: IntegrityIssue[] = [];
 
+  let scanError: string | undefined;
+
   for (let i = 0; i < total; i += BATCH_CHUNK_SIZE) {
     const chunk = checkItems.slice(i, i + BATCH_CHUNK_SIZE);
-    const reqs = chunk.map((c) => c.req);
-
     try {
+      const reqs = chunk.map((ci) => ci.req);
       const results = await ipc.verifyFileIntegrityBatch(reqs);
       for (let j = 0; j < results.length; j++) {
         const res = results[j];
@@ -158,9 +160,27 @@ export async function runIntegrityCheck(
         }
       }
     } catch (batchErr) {
+      const errMsg = batchErr instanceof Error ? batchErr.message : String(batchErr);
       log.error("cache-integrity", "Batch verification error:", batchErr);
+      scanError = errMsg;
+      for (let j = 0; j < chunk.length; j++) {
+        const item = chunk[j];
+        issues.push({
+          type: item.meta.type,
+          id: item.req.id,
+          path: item.req.path,
+          reason: `Verification error: ${errMsg}`,
+          isMissing: false,
+          isCorrupted: true,
+          chapterPermalink: item.meta.chapterPermalink,
+          pageIndex: item.meta.pageIndex,
+          cacheKey: item.meta.cacheKey,
+          seriesPermalink: item.meta.seriesPermalink,
+          collectionId: item.meta.collectionId,
+        });
+        totalCorrupted++;
+      }
     }
-
     scanned += chunk.length;
     onProgress?.(scanned, total);
   }
@@ -175,6 +195,7 @@ export async function runIntegrityCheck(
     pageCount: pages.length,
     coverCount: covers.length + followed.length + collections.length,
     issues,
+    error: scanError,
   };
 }
 

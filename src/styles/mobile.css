@@ -328,20 +328,32 @@
   display: none !important;
 }
 
-#ds-root[data-mobile] .ds-item-actions .win-button,
-#ds-root[data-mobile] .ds-feed-actions .win-button {
-  padding: 0;
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  max-width: 24px;
-  aspect-ratio: 1 / 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
+#ds-root[data-mobile] .ds-item-actions,
+#ds-root[data-mobile] .ds-feed-actions {
+  gap: 6px;
 }
 
+#ds-root[data-mobile] .ds-item-actions .win-button,
+#ds-root[data-mobile] .ds-feed-actions .win-button {
+  padding: 0 !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  font-size: 14px !important;
+  aspect-ratio: 1 / 1;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+#ds-root[data-mobile] .ds-item-actions .win-button i,
+#ds-root[data-mobile] .ds-item-actions .win-button .bi,
+#ds-root[data-mobile] .ds-feed-actions .win-button i,
+#ds-root[data-mobile] .ds-feed-actions .win-button .bi {
+  font-size: 14px;
+}
 #ds-root[data-mobile] .ds-item-actions .win-button .ds-btn-text,
 #ds-root[data-mobile] .ds-feed-actions .win-button .ds-btn-text {
   display: none !important;
@@ -368,9 +380,11 @@
   scrollbar-width: none;
   gap: 4px;
   padding-bottom: 0;
+  padding-right: 16px;
   box-sizing: border-box;
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
 }
-
 #ds-root[data-mobile] .ds-subtabs-left::-webkit-scrollbar {
   display: none;
 }

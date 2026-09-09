@@ -50,6 +50,7 @@ export type BaseIconProps = Omit<IconProps, "name">;
 // ── Common Semantic UI Icons ───────────────────────────────────────────────
 export const SearchIcon = (props: BaseIconProps) => <Icon name="search" {...props} />;
 export const RefreshIcon = (props: BaseIconProps) => <Icon name="arrow-clockwise" {...props} />;
+export const ArrowRepeatIcon = (props: BaseIconProps) => <Icon name="arrow-repeat" {...props} />;
 export const ClearIcon = (props: BaseIconProps) => <Icon name="x-circle" {...props} />;
 export const CloseIcon = (props: BaseIconProps) => <Icon name="x-lg" {...props} />;
 export const CheckIcon = (props: BaseIconProps) => <Icon name="check2" {...props} />;

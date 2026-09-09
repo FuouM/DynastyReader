@@ -100,6 +100,17 @@
   background-color: var(--sys-button-primary-hover);
   border-color: var(--sys-button-primary-hover);
 }
+.win-button:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--sys-border-focus, #0078d4);
+  outline-offset: 1px;
+}
+
+:is(:root[data-theme="high-contrast"], body.ds-high-contrast, [data-theme="high-contrast"]) .win-button:focus-visible,
+:is(:root[data-theme="high-contrast"], body.ds-high-contrast, [data-theme="high-contrast"]) button:focus-visible {
+  outline: 2px solid #ffffff !important;
+  outline-offset: 2px !important;
+}
 
 
 .input-field {

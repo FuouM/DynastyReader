@@ -39,7 +39,17 @@ export function IntegrityModal(props: IntegrityModalProps) {
       });
       setReport(rep);
       setStage("scanned");
-    } catch {
+    } catch (err) {
+      setReport({
+        totalScanned: 0,
+        totalHealthy: 0,
+        totalMissing: 0,
+        totalCorrupted: 0,
+        pageCount: 0,
+        coverCount: 0,
+        issues: [],
+        error: err instanceof Error ? err.message : String(err),
+      });
       setStage("scanned");
     }
   };
@@ -82,7 +92,7 @@ export function IntegrityModal(props: IntegrityModalProps) {
 
   const hasIssues = () => {
     const r = report();
-    return r ? r.totalMissing > 0 || r.totalCorrupted > 0 : false;
+    return r ? r.totalMissing > 0 || r.totalCorrupted > 0 || !!r.error : false;
   };
 
   const progressPercent = () => {
@@ -161,13 +171,15 @@ export function IntegrityModal(props: IntegrityModalProps) {
                   <WarningIcon class="ds-integrity-status-icon ds-text-warning" />
                   <div>
                     <div class="ds-integrity-title">
-                      {t("cache.integrityIssuesFound", {
-                        missing: report()!.totalMissing,
-                        corrupted: report()!.totalCorrupted,
-                      })}
+                      {report()!.error && report()!.issues.length === 0
+                        ? "Verification Error Encountered"
+                        : t("cache.integrityIssuesFound", {
+                            missing: report()!.totalMissing,
+                            corrupted: report()!.totalCorrupted,
+                          })}
                     </div>
                     <div class="ds-integrity-subtitle">
-                      {t("cache.integrityIssuesDesc", { count: report()!.issues.length })}
+                      {report()!.error || t("cache.integrityIssuesDesc")}
                     </div>
                   </div>
                 </div>

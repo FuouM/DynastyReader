@@ -9,7 +9,7 @@
  */
 
 import { createEffect, createSignal, onCleanup, Show, type JSX } from "solid-js";
-
+import { t } from "../i18n";
 export interface GroupBoxProps {
   id?: string;
   /** Title line — typically `<IconText>…</IconText>`. Rendered inside `.group-box-title`. */
@@ -68,6 +68,9 @@ export function GroupBox(props: GroupBoxProps) {
           <button
             type="button"
             class="group-box-collapse-btn"
+            aria-label={props.collapsed ? t("common.expandSection") : t("common.collapseSection")}
+            aria-expanded={!props.collapsed}
+            title={props.collapsed ? t("common.expandSection") : t("common.collapseSection")}
             onClick={(ev) => {
               ev.stopPropagation();
               props.onToggle?.();

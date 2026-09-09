@@ -51,6 +51,16 @@
   box-sizing: border-box;
   flex-shrink: 0;
 }
+
+#ds-root[data-mobile] .ds-feed-actions .ds-btn-icon,
+#ds-root[data-mobile] .ds-item-actions .ds-btn-icon {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+}
 .win-button.ds-btn-icon > i,
 .win-button.ds-btn-icon-sm > i {
 }

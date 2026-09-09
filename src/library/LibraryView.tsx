@@ -28,7 +28,7 @@ import { Modal } from "../components/Modal";
 import { SubTabs } from "../components/SubTabs";
 import { GroupBox } from "../components/GroupBox";
 import {
-  RefreshIcon,
+  ArrowRepeatIcon,
   CheckIcon,
   StorageIcon,
   BlacklistIcon,
@@ -526,12 +526,12 @@ function LibraryActions(props: {
           <Show
             when={props.refreshing()}
             fallback={
-              <Show when={props.justUpdated()} fallback={<RefreshIcon />}>
+              <Show when={props.justUpdated()} fallback={<ArrowRepeatIcon />}>
                 <CheckIcon />
               </Show>
             }
           >
-            <RefreshIcon spin={true} />
+            <ArrowRepeatIcon spin={true} />
           </Show>
         }
         text={

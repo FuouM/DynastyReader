@@ -113,7 +113,7 @@ export function Modal(props: ModalProps) {
 
   return (
     <Show when={props.open}>
-      <Portal mount={document.getElementById("ds-root") ?? document.body}>
+      <Portal mount={document.body}>
         <div
           ref={backdropEl}
           class="ds-modal-backdrop"

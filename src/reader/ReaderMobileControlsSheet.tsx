@@ -195,14 +195,14 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               </Show>
 
               {/* Fit Mode */}
-              <SettingsRow label={t("settings.reader.fitMode")} divider>
+              <SettingsRow label={t("settings.reader.fitMode")} divider stacked>
                 <SegmentedSwitch
                   value={s.fitMode()}
                   onChange={(val) => s.setFitMode(val as FitMode)}
                   options={[
-                    { id: "ds-ctrl-fit-width", value: "width", text: t("reader.toolbar.fitModes.width") },
-                    { id: "ds-ctrl-fit-height", value: "height", text: t("reader.toolbar.fitModes.height") },
-                    { id: "ds-ctrl-fit-orig", value: "original", text: t("reader.toolbar.fitModes.original") },
+                    { id: "ds-ctrl-fit-width", value: "width", text: t("reader.toolbar.fitModes.widthShort") || "Width", title: t("reader.toolbar.fitModes.width") },
+                    { id: "ds-ctrl-fit-height", value: "height", text: t("reader.toolbar.fitModes.heightShort") || "Height", title: t("reader.toolbar.fitModes.height") },
+                    { id: "ds-ctrl-fit-orig", value: "original", text: t("reader.toolbar.fitModes.originalShort") || "Original", title: t("reader.toolbar.fitModes.original") },
                   ]}
                 />
               </SettingsRow>
