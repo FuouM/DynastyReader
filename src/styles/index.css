@@ -1407,13 +1407,14 @@ code,
 
 /* ── WinForms-authentic Color Palette Wells ── */
 .ds-winforms-palette {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, 20px);
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 3px 4px;
+  padding: 4px;
   max-width: 100%;
-  background: var(--sys-control-bg, #ececec);
+  box-sizing: border-box;
   border: 1px solid var(--sys-border-dark, #888888);
   border-top-color: #666666;
   border-left-color: #666666;

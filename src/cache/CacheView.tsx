@@ -449,9 +449,18 @@ function CacheBody(props: {
       <GroupBox title={<IconText icon={<ChartIcon />}>{t("cache.overviewTitle")}</IconText>}>
         <div class="ds-stats-grid ds-stats-grid--4">
           <StatCard value={formatBytes(props.stats.totalSizeBytes)} label={t("cache.diskFootprint")} />
-          <StatCard value={props.stats.totalCachedPages} label={t("cache.pagesCached")} />
-          <StatCard value={props.stats.totalCachedChapters} label={t("cache.chaptersCached")} />
-          <StatCard value={props.totalWorks} label={t("cache.seriesCached")} />
+          <StatCard
+            value={props.stats.totalCachedPages}
+            label={props.stats.totalCachedPages === 1 ? t("cache.pagesCachedSingle") : t("cache.pagesCached")}
+          />
+          <StatCard
+            value={props.stats.totalCachedChapters}
+            label={props.stats.totalCachedChapters === 1 ? t("cache.chaptersCachedSingle") : t("cache.chaptersCached")}
+          />
+          <StatCard
+            value={props.totalWorks}
+            label={props.totalWorks === 1 ? t("cache.seriesCachedSingle") : t("cache.seriesCached")}
+          />
         </div>
       </GroupBox>
 
@@ -478,6 +487,7 @@ function CacheBody(props: {
                   type="number"
                   id="ds-cache-ceiling-input"
                   class="input-field"
+                  aria-label={t("cache.ceilingCustomInput")}
                   style="width:72px;height:24px;text-align:right;padding-right:4px;"
                   min="0"
                   step="any"

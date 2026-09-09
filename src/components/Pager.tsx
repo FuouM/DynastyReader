@@ -67,6 +67,7 @@ export function Pager(props: PagerProps) {
           max={String(Math.max(1, props.totalPages))}
           value={jumpValue()}
           class="input-field ds-pager-input"
+          aria-label={t("dialogs.pager.jumpPrompt") || "Page number"}
           title={t("dialogs.pager.jumpPrompt")}
           onInput={(ev) => setJumpValue((ev.target as HTMLInputElement).value)}
           onKeyDown={(ev) => {

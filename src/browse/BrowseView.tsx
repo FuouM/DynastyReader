@@ -79,6 +79,20 @@ export function BrowseView() {
     serialize: String,
     deserialize: (v) => v === "true",
   });
+  const [searchGoSearchTabOverride, setSearchGoSearchTabOverride] = createSignal<boolean | null>(null);
+
+  createEffect(() => {
+    if (activeTab() !== "search") {
+      setSearchGoSearchTabOverride(null);
+    }
+  });
+
+  const isSearchGoCollapsed = () => {
+    if (activeTab() === "search") {
+      return searchGoSearchTabOverride() ?? true;
+    }
+    return searchGoCollapsed();
+  };
   const [searchBoxValue, setSearchBoxValue] = createSignal("");
   const [urlValue, setUrlValue] = createSignal("");
   const [checkBtn, setCheckBtn] = createSignal<"idle" | "checking" | "updated" | "error">("idle");
@@ -166,6 +180,11 @@ export function BrowseView() {
   };
 
   const toggleSearchGo = (): void => {
+    if (activeTab() === "search") {
+      const next = !(searchGoSearchTabOverride() ?? true);
+      setSearchGoSearchTabOverride(next);
+      return;
+    }
     const next = !searchGoCollapsed();
     setSearchGoCollapsed(next);
     localStorage.setItem("ds-search-go-collapsed", String(next));
@@ -317,7 +336,7 @@ export function BrowseView() {
       <GroupBox
         class="ds-mb-8"
         collapsible
-        collapsed={searchGoCollapsed()}
+        collapsed={isSearchGoCollapsed()}
         onToggle={toggleSearchGo}
         title={<IconText icon={<SearchIcon />}>{t("browse.searchAndGo.title")}</IconText>}
       >

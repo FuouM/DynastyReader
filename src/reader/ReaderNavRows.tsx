@@ -104,6 +104,16 @@ export function ReaderMainRow(props: NavRowProps) {
         disabled={s.chapterNav().nextDisabled}
         onClick={() => s.gotoNextChapter()}
       />
+      <Show when={!isMobile() && s.mode() === "paged"}>
+        <IconButton
+          className="ds-nav-btn ds-btn-compact"
+          classList={{ primary: s.pagedLayout() === "spread" }}
+          icon={<ColumnsGapIcon />}
+          text={s.pagedLayout() === "spread" ? "Dual" : "Single"}
+          title={t("reader.toolbar.spreadTooltip", { state: s.pagedLayout() === "spread" ? "ON" : "OFF" })}
+          onClick={() => s.setPagedLayout(s.pagedLayout() === "spread" ? "single" : "spread")}
+        />
+      </Show>
       <Show when={showControls()}>
         <IconButton
           className="ds-nav-btn-page ds-btn-icon"

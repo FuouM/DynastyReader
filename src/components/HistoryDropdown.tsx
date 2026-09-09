@@ -188,6 +188,7 @@ export function HistoryNavButtons() {
           type="button"
           class="win-button ds-segmented-btn ds-nav-history-btn"
           id="ds-nav-back"
+          aria-label={t("common.back")}
           title={t("topbar.navBackTooltip")}
           disabled={!canGoBack()}
           onPointerDown={(ev) => {
@@ -219,6 +220,7 @@ export function HistoryNavButtons() {
           type="button"
           class="win-button ds-segmented-btn ds-nav-history-btn"
           id="ds-nav-forward"
+          aria-label={t("common.forward")}
           title={t("topbar.navForwardTooltip")}
           disabled={!canGoForward()}
           onPointerDown={(ev) => {

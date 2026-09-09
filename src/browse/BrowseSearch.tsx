@@ -400,11 +400,16 @@ export function BrowseSearch(props: BrowseSearchProps) {
               <IconText icon={<Icon name="list-stars" />}>{t("browse.search.resultsTitle")}</IconText>
               {model()!.pageData.query ? ` ${t("browse.search.resultsFor", { query: decodeEntities(model()!.pageData.query) })}` : ""}{" "}
               <span class="ds-muted ds-results-summary">
-                {t("browse.search.resultsSummary", {
-                  count: model()!.pageData.items.length,
-                  page: model()!.pageData.currentPage,
-                  totalPages: model()!.pageData.totalPages,
-                })}
+                {model()!.pageData.items.length === 1
+                  ? t("browse.search.resultsSummarySingle", {
+                      page: model()!.pageData.currentPage,
+                      totalPages: model()!.pageData.totalPages,
+                    })
+                  : t("browse.search.resultsSummary", {
+                      count: model()!.pageData.items.length,
+                      page: model()!.pageData.currentPage,
+                      totalPages: model()!.pageData.totalPages,
+                    })}
               </span>
             </div>
           </div>

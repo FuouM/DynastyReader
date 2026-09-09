@@ -25,9 +25,9 @@ import { Loading } from "../components/Loading";
 import { InputField } from "../components/InputField";
 import { ListItem } from "../components/ListItem";
 import { EmptyState } from "../components/EmptyState";
-import { BlacklistIcon } from "../components/Icon";
+import { BlacklistIcon, RefreshIcon } from "../components/Icon";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";
-import { IconText } from "../components/Button";
+import { Button, IconText } from "../components/Button";
 import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
 import type { Directory, DirectoryGroup } from "../types/api";
 import { ErrorRetryRow } from "../components/ErrorRetryRow";
@@ -253,7 +253,26 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
       </Show>
 
       <Show when={model() !== undefined && model()!.groups.length === 0}>
-        <div class="ds-muted">{t("browse.directory.emptyPage")}</div>
+        <EmptyState
+          cssText="padding:32px 16px;text-align:center;"
+          iconName={props.kind === "series" ? "book" : "tags"}
+          iconCssText="font-size:32px;opacity:0.6;display:block;margin:0 auto 12px;"
+        >
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <div style="font-weight:600;font-size:13px;">
+              {props.kind === "series" ? t("browse.directory.noSeriesTitle") : t("browse.directory.noTagsTitle")}
+            </div>
+            <div class="ds-muted" style="max-width:320px;font-size:11.5px;margin-bottom:8px;">
+              {props.kind === "series" ? t("browse.directory.noSeriesDesc") : t("browse.directory.noTagsDesc")}
+            </div>
+            <Button
+              className="primary"
+              icon={<RefreshIcon />}
+              text={t("browse.directory.syncDirectory")}
+              onClick={() => pane.reload()}
+            />
+          </div>
+        </EmptyState>
       </Show>
 
       <Show when={pane.error() !== undefined && model() === undefined}>

@@ -112,6 +112,7 @@ export function StorageSettings(props: StorageSettingsProps) {
                   id="ds-settings-download-schedule-start"
                   type="time"
                   class="input-field ds-select"
+                  aria-label="Download schedule start time"
                   value={downloadScheduleStart()}
                   onChange={(ev) => {
                     setDownloadScheduleStart(ev.currentTarget.value);
@@ -123,6 +124,7 @@ export function StorageSettings(props: StorageSettingsProps) {
                   id="ds-settings-download-schedule-end"
                   type="time"
                   class="input-field ds-select"
+                  aria-label="Download schedule end time"
                   value={downloadScheduleEnd()}
                   onChange={(ev) => {
                     setDownloadScheduleEnd(ev.currentTarget.value);

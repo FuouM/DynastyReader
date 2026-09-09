@@ -9,15 +9,13 @@ import { createEffect, Show, on } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { isMobile } from "../stores/platform";
-import { closeSessionMangaTab, navigate } from "../stores/router";
+import { closeSessionMangaTab } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { HistoryNavButtons } from "../components/HistoryDropdown";
 import { decodeEntities } from "../utils/html";
 import { addBookmark, removeBookmark } from "../db/library.repo";
 import { errorMessage } from "../utils/errors";
-import { dynastyUrl } from "../utils/url";
 import { t } from "../i18n";
-import { useCopyLink } from "../hooks/useCopyLink";
 import { getReaderNavPosition, getReaderFilterCss } from "./settings";
 import { IconButton } from "../components/Button";
 import { ReaderMainRow, ReaderControlsRow } from "./ReaderNavRows";
@@ -26,21 +24,12 @@ import {
   ToolIcon,
   BookmarkIcon,
   CloseIcon,
-  StorageIcon,
-  CloudDownloadIcon,
-  CheckIcon,
-  SettingsIcon,
-  Icon,
 } from "../components/Icon";
 
 
 export function ReaderToolbar(props: { session: ReaderSession }) {
   const s = props.session;
   const navPos = getReaderNavPosition;
-  const { copied, handleCopyLink } = useCopyLink({
-    getUrl: () => dynastyUrl("chapters", s.permalink),
-    namespace: "reader-toolbar",
-  });
   createEffect(() => {
     const z = s.zoomScale();
     if (s.containerEl) {
@@ -109,26 +98,6 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
       >
         <Show when={isMobile()}>
           <div class="ds-reader-nav-row nav-main ds-reader-mobile-row--full">
-            <div class="ds-segmented-switch ds-reader-view-switch">
-              <button
-                type="button"
-                class="win-button ds-segmented-btn"
-                id="ds-reader-nav-browse"
-                title={t("topbar.browseRecent")}
-                onClick={() => navigate({ view: "browse" })}
-              >
-                <span class="ds-btn-icon-wrap"><Icon name="compass" /></span>
-              </button>
-              <button
-                type="button"
-                class="win-button ds-segmented-btn"
-                id="ds-reader-nav-library"
-                title={t("topbar.library")}
-                onClick={() => navigate({ view: "library" })}
-              >
-                <span class="ds-btn-icon-wrap"><StorageIcon /></span>
-              </button>
-            </div>
             <HistoryNavButtons />
             <div class="ds-reader-mobile-title--flex" onClick={handleOpenSeries} title={s.seriesPermalink() ? t("reader.toolbar.viewSeries") : undefined}>
               <span class="ds-truncate ds-text-13-600">
@@ -141,20 +110,6 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
               </Show>
             </div>
             <div class="ds-row ds-row-gap-2">
-              <Show when={s.seriesPermalink()}>
-                <IconButton
-                  className="ds-btn-icon"
-                  icon={<StorageIcon />}
-                  title={t("reader.toolbar.viewSeries")}
-                  onClick={handleOpenSeries}
-                />
-              </Show>
-              <IconButton
-                className="ds-btn-icon"
-                icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
-                title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
-                onClick={() => void handleCopyLink()}
-              />
               <IconButton
                 className="ds-btn-icon"
                 classList={{ primary: s.bookmarked() }}
@@ -164,22 +119,10 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
               />
               <IconButton
                 className="ds-btn-icon"
-                icon={s.isFullyCached() ? <CheckIcon /> : <CloudDownloadIcon />}
-                title={t("reader.toolbar.cacheChapter")}
-                onClick={() => s.cacheFullChapter()}
-              />
-              <IconButton
-                className="ds-btn-icon"
                 classList={{ primary: s.controlsOpen() }}
                 icon={<ToolIcon />}
                 title={t("reader.toolbar.toggleControlsTooltip")}
                 onClick={() => s.setControlsOpen(!s.controlsOpen())}
-              />
-              <IconButton
-                className="ds-btn-icon"
-                icon={<SettingsIcon />}
-                title={t("topbar.settingsTooltip")}
-                onClick={() => window.dispatchEvent(new CustomEvent("ds-open-settings"))}
               />
               <IconButton
                 className="ds-btn-icon"
