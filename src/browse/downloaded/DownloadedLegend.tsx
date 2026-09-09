@@ -16,6 +16,10 @@ export function DownloadedLegend() {
         <span>{t("downloaded.legendDownloaded")}</span>
       </span>
       <span class="ds-legend-item">
+        <span class="ds-legend-swatch partial" />
+        <span>{t("downloaded.legendPartial")}</span>
+      </span>
+      <span class="ds-legend-item">
         <span class="ds-legend-swatch read"><CheckIcon size={10} /></span>
         <span>{t("downloaded.legendRead")}</span>
       </span>

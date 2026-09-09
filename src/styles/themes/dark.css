@@ -51,6 +51,8 @@
     --ds-warn-bg: #2e2022;
     --ds-warn-text: #ffb3b0;
     --ds-warn-border: #5c3034;
+    --ds-partial-text: #fbbf24;
+    --ds-partial-border: #f59e0b;
     /* reader-specific */
     --ds-reader-bg: #181818;
     --ds-reader-viewport-bg: #1e1e1e;
@@ -160,6 +162,10 @@
   :is(:root[data-theme="dark"], body.ds-dark) .ds-legend-swatch.downloaded {
     background: var(--sys-bg-active, #1e3a5f) !important;
     border: 1px solid var(--sys-primary-border, #2b6cb0) !important;
+  }
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-legend-swatch.partial {
+    background: var(--sys-bg-active, #1e3a5f) !important;
+    border: 1px dashed var(--sys-primary-border, #2b6cb0) !important;
   }
   :is(:root[data-theme="dark"], body.ds-dark) .ds-legend-swatch.read {
     background: #222224 !important;

@@ -60,6 +60,8 @@
     --ds-warn-bg: #fdf3f4;
     --ds-warn-text: #842029;
     --ds-warn-border: #f5c2c7;
+    --ds-partial-text: #92400e;
+    --ds-partial-border: #d97706;
     /* Accent colorization tokens */
     --ds-accent-aero-light: #4da6ff;
     --ds-accent-aero-mid: #0078d4;

@@ -10,8 +10,24 @@ import { log } from "./log";
 import { pruneOldestReadCachedPages, type CachePruneResult } from "../db/cache.repo";
 import type { TranslationKey } from "../i18n";
 
+export const MB = 1024 * 1024;
 export const GB = 1024 * 1024 * 1024;
 
+export interface CacheCeilingPreset {
+  bytes: number;
+  labelKey?: TranslationKey;
+  label: string;
+}
+
+export const CACHE_CEILING_PRESETS: CacheCeilingPreset[] = [
+  { bytes: 0, label: "Off", labelKey: "cache.ceilingOff" },
+  { bytes: 500 * MB, label: "500 MB", labelKey: "cache.ceiling500mb" },
+  { bytes: 1 * GB, label: "1 GB", labelKey: "cache.ceiling1gb" },
+  { bytes: 2 * GB, label: "2 GB", labelKey: "cache.ceiling2gb" },
+  { bytes: 5 * GB, label: "5 GB", labelKey: "cache.ceiling5gb" },
+  { bytes: 10 * GB, label: "10 GB", labelKey: "cache.ceiling10gb" },
+  { bytes: 20 * GB, label: "20 GB", labelKey: "cache.ceiling20gb" },
+];
 /** Selectable cache ceilings in bytes; `0` means the ceiling is off. */
 export const CACHE_CEILING_OPTIONS: { value: number; labelKey: TranslationKey }[] = [
   { value: 0, labelKey: "cache.ceilingOff" },

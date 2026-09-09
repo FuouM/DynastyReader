@@ -98,7 +98,7 @@ export function Topbar() {
                   </Show>
                 </button>
               </Show>
-              <Show when={route().view !== "reader"}>
+              <Show when={route().view !== "reader" && route().view !== "cache" && route().view !== "blacklist"}>
                 <IconButton
                   className="ds-btn-icon"
                   id="ds-page-refresh-btn"

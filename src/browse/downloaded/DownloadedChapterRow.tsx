@@ -34,7 +34,16 @@ export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
         <span class="ds-truncate" style="font-size:12px;font-weight:500;">{props.ch.chapterTitle}</span>
       </div>
       <div class="ds-chapter-badge ds-muted" style="font-size:11px;font-style:normal;display:flex;gap:6px;align-items:center;flex-shrink:0;">
-        <span>{props.ch.pageCount}p</span>
+        <span>
+          <Show
+            when={props.ch.pageTotal > 0 && props.ch.pageCount < props.ch.pageTotal}
+            fallback={`${props.ch.pageCount}p`}
+          >
+            <span class="ds-partial-text" title={`${props.ch.pageCount} of ${props.ch.pageTotal} pages cached`}>
+              {props.ch.pageCount}/{props.ch.pageTotal}
+            </span>
+          </Show>
+        </span>
         <Show when={props.ch.totalSizeBytes > 0}>
           <span>·</span>
           <span>{formatBytes(props.ch.totalSizeBytes)}</span>

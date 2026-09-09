@@ -351,6 +351,7 @@ export interface FullyCachedChapterRow {
   lastCachedAt: number;
   coverPath: string | null;
   tags?: { type?: string; name?: string; permalink?: string }[];
+  isFullyCached?: boolean;
 }
 
 export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]> {
@@ -365,9 +366,9 @@ export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]>
     const info = chapterInfo.get(cp);
 
     const totalPages = meta?.pagesCount || info?.pageTotal || 0;
-    const isFullyCached = totalPages > 0 ? row.pageCount >= totalPages : row.pageCount > 0;
+    const isFullyCached = totalPages > 0 ? row.pageCount >= totalPages : true;
 
-    if (isFullyCached) {
+    if (row.pageCount > 0) {
       const seriesPermalink = meta?.seriesPermalink || info?.seriesPermalink || null;
       const seriesName = meta?.seriesName || info?.seriesName || null;
       const chapterTitle = meta?.title || info?.chapterTitle || cp;
@@ -389,6 +390,7 @@ export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]>
         lastCachedAt: row.lastCachedAt,
         coverPath,
         tags: meta?.tags,
+        isFullyCached,
       });
     }
   }

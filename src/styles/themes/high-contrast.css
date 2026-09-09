@@ -51,6 +51,8 @@
     --ds-warn-bg: #1a0a00;
     --ds-warn-text: #ffaa80;
     --ds-warn-border: #883300;
+    --ds-partial-text: #ffaa00;
+    --ds-partial-border: #ffaa00;
     /* reader */
     --ds-reader-bg: #000000;
     --ds-reader-viewport-bg: #000000;

@@ -666,6 +666,10 @@
     background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 0%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
     border: 1px solid var(--sys-border-focus, #3c7fb1) !important;
   }
+  [data-theme="windows7"] .ds-legend-swatch.partial {
+    background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #eaf6fd) 0%, var(--ds-accent-hover-grad-2, #bee6fd) 45%, var(--ds-accent-hover-grad-3, #a7d9f5) 100%) !important;
+    border: 1px dashed var(--sys-border-focus, #3c7fb1) !important;
+  }
   [data-theme="windows7"] .ds-legend-swatch.read {
     background: linear-gradient(180deg, #f2f2f2 0%, #ebebeb 50%, #dddddd 51%, #cfcfcf 100%) !important;
     border: 1px solid #8e8f8f !important;

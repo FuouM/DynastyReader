@@ -747,6 +747,25 @@
   background: var(--sys-button-hover);
   border: 1px solid var(--sys-border-focus);
 }
+.ds-legend-swatch.partial {
+  background: var(--sys-button-hover);
+  border: 1px dashed var(--ds-partial-border, #d97706);
+  position: relative;
+  overflow: hidden;
+}
+.ds-legend-swatch.partial::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  height: 2px;
+  background: var(--ds-partial-border, #d97706);
+}
+:is(:root[data-theme="dark"], body.ds-dark) .ds-legend-swatch.partial::after {
+  background: var(--ds-partial-border, #f59e0b);
+}
+
 
 .ds-legend-swatch.read {
   background: var(--sys-control-bg);
@@ -828,6 +847,35 @@
   font-size: 9px;
   opacity: 0.85;
 }
+.ds-chapter-seat--partial {
+  border: 1px dashed var(--ds-partial-border, #d97706) !important;
+  color: var(--ds-partial-text, #92400e) !important;
+}
+:is(:root[data-theme="dark"], body.ds-dark) .ds-chapter-seat--partial {
+  border-color: var(--ds-partial-border, #f59e0b) !important;
+  color: var(--ds-partial-text, #fbbf24) !important;
+}
+.ds-seat-partial-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--ds-partial-border, #d97706);
+  border-radius: 0 0 0 var(--radius-1);
+  pointer-events: none;
+  max-width: 100%;
+}
+:is(:root[data-theme="dark"], body.ds-dark) .ds-seat-partial-bar {
+  background: var(--ds-partial-border, #f59e0b);
+}
+.ds-partial-text {
+  color: var(--ds-partial-text, #92400e);
+  font-weight: 600;
+}
+:is(:root[data-theme="dark"], body.ds-dark) .ds-partial-text {
+  color: var(--ds-partial-text, #fbbf24);
+}
+
 
 /* Bookmark Dog-Ear / Corner Fold on Chapter Seat & Legend */
 .ds-chapter-seat--bookmarked::before,

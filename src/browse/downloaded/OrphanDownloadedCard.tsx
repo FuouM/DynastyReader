@@ -32,6 +32,10 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
     if (listLimit() === -1 || props.orphans.length <= 20) return props.orphans;
     return props.orphans.slice(0, listLimit());
   });
+  const partialCount = createMemo(() =>
+    props.orphans.filter((c) => c.pageTotal > 0 && c.pageCount < c.pageTotal).length,
+  );
+
 
   return (
     <GroupBox
@@ -43,6 +47,15 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
         <span class="ds-icon-text">
           <BookIcon />
           <span>Individual Chapters / Oneshots ({props.totalCount ?? props.orphans.length})</span>
+          <Show when={partialCount() > 0}>
+            <span
+              class="ds-partial-text"
+              style="font-size:11px;margin-left:4px;"
+              title={`${partialCount()} of ${props.orphans.length} individual chapters partially cached`}
+            >
+              ({partialCount()} partial)
+            </span>
+          </Show>
         </span>
       }
       actions={

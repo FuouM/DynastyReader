@@ -122,6 +122,16 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
   const firstUnread = createMemo(() =>
     props.group.chapters.find((c) => !c.isRead),
   );
+  const partialChapters = createMemo(() =>
+    props.group.chapters.filter((c) => c.pageTotal > 0 && c.pageCount < c.pageTotal),
+  );
+  const partialCachedPages = createMemo(() =>
+    partialChapters().reduce((acc, c) => acc + c.pageCount, 0),
+  );
+  const partialTotalPages = createMemo(() =>
+    partialChapters().reduce((acc, c) => acc + c.pageTotal, 0),
+  );
+
 
   const navigateToChapter = (ch: ProcessedCachedChapter) =>
     navigate({
@@ -225,6 +235,15 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
         </Show>
         <div class="ds-downloaded-summary-text ds-muted">
           <span>{props.group.chapters.length} chapters</span>
+          <Show when={partialChapters().length > 0}>
+            <span>·</span>
+            <span
+              class="ds-partial-text"
+              title={`${partialCachedPages()} of ${partialTotalPages()} pages cached across ${partialChapters().length} partial chapters`}
+            >
+              {partialChapters().length} partial ({partialCachedPages()}/{partialTotalPages()})
+            </span>
+          </Show>
           <Show when={props.group.totalSizeBytes > 0}>
             <span>·</span>
             <span>{formatBytes(props.group.totalSizeBytes)}</span>
@@ -271,7 +290,13 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
           <For each={displayedChapters()}>
             {(ch, idx) => {
               const showVol = () => showVolDivider(hasMultipleVolumes(), ch, displayedChapters(), idx());
-              const tooltip = `${ch.chapterTitle}${ch.volumeHeader ? ` (${ch.volumeHeader})` : ""}\n${ch.pageCount} pages · ${formatBytes(ch.totalSizeBytes)}${ch.isRead ? " · Read" : " · Unread"}${ch.isBookmarked ? " · Bookmarked" : ""}\nClick to read offline`;
+              const isPartial = ch.pageTotal > 0 && ch.pageCount < ch.pageTotal;
+              const pct = isPartial ? Math.round((ch.pageCount / ch.pageTotal) * 100) : 100;
+              const pagesLabel = isPartial
+                ? `${ch.pageCount}/${ch.pageTotal} pages cached (${pct}%)`
+                : `${ch.pageCount} pages`;
+              const partialTag = isPartial ? " · Partial" : "";
+              const tooltip = `${ch.chapterTitle}${ch.volumeHeader ? ` (${ch.volumeHeader})` : ""}\n${pagesLabel}${partialTag} · ${formatBytes(ch.totalSizeBytes)}${ch.isRead ? " · Read" : " · Unread"}${ch.isBookmarked ? " · Bookmarked" : ""}\nClick to read offline`;
 
               return (
                 <>
@@ -284,7 +309,7 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
                   </Show>
                   <button
                     type="button"
-                    class={`win-button ds-chapter-seat ${ch.isRead ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${ch.isBookmarked ? " ds-chapter-seat--bookmarked" : ""}`}
+                    class={`win-button ds-chapter-seat ${ch.isRead ? "ds-chapter-seat--read" : "ds-chapter-seat--downloaded"}${ch.isBookmarked ? " ds-chapter-seat--bookmarked" : ""}${isPartial ? " ds-chapter-seat--partial" : ""}`}
                     title={tooltip}
                     onClick={() => navigateToChapter(ch)}
                   >
@@ -292,6 +317,12 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
                       <CheckIcon size={10} class="ds-seat-check" />
                     </Show>
                     <span>{ch.shortLabel}</span>
+                    <Show when={isPartial}>
+                      <span
+                        class="ds-seat-partial-bar"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </Show>
                   </button>
                 </>
               );
