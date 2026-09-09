@@ -17,19 +17,19 @@ open class RustPlugin : Plugin<Project> {
     override fun apply(project: Project) = with(project) {
         config = extensions.create("rust", Config::class.java)
 
-        val defaultAbiList = listOf("arm64-v8a", "armeabi-v7a", "x86_64")
-        val defaultArchList = listOf("arm64", "arm", "x86_64")
-        val defaultTargetsList = listOf("aarch64", "armv7", "x86_64")
+        val defaultAbiList = listOf("arm64-v8a", "x86_64")
+        val defaultArchList = listOf("arm64", "x86_64")
+        val defaultTargetsList = listOf("aarch64", "x86_64")
 
         val rawAbiList = (findProperty("abiList") as? String)?.split(',') ?: defaultAbiList
         val rawArchList = (findProperty("archList") as? String)?.split(',') ?: defaultArchList
         val rawTargetsList = (findProperty("targetList") as? String)?.split(',') ?: defaultTargetsList
 
-        // Exclude 32-bit x86 / i686 if passed by Tauri CLI default all-targets invocation
+        // Exclude obsolete 32-bit ABIs (x86/i686 and arm/armv7) if passed by default CLI invocations
         val indicesToKeep = rawArchList.indices.filter {
             val arch = rawArchList[it]
             val target = if (it < rawTargetsList.size) rawTargetsList[it] else ""
-            arch != "x86" && target != "i686"
+            arch != "x86" && target != "i686" && arch != "arm" && target != "armv7"
         }
         val abiList = indicesToKeep.map { rawAbiList.getOrElse(it) { "" } }.filter { it.isNotEmpty() }
         val archList = indicesToKeep.map { rawArchList[it] }
