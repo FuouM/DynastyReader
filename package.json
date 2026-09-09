@@ -1,13 +1,14 @@
 {
   "name": "dynasty-reader",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "bump": "node scripts/bump-version.js"
   },
   "dependencies": {
     "@solid-primitives/connectivity": "^0.4.6",
