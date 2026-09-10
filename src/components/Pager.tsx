@@ -10,6 +10,7 @@ import {
   ChevronRightIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
+  CheckIcon,
 } from "./Icon";
 import { Button } from "./Button";
 
@@ -81,12 +82,12 @@ export function Pager(props: PagerProps) {
           {t("dialogs.pager.ofTotal", { total: props.totalPages })}
         </span>
         <Button
-          className="ds-btn-sm ds-pager-go-btn"
+          className="ds-btn-icon ds-pager-go-btn"
+          icon={<CheckIcon size={12} />}
           title={t("dialogs.pager.jumpButton")}
+          aria-label={t("dialogs.pager.jumpButton")}
           onClick={doJump}
-        >
-          {t("dialogs.pager.jumpButton")}
-        </Button>
+        />
       </div>
 
       <Button

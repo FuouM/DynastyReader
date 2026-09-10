@@ -276,12 +276,12 @@
   display: none !important;
 }
 .ds-library-panel .ds-item-actions .win-button {
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  max-width: 24px;
   aspect-ratio: 1 / 1;
-  padding: 0 !important;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;

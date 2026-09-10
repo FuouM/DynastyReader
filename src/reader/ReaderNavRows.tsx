@@ -284,7 +284,7 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
         onClick={() => s.gotoPrevChapter()}
       />
       <div class="ds-mobile-scrubber-wrap">
-        <span class="ds-mobile-page-badge ds-mobile-page-badge--cur">{current()}</span>
+        <span class="ds-mobile-scrubber-text ds-mobile-scrubber-cur">{current()}</span>
         <input
           type="range"
           class="ds-mobile-scrubber-slider"
@@ -306,7 +306,7 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
           }}
           aria-label={t("reader.toolbar.jumpToPage")}
         />
-        <span class="ds-mobile-page-badge">{total()}</span>
+        <span class="ds-mobile-scrubber-text ds-mobile-scrubber-tot">{total()}</span>
       </div>
       <IconButton
         className="ds-btn-icon ds-mobile-nav-btn"

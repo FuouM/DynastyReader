@@ -63,16 +63,16 @@
 }
 .ds-item-actions .ds-btn-icon,
 .ds-item-actions .ds-btn-icon-sm {
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  max-width: 24px;
   aspect-ratio: 1 / 1;
-  padding: 0 !important;
+  padding: 0;
   font-size: 11.5px;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
 }
 
@@ -447,10 +447,14 @@
 }
 
 #ds-search-btn,
+#ds-url-paste-btn,
 #ds-url-btn {
   width: 76px;
   min-width: 76px;
   max-width: 76px;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
   justify-content: center;
   flex-shrink: 0;
   box-sizing: border-box;

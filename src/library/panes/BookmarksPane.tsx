@@ -56,7 +56,7 @@ export function BookmarksPane(props: LibraryPaneProps) {
             </div>
           }
         >
-          <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:6px;">
+          <div class="ds-bulk-actions-bar">
             <Show when={!selectMode()}>
               <Button text={t("library.selectModeButton")} onClick={toggleSelectMode} />
             </Show>

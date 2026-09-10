@@ -36,12 +36,12 @@
 /* 2-tier icon-only square button system */
 .ds-btn-icon,
 .ds-btn-icon-sm {
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
-  min-height: 24px !important;
-  max-height: 24px !important;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  max-width: 24px;
+  min-height: 24px;
+  max-height: 24px;
   aspect-ratio: 1 / 1;
   padding: 0 !important;
   display: inline-flex !important;
@@ -711,6 +711,34 @@
 .ds-modal-footer-actions .win-button,
 .ds-modal-footer-end .win-button {
   min-width: 75px;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.ds-bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.ds-bulk-actions-bar .win-button {
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-sm);
+  padding: 0 8px;
+  box-sizing: border-box;
 }
 .ds-modal-footer-end {
   display: flex;
@@ -924,6 +952,17 @@
   justify-content: flex-end;
   gap: 4px;
   flex-wrap: wrap;
+}
+.ds-pager-widget .ds-pager-go-btn {
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  line-height: 22px;
+  box-sizing: border-box;
 }
 .ds-trigger-title--warn {
   color: var(--ds-danger-text);

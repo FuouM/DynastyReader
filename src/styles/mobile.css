@@ -114,18 +114,19 @@
 }
 #ds-root[data-mobile] #ds-nav-history .ds-segmented-btn,
 #ds-root[data-mobile] .ds-reader-view-switch .ds-segmented-btn {
-  width: 30px;
-  height: 100%;
-  min-height: 0;
-  max-height: 100%;
-  min-width: 30px;
-  max-width: 30px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  font-size: 13px;
+  width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  font-size: 13px !important;
 }
 
 #ds-root[data-mobile] #ds-title {
@@ -161,18 +162,19 @@
   display: none !important;
 }
 #ds-root[data-mobile] #ds-actions .win-button {
-  width: 28px;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
-  min-width: 28px;
-  max-width: 28px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  font-size: 13px;
+  width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  font-size: 13px !important;
 }
 #ds-root[data-mobile] #ds-topbar-tools {
   display: inline-flex;
@@ -181,18 +183,19 @@
   flex-shrink: 0;
 }
 #ds-root[data-mobile] #ds-topbar-tools .ds-btn-icon {
-  width: 28px;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
-  min-width: 28px;
-  max-width: 28px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  font-size: 13px;
+  width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  font-size: 13px !important;
 }
 #ds-root[data-mobile] #ds-topbar-downloads-btn {
   width: auto !important;
@@ -337,8 +340,10 @@
   height: 32px !important;
   min-width: 32px !important;
   max-width: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
   font-size: 14px !important;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 1 / 1 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -489,10 +494,18 @@
 }
 
 #ds-root[data-mobile] .ds-pager-widget .ds-pager-go-btn {
+  width: 24px !important;
   height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
   min-height: 24px !important;
-  padding: 0 8px !important;
+  max-height: 24px !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
   font-size: 11px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 #ds-root[data-mobile] .tag-pill {
@@ -689,12 +702,13 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 }
 
 .ds-mobile-nav-btn {
-  width: 26px !important;
-  min-width: 26px !important;
-  max-width: 26px !important;
+  width: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
   height: 24px !important;
   min-height: 24px !important;
   max-height: 24px !important;
+  aspect-ratio: 1 / 1 !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -710,33 +724,29 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   height: 24px !important;
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 8px !important;
 }
 
-.ds-mobile-page-badge {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  height: 19px !important;
-  min-width: 24px !important;
-  padding: 0 5px !important;
-  background: var(--sys-control-bg, #ececec) !important;
-  border: 1px solid var(--sys-button-border, #adadad) !important;
-  border-radius: 10px !important;
+.ds-mobile-scrubber-text {
   font-size: 11px !important;
   font-weight: 600 !important;
   font-variant-numeric: tabular-nums !important;
-  color: var(--sys-window-text, #000) !important;
+  line-height: 24px !important;
   white-space: nowrap !important;
-  box-sizing: border-box !important;
   flex-shrink: 0 !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  min-width: 16px !important;
+  text-align: center !important;
+  user-select: none !important;
 }
 
-.ds-mobile-page-badge--cur {
+.ds-mobile-scrubber-cur {
   color: var(--sys-accent-primary, #0078d7) !important;
   font-weight: 700 !important;
-  border-color: color-mix(in srgb, var(--sys-accent-primary, #0078d7) 40%, var(--sys-button-border, #adadad)) !important;
+}
+
+.ds-mobile-scrubber-tot {
+  color: var(--sys-window-text, #666) !important;
+  opacity: 0.65 !important;
 }
 
 .ds-mobile-scrubber-slider {
@@ -794,10 +804,13 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 }
 
 #ds-root[data-mobile] .ds-reader-nav-top .ds-btn-icon {
-  width: 28px !important;
-  height: 26px !important;
-  min-width: 28px !important;
-  min-height: 26px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  aspect-ratio: 1 / 1 !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -818,7 +831,6 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   background: var(--sys-window-bg, #ffffff) !important;
   box-sizing: border-box !important;
 }
-
 #ds-root[data-mobile] .group-box.collapsed .group-box-title {
   position: static !important;
   top: unset !important;
