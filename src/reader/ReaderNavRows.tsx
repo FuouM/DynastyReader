@@ -104,7 +104,7 @@ export function ReaderMainRow(props: NavRowProps) {
         disabled={s.chapterNav().nextDisabled}
         onClick={() => s.gotoNextChapter()}
       />
-      <Show when={!isMobile() && s.mode() === "paged"}>
+      <Show when={!isMobile() && s.mode() === "paged" && !props.controlsOpen?.()}>
         <IconButton
           className="ds-nav-btn ds-btn-compact"
           classList={{ primary: s.pagedLayout() === "spread" }}

@@ -334,7 +334,9 @@
 }
 
 #ds-root[data-mobile] .ds-item-actions .win-button,
-#ds-root[data-mobile] .ds-feed-actions .win-button {
+#ds-root[data-mobile] .ds-feed-actions .win-button,
+#ds-root[data-mobile] .ds-item-actions .ds-btn-icon,
+#ds-root[data-mobile] .ds-feed-actions .ds-btn-icon {
   padding: 0 !important;
   width: 32px !important;
   height: 32px !important;

@@ -253,26 +253,31 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
       </Show>
 
       <Show when={model() !== undefined && model()!.groups.length === 0}>
-        <EmptyState
-          cssText="padding:32px 16px;text-align:center;"
-          iconName={props.kind === "series" ? "book" : "tags"}
-          iconCssText="font-size:32px;opacity:0.6;display:block;margin:0 auto 12px;"
-        >
-          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-            <div style="font-weight:600;font-size:13px;">
-              {props.kind === "series" ? t("browse.directory.noSeriesTitle") : t("browse.directory.noTagsTitle")}
-            </div>
-            <div class="ds-muted" style="max-width:320px;font-size:11.5px;margin-bottom:8px;">
-              {props.kind === "series" ? t("browse.directory.noSeriesDesc") : t("browse.directory.noTagsDesc")}
-            </div>
-            <Button
-              className="primary"
-              icon={<RefreshIcon />}
-              text={t("browse.directory.syncDirectory")}
-              onClick={() => pane.reload()}
-            />
-          </div>
-        </EmptyState>
+        {(() => {
+          const isSeries = props.kind === "series";
+          return (
+            <EmptyState
+              cssText="padding:32px 16px;text-align:center;"
+              iconName={isSeries ? "book" : "tags"}
+              iconCssText="font-size:32px;opacity:0.6;display:block;margin:0 auto 12px;"
+            >
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                <div style="font-weight:600;font-size:13px;">
+                  {isSeries ? t("browse.directory.noSeriesTitle") : t("browse.directory.noTagsTitle")}
+                </div>
+                <div class="ds-muted" style="max-width:320px;font-size:11.5px;margin-bottom:8px;">
+                  {isSeries ? t("browse.directory.noSeriesDesc") : t("browse.directory.noTagsDesc")}
+                </div>
+                <Button
+                  className="primary"
+                  icon={<RefreshIcon />}
+                  text={t("browse.directory.syncDirectory")}
+                  onClick={() => pane.reload()}
+                />
+              </div>
+            </EmptyState>
+          );
+        })()}
       </Show>
 
       <Show when={pane.error() !== undefined && model() === undefined}>

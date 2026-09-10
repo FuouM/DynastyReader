@@ -32,6 +32,18 @@ export function useBulkSelection<T>(
     setSelected(new Set<T>());
   };
 
+  const isAllSelected = (items: T[]): boolean => {
+    return items.length > 0 && selected().size === items.length;
+  };
+
+  const toggleSelectAll = (items: T[]): void => {
+    if (items.length > 0 && selected().size === items.length) {
+      clearSelection();
+    } else {
+      selectAll(items);
+    }
+  };
+
   const deleteSelected = async (): Promise<void> => {
     const items = [...selected()];
     if (items.length === 0) return;
@@ -48,5 +60,7 @@ export function useBulkSelection<T>(
     deleteSelected,
     selectAll,
     clearSelection,
+    isAllSelected,
+    toggleSelectAll,
   };
 }

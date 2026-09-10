@@ -279,40 +279,6 @@
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.95) !important;
   }
-  /* Danger / destructive button */
-  [data-theme="windows7"] .win-button.ds-danger,
-  [data-theme="windows7"] .win-button.ds-btn-danger {
-    background:
-      linear-gradient(180deg, #fce8e8 0%, #f7b4b6 45%, #e85d61 45%, #d13438 100%) !important;
-    border-color: #a82327 !important;
-    color: #ffffff !important;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
-    font-weight: 600 !important;
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.6),
-      0 1px 1px rgba(0, 0, 0, 0.1) !important;
-  }
-
-  [data-theme="windows7"] .win-button.ds-danger:hover,
-  [data-theme="windows7"] .win-button.ds-btn-danger:hover {
-    border-color: #821518 !important;
-    background:
-      linear-gradient(180deg, #fdeeee 0%, #fac6c8 45%, #ea6f73 45%, #db3d41 100%) !important;
-    color: #ffffff !important;
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.75) !important;
-  }
-
-  [data-theme="windows7"] .win-button.ds-danger:active,
-  [data-theme="windows7"] .win-button.ds-btn-danger:active {
-    border-color: #6b0f12 !important;
-    background:
-      linear-gradient(180deg, #d13438 0%, #b32428 100%) !important;
-    color: #ffffff !important;
-    box-shadow:
-      inset 1px 1px 0 rgba(0, 0, 0, 0.3) !important;
-  }
-
   /* Segmented switch frame */
   [data-theme="windows7"] .ds-segmented-switch {
     border: 1px solid #8e8f8f;
