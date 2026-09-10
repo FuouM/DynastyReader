@@ -8,6 +8,7 @@ import { createMemo, For, onCleanup, Show } from "solid-js";
 import type { SpreadGroup } from "../types/reader";
 import type { ReaderSession } from "./reader-session";
 import { ReaderSlot } from "./ReaderSlot";
+import { ReaderEndOfChapterCard } from "./ReaderEndOfChapterCard";
 export interface ReaderStripProps {
   session: ReaderSession;
 }
@@ -37,6 +38,9 @@ export function ReaderStrip(props: ReaderStripProps) {
         <For each={s.spreads()}>
           {(group) => <SpreadSlot session={s} group={group} />}
         </For>
+      </Show>
+      <Show when={!s.isHorizontal() && s.pages().length > 0}>
+        <ReaderEndOfChapterCard session={s} />
       </Show>
     </div>
   );

@@ -16,6 +16,44 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
   const [inputVal, setInputVal] = createSignal("");
   let inputRef: HTMLInputElement | undefined;
   let pillRef: HTMLDivElement | undefined;
+  let trackRef: HTMLDivElement | undefined;
+  const [isScrubbing, setIsScrubbing] = createSignal(false);
+
+  const calculatePageFromPointer = (e: PointerEvent): number => {
+    if (!trackRef) return s.currentIndex();
+    const rect = trackRef.getBoundingClientRect();
+    if (rect.width <= 0) return s.currentIndex();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const total = s.pages().length;
+    if (total <= 1) return 0;
+    const isRtl = s.isHorizontal() && s.direction() === "rtl";
+    const targetRatio = isRtl ? 1 - ratio : ratio;
+    return Math.round(targetRatio * (total - 1));
+  };
+
+  const handleTrackPointerDown = (e: PointerEvent) => {
+    if (editing() || s.pages().length <= 1) return;
+    e.preventDefault();
+    setIsScrubbing(true);
+    trackRef?.setPointerCapture(e.pointerId);
+    const targetPage = calculatePageFromPointer(e);
+    s.setPage(targetPage, false);
+  };
+
+  const handleTrackPointerMove = (e: PointerEvent) => {
+    if (!isScrubbing()) return;
+    e.preventDefault();
+    s.setPage(calculatePageFromPointer(e), false);
+  };
+
+  const handleTrackPointerUp = (e: PointerEvent) => {
+    if (!isScrubbing()) return;
+    setIsScrubbing(false);
+    if (trackRef?.hasPointerCapture(e.pointerId)) {
+      trackRef.releasePointerCapture(e.pointerId);
+    }
+    s.setPage(calculatePageFromPointer(e), true);
+  };
 
   const totalPages = () => s.pages().length;
 
@@ -163,7 +201,22 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
           </form>
         </Show>
       </div>
-      <div class="ds-reader-progress-track">
+      <div
+        ref={trackRef}
+        class="ds-reader-progress-track"
+        classList={{ "is-scrubbing": isScrubbing() }}
+        title={t("reader.toolbar.scrubberTooltip")}
+        role="slider"
+        aria-label={t("reader.toolbar.jumpToPage")}
+        aria-valuemin={1}
+        aria-valuemax={s.pages().length}
+        aria-valuenow={s.currentIndex() + 1}
+        tabIndex={0}
+        onPointerDown={handleTrackPointerDown}
+        onPointerMove={handleTrackPointerMove}
+        onPointerUp={handleTrackPointerUp}
+        onPointerCancel={handleTrackPointerUp}
+      >
         <div
           class="ds-reader-progress-fill"
           style={{

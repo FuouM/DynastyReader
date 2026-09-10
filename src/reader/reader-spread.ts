@@ -142,6 +142,17 @@ export function detectIsLongStrip(
   return tags.some(isLongStripTag);
 }
 
+/** Normalizes a chapter or series permalink for consistent routing and comparisons. */
+export function normalizePermalink(p: string): string {
+  let s = (p || "").toLowerCase().replace(/^\/+|\/+$/g, "").trim();
+  try {
+    s = decodeURIComponent(s);
+  } catch (err) {
+    log.debug("reader-spread", "decodeURIComponent failed:", s, err);
+  }
+  return s.replace(/\.json$/i, "").trim();
+}
+
 /**
  * Computes adjacent previous and next chapters from a chapter list and current permalink/title.
  */
@@ -152,21 +163,11 @@ export function getAdjacentChapters(
 ): { prevCh: ChapterRef | null; nextCh: ChapterRef | null } {
   if (!chapterList || chapterList.length === 0) return { prevCh: null, nextCh: null };
 
-  const normalize = (p: string): string => {
-    let s = (p || "").toLowerCase().replace(/^\/+|\/+$/g, "").trim();
-    try {
-      s = decodeURIComponent(s);
-    } catch (err) {
-      log.debug("reader-spread", "decodeURIComponent failed:", s, err);
-    }
-    return s.replace(/\.json$/i, "").trim();
-  };
-
-  const curPermalink = normalize(permalink);
+  const curPermalink = normalizePermalink(permalink);
   const curTitle = decodeEntities(chapterTitle || "").trim().toLowerCase();
 
   let curIdx = chapterList.findIndex((x) => {
-    const p = normalize(x.permalink);
+    const p = normalizePermalink(x.permalink);
     if (curPermalink.length > 0) {
       if (p === curPermalink || p.endsWith(`/${curPermalink}`) || curPermalink.endsWith(`/${p}`)) {
         return true;
@@ -189,7 +190,7 @@ export function getAdjacentChapters(
     if (baseSlug) {
       const baseNorm = baseSlug.replace(/[-_]+/g, "_");
       curIdx = chapterList.findIndex((x) => {
-        const xNorm = normalize(x.permalink).replace(/[-_]+/g, "_");
+        const xNorm = normalizePermalink(x.permalink).replace(/[-_]+/g, "_");
         return xNorm === baseNorm || xNorm.endsWith(`/${baseNorm}`) || xNorm.endsWith(baseNorm);
       });
     }

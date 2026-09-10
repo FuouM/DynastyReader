@@ -11,7 +11,7 @@ import { navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
 import { getPrevChapterStartPage } from "./settings";
-import { getAdjacentChapters } from "./reader-spread";
+import { getAdjacentChapters, normalizePermalink } from "./reader-spread";
 import { log } from "../utils/log";
 
 export function gotoChapter(s: ReaderSession, c: ChapterRef, targetPage?: number | "last"): void {
@@ -81,9 +81,9 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
         // If current chapter not found in stale cache, retry with forced network fetch to get fresh list with new chapter
         if (!useForce) {
           const cur = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
+          const curP = normalizePermalink(s.permalink);
           const found = cur.prevCh !== null || cur.nextCh !== null || cl.some((c) => {
-            const p = c.permalink.toLowerCase().replace(/^\/+|\/+$/g, "").replace(/\.json$/i, "");
-            const curP = s.permalink.toLowerCase().replace(/^\/+|\/+$/g, "").replace(/\.json$/i, "");
+            const p = normalizePermalink(c.permalink);
             return p === curP || p.endsWith(`/${curP}`) || curP.endsWith(`/${p}`);
           });
           if (!found && cl.length > 0) {

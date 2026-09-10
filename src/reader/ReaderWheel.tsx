@@ -15,6 +15,7 @@ import { createEffect, onCleanup } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { spreadIndexOf } from "./reader-spread";
+import { t } from "../i18n";
 
 export function ReaderWheel(props: { session: ReaderSession }) {
   const c = props.session;
@@ -36,7 +37,8 @@ export function ReaderWheel(props: { session: ReaderSession }) {
     const icon = document.createElement("i");
     icon.className = `bi bi-chevron-double-${type === "next" ? "down" : "up"}`;
     indicator.appendChild(icon);
-    indicator.appendChild(document.createTextNode(` Scroll again for ${type === "next" ? "Next" : "Prev"} Page`));
+    const msg = " " + (type === "next" ? t("reader.wheel.scrollAgainForNext") : t("reader.wheel.scrollAgainForPrev"));
+    indicator.appendChild(document.createTextNode(msg));
   };
 
   const hideIndicator = (): void => {
