@@ -9,7 +9,7 @@ import type { ChapterRef } from "../types/routes";
 import type { Series } from "../types/api";
 import type { SeriesProgressRow } from "../types/db";
 import { OfflineBadge } from "../components/OfflineBadge";
-import { Icon } from "../components/Icon";
+import { Icon, CheckIcon, CloudDownloadIcon } from "../components/Icon";
 import { IconButton } from "../components/Button";
 export interface ChapterMeta extends ChapterRef {
   volumeHeader?: string;
@@ -25,6 +25,9 @@ function ChapterRow(props: {
   seriesPermalink: string;
   seriesName: string;
   isReadInHistory: boolean;
+  seriesType?: string;
+  onDownloadChapter?: (ch: ChapterMeta) => Promise<void> | void;
+  onToggleRead?: (ch: ChapterMeta, isCurrentlyRead: boolean) => Promise<void> | void;
 }) {
   const isCompleted = () => props.prog?.completed === 1;
   const isRead = () => isCompleted() || props.isReadInHistory;
@@ -75,6 +78,25 @@ function ChapterRow(props: {
       <Show when={badges().length > 0}>
         <div class="ds-chapter-badge">{badges().join(" · ")}</div>
       </Show>
+      <div class="ds-chapter-actions" onClick={(e) => e.stopPropagation()}>
+        <Show when={props.onToggleRead}>
+          <IconButton
+            className="ds-btn-icon ds-chapter-action-btn"
+            classList={{ "is-read": isRead() }}
+            icon={<CheckIcon size={12} />}
+            title={isRead() ? t("series.markUnreadTooltip") : t("series.markReadTooltip")}
+            onClick={() => void props.onToggleRead?.(props.ch, isRead())}
+          />
+        </Show>
+        <Show when={props.seriesType !== "local" && !isFullyCached() && props.onDownloadChapter}>
+          <IconButton
+            className="ds-btn-icon ds-chapter-action-btn"
+            icon={<CloudDownloadIcon size={12} />}
+            title={t("series.downloadChapterTooltip")}
+            onClick={() => void props.onDownloadChapter?.(props.ch)}
+          />
+        </Show>
+      </div>
     </div>
   );
 }
@@ -89,6 +111,8 @@ export interface SeriesChapterListProps {
   readHistorySet: Set<string>;
   sortOrder: Accessor<"asc" | "desc">;
   setSortOrder: (v: "asc" | "desc") => void;
+  onDownloadChapter?: (ch: ChapterMeta) => Promise<void> | void;
+  onToggleRead?: (ch: ChapterMeta, isCurrentlyRead: boolean) => Promise<void> | void;
 }
 
 export function SeriesChapterList(props: SeriesChapterListProps) {
@@ -133,7 +157,10 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
                     chapters={props.chapters}
                     seriesPermalink={props.series.permalink}
                     seriesName={props.series.name}
+                    seriesType={props.series.type}
                     isReadInHistory={props.readHistorySet.has(ch.permalink)}
+                    onDownloadChapter={props.onDownloadChapter}
+                    onToggleRead={props.onToggleRead}
                   />
                 </>
               )}

@@ -32,7 +32,7 @@ import { enqueueChapters } from "../ipc";
 import { persistedSignal } from "../lib/persisted-signal";
 import { getQueuePageTotals } from "../db/cache-aggregate";
 import { addBlacklistedSeries, isSeriesBlacklisted, removeBlacklistedSeries } from "../db/blacklist.repo";
-import { followSeries, getFollowedSeriesRow, getHistoryPermalinks, getProgressForSeries, unfollowSeries } from "../db/library.repo";
+import { followSeries, getFollowedSeriesRow, getHistoryPermalinks, getProgressForSeries, unfollowSeries, markChapterRead, markChapterUnread } from "../db/library.repo";
 import { getCachedPageCounts } from "../db/cache.repo";
 import type { SeriesProgressRow } from "../types/db";
 import type { Series } from "../types/api";
@@ -48,6 +48,7 @@ import {
   BlacklistIcon,
   RefreshIcon,
   CloudDownloadIcon,
+  CheckIcon,
 } from "../components/Icon";
 import { SeriesHeader } from "./SeriesHeader";
 import { SeriesChapterList, type ChapterMeta } from "./SeriesChapterList";
@@ -307,6 +308,54 @@ export function SeriesView() {
       showBanner(errorMessage(err));
     }
   };
+  const handleDownloadSingleChapter = async (ch: ChapterMeta): Promise<void> => {
+    const d = data();
+    if (!d) return;
+    const sorted = chronologicalChapters(d.chapters);
+    const idx = sorted.findIndex((c) => c.permalink === ch.permalink);
+    const reqs = [
+      {
+        series_permalink: d.series.permalink,
+        series_title: d.series.name,
+        chapter_permalink: ch.permalink,
+        chapter_title: ch.title,
+        chapter_index: idx >= 0 ? idx : 0,
+      },
+    ];
+    try {
+      const result = await enqueueChapters(reqs);
+      if (result.already_queued_count > 0) {
+        showBanner(t("series.downloadQueuedPartialBanner", { count: 0, skipped: 1 }));
+      } else {
+        showBanner(t("series.downloadQueuedSingleBanner"));
+      }
+      refetch();
+    } catch (err) {
+      showBanner(errorMessage(err));
+    }
+  };
+
+  const handleToggleRead = async (ch: ChapterMeta, isCurrentlyRead: boolean): Promise<void> => {
+    const d = data();
+    if (!d) return;
+    try {
+      if (isCurrentlyRead) {
+        await markChapterUnread(ch.permalink);
+      } else {
+        await markChapterRead({
+          chapterPermalink: ch.permalink,
+          seriesPermalink: d.series.permalink,
+          seriesName: d.series.name,
+          chapterTitle: ch.title,
+          pageTotal: d.progress.get(ch.permalink)?.page_total,
+        });
+      }
+      refetch();
+    } catch (err) {
+      showBanner(errorMessage(err));
+    }
+  };
+
 
 
   const handleOpenAddToCol = (anchorEl: HTMLElement): void => {
@@ -325,7 +374,6 @@ export function SeriesView() {
 
   const isRedirected = (): boolean =>
     data.error !== undefined && data.error instanceof SeriesRedirected;
-  const dataErrorText = (): string => errorMessage(data.error);
 
   const ordered = createMemo<ChapterMeta[]>(() => {
     const chs = data()?.chapters ?? [];
@@ -339,7 +387,7 @@ export function SeriesView() {
       </Show>
       <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
         <ErrorRetryRow
-          message={t("series.loadError", { msg: dataErrorText() })}
+          message={t("series.loadError", { msg: errorMessage(data.error) })}
           onRetry={() => void refetch()}
         />
       </Show>
@@ -366,6 +414,8 @@ export function SeriesView() {
             onDownloadAll={data()!.series.type === "local" ? undefined : () => void handleDownloadAll()}
           />
         }
+        onDownloadChapter={handleDownloadSingleChapter}
+        onToggleRead={handleToggleRead}
       />
       </Show>
 
@@ -390,7 +440,28 @@ function SeriesBody(props: {
   sortOrder: Accessor<"asc" | "desc">;
   setSortOrder: (v: "asc" | "desc") => void;
   mobileActions?: JSX.Element;
+  onDownloadChapter?: (ch: ChapterMeta) => Promise<void> | void;
+  onToggleRead?: (ch: ChapterMeta, isCurrentlyRead: boolean) => Promise<void> | void;
 }) {
+  const resumeInfo = createMemo(() => {
+    const chapters = props.data.chapters;
+    if (chapters.length === 0) return null;
+    const sorted = chronologicalChapters(chapters);
+    const unread = sorted.find(
+      (c) =>
+        !props.data.readHistorySet.has(c.permalink) &&
+        props.data.progress.get(c.permalink)?.completed !== 1,
+    );
+    if (unread) {
+      const hasAnyRead = sorted.some(
+        (c) =>
+          props.data.readHistorySet.has(c.permalink) ||
+          props.data.progress.get(c.permalink)?.completed === 1,
+      );
+      return { chapter: unread, isStart: !hasAnyRead, isCompleted: false };
+    }
+    return { chapter: null, isStart: false, isCompleted: true };
+  });
   return (
     <>
       <Show when={props.blacklisted()}>
@@ -413,6 +484,48 @@ function SeriesBody(props: {
         </div>
       </Show>
 
+      <Show when={resumeInfo()}>
+        {(info) => (
+          <div class="ds-series-resume-banner">
+            <Show when={info().chapter}>
+              {(ch) => (
+                <button
+                  type="button"
+                  class="win-button primary ds-series-resume-btn"
+                  onClick={() => {
+                    const prog = props.data.progress.get(ch().permalink);
+                    navigate({
+                      view: "reader",
+                      seriesPermalink: props.data.series.permalink,
+                      chapterPermalink: ch().permalink,
+                      chapterTitle: ch().title,
+                      seriesName: props.data.series.name,
+                      chapterList: props.data.chapters,
+                      startPage: prog && prog.completed !== 1 ? prog.page_index : 0,
+                    });
+                  }}
+                >
+                  <span class="ds-resume-icon">▶</span>
+                  <span>
+                    {info().isStart
+                      ? t("series.startReading")
+                      : t("series.continueReading", {
+                          title: decodeEntities(ch().title),
+                        })}
+                  </span>
+                </button>
+              )}
+            </Show>
+            <Show when={info().isCompleted}>
+              <div class="ds-series-completed-banner ds-muted">
+                <CheckIcon size={14} />
+                <span>{t("series.allRead")}</span>
+              </div>
+            </Show>
+          </div>
+        )}
+      </Show>
+
       <SeriesTaggables series={props.data.series} />
 
       <SeriesChapterList
@@ -425,6 +538,8 @@ function SeriesBody(props: {
         queueTotals={props.data.queueTotals}
         sortOrder={props.sortOrder}
         setSortOrder={props.setSortOrder}
+        onDownloadChapter={props.onDownloadChapter}
+        onToggleRead={props.onToggleRead}
       />
     </>
   );

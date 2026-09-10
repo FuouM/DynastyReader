@@ -799,7 +799,116 @@ body {
   color: var(--sys-text-muted, #666);
   flex-shrink: 0;
 }
+.ds-chapter-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ds-chapter-action-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0;
+  border-radius: 3px;
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+}
+.ds-chapter-row:hover .ds-chapter-action-btn,
+.ds-chapter-action-btn.is-read {
+  opacity: 1;
+}
+.ds-chapter-action-btn.is-read {
+  color: #10b981;
+}
+.ds-series-resume-banner {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+}
+.ds-series-resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+.ds-series-completed-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  padding: 4px 10px;
+  background: color-mix(in srgb, #10b981 12%, transparent);
+  color: #10b981;
+  border-radius: 12px;
+  font-weight: 600;
+}
 
+/* Hotkey Cheatsheet Modal */
+.ds-cheatsheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 4px;
+}
+@media (max-width: 600px) {
+  .ds-cheatsheet-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+.ds-cheatsheet-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--sys-border-light, #ddd);
+  color: var(--sys-link, var(--sys-primary));
+}
+.ds-cheatsheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ds-cheatsheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  padding: 2px 0;
+}
+.ds-cheatsheet-label {
+  color: var(--sys-window-text);
+}
+.ds-cheatsheet-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ds-kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 14px;
+  color: var(--sys-window-text);
+  background: color-mix(in srgb, var(--sys-window-text) 6%, var(--sys-window-bg, #fff));
+  border: 1px solid color-mix(in srgb, var(--sys-window-text) 20%, transparent);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
 /* Modal Dialog System (Native Desktop Style) */
 .ds-modal-backdrop {
   position: fixed;
