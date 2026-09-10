@@ -205,6 +205,22 @@ export const HOTKEY_DEFINITIONS: HotkeyDefinition[] = [
     scope: "global",
     defaultKeys: ["Ctrl+w"],
   },
+  {
+    id: "global.openSearch",
+    get label() { return t("settings.hotkeys.actions.globalOpenSearch"); },
+    get description() { return t("settings.hotkeys.actions.globalOpenSearchDesc"); },
+    get category() { return t("settings.hotkeys.categories.navigation") as HotkeyCategory; },
+    scope: "global",
+    defaultKeys: ["Ctrl+f"],
+  },
+  {
+    id: "global.openCheatsheet",
+    get label() { return t("settings.hotkeys.actions.globalOpenCheatsheet"); },
+    get description() { return t("settings.hotkeys.actions.globalOpenCheatsheetDesc"); },
+    get category() { return t("settings.hotkeys.categories.navigation") as HotkeyCategory; },
+    scope: "global",
+    defaultKeys: ["?", "F1"],
+  },
 ];
 
 export const HOTKEY_DEFINITIONS_MAP = Object.fromEntries(

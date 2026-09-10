@@ -46,6 +46,12 @@ export function GlobalShortcuts() {
         consumeHotkeyEvent(ev);
         closeSessionMangaTab();
       }
+    } else if (matchesHotkey(ev, "global.openSearch")) {
+      consumeHotkeyEvent(ev);
+      navigate({ view: "browse", browseTab: "search" });
+    } else if (matchesHotkey(ev, "global.openCheatsheet")) {
+      consumeHotkeyEvent(ev);
+      window.dispatchEvent(new CustomEvent("ds-open-cheatsheet"));
     }
   };
 

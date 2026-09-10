@@ -33,7 +33,9 @@ export type GlobalActionId =
   | "global.openSettings"
   | "global.navBrowse"
   | "global.navLibrary"
-  | "global.closeTab";
+  | "global.closeTab"
+  | "global.openSearch"
+  | "global.openCheatsheet";
 
 export type HotkeyActionId = ReaderActionId | GlobalActionId;
 

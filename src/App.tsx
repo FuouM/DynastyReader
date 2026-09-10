@@ -24,6 +24,7 @@ import { isMobile } from "./stores/platform";
 import { Topbar } from "./components/Topbar";
 import { BottomNav } from "./components/BottomNav";
 import { GlobalShortcuts } from "./hotkeys/GlobalShortcuts";
+import { HotkeyCheatsheetModal } from "./components/HotkeyCheatsheetModal";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
 import { Loading } from "./components/Loading";
@@ -92,6 +93,7 @@ export function App() {
       }}
     >
       <GlobalShortcuts />
+      <HotkeyCheatsheetModal />
       <a href="#ds-main-content" class="ds-skip-link">{t("common.skipToContent")}</a>
       <Topbar />
       <main id="ds-main-content" tabIndex={-1}>
