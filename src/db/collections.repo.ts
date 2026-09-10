@@ -80,6 +80,22 @@ export async function deleteCollection(id: number): Promise<void> {
 }
 
 /**
+ * Renames a custom collection.
+ * Default collections cannot be renamed.
+ */
+export async function renameCollection(id: number, name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Collection name cannot be empty.");
+  const existing = await getCollectionById(id);
+  if (!existing) throw new Error("Collection not found.");
+  if (existing.is_default) {
+    throw new Error("The default Favorites collection cannot be renamed.");
+  }
+  await execute("UPDATE collections SET name = ? WHERE id = ?", [trimmed, id]);
+  notifyCollectionsChanged();
+}
+
+/**
  * Returns all items belonging to a collection, ordered by most recently added.
  */
 export async function getCollectionItems(collectionId: number): Promise<CollectionItemRow[]> {

@@ -154,6 +154,43 @@ export async function getProgressForSeries(seriesPermalink: string): Promise<Ser
   );
 }
 
+/** Manually marks a chapter as read in both reading_progress and reading_history. */
+export async function markChapterRead(p: {
+  chapterPermalink: string;
+  seriesPermalink: string;
+  seriesName: string;
+  chapterTitle: string;
+  pageTotal?: number;
+}): Promise<void> {
+  await Promise.all([
+    setReadingProgress({
+      chapterPermalink: p.chapterPermalink,
+      seriesPermalink: p.seriesPermalink,
+      seriesName: p.seriesName,
+      chapterTitle: p.chapterTitle,
+      pageIndex: 0,
+      pageTotal: p.pageTotal ?? 1,
+      completed: true,
+    }),
+    addHistory({
+      chapterPermalink: p.chapterPermalink,
+      seriesPermalink: p.seriesPermalink,
+      seriesName: p.seriesName,
+      chapterTitle: p.chapterTitle,
+    }),
+  ]);
+}
+
+/** Manually marks a chapter as unread by deleting its progress and history records. */
+export async function markChapterUnread(chapterPermalink: string): Promise<void> {
+  await Promise.all([
+    execute(`DELETE FROM reading_progress WHERE chapter_permalink = ?`, [chapterPermalink]),
+    execute(`DELETE FROM reading_history WHERE chapter_permalink = ?`, [chapterPermalink]),
+  ]);
+  notifyProgressChanged();
+  notifyHistoryChanged();
+}
+
 export async function addHistory(p: {
   chapterPermalink: string;
   seriesPermalink: string;
@@ -201,9 +238,11 @@ export async function clearHistory(): Promise<void> {
 export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
   return queryPaged<HistoryRow>(
     `SELECT COUNT(*) as count FROM reading_history`,
-    `SELECT id, chapter_permalink, series_permalink, series_name, chapter_title, read_at
-     FROM reading_history
-     ORDER BY read_at DESC, id DESC LIMIT ? OFFSET ?`,
+    `SELECT rh.id, rh.chapter_permalink, rh.series_permalink, rh.series_name, rh.chapter_title, rh.read_at,
+            rp.page_index, rp.page_total, rp.completed
+     FROM reading_history rh
+     LEFT JOIN reading_progress rp ON rh.chapter_permalink = rp.chapter_permalink
+     ORDER BY rh.read_at DESC, rh.id DESC LIMIT ? OFFSET ?`,
     page,
     pageSize,
   );

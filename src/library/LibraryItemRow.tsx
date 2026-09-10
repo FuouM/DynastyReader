@@ -35,6 +35,8 @@ export interface LibraryItemRowProps {
   onEdit?: () => void;
   exportTitle?: string;
   onExport?: () => void;
+  playTitle?: string;
+  onPlay?: () => void;
   deleteTitle?: string;
   onDelete?: () => Promise<void> | void;
   /** QoL-L3: bulk-select mode — row click toggles selection, actions hidden. */
@@ -143,6 +145,17 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
               onClick={(ev) => {
                 ev.stopPropagation();
                 props.onEdit!();
+              }}
+            />
+          </Show>
+          <Show when={props.onPlay}>
+            <IconButton
+              icon={<i class="bi bi-play-fill" />}
+              className="ds-btn-icon"
+              title={props.playTitle || t("library.continueReading")}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                props.onPlay!();
               }}
             />
           </Show>

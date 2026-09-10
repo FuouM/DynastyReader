@@ -99,6 +99,19 @@ function FollowedSeriesRowCard(props: {
   const openSeries = (): void => {
     navigate({ view: "series", seriesPermalink: props.row.permalink, seriesName: props.row.name });
   };
+  const continueReading = (): void => {
+    if (props.row.latest_chapter_permalink) {
+      navigate({
+        view: "reader",
+        seriesPermalink: props.row.permalink,
+        chapterPermalink: props.row.latest_chapter_permalink,
+        chapterTitle: props.row.latest_chapter_title ?? props.row.latest_chapter_permalink,
+        seriesName: props.row.name,
+      });
+    } else {
+      openSeries();
+    }
+  };
 
   return (
     <LibraryItemRow
@@ -115,6 +128,8 @@ function FollowedSeriesRowCard(props: {
       onCoverRetry={handleCoverError}
       actionLabel={t("common.open")}
       actionIcon="bi-folder2-open"
+      playTitle={t("library.continueReading")}
+      onPlay={props.row.latest_chapter_permalink ? continueReading : undefined}
       externalUrl={dynastyUrl("series", props.row.permalink)}
       deleteTitle={t("library.unfollowTooltip")}
       onDelete={async () => {

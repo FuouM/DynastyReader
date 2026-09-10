@@ -18,11 +18,12 @@ import { setActions, setTitle, showBanner } from "../stores/topbar";
 import { decodeEntities } from "../utils/html";
 import { formatDate } from "../utils/formatting";
 import { dynastyUrl } from "../utils/url";
+import { errorMessage } from "../utils/errors";
 import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api/series";
 import { getBlacklistMode, getBlacklistRevision, isSeriesBlacklisted } from "../db/blacklist.repo";
-import { getCollectionById, getCollectionItems, getCollectionsRevision, onCollectionsChanged, removeItemFromCollection, updateCollectionItemCover } from "../db/collections.repo";
+import { getCollectionById, getCollectionItems, getCollectionsRevision, onCollectionsChanged, removeItemFromCollection, updateCollectionItemCover, renameCollection } from "../db/collections.repo";
 import { deleteCached } from "../db/metadata.repo";
 import { seriesCoverKey } from "../lib/cache-keys";
 import type { CollectionItemRow, CollectionRow } from "../types/db";
@@ -37,8 +38,9 @@ import {
 } from "../components/Icon";
 import { ExportModal } from "./ExportModal";
 import { ImportModal } from "./ImportModal";
-import { IconButton } from "../components/Button";
+import { IconButton, Button } from "../components/Button";
 import { InputField } from "../components/InputField";
+import { Modal } from "../components/Modal";
 import { LibraryItemRow } from "./LibraryItemRow";
 
 export interface CollectionDetailViewProps {
@@ -67,6 +69,34 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
   const [filter, setFilter] = createSignal("");
   const [exportOpen, setExportOpen] = createSignal(false);
   const [importOpen, setImportOpen] = createSignal(false);
+  const [renameOpen, setRenameOpen] = createSignal(false);
+  const [renameName, setRenameName] = createSignal("");
+  const [renaming, setRenaming] = createSignal(false);
+
+  const openRename = () => {
+    const c = data()?.collection;
+    if (!c || c.is_default) return;
+    setRenameName(c.name);
+    setRenameOpen(true);
+  };
+
+  const handleRenameSubmit = async (e: Event) => {
+    e.preventDefault();
+    const id = props.collectionId;
+    const name = renameName().trim();
+    if (!name) return;
+    setRenaming(true);
+    try {
+      await renameCollection(id, name);
+      showBanner(t("library.renamedCollectionBanner", { name }));
+      setRenameOpen(false);
+      setTick((t) => t + 1);
+    } catch (err) {
+      showBanner(t("library.renameCollectionError", { msg: errorMessage(err) }));
+    } finally {
+      setRenaming(false);
+    }
+  };
   const [data] = createResource(
     () => ({ id: props.collectionId, tick: tick(), rev: rev() }),
     async ({ id }) => {
@@ -99,6 +129,14 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
           title={t("library.exportCollectionTooltip")}
           onClick={() => setExportOpen(true)}
         />
+        <Show when={data()?.collection && !data()!.collection!.is_default}>
+          <IconButton
+            icon={<Icon name="pencil" />}
+            text={t("library.renameCollection")}
+            title={t("library.renameCollectionTooltip")}
+            onClick={openRename}
+          />
+        </Show>
         <IconButton
           icon={<RefreshIcon />}
           text={t("common.refresh")}
@@ -215,6 +253,38 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
         onClose={() => setImportOpen(false)}
         onImported={() => setTick((t) => t + 1)}
       />
+      <Modal
+        open={renameOpen()}
+        title={t("library.renameCollectionModalTitle")}
+        onClose={() => setRenameOpen(false)}
+        width={400}
+        footer={
+          <div class="ds-modal-footer-end">
+            <Button
+              text={t("common.cancel")}
+              onClick={() => setRenameOpen(false)}
+            />
+            <Button
+              className="primary"
+              text={t("library.renameCollectionConfirm")}
+              disabled={renaming() || !renameName().trim()}
+              onClick={handleRenameSubmit}
+            />
+          </div>
+        }
+      >
+        <form onSubmit={handleRenameSubmit}>
+          <div class="ds-form-group ds-mb-12">
+            <label class="ds-label ds-mb-4">{t("library.renameCollectionNameLabel")}</label>
+            <InputField
+              value={renameName()}
+              onInput={setRenameName}
+              placeholder={t("library.createCollectionNamePlaceholder")}
+              autofocus
+            />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

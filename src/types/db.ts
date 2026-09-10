@@ -52,6 +52,9 @@ export interface HistoryRow {
   series_name: string;
   chapter_title: string;
   read_at: number;
+  page_index?: number | null;
+  page_total?: number | null;
+  completed?: number | null;
 }
 
 export interface HistoryPageResult {

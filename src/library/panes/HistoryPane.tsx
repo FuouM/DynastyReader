@@ -76,6 +76,13 @@ export function HistoryPane(props: LibraryPaneProps) {
               <LibraryItemRow
                 title={row.chapter_title}
                 subtitle={`${decodeEntities(row.series_name)} · ${t("library.readOn", { date: formatDate(Number(row.read_at)) })}`}
+                badge={
+                  row.completed === 1
+                    ? `✓ ${t("series.completedBadge")}`
+                    : typeof row.page_index === "number" && typeof row.page_total === "number" && row.page_total > 0
+                      ? `Pg ${row.page_index + 1}/${row.page_total}`
+                      : undefined
+                }
                 isFullyCached={data()!.fullyCachedSet.has(row.chapter_permalink)}
                 onOpen={() =>
                   navigate({
