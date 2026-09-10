@@ -422,6 +422,7 @@ export const en = {
       jumpInputPlaceholder: "Page #",
       jumpSubmit: "Jump to page",
       toggleControlsTooltip: "Toggle Reader Controls (Zoom, Fit, Layout)",
+      controlsSheetTitle: "Reader Controls",
       scrollLockInstantTooltip: "Page Slide Animation: Instant slide (click for smooth)",
       scrollLockSmoothTooltip: "Page Slide Animation: Smooth slide (click for instant)",
       scrollLockWheelTooltip: "Scroll Lock: mouse wheel flips exactly one page at a time (click for free scroll)",

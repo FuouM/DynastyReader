@@ -84,6 +84,26 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
     s.setControlsOpen(false);
   };
 
+  let touchStartY = 0;
+  let touchDiffY = 0;
+  const handleTouchStart = (ev: TouchEvent) => {
+    if (ev.touches.length === 1) {
+      touchStartY = ev.touches[0].clientY;
+      touchDiffY = 0;
+    }
+  };
+  const handleTouchMove = (ev: TouchEvent) => {
+    if (ev.touches.length === 1) {
+      touchDiffY = ev.touches[0].clientY - touchStartY;
+    }
+  };
+  const handleTouchEnd = () => {
+    if (touchDiffY > 60) {
+      requestClose();
+    }
+    touchStartY = 0;
+    touchDiffY = 0;
+  };
   return (
     <Show when={mounted()}>
       <Portal mount={document.body}>
@@ -102,12 +122,16 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
             classList={{ "ds-sheet-closing": closing() }}
             onPointerDown={(ev) => ev.stopPropagation()}
             onClick={(ev) => ev.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             role="dialog"
             aria-modal="true"
           >
+            <div class="ds-sheet-drag-handle" />
             <div class="ds-reader-sheet-header">
               <div class="ds-modal-title">
-                <IconText icon={<ToolIcon />}>{t("settings.reader.title")}</IconText>
+                <IconText icon={<ToolIcon />}>{t("reader.toolbar.controlsSheetTitle")}</IconText>
               </div>
               <IconButton
                 className="ds-modal-close"

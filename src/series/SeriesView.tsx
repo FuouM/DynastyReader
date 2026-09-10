@@ -458,7 +458,7 @@ function SeriesActions(props: SeriesActionsProps) {
       />
       <Button
         icon={props.blacklisted() ? <BlacklistIcon filled={true} color="var(--ds-warn-text,#d97706)" /> : <BlacklistIcon />}
-        text={props.blacklisted() ? t("series.blacklistedBadge") : t("blacklist.title").split(" ")[0]}
+        text={props.blacklisted() ? t("series.blacklistedBadge") : t("series.blacklistButton")}
         classList={{ active: props.blacklisted() }}
         title={props.blacklisted() ? t("series.unblacklistTooltip") : t("series.blacklistTooltip")}
         disabled={props.busyBlacklist()}

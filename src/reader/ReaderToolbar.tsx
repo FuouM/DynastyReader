@@ -18,7 +18,7 @@ import { errorMessage } from "../utils/errors";
 import { t } from "../i18n";
 import { getReaderNavPosition, getReaderFilterCss } from "./settings";
 import { IconButton } from "../components/Button";
-import { ReaderMainRow, ReaderControlsRow } from "./ReaderNavRows";
+import { ReaderMainRow, ReaderControlsRow, ReaderMobileBottomBar } from "./ReaderNavRows";
 import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
 import {
   ToolIcon,
@@ -109,7 +109,7 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
                 </span>
               </Show>
             </div>
-            <div class="ds-row ds-row-gap-2">
+            <div class="ds-reader-mobile-actions">
               <IconButton
                 className="ds-btn-icon"
                 classList={{ primary: s.bookmarked() }}
@@ -167,12 +167,7 @@ export function ReaderBottomNav(props: { session: ReaderSession }) {
         classList={{ "ds-toolbar-hidden": !s.toolbarVisible() }}
       >
         <Show when={isMobile()}>
-          <ReaderMainRow
-            session={s}
-            showChapterText={false}
-            showControlsToggle={false}
-            progressProps={{ showPrefix: false, showCachedNote: false }}
-          />
+          <ReaderMobileBottomBar session={s} />
         </Show>
         <Show when={!isMobile() && navPos() === "bottom"}>
           <ReaderMainRow

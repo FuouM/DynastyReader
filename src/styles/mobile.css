@@ -107,28 +107,25 @@
   height: 24px;
 }
 
-#ds-root[data-mobile] #ds-view-switch .ds-btn-text {
+#ds-root[data-mobile] #ds-view-switch,
+#ds-root[data-mobile] .ds-session-tab,
+#ds-root[data-mobile] #ds-page-refresh-btn {
   display: none !important;
 }
-#ds-root[data-mobile] #ds-view-switch .ds-segmented-btn,
 #ds-root[data-mobile] #ds-nav-history .ds-segmented-btn,
 #ds-root[data-mobile] .ds-reader-view-switch .ds-segmented-btn {
-  width: 24px;
+  width: 30px;
   height: 100%;
   min-height: 0;
   max-height: 100%;
-  min-width: 24px;
-  max-width: 24px;
+  min-width: 30px;
+  max-width: 30px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  font-size: 12px;
-}
-#ds-root[data-mobile] .ds-session-tab {
-  font-size: 11px;
-  height: 24px;
+  font-size: 13px;
 }
 
 #ds-root[data-mobile] #ds-title {
@@ -164,19 +161,18 @@
   display: none !important;
 }
 #ds-root[data-mobile] #ds-actions .win-button {
-  width: 24px;
+  width: 28px;
   height: 24px;
   min-height: 24px;
   max-height: 24px;
-  min-width: 24px;
-  max-width: 24px;
-  aspect-ratio: 1 / 1;
+  min-width: 28px;
+  max-width: 28px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  font-size: 12px;
+  font-size: 13px;
 }
 #ds-root[data-mobile] #ds-topbar-tools {
   display: inline-flex;
@@ -185,13 +181,12 @@
   flex-shrink: 0;
 }
 #ds-root[data-mobile] #ds-topbar-tools .ds-btn-icon {
-  width: 24px;
+  width: 28px;
   height: 24px;
   min-height: 24px;
   max-height: 24px;
-  min-width: 24px;
-  max-width: 24px;
-  aspect-ratio: 1 / 1;
+  min-width: 28px;
+  max-width: 28px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -594,21 +589,22 @@
 
 .ds-series-mobile-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   width: 100%;
-  margin: 10px 0;
+  margin: 8px 0;
 }
 
 .ds-series-mobile-actions .win-button {
-  height: 24px;
-  min-height: 24px;
+  height: 32px;
+  min-height: 32px;
   font-size: 11px;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  padding: 0 4px;
   border-radius: 0;
 }
 #ds-root[data-mobile] #ds-library-container {
@@ -682,6 +678,163 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   margin-bottom: 0 !important;
 }
 
+/* Mobile Reader Bottom Bar Scrubber & Chapter Navigation (MOB-02) */
+.ds-reader-mobile-bottom-row {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: 24px !important;
+  gap: 6px !important;
+  box-sizing: border-box !important;
+}
+
+.ds-mobile-nav-btn {
+  width: 26px !important;
+  min-width: 26px !important;
+  max-width: 26px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  border-radius: 3px !important;
+  font-size: 11px !important;
+}
+
+.ds-mobile-scrubber-wrap {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.ds-mobile-page-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 19px !important;
+  min-width: 24px !important;
+  padding: 0 5px !important;
+  background: var(--sys-control-bg, #ececec) !important;
+  border: 1px solid var(--sys-button-border, #adadad) !important;
+  border-radius: 10px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: var(--sys-window-text, #000) !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+.ds-mobile-page-badge--cur {
+  color: var(--sys-accent-primary, #0078d7) !important;
+  font-weight: 700 !important;
+  border-color: color-mix(in srgb, var(--sys-accent-primary, #0078d7) 40%, var(--sys-button-border, #adadad)) !important;
+}
+
+.ds-mobile-scrubber-slider {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  flex: 1 1 auto !important;
+  min-width: 60px !important;
+  height: 24px !important;
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  touch-action: pan-y !important;
+}
+
+.ds-mobile-scrubber-slider:focus {
+  outline: none !important;
+}
+
+.ds-mobile-scrubber-slider::-webkit-slider-runnable-track {
+  height: 4px !important;
+  border-radius: 2px !important;
+  background: linear-gradient(
+    to right,
+    var(--sys-accent-primary, #0078d7) var(--scrubber-pct, 0%),
+    color-mix(in srgb, var(--sys-window-text, #000) 18%, transparent) var(--scrubber-pct, 0%)
+  ) !important;
+  border: none !important;
+}
+
+.ds-mobile-scrubber-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 2.5px solid var(--sys-accent-primary, #0078d7) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
+  margin-top: -5px !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+.ds-mobile-scrubber-slider:active::-webkit-slider-thumb {
+  transform: scale(1.3) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Mobile Reader Topbar Actions (MOB-06) */
+.ds-reader-mobile-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+#ds-root[data-mobile] .ds-reader-nav-top .ds-btn-icon {
+  width: 28px !important;
+  height: 26px !important;
+  min-width: 28px !important;
+  min-height: 26px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+}
+
+/* Collapsed GroupBox Header on Mobile (MOB-08) */
+#ds-root[data-mobile] .group-box.collapsed {
+  min-height: 28px !important;
+  padding: 0 !important;
+  margin-top: 4px !important;
+  margin-bottom: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  border: 1px solid var(--sys-border-medium, #c8d4e2) !important;
+  border-radius: 4px !important;
+  background: var(--sys-window-bg, #ffffff) !important;
+  box-sizing: border-box !important;
+}
+
+#ds-root[data-mobile] .group-box.collapsed .group-box-title {
+  position: static !important;
+  top: unset !important;
+  left: unset !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 2px 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
+}
+
 #ds-root[data-mobile] .ds-slot-page-badge {
   position: absolute !important;
   top: 6px !important;
@@ -736,6 +889,26 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   animation: ds-sheet-slide-down 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
+
+.ds-sheet-drag-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--sys-scrollbar-thumb, rgba(0, 0, 0, 0.25));
+  margin: 0 auto 4px auto;
+  flex-shrink: 0;
+}
+
+.ds-reader-sheet-header .ds-modal-close {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  font-size: 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
 /* Narrow mobile overscroll target card cap (OS-07) */
 #ds-root[data-mobile] .ds-overscroll-target-card {
   min-width: unset !important;

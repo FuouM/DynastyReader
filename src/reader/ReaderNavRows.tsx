@@ -263,3 +263,58 @@ export function ReaderControlsRow(props: NavRowProps) {
     </div>
   );
 }
+
+export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
+  const s = props.session;
+  const total = () => Math.max(1, s.pages().length);
+  const current = () => s.currentIndex() + 1;
+  const pct = () => {
+    const tot = total();
+    if (tot <= 1) return 100;
+    return ((current() - 1) / (tot - 1)) * 100;
+  };
+
+  return (
+    <div class="ds-reader-mobile-bottom-row">
+      <IconButton
+        className="ds-btn-icon ds-mobile-nav-btn"
+        icon={<ChevronLeftIcon />}
+        title={t("reader.toolbar.prevChapter")}
+        disabled={s.chapterNav().prevDisabled}
+        onClick={() => s.gotoPrevChapter()}
+      />
+      <div class="ds-mobile-scrubber-wrap">
+        <span class="ds-mobile-page-badge ds-mobile-page-badge--cur">{current()}</span>
+        <input
+          type="range"
+          class="ds-mobile-scrubber-slider"
+          min="1"
+          max={total()}
+          value={current()}
+          style={{ "--scrubber-pct": `${pct()}%` }}
+          onInput={(e) => {
+            const val = parseInt(e.currentTarget.value, 10);
+            if (!isNaN(val) && val >= 1 && val <= total()) {
+              s.setPage(val - 1, false);
+            }
+          }}
+          onChange={(e) => {
+            const val = parseInt(e.currentTarget.value, 10);
+            if (!isNaN(val) && val >= 1 && val <= total()) {
+              s.setPage(val - 1, true);
+            }
+          }}
+          aria-label={t("reader.toolbar.jumpToPage")}
+        />
+        <span class="ds-mobile-page-badge">{total()}</span>
+      </div>
+      <IconButton
+        className="ds-btn-icon ds-mobile-nav-btn"
+        icon={<ChevronRightIcon />}
+        title={t("reader.toolbar.nextChapter")}
+        disabled={s.chapterNav().nextDisabled}
+        onClick={() => s.gotoNextChapter()}
+      />
+    </div>
+  );
+}
