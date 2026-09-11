@@ -253,8 +253,13 @@ fn encode_dynamic(img: &DynamicImage, ext: &str, quality: u8) -> Result<Vec<u8>,
             .write_image(&as_rgb8_bytes(img), w, h, ExtendedColorType::Rgb8)
             .map_err(|e| format!("JPEG encode failed: {e}"))?,
         "webp" => {
-            let data = as_rgb8_bytes(img);
-            let encoded = webp::Encoder::from_rgb(&data, w, h).encode(quality as f32);
+            let encoded = if img.color().has_alpha() {
+                let data = as_rgba8_bytes(img);
+                webp::Encoder::from_rgba(&data, w, h).encode(quality as f32)
+            } else {
+                let data = as_rgb8_bytes(img);
+                webp::Encoder::from_rgb(&data, w, h).encode(quality as f32)
+            };
             buf.extend_from_slice(encoded.as_ref());
         }
         "gif" => GifEncoder::new(&mut buf)

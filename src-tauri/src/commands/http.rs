@@ -57,6 +57,20 @@ pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
             if ipv6.is_loopback() || ipv6.is_unspecified() || ipv6.is_multicast() {
                 return Err(format!("requests to private/loopback IPv6 '{ipv6}' are forbidden"));
             }
+            // IPv4-mapped IPv6 (::ffff:a.b.c.d): apply the same IPv4 private checks.
+            if let Some(mapped_v4) = ipv6.to_ipv4_mapped() {
+                if mapped_v4.is_loopback()
+                    || mapped_v4.is_private()
+                    || mapped_v4.is_link_local()
+                    || mapped_v4.is_broadcast()
+                    || mapped_v4.is_unspecified()
+                    || mapped_v4.is_multicast()
+                {
+                    return Err(format!(
+                        "requests to private IPv4-mapped IPv6 '{ipv6}' are forbidden"
+                    ));
+                }
+            }
             let seg = ipv6.segments();
             // fe80::/10 link-local or fc00::/7 unique local
             if (seg[0] & 0xffc0) == 0xfe80 || (seg[0] & 0xfe00) == 0xfc00 {
@@ -268,20 +282,20 @@ pub async fn http_download(
     let mut stream = resp.bytes_stream();
     let write_result = stream_to_file_capped(&mut stream, &mut out, MAX_DOWNLOAD_BYTES, |_| {}).await;
     drop(out);
-    let _ = match write_result {
-        Ok(total) => total,
+    let total = match write_result {
+        Ok(t) => t,
         Err(e) => {
             let _ = tokio::fs::remove_file(&temp_path).await;
             return Err(e);
         }
     };
-    tokio::fs::rename(&temp_path, &target)
-        .await
-        .map_err(|e| format!("failed finalizing download: {e}"))?;
-    let size = std::fs::metadata(&target).map(|m| m.len()).unwrap_or(0);
+    if let Err(e) = tokio::fs::rename(&temp_path, &target).await {
+        let _ = tokio::fs::remove_file(&temp_path).await;
+        return Err(format!("failed finalizing download: {e}"));
+    }
     Ok(json!({
         "written_to": output_path,
-        "size_bytes": size,
+        "size_bytes": total,
         "absolute_path": target.to_string_lossy().into_owned(),
     }))
 }

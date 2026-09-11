@@ -11,7 +11,7 @@ const WHEEL_DELTA_THRESHOLD = 10;
 const PAGE_FLIP_COOLDOWN_MS = 220;
 const WHEEL_IDLE_RESET_MS = 350;
 
-import { createEffect, onCleanup } from "solid-js";
+import { onCleanup } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { spreadIndexOf } from "./reader-spread";
@@ -228,13 +228,9 @@ export function ReaderWheel(props: { session: ReaderSession }) {
     }
   };
 
+  // Register on window only. Registering on both window and viewportEl causes
+  // every wheel event to fire onWheel twice (viewport fires, then it bubbles to
+  // window), doubling scroll speed and jitter.
   makeEventListener(window, "wheel", onWheel, { passive: false });
-  createEffect(() => {
-    const vp = c.viewportEl;
-    if (vp) {
-      vp.addEventListener("wheel", onWheel, { passive: false });
-      onCleanup(() => vp.removeEventListener("wheel", onWheel));
-    }
-  });
   return null;
 }

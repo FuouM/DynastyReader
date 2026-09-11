@@ -266,19 +266,30 @@ export function ReaderControlsRow(props: NavRowProps) {
 
 export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
   const s = props.session;
+  const isRtl = () => s.direction() === "rtl";
   const total = () => Math.max(1, s.pages().length);
   const current = () => s.currentIndex() + 1;
   const pct = () => {
     const tot = total();
     if (tot <= 1) return 100;
-    return ((current() - 1) / (tot - 1)) * 100;
+    // In RTL, page 1 is on the right: invert the percentage for the gradient.
+    const raw = ((current() - 1) / (tot - 1)) * 100;
+    return isRtl() ? 100 - raw : raw;
+  };
+  // In RTL, slider value is inverted: slider left = last page, slider right = page 1.
+  const sliderValue = () => (isRtl() ? total() - current() + 1 : current());
+  const onSliderChange = (rawVal: number, instant: boolean) => {
+    const pageIdx = isRtl() ? total() - rawVal : rawVal - 1;
+    if (!isNaN(pageIdx) && pageIdx >= 0 && pageIdx < total()) {
+      s.setPage(pageIdx, instant);
+    }
   };
 
   return (
     <div class="ds-reader-mobile-bottom-row">
       <IconButton
         className="ds-btn-icon ds-mobile-nav-btn"
-        icon={<ChevronLeftIcon />}
+        icon={isRtl() ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         title={t("reader.toolbar.prevChapter")}
         disabled={s.chapterNav().prevDisabled}
         onClick={() => s.gotoPrevChapter()}
@@ -290,27 +301,17 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
           class="ds-mobile-scrubber-slider"
           min="1"
           max={total()}
-          value={current()}
+          value={sliderValue()}
           style={{ "--scrubber-pct": `${pct()}%` }}
-          onInput={(e) => {
-            const val = parseInt(e.currentTarget.value, 10);
-            if (!isNaN(val) && val >= 1 && val <= total()) {
-              s.setPage(val - 1, false);
-            }
-          }}
-          onChange={(e) => {
-            const val = parseInt(e.currentTarget.value, 10);
-            if (!isNaN(val) && val >= 1 && val <= total()) {
-              s.setPage(val - 1, true);
-            }
-          }}
+          onInput={(e) => onSliderChange(parseInt(e.currentTarget.value, 10), false)}
+          onChange={(e) => onSliderChange(parseInt(e.currentTarget.value, 10), true)}
           aria-label={t("reader.toolbar.jumpToPage")}
         />
         <span class="ds-mobile-scrubber-text ds-mobile-scrubber-tot">{total()}</span>
       </div>
       <IconButton
         className="ds-btn-icon ds-mobile-nav-btn"
-        icon={<ChevronRightIcon />}
+        icon={isRtl() ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         title={t("reader.toolbar.nextChapter")}
         disabled={s.chapterNav().nextDisabled}
         onClick={() => s.gotoNextChapter()}

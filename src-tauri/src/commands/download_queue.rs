@@ -314,6 +314,7 @@ pub async fn resume_downloads(
     http_state: State<'_, crate::commands::http::HttpState>,
 ) -> Result<(), String> {
     state.paused.store(false, Ordering::SeqCst);
+    state.notify.notify_waiters();
     ensure_processor_running(&app, &state, &http_state.0);
     Ok(())
 }
@@ -376,6 +377,7 @@ pub async fn retry_chapter_download(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command(rename = "setDownloadConstraints")]
 pub async fn set_download_constraints(
     app: AppHandle,
@@ -574,7 +576,7 @@ fn constraints_blocked(state: &DownloadState) -> bool {
 async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
     let state: State<DownloadState> = app.state();
     // Ensure stuck rows are reset (blocking, so offload)
-    let _ = tokio::task::spawn_blocking(|| ensure_download_queue_table())
+    let _ = tokio::task::spawn_blocking(ensure_download_queue_table)
         .await
         .unwrap_or(Ok(()));
     loop {
@@ -932,6 +934,14 @@ async fn download_chapter(
 
         // Fetch page with cancel/pause select. Transient failures get two
         // retries (500 ms, 1500 ms backoff) before the chapter is failed.
+        struct TempFileGuard(Option<std::path::PathBuf>);
+        impl Drop for TempFileGuard {
+            fn drop(&mut self) {
+                if let Some(path) = self.0.take() {
+                    let _ = std::fs::remove_file(path);
+                }
+            }
+        }
         let mut attempt = 0usize;
         let size_res: Result<i64, String> = loop {
             let fetch_fut = async {
@@ -965,6 +975,7 @@ async fn download_chapter(
                 let (std_file, tmp_path) = tmp
                     .keep()
                     .map_err(|e| format!("keep tmp file: {e}"))?;
+                let mut guard = TempFileGuard(Some(tmp_path.clone()));
                 let mut out = tokio::fs::File::from_std(std_file);
                 let mut stream = resp.bytes_stream();
                 let write_res = crate::commands::http::stream_to_file_capped(&mut stream, &mut out, MAX_PAGE_BYTES, |_| {}).await;
@@ -972,7 +983,6 @@ async fn download_chapter(
                 let size = match write_res {
                     Ok(s) => s,
                     Err(e) => {
-                        let _ = tokio::fs::remove_file(&tmp_path).await;
                         let e = if e.contains("exceeds size cap") {
                             format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes")
                         } else {
@@ -981,9 +991,14 @@ async fn download_chapter(
                         return Err(e);
                     }
                 };
-                tokio::fs::rename(&tmp_path, &target)
-                    .await
-                    .map_err(|e| format!("persist: {e}"))?;
+                match tokio::fs::rename(&tmp_path, &target).await {
+                    Ok(_) => {
+                        guard.0 = None;
+                    }
+                    Err(e) => {
+                        return Err(format!("persist: {e}"));
+                    }
+                }
                 let size = size as i64;
                 Ok::<i64, String>(size)
             };

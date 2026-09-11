@@ -1,5 +1,5 @@
 import type { GetTextOptions, HttpResponseText } from "../types/api";
-import { getCached, setCached } from "../db/metadata.repo";
+import { getCached, setCached, touchCached } from "../db/metadata.repo";
 import { recordNetworkTraffic, recordCacheHit } from "./traffic";
 import { tryParseJson } from "../utils/json";
 import * as ipc from "../ipc";
@@ -95,6 +95,7 @@ export async function cachedJson<T>(key: string, url: string, ttlMs?: number, da
 
   if (status === 304 && cached) {
     recordCacheHit(cached.json_payload.length);
+    await touchCached(key);
     const parsed = tryParseJson<T>(cached.json_payload);
     if (parsed !== null) return parsed;
   }

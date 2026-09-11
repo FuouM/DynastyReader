@@ -408,7 +408,7 @@ fn import_archive_inner(
     meta: &LocalSeriesMeta,
 ) -> Result<String, String> {
         // Open archive once for extraction
-        let file = std::fs::File::open(&zip_path).map_err(|e| format!("failed opening archive: {e}"))?;
+        let file = std::fs::File::open(zip_path).map_err(|e| format!("failed opening archive: {e}"))?;
         let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("invalid zip: {e}"))?;
         if archive.len() > MAX_ARCHIVE_ENTRIES {
             return Err(format!(
@@ -467,7 +467,7 @@ fn import_archive_inner(
                     ));
                 }
                 extracted_pages += 1;
-                if extracted_pages % IMPORT_PROGRESS_EVERY == 0 {
+                if extracted_pages.is_multiple_of(IMPORT_PROGRESS_EVERY) {
                     emit_import_progress(app, extracted_pages, planned_total_pages, "extract");
                 }
             }
@@ -763,10 +763,21 @@ fn create_cover_webp(src_bytes: &[u8], out_path: &Path) -> Result<(), String> {
     } else {
         img
     };
-    let rgb = img.to_rgb8();
-    let (w2, h2) = (rgb.width(), rgb.height());
-    let encoded = webp::Encoder::from_rgb(rgb.as_raw(), w2, h2).encode(80.0);
-    std::fs::write(out_path, &*encoded).map_err(|e| format!("cover write failed: {e}"))?;
+    let (w2, h2) = (img.width(), img.height());
+    let encoded = if img.color().has_alpha() {
+        let rgba = img.to_rgba8();
+        webp::Encoder::from_rgba(rgba.as_raw(), w2, h2).encode(80.0)
+    } else {
+        let rgb = img.to_rgb8();
+        webp::Encoder::from_rgb(rgb.as_raw(), w2, h2).encode(80.0)
+    };
+    // Write atomically: temp file + rename to avoid truncated covers on interruption.
+    let tmp_path = out_path.with_extension("webp.tmp");
+    std::fs::write(&tmp_path, &*encoded).map_err(|e| format!("cover write failed: {e}"))?;
+    std::fs::rename(&tmp_path, out_path).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp_path);
+        format!("cover rename failed: {e}")
+    })?;
     Ok(())
 }
 
@@ -803,7 +814,11 @@ fn register_local_series_in_db(
     let cover_rel_path = format!("local/{}/cover.webp", series_slug);
     let series_cover_abs = crate::paths::data_root().join(&cover_rel_path).to_string_lossy().into_owned();
 
-    conn.execute(
+    // Insert local_series AND all metadata/pages inside a single transaction so
+    // that a rollback on any failure leaves no ghost series row.
+    let tx = conn.unchecked_transaction().map_err(|e| format!("tx failed: {e}"))?;
+
+    tx.execute(
         "INSERT OR REPLACE INTO local_series (permalink, title, author, description, cover_path, source_path, chapter_count, total_pages, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         rusqlite::params![
@@ -823,8 +838,6 @@ fn register_local_series_in_db(
 
     // Ensure cached_metadata and cached_pages tables exist (they do via schema, but be safe)
     // Insert series + chapter metadata + cached_pages rows
-    // We do this in a transaction
-    let tx = conn.unchecked_transaction().map_err(|e| format!("tx failed: {e}"))?;
 
     // Series metadata with chapter taggings for SeriesView
     {
@@ -976,10 +989,6 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
                 }
             }
         }
-
-        if series_dir.exists() {
-            std::fs::remove_dir_all(&series_dir).map_err(|e| format!("failed deleting series dir: {e}"))?;
-        }
         let db_path = data_root.join("dynasty_reader.db");
         if db_path.exists() {
             let conn = crate::commands::db::open_synced(&db_path)?;
@@ -998,6 +1007,8 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
                 }
             }
 
+            // Commit DB cleanup BEFORE touching disk — if the DB tx fails, the
+            // files are still intact and the user can retry.
             let tx = conn.unchecked_transaction().map_err(|e| format!("tx failed: {e}"))?;
             tx.execute("DELETE FROM local_series WHERE permalink = ?1", rusqlite::params![permalink])
                 .map_err(|e| format!("delete local_series failed: {e}"))?;
@@ -1028,6 +1039,11 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
                 .ok();
             }
             tx.commit().map_err(|e| format!("commit failed: {e}"))?;
+        }
+
+        // DB is clean — now safe to remove files.
+        if series_dir.exists() {
+            std::fs::remove_dir_all(&series_dir).map_err(|e| format!("failed deleting series dir: {e}"))?;
         }
         Ok(())
     })

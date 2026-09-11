@@ -25,6 +25,7 @@ import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
 import type { BlacklistMode } from "../types/blacklist";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import {
+  scrollBrowseToTop,
   setPaneError,
   setPaneLoading,
   setTopPagerFor,
@@ -345,6 +346,13 @@ export function BrowseFeed(props: BrowseFeedProps) {
       onAddToCol={addToCol.onAddToCol}
     />
   );
+  const handleUpdateBannerClick = (): void => {
+    setUpdateBanner(false);
+    feedSeenByTab.delete(props.tabId);
+    pane.goToPage(1);
+    pane.reload();
+    scrollBrowseToTop();
+  };
 
   return (
     <div ref={setHostEl}>
@@ -355,7 +363,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
               icon={<RefreshIcon />}
               text={t("browse.feed.newChaptersNotice")}
               className="ds-feed-update-btn"
-              onClick={() => pane.goToPage(1)}
+              onClick={handleUpdateBannerClick}
             />
           </div>
         </Show>

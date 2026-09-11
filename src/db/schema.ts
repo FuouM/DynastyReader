@@ -432,6 +432,12 @@ export async function initDb(): Promise<void> {
             throw err;
           }
         }
+        // Always populate in-memory blacklist caches on startup once schema is ready.
+        try {
+          await initBlacklistCache();
+        } catch (err) {
+          log.error("db/schema", "failed to initialize blacklist cache on startup:", err);
+        }
       } catch (err) {
         initDbPromise = null;
         log.error("db/schema", "initDb failed — user_version not advanced:", err);

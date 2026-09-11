@@ -23,8 +23,12 @@ export function IntegrityModal(props: IntegrityModalProps) {
   const [scannedCount, setScannedCount] = createSignal(0);
   const [totalCount, setTotalCount] = createSignal(0);
   const [phaseText, setPhaseText] = createSignal("");
+  // Incremented each time the modal closes, so an in-flight scan can detect
+  // it was superseded and skip updating stage/report after close.
+  let scanGeneration = 0;
 
   const startScan = async () => {
+    const gen = ++scanGeneration;
     setStage("scanning");
     setReport(null);
     setRecoveryResult(null);
@@ -34,12 +38,15 @@ export function IntegrityModal(props: IntegrityModalProps) {
 
     try {
       const rep = await runIntegrityCheck((scanned, total) => {
+        if (scanGeneration !== gen) return;
         setScannedCount(scanned);
         setTotalCount(total);
       });
+      if (scanGeneration !== gen) return;
       setReport(rep);
       setStage("scanned");
     } catch (err) {
+      if (scanGeneration !== gen) return;
       setReport({
         totalScanned: 0,
         totalHealthy: 0,
@@ -58,6 +65,7 @@ export function IntegrityModal(props: IntegrityModalProps) {
     if (props.open && stage() === "idle") {
       void startScan();
     } else if (!props.open) {
+      scanGeneration++;
       setStage("idle");
       setReport(null);
       setRecoveryResult(null);

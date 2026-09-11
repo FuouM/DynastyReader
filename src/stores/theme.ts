@@ -41,11 +41,19 @@ function deserializeTheme(raw: string): AppTheme {
   const parsed = parsePersistedId(raw, "light");
   return isAppTheme(parsed) ? parsed : "light";
 }
+let activeTransitionTimer: number | null = null;
+
 function applyThemeToDom(t: AppTheme): void {
   // Dual guard: CSS class (earliest layer, !important beats all layers) + injected style fallback.
   // Release WebView batches differently than Vite dev — rAF alone can remove guard before paint.
   const root = document.documentElement;
   root.classList.add("ds-disable-transitions");
+  // Clean up any earlier pending transition guard style tags and timer.
+  if (activeTransitionTimer !== null) {
+    window.clearTimeout(activeTransitionTimer);
+    activeTransitionTimer = null;
+  }
+  document.head.querySelectorAll("style[data-ds-disable-transitions]").forEach((el) => el.remove());
   const disableTransitions = document.createElement("style");
   disableTransitions.setAttribute("data-ds-disable-transitions", "");
   disableTransitions.textContent =
@@ -100,7 +108,8 @@ function applyThemeToDom(t: AppTheme): void {
   // the transition would otherwise start after the guard is removed (release vs dev timing).
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      window.setTimeout(() => {
+      activeTransitionTimer = window.setTimeout(() => {
+        activeTransitionTimer = null;
         disableTransitions.remove();
         root.classList.remove("ds-disable-transitions");
       }, 150);

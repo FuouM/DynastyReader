@@ -332,7 +332,11 @@ function CollectionItemCard(props: {
 
   createEffect(() => {
     const c = cover();
-    if (c && (c.includes("/") || c.includes("\\"))) return;
+    // Only hydrate when cover is a bare non-path key (not already a resolved
+    // file path). Guard against re-entrancy: if cover is null/empty after a
+    // failed hydration, stop — don't loop.
+    if (!c) return;
+    if (c.includes("/") || c.includes("\\")) return;
     void hydrate();
   });
 

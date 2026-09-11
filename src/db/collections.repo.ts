@@ -154,8 +154,8 @@ export async function addItemToCollection(
   if (resolvedCover && !isCoverFilePath(resolvedCover)) {
     try {
       const rows = await query<{ json_payload: string }>(
-        "SELECT json_payload FROM cached_metadata WHERE cache_key = ?",
-        [`cover:${resolvedCover}`],
+        "SELECT json_payload FROM cached_metadata WHERE cache_key = ? OR cache_key = ?",
+        [`cover:series:${resolvedCover}`, `cover:chapter:${resolvedCover}`],
       );
       if (rows.length > 0 && rows[0].json_payload) {
         resolvedCover = rows[0].json_payload;

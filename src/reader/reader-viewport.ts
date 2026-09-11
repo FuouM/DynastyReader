@@ -169,6 +169,7 @@ export function slideTo(
 }
 
 export function resetToCurrentPage(s: ReaderSession, smooth = false): void {
+  s.cancelScrollAnimation();
   updateViewportHeight(s);
   if (s.isHorizontal()) {
     const slideIndex = s.isSpread()
@@ -245,11 +246,6 @@ export function applyLayoutMode(s: ReaderSession): void {
     s.viewportEl.classList.remove("horizontal", "rtl", "ltr");
     s.stripEl.classList.remove("rtl", "ltr");
     s.stripEl.style.transform = "";
-    const target = s.slotEls[s.currentIndex()];
-    if (target) {
-      target.scrollIntoView({ behavior: "auto", block: "center" });
-    } else if (s.viewportEl && s.currentIndex() === 0) {
-      s.viewportEl.scrollTop = 0;
-    }
+    resetToCurrentPage(s, false);
   }
 }

@@ -30,34 +30,35 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
         {decodeEntities(s.chapterTitle() || s.permalink)}
       </div>
 
-      <Show
-        when={nextChapter()}
-        fallback={
-          <div class="ds-chapter-end-caughtup ds-muted">
-            <Icon name="bookmark-check" />
-            <span>{t("reader.endOfChapterCard.seriesCaughtUp")}</span>
-          </div>
-        }
-      >
-        {(next) => (
-          <div class="ds-chapter-end-next-box">
-            <div class="ds-chapter-end-next-label">
-              {t("reader.endOfChapterCard.nextPrompt", {
-                title: decodeEntities(next().title || next().permalink),
-              })}
+      <Show when={s.chapterList().length > 0 && !s.loading() && !s.chapterNavigating()}>
+        <Show
+          when={nextChapter()}
+          fallback={
+            <div class="ds-chapter-end-caughtup ds-muted">
+              <Icon name="bookmark-check" />
+              <span>{t("reader.endOfChapterCard.seriesCaughtUp")}</span>
             </div>
-            <button
-              type="button"
-              class="win-button primary ds-chapter-end-primary-btn"
-              onClick={() => s.gotoNextChapter()}
-            >
-              <span>{t("reader.endOfChapterCard.readNextButton")}</span>
-              <ArrowRightIcon />
-            </button>
-          </div>
-        )}
+          }
+        >
+          {(next) => (
+            <div class="ds-chapter-end-next-box">
+              <div class="ds-chapter-end-next-label">
+                {t("reader.endOfChapterCard.nextPrompt", {
+                  title: decodeEntities(next().title || next().permalink),
+                })}
+              </div>
+              <button
+                type="button"
+                class="win-button primary ds-chapter-end-primary-btn"
+                onClick={() => s.gotoNextChapter()}
+              >
+                <span>{t("reader.endOfChapterCard.readNextButton")}</span>
+                <ArrowRightIcon />
+              </button>
+            </div>
+          )}
+        </Show>
       </Show>
-
       <div class="ds-chapter-end-actions">
         <Show when={s.seriesPermalink()}>
           <button

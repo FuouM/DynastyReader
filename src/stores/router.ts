@@ -122,8 +122,11 @@ export function goBackTo(index: number): void {
     setHistoryBackStack(remaining);
     setHistoryForwardStack((s) => [...s, { ...route() }, ...popped.reverse()]);
     isNavigatingHistory = true;
-    navigate(targetRoute);
-    isNavigatingHistory = false;
+    try {
+      navigate(targetRoute);
+    } finally {
+      isNavigatingHistory = false;
+    }
   });
 }
 
@@ -144,8 +147,11 @@ export function goForwardTo(index: number): void {
     setHistoryForwardStack(remaining);
     setHistoryBackStack((s) => [...s, { ...route() }, ...popped.reverse()]);
     isNavigatingHistory = true;
-    navigate(targetRoute);
-    isNavigatingHistory = false;
+    try {
+      navigate(targetRoute);
+    } finally {
+      isNavigatingHistory = false;
+    }
   });
 }
 

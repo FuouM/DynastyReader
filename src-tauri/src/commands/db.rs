@@ -429,7 +429,7 @@ fn evict_pool_connection(
     normalized: &str,
 ) -> Result<(), String> {
     let mut guard = lock_unpoisoned(pool);
-    guard.retain(|k, _| k != &normalized);
+    guard.retain(|k, _| k != normalized);
     Ok(())
 }
 
@@ -441,15 +441,21 @@ async fn copy_db_file_with_retry(
 ) -> Result<(), String> {
     tokio::task::spawn_blocking(move || -> Result<(), String> {
         std::thread::sleep(std::time::Duration::from_millis(RESTORE_RETRY_INITIAL_DELAY_MS));
+        let tmp_target = target.with_extension("restore-tmp");
         for attempt in 0..RESTORE_MAX_ATTEMPTS {
-            if let Err(e) = std::fs::remove_file(&wal) {
-                log::warn!("failed removing WAL sidecar: {e}");
-            }
-            if let Err(e) = std::fs::remove_file(&shm) {
-                log::warn!("failed removing SHM sidecar: {e}");
-            }
-            match std::fs::copy(&source, &target) {
-                Ok(_) => return Ok(()),
+            match std::fs::copy(&source, &tmp_target) {
+                Ok(_) => {
+                    // Copy succeeded — now it's safe to drop WAL/SHM and swap.
+                    if let Err(e) = std::fs::remove_file(&wal) {
+                        log::warn!("failed removing WAL sidecar: {e}");
+                    }
+                    if let Err(e) = std::fs::remove_file(&shm) {
+                        log::warn!("failed removing SHM sidecar: {e}");
+                    }
+                    std::fs::rename(&tmp_target, &target)
+                        .map_err(|e| format!("failed to rename restore tmp: {e}"))?;
+                    return Ok(());
+                }
                 Err(e) => {
                     let is_lock = e.kind() == std::io::ErrorKind::PermissionDenied
                         || e.raw_os_error() == Some(32)
@@ -458,10 +464,12 @@ async fn copy_db_file_with_retry(
                         std::thread::sleep(std::time::Duration::from_millis(RESTORE_RETRY_BACKOFF_MS * (attempt + 1) as u64));
                         continue;
                     }
+                    let _ = std::fs::remove_file(&tmp_target);
                     return Err(format!("failed to restore after {RESTORE_MAX_ATTEMPTS} attempts: {e}"));
                 }
             }
         }
+        let _ = std::fs::remove_file(&tmp_target);
         Err(format!("failed to restore after {RESTORE_MAX_ATTEMPTS} attempts"))
     })
     .await

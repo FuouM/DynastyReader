@@ -226,7 +226,8 @@ export function resolveTapZone(
     const step = isRtl ? 1 : -1;
     const targetPage = s.currentIndex() + step;
     if (targetPage >= 0 && targetPage < s.pages().length) {
-      if (isMobile()) triggerHaptic("page-turn");
+      const willActuallyTurn = !s.isSpread() || s.canStepSpread(step as 1 | -1);
+      if (isMobile() && willActuallyTurn) triggerHaptic("page-turn");
       if (s.isSpread()) s.stepSpread(step as 1 | -1);
       else s.setPage(targetPage);
     }
@@ -234,7 +235,8 @@ export function resolveTapZone(
     const step = isRtl ? -1 : 1;
     const targetPage = s.currentIndex() + step;
     if (targetPage >= 0 && targetPage < s.pages().length) {
-      if (isMobile()) triggerHaptic("page-turn");
+      const willActuallyTurn = !s.isSpread() || s.canStepSpread(step as 1 | -1);
+      if (isMobile() && willActuallyTurn) triggerHaptic("page-turn");
       if (s.isSpread()) s.stepSpread(step as 1 | -1);
       else s.setPage(targetPage);
     }
@@ -271,7 +273,8 @@ export function resolveSwipe(
     const total = s.pages().length;
     const targetPage = cur + step;
     if (targetPage >= 0 && targetPage < total) {
-      if (isMobile()) triggerHaptic("page-turn");
+      const willActuallyTurn = !(s.isHorizontal() && s.isSpread()) || s.canStepSpread(step as 1 | -1);
+      if (isMobile() && willActuallyTurn) triggerHaptic("page-turn");
       if (s.isHorizontal() && s.isSpread()) {
         s.stepSpread(step as 1 | -1);
       } else {

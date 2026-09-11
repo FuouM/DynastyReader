@@ -197,18 +197,19 @@ export function BrowseView() {
     await new Promise<void>((resolve) => {
       const deadline = Date.now() + CHECK_UPDATES_POLL_DEADLINE_MS;
       let sawLoading = false;
+      let timer: number | null = null;
+      const cleanup = () => { if (timer !== null) { window.clearTimeout(timer); timer = null; } };
       const tick = (): void => {
         const loading = getPaneLoading(tabId);
         if (loading) sawLoading = true;
-        if (sawLoading && !loading) {
-          resolve();
-          return;
+        if (sawLoading && !loading) { cleanup(); resolve(); return; }
+        if (Date.now() > deadline) { cleanup(); resolve(); return; }
+        // If we never see loading=true within one interval, the pane data was
+        // already fresh — resolve immediately instead of waiting the full deadline.
+        if (!sawLoading && Date.now() > deadline - CHECK_UPDATES_POLL_DEADLINE_MS + CHECK_UPDATES_POLL_INTERVAL_MS * 3) {
+          cleanup(); resolve(); return;
         }
-        if (Date.now() > deadline) {
-          resolve();
-          return;
-        }
-        pollTimer = window.setTimeout(tick, CHECK_UPDATES_POLL_INTERVAL_MS);
+        timer = window.setTimeout(tick, CHECK_UPDATES_POLL_INTERVAL_MS);
       };
       tick();
     });

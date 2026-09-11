@@ -399,7 +399,9 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   }
 
   setPageFromScroll(index: number): void {
-    this.updateIndexAndNotifyEnd(index);
+    const clamped = Math.max(0, Math.min(index, this.pages().length - 1));
+    if (this.pages().length === 0) return;
+    this.updateIndexAndNotifyEnd(clamped);
     this.schedulePersist();
     if (this.atEnd()) void this.persistNow();
   }
@@ -466,6 +468,14 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.setPage(anchorPageOf(this.spreads(), next), false, delta === -1);
     this.enqueueSpreadNeighborhood();
   }
+  /** Returns true if stepSpread(delta) would actually navigate to a new spread. */
+  canStepSpread(delta: 1 | -1): boolean {
+    if (!this.isSpread() || this.spreads().length === 0) return false;
+    const cur = spreadIndexOf(this.spreads(), this.currentIndex());
+    const next = cur + delta;
+    return next >= 0 && next < this.spreads().length;
+  }
+
 
   // Layout controls ---------------------------------------------------------
   setMode(mode: ReaderMode): void {
@@ -504,7 +514,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     }
   }
 
-  private applyFitClass(fit: FitMode): void {
+  applyFitClass(fit: FitMode): void {
     if (this.containerEl) {
       this.containerEl.classList.remove("fit-width", "fit-height", "fit-original");
       this.containerEl.classList.add(`fit-${fit}`);
@@ -794,7 +804,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     const create = () =>
       createComponent(ReaderActions, {
         ctrl: this,
-        bookmarked: this.bookmarked(),
+        bookmarked: () => this.bookmarked(),
       });
     const owner = this.sessionOwner;
     const attach = () => {

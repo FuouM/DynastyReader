@@ -271,12 +271,21 @@ export async function pruneOldestReadCachedPages(
 
   const toDelete: string[] = [];
   let freedBytes = 0;
+  let noProgressStreak = 0;
   for (const row of rows) {
     if (excess <= 0) break;
     if (excludePermalinks?.has(row.chapter_permalink)) continue;
+    const rowBytes = Math.max(Number(row.bytes) || 0, 1);
     toDelete.push(row.chapter_permalink);
     freedBytes += Number(row.bytes) || 0;
-    excess -= Number(row.bytes) || 0;
+    if (rowBytes <= 1) {
+      // Row has no measured size — cap deletions to avoid wiping entire cache.
+      noProgressStreak++;
+      if (noProgressStreak >= 3) break;
+    } else {
+      noProgressStreak = 0;
+      excess -= rowBytes;
+    }
   }
   if (toDelete.length > 0) {
     await clearCachedGroupPages(toDelete);

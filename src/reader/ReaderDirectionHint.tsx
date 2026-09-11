@@ -63,15 +63,17 @@ export function ReaderDirectionHint(props: ReaderDirectionHintProps) {
     }
 
     if (permalink && permalink !== lastPermalink) {
-      // Check if direction changed from previous chapter or if it's first load of session
       const isFirstLoad = lastPermalink === null;
       const isDirChanged = lastDirection !== null && lastDirection !== dir;
       lastPermalink = permalink;
       lastDirection = dir;
-
       if ((isFirstLoad || isDirChanged) && props.pageIndex === 0) {
         showHint(2400);
       }
+    } else if (permalink && dir !== lastDirection) {
+      // Direction toggled mid-session within the same chapter.
+      lastDirection = dir;
+      showHint(2400);
     }
   });
 

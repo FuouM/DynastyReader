@@ -146,9 +146,10 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
           const newDir = detectReadingDirection(chapter.tags ?? [], seriesData.tags ?? []);
           if (newDir !== s.direction()) {
             s.setDirectionSignal(newDir);
-            if (s.isSpread()) {
-              s.resetToCurrentPage(true);
-            }
+            // applyLayoutMode updates rtl/ltr classes on containerEl/stripEl;
+            // resetToCurrentPage syncs scroll position.
+            s.applyLayoutMode();
+            s.resetToCurrentPage(true);
           }
         }
         if (s.layoutAutoDetected() && isLongStripSpreadOverrideEnabled()) {
@@ -156,15 +157,16 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
           s.setIsLongStrip(isLong);
           if (isLong && s.pagedLayout() === "spread") {
             s.setPagedLayoutSignal("single");
-            if (s.isSpread()) {
-              s.resetToCurrentPage(true);
-            }
+            s.applyLayoutMode();
+            s.resetToCurrentPage(true);
           }
         }
         if (isLongStripFitWidthEnabled()) {
           const isLong = detectIsLongStrip(chapter.tags ?? [], seriesData.tags ?? []);
           if (isLong && s.fitMode() !== "width") {
             s.setFitModeSignal("width");
+            s.applyFitClass("width");
+            s.updateSlotClearances();
           }
         }
       } catch (err) {

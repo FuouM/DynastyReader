@@ -96,7 +96,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
     tags: rawTags,
   });
 
-  const blMode = getBlacklistMode();
+  const blMode = () => getBlacklistMode();
 
   const externalUrl = (): string => {
     if (ch.url) return ch.url;
@@ -272,7 +272,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
             </Show>
 
             <Show when={isBlacklisted() && matchedTags().length > 0}>
-              <WarningChip mode={blMode} tags={matchedTags()} />
+              <WarningChip mode={blMode()} tags={matchedTags()} />
             </Show>
           </div>
 

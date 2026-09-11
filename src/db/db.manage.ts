@@ -2,6 +2,7 @@ import { query, execute } from "./client";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
+import { initBlacklistCache, notifyBlacklistChanged } from "./blacklist.repo";
 export interface DbFileStats {
   dbSizeBytes: number;
   walSizeBytes: number;
@@ -21,6 +22,8 @@ export interface DbTableCounts {
   collections: number;
   collectionItems: number;
   directoryEntries: number;
+  localSeries: number;
+  downloadQueue: number;
 }
 
 export interface DbStats {
@@ -29,22 +32,24 @@ export interface DbStats {
   totalRows: number;
 }
 
-const ALLOWED_COUNT_TABLES = new Set<string>([
-  "followed_series",
-  "reading_progress",
-  "reading_history",
-  "bookmarks",
-  "cached_metadata",
-  "cached_pages",
-  "tag_blacklist",
-  "series_blacklist",
-  "collections",
-  "collection_items",
-  "directory_entries",
-]);
+const ALLOWED_COUNT_TABLES: Record<string, true> = {
+  followed_series: true,
+  reading_progress: true,
+  reading_history: true,
+  bookmarks: true,
+  cached_metadata: true,
+  cached_pages: true,
+  tag_blacklist: true,
+  series_blacklist: true,
+  collections: true,
+  collection_items: true,
+  directory_entries: true,
+  local_series: true,
+  download_queue: true,
+};
 
 async function countTable(table: string): Promise<number> {
-  if (!ALLOWED_COUNT_TABLES.has(table)) {
+  if (!ALLOWED_COUNT_TABLES[table]) {
     log.warn("db/manage", `countTable rejected unapproved table name: "${table}"`);
     return 0;
   }
@@ -98,6 +103,8 @@ export async function getDbTableCounts(): Promise<DbTableCounts> {
     collections,
     collectionItems,
     directoryEntries,
+    localSeries,
+    downloadQueue,
   ] = await Promise.all([
     countTable("followed_series"),
     countTable("reading_progress"),
@@ -110,6 +117,8 @@ export async function getDbTableCounts(): Promise<DbTableCounts> {
     countTable("collections"),
     countTable("collection_items"),
     countTable("directory_entries"),
+    countTable("local_series"),
+    countTable("download_queue"),
   ]);
   return {
     followedSeries,
@@ -123,6 +132,8 @@ export async function getDbTableCounts(): Promise<DbTableCounts> {
     collections,
     collectionItems,
     directoryEntries,
+    localSeries,
+    downloadQueue,
   };
 }
 
@@ -146,6 +157,8 @@ export async function wipeDatabase(): Promise<void> {
     "collection_items",
     "collections",
     "directory_entries",
+    "local_series",
+    "download_queue",
   ];
   const statements = tables.map((t) => `DELETE FROM ${t}`);
   // Use batch for atomicity where supported; fallback to sequential
@@ -161,6 +174,16 @@ export async function wipeDatabase(): Promise<void> {
       }
     }
   }
+  // Re-seed the default "Favorites" collection (migrations only seed it on v1
+  // and do not re-run after a wipe since user_version stays unchanged).
+  try {
+    await execute(
+      `INSERT OR IGNORE INTO collections (id, name, is_default, created_at) VALUES (1, 'Favorites', 1, ?)`,
+      [Date.now()],
+    );
+  } catch (err) {
+    log.warn("db/manage", "re-seeding Favorites after wipe failed:", err);
+  }
   // Shrink file
   try {
     await execute("VACUUM", []);
@@ -172,6 +195,13 @@ export async function wipeDatabase(): Promise<void> {
     await execute("DELETE FROM sqlite_sequence", []);
   } catch (err) {
     log.warn("db/manage", "sqlite_sequence reset after wipe failed:", err);
+  }
+  // Reset in-memory blacklist cache so cleared blacklist takes immediate effect
+  try {
+    await initBlacklistCache();
+    notifyBlacklistChanged();
+  } catch (err) {
+    log.warn("db/manage", "re-initializing blacklist cache after wipe failed:", err);
   }
 }
 

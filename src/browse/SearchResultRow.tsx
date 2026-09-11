@@ -33,76 +33,83 @@ export interface SearchResultRowProps {
 }
 
 export function SearchResultRow(props: SearchResultRowProps) {
-  // ── 1. Content items (Series, Chapters, Doujins, Anthologies, Issues) ────────
-  if (isContentKind(props.row.item.kind)) {
-    const item = () => props.row.item;
-    const itemTags = () => {
-      const tags = (item().tags ?? []).map((t) => ({
-        type: t.type || "General",
-        name: t.name || "",
-        permalink: t.permalink || "",
-      }));
-      if (item().author && !tags.some((t) => t.permalink === item().author!.permalink)) {
-        tags.push({ type: "Author", name: item().author!.name, permalink: item().author!.permalink });
-      }
-      if (item().doujin && !tags.some((t) => t.permalink === item().doujin!.permalink)) {
-        tags.push({ type: "Doujin", name: item().doujin!.name, permalink: item().doujin!.permalink });
-      }
-      return tags;
-    };
-
-    const feedData = () => ({
-      permalink: item().permalink,
-      title: item().title,
-      kind: item().kind,
-      series: item().kind !== "chapter" ? item().title : null,
-      tags: itemTags(),
-    });
-
-    const extraMeta = (
-      <>
-        <span class="ds-muted ds-kind-badge">
-          {item().kind}
-        </span>
-        <Show when={item().releasedOn}>
-          <span class="ds-muted ds-text-11">
-            {t("browse.search.releasedOn", { date: item().releasedOn })}
-          </span>
-        </Show>
-      </>
-    );
-
-    return (
-      <FeedItemRow
-        item={feedData()}
-        isBlacklisted={props.row.isBlacklisted}
-        matchedTags={props.row.matchedTags}
+  return (
+    <Show
+      when={isContentKind(props.row.item.kind)}
+      fallback={<TaxonomicRow row={props.row} blMode={props.blMode} />}
+    >
+      <ContentRow
+        row={props.row}
         isFullyCached={props.isFullyCached}
-        extraMeta={extraMeta}
+        blMode={props.blMode}
         onWarn={props.onWarn}
         onAddToCol={props.onAddToCol}
       />
-    );
-  }
+    </Show>
+  );
+}
 
-  // ── 2. Taxonomic metadata items (Authors, Scanlators, Tags, Pairings) ────────
+function ContentRow(props: SearchResultRowProps) {
+  const item = () => props.row.item;
+  const itemTags = () => {
+    const tags = (item().tags ?? []).map((t) => ({
+      type: t.type || "General",
+      name: t.name || "",
+      permalink: t.permalink || "",
+    }));
+    if (item().author && !tags.some((t) => t.permalink === item().author!.permalink)) {
+      tags.push({ type: "Author", name: item().author!.name, permalink: item().author!.permalink });
+    }
+    if (item().doujin && !tags.some((t) => t.permalink === item().doujin!.permalink)) {
+      tags.push({ type: "Doujin", name: item().doujin!.name, permalink: item().doujin!.permalink });
+    }
+    return tags;
+  };
+
+  const feedData = () => ({
+    permalink: item().permalink,
+    title: item().title,
+    kind: item().kind,
+    series: item().kind !== "chapter" ? item().title : null,
+    tags: itemTags(),
+  });
+
+  const extraMeta = (
+    <>
+      <span class="ds-muted ds-kind-badge">
+        {item().kind}
+      </span>
+      <Show when={item().releasedOn}>
+        <span class="ds-muted ds-text-11">
+          {t("browse.search.releasedOn", { date: item().releasedOn })}
+        </span>
+      </Show>
+    </>
+  );
+
+  return (
+    <FeedItemRow
+      item={feedData()}
+      isBlacklisted={props.row.isBlacklisted}
+      matchedTags={props.row.matchedTags}
+      isFullyCached={props.isFullyCached}
+      extraMeta={extraMeta}
+      onWarn={props.onWarn}
+      onAddToCol={props.onAddToCol}
+    />
+  );
+}
+
+function TaxonomicRow(props: { row: SearchRow; blMode: BlacklistMode }) {
   const item = () => props.row.item;
   const isBlacklisted = () => props.row.isBlacklisted;
   const matchedTags = () => props.row.matchedTags;
 
   const openTaxonomicItem = (): void => {
     if (item().kind === "tag") {
-      navigate({
-        view: "browse",
-        browseTab: "search",
-        withTag: item().title,
-      });
+      navigate({ view: "browse", browseTab: "search", withTag: item().title });
     } else {
-      navigate({
-        view: "series",
-        seriesPermalink: item().permalink,
-        seriesName: item().title,
-      });
+      navigate({ view: "series", seriesPermalink: item().permalink, seriesName: item().title });
     }
   };
 
@@ -119,14 +126,10 @@ export function SearchResultRow(props: SearchResultRowProps) {
       }
       title={
         <div class="ds-flex-row ds-search-title-link--row">
-          <span
-            class="ds-item-title ds-search-title-link"
-          >
+          <span class="ds-item-title ds-search-title-link">
             {decodeEntities(item().title)}
           </span>
-          <span
-            class="ds-muted ds-kind-badge"
-          >
+          <span class="ds-muted ds-kind-badge">
             {item().kind}
           </span>
           <Show when={isBlacklisted() && matchedTags().length > 0}>

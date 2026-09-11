@@ -56,19 +56,22 @@ export function ReaderFilterPopover(props: ReaderFilterPopoverProps) {
     setPositionStyle(`${baseStyle}top:${Math.round(y)}px;left:${Math.round(x)}px;`);
   });
 
-  // Handle escape key to close
-  const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Escape" && props.open) {
-      e.stopPropagation();
-      props.onClose();
-    }
-  };
-  window.addEventListener("keydown", onKeyDown);
-  onCleanup(() => window.removeEventListener("keydown", onKeyDown));
+  // Handle escape key to close — only attached while popover is open
+  createEffect(() => {
+    if (!props.open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        props.onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    onCleanup(() => window.removeEventListener("keydown", onKeyDown));
+  });
 
   return (
     <Show when={props.open}>
-      <Portal mount={document.getElementById("ds-root") ?? document.body}>
+      <Portal mount={document.body}>
         <div
           class="ds-overlay ds-overlay--transparent"
           onClick={(ev) => {

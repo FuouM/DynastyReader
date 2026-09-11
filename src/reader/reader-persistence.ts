@@ -22,6 +22,8 @@ export function createReaderPersistence(state: ReaderState, permalink: string): 
   let lastPersistedCompleted = false;
 
   const persistNow = async (): Promise<void> => {
+    const pages = state.pages();
+    if (pages.length === 0) return;
     const completed = state.atEnd();
     // Skip only when neither the page index nor the completion flag moved —
     // re-opening a finished chapter and scrolling back must un-complete it.

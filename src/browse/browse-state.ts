@@ -106,43 +106,49 @@ export interface TabPane<T> {
 export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
   const [page, setPage] = createSignal(1);
   const [loadSeq, setLoadSeq] = createSignal(0);
+  let lastLoadedKey = "";
 
   const source = () => {
     if (!opts.active()) return false;
+    const key = `${page()}:${loadSeq()}:${opts.revision()}:${opts.forceTick()}`;
+    // If we already satisfied these exact query parameters, do not re-fetch on tab return.
+    if (key === lastLoadedKey && data()) return false;
     return {
+      key,
       page: page(),
-      seq: loadSeq(),
-      revision: opts.revision(),
-      force: opts.forceTick(),
     };
   };
-
-  const [data, { refetch }] = createResource(
+  const [data] = createResource(
     source,
     async (params) => {
-      return opts.load(params.page);
+      const p = typeof params === "object" && params !== null ? params.page : page();
+      if (typeof params === "object" && params !== null) {
+        lastLoadedKey = params.key;
+      }
+      return opts.load(p);
     },
   );
 
   createEffect(() => {
     if (opts.forceTick() > 0 && opts.active()) {
       setPage(1);
-      setLoadSeq((s) => s + 1);
       scrollBrowseToTop();
     }
   });
 
-  const goToPage = (p: number): void => {
-    setPage(p);
+  const reload = (): void => {
+    lastLoadedKey = "";
     setLoadSeq((s) => s + 1);
+  };
+
+  const goToPage = (p: number): void => {
+    if (p === page()) {
+      reload();
+    } else {
+      setPage(p);
+    }
     scrollBrowseToTop();
   };
-
-  const reload = (): void => {
-    setLoadSeq((s) => s + 1);
-    void refetch();
-  };
-
   return {
     page,
     goToPage,

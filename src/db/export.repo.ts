@@ -79,7 +79,7 @@ export async function getAllFollowedSeries(): Promise<ExportFollowedItem[]> {
   return rows.map((r) => ({
     name: decodeEntities(r.name),
     permalink: r.permalink,
-    url: dynastyUrl("series", r.permalink),
+    url: r.permalink.startsWith("local:") ? "" : dynastyUrl("series", r.permalink),
     cover: r.cover ?? null,
     followedAt: Number(r.created_at),
     latestChapterTitle: r.latest_chapter_title ? decodeEntities(r.latest_chapter_title) : null,
@@ -154,7 +154,7 @@ export async function getAllCollections(collectionIds?: number | number[]): Prom
       title: decodeEntities(item.item_title),
       permalink: item.item_permalink,
       kind: item.item_kind,
-      url: dynastyUrl(path, item.item_permalink),
+      url: item.item_permalink.startsWith("local:") ? "" : dynastyUrl(path, item.item_permalink),
       cover: item.cover ?? null,
       parentSeriesName: item.parent_series_name ? decodeEntities(item.parent_series_name) : null,
       parentSeriesPermalink: item.parent_series_permalink ?? null,

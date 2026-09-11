@@ -8,7 +8,7 @@ export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, Blacklist
 const blacklistNotifier = createChangeNotifier("blacklist.repo");
 export const getBlacklistRevision = blacklistNotifier.getRevision;
 export const onBlacklistChanged = blacklistNotifier.onChanged;
-const notifyBlacklistChanged = blacklistNotifier.notifyChanged;
+export const notifyBlacklistChanged = blacklistNotifier.notifyChanged;
 
 const [blacklistModeSignal, setBlacklistModeRaw] = persistedSignal<BlacklistMode>("hide", {
   name: "ds-blacklist-mode",
@@ -25,29 +25,40 @@ export function setBlacklistMode(mode: BlacklistMode): void {
 let cachedBlacklistNames = new Set<string>();
 let cachedBlacklistSeriesPermalinks = new Set<string>();
 let cachedBlacklistSeriesNames = new Set<string>();
+let blacklistCacheInitialized = false;
+let blacklistCacheInitPromise: Promise<void> | null = null;
 
 /**
  * Loads the active tag and series blacklists into memory for ultra-fast synchronous checks.
  */
 export async function initBlacklistCache(): Promise<void> {
-  const [tagRows, seriesRows] = await Promise.all([
-    getBlacklistedTags(),
-    getBlacklistedSeries(),
-  ]);
+  if (blacklistCacheInitPromise) return blacklistCacheInitPromise;
+  blacklistCacheInitPromise = (async () => {
+    try {
+      const [tagRows, seriesRows] = await Promise.all([
+        getBlacklistedTags(),
+        getBlacklistedSeries(),
+      ]);
 
-  cachedBlacklistNames = new Set(
-    tagRows.flatMap((r) => [
-      r.tag_name.toLowerCase().trim(),
-      ...(r.tag_permalink ? [r.tag_permalink.toLowerCase().trim()] : []),
-    ]),
-  );
+      cachedBlacklistNames = new Set(
+        tagRows.flatMap((r) => [
+          r.tag_name.toLowerCase().trim(),
+          ...(r.tag_permalink ? [r.tag_permalink.toLowerCase().trim()] : []),
+        ]),
+      );
 
-  cachedBlacklistSeriesPermalinks = new Set(
-    seriesRows.map((r) => r.series_permalink.toLowerCase().trim()),
-  );
-  cachedBlacklistSeriesNames = new Set(
-    seriesRows.map((r) => r.series_name.toLowerCase().trim()),
-  );
+      cachedBlacklistSeriesPermalinks = new Set(
+        seriesRows.map((r) => r.series_permalink.toLowerCase().trim()),
+      );
+      cachedBlacklistSeriesNames = new Set(
+        seriesRows.map((r) => r.series_name.toLowerCase().trim()),
+      );
+      blacklistCacheInitialized = true;
+    } finally {
+      blacklistCacheInitPromise = null;
+    }
+  })();
+  return blacklistCacheInitPromise;
 }
 
 /**
@@ -73,10 +84,7 @@ export async function addBlacklistedTag(name: string, permalink?: string): Promi
     [trimmed, permalink ? permalink.trim() : null, now],
   );
 
-  cachedBlacklistNames.add(trimmed.toLowerCase());
-  if (permalink) {
-    cachedBlacklistNames.add(permalink.trim().toLowerCase());
-  }
+  await initBlacklistCache();
   notifyBlacklistChanged();
 }
 
@@ -117,8 +125,7 @@ export async function addBlacklistedSeries(permalink: string, name: string): Pro
     [cleanPerm, cleanName, now],
   );
 
-  cachedBlacklistSeriesPermalinks.add(cleanPerm.toLowerCase());
-  cachedBlacklistSeriesNames.add(cleanName.toLowerCase());
+  await initBlacklistCache();
   notifyBlacklistChanged();
 }
 
@@ -139,6 +146,9 @@ export async function removeBlacklistedSeries(permalink: string): Promise<void> 
  * Checks synchronously whether a series is blacklisted by permalink or title.
  */
 export function isSeriesBlacklisted(permalink?: string, name?: string): boolean {
+  if (!blacklistCacheInitialized && !blacklistCacheInitPromise) {
+    void initBlacklistCache().then(() => notifyBlacklistChanged());
+  }
   if (permalink && cachedBlacklistSeriesPermalinks.has(permalink.toLowerCase().trim())) {
     return true;
   }
@@ -155,6 +165,9 @@ export function isItemBlacklisted(
   tags: { name: string; permalink?: string; type?: string }[] | undefined,
   seriesInfo?: { permalink?: string; name?: string },
 ): BlacklistCheckResult {
+  if (!blacklistCacheInitialized && !blacklistCacheInitPromise) {
+    void initBlacklistCache().then(() => notifyBlacklistChanged());
+  }
   const matched: string[] = [];
 
   // 1. Check direct series blacklist

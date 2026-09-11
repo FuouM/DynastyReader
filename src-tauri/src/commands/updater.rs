@@ -285,8 +285,13 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
         }
         fs::rename(&current_exe, &old_exe)
             .map_err(|e| format!("failed to backup executable: {e}"))?;
-        fs::rename(&new_exe, &current_exe)
-            .map_err(|e| format!("failed to activate new executable: {e}"))?;
+        if let Err(e) = fs::rename(&new_exe, &current_exe) {
+            // Rollback: restore old executable so the app stays runnable.
+            if let Err(rb) = fs::rename(&old_exe, &current_exe) {
+                log::error!("update rollback also failed: {rb}");
+            }
+            return Err(format!("failed to activate new executable: {e}"));
+        }
 
         std::process::Command::new(&current_exe)
             .spawn()
@@ -312,6 +317,18 @@ pub fn cleanup_old_executables() {
                 if new_exe.exists() {
                     if let Err(e) = fs::remove_file(new_exe) {
                         log::warn!("failed cleaning up new executable: {e}");
+                    }
+                }
+            }
+            // Clean up any leftover .tmp-update-* files from interrupted installs.
+            if let Ok(rd) = fs::read_dir(dir) {
+                for entry in rd.flatten() {
+                    let name = entry.file_name();
+                    let name_str = name.to_string_lossy();
+                    if name_str.starts_with(".tmp-update-") {
+                        if let Err(e) = fs::remove_file(entry.path()) {
+                            log::warn!("failed cleaning up temp update file '{}': {e}", entry.path().display());
+                        }
                     }
                 }
             }

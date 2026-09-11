@@ -295,7 +295,9 @@ export async function enrichCachedChapters(
           volumeMap.set(t.permalink, curVolume);
         }
       }
-    } catch {}
+    } catch (err) {
+      log.debug("cache-aggregate", "failed parsing series metadata payload:", err);
+    }
   }
 
   const readHistorySet = new Set(readHistoryMap.keys());
