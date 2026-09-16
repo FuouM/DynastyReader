@@ -54,7 +54,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   const { copied, handleCopyLink } = useCopyLink({
     getUrl: () => dynastyUrl("chapters", s.permalink),
     namespace: "mobile-controls",
-    showBanners: false,
+    showBanners: true,
   });
   let closeTimer: number | null = null;
   createEffect(() => {

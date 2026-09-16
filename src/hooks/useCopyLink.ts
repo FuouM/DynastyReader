@@ -27,10 +27,14 @@ export function useCopyLink(opts: UseCopyLinkOpts) {
   const [copied, setCopied] = createSignal(false);
   const resetCopied = debounce(() => setCopied(false), 2000);
 
-  const handleCopyLink = async (ev?: MouseEvent): Promise<void> => {
+  const handleCopyLink = async (ev?: MouseEvent | TouchEvent): Promise<void> => {
     ev?.stopPropagation();
+    ev?.preventDefault();
     try {
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
+      if (typeof window !== "undefined" && window.focus) {
+        window.focus();
+      }
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(opts.getUrl());
         setCopied(true);
         if (showBanners) {

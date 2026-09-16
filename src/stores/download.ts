@@ -5,7 +5,7 @@ import { isAndroid } from "./platform";
 import { formatSpeed } from "../utils/formatting";
 import { maybeAutoPruneCache } from "../utils/cache-quota";
 import { pushDownloadConstraints } from "../utils/download-constraints";
-
+import { notifyCacheChanged } from "../db/cache.repo";
 export interface DownloadProgressPayload {
   chapter_permalink: string;
   series_permalink: string;
@@ -233,6 +233,7 @@ export function initGlobalDownloadListener(): void {
         ) {
           void refreshState();
           if (payload.status === "done") {
+            notifyCacheChanged();
             void maybeAutoPruneCache(downloadingChapterPermalinks());
           }
         }

@@ -8,7 +8,7 @@ import { decodeEntities } from "../../utils/html";
 import { formatDate } from "../../utils/formatting";
 import { dynastyUrl } from "../../utils/url";
 import { t } from "../../i18n";
-import { getHistoryPage, getHistoryRevision, onHistoryChanged, removeHistory, removeHistoryBatch } from "../../db/library.repo";
+import { getHistoryPage, getHistoryRevision, onHistoryChanged, getProgressRevision, onProgressChanged, removeHistory, removeHistoryBatch } from "../../db/library.repo";
 import { getFullyCachedChapterPermalinks } from "../../db/cache.repo";
 import type { HistoryRow, HistoryPageResult } from "../../types/db";
 import { Loading } from "../../components/Loading";
@@ -17,7 +17,7 @@ import { LibraryItemRow } from "../LibraryItemRow";
 import { useLibraryPaneResource, type LibraryPaneProps } from "../useLibraryPaneResource";
 import { useBulkSelection } from "../../hooks/useBulkSelection";
 import { Button, ConfirmDeleteButton } from "../../components/Button";
-import { TrashIcon } from "../../components/Icon";
+import { TrashIcon, Icon } from "../../components/Icon";
 
 interface HistoryPaneData {
   res: HistoryPageResult;
@@ -26,8 +26,15 @@ interface HistoryPaneData {
 
 export function HistoryPane(props: LibraryPaneProps) {
   const { setPage, data, refetch, showSpinner } = useLibraryPaneResource<HistoryPaneData>({
-    getRevision: getHistoryRevision,
-    onChanged: onHistoryChanged,
+    getRevision: () => getHistoryRevision() + getProgressRevision(),
+    onChanged: (cb) => {
+      const u1 = onHistoryChanged(cb);
+      const u2 = onProgressChanged(cb);
+      return () => {
+        u1();
+        u2();
+      };
+    },
     fetcher: async (p) => {
       const res = await getHistoryPage(p, 15);
       const permalinks = res.rows.map((r) => r.chapter_permalink);
@@ -50,7 +57,12 @@ export function HistoryPane(props: LibraryPaneProps) {
       >
         <Show
           when={data()!.res.rows.length > 0}
-          fallback={<div class="ds-muted">{t("library.emptyHistory")}</div>}
+          fallback={
+            <div class="ds-library-empty">
+              <Icon name="clock-history" style="font-size:28px;margin-bottom:4px;" />
+              <span>{t("library.emptyHistory")}</span>
+            </div>
+          }
         >
           <div class="ds-bulk-actions-bar">
             <Show when={!selectMode()}>

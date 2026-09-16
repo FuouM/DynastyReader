@@ -6,6 +6,7 @@
 import { createEffect, createSignal, onCleanup, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { canGoBack, canGoForward, goBack, goForward, goBackTo, goForwardTo, historyBackStack, historyForwardStack, routeLabel } from "../stores/router";
+import { isMobile } from "../stores/platform";
 import { uiScale } from "../stores/ui-scale";
 import { t } from "../i18n";
 import { ArrowLeftIcon, ArrowRightIcon, Icon, type BootstrapIconName } from "./Icon";
@@ -189,7 +190,7 @@ export function HistoryNavButtons() {
           class="win-button ds-segmented-btn ds-nav-history-btn"
           id="ds-nav-back"
           aria-label={t("common.back")}
-          title={t("topbar.navBackTooltip")}
+          title={isMobile() ? undefined : t("topbar.navBackTooltip")}
           disabled={!canGoBack()}
           onPointerDown={(ev) => {
             if (ev.button === 0 && canGoBack()) {
@@ -221,7 +222,7 @@ export function HistoryNavButtons() {
           class="win-button ds-segmented-btn ds-nav-history-btn"
           id="ds-nav-forward"
           aria-label={t("common.forward")}
-          title={t("topbar.navForwardTooltip")}
+          title={isMobile() ? undefined : t("topbar.navForwardTooltip")}
           disabled={!canGoForward()}
           onPointerDown={(ev) => {
             if (ev.button === 0 && canGoForward()) {

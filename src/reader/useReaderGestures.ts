@@ -180,15 +180,16 @@ export function useReaderGestures(s: ReaderSession) {
     }, 0);
 
     // Dynamic scroll-position tracking (continuous scroll mode) — O(log N) binary search
-    const computeCurrentPageFromScroll = (): void => {
-      if (s.isHorizontal() || s.isProgrammaticScroll || s.isToolbarAnimating) return;
+    const computeCurrentPageFromScroll = (force = false): void => {
+      if (s.isHorizontal() || s.isProgrammaticScroll || s.restoring() || (!force && s.isToolbarAnimating)) return;
       const vp = s.viewportEl;
-      if (!vp) return;
+      if (!vp || !vp.isConnected) return;
 
       const totalSlots = s.slotEls.length;
       if (totalSlots === 0) return;
 
       const vpRect = vp.getBoundingClientRect();
+      if (vpRect.height <= 0) return;
       const targetY = vpRect.top + vpRect.height * 0.4;
 
       let low = 0;
@@ -231,11 +232,13 @@ export function useReaderGestures(s: ReaderSession) {
     };
     // Recompute page progress once the toolbar show/hide animation lock lifts (RD-M3).
     s.toolbarAnimEndHook = () => computeCurrentPageFromScroll();
+    s.computeScrollProgress = () => computeCurrentPageFromScroll(true);
 
     vpEl.addEventListener("scroll", onViewportScroll, { passive: true });
     s.onDispose(() => {
       vpEl.removeEventListener("scroll", onViewportScroll);
       if (s.scrollRaf !== null) cancelAnimationFrame(s.scrollRaf);
+      s.computeScrollProgress = null;
     });
 
     // ── Helper: Restore Canvas Strip Transform (Never Jump to Void) ──

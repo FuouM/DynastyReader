@@ -9,6 +9,7 @@ import { debounce } from "@solid-primitives/scheduled";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../i18n";
 import { CheckIcon } from "./Icon";
+import { isMobile } from "../stores/platform";
 export interface ButtonProps {
   ref?: HTMLButtonElement | ((el: HTMLButtonElement) => void);
   id?: string;
@@ -72,7 +73,7 @@ export function Button(props: ButtonProps) {
       class={`win-button ${resolvedClass()}`.trim()}
       classList={{ "ds-btn-loading": !!props.loading, ...props.classList }}
       style={props.style ?? props.cssText}
-      title={props.title}
+      title={isMobile() ? undefined : props.title}
       aria-label={props["aria-label"] ?? (typeof props.text === "string" && props.text ? props.text : props.title)}
       aria-pressed={props["aria-pressed"]}
       aria-selected={props["aria-selected"]}

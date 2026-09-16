@@ -9,6 +9,7 @@ import { errorMessage } from "../../utils/errors";
 import { getCollections, getCollectionsRevision, onCollectionsChanged, deleteCollection } from "../../db/collections.repo";
 import type { CollectionRow } from "../../types/db";
 import { Loading } from "../../components/Loading";
+import { FolderIcon } from "../../components/Icon";
 import { LibraryItemRow } from "../LibraryItemRow";
 import { useLibraryPaneResource, type LibraryPaneProps } from "../useLibraryPaneResource";
 
@@ -37,7 +38,12 @@ export function CollectionsPane(props: CollectionsPaneProps) {
     >
       <Show
         when={data()!.length > 0}
-        fallback={<div class="ds-muted">{t("library.emptyCollections")}</div>}
+        fallback={
+          <div class="ds-library-empty">
+            <FolderIcon size={28} />
+            <span>{t("library.emptyCollections")}</span>
+          </div>
+        }
       >
         <For each={data()!}>
           {(col) => (

@@ -4,8 +4,13 @@ import { loadCachedChapterContext } from "./cache-aggregate";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
+import { createChangeNotifier } from "../lib/change-notifier";
 import type { CachedPageRow, ChapterCacheCount, CacheOverviewStats, CachedSeriesGroup } from "../types/db";
 
+const cacheNotifier = createChangeNotifier("cache.repo");
+export const getCacheRevision = cacheNotifier.getRevision;
+export const onCacheChanged = cacheNotifier.onChanged;
+export const notifyCacheChanged = cacheNotifier.notifyChanged;
 export async function getCachedPages(chapterPermalink: string): Promise<CachedPageRow[]> {
   return query<CachedPageRow>(
     `SELECT chapter_permalink, page_index, file_path, cached_at
@@ -29,6 +34,7 @@ export async function setCachedPage(
        cached_at = excluded.cached_at`,
     [chapterPermalink, pageIndex, filePath, sizeBytes, Date.now()],
   );
+  notifyCacheChanged();
 }
 
 /** Cached-page counts for a batch of chapters (one query). */
@@ -215,6 +221,7 @@ async function deleteCachedPageRows(
     batchParams.push([chapterPermalink, ...paths]);
   }
   await ipc.dbExecuteBatch(DB_NAME, statements, batchParams);
+  notifyCacheChanged();
 }
 
 export async function clearCachedGroupPages(chapterPermalinks: string[]): Promise<void> {
@@ -533,6 +540,7 @@ export async function removeCorruptedCachedPages(
       [item.chapterPermalink, item.pageIndex],
     );
   }
+  notifyCacheChanged();
 }
 
 /** Removes corrupted/missing cover metadata rows from SQLite. */

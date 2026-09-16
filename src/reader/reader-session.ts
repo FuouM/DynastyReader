@@ -143,6 +143,8 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   toolbarAnimEndHook: (() => void) | null = null;
   /** Registered by ReaderProgressWrap; focuses the page-jump input (QoL-R2). */
   pageJumpFocusHook: (() => void) | null = null;
+  /** Invoked to force synchronous computation of current page from scroll position. */
+  computeScrollProgress: (() => void) | null = null;
   private fullscreenRelayoutTimers: number[] = [];
   private readonly cleanupFns: (() => void)[] = [];
   containerTagPermalink: string | null = null;
@@ -262,6 +264,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.disposedFlag = true;
     this.cancelScrollAnimation();
     this.persistence.dispose();
+    this.computeScrollProgress = null;
     this.clearToolbarTimer();
     if (this.toolbarAnimTimer !== null) {
       clearTimeout(this.toolbarAnimTimer);
@@ -350,6 +353,12 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
 
   async persistNow(): Promise<void> {
     return this.persistence.persistNow();
+  }
+  get lastPersistedIndex(): number {
+    return this.persistence.lastPersistedIndex;
+  }
+  set lastPersistedIndex(v: number) {
+    this.persistence.lastPersistedIndex = v;
   }
 
   /** Update the page index and show an end-of-chapter banner if we just crossed the boundary. */
@@ -650,6 +659,9 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     }
     if (index === this.pages().length - 1) {
       this.updateLastSlotHeight();
+    }
+    if (this.restoring() && !this.isHorizontal()) {
+      this.slideTo(this.currentIndex(), true);
     }
   }
 

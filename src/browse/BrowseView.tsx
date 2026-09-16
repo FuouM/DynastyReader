@@ -49,6 +49,8 @@ import { BrowseFeed } from "./BrowseFeed";
 import { BrowseDirectory } from "./BrowseDirectory";
 import { BrowseDownloaded } from "./BrowseDownloaded";
 import { BrowseSearch } from "./BrowseSearch";
+import { getCacheRevision } from "../db/cache.repo";
+import { getBookmarksRevision, getHistoryRevision, getProgressRevision } from "../db/library.repo";
 
 export type BrowseTabId =
   | "releases"
@@ -104,7 +106,13 @@ export function BrowseView() {
     if (checkTimer !== null) window.clearTimeout(checkTimer);
     if (pollTimer !== null) window.clearTimeout(pollTimer);
   });
-  const revision = useBlacklistRevision();
+  const blacklistRev = useBlacklistRevision();
+  const revision = () =>
+    blacklistRev() +
+    getCacheRevision() +
+    getHistoryRevision() +
+    getBookmarksRevision() +
+    getProgressRevision();
   const [pendingSearch, setPendingSearch] = createSignal<{
     searchQuery?: string;
     withTag?: string;

@@ -527,6 +527,7 @@ export const en = {
         readNextButton: "Read Next Chapter",
         backToSeries: "Back to Series",
         seriesCaughtUp: "You've caught up with the latest chapter!",
+        swipeRightBrowse: "Swipe right to browse",
       },
     tapZones: {
       prevPage: "Previous Page",

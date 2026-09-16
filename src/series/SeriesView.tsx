@@ -32,8 +32,8 @@ import { enqueueChapters } from "../ipc";
 import { persistedSignal } from "../lib/persisted-signal";
 import { getQueuePageTotals } from "../db/cache-aggregate";
 import { addBlacklistedSeries, isSeriesBlacklisted, removeBlacklistedSeries } from "../db/blacklist.repo";
-import { followSeries, getFollowedSeriesRow, getHistoryPermalinks, getProgressForSeries, unfollowSeries, markChapterRead, markChapterUnread } from "../db/library.repo";
-import { getCachedPageCounts } from "../db/cache.repo";
+import { followSeries, getFollowedSeriesRow, getHistoryPermalinks, getProgressForSeries, unfollowSeries, markChapterRead, markChapterUnread, getProgressRevision, getHistoryRevision, getBookmarksRevision } from "../db/library.repo";
+import { getCachedPageCounts, getCacheRevision } from "../db/cache.repo";
 import type { SeriesProgressRow } from "../types/db";
 import type { Series } from "../types/api";
 import { useDelayedSpinner } from "../browse/browse-state";
@@ -105,7 +105,14 @@ export function SeriesView() {
   const addToCol = useAddToCollection();
 
   const [data, { refetch }] = createResource(
-    () => ({ permalink: route().seriesPermalink, forceTick: forceTick() }),
+    () => ({
+      permalink: route().seriesPermalink,
+      forceTick: forceTick(),
+      cacheRev: getCacheRevision(),
+      progressRev: getProgressRevision(),
+      historyRev: getHistoryRevision(),
+      bookmarksRev: getBookmarksRevision(),
+    }),
     async ({ permalink, forceTick: tick }) => {
       if (!permalink) throw new Error(t("series.missingPermalinkError"));
 

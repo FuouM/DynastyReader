@@ -18,6 +18,7 @@ import type { FollowedSeriesRow } from "../../types/db";
 import { Loading } from "../../components/Loading";
 import { Pager } from "../../components/Pager";
 import { LibraryItemRow } from "../LibraryItemRow";
+import { Icon } from "../../components/Icon";
 import { useLibraryPaneResource, type LibraryPaneProps } from "../useLibraryPaneResource";
 
 export function FollowedPane(props: LibraryPaneProps) {
@@ -38,8 +39,9 @@ export function FollowedPane(props: LibraryPaneProps) {
         <Show
           when={data()!.rows.length > 0}
           fallback={
-            <div class="ds-muted">
-              {t("library.emptyFollowed")}
+            <div class="ds-library-empty">
+              <Icon name="bookmark-heart" style="font-size:28px;margin-bottom:4px;" />
+              <span>{t("library.emptyFollowed")}</span>
             </div>
           }
         >

@@ -17,7 +17,7 @@ import { LibraryItemRow } from "../LibraryItemRow";
 import { useLibraryPaneResource, type LibraryPaneProps } from "../useLibraryPaneResource";
 import { useBulkSelection } from "../../hooks/useBulkSelection";
 import { Button, ConfirmDeleteButton } from "../../components/Button";
-import { TrashIcon } from "../../components/Icon";
+import { TrashIcon, BookmarkIcon } from "../../components/Icon";
 
 interface BookmarksPaneData {
   res: BookmarkPageResult;
@@ -51,8 +51,9 @@ export function BookmarksPane(props: LibraryPaneProps) {
         <Show
           when={data()!.res.rows.length > 0}
           fallback={
-            <div class="ds-muted">
-              {t("library.emptyBookmarks")}
+            <div class="ds-library-empty">
+              <BookmarkIcon size={28} />
+              <span>{t("library.emptyBookmarks")}</span>
             </div>
           }
         >

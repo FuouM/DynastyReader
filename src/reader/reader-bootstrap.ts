@@ -130,8 +130,9 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
       log.error("reader-bootstrap", "failed to load reading progress:", err);
     }
   }
-  s.setCurrentIndex(Math.min(startPage, Math.max(0, pageCount - 1)));
-
+  const effectiveStart = Math.min(startPage, Math.max(0, pageCount - 1));
+  s.setCurrentIndex(effectiveStart);
+  s.lastPersistedIndex = effectiveStart;
   // Fetch latest series / anthology chapterList and auto-detect layout
   if (s.seriesPermalink()) {
     const p = loadChapterList(s, false);
@@ -343,7 +344,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
     if (s.disposed) return;
     s.setPage(startPage, true);
     if (startPage > 0) {
-      revealAfterRestore(s);
+      revealAfterRestore(s, startPage);
     }
   });
 }
@@ -363,14 +364,17 @@ export function retryReaderSession(s: ReaderSession): void {
   void initReaderSession(s);
 }
 
-export function revealAfterRestore(s: ReaderSession): void {
+export function revealAfterRestore(s: ReaderSession, targetPage?: number): void {
+  const target = targetPage ?? s.currentIndex();
   const deadline = window.performance.now() + RESTORE_REVEAL_DEADLINE_MS;
   const poll = (): void => {
     if (s.disposed) return;
+    if (!s.isHorizontal()) {
+      s.slideTo(target, true);
+    }
     let ready = true;
-    const cur = s.currentIndex();
-    const start = Math.max(0, cur - 1);
-    const end = Math.min(s.pages().length - 1, cur + 1);
+    const start = Math.max(0, target - 1);
+    const end = Math.min(s.pages().length - 1, target + 1);
     for (let i = start; i <= end; i++) {
       const img = s.slotEls[i]?.querySelector<HTMLImageElement>("img.ds-page-img");
       if (img && !img.complete) {
@@ -382,7 +386,7 @@ export function revealAfterRestore(s: ReaderSession): void {
       window.setTimeout(poll, 30);
       return;
     }
-    s.slideTo(s.currentIndex(), true);
+    s.slideTo(target, true);
     s.setRestoring(false);
   };
   window.setTimeout(poll, 0);

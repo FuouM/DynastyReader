@@ -143,6 +143,7 @@ export async function setReadingProgress(p: {
     ],
   );
   notifyProgressChanged();
+  notifyHistoryChanged();
 }
 
 /** Reading progress for every chapter of a series (one query, no per-chapter calls). */

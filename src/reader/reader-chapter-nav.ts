@@ -153,6 +153,11 @@ export async function gotoNextChapter(s: ReaderSession): Promise<void> {
 }
 
 export function gotoSeries(s: ReaderSession): void {
+  if (!s.isHorizontal() && s.viewportEl && s.stripEl) {
+    s.isToolbarAnimating = false;
+    s.computeScrollProgress?.();
+  }
+  void s.persistNow();
   navigate({
     view: "series",
     seriesPermalink: s.seriesPermalink() ?? undefined,

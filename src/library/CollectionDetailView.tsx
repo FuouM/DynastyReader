@@ -214,8 +214,9 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
 
         <div class="ds-collection-list">
           <Show when={totalItems() === 0}>
-            <div class="ds-muted ds-collection-empty">
-              {t("library.emptyCollectionNotice")}
+            <div class="ds-library-empty ds-collection-empty">
+              <FolderIcon size={28} />
+              <span>{t("library.emptyCollectionNotice")}</span>
             </div>
           </Show>
           <Show when={totalItems() > 0 && filteredItems().length === 0}>
