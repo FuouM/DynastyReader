@@ -768,6 +768,98 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
     }
 }
 
+struct TempFileGuard(Option<std::path::PathBuf>);
+impl Drop for TempFileGuard {
+    fn drop(&mut self) {
+        if let Some(path) = self.0.take() {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+}
+
+async fn record_page_progress(
+    chapter_permalink: &str,
+    page_index: usize,
+    file_path: &str,
+    size_bytes: i64,
+    progress: usize,
+) {
+    let cp = chapter_permalink.to_string();
+    let fp = file_path.to_string();
+    tokio::task::spawn_blocking(move || {
+        if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
+            let now = crate::util::now_ms();
+            let _ = conn.execute(
+                "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                rusqlite::params![cp, page_index as i64, fp, size_bytes, now],
+            );
+            let _ = conn.execute(
+                "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
+                rusqlite::params![progress as i64, cp],
+            );
+        }
+    })
+    .await
+    .ok();
+}
+
+async fn fetch_page_to_file(
+    client: &reqwest::Client,
+    abs_url: &str,
+    target: &std::path::Path,
+) -> Result<i64, String> {
+    if let Some(parent) = target.parent() {
+        tokio::fs::create_dir_all(parent).await.map_err(|e| format!("mkdir: {e}"))?;
+    }
+    let resp = crate::commands::http::send_with_redirects(
+        client,
+        "GET",
+        abs_url,
+        None,
+        None,
+        None,
+        Some(FETCH_TIMEOUT_MS),
+    )
+    .await
+    .map_err(|e| format!("http get: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("http status {}", resp.status()));
+    }
+    let parent = target.parent().unwrap_or(target);
+    let tmp = tempfile::Builder::new()
+        .prefix(".tmp-download-")
+        .tempfile_in(parent)
+        .map_err(|e| format!("tmp file: {e}"))?;
+    let (std_file, tmp_path) = tmp
+        .keep()
+        .map_err(|e| format!("keep tmp file: {e}"))?;
+    let mut guard = TempFileGuard(Some(tmp_path.clone()));
+    let mut out = tokio::fs::File::from_std(std_file);
+    let mut stream = resp.bytes_stream();
+    let write_res = crate::commands::http::stream_to_file_capped(&mut stream, &mut out, MAX_PAGE_BYTES, |_| {}).await;
+    drop(out);
+    let size = match write_res {
+        Ok(s) => s,
+        Err(e) => {
+            let e = if e.contains("exceeds size cap") {
+                format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes")
+            } else {
+                e
+            };
+            return Err(e);
+        }
+    };
+    match tokio::fs::rename(&tmp_path, target).await {
+        Ok(_) => {
+            guard.0 = None;
+        }
+        Err(e) => {
+            return Err(format!("persist: {e}"));
+        }
+    }
+    Ok(size as i64)
+}
+
 async fn download_chapter(
     app: &AppHandle,
     client: &reqwest::Client,
@@ -894,21 +986,7 @@ async fn download_chapter(
                     let size = meta.len() as i64;
                     done += 1;
                     total_bytes_done += size as u64;
-                    tokio::task::spawn_blocking(move || {
-                        if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                            let now = crate::util::now_ms();
-                            let _ = conn.execute(
-                                "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-                                rusqlite::params![cp, idx as i64, abs_str, size, now],
-                            );
-                            let _ = conn.execute(
-                                "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
-                                rusqlite::params![done as i64, cp],
-                            );
-                        }
-                    })
-                    .await
-                    .ok();
+                    record_page_progress(&req.chapter_permalink, idx, &abs_str, size, done).await;
                     let _ = app.emit(
                         "download://progress",
                         DownloadProgressPayload {
@@ -926,76 +1004,9 @@ async fn download_chapter(
             }
         }
 
-        // Fetch page with cancel/pause select. Transient failures get two
-        // retries (500 ms, 1500 ms backoff) before the chapter is failed.
-        struct TempFileGuard(Option<std::path::PathBuf>);
-        impl Drop for TempFileGuard {
-            fn drop(&mut self) {
-                if let Some(path) = self.0.take() {
-                    let _ = std::fs::remove_file(path);
-                }
-            }
-        }
         let mut attempt = 0usize;
         let size_res: Result<i64, String> = loop {
-            let fetch_fut = async {
-                // Ensure parent dir
-                if let Some(parent) = target.parent() {
-                    tokio::fs::create_dir_all(parent).await.map_err(|e| format!("mkdir: {e}"))?;
-                }
-                let resp = crate::commands::http::send_with_redirects(
-                    client,
-                    "GET",
-                    &abs_url,
-                    None,
-                    None,
-                    None,
-                    Some(FETCH_TIMEOUT_MS),
-                )
-                .await
-                .map_err(|e| format!("http get: {e}"))?;
-                if !resp.status().is_success() {
-                    return Err(format!("http status {}", resp.status()));
-                }
-                // Stream to a temp file with a hard byte cap, then atomically rename.
-                // Write through the temp file's own handle (`keep()`) — a second
-                // `File::create` on the same path risks Windows sharing violations.
-                // `keep()` detaches the auto-delete guard so the file remains for rename.
-                let parent = target.parent().unwrap_or(&target);
-                let tmp = tempfile::Builder::new()
-                    .prefix(".tmp-download-")
-                    .tempfile_in(parent)
-                    .map_err(|e| format!("tmp file: {e}"))?;
-                let (std_file, tmp_path) = tmp
-                    .keep()
-                    .map_err(|e| format!("keep tmp file: {e}"))?;
-                let mut guard = TempFileGuard(Some(tmp_path.clone()));
-                let mut out = tokio::fs::File::from_std(std_file);
-                let mut stream = resp.bytes_stream();
-                let write_res = crate::commands::http::stream_to_file_capped(&mut stream, &mut out, MAX_PAGE_BYTES, |_| {}).await;
-                drop(out);
-                let size = match write_res {
-                    Ok(s) => s,
-                    Err(e) => {
-                        let e = if e.contains("exceeds size cap") {
-                            format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes")
-                        } else {
-                            e
-                        };
-                        return Err(e);
-                    }
-                };
-                match tokio::fs::rename(&tmp_path, &target).await {
-                    Ok(_) => {
-                        guard.0 = None;
-                    }
-                    Err(e) => {
-                        return Err(format!("persist: {e}"));
-                    }
-                }
-                let size = size as i64;
-                Ok::<i64, String>(size)
-            };
+            let fetch_fut = fetch_page_to_file(client, &abs_url, &target);
 
             tokio::select! {
                 r = fetch_fut => match r {
@@ -1037,21 +1048,7 @@ async fn download_chapter(
                 total_bytes_done += page_size as u64;
                 let cp = req.chapter_permalink.clone();
                 let abs_clone = target.to_string_lossy().into_owned();
-                tokio::task::spawn_blocking(move || {
-                    if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                        let now = crate::util::now_ms();
-                        let _ = conn.execute(
-                            "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-                            rusqlite::params![cp, idx as i64, abs_clone, page_size, now],
-                        );
-                        let _ = conn.execute(
-                            "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
-                            rusqlite::params![done as i64, cp],
-                        );
-                    }
-                })
-                .await
-                .ok();
+                record_page_progress(&req.chapter_permalink, idx, &abs_clone, page_size, done).await;
                 let _ = app.emit(
                     "download://progress",
                     DownloadProgressPayload {

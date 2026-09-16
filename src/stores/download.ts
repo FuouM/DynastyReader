@@ -23,12 +23,25 @@ const [sessionDownloadedBytes, setSessionDownloadedBytes] = createSignal(0);
 const [downloadingChapterPermalinks, setDownloadingChapterPermalinks] = createSignal<Set<string>>(
   new Set(),
 );
+const [downloadQueueItems, setDownloadQueueItems] = createSignal<DownloadQueueItem[]>([]);
+const [isDownloadPaused, setIsDownloadPaused] = createSignal(false);
+const [downloadActiveProgress, setDownloadActiveProgress] = createSignal<
+  Record<string, { done: number; total: number; bytes: number }>
+>({});
+
 export {
   activeDownloadCount,
   downloadSpeedBps,
   downloadEtaSeconds,
   sessionDownloadedBytes,
   downloadingChapterPermalinks,
+  downloadQueueItems,
+  isDownloadPaused,
+  downloadActiveProgress,
+};
+
+export const refreshDownloadQueue = async (): Promise<void> => {
+  if (boundRefreshState) await boundRefreshState();
 };
 
 export const formatDownloadSpeed = formatSpeed;
@@ -138,6 +151,10 @@ export function initGlobalDownloadListener(): void {
   const refreshState = async () => {
     try {
       const res = await getDownloadQueue();
+      setDownloadQueueItems(res.items);
+      if (typeof res.paused === "boolean") {
+        setIsDownloadPaused(res.paused);
+      }
       updateDownloadQueueSnapshot(res.items);
       const activeOrPending = res.items.filter(
         (i) => i.status === "downloading" || i.status === "pending",
@@ -147,7 +164,6 @@ export function initGlobalDownloadListener(): void {
       setDownloadingChapterPermalinks(
         new Set(res.items.filter((i) => i.status === "downloading").map((i) => i.chapter_permalink)),
       );
-
     } catch {
       // Best-effort
     }
@@ -174,6 +190,28 @@ export function initGlobalDownloadListener(): void {
             return next;
           });
         }
+        setDownloadActiveProgress((prev) => ({
+          ...prev,
+          [payload.chapter_permalink]: {
+            done: payload.pages_done,
+            total: payload.total_pages,
+            bytes: payload.bytes_done || 0,
+          },
+        }));
+
+        setDownloadQueueItems((prev) =>
+          prev.map((item) => {
+            if (item.chapter_permalink === payload.chapter_permalink) {
+              return {
+                ...item,
+                progress: payload.pages_done,
+                total_pages: payload.total_pages || item.total_pages,
+                status: payload.status as DownloadQueueItem["status"],
+              };
+            }
+            return item;
+          }),
+        );
 
         if (pageBytes > 0 && payload.status === "downloading") {
           if (payload.chapter_permalink !== lastChapterPermalink) {
@@ -231,6 +269,15 @@ export function initGlobalDownloadListener(): void {
           payload.status === "failed" ||
           payload.status === "cancelled"
         ) {
+          const key = payload.chapter_permalink;
+          window.setTimeout(() => {
+            setDownloadActiveProgress((prev) => {
+              if (!(key in prev)) return prev;
+              const next = { ...prev };
+              delete next[key];
+              return next;
+            });
+          }, 0);
           void refreshState();
           if (payload.status === "done") {
             notifyCacheChanged();

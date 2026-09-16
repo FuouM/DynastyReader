@@ -286,48 +286,13 @@ function LibraryGrid() {
               }
               actions={
                 <div class="ds-library-detail-actions">
-                  <Show when={activeTab() === "followed"}>
-                    <IconButton
-                      icon={<Icon name="box-arrow-in-down" />}
-                      text={t("library.importButton")}
-                      title={t("library.importFollowedTooltip")}
-                      onClick={() => openImport("followed")}
-                    />
-                    <IconButton
-                      icon={<Icon name="box-arrow-up" />}
-                      text={t("library.exportButton")}
-                      title={t("library.exportFollowedTooltip")}
-                      onClick={() => openExport("followed")}
-                    />
-                  </Show>
-                  <Show when={activeTab() === "collections"}>
-                    <IconButton
-                      icon={<Icon name="box-arrow-in-down" />}
-                      text={t("library.importButton")}
-                      title={t("library.importCollectionsTooltip")}
-                      onClick={() => openImport("collections")}
-                    />
-                    <IconButton
-                      icon={<Icon name="box-arrow-up" />}
-                      text={t("library.exportButton")}
-                      title={t("library.exportCollectionsTooltip")}
-                      onClick={() => openExport("collections")}
-                    />
-                    <IconButton
-                      icon={<AddIcon />}
-                      text={t("library.newCollectionButton")}
-                      title={t("library.createCollectionTooltip")}
-                      onClick={() => setCreating(true)}
-                    />
-                  </Show>
-                  <Show when={activeTab() === "history"}>
-                    <ConfirmDeleteButton
-                      icon={<TrashIcon />}
-                      text={t("library.clearHistoryButton")}
-                      title={t("library.clearHistoryTooltip")}
-                      onConfirm={clearHistoryAll}
-                    />
-                  </Show>
+                  <LibraryTabActions
+                    activeTab={activeTab()}
+                    onOpenImport={openImport}
+                    onOpenExport={openExport}
+                    onCreateCollection={() => setCreating(true)}
+                    onClearHistory={clearHistoryAll}
+                  />
                 </div>
               }
             >
@@ -345,56 +310,14 @@ function LibraryGrid() {
           onSwitch={(id) => switchTab(id as LibraryTabId)}
           compact={isNarrowOrMobile()}
           right={
-            <>
-              <Show when={activeTab() === "followed"}>
-                <IconButton
-                  icon={<Icon name="box-arrow-in-down" />}
-                  text={t("library.importButton")}
-                  className="ds-btn-sm"
-                  title={t("library.importFollowedTooltip")}
-                  onClick={() => openImport("followed")}
-                />
-                <IconButton
-                  icon={<Icon name="box-arrow-up" />}
-                  text={t("library.exportButton")}
-                  className="ds-btn-sm"
-                  title={t("library.exportFollowedTooltip")}
-                  onClick={() => openExport("followed")}
-                />
-              </Show>
-              <Show when={activeTab() === "collections"}>
-                <IconButton
-                  icon={<Icon name="box-arrow-in-down" />}
-                  text={t("library.importButton")}
-                  className="ds-btn-sm"
-                  title={t("library.importCollectionsTooltip")}
-                  onClick={() => openImport("collections")}
-                />
-                <IconButton
-                  icon={<Icon name="box-arrow-up" />}
-                  text={t("library.exportButton")}
-                  className="ds-btn-sm"
-                  title={t("library.exportCollectionsTooltip")}
-                  onClick={() => openExport("collections")}
-                />
-                <IconButton
-                  icon={<AddIcon />}
-                  text={t("library.newCollectionButton")}
-                  className="ds-btn-sm"
-                  title={t("library.createCollectionTooltip")}
-                  onClick={() => setCreating(true)}
-                />
-              </Show>
-              <Show when={activeTab() === "history"}>
-                <ConfirmDeleteButton
-                  icon={<TrashIcon />}
-                  text={t("library.clearHistoryButton")}
-                  className="ds-btn-compact"
-                  title={t("library.clearHistoryTooltip")}
-                  onConfirm={clearHistoryAll}
-                />
-              </Show>
-            </>
+            <LibraryTabActions
+              activeTab={activeTab()}
+              compact
+              onOpenImport={openImport}
+              onOpenExport={openExport}
+              onCreateCollection={() => setCreating(true)}
+              onClearHistory={clearHistoryAll}
+            />
           }
         />
 
@@ -557,6 +480,69 @@ function LibraryActions(props: {
         title={t("library.seriesBlacklistTooltip")}
         onClick={() => navigate({ view: "blacklist" })}
       />
+    </>
+  );
+}
+
+function LibraryTabActions(props: {
+  activeTab: LibraryTabId;
+  compact?: boolean;
+  onOpenImport: (target: "followed" | "collections") => void;
+  onOpenExport: (target: "followed" | "collections") => void;
+  onCreateCollection: () => void;
+  onClearHistory: () => Promise<void>;
+}) {
+  const btnClass = props.compact ? "ds-btn-sm" : undefined;
+  return (
+    <>
+      <Show when={props.activeTab === "followed"}>
+        <IconButton
+          icon={<Icon name="box-arrow-in-down" />}
+          text={t("library.importButton")}
+          className={btnClass}
+          title={t("library.importFollowedTooltip")}
+          onClick={() => props.onOpenImport("followed")}
+        />
+        <IconButton
+          icon={<Icon name="box-arrow-up" />}
+          text={t("library.exportButton")}
+          className={btnClass}
+          title={t("library.exportFollowedTooltip")}
+          onClick={() => props.onOpenExport("followed")}
+        />
+      </Show>
+      <Show when={props.activeTab === "collections"}>
+        <IconButton
+          icon={<Icon name="box-arrow-in-down" />}
+          text={t("library.importButton")}
+          className={btnClass}
+          title={t("library.importCollectionsTooltip")}
+          onClick={() => props.onOpenImport("collections")}
+        />
+        <IconButton
+          icon={<Icon name="box-arrow-up" />}
+          text={t("library.exportButton")}
+          className={btnClass}
+          title={t("library.exportCollectionsTooltip")}
+          onClick={() => props.onOpenExport("collections")}
+        />
+        <IconButton
+          icon={<AddIcon />}
+          text={t("library.newCollectionButton")}
+          className={btnClass}
+          title={t("library.createCollectionTooltip")}
+          onClick={props.onCreateCollection}
+        />
+      </Show>
+      <Show when={props.activeTab === "history"}>
+        <ConfirmDeleteButton
+          icon={<TrashIcon />}
+          text={t("library.clearHistoryButton")}
+          className={props.compact ? "ds-btn-compact" : undefined}
+          title={t("library.clearHistoryTooltip")}
+          onConfirm={props.onClearHistory}
+        />
+      </Show>
     </>
   );
 }

@@ -1097,38 +1097,21 @@ pub async fn update_local_series(
         )
         .map_err(|e| format!("update local_series failed: {e}"))?;
 
-        // Patch series JSON payload in cached_metadata
+        // Patch series JSON payload in cached_metadata atomically via SQLite json_set
         let series_cache_key = format!("series:{}", permalink);
-        let existing: Option<String> = tx
-            .query_row(
-                "SELECT json_payload FROM cached_metadata WHERE cache_key = ?1",
-                rusqlite::params![series_cache_key],
-                |row| row.get(0),
-            )
-            .ok();
-
-        if let Some(json_str) = existing {
-            let mut payload: serde_json::Value =
-                serde_json::from_str(&json_str).map_err(|e| format!("bad series JSON: {e}"))?;
-            payload["name"] = serde_json::json!(meta.title);
-            payload["author"] = match &meta.author {
-                Some(a) => serde_json::json!(a),
-                None => serde_json::Value::Null,
-            };
-            payload["description"] = match &meta.description {
-                Some(d) => serde_json::json!(d),
-                None => serde_json::Value::Null,
-            };
-            // Always reflect current cover path (may have just been regenerated)
-            payload["cover"] = serde_json::json!(cover_abs);
-            let updated_str = serde_json::to_string(&payload)
-                .map_err(|e| format!("re-serialise series JSON failed: {e}"))?;
-            tx.execute(
-                "UPDATE cached_metadata SET json_payload = ?1, cached_at = ?2 WHERE cache_key = ?3",
-                rusqlite::params![updated_str, now, series_cache_key],
-            )
-            .map_err(|e| format!("update cached_metadata failed: {e}"))?;
-        }
+        let _ = tx.execute(
+            "UPDATE cached_metadata
+             SET json_payload = json_set(
+                 json_payload,
+                 '$.name', ?1,
+                 '$.author', ?2,
+                 '$.description', ?3,
+                 '$.cover', ?4
+             ),
+             cached_at = ?5
+             WHERE cache_key = ?6",
+            rusqlite::params![meta.title, meta.author, meta.description, cover_abs, now, series_cache_key],
+        );
 
         // If cover was replaced, update cover:series:<permalink> row too
         if meta.new_cover_path.is_some() {

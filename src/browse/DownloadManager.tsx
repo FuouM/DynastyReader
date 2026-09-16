@@ -1,9 +1,7 @@
-import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { createEffect, createMemo, createSignal, For, on, onMount, Show } from "solid-js";
 import {
   cancelDownload,
   clearCompletedDownloads,
-  getDownloadQueue,
   pauseDownloads,
   resumeDownloads,
   retryChapterDownload,
@@ -32,7 +30,10 @@ import {
   downloadEtaSeconds as etaSeconds,
   sessionDownloadedBytes as sessionBytes,
   resetDownloadSpeedAccumulators,
-  updateDownloadQueueSnapshot,
+  downloadQueueItems as items,
+  isDownloadPaused as isPaused,
+  downloadActiveProgress as activeProgress,
+  refreshDownloadQueue as refreshQueue,
   type DownloadProgressPayload,
 } from "../stores/download";
 
@@ -52,14 +53,11 @@ export interface SeriesDownloadGroup {
 export type { DownloadProgressPayload };
 
 export function DownloadManager(props: { onComplete?: () => void }) {
-  const [items, setItems] = createSignal<DownloadQueueItem[]>([]);
   const QUEUE_COLLAPSED_KEY = "ds_download_queue_collapsed";
   const [isCollapsed, setIsCollapsed] = createSignal(
     typeof window !== "undefined" ? localStorage.getItem(QUEUE_COLLAPSED_KEY) === "true" : false,
   );
-  const [isPaused, setIsPaused] = createSignal(false);
   const [expandedSeries, setExpandedSeries] = createSignal<Set<string>>(new Set());
-  const [activeProgress, setActiveProgress] = createSignal<Record<string, { done: number; total: number; bytes: number }>>({});
   // Speed/ETA/session-bytes come from the single store stream (QoL-D4);
   // pause/resume and queue drains reset them centrally.
   // Per-row in-flight guards for retry/cancel buttons (QoL-D2).
@@ -91,107 +89,26 @@ export function DownloadManager(props: { onComplete?: () => void }) {
     }
   };
 
-  let unlisten: UnlistenFn | null = null;
-  let pollTimer: number | null = null;
-  let mounted = true;
-
-  const refreshQueue = async () => {
-    try {
-      const res = await getDownloadQueue();
-      setItems(res.items);
-      if (typeof res.paused === "boolean") {
-        setIsPaused(res.paused);
-      }
-      updateDownloadQueueSnapshot(res.items);
-    } catch {
-      // Best-effort
-    }
-  };
-
   onMount(() => {
     void refreshQueue();
-
-    try {
-      void listen<DownloadProgressPayload>("download://progress", (event) => {
-        const payload = event.payload;
-        if (payload) {
-
-          setActiveProgress((prev) => ({
-            ...prev,
-            [payload.chapter_permalink]: {
-              done: payload.pages_done,
-              total: payload.total_pages,
-              bytes: payload.bytes_done || 0,
-            },
-          }));
-
-          setItems((prev) =>
-            prev.map((item) => {
-              if (item.chapter_permalink === payload.chapter_permalink) {
-                return {
-                  ...item,
-                  progress: payload.pages_done,
-                  total_pages: payload.total_pages || item.total_pages,
-                  status: payload.status as DownloadQueueItem["status"],
-                };
-              }
-              return item;
-            }),
-          );
-
-          if (payload.status === "done" || payload.status === "failed" || payload.status === "cancelled") {
-            // Let the final state render once, then evict the entry so the
-            // map does not grow for the whole session.
-            const key = payload.chapter_permalink;
-            window.setTimeout(() => {
-              if (!mounted) return;
-              setActiveProgress((prev) => {
-                if (!(key in prev)) return prev;
-                const next = { ...prev };
-                delete next[key];
-                return next;
-              });
-            }, 0);
-            void refreshQueue();
-            if (payload.status === "done") {
-              props.onComplete?.();
-            }
-          }
-        }
-      }).then((fn) => {
-        if (mounted) {
-          unlisten = fn;
-        } else {
-          // Unmounted before registration resolved — release immediately.
-          fn();
-        }
-      }).catch(() => {
-        // Listener registration failed
-      });
-    } catch {
-      // Outside Tauri
-    }
-
-    // Gentle 3s poll when there are active/pending items
-    pollTimer = window.setInterval(() => {
-      const list = items();
-      const hasActive = list.some((i) => i.status === "downloading" || i.status === "pending");
-      if (hasActive) {
-        void refreshQueue();
-      }
-    }, 3000);
-  });
-
-  onCleanup(() => {
-    mounted = false;
-    if (unlisten) unlisten();
-    if (pollTimer !== null) clearInterval(pollTimer);
   });
   const totalCount = () => items().length;
   const activeOrPendingCount = () =>
     items().filter((i) => i.status === "downloading" || i.status === "pending").length;
   const allFailedCount = () => items().filter((i) => i.status === "failed").length;
   const allCompletedCount = () => items().filter((i) => i.status === "done").length;
+
+  createEffect(
+    on(
+      allCompletedCount,
+      (cur, prev) => {
+        if (prev !== undefined && cur > prev) {
+          props.onComplete?.();
+        }
+      },
+      { defer: true },
+    ),
+  );
 
   // Group items by Series, sorted by most recent activity (active first, then latestQueuedAt DESC)
   const seriesGroups = createMemo((): SeriesDownloadGroup[] => {
@@ -302,10 +219,8 @@ export function DownloadManager(props: { onComplete?: () => void }) {
       resetDownloadSpeedAccumulators();
       if (isPaused()) {
         await resumeDownloads();
-        setIsPaused(false);
       } else {
         await pauseDownloads();
-        setIsPaused(true);
       }
       await refreshQueue();
     } catch (err) {
