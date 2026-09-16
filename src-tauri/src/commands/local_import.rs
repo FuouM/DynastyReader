@@ -965,7 +965,6 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
             return Err("not a local series permalink".to_string());
         }
         let slug = permalink.trim_start_matches("local:");
-        let data_root = crate::paths::data_root();
         let series_dir = resolve_local_series_dir(slug)?;
         // Discover exact chapter permalinks from disk and metadata before
         // removing files, so we never rely on a broad prefix LIKE that could
@@ -1070,7 +1069,6 @@ pub async fn update_local_series(
             return Err("not a local series permalink".to_string());
         }
         let slug = permalink.trim_start_matches("local:").to_string();
-        let data_root = crate::paths::data_root();
         let series_dir = resolve_local_series_dir(&slug)?;
         let db_path = crate::paths::db_path();
         let now = crate::util::now_ms();

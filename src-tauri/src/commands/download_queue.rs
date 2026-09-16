@@ -6,7 +6,7 @@
 //!
 //! Phase 2 desktop-only — Android foreground service deferred to Phase 3.
 
-use crate::util::lock_unpoisoned;
+use crate::util::{lock_unpoisoned, now_ms};
 use log;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -236,7 +236,7 @@ pub async fn enqueue_chapters(
     http_state: State<'_, crate::commands::http::HttpState>,
     chapters: Vec<DownloadRequest>,
 ) -> Result<EnqueueResult, String> {
-    let now = chrono_now();
+    let now = now_ms();
     let result = tokio::task::spawn_blocking(move || -> Result<EnqueueResult, String> {
         ensure_download_queue_table()?;
         let mut conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
@@ -357,7 +357,7 @@ pub async fn retry_chapter_download(
     let cp = chapter_permalink.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
         let conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
-        let now = chrono_now();
+        let now = now_ms();
         let updated = conn
             .execute(
                 "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE chapter_permalink = ?2 AND status = 'failed'",
@@ -418,7 +418,7 @@ pub async fn retry_failed_downloads(
     let sp = series_permalink.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
         let conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
-        let now = chrono_now();
+        let now = now_ms();
         if is_singles_series(&sp) {
             conn.execute(
                 "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE (series_permalink = '' OR series_permalink IS NULL OR series_permalink = '_singles') AND status = 'failed'",
@@ -672,7 +672,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         }
 
         // Update status (blocking)
-        let now = chrono_now();
+        let now = now_ms();
         let req_clone = req.clone();
         let app_clone = app.clone();
         match result {
@@ -982,7 +982,6 @@ async fn download_chapter(
                 if meta.len() > 0 {
                     // Register in cached_pages if not already and update progress in single DB connection
                     let abs_str = target.to_string_lossy().into_owned();
-                    let cp = req.chapter_permalink.clone();
                     let size = meta.len() as i64;
                     done += 1;
                     total_bytes_done += size as u64;
@@ -1046,7 +1045,6 @@ async fn download_chapter(
             Ok(page_size) => {
                 done += 1;
                 total_bytes_done += page_size as u64;
-                let cp = req.chapter_permalink.clone();
                 let abs_clone = target.to_string_lossy().into_owned();
                 record_page_progress(&req.chapter_permalink, idx, &abs_clone, page_size, done).await;
                 let _ = app.emit(
