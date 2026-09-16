@@ -221,7 +221,10 @@ fn row_to_json(row: &rusqlite::Row<'_>) -> Result<Value, rusqlite::Error> {
             rusqlite::types::ValueRef::Integer(v) => json!(v),
             rusqlite::types::ValueRef::Real(v) => json!(v),
             rusqlite::types::ValueRef::Text(v) => json!(String::from_utf8_lossy(v).into_owned()),
-            rusqlite::types::ValueRef::Blob(v) => json!(String::from_utf8_lossy(v).into_owned()),
+            rusqlite::types::ValueRef::Blob(v) => match std::str::from_utf8(v) {
+                Ok(s) => json!(s),
+                Err(_) => json!(v),
+            },
         };
         obj.insert(name, cell);
     }
@@ -330,10 +333,7 @@ pub async fn db_backup(
 ) -> Result<serde_json::Value, String> {
     let normalized = validate_db_name(&db_name)?;
     let src_db_path = crate::paths::data_root().join(&normalized);
-    let ts = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis())
-        .unwrap_or(0);
+    let ts = crate::util::now_ms();
     let backup_filename = format!("{}.backup.{}.db", normalized, ts);
     let backup_path = crate::paths::data_root().join(&backup_filename);
     let backup_str = backup_path.to_string_lossy().to_string();

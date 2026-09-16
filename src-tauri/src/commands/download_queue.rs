@@ -519,12 +519,6 @@ pub async fn get_download_queue(
     let is_paused = state.paused.load(Ordering::SeqCst);
     Ok(serde_json::json!({ "items": items, "paused": is_paused }))
 }
-fn chrono_now() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or(0)
-}
 
 /// Parses `"HH:mm"` into minutes since midnight; `None` when malformed.
 fn parse_hhmm(s: &str) -> Option<i32> {
@@ -812,7 +806,7 @@ async fn download_chapter(
         let body_clone = body.clone();
         tokio::task::spawn_blocking(move || {
             if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                let now = chrono_now();
+                let now = crate::util::now_ms();
                 let key = format!("chapter:{}", cp);
                 let _ = conn.execute(
                     "INSERT OR REPLACE INTO cached_metadata (cache_key, data_type, json_payload, cached_at) VALUES (?1, 'chapter', ?2, ?3)",
@@ -902,7 +896,7 @@ async fn download_chapter(
                     total_bytes_done += size as u64;
                     tokio::task::spawn_blocking(move || {
                         if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                            let now = chrono_now();
+                            let now = crate::util::now_ms();
                             let _ = conn.execute(
                                 "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
                                 rusqlite::params![cp, idx as i64, abs_str, size, now],
@@ -1045,7 +1039,7 @@ async fn download_chapter(
                 let abs_clone = target.to_string_lossy().into_owned();
                 tokio::task::spawn_blocking(move || {
                     if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                        let now = chrono_now();
+                        let now = crate::util::now_ms();
                         let _ = conn.execute(
                             "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
                             rusqlite::params![cp, idx as i64, abs_clone, page_size, now],

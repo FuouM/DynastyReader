@@ -15,11 +15,11 @@ export type SlotStateKind = "spinner" | "offline" | "error" | "idle";
  * directly, so the JSX slot components re-render on their own.
  */
 export interface ReaderQueueHost {
-  getPages(): ChapterPage[];
-  permalink: string;
-  getSeriesPermalink(): string | null;
-  getCurrentIndex(): number;
-  isDisposed(): boolean;
+  readonly pages: () => ChapterPage[];
+  readonly permalink: string;
+  readonly seriesPermalink: () => string | null;
+  readonly currentIndex: () => number;
+  readonly disposed: boolean;
   getCachedPath(index: number): string | undefined;
   setCachedPath(index: number, path: string): void;
   setSlotState(index: number, kind: SlotStateKind, message: string): void;
@@ -68,7 +68,7 @@ export class ReaderQueue {
 
   /** Marks a page as needing a (re)download. Priorities jump to the queue head. */
   enqueue(index: number, priority = false): void {
-    const pages = this.c.getPages();
+    const pages = this.c.pages();
     if (index < 0 || index >= pages.length) return;
     if (this.inFlight.has(index) || this.failed.has(index)) return;
     if (priority) {
@@ -78,7 +78,7 @@ export class ReaderQueue {
       this.queue.push(index);
     }
     // Keep queue sorted by priority first, then proximity to the user's reading position
-    const current = this.c.getCurrentIndex();
+    const current = this.c.currentIndex();
     this.queue.sort((a, b) => {
       const prioA = this.priorityIndices.has(a) ? 0 : 1;
       const prioB = this.priorityIndices.has(b) ? 0 : 1;
@@ -105,10 +105,10 @@ export class ReaderQueue {
 
   private async downloadPage(index: number): Promise<void> {
     const c = this.c;
-    const pages = c.getPages();
+    const pages = c.pages();
     const page = pages[index];
     if (!page) return;
-    const outPath = pageOutputPath(c.getSeriesPermalink() ?? "", c.permalink, index, page.url);
+    const outPath = pageOutputPath(c.seriesPermalink() ?? "", c.permalink, index, page.url);
     try {
       // If the file already exists at the canonical path, skip the network entirely
       const existing = await fileResolveWithStat(outPath);
@@ -124,10 +124,10 @@ export class ReaderQueue {
       }
       await setCachedPage(c.permalink, index, absPath, sizeBytes);
       // Symmetric with the catch path: never write into a disposed session.
-      if (c.isDisposed()) return;
+      if (c.disposed) return;
       c.setCachedPath(index, absPath);
     } catch (err) {
-      if (c.isDisposed()) return;
+      if (c.disposed) return;
       this.failed.add(index);
       const msg = errorMessage(err);
       c.setSlotState(index, "error", t("reader.session.slotState.downloadFailed", { msg }));

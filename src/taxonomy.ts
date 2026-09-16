@@ -11,8 +11,8 @@
 
 import type { BootstrapIconName } from "./components/Icon";
 import type { ChapterTag, SeriesTag, SeriesTaggings } from "./types/api";
-export type { GroupedSeriesTags } from "./types/taxonomy";
 import type { GroupedSeriesTags } from "./types/taxonomy";
+export type { GroupedSeriesTags };
 
 // ── 1. Canonical Domain Entity Types ──────────────────────────────────────────
 

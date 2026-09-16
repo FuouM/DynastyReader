@@ -789,7 +789,7 @@ fn register_local_series_in_db(
     series_slug: &str,
     total_pages: usize,
 ) -> Result<(), String> {
-    let db_path = crate::paths::data_root().join("dynasty_reader.db");
+    let db_path = crate::paths::db_path();
     let conn = crate::commands::db::open_synced(&db_path)?;
 
     // Ensure local_series table exists (idempotent)
@@ -810,7 +810,7 @@ fn register_local_series_in_db(
     )
     .map_err(|e| format!("create local_series failed: {e}"))?;
 
-    let now = chrono_like_now();
+    let now = crate::util::now_ms();
     let cover_rel_path = format!("local/{}/cover.webp", series_slug);
     let series_cover_abs = crate::paths::data_root().join(&cover_rel_path).to_string_lossy().into_owned();
 
@@ -941,12 +941,6 @@ fn register_local_series_in_db(
     Ok(())
 }
 
-fn chrono_like_now() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or(0)
-}
 
 /// Resolve `<data_root>/local/<slug>` rejecting traversal: the slug must be a
 /// single safe path component (no separators, no dot segments) so a crafted
@@ -989,7 +983,7 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
                 }
             }
         }
-        let db_path = data_root.join("dynasty_reader.db");
+        let db_path = crate::paths::db_path();
         if db_path.exists() {
             let conn = crate::commands::db::open_synced(&db_path)?;
             // Also harvest any chapter permalinks explicitly declared in cached_metadata
@@ -1077,8 +1071,8 @@ pub async fn update_local_series(
         let slug = permalink.trim_start_matches("local:").to_string();
         let data_root = crate::paths::data_root();
         let series_dir = resolve_local_series_dir(&slug)?;
-        let db_path = data_root.join("dynasty_reader.db");
-        let now = chrono_like_now();
+        let db_path = crate::paths::db_path();
+        let now = crate::util::now_ms();
 
         // --- Optional cover replacement ---
         // Do this before touching the DB so the cover path stored is correct.

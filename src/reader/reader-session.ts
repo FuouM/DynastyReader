@@ -183,23 +183,6 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.queue = new ReaderQueue(this);
     this.persistence = createReaderPersistence(this.state, this.permalink);
   }
-  // ReaderQueueHost interface implementation (method wrappers for signal accessors)
-  getPages(): ChapterPage[] {
-    return this.pages();
-  }
-
-  getSeriesPermalink(): string | null {
-    return this.seriesPermalink();
-  }
-
-  getCurrentIndex(): number {
-    return this.currentIndex();
-  }
-
-  isDisposed(): boolean {
-    return this.disposedFlag;
-  }
-
   /** Internal property accessor used by reader lifecycle guards (RD-M3). */
   get disposed(): boolean {
     return this.disposedFlag;
