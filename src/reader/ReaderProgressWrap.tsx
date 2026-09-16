@@ -3,6 +3,7 @@ import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { t } from "../i18n";
 import { CheckIcon } from "../components/Icon";
+import { triggerHaptic } from "../utils/haptics";
 
 export interface ReaderProgressWrapProps {
   session: ReaderSession;
@@ -18,7 +19,24 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
   let pillRef: HTMLDivElement | undefined;
   let trackRef: HTMLDivElement | undefined;
   const [isScrubbing, setIsScrubbing] = createSignal(false);
+  let lastHapticPage: number | null = null;
+  let lastHapticTime = 0;
+  const HAPTIC_THROTTLE_MS = 40;
 
+  const triggerScrubHaptic = (targetPage: number, instant: boolean) => {
+    if (s.pages().length <= 1) return;
+    if (lastHapticPage === null) {
+      lastHapticPage = s.currentIndex();
+    }
+    const now = performance.now();
+    if (targetPage !== lastHapticPage) {
+      if (instant || now - lastHapticTime >= HAPTIC_THROTTLE_MS) {
+        lastHapticPage = targetPage;
+        lastHapticTime = now;
+        triggerHaptic("page-turn");
+      }
+    }
+  };
   const calculatePageFromPointer = (e: PointerEvent): number => {
     if (!trackRef) return s.currentIndex();
     const rect = trackRef.getBoundingClientRect();
@@ -36,14 +54,19 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
     e.preventDefault();
     setIsScrubbing(true);
     trackRef?.setPointerCapture(e.pointerId);
+    lastHapticPage = s.currentIndex();
+    lastHapticTime = 0;
     const targetPage = calculatePageFromPointer(e);
+    triggerScrubHaptic(targetPage, false);
     s.setPage(targetPage, false);
   };
 
   const handleTrackPointerMove = (e: PointerEvent) => {
     if (!isScrubbing()) return;
     e.preventDefault();
-    s.setPage(calculatePageFromPointer(e), false);
+    const targetPage = calculatePageFromPointer(e);
+    triggerScrubHaptic(targetPage, false);
+    s.setPage(targetPage, false);
   };
 
   const handleTrackPointerUp = (e: PointerEvent) => {
@@ -52,7 +75,10 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
     if (trackRef?.hasPointerCapture(e.pointerId)) {
       trackRef.releasePointerCapture(e.pointerId);
     }
-    s.setPage(calculatePageFromPointer(e), true);
+    const targetPage = calculatePageFromPointer(e);
+    triggerScrubHaptic(targetPage, true);
+    s.setPage(targetPage, true);
+    lastHapticPage = targetPage;
   };
 
   const totalPages = () => s.pages().length;

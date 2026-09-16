@@ -38,6 +38,7 @@ import {
 import { ReaderProgressWrap } from "./ReaderProgressWrap";
 import { ReaderFilterPopover } from "./ReaderFilterPopover";
 import { isReaderFilterDefault } from "./ReaderFilterControls";
+import { triggerHaptic } from "../utils/haptics";
 export interface NavRowProps {
   session: ReaderSession;
   controlsOpen?: Accessor<boolean>;
@@ -278,10 +279,35 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
   };
   // In RTL, slider value is inverted: slider left = last page, slider right = page 1.
   const sliderValue = () => (isRtl() ? total() - current() + 1 : current());
+  let lastHapticPage: number | null = null;
+  let lastHapticTime = 0;
+  const HAPTIC_THROTTLE_MS = 40;
+
+  const onSliderPointerDown = () => {
+    lastHapticPage = s.currentIndex();
+    lastHapticTime = 0;
+  };
+
   const onSliderChange = (rawVal: number, instant: boolean) => {
     const pageIdx = isRtl() ? total() - rawVal : rawVal - 1;
     if (!isNaN(pageIdx) && pageIdx >= 0 && pageIdx < total()) {
+      if (total() > 1) {
+        if (lastHapticPage === null) {
+          lastHapticPage = s.currentIndex();
+        }
+        const now = performance.now();
+        if (pageIdx !== lastHapticPage) {
+          if (instant || now - lastHapticTime >= HAPTIC_THROTTLE_MS) {
+            lastHapticPage = pageIdx;
+            lastHapticTime = now;
+            triggerHaptic("page-turn");
+          }
+        }
+      }
       s.setPage(pageIdx, instant);
+      if (instant) {
+        lastHapticPage = pageIdx;
+      }
     }
   };
 
@@ -303,6 +329,12 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
           max={total()}
           value={sliderValue()}
           style={{ "--scrubber-pct": `${pct()}%` }}
+          onPointerDown={onSliderPointerDown}
+          onTouchStart={onSliderPointerDown}
+          onFocus={onSliderPointerDown}
+          onBlur={() => {
+            lastHapticPage = null;
+          }}
           onInput={(e) => onSliderChange(parseInt(e.currentTarget.value, 10), false)}
           onChange={(e) => onSliderChange(parseInt(e.currentTarget.value, 10), true)}
           aria-label={t("reader.toolbar.jumpToPage")}
