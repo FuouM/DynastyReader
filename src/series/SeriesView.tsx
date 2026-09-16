@@ -38,21 +38,14 @@ import type { SeriesProgressRow } from "../types/db";
 import type { Series } from "../types/api";
 import { useDelayedSpinner } from "../browse/browse-state";
 import { Loading } from "../components/Loading";
-import { Button } from "../components/Button";
-import { ExternalLinkButton } from "../components/ExternalLinkButton";
-import { AddToCollectionButton } from "../components/AddToCollectionButton";
 import { useAddToCollection } from "../components/hooks/useAddToCollection";
 import { ErrorRetryRow } from "../components/ErrorRetryRow";
-import {
-  BookmarkIcon,
-  BlacklistIcon,
-  RefreshIcon,
-  CloudDownloadIcon,
-  CheckIcon,
-} from "../components/Icon";
+import { BlacklistIcon } from "../components/Icon";
 import { SeriesHeader } from "./SeriesHeader";
 import { SeriesChapterList, type ChapterMeta } from "./SeriesChapterList";
 import { SeriesTaggables } from "./SeriesTaggables";
+import { SeriesActions } from "./SeriesActions";
+import { SeriesResumeBanner, chronologicalChapters } from "./SeriesResumeBanner";
 
 /** Thrown when the permalink turned out to be a standalone chapter (redirected). */
 class SeriesRedirected extends Error {}
@@ -77,20 +70,6 @@ function collectChapters(series: Series): ChapterMeta[] {
   return out;
 }
 
-/**
- * Chapters in chronological release order. Taggings order is not guaranteed
- * to match release order (anthology series interleave headers/collections),
- * so sort by released_on with a stable fallback to the original order.
- */
-function chronologicalChapters(chapters: ChapterMeta[]): ChapterMeta[] {
-  return chapters
-    .map((ch, idx) => {
-      const ts = ch.released_on ? Date.parse(ch.released_on) : NaN;
-      return { ch, idx, ts: Number.isNaN(ts) ? -Infinity : ts };
-    })
-    .sort((a, b) => (a.ts !== b.ts ? a.ts - b.ts : a.idx - b.idx))
-    .map((x) => x.ch);
-}
 
 export function SeriesView() {
   const [forceTick, setForceTick] = createSignal(0);
@@ -450,25 +429,6 @@ function SeriesBody(props: {
   onDownloadChapter?: (ch: ChapterMeta) => Promise<void> | void;
   onToggleRead?: (ch: ChapterMeta, isCurrentlyRead: boolean) => Promise<void> | void;
 }) {
-  const resumeInfo = createMemo(() => {
-    const chapters = props.data.chapters;
-    if (chapters.length === 0) return null;
-    const sorted = chronologicalChapters(chapters);
-    const unread = sorted.find(
-      (c) =>
-        !props.data.readHistorySet.has(c.permalink) &&
-        props.data.progress.get(c.permalink)?.completed !== 1,
-    );
-    if (unread) {
-      const hasAnyRead = sorted.some(
-        (c) =>
-          props.data.readHistorySet.has(c.permalink) ||
-          props.data.progress.get(c.permalink)?.completed === 1,
-      );
-      return { chapter: unread, isStart: !hasAnyRead, isCompleted: false };
-    }
-    return { chapter: null, isStart: false, isCompleted: true };
-  });
   return (
     <>
       <Show when={props.blacklisted()}>
@@ -491,47 +451,12 @@ function SeriesBody(props: {
         </div>
       </Show>
 
-      <Show when={resumeInfo()}>
-        {(info) => (
-          <div class="ds-series-resume-banner">
-            <Show when={info().chapter}>
-              {(ch) => (
-                <button
-                  type="button"
-                  class="win-button primary ds-series-resume-btn"
-                  onClick={() => {
-                    const prog = props.data.progress.get(ch().permalink);
-                    navigate({
-                      view: "reader",
-                      seriesPermalink: props.data.series.permalink,
-                      chapterPermalink: ch().permalink,
-                      chapterTitle: ch().title,
-                      seriesName: props.data.series.name,
-                      chapterList: props.data.chapters,
-                      startPage: prog && prog.completed !== 1 ? prog.page_index : 0,
-                    });
-                  }}
-                >
-                  <span class="ds-resume-icon">▶</span>
-                  <span>
-                    {info().isStart
-                      ? t("series.startReading")
-                      : t("series.continueReading", {
-                          title: decodeEntities(ch().title),
-                        })}
-                  </span>
-                </button>
-              )}
-            </Show>
-            <Show when={info().isCompleted}>
-              <div class="ds-series-completed-banner ds-muted">
-                <CheckIcon size={14} />
-                <span>{t("series.allRead")}</span>
-              </div>
-            </Show>
-          </div>
-        )}
-      </Show>
+      <SeriesResumeBanner
+        series={props.data.series}
+        chapters={props.data.chapters}
+        progress={props.data.progress}
+        readHistorySet={props.data.readHistorySet}
+      />
 
       <SeriesTaggables series={props.data.series} />
 
@@ -552,61 +477,3 @@ function SeriesBody(props: {
   );
 }
 
-interface SeriesActionsProps {
-  followed: () => boolean;
-  busyFollow: () => boolean;
-  onToggleFollow: () => void;
-  blacklisted: () => boolean;
-  busyBlacklist: () => boolean;
-  onToggleBlacklist: () => void;
-  onRefresh: () => void;
-  onOpenAddToCol: (anchorEl: HTMLElement) => void;
-  openUrl: string;
-  seriesType?: string;
-  onDownloadAll?: () => void;
-}
-function SeriesActions(props: SeriesActionsProps) {
-  return (
-    <>
-      <Button
-        icon={props.followed() ? <BookmarkIcon filled={true} /> : <BookmarkIcon />}
-        text={props.followed() ? t("series.following") : t("series.follow")}
-        disabled={props.busyFollow()}
-        onClick={props.onToggleFollow}
-      />
-      <AddToCollectionButton
-        text={t("series.addToButton")}
-        onOpen={props.onOpenAddToCol}
-      />
-      <Button
-        icon={props.blacklisted() ? <BlacklistIcon filled={true} color="var(--ds-warn-text,#d97706)" /> : <BlacklistIcon />}
-        text={props.blacklisted() ? t("series.blacklistedBadge") : t("series.blacklistButton")}
-        classList={{ active: props.blacklisted() }}
-        title={props.blacklisted() ? t("series.unblacklistTooltip") : t("series.blacklistTooltip")}
-        disabled={props.busyBlacklist()}
-        onClick={props.onToggleBlacklist}
-      />
-      <Button
-        icon={<RefreshIcon />}
-        text={t("common.refresh")}
-        title={t("series.reloadTooltip")}
-        onClick={props.onRefresh}
-      />
-      <Show when={props.onDownloadAll}>
-        <Button
-          icon={<CloudDownloadIcon />}
-          text={t("series.downloadAll")}
-          title={t("series.downloadAllTooltip")}
-          onClick={props.onDownloadAll}
-        />
-      </Show>
-      <Show when={props.openUrl}>
-        <ExternalLinkButton
-          className="ds-btn-icon"
-          title={t("series.openInBrowserTooltip", { type: props.seriesType ? props.seriesType.toLowerCase() : "series" })}
-          url={props.openUrl}
-        />
-      </Show>
-    </>
-  );
-}

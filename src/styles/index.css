@@ -152,13 +152,13 @@ body {
   box-sizing: border-box;
 }
 .ds-segmented-btn:not(:has(.ds-btn-text)) {
-  width: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  max-height: 100% !important;
-  padding: 0 !important;
+  width: 24px;
+  min-width: 24px;
+  max-width: 24px;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  padding: 0;
   font-size: var(--font-md);
 }
 .ds-segmented-btn span,

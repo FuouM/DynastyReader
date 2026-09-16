@@ -4,18 +4,10 @@
  */
 
 import { createSignal, onMount } from "solid-js";
-import { createResizeObserver } from "@solid-primitives/resize-observer";
 import type { ReaderSession } from "./reader-session";
-import { isMobile } from "../stores/platform";
-import {
-  isMobileGesturesOnDesktopEnabled,
-  getDefaultReaderMode,
-  getDefaultPagedLayout,
-  getEffectiveDefaultReaderMode,
-  getEffectiveDefaultPagedLayout,
-  getDefaultFitMode,
-  getEffectiveFitMode,
-} from "./settings";
+import { isMobileGesturesOnDesktopEnabled } from "./settings";
+import { setupScrollTracker } from "./scroll-tracker";
+import { setupViewportResize } from "./viewport-resize";
 import { getAdjacentChapters } from "./reader-spread";
 import { triggerHaptic } from "../utils/haptics";
 import {
@@ -80,167 +72,20 @@ export function useReaderGestures(s: ReaderSession) {
     const vpEl = s.viewportEl;
     if (!vpEl) return;
 
-    // Compute exact available viewport height dynamically via reactive primitive (M-06)
-    const isLandscapeNow = (): boolean => {
-      if (typeof screen !== "undefined" && screen.orientation?.type) {
-        return screen.orientation.type.startsWith("landscape");
+    setupViewportResize(s, vpEl, () => {
+      if (activeOverscroll) {
+        activeOverscroll = null;
+        dispatchOverscroll(null);
+        resetStripTransform(false);
       }
-      return typeof window !== "undefined" ? window.innerWidth > window.innerHeight : false;
-    };
-    let lastIsLandscape = isMobile() && isLandscapeNow();
-    let resizeRaf: number | null = null;
-    createResizeObserver(
-      () => vpEl,
-      () => {
-        if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
-        resizeRaf = requestAnimationFrame(() => {
-          resizeRaf = null;
-          // Cancel any active overscroll gesture on viewport resize / rotation (OS-04)
-          if (activeOverscroll) {
-            activeOverscroll = null;
-            dispatchOverscroll(null);
-            resetStripTransform(false);
-          }
-          if (activeMouseOverscroll) {
-            activeMouseOverscroll = null;
-            dispatchOverscroll(null);
-            resetStripTransform(false);
-          }
-          if (!s.isHorizontal()) {
-            const vp = s.viewportEl;
-            const curIdx = s.currentIndex();
-            const anchorEl = s.slotEls[curIdx] || s.slotEls[0];
-            const wasAtTop = !!vp && vp.scrollTop <= 2 && curIdx === 0;
-            let offsetFromVpTop = 0;
-
-            if (vp && anchorEl) {
-              const vpRect = vp.getBoundingClientRect();
-              const anchorRect = anchorEl.getBoundingClientRect();
-              offsetFromVpTop = anchorRect.top - vpRect.top;
-            }
-
-            s.updateViewportHeight();
-
-            if (vp && anchorEl && !wasAtTop) {
-              const newVpRect = vp.getBoundingClientRect();
-              const newAnchorRect = anchorEl.getBoundingClientRect();
-              const currentOffset = newAnchorRect.top - newVpRect.top;
-              const delta = currentOffset - offsetFromVpTop;
-              if (Math.abs(delta) > 0.5) {
-                vp.scrollTop += delta;
-              }
-            }
-          } else {
-            s.updateViewportHeight();
-          }
-
-          if (isMobile() && typeof window !== "undefined") {
-            const currentIsLandscape = isLandscapeNow();
-            if (currentIsLandscape !== lastIsLandscape) {
-              lastIsLandscape = currentIsLandscape;
-              if (!s.isLongStrip()) {
-                const targetMode = currentIsLandscape
-                  ? getEffectiveDefaultReaderMode(s.mode())
-                  : getDefaultReaderMode();
-                const targetLayout = currentIsLandscape
-                  ? getEffectiveDefaultPagedLayout(s.pagedLayout())
-                  : getDefaultPagedLayout();
-                const targetFit = currentIsLandscape
-                  ? getEffectiveFitMode(s.fitMode())
-                  : getDefaultFitMode();
-                let changed = false;
-                if (targetMode !== s.mode()) {
-                  s.setModeSignal(targetMode);
-                  changed = true;
-                }
-                if (targetLayout !== s.pagedLayout()) {
-                  s.setPagedLayoutSignal(targetLayout);
-                  changed = true;
-                }
-                if (targetFit !== s.fitMode()) {
-                  s.setFitModeSignal(targetFit);
-                  changed = true;
-                }
-                if (changed) {
-                  s.applyLayoutMode();
-                  s.resetToCurrentPage(false);
-                }
-              }
-            }
-          }
-        });
-      },
-    );
-    s.onDispose(() => {
-      if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
-    });
-    window.setTimeout(() => {
-      s.updateViewportHeight();
-      s.applyLayoutMode();
-    }, 0);
-
-    // Dynamic scroll-position tracking (continuous scroll mode) — O(log N) binary search
-    const computeCurrentPageFromScroll = (force = false): void => {
-      if (s.isHorizontal() || s.isProgrammaticScroll || s.restoring() || (!force && s.isToolbarAnimating)) return;
-      const vp = s.viewportEl;
-      if (!vp || !vp.isConnected) return;
-
-      const totalSlots = s.slotEls.length;
-      if (totalSlots === 0) return;
-
-      const vpRect = vp.getBoundingClientRect();
-      if (vpRect.height <= 0) return;
-      const targetY = vpRect.top + vpRect.height * 0.4;
-
-      let low = 0;
-      let high = totalSlots - 1;
-      let bestIdx = 0;
-
-      while (low <= high) {
-        const mid = (low + high) >> 1;
-        const el = s.slotEls[mid];
-        if (!el) {
-          low = mid + 1;
-          continue;
-        }
-        const rect = el.getBoundingClientRect();
-
-        if (targetY >= rect.top && targetY < rect.bottom) {
-          bestIdx = mid;
-          break;
-        } else if (targetY < rect.top) {
-          high = mid - 1;
-          bestIdx = mid;
-        } else {
-          low = mid + 1;
-          bestIdx = mid;
-        }
+      if (activeMouseOverscroll) {
+        activeMouseOverscroll = null;
+        dispatchOverscroll(null);
+        resetStripTransform(false);
       }
-
-      if (bestIdx !== s.currentIndex()) {
-        s.setPageFromScroll(bestIdx);
-      }
-    };
-
-    const onViewportScroll = (): void => {
-      if (s.isHorizontal() || s.isProgrammaticScroll || s.isToolbarAnimating) return;
-      if (s.scrollRaf !== null) cancelAnimationFrame(s.scrollRaf);
-      s.scrollRaf = requestAnimationFrame(() => {
-        computeCurrentPageFromScroll();
-        s.scrollRaf = null;
-      });
-    };
-    // Recompute page progress once the toolbar show/hide animation lock lifts (RD-M3).
-    s.toolbarAnimEndHook = () => computeCurrentPageFromScroll();
-    s.computeScrollProgress = () => computeCurrentPageFromScroll(true);
-
-    vpEl.addEventListener("scroll", onViewportScroll, { passive: true });
-    s.onDispose(() => {
-      vpEl.removeEventListener("scroll", onViewportScroll);
-      if (s.scrollRaf !== null) cancelAnimationFrame(s.scrollRaf);
-      s.computeScrollProgress = null;
     });
 
+    setupScrollTracker(s, vpEl);
     // ── Helper: Restore Canvas Strip Transform (Never Jump to Void) ──
     let resetTransformTimer: number | null = null;
     const resetStripTransform = (smooth = true) => {
