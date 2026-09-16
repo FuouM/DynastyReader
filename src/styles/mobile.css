@@ -1036,7 +1036,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 }
 
 /* Full-page presentation for Settings when in mobile mode on any viewport */
-#ds-root[data-mobile] #ds-settings-modal-backdrop.ds-modal-backdrop {
+[data-mobile] #ds-settings-modal-backdrop.ds-modal-backdrop {
   position: fixed;
   inset: 0;
   width: 100%;
@@ -1053,7 +1053,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   z-index: var(--z-modal);
 }
 
-#ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-window {
+[data-mobile] #ds-settings-modal-backdrop .ds-modal-window {
   width: 100% !important;
   max-width: 100% !important;
   height: 100% !important;
@@ -1071,7 +1071,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   overflow: hidden !important;
 }
 
-#ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-header {
+[data-mobile] #ds-settings-modal-backdrop .ds-modal-header {
   height: 32px !important;
   min-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
   max-height: calc(32px + env(safe-area-inset-top, 0px)) !important;
@@ -1086,7 +1086,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   box-sizing: border-box !important;
 }
 
-#ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-title {
+[data-mobile] #ds-settings-modal-backdrop .ds-modal-title {
   font-size: 13px !important;
   font-weight: 600 !important;
   color: var(--sys-window-text, #000) !important;
@@ -1094,7 +1094,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   align-items: center !important;
   gap: 4px !important;
 }
-#ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-close {
+[data-mobile] #ds-settings-modal-backdrop .ds-modal-close {
   min-width: 24px !important;
   width: 24px !important;
   height: 24px !important;
@@ -1108,7 +1108,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 
 
 
-#ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-body {
+[data-mobile] #ds-settings-modal-backdrop .ds-modal-body {
   flex: 1 1 auto !important;
   min-height: 0 !important;
   height: 100% !important;
@@ -1120,7 +1120,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   background: var(--sys-control-bg, #ececec) !important;
 }
 
-#ds-root[data-mobile] #ds-settings-modal-backdrop .ds-modal-footer {
+[data-mobile] #ds-settings-modal-backdrop .ds-modal-footer {
   padding: 6px max(14px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)) !important;
   background: var(--sys-control-bg, #ececec) !important;
   border-top: 1px solid var(--sys-border-dark, #b0b0b0) !important;
@@ -1131,14 +1131,14 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   margin: 0 !important;
 }
 
-#ds-root[data-mobile] #ds-settings-modal-backdrop #ds-settings-done-btn {
+[data-mobile] #ds-settings-modal-backdrop #ds-settings-done-btn {
   min-width: 80px !important;
   height: 24px !important;
   min-height: 24px !important;
   font-size: 12px !important;
   font-weight: 600 !important;
 }
-#ds-root[data-mobile] .ds-settings-layout {
+[data-mobile] .ds-settings-layout {
   display: flex !important;
   flex-direction: column !important;
   flex: 1 1 auto !important;
@@ -1151,11 +1151,11 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   overflow: hidden !important;
 }
 
-#ds-root[data-mobile] .ds-settings-sidebar {
+[data-mobile] .ds-settings-sidebar {
   display: none !important;
 }
 
-#ds-root[data-mobile] .ds-settings-subpage {
+[data-mobile] .ds-settings-subpage {
   display: flex !important;
   flex-direction: column !important;
   flex: 1 1 auto !important;
@@ -1167,7 +1167,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   overflow: hidden !important;
 }
 
-#ds-root[data-mobile] .ds-settings-subpage-content {
+[data-mobile] .ds-settings-subpage-content {
   flex: 1 1 auto !important;
   height: 100% !important;
   max-height: none !important;
@@ -1179,13 +1179,13 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   box-sizing: border-box !important;
 }
 
-#ds-root[data-mobile] .ds-hotkey-scroll {
+[data-mobile] .ds-hotkey-scroll {
   padding: 0 max(14px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)) !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior-y: contain !important;
 }
 
-#ds-root[data-mobile] .ds-advanced-scroll {
+[data-mobile] .ds-advanced-scroll {
   flex: 1 1 auto !important;
   height: 100% !important;
   max-height: none !important;
@@ -1197,7 +1197,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   box-sizing: border-box !important;
 }
 
-#ds-root[data-mobile] .ds-settings-content {
+[data-mobile] .ds-settings-content {
   flex: 1 1 auto !important;
   height: 100% !important;
   max-height: none !important;
@@ -1212,8 +1212,8 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   box-sizing: border-box !important;
 }
 
-#ds-root[data-mobile] .ds-settings-content .group-box,
-#ds-root[data-mobile] .ds-advanced-scroll .group-box {
+[data-mobile] .ds-settings-content .group-box,
+[data-mobile] .ds-advanced-scroll .group-box {
   margin: 0 !important;
   width: 100% !important;
   box-sizing: border-box !important;
@@ -1223,47 +1223,47 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   padding: 8px !important;
 }
 
-#ds-root[data-mobile] .ds-settings-row {
+[data-mobile] .ds-settings-row {
   flex-direction: column !important;
   align-items: stretch !important;
   gap: 6px !important;
   padding: 6px 0 !important;
 }
 
-#ds-root[data-mobile] .ds-settings-row:has(.ds-switch) {
+[data-mobile] .ds-settings-row:has(.ds-switch) {
   flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 12px !important;
 }
-#ds-root[data-mobile] .ds-settings-row:has(.ds-switch) .ds-settings-row-label {
+[data-mobile] .ds-settings-row:has(.ds-switch) .ds-settings-row-label {
   flex: 1 1 auto !important;
   min-width: 0 !important;
   width: auto !important;
 }
-#ds-root[data-mobile] .ds-settings-row:has(.ds-switch) .ds-settings-row-control {
+[data-mobile] .ds-settings-row:has(.ds-switch) .ds-settings-row-control {
   width: auto !important;
   flex: 0 0 auto !important;
   justify-content: flex-end !important;
 }
 
-#ds-root[data-mobile] #ds-settings-sec-storage .ds-settings-row {
+[data-mobile] #ds-settings-sec-storage .ds-settings-row {
   flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 12px !important;
 }
-#ds-root[data-mobile] #ds-settings-sec-storage .ds-settings-row-label {
+[data-mobile] #ds-settings-sec-storage .ds-settings-row-label {
   flex: 1 1 auto !important;
   min-width: 0 !important;
   width: auto !important;
 }
-#ds-root[data-mobile] #ds-settings-sec-storage .ds-settings-row-control {
+[data-mobile] #ds-settings-sec-storage .ds-settings-row-control {
   width: auto !important;
   flex: 0 0 auto !important;
   justify-content: flex-end !important;
 }
-#ds-root[data-mobile] #ds-settings-sec-storage .ds-settings-row-control .win-button {
+[data-mobile] #ds-settings-sec-storage .ds-settings-row-control .win-button {
   width: 155px !important;
   min-width: 155px !important;
   justify-content: flex-start !important;
@@ -1273,12 +1273,12 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   box-sizing: border-box !important;
 }
 
-#ds-root[data-mobile] .ds-settings-row-label {
+[data-mobile] .ds-settings-row-label {
   min-width: 0 !important;
   width: 100% !important;
 }
 
-#ds-root[data-mobile] .ds-settings-row-control {
+[data-mobile] .ds-settings-row-control {
   width: 100% !important;
   display: flex !important;
   align-items: center !important;

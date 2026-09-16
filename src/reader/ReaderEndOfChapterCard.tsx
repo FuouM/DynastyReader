@@ -39,10 +39,22 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
     const t0 = ev.touches[0];
     const dx = t0.clientX - touchStartX;
     const dy = t0.clientY - touchStartY;
-    if (dx > 0 && Math.abs(dx) > Math.abs(dy) * 1.1) {
-      setIsSwiping(true);
-      setSwipeOffset(Math.min(dx, 120));
-      if (ev.cancelable && dx > 8) ev.preventDefault();
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (absX > absY * 1.1) {
+      if (dx > 0) {
+        // Swipe right -> Browse / Series
+        setIsSwiping(true);
+        setSwipeOffset(Math.min(dx, 120));
+        if (ev.cancelable && dx > 8) ev.preventDefault();
+      } else if (dx < 0) {
+        // Swipe left -> Next chapter
+        const canNext = Boolean(nextChapter() && !s.chapterNav().nextDisabled);
+        setIsSwiping(true);
+        setSwipeOffset(canNext ? Math.max(dx, -120) : Math.max(dx * 0.25, -40));
+        if (ev.cancelable && absX > 8) ev.preventDefault();
+      }
     }
   };
 
@@ -52,9 +64,21 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
       const dt = Date.now() - touchStartTime;
       setIsSwiping(false);
       setSwipeOffset(0);
+
+      // Swipe left -> Next chapter
+      if (offset <= -55 || (offset <= -35 && dt < 300)) {
+        if (nextChapter() && !s.chapterNav().nextDisabled) {
+          triggerHaptic("confirm");
+          s.gotoNextChapter();
+          return;
+        }
+      }
+
+      // Swipe right -> Browse
       if (offset >= 55 || (offset >= 35 && dt < 300)) {
         triggerHaptic("confirm");
         navigate({ view: "browse" });
+        return;
       }
     }
   };
@@ -72,7 +96,7 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
       style={{
-        transform: swipeOffset() > 0 ? `translateX(${swipeOffset()}px)` : undefined,
+        transform: swipeOffset() !== 0 ? `translateX(${swipeOffset()}px)` : undefined,
         transition: isSwiping() ? "none" : "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
     >
@@ -138,8 +162,23 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
         </button>
       </div>
       <div class="ds-chapter-end-swipe-hint ds-muted">
-        <Icon name="arrow-right" />
-        <span>{t("reader.endOfChapterCard.swipeRightBrowse")}</span>
+        <Show
+          when={nextChapter() && !s.chapterNav().nextDisabled}
+          fallback={
+            <>
+              <Icon name="arrow-right" />
+              <span>{t("reader.endOfChapterCard.swipeRightBrowse")}</span>
+            </>
+          }
+        >
+          <span>
+            <Icon name="arrow-left" /> {t("reader.endOfChapterCard.swipeLeftNext")}
+          </span>
+          <span>·</span>
+          <span>
+            {t("reader.endOfChapterCard.swipeRightBrowse")} <Icon name="arrow-right" />
+          </span>
+        </Show>
       </div>
     </div>
   );

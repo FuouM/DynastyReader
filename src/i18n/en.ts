@@ -528,6 +528,7 @@ export const en = {
         backToSeries: "Back to Series",
         seriesCaughtUp: "You've caught up with the latest chapter!",
         swipeRightBrowse: "Swipe right to browse",
+        swipeLeftNext: "Swipe left for next chapter",
       },
     tapZones: {
       prevPage: "Previous Page",

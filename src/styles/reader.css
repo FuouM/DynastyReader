@@ -180,7 +180,7 @@
   }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 680px) {
   /* Narrow phone: compress toolbar, drop non-essential labels and controls */
   .ds-nav-btn-ch .ds-ch-btn-text {
     display: none;

@@ -51,8 +51,18 @@ export function App() {
     const r = route();
     setTitle(routeTitle(r));
   });
-
-
+  createEffect(() => {
+    const mobile = isMobile();
+    if (typeof document !== "undefined") {
+      if (mobile) {
+        document.documentElement.setAttribute("data-mobile", "1");
+        document.body.setAttribute("data-mobile", "1");
+      } else {
+        document.documentElement.removeAttribute("data-mobile");
+        document.body.removeAttribute("data-mobile");
+      }
+    }
+  });
   createEffect(() => {
     const inReader = route().view === "reader";
     const hidePref = isHideStatusBarEnabled();
@@ -61,6 +71,10 @@ export function App() {
 
   onCleanup(() => {
     syncReaderStatusBar(false, false);
+    if (typeof document !== "undefined") {
+      document.documentElement.removeAttribute("data-mobile");
+      document.body.removeAttribute("data-mobile");
+    }
   });
 
   onMount(() => {
