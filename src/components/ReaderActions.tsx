@@ -148,6 +148,8 @@ export function ReaderActions(props: ReaderActionsProps) {
       <Button
         className="ds-btn-icon"
         icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
+        title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
+        aria-label={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
         onClick={() => void copyLink()}
       />
       <Button

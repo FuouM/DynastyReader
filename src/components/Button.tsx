@@ -217,12 +217,15 @@ export interface DsSelectProps {
   options?: SelectOption[];
   onChange?: (value: string) => void;
   children?: JSX.Element;
+  "aria-label"?: string;
+  ariaLabel?: string;
 }
 
 export function DsSelect(props: DsSelectProps) {
   return (
     <select
       id={props.id}
+      aria-label={props["aria-label"] ?? props.ariaLabel}
       class={`input-field ds-select ${props.className ?? ""}`.trim()}
       style={props.style}
       value={props.value}

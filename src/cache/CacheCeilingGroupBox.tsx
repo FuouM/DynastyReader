@@ -139,9 +139,10 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
     <GroupBox title={<IconText icon={<StorageIcon />}>{t("cache.ceilingTitle")}</IconText>}>
       <div class="ds-col" style="gap:8px;">
         <div class="ds-flex-row" style="align-items:center;flex-wrap:wrap;gap:8px;">
-          <span class="ds-muted">{t("cache.ceilingLabel")}</span>
+          <label for="ds-cache-ceiling-select" class="ds-muted">{t("cache.ceilingLabel")}</label>
           <DsSelect
             id="ds-cache-ceiling-select"
+            aria-label={t("cache.ceilingLabel")}
             value={dropdownValue()}
             style="height:24px;min-width:110px;"
             options={[

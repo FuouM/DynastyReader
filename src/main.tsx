@@ -4,7 +4,7 @@ import { attachConsole } from "@tauri-apps/plugin-log";
 import { initAppTheme } from "./stores/theme";
 import { initAccentColor } from "./stores/accent-color";
 import { showBanner } from "./stores/topbar";
-import { setDbReady } from "./stores/router";
+import { setDbReady, navigate } from "./stores/router";
 import { initGlobalDownloadListener } from "./stores/download";
 import { t } from "./i18n";
 import { initDb } from "./db/schema";
@@ -16,6 +16,13 @@ import { App } from "./App";
 // already light or dark (no flash from the default light stylesheet).
 initAppTheme();
 initAccentColor();
+if (typeof window !== "undefined") {
+  interface DevWindow {
+    __NAVIGATE__?: typeof navigate;
+  }
+  const devWin = window as unknown as DevWindow;
+  devWin.__NAVIGATE__ = navigate;
+}
 
 // Mirror browser console output into the tauri-plugin-log backend so the
 // daemon-style `data/logs/dynasty-reader.log` file captures frontend errors
