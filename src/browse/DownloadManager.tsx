@@ -6,9 +6,7 @@ import {
   resumeDownloads,
   retryChapterDownload,
   retryFailedDownloads,
-  type DownloadQueueItem,
 } from "../ipc";
-import { formatBytes, formatSpeed, formatEta } from "../utils/formatting";
 import { errorMessage } from "../utils/errors";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
@@ -19,12 +17,11 @@ import {
   TrashIcon,
   PlayIcon,
   PauseIcon,
-  SpeedIcon,
-  HourglassIcon,
-  CloseIcon,
-  CheckIcon,
-  ChevronDownIcon,
 } from "../components/Icon";
+import { buildSeriesDownloadGroups } from "./download-manager/buildGroups";
+import { SeriesDownloadCard } from "./download-manager/SeriesDownloadCard";
+import type { SeriesDownloadGroup } from "./download-manager/types";
+export type { SeriesDownloadGroup };
 import {
   downloadSpeedBps as speedBps,
   downloadEtaSeconds as etaSeconds,
@@ -37,18 +34,6 @@ import {
   type DownloadProgressPayload,
 } from "../stores/download";
 
-export interface SeriesDownloadGroup {
-  series_permalink: string;
-  series_title: string;
-  items: DownloadQueueItem[];
-  latestQueuedAt: number;
-  totalChapters: number;
-  completedChapters: number;
-  failedChapters: number;
-  downloadingItem?: DownloadQueueItem;
-  overallPercent: number;
-  status: "downloading" | "paused" | "failed" | "pending" | "done";
-}
 
 export type { DownloadProgressPayload };
 
@@ -110,97 +95,8 @@ export function DownloadManager(props: { onComplete?: () => void }) {
     ),
   );
 
-  // Group items by Series, sorted by most recent activity (active first, then latestQueuedAt DESC)
-  const seriesGroups = createMemo((): SeriesDownloadGroup[] => {
-    const list = items();
-    const map = new Map<string, DownloadQueueItem[]>();
-    for (const item of list) {
-      const key = item.series_permalink || "_singles";
-      let arr = map.get(key);
-      if (!arr) {
-        arr = [];
-        map.set(key, arr);
-      }
-      arr.push(item);
-    }
-
-    const groups: SeriesDownloadGroup[] = [];
-    const progMap = activeProgress();
-    const paused = isPaused();
-
-    for (const [perm, chs] of map.entries()) {
-      chs.sort((a, b) => a.chapter_index - b.chapter_index);
-
-      const series_title = chs[0]?.series_title || (perm === "_singles" ? "Individual Chapters" : perm);
-      const latestQueuedAt = Math.max(...chs.map((c) => c.queued_at));
-      const totalChapters = chs.length;
-      const completedChapters = chs.filter((c) => c.status === "done").length;
-      const failedChapters = chs.filter((c) => c.status === "failed").length;
-      const downloadingItem = chs.find((c) => c.status === "downloading");
-
-      let currentChapterRatio = 0;
-      if (downloadingItem) {
-        const prog = progMap[downloadingItem.chapter_permalink];
-        const done = prog?.done ?? downloadingItem.progress;
-        const total = (prog?.total ?? downloadingItem.total_pages) || 1;
-        currentChapterRatio = Math.min(1, done / total);
-      }
-
-      const overallPercent =
-        totalChapters > 0
-          ? Math.min(100, Math.round(((completedChapters + currentChapterRatio) / totalChapters) * 100))
-          : 0;
-
-      let status: SeriesDownloadGroup["status"] = "pending";
-      const hasPending = chs.some((c) => c.status === "pending");
-      if (downloadingItem) {
-        status = paused ? "paused" : "downloading";
-      } else if (paused && hasPending) {
-        status = "paused";
-      } else if (hasPending && (completedChapters > 0 || list.some((i) => i.status === "downloading"))) {
-        // Smooth transition between chapters: keep active downloading status
-        status = paused ? "paused" : "downloading";
-      } else if (failedChapters > 0 && completedChapters + failedChapters === totalChapters) {
-        status = "failed";
-      } else if (completedChapters === totalChapters) {
-        status = "done";
-      } else if (failedChapters > 0) {
-        status = "failed";
-      }
-
-      groups.push({
-        series_permalink: perm,
-        series_title,
-        items: chs,
-        latestQueuedAt,
-        totalChapters,
-        completedChapters,
-        failedChapters,
-        downloadingItem,
-        overallPercent,
-        status,
-      });
-    }
-
-    // Sort order:
-    // 1. Actively downloading series
-    // 2. Paused / pending series with incomplete chapters
-    // 3. Failed series
-    // 4. Completed series
-    // Sub-sorted by latestQueuedAt descending
-    return groups.sort((a, b) => {
-      const getPriority = (g: SeriesDownloadGroup) => {
-        if (g.status === "downloading") return 1;
-        if (g.status === "paused" || g.status === "pending") return 2;
-        if (g.status === "failed") return 3;
-        return 4; // done
-      };
-      const priA = getPriority(a);
-      const priB = getPriority(b);
-      if (priA !== priB) return priA - priB;
-      return b.latestQueuedAt - a.latestQueuedAt;
-    });
-  });
+  // Group items by Series, sorted by most recent activity
+  const seriesGroups = createMemo(() => buildSeriesDownloadGroups(items(), activeProgress(), isPaused()));
 
   const toggleExpand = (seriesPerm: string) => {
     setExpandedSeries((prev) => {
@@ -353,210 +249,23 @@ export function DownloadManager(props: { onComplete?: () => void }) {
         {/* Series Grouped Download Cards */}
         <div class="ds-download-series-list">
           <For each={seriesGroups()}>
-            {(group) => {
-              const isExpanded = () => expandedSeries().has(group.series_permalink);
-              const isAct = () => group.status === "downloading";
-              const isFail = () => group.status === "failed";
-              const isDone = () => group.status === "done";
-              const isPsd = () => group.status === "paused";
-
-              return (
-                <div class={`ds-download-series-item${isDone() ? " ds-download-series-item--done" : ""}${isAct() ? " ds-download-series-item--active" : ""}`}>
-                  {/* Top Row: Series Title + Status + Action Buttons */}
-                  <div class="ds-download-series-header">
-                    <div class="ds-download-series-title-row">
-                      <span class="ds-download-series-title" title={group.series_title}>
-                        {group.series_title}
-                      </span>
-                      <Show when={isAct()}>
-                        <span class="ds-status-pill fresh">
-                          {t("download.statusDownloading")}
-                        </span>
-                      </Show>
-                      <Show when={isPsd()}>
-                        <span class="ds-status-pill">
-                          {t("download.statusPaused")}
-                        </span>
-                      </Show>
-                      <Show when={isDone()}>
-                        <span class="ds-status-pill fresh">
-                          <CheckIcon size={10} /> {t("download.statusComplete")}
-                        </span>
-                        <span class="ds-muted ds-download-series-count" style="font-size:10.5px;">
-                          ({group.totalChapters} {t("downloaded.chaptersAbbrev")})
-                        </span>
-                      </Show>
-                      <Show when={isFail()}>
-                        <span class="ds-status-pill" style="color:var(--ds-danger-text);">
-                          {t("download.statusFailed", { count: group.failedChapters })}
-                        </span>
-                      </Show>
-                    </div>
-
-                    <div class="ds-download-series-actions">
-                      <Show when={group.failedChapters > 0}>
-                        <button
-                          type="button"
-                          class="win-button ds-btn-sm"
-                          onClick={() => void handleRetrySeries(group.series_permalink)}
-                          title={t("download.retrySeriesFailedTooltip")}
-                          style="color:var(--ds-warn-text);"
-                        >
-                          <RefreshIcon /> {t("common.retry")}
-                        </button>
-                      </Show>
-
-                      <Show when={isDone()}>
-                        <button
-                          type="button"
-                          class="win-button ds-btn-sm"
-                          onClick={() => void handleClearSeries(group.series_permalink)}
-                          title={t("download.clearSeriesCompletedTooltip")}
-                        >
-                          <TrashIcon /> {t("common.clear")}
-                        </button>
-                      </Show>
-
-                      <Show when={!isDone()}>
-                        <button
-                          type="button"
-                          class="win-button ds-btn-sm"
-                          onClick={() => void handleCancelSeries(group)}
-                          title={t("download.cancelSeriesPendingTooltip")}
-                        >
-                          {t("common.cancel")}
-                        </button>
-                      </Show>
-
-                      <button
-                        type="button"
-                        class="win-button ds-btn-sm ds-btn-icon"
-                        onClick={() => toggleExpand(group.series_permalink)}
-                        title={isExpanded() ? t("download.hideChapters") : t("download.showChapters")}
-                      >
-                        <ChevronDownIcon class={isExpanded() ? "ds-rotate-180" : ""} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Live Status & Metrics + Progress Bar (for non-completed items) */}
-                  <Show when={!isDone()}>
-                    {/* Second Row: Detailed Status & Live Metrics + Percent */}
-                    <div class="ds-download-series-subrow">
-                      <div class="ds-download-series-subtext ds-muted">
-                        <Show
-                          when={group.downloadingItem}
-                          fallback={
-                            <span>
-                              {t("download.chaptersComplete", { done: group.completedChapters, total: group.totalChapters })}
-                              <Show when={group.status === "downloading" && group.completedChapters < group.totalChapters}>
-                                {" "}· {t("download.preparingNextChapter")}
-                              </Show>
-                              <Show when={group.failedChapters > 0}> · {group.failedChapters} {t("download.failed")}</Show>
-                            </span>
-                          }
-                        >
-                          {(down) => (
-                            <span>
-                              {group.completedChapters + 1}/{group.totalChapters}: {down().chapter_title} ({activeProgress()[down().chapter_permalink]?.done ?? down().progress}/{(activeProgress()[down().chapter_permalink]?.total ?? down().total_pages) || 1} {t("downloaded.pagesLabel")})
-                              <Show when={isAct() && speedBps() > 0}>
-                                {" "}· <span style="color:var(--sys-link);font-weight:600;"><SpeedIcon size={10} /> {formatSpeed(speedBps())}</span>
-                                <Show when={sessionBytes() > 0}>
-                                  <span class="ds-muted"> ({formatBytes(sessionBytes())})</span>
-                                </Show>
-                              </Show>
-                              <Show when={isAct() && etaSeconds() > 0}>
-                                {" "}· {formatEta(etaSeconds())} {t("download.remaining")}
-                              </Show>
-                            </span>
-                          )}
-                        </Show>
-                      </div>
-
-                      <div class="ds-download-percent-badge">
-                        {group.overallPercent}%
-                      </div>
-                    </div>
-
-                    {/* Third Row: Full-width Progress Bar */}
-                    <div class="ds-progress-track">
-                      <div
-                        class={`ds-progress-fill${isFail() ? " fail" : ""}`}
-                        style={{
-                          width: `${group.overallPercent}%`,
-                        }}
-                      />
-                    </div>
-                  </Show>
-                  <Show when={isExpanded()}>
-                    <div class="ds-download-chapters-drawer">
-                      <For each={group.items}>
-                        {(ch) => {
-                          const isChAct = () => ch.status === "downloading";
-                          const isChDone = () => ch.status === "done";
-                          const isChFail = () => ch.status === "failed";
-                          const chProg = () => activeProgress()[ch.chapter_permalink];
-                          const chDone = () => chProg()?.done ?? ch.progress;
-                          const chTotal = () => chProg()?.total ?? ch.total_pages;
-
-                          return (
-                            <div class="ds-download-chapter-row">
-                              <div class="ds-download-chapter-label">
-                                <span>{ch.chapter_title}</span>
-                                <span class="ds-muted ds-download-chapter-status">
-                                  <Show when={isChAct()}>
-                                    <span style="color:var(--sys-link);font-weight:600;">
-                                      {t("download.downloadingPages", { done: chDone(), total: chTotal() > 0 ? chTotal() : "?" })}
-                                    </span>
-                                  </Show>
-                                  <Show when={isChDone()}>
-                                    <span style="color:var(--ds-status-fresh-text);">
-                                      <CheckIcon size={10} /> {t("download.statusComplete")}
-                                    </span>
-                                  </Show>
-                                  <Show when={isChFail()}>
-                                    <span style="color:var(--ds-danger-text);">
-                                      <CloseIcon size={10} /> {t("download.statusFailed", { count: 1 })}{ch.error_msg ? `: ${ch.error_msg}` : ""}
-                                    </span>
-                                  </Show>
-                                  <Show when={ch.status === "pending"}>
-                                    <span><HourglassIcon size={10} /> {t("download.statusQueued")}</span>
-                                  </Show>
-                                </span>
-                              </div>
-
-                              <Show when={isChFail()}>
-                                <button
-                                  type="button"
-                                  class="win-button ds-btn-sm ds-btn-icon ds-chapter-retry-btn"
-                                  disabled={rowBusy().has(`retry:${ch.chapter_permalink}`)}
-                                  onClick={() => void handleRetryChapter(ch.chapter_permalink)}
-                                  title={t("download.retryChapterTooltip")}
-                                  style="color:var(--ds-warn-text);"
-                                >
-                                  <RefreshIcon size={10} />
-                                </button>
-                              </Show>
-                              <Show when={!isChDone()}>
-                                <button
-                                  type="button"
-                                  class="win-button ds-btn-sm ds-btn-icon ds-chapter-cancel-btn"
-                                  disabled={rowBusy().has(`cancel:${ch.chapter_permalink}`)}
-                                  onClick={() => void handleCancelChapter(ch.chapter_permalink)}
-                                  title={t("download.cancelChapterTooltip")}
-                                >
-                                  <CloseIcon size={10} />
-                                </button>
-                              </Show>
-                            </div>
-                          );
-                        }}
-                      </For>
-                    </div>
-                  </Show>
-                </div>
-              );
-            }}
+            {(group) => (
+              <SeriesDownloadCard
+                group={group}
+                isExpanded={expandedSeries().has(group.series_permalink)}
+                activeProgress={activeProgress()}
+                speedBps={speedBps()}
+                etaSeconds={etaSeconds()}
+                sessionBytes={sessionBytes()}
+                rowBusy={rowBusy()}
+                onToggleExpand={() => toggleExpand(group.series_permalink)}
+                onRetrySeries={handleRetrySeries}
+                onClearSeries={handleClearSeries}
+                onCancelSeries={handleCancelSeries}
+                onRetryChapter={handleRetryChapter}
+                onCancelChapter={handleCancelChapter}
+              />
+            )}
           </For>
         </div>
       </GroupBox>

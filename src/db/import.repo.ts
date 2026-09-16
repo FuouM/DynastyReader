@@ -587,30 +587,33 @@ export async function executeImport(
 /**
  * Batches insertion of followed series into followed_series within a single transaction.
  */
+async function resolveMissingCachedCovers(permalinks: string[]): Promise<Map<string, string>> {
+  const cachedCoverMap = new Map<string, string>();
+  if (permalinks.length === 0) return cachedCoverMap;
+  try {
+    const keys = permalinks.map((p) => seriesCoverKey(p));
+    const cachedRows = await query<{ cache_key: string; json_payload: string }>(
+      `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${inClause(keys.length)})`,
+      keys,
+    );
+    for (const row of cachedRows) {
+      if (row.json_payload && isCoverFilePath(row.json_payload)) {
+        const permalink = row.cache_key.replace("cover:series:", "");
+        cachedCoverMap.set(permalink, row.json_payload.trim());
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return cachedCoverMap;
+}
+
 async function importFollowedSeriesBatch(items: ValidatedFollowedItem[]): Promise<number> {
   if (items.length === 0) return 0;
   const missingPermalinks = items
     .filter((it) => !it.cover || !isCoverFilePath(it.cover))
     .map((it) => it.permalink);
-
-  const cachedCoverMap = new Map<string, string>();
-  if (missingPermalinks.length > 0) {
-    try {
-      const keys = missingPermalinks.map((p) => seriesCoverKey(p));
-      const cachedRows = await query<{ cache_key: string; json_payload: string }>(
-        `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${inClause(keys.length)})`,
-        keys,
-      );
-      for (const row of cachedRows) {
-        if (row.json_payload && isCoverFilePath(row.json_payload)) {
-          const permalink = row.cache_key.replace("cover:series:", "");
-          cachedCoverMap.set(permalink, row.json_payload.trim());
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }
+  const cachedCoverMap = await resolveMissingCachedCovers(missingPermalinks);
 
   const sql = `INSERT INTO followed_series
     (permalink, name, cover, last_checked_at, latest_chapter_permalink, latest_chapter_title, created_at)
@@ -656,25 +659,7 @@ async function importItemsIntoCollectionBatch(
   const missingPermalinks = items
     .filter((it) => !it.cover || !isCoverFilePath(it.cover))
     .map((it) => it.permalink);
-
-  const cachedCoverMap = new Map<string, string>();
-  if (missingPermalinks.length > 0) {
-    try {
-      const keys = missingPermalinks.map((p) => seriesCoverKey(p));
-      const cachedRows = await query<{ cache_key: string; json_payload: string }>(
-        `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${inClause(keys.length)})`,
-        keys,
-      );
-      for (const row of cachedRows) {
-        if (row.json_payload && isCoverFilePath(row.json_payload)) {
-          const permalink = row.cache_key.replace("cover:series:", "");
-          cachedCoverMap.set(permalink, row.json_payload.trim());
-        }
-      }
-    } catch {
-      // ignore
-    }
-  }
+  const cachedCoverMap = await resolveMissingCachedCovers(missingPermalinks);
 
   const sql = `INSERT INTO collection_items
     (collection_id, item_permalink, item_title, item_kind, cover, parent_series_permalink, parent_series_name, created_at)

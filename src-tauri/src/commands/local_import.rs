@@ -1015,22 +1015,23 @@ pub async fn delete_local_series(permalink: String) -> Result<(), String> {
             )
             .ok();
 
-            for cp in &chapter_permalinks {
+            if !chapter_permalinks.is_empty() {
+                let placeholders = chapter_permalinks.iter().map(|_| "?").collect::<Vec<_>>().join(",");
                 for table in ["cached_pages", "reading_progress", "reading_history", "bookmarks"] {
-                    tx.execute(
-                        &format!("DELETE FROM {table} WHERE chapter_permalink = ?1"),
-                        rusqlite::params![cp],
-                    )
-                    .map_err(|e| format!("delete {table} failed: {e}"))?;
+                    let sql = format!("DELETE FROM {table} WHERE chapter_permalink IN ({placeholders})");
+                    tx.execute(&sql, rusqlite::params_from_iter(chapter_permalinks.iter()))
+                        .map_err(|e| format!("delete {table} failed: {e}"))?;
                 }
-                tx.execute(
-                    "DELETE FROM cached_metadata WHERE cache_key = ?1 OR cache_key = ?2",
-                    rusqlite::params![
-                        format!("chapter:{}", cp),
-                        format!("cover:chapter:{}", cp),
-                    ],
-                )
-                .ok();
+                for cp in &chapter_permalinks {
+                    tx.execute(
+                        "DELETE FROM cached_metadata WHERE cache_key = ?1 OR cache_key = ?2",
+                        rusqlite::params![
+                            format!("chapter:{}", cp),
+                            format!("cover:chapter:{}", cp),
+                        ],
+                    )
+                    .ok();
+                }
             }
             tx.commit().map_err(|e| format!("commit failed: {e}"))?;
         }

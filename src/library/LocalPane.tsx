@@ -12,20 +12,17 @@ import { t } from "../i18n";
 import { errorMessage } from "../utils/errors";
 import { Button, DsSelect, IconButton } from "../components/Button";
 import { InputField } from "../components/InputField";
-import { Modal } from "../components/Modal";
 import type { ArchiveScanResult, FolderScanResult } from "../ipc";
 import { Loading } from "../components/Loading";
 import { AddIcon, FolderIcon, StorageIcon } from "../components/Icon";
 import { LibraryItemRow } from "./LibraryItemRow";
 import { persistedSignal } from "../lib/persisted-signal";
+import { ArchiveImportModal, type ImportProgressPayload } from "./local/ArchiveImportModal";
+import { FolderImportModal } from "./local/FolderImportModal";
+import { EditLocalSeriesModal } from "./local/EditLocalSeriesModal";
 
 type LocalSortMode = "updated_desc" | "alphabetical" | "page_count" | "date_added";
 
-interface ImportProgressPayload {
-  current: number;
-  total: number;
-  phase: "extract" | "register" | "done";
-}
 import type { LibraryPaneApi } from "./useLibraryPaneResource";
 export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const [tick, setTick] = createSignal(0);
@@ -380,222 +377,59 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
         </Show>
       </div>
       <Show when={scanResult()}>
-        <Modal
-          open={true}
-          onClose={() => {
+        <ArchiveImportModal
+          scanResult={scanResult()!}
+          editTitle={editTitle()}
+          onEditTitle={setEditTitle}
+          importing={importing()}
+          importProgress={importProgress()}
+          onCancel={() => {
             if (!importing()) {
               setScanResult(null);
               setScanPath(null);
             }
           }}
-          title={t("local.importTitle", { name: scanResult()!.file_name })}
-          body={
-            <div class="ds-form-stack">
-              <label class="ds-form-label-sm">{t("local.seriesTitleLabel")}</label>
-              <InputField value={editTitle()} onInput={setEditTitle} placeholder={scanResult()!.series_title} />
-              <div class="ds-muted" style="font-size:12px;">
-                {t("local.chapterPagesSummary", { chapters: scanResult()!.chapters.length, pages: scanResult()!.total_pages })}
-              </div>
-              <For each={scanResult()!.chapters}>
-                {(ch) => (
-                  <div class="ds-muted" style="font-size:12px;">
-                    {ch.title} — {ch.page_count} pages
-                  </div>
-                )}
-              </For>
-              <div style="margin-top:8px; border:1px solid var(--ds-border, #ddd); border-radius:6px; max-height:220px; overflow:auto; padding:6px; background:var(--ds-bg-subtle, rgba(0,0,0,0.02))">
-                <div style="font-size:11px; font-weight:600; margin-bottom:6px;">{t("local.previewTitle", { count: scanResult()!.total_pages })}</div>
-                <For each={scanResult()!.chapters}>
-                  {(ch) => (
-                    <div style="margin-bottom:8px;">
-                      <div style="font-size:11px; font-weight:600; opacity:0.8; margin-bottom:2px;">{ch.title}</div>
-                      <For each={ch.files}>
-                        {(f, idx) => {
-                          const ext = f.split(".").pop()?.toLowerCase() ?? "jpg";
-                          const out = `p${String(idx()).padStart(3, "0")}.${ext}`;
-                          return (
-                            <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; display:flex; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                              <span style="opacity:0.5; min-width:28px; text-align:right;">{String(idx() + 1).padStart(2, "0")}.</span>
-                              <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">{f}</span>
-                              <span style="opacity:0.5;">→</span>
-                              <span>{out}</span>
-                            </div>
-                          );
-                        }}
-                      </For>
-                    </div>
-                  )}
-                </For>
-              </div>
-              <Show when={importing()}>
-                <div style="display:flex;flex-direction:column;gap:4px;">
-                  <div class="ds-muted" style="font-size:12px;">
-                    {importProgress()?.phase === "register"
-                      ? t("local.importProgressRegister")
-                      : t("local.importProgressExtract", {
-                          current: importProgress()?.current ?? 0,
-                          total: importProgress()?.total ?? scanResult()!.total_pages,
-                        })}
-                  </div>
-                  <div class="ds-progress-track" role="progressbar"
-                    aria-valuemin={0}
-                    aria-valuemax={importProgress()?.total ?? scanResult()!.total_pages}
-                    aria-valuenow={importProgress()?.current ?? 0}
-                  >
-                    <div
-                      class="ds-progress-fill"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.round(
-                            ((importProgress()?.current ?? 0) /
-                              Math.max(1, importProgress()?.total ?? scanResult()!.total_pages)) * 100,
-                          ),
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </Show>
-            </div>
-          }
-          footer={
-            <div class="ds-modal-footer-actions">
-              <Button
-                text={t("common.cancel")}
-                onClick={() => {
-                  if (importing()) {
-                    void ipc.cancelImport();
-                  } else {
-                    setScanResult(null);
-                    setScanPath(null);
-                  }
-                }}
-              />
-              <IconButton icon={<AddIcon />} text={importing() ? t("local.importing") : t("local.importButton")} onClick={() => void doImport()} disabled={importing()} className="primary" />
-            </div>
-          }
+          onImport={() => void doImport()}
         />
       </Show>
 
       <Show when={folderScanResult()}>
-        <Modal
-          open={true}
-          onClose={() => {
+        <FolderImportModal
+          scanResult={folderScanResult()!}
+          seriesTitle={folderSeriesTitle()}
+          onSeriesTitle={setFolderSeriesTitle}
+          chapterTitle={folderChapterTitle()}
+          onChapterTitle={setFolderChapterTitle}
+          coverPath={folderCoverPath()}
+          onPickCover={() => void pickFolderCover()}
+          onRemoveCover={() => setFolderCoverPath(null)}
+          importing={importing()}
+          onCancel={() => {
             if (!importing()) {
               setFolderScanResult(null);
               setFolderScanPath(null);
               setFolderCoverPath(null);
             }
           }}
-          title={t("local.importFolderTitle", { name: folderScanResult()!.folder_name })}
-          body={
-            <div class="ds-form-stack">
-              <label class="ds-form-label-sm">{t("local.seriesTitleLabel")}</label>
-              <InputField value={folderSeriesTitle()} onInput={setFolderSeriesTitle} placeholder={folderScanResult()!.series_title} />
-              <label class="ds-form-label-sm">{t("local.chapterTitleLabel")}</label>
-              <InputField value={folderChapterTitle()} onInput={setFolderChapterTitle} placeholder={t("local.chapterTitleDefault")} />
-              <div class="ds-muted" style="font-size:12px;">
-                {t("local.folderSummary", { pages: folderScanResult()!.page_count })}
-              </div>
-              <label class="ds-form-label-sm">{t("local.coverLabel")}</label>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <Button text={t("local.newCoverButton")} onClick={() => void pickFolderCover()} disabled={importing()} />
-                <Show when={folderCoverPath()}>
-                  <span class="ds-muted" style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    {t("local.newCoverSelected", { name: folderCoverPath()!.split(/[/\\]/).pop() ?? "" })}
-                  </span>
-                  <Button text={t("local.newCoverRemove")} onClick={() => setFolderCoverPath(null)} disabled={importing()} />
-                </Show>
-                <Show when={!folderCoverPath()}>
-                  <span class="ds-muted" style="font-size:12px;">{t("local.newCoverKeepHint")}</span>
-                </Show>
-              </div>
-              <div style="margin-top:8px; border:1px solid var(--ds-border, #ddd); border-radius:6px; max-height:220px; overflow:auto; padding:6px; background:var(--ds-bg-subtle, rgba(0,0,0,0.02))">
-                <div style="font-size:11px; font-weight:600; margin-bottom:6px;">{t("local.previewTitle", { count: folderScanResult()!.page_count })}</div>
-                <For each={folderScanResult()!.files}>
-                  {(f, idx) => {
-                    const ext = f.split(".").pop()?.toLowerCase() ?? "jpg";
-                    const out = `p${String(idx()).padStart(3, "0")}.${ext}`;
-                    return (
-                      <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; display:flex; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                        <span style="opacity:0.5; min-width:28px; text-align:right;">{String(idx() + 1).padStart(2, "0")}.</span>
-                        <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">{f}</span>
-                        <span style="opacity:0.5;">→</span>
-                        <span>{out}</span>
-                      </div>
-                    );
-                  }}
-                </For>
-              </div>
-            </div>
-          }
-          footer={
-            <div class="ds-modal-footer-actions">
-              <Button
-                text={t("common.cancel")}
-                onClick={() => {
-                  if (importing()) {
-                    void ipc.cancelImport();
-                  } else {
-                    setFolderScanResult(null);
-                    setFolderScanPath(null);
-                    setFolderCoverPath(null);
-                  }
-                }}
-              />
-              <IconButton
-                icon={<AddIcon />}
-                text={importing() ? t("local.importing") : t("local.importButton")}
-                onClick={() => void doFolderImport()}
-                disabled={importing()}
-                className="primary"
-              />
-            </div>
-          }
+          onImport={() => void doFolderImport()}
         />
       </Show>
 
       <Show when={editRow()}>
-        <Modal
-          open={true}
+        <EditLocalSeriesModal
+          row={editRow()!}
+          title={editSeriesTitle()}
+          onTitle={setEditSeriesTitle}
+          author={editAuthor()}
+          onAuthor={setEditAuthor}
+          description={editDescription()}
+          onDescription={setEditDescription}
+          newCoverPath={newCoverPath()}
+          onPickCover={() => void pickNewCover()}
+          onRemoveCover={() => setNewCoverPath(null)}
+          saving={saving()}
           onClose={closeEdit}
-          title={t("local.editTitle", { name: editRow()!.title })}
-          body={
-            <div class="ds-form-stack">
-              <label class="ds-form-label-sm">{t("local.seriesTitleLabel")}</label>
-              <InputField value={editSeriesTitle()} onInput={setEditSeriesTitle} placeholder={editRow()!.title} />
-              <label class="ds-form-label-sm">{t("local.authorLabel")}</label>
-              <InputField value={editAuthor()} onInput={setEditAuthor} placeholder="" />
-              <label class="ds-form-label-sm">{t("local.descriptionLabel")}</label>
-              <InputField value={editDescription()} onInput={setEditDescription} placeholder="" />
-              <label class="ds-form-label-sm">{t("local.coverLabel")}</label>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <Button text={t("local.newCoverButton")} onClick={() => void pickNewCover()} disabled={saving()} />
-                <Show when={newCoverPath()}>
-                  <span class="ds-muted" style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    {t("local.newCoverSelected", { name: newCoverPath()!.split(/[/\\]/).pop() ?? "" })}
-                  </span>
-                  <Button text={t("local.newCoverRemove")} onClick={() => setNewCoverPath(null)} disabled={saving()} />
-                </Show>
-                <Show when={!newCoverPath()}>
-                  <span class="ds-muted" style="font-size:12px;">{t("local.newCoverKeepHint")}</span>
-                </Show>
-              </div>
-            </div>
-          }
-          footer={
-            <div class="ds-modal-footer-actions">
-              <Button text={t("common.cancel")} onClick={closeEdit} disabled={saving()} />
-              <IconButton
-                icon={<i class="bi bi-check-lg" />}
-                text={saving() ? t("local.saving") : t("local.saveButton")}
-                onClick={() => void doEdit()}
-                disabled={saving()}
-                className="primary"
-              />
-            </div>
-          }
+          onSave={() => void doEdit()}
         />
       </Show>
 
