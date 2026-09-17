@@ -141,7 +141,7 @@ export function useReaderGestures(s: ReaderSession) {
 
     const onTouchStart = (ev: TouchEvent): void => {
       if (ev.touches.length !== 1) return;
-      if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
+      if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea, .ds-chapter-end-card")) return;
       // If any modal/sheet is open, don't capture touch for reader gestures
       if (document.querySelector(".ds-modal-backdrop, .ds-reader-sheet-backdrop, .ds-overlay")) return;
       s.cancelScrollAnimation();
@@ -445,7 +445,7 @@ export function useReaderGestures(s: ReaderSession) {
       ) {
         return;
       }
-      if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
+      if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea, .ds-chapter-end-card")) return;
       s.cancelScrollAnimation();
       isMouseDown = true;
       mouseStartX = ev.clientX;

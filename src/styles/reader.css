@@ -1477,6 +1477,16 @@
   gap: 14px;
   touch-action: pan-y;
   user-select: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+.ds-chapter-end-card--ready-left {
+  border-color: var(--sys-highlight-bg, #0078d7) !important;
+  box-shadow: -3px 4px 18px rgba(0, 120, 215, 0.3) !important;
+}
+.ds-chapter-end-card--ready-right {
+  border-color: var(--sys-highlight-bg, #0078d7) !important;
+  box-shadow: 3px 4px 18px rgba(0, 120, 215, 0.3) !important;
 }
 .ds-chapter-end-badge {
   display: inline-flex;
