@@ -128,32 +128,53 @@ export function ReaderMainRow(props: NavRowProps) {
   );
 }
 
+function ScrollLockBtn(props: { session: ReaderSession }) {
+  const s = props.session;
+  const isHoriz = () => s.isHorizontal();
+  const locked = () => s.scrollLock();
+
+  const icon = () => {
+    if (isHoriz()) return <ArrowLeftRightIcon />;
+    return locked() ? <LockIcon /> : <UnlockIcon />;
+  };
+
+  const text = () => {
+    if (isHoriz()) {
+      return locked() ? t("reader.toolbar.smoothOn") : t("reader.toolbar.smoothOff");
+    }
+    return locked() ? t("reader.toolbar.lockOn") : t("reader.toolbar.lockOff");
+  };
+
+  const title = () => {
+    if (isHoriz()) {
+      return locked()
+        ? t("reader.toolbar.scrollLockInstantTooltip")
+        : t("reader.toolbar.scrollLockSmoothTooltip");
+    }
+    return locked()
+      ? t("reader.toolbar.scrollLockOnTooltip")
+      : t("reader.toolbar.scrollLockOffTooltip");
+  };
+
+  return (
+    <IconButton
+      className="ds-ctrl-btn"
+      classList={{ primary: locked() }}
+      icon={icon()}
+      text={text()}
+      title={title()}
+      onClick={() => s.setScrollLock()}
+    />
+  );
+}
+
 export function ReaderControlsRow(props: NavRowProps) {
   const s = props.session;
   const [filterOpen, setFilterOpen] = createSignal(false);
   const [filterBtnEl, setFilterBtnEl] = createSignal<HTMLElement | null>(null);
   return (
     <div class="ds-reader-nav-row nav-controls">
-      <IconButton
-        className="ds-ctrl-btn"
-        classList={{ primary: s.scrollLock() }}
-        icon={s.isHorizontal() ? <ArrowLeftRightIcon /> : s.scrollLock() ? <LockIcon /> : <UnlockIcon />}
-        text={
-          s.isHorizontal()
-            ? (s.scrollLock() ? t("reader.toolbar.smoothOn") : t("reader.toolbar.smoothOff"))
-            : (s.scrollLock() ? t("reader.toolbar.lockOn") : t("reader.toolbar.lockOff"))
-        }
-        title={
-          s.isHorizontal()
-            ? (s.scrollLock()
-                ? t("reader.toolbar.scrollLockInstantTooltip")
-                : t("reader.toolbar.scrollLockSmoothTooltip"))
-            : (s.scrollLock()
-                ? t("reader.toolbar.scrollLockOnTooltip")
-                : t("reader.toolbar.scrollLockOffTooltip"))
-        }
-        onClick={() => s.setScrollLock()}
-      />
+      <ScrollLockBtn session={s} />
       <IconButton
         className="ds-ctrl-btn"
         icon={s.isHorizontal() ? <DistributeVerticalIcon /> : <ArrowLeftRightIcon />}
