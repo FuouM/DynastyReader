@@ -200,6 +200,7 @@ export function BrowseView() {
   };
 
   const checkUpdates = async (): Promise<void> => {
+    if (checkBtn() === "checking") return;
     setCheckBtn("checking");
     setForceTick((t) => t + 1);
     const tabId = activeTab();
