@@ -75,6 +75,7 @@ export function SeriesView() {
   const [forceTick, setForceTick] = createSignal(0);
   const [busyFollow, setBusyFollow] = createSignal(false);
   const [busyBlacklist, setBusyBlacklist] = createSignal(false);
+  const [busyDownload, setBusyDownload] = createSignal(false);
   const [sortOrder, setSortOrder] = persistedSignal<"asc" | "desc">("asc", {
     name: "ds_series_sort_order",
     deserialize: (v) => (v === "desc" ? "desc" : "asc"),
@@ -268,8 +269,10 @@ export function SeriesView() {
     }
   };
   const handleDownloadAll = async (): Promise<void> => {
+    if (busyDownload()) return;
     const d = data();
     if (!d) return;
+    setBusyDownload(true);
     const { series, chapters } = d;
     const reqs = chronologicalChapters(chapters).map((ch, idx) => ({
       series_permalink: series.permalink,
@@ -292,11 +295,15 @@ export function SeriesView() {
       }
     } catch (err) {
       showBanner(errorMessage(err));
+    } finally {
+      setBusyDownload(false);
     }
   };
   const handleDownloadSingleChapter = async (ch: ChapterMeta): Promise<void> => {
+    if (busyDownload()) return;
     const d = data();
     if (!d) return;
+    setBusyDownload(true);
     const sorted = chronologicalChapters(d.chapters);
     const idx = sorted.findIndex((c) => c.permalink === ch.permalink);
     const reqs = [
@@ -318,6 +325,8 @@ export function SeriesView() {
       refetch();
     } catch (err) {
       showBanner(errorMessage(err));
+    } finally {
+      setBusyDownload(false);
     }
   };
 
