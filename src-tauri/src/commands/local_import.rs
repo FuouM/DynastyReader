@@ -14,7 +14,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
 
 const IMAGE_EXTS: &[&str] = &["jpg", "jpeg", "png", "webp", "avif", "gif", "bmp"];
-const SKIP_PREFIXES: &[&str] = &["__macosx", "__MACOSX"];
+const SKIP_PREFIXES: &[&str] = &["__macosx"];
 const SKIP_FILES: &[&str] = &["thumbs.db", ".ds_store", "comicinfo.xml"];
 
 /// Zip-bomb guards for archive import.
@@ -60,7 +60,7 @@ fn is_image(name: &str) -> bool {
 fn should_skip(entry: &str) -> bool {
     let lower = entry.to_ascii_lowercase();
     for pref in SKIP_PREFIXES {
-        if lower.starts_with(&pref.to_ascii_lowercase()) {
+        if lower.starts_with(pref) {
             return true;
         }
     }

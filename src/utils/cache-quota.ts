@@ -28,14 +28,6 @@ export const CACHE_CEILING_PRESETS: CacheCeilingPreset[] = [
   { bytes: 10 * GB, label: "10 GB", labelKey: "cache.ceiling10gb" },
   { bytes: 20 * GB, label: "20 GB", labelKey: "cache.ceiling20gb" },
 ];
-/** Selectable cache ceilings in bytes; `0` means the ceiling is off. */
-export const CACHE_CEILING_OPTIONS: { value: number; labelKey: TranslationKey }[] = [
-  { value: 0, labelKey: "cache.ceilingOff" },
-  { value: 1 * GB, labelKey: "cache.ceiling1gb" },
-  { value: 2 * GB, labelKey: "cache.ceiling2gb" },
-  { value: 5 * GB, labelKey: "cache.ceiling5gb" },
-  { value: 10 * GB, labelKey: "cache.ceiling10gb" },
-];
 
 /** Page-cache ceiling in bytes; `0` = off (default). */
 export const [cacheCeilingBytes, setCacheCeilingBytes] = persistedSignal<number>(0, {

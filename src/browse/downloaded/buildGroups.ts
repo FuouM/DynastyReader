@@ -7,7 +7,7 @@ import type { FullyCachedChapterRow } from "../../db/cache.repo";
 import { extractVolumeHeader } from "../../utils/volume";
 import type { DownloadedSeriesGroup, DownloadedSortMode, ProcessedCachedChapter } from "./types";
 
-function extractChapterLabel(title: string, index?: number, total?: number): string {
+function extractChapterLabel(title: string, index?: number): string {
   const clean = title.trim();
   const match = clean.match(/\b(?:chapter|ch\.?|c)\s*(\d+(?:\.\d+)?)\b/i);
   if (match) return match[1];
@@ -23,7 +23,6 @@ function extractChapterLabel(title: string, index?: number, total?: number): str
   if (/extra/i.test(clean)) return "Ex";
   if (clean.length <= 4) return clean;
   if (index !== undefined) return `${index + 1}`;
-  if (total === 1) return "1";
   return "1";
 }
 
@@ -79,16 +78,12 @@ export function buildGroups(
     );
     const total = g.chapters.length;
     for (let i = 0; i < total; i++) {
-      g.chapters[i].shortLabel = extractChapterLabel(
-        g.chapters[i].chapterTitle,
-        i,
-        total,
-      );
+      g.chapters[i].shortLabel = extractChapterLabel(g.chapters[i].chapterTitle, i);
     }
   }
   const orphanTotal = orphans.length;
   for (let i = 0; i < orphanTotal; i++) {
-    orphans[i].shortLabel = extractChapterLabel(orphans[i].chapterTitle, i, orphanTotal);
+    orphans[i].shortLabel = extractChapterLabel(orphans[i].chapterTitle, i);
   }
 
   const groups = Array.from(map.values());

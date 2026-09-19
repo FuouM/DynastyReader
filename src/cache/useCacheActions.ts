@@ -50,12 +50,7 @@ export function useCacheActions(refetch: () => void) {
         return;
       }
       if (!picked || Array.isArray(picked)) return;
-      try {
-        await restoreDatabaseFromPath(picked);
-      } catch (e) {
-        log.error("cache-actions", "restoreDatabaseFromPath failed:", e);
-        throw e;
-      }
+      await restoreDatabaseFromPath(picked);
       try {
         browseCovers.clearMemoryCache();
       } catch (e) {

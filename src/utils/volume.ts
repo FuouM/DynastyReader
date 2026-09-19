@@ -13,13 +13,9 @@ export function extractVolumeHeader(title: string): string | undefined {
   const bracketed = title.match(/[\[\(【]\s*(?:vol(?:ume)?\.?|v)\s*(\d+)\s*[\]\)】]/i);
   if (bracketed) return `Volume ${parseInt(bracketed[1], 10)}`;
 
-  // 2. Leading: Vol. 1, Volume 2, v01
-  const leading = title.match(/^(?:vol(?:ume)?\.?|v)\s*(\d+)\b/i);
-  if (leading) return `Volume ${parseInt(leading[1], 10)}`;
-
-  // 3. Middle / trailing: ... Volume 1, ... Vol. 2
-  const middle = title.match(/\b(?:vol(?:ume)?\.?|v)\s*(\d+)\b/i);
-  if (middle) return `Volume ${parseInt(middle[1], 10)}`;
+  // 2. Standard: Vol. 1, Volume 2, v01, ... Volume 1
+  const match = title.match(/\b(?:vol(?:ume)?\.?|v)\s*(\d+)\b/i);
+  if (match) return `Volume ${parseInt(match[1], 10)}`;
 
   return undefined;
 }

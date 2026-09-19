@@ -45,9 +45,12 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
   // Check SQLite cache (TTL: 1 hour)
   const SEARCH_TTL_MS = 60 * 60 * 1000;
   const cached = await getCached(cacheKey);
+  const returnCached = () => {
+    recordCacheHit(cached!.json_payload.length);
+    return parseSearchHtml(cached!.json_payload, displayQuery, page);
+  };
   if (cached && Date.now() - cached.cached_at < SEARCH_TTL_MS) {
-    recordCacheHit(cached.json_payload.length);
-    return parseSearchHtml(cached.json_payload, displayQuery, page);
+    return returnCached();
   }
 
   const headers: Record<string, string> = {};
@@ -59,8 +62,7 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
     const { status, body, etag } = await httpGetText(url, { headers });
 
     if (status === 304 && cached) {
-      recordCacheHit(cached.json_payload.length);
-      return parseSearchHtml(cached.json_payload, displayQuery, page);
+      return returnCached();
     }
 
     if (status === 200 && body) {
@@ -78,17 +80,11 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
     }
   } catch (err) {
     // If network fails but we have cached results, return cached version
-    if (cached) {
-      recordCacheHit(cached.json_payload.length);
-      return parseSearchHtml(cached.json_payload, displayQuery, page);
-    }
+    if (cached) return returnCached();
     throw err;
   }
 
-  if (cached) {
-    recordCacheHit(cached.json_payload.length);
-    return parseSearchHtml(cached.json_payload, displayQuery, page);
-  }
+  if (cached) return returnCached();
 
   return { items: [], totalPages: 1, currentPage: page, query: displayQuery };
 }

@@ -49,9 +49,7 @@ export function buildSeriesDownloadGroups(
     } else if (paused && hasPending) {
       status = "paused";
     } else if (hasPending && (completedChapters > 0 || list.some((i) => i.status === "downloading"))) {
-      status = paused ? "paused" : "downloading";
-    } else if (failedChapters > 0 && completedChapters + failedChapters === totalChapters) {
-      status = "failed";
+      status = "downloading";
     } else if (completedChapters === totalChapters) {
       status = "done";
     } else if (failedChapters > 0) {

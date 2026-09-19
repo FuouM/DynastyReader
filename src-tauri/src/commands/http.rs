@@ -22,6 +22,15 @@ const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 
 pub struct HttpState(pub reqwest::Client);
 
+fn is_ipv4_forbidden(ipv4: &std::net::Ipv4Addr) -> bool {
+    ipv4.is_loopback()
+        || ipv4.is_private()
+        || ipv4.is_link_local()
+        || ipv4.is_broadcast()
+        || ipv4.is_unspecified()
+        || ipv4.is_multicast()
+}
+
 /// Validates that `raw` is a valid HTTP/HTTPS URL and does not target private or loopback networks (SSRF defense).
 pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
     let parsed = reqwest::Url::parse(raw).map_err(|e| format!("invalid URL '{raw}': {e}"))?;
@@ -43,13 +52,7 @@ pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
             }
         }
         Some(url::Host::Ipv4(ipv4)) => {
-            if ipv4.is_loopback()
-                || ipv4.is_private()
-                || ipv4.is_link_local()
-                || ipv4.is_broadcast()
-                || ipv4.is_unspecified()
-                || ipv4.is_multicast()
-            {
+            if is_ipv4_forbidden(&ipv4) {
                 return Err(format!("requests to private/loopback IP '{ipv4}' are forbidden"));
             }
         }
@@ -59,13 +62,7 @@ pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
             }
             // IPv4-mapped IPv6 (::ffff:a.b.c.d): apply the same IPv4 private checks.
             if let Some(mapped_v4) = ipv6.to_ipv4_mapped() {
-                if mapped_v4.is_loopback()
-                    || mapped_v4.is_private()
-                    || mapped_v4.is_link_local()
-                    || mapped_v4.is_broadcast()
-                    || mapped_v4.is_unspecified()
-                    || mapped_v4.is_multicast()
-                {
+                if is_ipv4_forbidden(&mapped_v4) {
                     return Err(format!(
                         "requests to private IPv4-mapped IPv6 '{ipv6}' are forbidden"
                     ));

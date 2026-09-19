@@ -15,14 +15,10 @@ const panePageMemory = new Map<unknown, number>();
 
 /** Reads `totalPages` from a pane fetch result, tolerating a nested `res` wrapper. */
 function extractTotalPages(d: unknown): number | undefined {
-  if (d && typeof d === "object") {
-    const o = d as Record<string, unknown>;
-    if (typeof o.totalPages === "number") return o.totalPages;
-    const res = o.res;
-    if (res && typeof res === "object" && typeof (res as Record<string, unknown>).totalPages === "number") {
-      return (res as Record<string, number>).totalPages;
-    }
-  }
+  if (!d || typeof d !== "object") return undefined;
+  const o = d as { totalPages?: unknown; res?: { totalPages?: unknown } };
+  if (typeof o.totalPages === "number") return o.totalPages;
+  if (typeof o.res?.totalPages === "number") return o.res.totalPages;
   return undefined;
 }
 
