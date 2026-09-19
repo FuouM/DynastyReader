@@ -16,6 +16,7 @@ import {
   For,
   Show,
 } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { navigate, setSessionTab } from "../stores/router";
 import { setActions, showBanner } from "../stores/topbar";
 import { downloadingChapterPermalinks } from "../stores/download";
@@ -97,15 +98,14 @@ export function CacheView() {
         ? v
         : "size-desc",
   });
-  let debounceTimer: number | undefined;
+  const debouncedSetFilter = debounce((val: string) => {
+    setFilterText(val);
+    setCurrentPage(1);
+  }, 200);
 
   const handleInput = (val: string) => {
     setInputVal(val);
-    clearTimeout(debounceTimer);
-    debounceTimer = window.setTimeout(() => {
-      setFilterText(val);
-      setCurrentPage(1);
-    }, 200);
+    debouncedSetFilter(val);
   };
 
   const { purgeAll, purgePages, purgeCovers, wipeDb, backupDb, restoreFromPicker } = useCacheActions(

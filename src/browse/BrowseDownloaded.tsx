@@ -8,6 +8,7 @@
  */
 
 import { createEffect, createMemo, createSignal, For, Show, type Accessor } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { route } from "../stores/router";
 import { t } from "../i18n";
 import { persistedSignal } from "../lib/persisted-signal";
@@ -56,19 +57,19 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
   });
   const [query, setQuery] = createSignal("");
   const [inputVal, setInputVal] = createSignal("");
-  let debounceTimer: number | null = null;
+  const debouncedSetQuery = debounce((val: string) => {
+    setQuery(val);
+    setCurrentPage(1);
+  }, 200);
 
   const handleInput = (val: string) => {
     setInputVal(val);
-    if (debounceTimer !== null) clearTimeout(debounceTimer);
-    debounceTimer = window.setTimeout(() => {
-      setQuery(val);
-      setCurrentPage(1);
-    }, 200);
+    debouncedSetQuery(val);
   };
 
   createEffect(() => {
     if (route().view !== "browse") {
+      debouncedSetQuery.clear();
       setInputVal("");
       setQuery("");
       setCurrentPage(1);
