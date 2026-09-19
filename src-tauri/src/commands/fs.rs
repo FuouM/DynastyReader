@@ -39,9 +39,13 @@ fn probe_image_file(path: &std::path::Path) -> Result<(u32, u32), String> {
     Ok((w, h))
 }
 fn stat_file(target: &std::path::Path, min_size: u64) -> (bool, u64) {
-    let meta = target.metadata().ok();
-    let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
-    (target.is_file() && size >= min_size, size)
+    match target.metadata() {
+        Ok(meta) => {
+            let size = meta.len();
+            (meta.is_file() && size >= min_size, size)
+        }
+        Err(_) => (false, 0),
+    }
 }
 
 #[tauri::command(rename = "fileExists")]
@@ -101,18 +105,9 @@ pub async fn verify_file_integrity_batch(
         items
             .into_iter()
             .map(|item| match crate::paths::resolve_in_root(&item.path) {
-                Ok(target) => {
-                    if !target.is_file() {
-                        IntegrityCheckResultItem {
-                            id: item.id,
-                            path: item.path,
-                            exists: false,
-                            size_bytes: 0,
-                            is_valid: false,
-                            error: Some("File does not exist on disk".to_string()),
-                        }
-                    } else {
-                        let size = target.metadata().map(|m| m.len()).unwrap_or(0);
+                Ok(target) => match target.metadata() {
+                    Ok(meta) if meta.is_file() => {
+                        let size = meta.len();
                         if size == 0 {
                             IntegrityCheckResultItem {
                                 id: item.id,
@@ -143,7 +138,15 @@ pub async fn verify_file_integrity_batch(
                             }
                         }
                     }
-                }
+                    Ok(_) | Err(_) => IntegrityCheckResultItem {
+                        id: item.id,
+                        path: item.path,
+                        exists: false,
+                        size_bytes: 0,
+                        is_valid: false,
+                        error: Some("File does not exist on disk".to_string()),
+                    },
+                },
                 Err(e) => IntegrityCheckResultItem {
                     id: item.id,
                     path: item.path,
