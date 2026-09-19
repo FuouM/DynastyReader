@@ -7,6 +7,8 @@ import type { FullyCachedChapterRow } from "../../db/cache.repo";
 import { extractVolumeHeader } from "../../utils/volume";
 import type { DownloadedSeriesGroup, DownloadedSortMode, ProcessedCachedChapter } from "./types";
 
+const titleCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
 function extractChapterLabel(title: string, index?: number): string {
   const clean = title.trim();
   const match = clean.match(/\b(?:chapter|ch\.?|c)\s*(\d+(?:\.\d+)?)\b/i);
@@ -73,9 +75,7 @@ export function buildGroups(
     if (!g.seriesName && r.seriesName) g.seriesName = r.seriesName;
   }
   for (const g of map.values()) {
-    g.chapters.sort((a, b) =>
-      a.chapterTitle.localeCompare(b.chapterTitle, undefined, { numeric: true, sensitivity: "base" }),
-    );
+    g.chapters.sort((a, b) => titleCollator.compare(a.chapterTitle, b.chapterTitle));
     const total = g.chapters.length;
     for (let i = 0; i < total; i++) {
       g.chapters[i].shortLabel = extractChapterLabel(g.chapters[i].chapterTitle, i);
@@ -97,11 +97,9 @@ export function buildGroups(
     groups.sort((a, b) => {
       const nameA = a.seriesName || a.seriesPermalink;
       const nameB = b.seriesName || b.seriesPermalink;
-      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: "base" });
+      return titleCollator.compare(nameA, nameB);
     });
-    orphans.sort((a, b) =>
-      a.chapterTitle.localeCompare(b.chapterTitle, undefined, { numeric: true, sensitivity: "base" }),
-    );
+    orphans.sort((a, b) => titleCollator.compare(a.chapterTitle, b.chapterTitle));
   } else if (sortMode === "read-desc") {
     // Most recently read series first; unread series (lastReadAt === 0) after read series
     groups.sort((a, b) => {
