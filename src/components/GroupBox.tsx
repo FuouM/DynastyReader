@@ -8,7 +8,8 @@
  * specificity changes. Collapse is opt-in via `collapsible`.
  */
 
-import { createEffect, createSignal, onCleanup, Show, type JSX } from "solid-js";
+import { createSignal, Show, type JSX } from "solid-js";
+import { createResizeObserver } from "@solid-primitives/resize-observer";
 import { t } from "../i18n";
 export interface GroupBoxProps {
   id?: string;
@@ -31,22 +32,12 @@ export function GroupBox(props: GroupBoxProps) {
   let actionsEl: HTMLDivElement | undefined;
   const [actionsWidth, setActionsWidth] = createSignal(0);
 
-  createEffect(() => {
-    if (!props.actions) {
-      setActionsWidth(0);
-      return;
-    }
-    if (!actionsEl) return;
-    const update = () => {
-      if (actionsEl) {
-        setActionsWidth(actionsEl.offsetWidth);
-      }
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(actionsEl);
-    onCleanup(() => ro.disconnect());
-  });
+  createResizeObserver(
+    () => (props.actions ? actionsEl : undefined),
+    () => {
+      setActionsWidth(actionsEl ? actionsEl.offsetWidth : 0);
+    },
+  );
 
   return (
     <div
