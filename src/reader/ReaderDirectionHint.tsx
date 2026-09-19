@@ -6,6 +6,7 @@
  * Fades out automatically after 2.2s or immediately upon any interaction.
  */
 
+import { makeEventListener } from "@solid-primitives/event-listener";
 import { createSignal, onMount, onCleanup, createEffect, Show } from "solid-js";
 import type { ReadingDirection } from "../types/reader";
 import { t } from "../i18n";
@@ -21,7 +22,7 @@ export interface ReaderDirectionHintProps {
 
 export function ReaderDirectionHint(props: ReaderDirectionHintProps) {
   const [visible, setVisible] = createSignal(false);
-  let hideTimer: number | null = null;
+  let hideTimer: number | undefined;
   let lastDirection: ReadingDirection | null = null;
   let lastPermalink: string | null = null;
   let lastTriggerTick = 0;
@@ -29,18 +30,16 @@ export function ReaderDirectionHint(props: ReaderDirectionHintProps) {
   const showHint = (durationMs = 2200) => {
     if (!props.isHorizontal) return;
     setVisible(true);
-    if (hideTimer !== null) clearTimeout(hideTimer);
+    clearTimeout(hideTimer);
     hideTimer = window.setTimeout(() => {
       setVisible(false);
-      hideTimer = null;
+      hideTimer = undefined;
     }, durationMs);
   };
 
   const dismiss = () => {
-    if (hideTimer !== null) {
-      clearTimeout(hideTimer);
-      hideTimer = null;
-    }
+    clearTimeout(hideTimer);
+    hideTimer = undefined;
     setVisible(false);
   };
 
@@ -79,12 +78,10 @@ export function ReaderDirectionHint(props: ReaderDirectionHintProps) {
 
   onMount(() => {
     const onUserAction = () => dismiss();
-    window.addEventListener("pointerdown", onUserAction, { passive: true, capture: true });
-    window.addEventListener("keydown", onUserAction, { passive: true, capture: true });
+    makeEventListener(window, "pointerdown", onUserAction, { passive: true, capture: true });
+    makeEventListener(window, "keydown", onUserAction, { passive: true, capture: true });
     onCleanup(() => {
-      if (hideTimer !== null) clearTimeout(hideTimer);
-      window.removeEventListener("pointerdown", onUserAction, { capture: true });
-      window.removeEventListener("keydown", onUserAction, { capture: true });
+      clearTimeout(hideTimer);
     });
   });
 

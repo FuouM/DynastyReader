@@ -12,6 +12,7 @@ const CHECK_UPDATES_POLL_DEADLINE_MS = 15_000;
 const CHECK_UPDATES_POLL_INTERVAL_MS = 50;
 const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
+import { makeEventListener } from "@solid-primitives/event-listener";
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, type JSX } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
 import { isMobile } from "../stores/platform";
@@ -296,16 +297,10 @@ export function BrowseView() {
       setPullOffset(0);
       setPullReady(false);
     };
-    paneEl.addEventListener("touchstart", onTouchStart, { passive: true });
-    paneEl.addEventListener("touchmove", onTouchMove, { passive: false });
-    paneEl.addEventListener("touchend", onTouchEnd, { passive: true });
-    paneEl.addEventListener("touchcancel", onTouchCancel, { passive: true });
-    onCleanup(() => {
-      paneEl.removeEventListener("touchstart", onTouchStart);
-      paneEl.removeEventListener("touchmove", onTouchMove);
-      paneEl.removeEventListener("touchend", onTouchEnd);
-      paneEl.removeEventListener("touchcancel", onTouchCancel);
-    });
+    makeEventListener(paneEl, "touchstart", onTouchStart, { passive: true });
+    makeEventListener(paneEl, "touchmove", onTouchMove, { passive: false });
+    makeEventListener(paneEl, "touchend", onTouchEnd, { passive: true });
+    makeEventListener(paneEl, "touchcancel", onTouchCancel, { passive: true });
   });
 
   const checkBtnIcon = (): JSX.Element => {

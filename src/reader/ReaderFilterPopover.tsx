@@ -3,7 +3,8 @@
  * Anchored to the Filter button in ReaderControlsRow.
  */
 
-import { createEffect, createSignal, onCleanup, Show } from "solid-js";
+import { makeEventListener } from "@solid-primitives/event-listener";
+import { createEffect, createSignal, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { uiScale } from "../stores/ui-scale";
 import { t } from "../i18n";
@@ -65,8 +66,7 @@ export function ReaderFilterPopover(props: ReaderFilterPopoverProps) {
         props.onClose();
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    onCleanup(() => window.removeEventListener("keydown", onKeyDown));
+    makeEventListener(window, "keydown", onKeyDown);
   });
 
   return (
