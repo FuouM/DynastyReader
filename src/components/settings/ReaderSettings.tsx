@@ -72,8 +72,8 @@ function ToggleSettingRow(props: ToggleSettingRowProps) {
 
 export function ReaderSettings() {
   const [autoCacheEnabled, setAutoCacheEnabled] = usePersistedSetting(isAutoCacheChapterEnabled, setAutoCacheChapterEnabled);
-  const [prefetchBuffer, setPrefetchBufferLocal] = usePersistedSetting(getPrefetchBuffer, setPrefetchBuffer as (v: number) => void);
-  const [navPosition, setNavPosition] = usePersistedSetting(getReaderNavPosition, setReaderNavPosition as (v: string) => void) as [() => string, (v: string) => void];
+  const [prefetchBuffer, setPrefetchBufferLocal] = usePersistedSetting(getPrefetchBuffer, setPrefetchBuffer);
+  const [navPosition, setNavPosition] = usePersistedSetting(getReaderNavPosition, setReaderNavPosition);
   const [readerModePref, setReaderModePref] = usePersistedSetting(getDefaultReaderMode, setDefaultReaderMode);
   const [pagedLayoutPref, setPagedLayoutPref] = usePersistedSetting(getDefaultPagedLayout, setDefaultPagedLayout);
   const [mobileLandscapeModePref, setMobileLandscapeModePref] = usePersistedSetting(getMobileLandscapeReaderMode, setMobileLandscapeReaderMode);

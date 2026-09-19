@@ -38,13 +38,10 @@ function isLtrTag(tag: { type?: string; name?: string; permalink?: string }): bo
 
 function isLongStripTag(tag: { type?: string; name?: string; permalink?: string }): boolean {
   if (!tag) return false;
-  if (tag.permalink && LONG_STRIP_TAG_PERMALINKS.has(tag.permalink.toLowerCase())) {
-    return true;
-  }
-  if (tag.name && LONG_STRIP_NAME_FAMILY.has(tag.name.trim().toLowerCase())) {
-    return true;
-  }
-  return false;
+  return (
+    (tag.permalink !== undefined && LONG_STRIP_TAG_PERMALINKS.has(tag.permalink.toLowerCase())) ||
+    (tag.name !== undefined && LONG_STRIP_NAME_FAMILY.has(tag.name.trim().toLowerCase()))
+  );
 }
 
 /**

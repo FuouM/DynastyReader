@@ -2,7 +2,6 @@ import { createSignal } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import { getDownloadQueue, pauseDownloads, resumeDownloads, type DownloadQueueItem } from "../ipc";
 import { isAndroid } from "./platform";
-import { formatSpeed } from "../utils/formatting";
 import { maybeAutoPruneCache } from "../utils/cache-quota";
 import { pushDownloadConstraints } from "../utils/download-constraints";
 import { notifyCacheChanged } from "../db/cache.repo";
@@ -44,7 +43,6 @@ export const refreshDownloadQueue = async (): Promise<void> => {
   if (boundRefreshState) await boundRefreshState();
 };
 
-export const formatDownloadSpeed = formatSpeed;
 
 /**
  * Single speed/ETA accumulator stream (QoL-D4): the topbar and the download

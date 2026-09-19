@@ -3,7 +3,8 @@ import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { route, navigate, closeSessionMangaTab, isInMangaView, sessionTab } from "../stores/router";
 import { title, banner, actions } from "../stores/topbar";
-import { activeDownloadCount, downloadSpeedBps, formatDownloadSpeed } from "../stores/download";
+import { activeDownloadCount, downloadSpeedBps } from "../stores/download";
+import { formatSpeed } from "../utils/formatting";
 import { isMobile } from "../stores/platform";
 import { uiScale } from "../stores/ui-scale";
 import { decodeEntities } from "../utils/html";
@@ -94,7 +95,7 @@ export function Topbar() {
                   <DownloadIcon />
                   <span>{activeDownloadCount()}</span>
                   <Show when={downloadSpeedBps() > 0}>
-                    <span class="ds-topbar-download-speed ds-muted">{formatDownloadSpeed(downloadSpeedBps())}</span>
+                    <span class="ds-topbar-download-speed ds-muted">{formatSpeed(downloadSpeedBps())}</span>
                   </Show>
                 </button>
               </Show>

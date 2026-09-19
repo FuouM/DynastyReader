@@ -14,16 +14,12 @@ export async function getCached(key: string): Promise<CachedMetadata | null> {
  * Batch retrieves multiple cached metadata records in a single fast SQL query.
  */
 export async function getBatchCached(keys: string[]): Promise<Map<string, string>> {
-  const result = new Map<string, string>();
-  if (keys.length === 0) return result;
+  if (keys.length === 0) return new Map();
   const rows = await query<{ cache_key: string; json_payload: string }>(
     `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key IN (${inClause(keys.length)})`,
     keys,
   );
-  for (const r of rows) {
-    result.set(r.cache_key, r.json_payload);
-  }
-  return result;
+  return new Map(rows.map((r) => [r.cache_key, r.json_payload]));
 }
 
 export async function setCached(

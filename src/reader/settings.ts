@@ -158,10 +158,7 @@ const [getReaderNavPosition, _setNavPos] = persistedSignal<ReaderNavPosition>("t
   name: "ds-reader-nav-position",
   deserialize: (v) => v === "bottom" ? "bottom" : "top",
 });
-export { getReaderNavPosition };
-export const setReaderNavPosition = (pos: ReaderNavPosition) => {
-  _setNavPos(pos);
-};
+export { getReaderNavPosition, _setNavPos as setReaderNavPosition };
 
 // Prev chapter start page
 const [getPrevChapterStartPage, setPrevChapterStartPage] = persistedSignal<PrevChapterStartPage>("first", {

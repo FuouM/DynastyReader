@@ -278,17 +278,13 @@ fn stat_one(target: &std::path::Path) -> (u64, u64) {
     if !target.is_dir() {
         return (0, 0);
     }
-    let mut total_bytes: u64 = 0;
-    let mut file_count: u64 = 0;
-    for entry in WalkDir::new(target).follow_links(false).into_iter().filter_map(|e| e.ok()) {
-        if entry.file_type().is_file() {
-            if let Ok(meta) = entry.metadata() {
-                total_bytes += meta.len();
-                file_count += 1;
-            }
-        }
-    }
-    (total_bytes, file_count)
+    WalkDir::new(target)
+        .follow_links(false)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .filter_map(|e| e.metadata().ok())
+        .fold((0, 0), |(bytes, count), m| (bytes + m.len(), count + 1))
 }
 
 #[tauri::command(rename = "dirStat")]

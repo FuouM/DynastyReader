@@ -55,13 +55,11 @@ export const getOverscrollTarget = (
     // Is the drag starting on the destination half of the screen?
     const isStartingOnDestSide = isPullingLeft ? engagedX < cx + 40 : engagedX > cx - 40;
 
-    let targetX: number;
+    let targetX = isPullingLeft ? EDGE_MARGIN_X : winW - EDGE_MARGIN_X;
     let targetY: number;
 
     if (!isStartingOnDestSide) {
       // Started on the opposite side: clean cross-screen horizontal runway
-      targetX = isPullingLeft ? EDGE_MARGIN_X : winW - EDGE_MARGIN_X;
-
       // Keep target roughly aligned with finger Y, avoiding center card
       targetY = engagedY;
       if (Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
@@ -72,8 +70,6 @@ export const getOverscrollTarget = (
     } else {
       // Started on the destination side (or near edge):
       // Apply diagonal corner deflection into the open vertical quadrant
-      targetX = isPullingLeft ? EDGE_MARGIN_X : winW - EDGE_MARGIN_X;
-
       if (engagedY < cy) {
         // Upper quadrant -> deflect to lower destination corner
         targetY = Math.min(winH - EDGE_MARGIN_Y, Math.max(cy + OVERSCROLL_CARD_AVOID_H_PX + 20, winH * 0.74));
@@ -106,13 +102,11 @@ export const getOverscrollTarget = (
 
     const isStartingOnDestSide = isPullingUp ? engagedY < cy + 40 : engagedY > cy - 40;
 
+    let targetY = isPullingUp ? EDGE_MARGIN_Y : winH - EDGE_MARGIN_Y;
     let targetX: number;
-    let targetY: number;
 
     if (!isStartingOnDestSide) {
       // Clean cross-screen vertical runway
-      targetY = isPullingUp ? EDGE_MARGIN_Y : winH - EDGE_MARGIN_Y;
-
       targetX = engagedX;
       if (Math.abs(targetX - cx) < cardAvoidW) {
         targetX = engagedX < cx
@@ -121,8 +115,6 @@ export const getOverscrollTarget = (
       }
     } else {
       // Started near top/bottom destination margin: deflect into opposite horizontal corner
-      targetY = isPullingUp ? EDGE_MARGIN_Y : winH - EDGE_MARGIN_Y;
-
       if (engagedX < cx) {
         // Left quadrant -> deflect to right destination corner
         targetX = Math.min(winW - EDGE_MARGIN_X, Math.max(cx + cardAvoidW + 20, winW * 0.76));

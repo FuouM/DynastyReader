@@ -8,7 +8,7 @@ import { log } from "../utils/log";
  * the local mirror in one step — call-sites collapse from two setter calls
  * to one.
  */
-export function usePersistedSetting<T>(getter: () => T, setter: (v: T) => void) {
+export function usePersistedSetting<T>(getter: () => T, setter: (v: T) => unknown) {
   const [val, setVal] = createSignal(getter());
   const set = (next: T) => {
     setter(next);
