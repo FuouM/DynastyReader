@@ -151,15 +151,26 @@ export async function getCachedSeriesGroups(): Promise<CachedSeriesGroup[]> {
   }
 
   if (fileProbe.length > 0) {
-    const filePathGroups = await Promise.all(
-      fileProbe.map(async (p) => {
-        const pathRows = await query<{ file_path: string }>(
-          `SELECT file_path FROM cached_pages WHERE chapter_permalink IN (${inClause(p.group.chapterPermalinks.length)})`,
-          p.group.chapterPermalinks,
-        );
-        return { group: p.group, filePaths: pathRows.map((r) => r.file_path) };
-      }),
-    );
+    const allPermalinks = [...new Set(fileProbe.flatMap((p) => p.group.chapterPermalinks))];
+    const pathRows = allPermalinks.length > 0
+      ? await query<{ chapter_permalink: string; file_path: string }>(
+          `SELECT chapter_permalink, file_path FROM cached_pages WHERE chapter_permalink IN (${inClause(allPermalinks.length)})`,
+          allPermalinks,
+        )
+      : [];
+    const pathsByChapter = new Map<string, string[]>();
+    for (const r of pathRows) {
+      const list = pathsByChapter.get(r.chapter_permalink);
+      if (list) {
+        list.push(r.file_path);
+      } else {
+        pathsByChapter.set(r.chapter_permalink, [r.file_path]);
+      }
+    }
+    const filePathGroups = fileProbe.map((p) => ({
+      group: p.group,
+      filePaths: p.group.chapterPermalinks.flatMap((cp) => pathsByChapter.get(cp) ?? []),
+    }));
     const allFilePaths = [...new Set(filePathGroups.flatMap((f) => f.filePaths))];
     const fileResp = await ipc.fileExistsBatch(allFilePaths);
     const sizeByPath = new Map<string, number>();
