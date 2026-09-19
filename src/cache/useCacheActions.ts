@@ -9,15 +9,23 @@ import { backupDatabase, restoreDatabaseFromPath, wipeDatabase } from "../db/db.
 import { clearAllCacheStorage, clearAllCachedCovers, clearAllCachedPages } from "../db/cache.repo";
 
 export function useCacheActions(refetch: () => void) {
+  let isBusy = false;
+
   const withRefresh = async (action: () => Promise<void>, successKey: Parameters<typeof t>[0]) => {
-    await action();
+    if (isBusy) return;
+    isBusy = true;
     try {
-      browseCovers.clearMemoryCache();
-    } catch (e) {
-      log.debug("cache-actions", "clearMemoryCache failed (non-fatal):", e);
+      await action();
+      try {
+        browseCovers.clearMemoryCache();
+      } catch (e) {
+        log.debug("cache-actions", "clearMemoryCache failed (non-fatal):", e);
+      }
+      showBanner(t(successKey));
+      void refetch();
+    } finally {
+      isBusy = false;
     }
-    showBanner(t(successKey));
-    void refetch();
   };
 
   const purgeAll = () => withRefresh(() => clearAllCacheStorage(), "cache.clearAllSuccess");
@@ -26,16 +34,22 @@ export function useCacheActions(refetch: () => void) {
   const wipeDb = () => withRefresh(() => wipeDatabase(), "cache.dbWipeSuccess");
 
   const backupDb = async (): Promise<void> => {
+    if (isBusy) return;
+    isBusy = true;
     try {
       const res = await backupDatabase();
       showBanner(t("cache.dbBackupSuccess", { path: res.backup_path, size: formatBytes(res.size_bytes) }));
       void refetch();
     } catch (err) {
       showBanner(t("cache.dbBackupError", { msg: errorMessage(err) }));
+    } finally {
+      isBusy = false;
     }
   };
 
   const restoreFromPicker = async (): Promise<void> => {
+    if (isBusy) return;
+    isBusy = true;
     try {
       let picked: string | string[] | null;
       try {
@@ -63,8 +77,9 @@ export function useCacheActions(refetch: () => void) {
       const msg = errorMessage(err);
       log.error("cache-actions", "restoreFromPicker failed:", err);
       showBanner(t("cache.dbRestoreError", { msg }));
+    } finally {
+      isBusy = false;
     }
   };
-
   return { purgeAll, purgePages, purgeCovers, wipeDb, backupDb, restoreFromPicker };
 }
