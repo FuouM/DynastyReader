@@ -860,14 +860,10 @@ async fn fetch_page_to_file(
     Ok(size as i64)
 }
 
-async fn download_chapter(
-    app: &AppHandle,
+async fn fetch_and_cache_chapter_pages(
     client: &reqwest::Client,
     req: &DownloadRequest,
-    cancel: &CancellationToken,
-) -> Result<(usize, usize), String> {
-    // Fetch chapter JSON to get page list (uses Dynasty API, with SSRF validation bypass? Need to fetch via http client directly)
-    // We fetch via reqwest directly to avoid Tauri IPC; the chapter JSON is at https://dynasty-scans.com/chapters/<permalink>.json
+) -> Result<Vec<serde_json::Value>, String> {
     let chapter_url = format!("https://dynasty-scans.com/chapters/{}.json", req.chapter_permalink);
     let resp = crate::commands::http::send_with_redirects(
         client,
@@ -929,6 +925,92 @@ async fn download_chapter(
         .await
         .ok();
     }
+
+    Ok(pages)
+}
+
+async fn record_and_emit_page_progress(
+    app: &AppHandle,
+    req: &DownloadRequest,
+    idx: usize,
+    target_str: &str,
+    size: i64,
+    done: usize,
+    total: usize,
+    total_bytes_done: u64,
+) {
+    record_page_progress(&req.chapter_permalink, idx, target_str, size, done).await;
+    let _ = app.emit(
+        "download://progress",
+        DownloadProgressPayload {
+            chapter_permalink: req.chapter_permalink.clone(),
+            series_permalink: req.series_permalink.clone(),
+            pages_done: done,
+            total_pages: total,
+            bytes_done: total_bytes_done,
+            last_page_bytes: size as u64,
+            status: "downloading".to_string(),
+        },
+    );
+}
+
+async fn fetch_page_with_retries(
+    client: &reqwest::Client,
+    abs_url: &str,
+    target: &std::path::Path,
+    state: &DownloadState,
+    cancel: &CancellationToken,
+    idx: usize,
+    total: usize,
+    chapter_permalink: &str,
+) -> Result<i64, String> {
+    let mut attempt = 0usize;
+    loop {
+        let fetch_fut = fetch_page_to_file(client, abs_url, target);
+
+        tokio::select! {
+            r = fetch_fut => match r {
+                Ok(size) => break Ok(size),
+                Err(e) => {
+                    if attempt >= PAGE_RETRY_BACKOFF_MS.len() {
+                        break Err(e);
+                    }
+                    let backoff = PAGE_RETRY_BACKOFF_MS[attempt];
+                    attempt += 1;
+                    log::warn!(
+                        "page {}/{} of {} failed ({e}); retrying in {backoff}ms",
+                        idx + 1,
+                        total,
+                        chapter_permalink,
+                    );
+                    tokio::select! {
+                        _ = tokio::time::sleep(std::time::Duration::from_millis(backoff)) => {}
+                        _ = cancel.cancelled() => return Err("cancelled".to_string()),
+                    }
+                }
+            },
+            _ = cancel.cancelled() => return Err("cancelled".to_string()),
+            // Pause aborts the in-flight fetch; the page restarts on resume.
+            _ = wait_until_paused(state) => {
+                while state.paused.load(Ordering::SeqCst) {
+                    state.notify.notified().await;
+                    if cancel.is_cancelled() {
+                        return Err("cancelled".to_string());
+                    }
+                }
+            }
+        }
+    }
+}
+
+async fn download_chapter(
+    app: &AppHandle,
+    client: &reqwest::Client,
+    req: &DownloadRequest,
+    cancel: &CancellationToken,
+) -> Result<(usize, usize), String> {
+    let pages = fetch_and_cache_chapter_pages(client, req).await?;
+    let total = pages.len();
     let state: State<DownloadState> = app.state();
     let rel_dir = chapter_pages_rel_dir(req);
     let mut done = 0usize;
@@ -985,86 +1067,28 @@ async fn download_chapter(
                     let size = meta.len() as i64;
                     done += 1;
                     total_bytes_done += size as u64;
-                    record_page_progress(&req.chapter_permalink, idx, &abs_str, size, done).await;
-                    let _ = app.emit(
-                        "download://progress",
-                        DownloadProgressPayload {
-                            chapter_permalink: req.chapter_permalink.clone(),
-                            series_permalink: req.series_permalink.clone(),
-                            pages_done: done,
-                            total_pages: total,
-                            bytes_done: total_bytes_done,
-                            last_page_bytes: size as u64,
-                            status: "downloading".to_string(),
-                        },
-                    );
+                    record_and_emit_page_progress(app, req, idx, &abs_str, size, done, total, total_bytes_done).await;
                     continue;
                 }
             }
         }
 
-        let mut attempt = 0usize;
-        let size_res: Result<i64, String> = loop {
-            let fetch_fut = fetch_page_to_file(client, &abs_url, &target);
+        let page_size = fetch_page_with_retries(
+            client,
+            &abs_url,
+            &target,
+            &state,
+            cancel,
+            idx,
+            total,
+            &req.chapter_permalink,
+        )
+        .await?;
 
-            tokio::select! {
-                r = fetch_fut => match r {
-                    Ok(size) => break Ok(size),
-                    Err(e) => {
-                        if attempt >= PAGE_RETRY_BACKOFF_MS.len() {
-                            break Err(e);
-                        }
-                        let backoff = PAGE_RETRY_BACKOFF_MS[attempt];
-                        attempt += 1;
-                        log::warn!(
-                            "page {}/{} of {} failed ({e}); retrying in {backoff}ms",
-                            idx + 1,
-                            total,
-                            req.chapter_permalink,
-                        );
-                        tokio::select! {
-                            _ = tokio::time::sleep(std::time::Duration::from_millis(backoff)) => {}
-                            _ = cancel.cancelled() => return Err("cancelled".to_string()),
-                        }
-                    }
-                },
-                _ = cancel.cancelled() => return Err("cancelled".to_string()),
-                // Pause aborts the in-flight fetch; the page restarts on resume.
-                _ = wait_until_paused(&state) => {
-                    while state.paused.load(Ordering::SeqCst) {
-                        state.notify.notified().await;
-                        if cancel.is_cancelled() {
-                            return Err("cancelled".to_string());
-                        }
-                    }
-                }
-            }
-        };
-
-        match size_res {
-            Ok(page_size) => {
-                done += 1;
-                total_bytes_done += page_size as u64;
-                let abs_clone = target.to_string_lossy().into_owned();
-                record_page_progress(&req.chapter_permalink, idx, &abs_clone, page_size, done).await;
-                let _ = app.emit(
-                    "download://progress",
-                    DownloadProgressPayload {
-                        chapter_permalink: req.chapter_permalink.clone(),
-                        series_permalink: req.series_permalink.clone(),
-                        pages_done: done,
-                        total_pages: total,
-                        bytes_done: total_bytes_done,
-                        last_page_bytes: page_size as u64,
-                        status: "downloading".to_string(),
-                    },
-                );
-            }
-            Err(e) => {
-                // Retries exhausted — fail the chapter.
-                return Err(e);
-            }
-        }
+        done += 1;
+        total_bytes_done += page_size as u64;
+        let abs_clone = target.to_string_lossy().into_owned();
+        record_and_emit_page_progress(app, req, idx, &abs_clone, page_size, done, total, total_bytes_done).await;
     }
 
     Ok((done, total))
