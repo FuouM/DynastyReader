@@ -58,17 +58,22 @@ export function Typeahead(props: TypeaheadProps) {
     }
   });
 
+  let fetchSeq = 0;
   const debouncedFetch = debounce(async (val: string) => {
+    const seq = ++fetchSeq;
     let items: TypeaheadItem[];
     try {
       const raw = await props.fetcher(val);
+      if (seq !== fetchSeq || val !== inputValue().trim()) return;
       items = Array.isArray(raw) ? raw : [];
     } catch {
+      if (seq !== fetchSeq) return;
       setSuggestions([]);
       setSelectedIndex(-1);
       setOpen(false);
       return;
     }
+    if (seq !== fetchSeq || val !== inputValue().trim()) return;
     if (!Array.isArray(items)) items = [];
     const sliced = items.slice(0, maxItems);
     setSuggestions(sliced);
@@ -81,6 +86,7 @@ export function Typeahead(props: TypeaheadProps) {
   createEffect(() => {
     const val = inputValue().trim();
     if (!val) {
+      fetchSeq++;
       debouncedFetch.clear();
       setSuggestions([]);
       setSelectedIndex(-1);
