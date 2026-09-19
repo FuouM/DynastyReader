@@ -39,24 +39,30 @@ import { loadChapterList } from "./reader-chapter-nav";
 
 const RESTORE_REVEAL_DEADLINE_MS = 1200;
 
-export async function initReaderSession(s: ReaderSession): Promise<void> {
-  const route = s.route;
-  const permalink = route.chapterPermalink;
-  if (!permalink) return;
-
-  let chapter: Chapter;
-  try {
-    chapter = await fetchChapter(permalink);
-  } catch (err) {
-    if (s.disposed) return;
-    const msg = errorMessage(err);
-    showBanner(t("reader.session.loadChapterError", { msg }));
-    s.setError(msg);
-    s.setLoading(false);
-    return;
+async function determineStartPage(
+  route: ReaderSession["route"],
+  permalink: string,
+  pageCount: number,
+): Promise<number> {
+  let startPage = route.startPage ?? 0;
+  if (startPage === -1) {
+    startPage = Math.max(0, pageCount - 1);
+  } else if (startPage <= 0) {
+    try {
+      const prog = await getReadingProgress(permalink);
+      if (prog && prog.completed !== 1 && prog.page_index > 0) {
+        startPage = prog.page_index;
+      }
+    } catch (err) {
+      log.error("reader-bootstrap", "failed to load reading progress:", err);
+    }
   }
-  if (s.disposed) return;
+  return Math.min(startPage, Math.max(0, pageCount - 1));
+}
 
+function resolveSeriesContext(s: ReaderSession, chapter: Chapter): void {
+  const route = s.route;
+  const permalink = s.permalink;
   const containerTag = getChapterContainerTag(chapter.tags);
   const isLocalChapter = permalink.startsWith("local:");
   const containerPerm = containerTag?.permalink
@@ -109,6 +115,159 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
     s.setChapterList([]);
   }
   s.setPages(chapter.pages ?? []);
+}
+
+function initDisplayPreferences(s: ReaderSession, chapter: Chapter): void {
+  s.setModeSignal(getEffectiveDefaultReaderMode());
+
+  const isLong = detectIsLongStrip(chapter.tags ?? []);
+  s.setIsLongStrip(isLong);
+
+  if (isLong && isLongStripSpreadOverrideEnabled()) {
+    // Soft disable spread mode for long strip chapters
+    s.setPagedLayoutSignal("single");
+    s.setLayoutAutoDetected(true);
+  } else {
+    s.setPagedLayoutSignal(getEffectiveDefaultPagedLayout());
+    s.setLayoutAutoDetected(false);
+  }
+
+  s.setCoverOffsetSignal(isCoverOffsetDefaultEnabled());
+
+  const dirPref = getDefaultReadingDirection();
+  if (dirPref === "auto") {
+    const tagDir = detectReadingDirection(chapter.tags ?? []);
+    s.setDirectionSignal(tagDir);
+    s.setDirectionAutoDetected(true);
+  } else {
+    s.setDirectionSignal(dirPref);
+    s.setDirectionAutoDetected(false);
+  }
+  if (isLong && isLongStripFitWidthEnabled()) {
+    s.setFitModeSignal("width");
+  } else {
+    s.setFitModeSignal(getDefaultFitMode());
+  }
+  s.setScrollLockSignal(getScrollLock());
+}
+
+async function hydrateCachedPages(s: ReaderSession, permalink: string, pageCount: number): Promise<void> {
+  let cachedRows: CachedPageRow[] = [];
+  try {
+    cachedRows = await getCachedPages(permalink);
+  } catch (err) {
+    cachedRows = [];
+    showBanner(
+      t("reader.session.cacheLookupError", { msg: errorMessage(err) }),
+    );
+  }
+  for (const row of cachedRows) {
+    if (row.page_index >= 0 && row.page_index < pageCount && row.file_path) {
+      s.cachedPages[1](row.page_index, row.file_path);
+    }
+  }
+  s.recountCached();
+}
+
+function preloadInitialDimensions(s: ReaderSession, pageCount: number): void {
+  if (typeof window === "undefined") return;
+  const cachedMap = s.cachedPages[0];
+  const cur = s.currentIndex();
+  const isSpread = s.isSpread();
+  const spreads = s.spreads();
+  const priorityIndices: number[] = [];
+  if (isSpread && spreads.length > 0) {
+    const curSpread = spreadIndexOf(spreads, cur);
+    for (const p of spreads[curSpread]?.pageIndices ?? []) priorityIndices.push(p);
+    for (const p of spreads[curSpread + 1]?.pageIndices ?? []) priorityIndices.push(p);
+    if (curSpread > 0) for (const p of spreads[curSpread - 1]?.pageIndices ?? []) priorityIndices.push(p);
+  } else {
+    priorityIndices.push(cur);
+    if (cur + 1 < pageCount) priorityIndices.push(cur + 1);
+  }
+
+  for (const i of priorityIndices) {
+    const p = cachedMap[i];
+    if (!p) continue;
+    const img = new Image();
+    img.src = convertFileSrc(p);
+    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
+    } else {
+      img.onload = () => {
+        if (!s.disposedFlag) {
+          s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
+        }
+      };
+    }
+  }
+}
+
+function initSlotStatesAndQueue(s: ReaderSession, pageCount: number): void {
+  const autoCacheAll = isAutoCacheChapterEnabled();
+  for (let i = 0; i < pageCount; i++) {
+    if (s.getCachedPath(i) !== undefined) continue;
+    if (!isOnline()) {
+      s.setSlotState(i, "offline", t("reader.session.slotState.offline"));
+    } else if (autoCacheAll) {
+      s.setSlotState(i, "spinner", t("reader.session.slotState.queued"));
+      s.enqueue(i);
+    } else {
+      s.setSlotState(i, "idle", t("reader.session.slotState.waiting"));
+    }
+  }
+
+  const cur = s.currentIndex();
+  if (s.isSpread() && s.spreads().length > 0) {
+    const curSpread = spreadIndexOf(s.spreads(), cur);
+    const active = s.spreads()[curSpread];
+    if (active) {
+      for (const p of active.pageIndices) {
+        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
+      }
+    }
+    const nextSpread = s.spreads()[curSpread + 1];
+    if (nextSpread) {
+      for (const p of nextSpread.pageIndices) {
+        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
+      }
+    }
+    const spreadPlus2 = s.spreads()[curSpread + 2];
+    if (spreadPlus2) {
+      for (const p of spreadPlus2.pageIndices) {
+        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
+      }
+    }
+  } else {
+    if (s.getCachedPath(cur) === undefined) s.enqueue(cur, true);
+    for (let offset = 1; offset <= 4; offset++) {
+      const nextIdx = cur + offset;
+      if (nextIdx < pageCount && s.getCachedPath(nextIdx) === undefined) {
+        s.enqueue(nextIdx, true);
+      }
+    }
+  }
+}
+
+export async function initReaderSession(s: ReaderSession): Promise<void> {
+  const route = s.route;
+  const permalink = route.chapterPermalink;
+  if (!permalink) return;
+
+  let chapter: Chapter;
+  try {
+    chapter = await fetchChapter(permalink);
+  } catch (err) {
+    if (s.disposed) return;
+    const msg = errorMessage(err);
+    showBanner(t("reader.session.loadChapterError", { msg }));
+    s.setError(msg);
+    s.setLoading(false);
+    return;
+  }
+  if (s.disposed) return;
+
+  resolveSeriesContext(s, chapter);
 
   const pageCount = s.pages().length;
   if (pageCount === 0) {
@@ -117,22 +276,9 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
     return;
   }
 
-  let startPage = route.startPage ?? 0;
-  if (startPage === -1) {
-    startPage = Math.max(0, pageCount - 1);
-  } else if (startPage <= 0) {
-    try {
-      const prog = await getReadingProgress(permalink);
-      if (prog && prog.completed !== 1 && prog.page_index > 0) {
-        startPage = prog.page_index;
-      }
-    } catch (err) {
-      log.error("reader-bootstrap", "failed to load reading progress:", err);
-    }
-  }
-  const effectiveStart = Math.min(startPage, Math.max(0, pageCount - 1));
-  s.setCurrentIndex(effectiveStart);
-  s.lastPersistedIndex = effectiveStart;
+  const startPage = await determineStartPage(route, permalink, pageCount);
+  s.setCurrentIndex(startPage);
+  s.lastPersistedIndex = startPage;
   // Fetch latest series / anthology chapterList and auto-detect layout
   if (s.seriesPermalink()) {
     const p = loadChapterList(s, false);
@@ -183,134 +329,12 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
     }
   }
 
-  // Display-mode preferences
-  s.setModeSignal(getEffectiveDefaultReaderMode());
+  initDisplayPreferences(s, chapter);
 
-  const isLong = detectIsLongStrip(chapter.tags ?? []);
-  s.setIsLongStrip(isLong);
+  await hydrateCachedPages(s, permalink, pageCount);
 
-  if (isLong && isLongStripSpreadOverrideEnabled()) {
-    // Soft disable spread mode for long strip chapters
-    s.setPagedLayoutSignal("single");
-    s.setLayoutAutoDetected(true);
-  } else {
-    s.setPagedLayoutSignal(getEffectiveDefaultPagedLayout());
-    s.setLayoutAutoDetected(false);
-  }
-
-  s.setCoverOffsetSignal(isCoverOffsetDefaultEnabled());
-
-  const dirPref = getDefaultReadingDirection();
-  if (dirPref === "auto") {
-    const tagDir = detectReadingDirection(chapter.tags ?? []);
-    s.setDirectionSignal(tagDir);
-    s.setDirectionAutoDetected(true);
-  } else {
-    s.setDirectionSignal(dirPref);
-    s.setDirectionAutoDetected(false);
-  }
-  if (isLong && isLongStripFitWidthEnabled()) {
-    s.setFitModeSignal("width");
-  } else {
-    s.setFitModeSignal(getDefaultFitMode());
-  }
-  s.setScrollLockSignal(getScrollLock());
-
-  // Restore cached page paths from SQLite
-  let cachedRows: CachedPageRow[] = [];
-  try {
-    cachedRows = await getCachedPages(permalink);
-  } catch (err) {
-    cachedRows = [];
-    showBanner(
-      t("reader.session.cacheLookupError", { msg: errorMessage(err) }),
-    );
-  }
-  for (const row of cachedRows) {
-    if (row.page_index >= 0 && row.page_index < pageCount && row.file_path) {
-      s.cachedPages[1](row.page_index, row.file_path);
-    }
-  }
-  s.recountCached();
-
-  // Pre-resolve dimensions for the initial view (paged/spread mode)
-  if (typeof window !== "undefined") {
-    const cachedMap = s.cachedPages[0];
-    const cur = s.currentIndex();
-    const isSpread = s.isSpread();
-    const spreads = s.spreads();
-    const priorityIndices: number[] = [];
-    if (isSpread && spreads.length > 0) {
-      const curSpread = spreadIndexOf(spreads, cur);
-      for (const p of spreads[curSpread]?.pageIndices ?? []) priorityIndices.push(p);
-      for (const p of spreads[curSpread + 1]?.pageIndices ?? []) priorityIndices.push(p);
-      if (curSpread > 0) for (const p of spreads[curSpread - 1]?.pageIndices ?? []) priorityIndices.push(p);
-    } else {
-      priorityIndices.push(cur);
-      if (cur + 1 < pageCount) priorityIndices.push(cur + 1);
-    }
-
-    for (const i of priorityIndices) {
-      const p = cachedMap[i];
-      if (!p) continue;
-      const img = new Image();
-      img.src = convertFileSrc(p);
-      if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-        s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-      } else {
-        img.onload = () => {
-          if (!s.disposedFlag) {
-            s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-          }
-        };
-      }
-    }
-  }
-  // Initial slot states (uncached pages)
-  const autoCacheAll = isAutoCacheChapterEnabled();
-  for (let i = 0; i < pageCount; i++) {
-    if (s.getCachedPath(i) !== undefined) continue;
-    if (!isOnline()) {
-      s.setSlotState(i, "offline", t("reader.session.slotState.offline"));
-    } else if (autoCacheAll) {
-      s.setSlotState(i, "spinner", t("reader.session.slotState.queued"));
-      s.enqueue(i);
-    } else {
-      s.setSlotState(i, "idle", t("reader.session.slotState.waiting"));
-    }
-  }
-
-  // Trigger priority download for uncached start/nearby pages
-  const cur = s.currentIndex();
-  if (s.isSpread() && s.spreads().length > 0) {
-    const curSpread = spreadIndexOf(s.spreads(), cur);
-    const active = s.spreads()[curSpread];
-    if (active) {
-      for (const p of active.pageIndices) {
-        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
-      }
-    }
-    const nextSpread = s.spreads()[curSpread + 1];
-    if (nextSpread) {
-      for (const p of nextSpread.pageIndices) {
-        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
-      }
-    }
-    const spreadPlus2 = s.spreads()[curSpread + 2];
-    if (spreadPlus2) {
-      for (const p of spreadPlus2.pageIndices) {
-        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
-      }
-    }
-  } else {
-    if (s.getCachedPath(cur) === undefined) s.enqueue(cur, true);
-    for (let offset = 1; offset <= 4; offset++) {
-      const nextIdx = cur + offset;
-      if (nextIdx < pageCount && s.getCachedPath(nextIdx) === undefined) {
-        s.enqueue(nextIdx, true);
-      }
-    }
-  }
+  preloadInitialDimensions(s, pageCount);
+  initSlotStatesAndQueue(s, pageCount);
   if (startPage > 0) {
     s.setRestoring(true);
   }
