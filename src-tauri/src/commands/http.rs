@@ -163,8 +163,12 @@ pub async fn send_with_redirects(
 
 /// Reads a full response body with a hard byte cap, failing loudly on overflow.
 pub async fn read_body_capped(resp: reqwest::Response, cap: usize) -> Result<Vec<u8>, String> {
+    let initial_cap = resp
+        .content_length()
+        .map(|len| (len as usize).min(cap))
+        .unwrap_or(0);
     let mut stream = resp.bytes_stream();
-    let mut buf: Vec<u8> = Vec::new();
+    let mut buf: Vec<u8> = Vec::with_capacity(initial_cap);
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| format!("failed reading response body: {e}"))?;
         if buf.len() + chunk.len() > cap {

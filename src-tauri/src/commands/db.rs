@@ -210,20 +210,28 @@ fn bind_value_owned(v: Value) -> Result<rusqlite::types::Value, String> {
 }
 
 fn row_to_json(row: &rusqlite::Row<'_>) -> Result<Value, rusqlite::Error> {
-    let mut obj = Map::new();
     let row_ref = row.as_ref();
     let count = row_ref.column_count();
+    let mut obj = Map::with_capacity(count);
     for i in 0..count {
         let name = row_ref.column_name(i)?.to_string();
         let value = row.get_ref(i)?;
         let cell = match value {
             rusqlite::types::ValueRef::Null => Value::Null,
-            rusqlite::types::ValueRef::Integer(v) => json!(v),
-            rusqlite::types::ValueRef::Real(v) => json!(v),
-            rusqlite::types::ValueRef::Text(v) => json!(String::from_utf8_lossy(v).into_owned()),
+            rusqlite::types::ValueRef::Integer(v) => Value::Number(serde_json::Number::from(v)),
+            rusqlite::types::ValueRef::Real(v) => serde_json::Number::from_f64(v)
+                .map(Value::Number)
+                .unwrap_or(Value::Null),
+            rusqlite::types::ValueRef::Text(v) => {
+                let s = match std::str::from_utf8(v) {
+                    Ok(valid) => valid.to_string(),
+                    Err(_) => String::from_utf8_lossy(v).into_owned(),
+                };
+                Value::String(s)
+            }
             rusqlite::types::ValueRef::Blob(v) => match std::str::from_utf8(v) {
-                Ok(s) => json!(s),
-                Err(_) => json!(v),
+                Ok(s) => Value::String(s.to_string()),
+                Err(_) => Value::Array(v.iter().map(|&b| Value::Number(serde_json::Number::from(b))).collect()),
             },
         };
         obj.insert(name, cell);
