@@ -29,8 +29,7 @@ import { getDbStats, type DbStats } from "../db/db.manage";
 import type { CacheOverviewStats } from "../types/db";
 import { SeriesDownloadedCard } from "../browse/downloads/SeriesDownloadedCard";
 import { OrphanDownloadedCard } from "../browse/downloads/OrphanDownloadedCard";
-import { DownloadedLegend } from "../browse/downloads/DownloadedLegend";
-import { DownloadedToolbar } from "../browse/downloads/DownloadedToolbar";
+import { DownloadedToolbar, DownloadedLegend } from "../browse/downloads/DownloadedToolbar";
 import { buildGroups } from "../browse/downloads/buildGroups";
 import type {
   DownloadedSortMode,

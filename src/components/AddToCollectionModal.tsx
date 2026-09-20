@@ -6,10 +6,9 @@
  */
 
 import { createEffect, createSignal, For, Show } from "solid-js";
-import { Portal } from "solid-js/web";
-import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/formatting";
+import { AnchoredPopover } from "./AnchoredPopover";
 import { FolderIcon,
   CloseIcon,
   StarIcon,
@@ -20,9 +19,7 @@ import { Button, IconText } from "./Button";
 import { InputField } from "./InputField";
 import { getCollections, createCollection, getItemCollectionIds, toggleItemInCollection } from "../db/collections.repo";
 import type { CollectionItemKind } from "../types/db";
-import { isMobile } from "../stores/platform";
 import { showBanner } from "../stores/topbar";
-import { uiScale } from "../stores/ui-scale";
 import { log } from "../utils/log";
 
 export interface AddToCollectionItem {
@@ -55,80 +52,11 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
   const [loadError, setLoadError] = createSignal(false);
   const [newName, setNewName] = createSignal("");
   const [creating, setCreating] = createSignal(false);
-  const [positionStyle, setPositionStyle] = createSignal(
-    "top:20%;left:50%;transform:translateX(-50%);",
-  );
-  let dropdownRef: HTMLDivElement | undefined;
-  createEffect(() => {
-    if (!props.open) return;
-    const openedAt = Date.now();
-
-    const onKeyDown = (ev: KeyboardEvent): void => {
-      if (ev.key === "Escape") {
-        ev.preventDefault();
-        props.onClose();
-      }
-    };
-
-    const onScroll = (ev: Event): void => {
-      if (Date.now() - openedAt < 250) return;
-      if (dropdownRef && document.activeElement && dropdownRef.contains(document.activeElement)) {
-        return;
-      }
-      const target = ev.target as Node | null;
-      if (target && dropdownRef && dropdownRef.contains(target)) {
-        return;
-      }
-      props.onClose();
-    };
-
-    makeEventListener(window, "keydown", onKeyDown);
-    makeEventListener(window, "scroll", onScroll, { capture: true, passive: true });
-  });
-
   createEffect(() => {
     if (props.open) {
       setLoading(true);
       void loadRows();
     }
-  });
-
-  createEffect(() => {
-    if (!props.open) return;
-    const scale = uiScale() || 1;
-    const baseStyle = "width:290px;max-width:94vw;";
-
-    const anchor = props.anchorEl;
-    if (!anchor || isMobile()) {
-      setPositionStyle(`${baseStyle}top:15%;left:50%;transform:translateX(-50%);`);
-      return;
-    }
-
-    const rect = anchor.getBoundingClientRect();
-    const width = 290;
-    const estHeight = 260;
-    const screenBottom = rect.bottom / scale;
-    const screenTop = rect.top / scale;
-    const screenLeft = rect.left / scale;
-    const screenRight = rect.right / scale;
-    const vpWidth = window.innerWidth / scale;
-    const vpHeight = window.innerHeight / scale;
-
-    let left = screenLeft;
-    if (left + width > vpWidth - 8) {
-      left = Math.max(8, screenRight - width);
-    }
-
-    let vertical = "";
-    if (screenBottom + estHeight > vpHeight - 8 && screenTop > 100) {
-      vertical = `bottom:${Math.max(4, Math.round(vpHeight - screenTop + 4))}px;`;
-    } else {
-      vertical = `top:${Math.max(4, Math.round(screenBottom + 4))}px;`;
-    }
-
-    setPositionStyle(
-      `${baseStyle}${vertical}left:${Math.max(4, Math.round(left))}px;`,
-    );
   });
 
   const loadRows = async (): Promise<void> => {
@@ -199,87 +127,83 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
   };
 
   return (
-    <Show when={props.open}>
-      <Portal mount={document.body}>
-        <div
-          id="ds-add-to-collection-overlay"
-          class="ds-overlay"
-          onClick={(ev) => {
-            if (ev.target === ev.currentTarget) props.onClose();
-          }}
-        >
-          <div ref={dropdownRef} class="ds-popup-card ds-add-to-collection-dropdown" style={positionStyle()}>
-            <div class="ds-dropdown-header">
-              <IconText icon={<FolderIcon color="var(--sys-link,#0078d4)" />}>
-                {t("dialogs.addToCollection.title")}
-              </IconText>
-              <Button className="ds-btn-icon" icon={<CloseIcon />} title={t("common.close")} onClick={props.onClose} />
-            </div>
-            <div class="ds-add-col-header">
-              <div class="ds-truncate ds-add-col-title" title={props.item.title}>
-                {props.item.title}
-              </div>
-            </div>
-            <div id="ds-add-to-col-list" class="ds-add-col-list">
-              <Show when={loading()} fallback={null}>
-                <span class="ds-muted ds-add-col-status">{t("dialogs.addToCollection.loading")}</span>
-              </Show>
-              <Show when={loadError()}>
-                <span class="ds-muted ds-add-col-status--error">{t("dialogs.addToCollection.loadError")}</span>
-              </Show>
-              <For each={rows()}>
-                {(col) => (
-                  <div
-                    class={`ds-item ds-add-col-row${col.active ? " active" : ""}`}
-                    role="checkbox"
-                    tabIndex={0}
-                    aria-checked={col.active}
-                    onClick={() => void toggle(col)}
-                    onKeyDown={(ev) => {
-                      if (ev.key === "Enter" || ev.key === " ") {
-                        ev.preventDefault();
-                        void toggle(col);
-                      }
-                    }}
-                  >
-                    <div class="ds-add-col-row-main">
-                      <Icon
-                        name={col.active ? "check-circle-fill" : "circle"}
-                        class={col.active ? "ds-add-col-icon--active" : "ds-add-col-icon--inactive"}
-                      />
-                      <span class={`ds-truncate ds-text-11${col.is_default ? " ds-font-600" : ""}`}>
-                        <Show when={col.is_default}>
-                          <StarIcon filled={true} class="ds-add-col-star" />
-                        </Show>
-                        {col.name}
-                      </span>
-                    </div>
-                    <span class="ds-muted ds-text-10">{col.itemCount ?? 0}</span>
-                  </div>
-                )}
-              </For>
-            </div>
-            <div class="ds-add-col-footer">
-              <InputField
-                id="ds-add-to-col-new-input"
-                placeholder={t("dialogs.addToCollection.createPrompt")}
-                wrapperClass="ds-flex-1"
-                value={newName()}
-                onInput={(val) => setNewName(val)}
-                onEnter={() => void handleCreate()}
-              />
-              <Button
-                className="ds-btn-sm"
-                id="ds-add-to-col-create-btn"
-                disabled={creating()}
-                icon={<AddIcon class="ds-add-col-create-icon" />}
-                text={t("common.create")}
-                onClick={() => void handleCreate()}
-              />
-            </div>
-          </div>
+    <AnchoredPopover
+      open={props.open}
+      anchorEl={props.anchorEl}
+      onClose={props.onClose}
+      width={290}
+      maxWidth="94vw"
+      overlayId="ds-add-to-collection-overlay"
+      popoverClass="ds-popup-card ds-add-to-collection-dropdown"
+    >
+      <div class="ds-dropdown-header">
+        <IconText icon={<FolderIcon color="var(--sys-link,#0078d4)" />}>
+          {t("dialogs.addToCollection.title")}
+        </IconText>
+        <Button className="ds-btn-icon" icon={<CloseIcon />} title={t("common.close")} onClick={props.onClose} />
+      </div>
+      <div class="ds-add-col-header">
+        <div class="ds-truncate ds-add-col-title" title={props.item.title}>
+          {props.item.title}
         </div>
-      </Portal>
-    </Show>
+      </div>
+      <div id="ds-add-to-col-list" class="ds-add-col-list">
+        <Show when={loading()} fallback={null}>
+          <span class="ds-muted ds-add-col-status">{t("dialogs.addToCollection.loading")}</span>
+        </Show>
+        <Show when={loadError()}>
+          <span class="ds-muted ds-add-col-status--error">{t("dialogs.addToCollection.loadError")}</span>
+        </Show>
+        <For each={rows()}>
+          {(col) => (
+            <div
+              class={`ds-item ds-add-col-row${col.active ? " active" : ""}`}
+              role="checkbox"
+              tabIndex={0}
+              aria-checked={col.active}
+              onClick={() => void toggle(col)}
+              onKeyDown={(ev) => {
+                if (ev.key === "Enter" || ev.key === " ") {
+                  ev.preventDefault();
+                  void toggle(col);
+                }
+              }}
+            >
+              <div class="ds-add-col-row-main">
+                <Icon
+                  name={col.active ? "check-circle-fill" : "circle"}
+                  class={col.active ? "ds-add-col-icon--active" : "ds-add-col-icon--inactive"}
+                />
+                <span class={`ds-truncate ds-text-11${col.is_default ? " ds-font-600" : ""}`}>
+                  <Show when={col.is_default}>
+                    <StarIcon filled={true} class="ds-add-col-star" />
+                  </Show>
+                  {col.name}
+                </span>
+              </div>
+              <span class="ds-muted ds-text-10">{col.itemCount ?? 0}</span>
+            </div>
+          )}
+        </For>
+      </div>
+      <div class="ds-add-col-footer">
+        <InputField
+          id="ds-add-to-col-new-input"
+          placeholder={t("dialogs.addToCollection.createPrompt")}
+          wrapperClass="ds-flex-1"
+          value={newName()}
+          onInput={(val) => setNewName(val)}
+          onEnter={() => void handleCreate()}
+        />
+        <Button
+          className="ds-btn-sm"
+          id="ds-add-to-col-create-btn"
+          disabled={creating()}
+          icon={<AddIcon class="ds-add-col-create-icon" />}
+          text={t("common.create")}
+          onClick={() => void handleCreate()}
+        />
+      </div>
+    </AnchoredPopover>
   );
 }

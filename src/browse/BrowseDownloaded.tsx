@@ -26,8 +26,7 @@ import { Pager } from "../components/Pager";
 import { Loading, EmptyState } from "../components/Feedback";
 import { SeriesDownloadedCard } from "./downloads/SeriesDownloadedCard";
 import { OrphanDownloadedCard } from "./downloads/OrphanDownloadedCard";
-import { DownloadedLegend } from "./downloads/DownloadedLegend";
-import { DownloadedToolbar } from "./downloads/DownloadedToolbar";
+import { DownloadedToolbar, DownloadedLegend } from "./downloads/DownloadedToolbar";
 import { buildGroups } from "./downloads/buildGroups";
 import type {
   DownloadedSortMode,

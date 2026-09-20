@@ -36,11 +36,8 @@ import { useDelayedSpinner } from "../browse/browse-state";
 import { Loading, ErrorRetryRow } from "../components/Feedback";
 import { useAddToCollection } from "../hooks/useAddToCollection";
 import { BlacklistIcon } from "../components/Icon";
-import { SeriesHeader } from "./SeriesHeader";
+import { SeriesHeader, SeriesTaggables, SeriesActions, SeriesResumeBanner, chronologicalChapters } from "./SeriesComponents";
 import { SeriesChapterList, type ChapterMeta } from "./SeriesChapterList";
-import { SeriesTaggables } from "./SeriesTaggables";
-import { SeriesActions } from "./SeriesActions";
-import { SeriesResumeBanner, chronologicalChapters } from "./SeriesResumeBanner";
 
 /** Thrown when the permalink turned out to be a standalone chapter (redirected). */
 class SeriesRedirected extends Error {}
