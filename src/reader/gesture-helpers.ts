@@ -325,7 +325,7 @@ export function resolveTapZone(
   s: ReaderSession,
   zone: "left" | "center" | "right",
 ): void {
-  if (zone === "center") {
+  if (zone === "center" || !s.isHorizontal()) {
     s.toggleToolbarVisible();
     return;
   }
