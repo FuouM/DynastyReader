@@ -1,7 +1,10 @@
 // Web Mock Bridge for Tauri v2 IPC
-if (typeof window !== "undefined" && !window.__TAURI_MOCK_INITIALIZED__ && (!window.__TAURI_INTERNALS__ || window.__TAURI_IS_MOCK__)) {
+(() => {
+  if (typeof window === "undefined") return;
+  if (window.__TAURI_MOCK_INITIALIZED__ && window.__TAURI_INTERNALS__) return;
   window.__TAURI_MOCK_INITIALIZED__ = true;
   window.__TAURI_IS_MOCK__ = true;
+  console.log("[MockBridge] Initialized successfully");
 
   const listeners = new Map();
   let nextListenerId = 1;
@@ -118,7 +121,7 @@ if (typeof window !== "undefined" && !window.__TAURI_MOCK_INITIALIZED__ && (!win
 
       // Updates
       if (cmd === "checkForUpdates") {
-        return null;
+        return { has_update: false, current_version: "0.5.0", latest_version: "0.5.0" };
       }
 
       console.warn("[MockBridge] Unhandled invoke cmd:", cmd, args);
@@ -134,4 +137,4 @@ if (typeof window !== "undefined" && !window.__TAURI_MOCK_INITIALIZED__ && (!win
     },
     convertFileSrc: (filePath) => filePath || "",
   };
-}
+})();
