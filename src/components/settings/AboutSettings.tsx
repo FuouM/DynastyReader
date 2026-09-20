@@ -13,7 +13,7 @@ import {
   updateProgress,
   isUpdating,
   updateStatusText,
-} from "../UpdateDialog";
+} from "../../stores/updater";
 import { GroupBox } from "../GroupBox";
 import { IconText, IconButton, ExternalLinkButton } from "../Button";
 import { RefreshIcon, CloudDownloadIcon, Icon } from "../Icon";

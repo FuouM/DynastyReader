@@ -10,7 +10,7 @@ import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";
 import { DsSelect, IconText, IconButton, SegmentedSwitch, Button } from "../Button";
 import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
 import { GroupBox } from "../GroupBox";
-import { SCALE_PRESETS } from "./types";
+import { SCALE_PRESETS } from "./settings-shared";
 export function DisplaySettings() {
   const [scale, setScale] = createSignal(uiScale());
   const [coversEnabled, setCoversEnabledLocal] = createSignal(browseCovers.coversEnabled);

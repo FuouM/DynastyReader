@@ -43,7 +43,7 @@ export async function checkUpdates(manual = false): Promise<UpdateInfo | null> {
     }
     return info;
   } catch (err) {
-    log.error("update-dialog", "update check failed:", err);
+    log.error("updater", "update check failed:", err);
     setUpdateError(errorMessage(err));
     return null;
   } finally {
@@ -68,7 +68,7 @@ export async function installUpdate(): Promise<void> {
         }
       });
     } catch (err) {
-      log.error("update-dialog", "Failed to setup update-progress listener:", err);
+      log.error("updater", "Failed to setup update-progress listener:", err);
     }
   }
 
@@ -79,6 +79,6 @@ export async function installUpdate(): Promise<void> {
     const msg = errorMessage(err);
     setUpdateError(t("settings.about.installError", { msg }));
     setUpdateStatusText(t("settings.about.updateFailedNotice"));
-    log.error("update-dialog", "Failed to install update:", err);
+    log.error("updater", "Failed to install update:", err);
   }
 }

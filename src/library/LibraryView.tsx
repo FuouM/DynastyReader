@@ -38,10 +38,7 @@ import {
   TrashIcon,
   Icon,
 } from "../components/Icon";
-import { FollowedPane } from "./panes/FollowedPane";
-import { CollectionsPane } from "./panes/CollectionsPane";
-import { BookmarksPane } from "./panes/BookmarksPane";
-import { HistoryPane } from "./panes/HistoryPane";
+import { FollowedPane, CollectionsPane, BookmarksPane, HistoryPane } from "./LibraryPanes";
 import type { LibraryPaneApi } from "./useLibraryPaneResource";
 import { LocalPane } from "./LocalPane";
 import { CollectionDetailView } from "./CollectionDetailView";
