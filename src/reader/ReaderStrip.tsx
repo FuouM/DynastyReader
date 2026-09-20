@@ -7,14 +7,15 @@
 import { createMemo, For, onCleanup, Show } from "solid-js";
 import type { SpreadGroup } from "../types/reader";
 import type { ReaderSession } from "./reader-session";
+import { useReader } from "./reader-context";
 import { ReaderSlot } from "./ReaderSlot";
 import { ReaderEndOfChapterCard } from "./ReaderEndOfChapterCard";
 export interface ReaderStripProps {
-  session: ReaderSession;
+  session?: ReaderSession;
 }
 
 export function ReaderStrip(props: ReaderStripProps) {
-  const s = props.session;
+  const s = useReader(props.session);
 
   return (
     <div

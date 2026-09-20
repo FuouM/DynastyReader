@@ -8,14 +8,118 @@ import type { ChapterRef } from "../types/routes";
 import type { ReaderSession } from "./reader-session";
 import { isMobile } from "../stores/platform";
 import { triggerHaptic } from "../utils/haptics";
-import {
-  OVERSCROLL_ENGAGE_THRESHOLD_PX,
-  OVERSCROLL_MAX_PULL_PX,
-  getOverscrollTarget,
-  isOverscrollReady,
-} from "./overscroll-math";
+export const OVERSCROLL_ENGAGE_THRESHOLD_PX = 35;
+export const OVERSCROLL_MAX_PULL_PX = 70;
+export const SWIPE_MIN_DIST_TOUCH_PX = 35;
+export const SWIPE_MIN_DIST_MOUSE_PX = 45;
+
+export const OVERSCROLL_COLLISION_RADIUS_PX = 48;
+export const OVERSCROLL_CARD_AVOID_H_PX = 96;
+export const OVERSCROLL_CARD_AVOID_W_PX = 185;
+
+export function getOverscrollCardAvoidW(winW: number): number {
+  const cardW = Math.min(260, Math.max(160, winW - 48));
+  return Math.round(cardW / 2 + 32 + 16);
+}
+
+export const getOverscrollTarget = (
+  startX: number,
+  startY: number,
+  direction: "prev" | "next",
+  isHorizontal: boolean,
+  isRtl = false,
+): { targetX: number; targetY: number } => {
+  const winW = typeof window !== "undefined" ? window.innerWidth : 400;
+  const winH = typeof window !== "undefined" ? window.innerHeight : 600;
+  const cx = winW / 2;
+  const cy = winH / 2;
+  const cardAvoidW = getOverscrollCardAvoidW(winW);
+  const EDGE_MARGIN_X = Math.max(56, Math.min(100, winW * 0.08));
+  const EDGE_MARGIN_Y = Math.max(56, Math.min(100, winH * 0.08));
+
+  if (isHorizontal) {
+    const isPullingLeft = isRtl ? direction === "prev" : direction === "next";
+    const engagedX = isPullingLeft
+      ? startX - OVERSCROLL_ENGAGE_THRESHOLD_PX
+      : startX + OVERSCROLL_ENGAGE_THRESHOLD_PX;
+    const engagedY = startY;
+    const isStartingOnDestSide = isPullingLeft ? engagedX < cx + 40 : engagedX > cx - 40;
+
+    let targetX = isPullingLeft ? EDGE_MARGIN_X : winW - EDGE_MARGIN_X;
+    let targetY: number;
+
+    if (!isStartingOnDestSide) {
+      targetY = engagedY;
+      if (Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
+        targetY = engagedY < cy
+          ? cy - OVERSCROLL_CARD_AVOID_H_PX - 20
+          : cy + OVERSCROLL_CARD_AVOID_H_PX + 20;
+      }
+    } else {
+      if (engagedY < cy) {
+        targetY = Math.min(winH - EDGE_MARGIN_Y, Math.max(cy + OVERSCROLL_CARD_AVOID_H_PX + 20, winH * 0.74));
+      } else {
+        targetY = Math.max(EDGE_MARGIN_Y, Math.min(cy - OVERSCROLL_CARD_AVOID_H_PX - 20, winH * 0.26));
+      }
+    }
+
+    if (Math.abs(targetX - cx) < cardAvoidW && Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
+      if (Math.abs(targetY - cy) < Math.abs(targetX - cx)) {
+        targetY = targetY < cy ? cy - OVERSCROLL_CARD_AVOID_H_PX - 20 : cy + OVERSCROLL_CARD_AVOID_H_PX + 20;
+      } else {
+        targetX = targetX < cx ? cx - cardAvoidW - 20 : cx + cardAvoidW + 20;
+      }
+    }
+
+    const clampedX = Math.max(48, Math.min(winW - 48, targetX));
+    const clampedY = Math.max(48, Math.min(winH - 48, targetY));
+    return { targetX: clampedX, targetY: clampedY };
+  } else {
+    const isPullingUp = direction === "next";
+    const engagedX = startX;
+    const engagedY = isPullingUp
+      ? startY - OVERSCROLL_ENGAGE_THRESHOLD_PX
+      : startY + OVERSCROLL_ENGAGE_THRESHOLD_PX;
+
+    const isStartingOnDestSide = isPullingUp ? engagedY < cy + 40 : engagedY > cy - 40;
+
+    let targetY = isPullingUp ? EDGE_MARGIN_Y : winH - EDGE_MARGIN_Y;
+    let targetX: number;
+
+    if (!isStartingOnDestSide) {
+      targetX = engagedX;
+      if (Math.abs(targetX - cx) < cardAvoidW) {
+        targetX = engagedX < cx
+          ? cx - cardAvoidW - 20
+          : cx + cardAvoidW + 20;
+      }
+    } else {
+      if (engagedX < cx) {
+        targetX = Math.min(winW - EDGE_MARGIN_X, Math.max(cx + cardAvoidW + 20, winW * 0.76));
+      } else {
+        targetX = Math.max(EDGE_MARGIN_X, Math.min(cx - cardAvoidW - 20, winW * 0.24));
+      }
+    }
+
+    if (Math.abs(targetX - cx) < cardAvoidW && Math.abs(targetY - cy) < OVERSCROLL_CARD_AVOID_H_PX) {
+      if (Math.abs(targetX - cx) < Math.abs(targetY - cy)) {
+        targetX = targetX < cx ? cx - cardAvoidW - 20 : cx + cardAvoidW + 20;
+      } else {
+        targetY = targetY < cy ? cy - OVERSCROLL_CARD_AVOID_H_PX - 20 : cy + OVERSCROLL_CARD_AVOID_H_PX + 20;
+      }
+    }
+
+    const clampedX = Math.max(48, Math.min(winW - 48, targetX));
+    const clampedY = Math.max(48, Math.min(winH - 48, targetY));
+    return { targetX: clampedX, targetY: clampedY };
+  }
+};
+
+export const isOverscrollReady = (fingerX: number, fingerY: number, targetX: number, targetY: number): boolean => {
+  return Math.hypot(fingerX - targetX, fingerY - targetY) <= OVERSCROLL_COLLISION_RADIUS_PX;
+};
 import { stripTranslateXWithPull } from "./reader-transform";
-import type { OverscrollGestureState } from "./ReaderOverscrollOverlay";
+import type { OverscrollGestureState } from "./ReaderOverlays";
 
 export const DAMPING_EXPONENT = 0.72;
 export const DIRECTION_ANGLE_RATIO = 1.1;

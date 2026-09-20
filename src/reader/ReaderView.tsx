@@ -5,11 +5,11 @@
 import { onCleanup, onMount, Show } from "solid-js";
 import type { Route } from "../types/routes";
 import { createReaderSession } from "./reader-session";
+import { ReaderProvider } from "./reader-context";
 import { ReaderToolbar, ReaderBottomNav } from "./ReaderToolbar";
 import { ReaderViewport } from "./ReaderViewport";
 import { ReaderStrip } from "./ReaderStrip";
-import { ReaderShortcuts } from "./ReaderShortcuts";
-import { ReaderWheel } from "./ReaderWheel";
+import { useReaderShortcuts, useReaderWheel } from "./reader-inputs";
 import { Loading } from "../components/Feedback";
 import { IconButton } from "../components/Button";
 import { RefreshIcon } from "../components/Icon";
@@ -28,12 +28,16 @@ export function ReaderView(props: { route: Route }) {
 function ReaderViewInner(props: { permalink: string; route: Route }) {
   const session = createReaderSession(props.route);
 
+  useReaderShortcuts(session);
+  useReaderWheel(session);
+
   onMount(() => {
     void session.init();
   });
   onCleanup(() => session.dispose());
   return (
-    <div class="ds-reader-view">
+    <ReaderProvider session={session}>
+      <div class="ds-reader-view">
       <Show when={session.loading()}>
         <Loading />
       </Show>
@@ -77,9 +81,8 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
           </ReaderViewport>
           <ReaderBottomNav session={session} />
         </div>
-        <ReaderShortcuts session={session} />
-        <ReaderWheel session={session} />
       </Show>
-    </div>
+      </div>
+    </ReaderProvider>
   );
 }

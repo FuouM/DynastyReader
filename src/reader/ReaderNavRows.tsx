@@ -36,8 +36,7 @@ import {
   SlidersIcon,
 } from "../components/Icon";
 import { ReaderProgressWrap } from "./ReaderProgressWrap";
-import { ReaderFilterPopover } from "./ReaderFilterPopover";
-import { isReaderFilterDefault } from "./ReaderFilterControls";
+import { ReaderFilterPopover, isReaderFilterDefault } from "./ReaderFilterControls";
 import { triggerHaptic } from "../utils/haptics";
 export interface NavRowProps {
   session: ReaderSession;

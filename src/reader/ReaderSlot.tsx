@@ -6,6 +6,7 @@
 
 import { createSignal, onCleanup, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
+import { useReader } from "./reader-context";
 import type { SlotStateKind } from "./reader-queue";
 import { convertFileSrc } from "../ipc";
 import { DsButton } from "../components/Button";
@@ -14,7 +15,7 @@ import { t } from "../i18n";
 import { WIDE_RATIO } from "./reader-spread";
 import { log } from "../utils/log";
 export interface ReaderSlotProps {
-  session: ReaderSession;
+  session?: ReaderSession;
   index: number;
   style?: string | JSX.CSSProperties;
 }
@@ -24,7 +25,7 @@ export interface ReaderSlotProps {
  * queue/tooling has set a slot state it shows that state; otherwise it idles.
  */
 export function ReaderSlot(props: ReaderSlotProps) {
-  const s = props.session;
+  const s = useReader(props.session);
   const cachedPath = (): string | undefined => s.cachedPages[0][props.index];
   let elRef: HTMLElement | undefined;
 

@@ -8,6 +8,7 @@
 import { createEffect, Show, on } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
+import { useReader } from "./reader-context";
 import { isMobile } from "../stores/platform";
 import { closeSessionMangaTab } from "../stores/router";
 import { showBanner } from "../stores/topbar";
@@ -26,8 +27,8 @@ import {
 } from "../components/Icon";
 
 
-export function ReaderToolbar(props: { session: ReaderSession }) {
-  const s = props.session;
+export function ReaderToolbar(props: { session?: ReaderSession }) {
+  const s = useReader(props.session);
   const navPos = getReaderNavPosition;
   createEffect(() => {
     const z = s.zoomScale();
@@ -156,8 +157,8 @@ export function ReaderToolbar(props: { session: ReaderSession }) {
   );
 }
 
-export function ReaderBottomNav(props: { session: ReaderSession }) {
-  const s = props.session;
+export function ReaderBottomNav(props: { session?: ReaderSession }) {
+  const s = useReader(props.session);
   const navPos = getReaderNavPosition;
   return (
     <Show when={isMobile() || navPos() === "bottom"}>

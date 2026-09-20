@@ -9,15 +9,18 @@
 
 import { createEffect, onCleanup, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
+import { useReader } from "./reader-context";
 import { convertFileSrc } from "../ipc";
 import { spreadIndexOf } from "./reader-spread";
 import { getPrefetchBuffer, isAutoCacheChapterEnabled } from "./settings";
 import { useReaderGestures } from "./useReaderGestures";
-import { ReaderOverscrollOverlay } from "./ReaderOverscrollOverlay";
-import { ReaderTapZoneGuide } from "./ReaderTapZoneGuide";
-import { ReaderDirectionHint } from "./ReaderDirectionHint";
-export function ReaderViewport(props: { session: ReaderSession; children?: JSX.Element }) {
-  const s = props.session;
+import {
+  ReaderOverscrollOverlay,
+  ReaderTapZoneGuide,
+  ReaderDirectionHint,
+} from "./ReaderOverlays";
+export function ReaderViewport(props: { session?: ReaderSession; children?: JSX.Element }) {
+  const s = useReader(props.session);
   const { tapZoneGuide, overscrollGesture, directionHintTick } = useReaderGestures(s);
 
   // Pre-fetch pages as they near the viewport boundary across strip changes
