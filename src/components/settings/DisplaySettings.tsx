@@ -5,6 +5,7 @@ import { accentColor, setAccentColor, ACCENT_COLOR_PRESETS, getContrastText } fr
 import { uiScale, setUiScale } from "../../stores/ui-scale";
 import { uiMode, setUiMode, type UiMode } from "../../stores/platform";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
+import { activeProvider, PROVIDERS } from "../../stores/provider";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";
 import { DsSelect, IconText, IconButton, SegmentedSwitch, Button } from "../Button";
@@ -48,6 +49,19 @@ export function DisplaySettings() {
   return (
     <GroupBox id="ds-settings-sec-display" title={<IconText icon={<Icon name="aspect-ratio" />}>{t("settings.display.title")}</IconText>}>
       <div class="ds-col">
+        {/* Content Source */}
+        <SettingsRow
+          label="Content Source"
+          desc={`Currently using ${PROVIDERS[activeProvider()].name} (${PROVIDERS[activeProvider()].badge})`}
+        >
+          <button
+            type="button"
+            class="win-button"
+            onClick={() => window.dispatchEvent(new CustomEvent("ds-open-source-switcher"))}
+          >
+            Switch Source...
+          </button>
+        </SettingsRow>
         {/* Scale Factor */}
         <SettingsRow
           label={t("settings.display.uiScale")}

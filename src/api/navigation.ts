@@ -108,9 +108,11 @@ export function pageOutputPath(
   pageIndex: number,
   pageUrl: string,
 ): string {
-  const cleanSeries = (seriesPermalink || "_singles").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const cleanChapter = (chapterPermalink || "chapter").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const ext = pageUrl.split(".").pop()?.split("?")[0] || "webp";
+  const isMdx = chapterPermalink.startsWith("mdx:");
+  const prefix = isMdx ? "mangadex/pages" : PAGES_PREFIX;
+  const cleanSeries = (seriesPermalink.replace(/^mdx:/, "") || "_singles").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const cleanChapter = (chapterPermalink.replace(/^mdx:/, "") || "chapter").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const ext = pageUrl.split(".").pop()?.split("?")[0] || (isMdx ? "jpg" : "webp");
   const pad = String(pageIndex + 1).padStart(4, "0");
-  return `${PAGES_PREFIX}/${cleanSeries}/${cleanChapter}/page_${pad}.${ext}`;
+  return `${prefix}/${cleanSeries}/${cleanChapter}/page_${pad}.${ext}`;
 }

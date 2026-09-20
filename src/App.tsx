@@ -32,15 +32,30 @@ import { t } from "./i18n";
 import type { ViewName, Route } from "./types/routes";
 import { isHideStatusBarEnabled } from "./reader/settings";
 import { syncReaderStatusBar } from "./utils/status-bar";
+import { activeProvider } from "./stores/provider";
 
+const MangaDexBrowse = lazy(() =>
+  import("./providers/mangadex/views/MangaDexBrowse").then((m) => ({ default: m.MangaDexBrowse })),
+);
+const MangaDexSeries = lazy(() =>
+  import("./providers/mangadex/views/MangaDexSeries").then((m) => ({ default: m.MangaDexSeries })),
+);
+const MangaDexLibrary = lazy(() =>
+  import("./providers/mangadex/views/MangaDexLibrary").then((m) => ({ default: m.MangaDexLibrary })),
+);
 const SeriesView = lazy(() => import("./series/SeriesView").then((m) => ({ default: m.SeriesView })));
 const ReaderView = lazy(() => import("./reader/ReaderView").then((m) => ({ default: m.ReaderView })));
 const CacheView = lazy(() => import("./cache/CacheView").then((m) => ({ default: m.CacheView })));
 const BlacklistView = lazy(() => import("./blacklist/BlacklistView").then((m) => ({ default: m.BlacklistView })));
 export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
-  browse: () => <BrowseView />,
-  library: () => <LibraryView />,
-  series: () => <SeriesView />,
+  browse: () => (activeProvider() === "mangadex" ? <MangaDexBrowse /> : <BrowseView />),
+  library: () => (activeProvider() === "mangadex" ? <MangaDexLibrary /> : <LibraryView />),
+  series: (p) =>
+    p.route.seriesPermalink?.startsWith("mdx:") || activeProvider() === "mangadex" ? (
+      <MangaDexSeries />
+    ) : (
+      <SeriesView />
+    ),
   reader: (p) => <ReaderView route={p.route} />,
   cache: () => <CacheView />,
   blacklist: () => <BlacklistView />,

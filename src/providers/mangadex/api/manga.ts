@@ -1,0 +1,104 @@
+/**
+ * MangaDex Manga API Endpoints
+ * Implements search, details, feed, aggregate, and tags.
+ */
+
+import { fetchMangaDex } from "./client";
+import type {
+  MangaDexAggregateResponse,
+  MangaDexChapter,
+  MangaDexManga,
+  MangaDexResponse,
+  MangaDexSearchFilters,
+  MangaDexTag,
+} from "../types";
+
+/**
+ * Searches manga with filters (tags, content rating, status, sorting, pagination).
+ * Automatically includes cover_art and author entities.
+ */
+export async function searchManga(
+  filters: MangaDexSearchFilters = {},
+): Promise<MangaDexResponse<MangaDexManga[]>> {
+  const params: Record<string, unknown> = {
+    title: filters.title,
+    includedTags: filters.includedTags,
+    excludedTags: filters.excludedTags,
+    contentRating: filters.contentRatings ?? ["safe", "suggestive", "erotica", "pornographic"],
+    status: filters.status,
+    originalLanguage: filters.originalLanguage,
+    availableTranslatedLanguage: filters.translatedLanguage,
+    order: filters.order ?? { latestUploadedChapter: "desc" },
+    limit: filters.limit ?? 24,
+    offset: filters.offset ?? 0,
+    includes: ["cover_art", "author"],
+  };
+
+  return fetchMangaDex<MangaDexResponse<MangaDexManga[]>>("/manga", params);
+}
+
+/**
+ * Fetches a single manga by UUID with cover_art and author relationships.
+ */
+export async function getManga(id: string): Promise<MangaDexManga> {
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexManga>>(`/manga/${id}`, {
+    includes: ["cover_art", "author"],
+  });
+  return resp.data;
+}
+
+export interface GetMangaFeedOptions {
+  translatedLanguage?: string[];
+  limit?: number;
+  offset?: number;
+  order?: {
+    chapter?: "asc" | "desc";
+    volume?: "asc" | "desc";
+  };
+}
+
+/**
+ * Fetches paginated chapter feed for a manga with scanlation_group relationships.
+ */
+export async function getMangaFeed(
+  id: string,
+  options: GetMangaFeedOptions = {},
+): Promise<MangaDexResponse<MangaDexChapter[]>> {
+  const params: Record<string, unknown> = {
+    translatedLanguage: options.translatedLanguage ?? ["en"],
+    limit: options.limit ?? 100,
+    offset: options.offset ?? 0,
+    order: options.order ?? { chapter: "asc" },
+    includes: ["scanlation_group"],
+  };
+
+  return fetchMangaDex<MangaDexResponse<MangaDexChapter[]>>(`/manga/${id}/feed`, params);
+}
+
+/**
+ * Fetches the volume/chapter aggregate tree for a manga.
+ * Extremely efficient for getting the complete chapter index and duplicate translation counts.
+ */
+export async function getMangaAggregate(
+  id: string,
+  translatedLanguage: string[] = ["en"],
+): Promise<MangaDexAggregateResponse> {
+  return fetchMangaDex<MangaDexAggregateResponse>(`/manga/${id}/aggregate`, {
+    translatedLanguage,
+  });
+}
+
+/** Cache tag taxonomy in memory to avoid repeated network calls */
+let cachedTags: MangaDexTag[] | null = null;
+
+/**
+ * Fetches all MangaDex tags (genres, themes, formats, content).
+ */
+export async function getTags(forceRefresh = false): Promise<MangaDexTag[]> {
+  if (cachedTags && !forceRefresh) {
+    return cachedTags;
+  }
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexTag[]>>("/manga/tag");
+  cachedTags = resp.data;
+  return resp.data;
+}

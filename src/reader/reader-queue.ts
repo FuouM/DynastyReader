@@ -3,6 +3,7 @@ import { fileResolveWithStat } from "../ipc";
 import { httpDownloadFull } from "../api/http";
 import { pageOutputPath } from "../api/navigation";
 import { setCachedPage } from "../db/cache.repo";
+import { setMdxCachedPage, reportAtHome, refreshMangaDexNode } from "../providers/mangadex/reader";
 import type { ChapterPage } from "../types/api";
 import { t } from "../i18n";
 
@@ -108,6 +109,10 @@ export class ReaderQueue {
     const page = pages[index];
     if (!page) return;
     const outPath = pageOutputPath(c.seriesPermalink() ?? "", c.permalink, index, page.url);
+    const isMdx = c.permalink.startsWith("mdx:");
+    const chapterId = isMdx ? c.permalink.replace(/^mdx:/, "") : "";
+    const startTime = Date.now();
+
     try {
       // If the file already exists at the canonical path, skip the network entirely
       const existing = await fileResolveWithStat(outPath);
@@ -120,13 +125,59 @@ export class ReaderQueue {
         const res = await httpDownloadFull(absUrl(page.url), outPath);
         absPath = res.absolutePath;
         sizeBytes = res.sizeBytes;
+
+        if (isMdx) {
+          reportAtHome({
+            url: page.url,
+            success: true,
+            bytes: sizeBytes,
+            duration: Date.now() - startTime,
+            cached: false,
+          });
+        }
       }
-      await setCachedPage(c.permalink, index, absPath, sizeBytes);
+
+      if (isMdx) {
+        await setMdxCachedPage(chapterId, index, absPath, sizeBytes);
+      } else {
+        await setCachedPage(c.permalink, index, absPath, sizeBytes);
+      }
+
       // Symmetric with the catch path: never write into a disposed session.
       if (c.disposed) return;
       c.setCachedPath(index, absPath);
     } catch (err) {
       if (c.disposed) return;
+
+      if (isMdx) {
+        reportAtHome({
+          url: page.url,
+          success: false,
+          bytes: 0,
+          duration: Date.now() - startTime,
+          cached: false,
+        });
+
+        // Failover: re-query @Home server and rewrite remaining un-cached page URLs
+        const newServer = await refreshMangaDexNode(chapterId);
+        if (newServer) {
+          const currentPages = c.pages();
+          for (let i = 0; i < currentPages.length; i++) {
+            if (c.getCachedPath(i) === undefined) {
+              const oldUrl = currentPages[i].url;
+              try {
+                const u = new URL(oldUrl);
+                const newU = new URL(newServer.baseUrl);
+                u.protocol = newU.protocol;
+                u.host = newU.host;
+                u.port = newU.port;
+                currentPages[i].url = u.toString();
+              } catch {}
+            }
+          }
+        }
+      }
+
       this.failed.add(index);
       const msg = errorMessage(err);
       c.setSlotState(index, "error", t("reader.session.slotState.downloadFailed", { msg }));

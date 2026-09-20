@@ -4,12 +4,17 @@
  */
 
 import type { ReaderSession } from "./reader-session";
-import type { CachedPageRow } from "../types/db";
 import type { Chapter } from "../types/api";
 import { convertFileSrc } from "../ipc";
 import { fetchChapter, fetchSeries } from "../api/series";
 import { addHistory, getBookmark, getReadingProgress } from "../db/library.repo";
 import { getCachedPages } from "../db/cache.repo";
+import {
+  loadMangaDexChapterForReader,
+  getMdxCachedPages,
+  getMdxProgress,
+  recordMdxHistory,
+} from "../providers/mangadex/reader";
 import { getChapterContainerTag } from "../taxonomy";
 import {
   detectIsLongStrip,
@@ -47,9 +52,16 @@ async function determineStartPage(
     startPage = Math.max(0, pageCount - 1);
   } else if (startPage <= 0) {
     try {
-      const prog = await getReadingProgress(permalink);
-      if (prog && prog.completed !== 1 && prog.page_index > 0) {
-        startPage = prog.page_index;
+      if (permalink.startsWith("mdx:")) {
+        const prog = await getMdxProgress(permalink.replace(/^mdx:/, ""));
+        if (prog && prog.completed !== 1 && prog.page_index > 0) {
+          startPage = prog.page_index;
+        }
+      } else {
+        const prog = await getReadingProgress(permalink);
+        if (prog && prog.completed !== 1 && prog.page_index > 0) {
+          startPage = prog.page_index;
+        }
       }
     } catch (err) {
       log.error("reader-bootstrap", "failed to load reading progress:", err);
@@ -150,11 +162,14 @@ function initDisplayPreferences(s: ReaderSession, chapter: Chapter): void {
 }
 
 async function hydrateCachedPages(s: ReaderSession, permalink: string, pageCount: number): Promise<void> {
-  let cachedRows: CachedPageRow[] = [];
+  let cachedRows: Array<{ page_index: number; file_path: string }> = [];
   try {
-    cachedRows = await getCachedPages(permalink);
+    if (permalink.startsWith("mdx:")) {
+      cachedRows = await getMdxCachedPages(permalink.replace(/^mdx:/, ""));
+    } else {
+      cachedRows = await getCachedPages(permalink);
+    }
   } catch (err) {
-    cachedRows = [];
     showBanner(
       t("reader.session.cacheLookupError", { msg: errorMessage(err) }),
     );
@@ -254,7 +269,12 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
 
   let chapter: Chapter;
   try {
-    chapter = await fetchChapter(permalink);
+    if (permalink.startsWith("mdx:")) {
+      const payload = await loadMangaDexChapterForReader(permalink);
+      chapter = payload.chapter;
+    } else {
+      chapter = await fetchChapter(permalink);
+    }
   } catch (err) {
     if (s.disposed) return;
     const msg = errorMessage(err);
@@ -341,12 +361,21 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
 
   // History + bookmarked state
   try {
-    await addHistory({
-      chapterPermalink: permalink,
-      seriesPermalink: s.seriesPermalink() ?? "",
-      seriesName: s.seriesName() ?? "",
-      chapterTitle: s.chapterTitle(),
-    });
+    if (permalink.startsWith("mdx:")) {
+      await recordMdxHistory(
+        permalink.replace(/^mdx:/, ""),
+        s.seriesPermalink()?.replace(/^mdx:/, "") ?? "",
+        s.seriesName() ?? "",
+        s.chapterTitle(),
+      );
+    } else {
+      await addHistory({
+        chapterPermalink: permalink,
+        seriesPermalink: s.seriesPermalink() ?? "",
+        seriesName: s.seriesName() ?? "",
+        chapterTitle: s.chapterTitle(),
+      });
+    }
   } catch (err) {
     log.error("reader-bootstrap", "failed to record history:", err);
   }

@@ -107,13 +107,23 @@ impl Default for DownloadState {
 /// (prunes partial downloads).
 fn chapter_pages_rel_dir(req: &DownloadRequest) -> String {
     let sanitize = |s: &str| s.replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_");
-    let clean_series = if req.series_permalink.is_empty() {
-        "_singles".to_string()
+    if req.chapter_permalink.starts_with("mdx:") {
+        let clean_series = if req.series_permalink.is_empty() {
+            "_singles".to_string()
+        } else {
+            sanitize(req.series_permalink.trim_start_matches("mdx:"))
+        };
+        let clean_chapter = sanitize(req.chapter_permalink.trim_start_matches("mdx:"));
+        format!("mangadex/pages/{}/{}", clean_series, clean_chapter)
     } else {
-        sanitize(&req.series_permalink)
-    };
-    let clean_chapter = sanitize(&req.chapter_permalink);
-    format!("pages/{}/{}", clean_series, clean_chapter)
+        let clean_series = if req.series_permalink.is_empty() {
+            "_singles".to_string()
+        } else {
+            sanitize(&req.series_permalink)
+        };
+        let clean_chapter = sanitize(&req.chapter_permalink);
+        format!("pages/{}/{}", clean_series, clean_chapter)
+    }
 }
 
 #[inline]
@@ -753,13 +763,26 @@ async fn record_page_progress(
 ) {
     let cp = chapter_permalink.to_string();
     let fp = file_path.to_string();
+    let is_mdx = cp.starts_with("mdx:");
     tokio::task::spawn_blocking(move || {
-        if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
+        if is_mdx {
+            let mdx_path = crate::paths::data_root().join("mangadex");
+            if let Ok(conn) = crate::commands::db::open_synced(&mdx_path) {
+                let now = crate::util::now_ms();
+                let ch_id = cp.trim_start_matches("mdx:");
+                let _ = conn.execute(
+                    "INSERT OR REPLACE INTO cached_pages (chapter_id, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+                    rusqlite::params![ch_id, page_index as i64, fp, size_bytes, now],
+                );
+            }
+        } else if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
             let now = crate::util::now_ms();
             let _ = conn.execute(
                 "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
                 rusqlite::params![cp, page_index as i64, fp, size_bytes, now],
             );
+        }
+        if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
             let _ = conn.execute(
                 "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
                 rusqlite::params![progress as i64, cp],
@@ -775,6 +798,8 @@ async fn fetch_page_to_file(
     abs_url: &str,
     target: &std::path::Path,
 ) -> Result<i64, String> {
+    let is_mdx_network = abs_url.contains("mangadex.network");
+    let start_time = std::time::Instant::now();
     if let Some(parent) = target.parent() {
         tokio::fs::create_dir_all(parent).await.map_err(|e| format!("mkdir: {e}"))?;
     }
@@ -788,8 +813,40 @@ async fn fetch_page_to_file(
         Some(FETCH_TIMEOUT_MS),
     )
     .await
-    .map_err(|e| format!("http get: {e}"))?;
+    .map_err(|e| {
+        if is_mdx_network {
+            let duration = start_time.elapsed().as_millis() as u64;
+            let url_str = abs_url.to_string();
+            let client_clone = client.clone();
+            tokio::spawn(async move {
+                let payload = serde_json::json!({
+                    "url": url_str,
+                    "success": false,
+                    "bytes": 0,
+                    "duration": duration,
+                    "cached": false,
+                });
+                let _ = client_clone.post("https://api.mangadex.network/report").header(reqwest::header::CONTENT_TYPE, "application/json").body(payload.to_string()).send().await;
+            });
+        }
+        format!("http get: {e}")
+    })?;
     if !resp.status().is_success() {
+        if is_mdx_network {
+            let duration = start_time.elapsed().as_millis() as u64;
+            let url_str = abs_url.to_string();
+            let client_clone = client.clone();
+            tokio::spawn(async move {
+                let payload = serde_json::json!({
+                    "url": url_str,
+                    "success": false,
+                    "bytes": 0,
+                    "duration": duration,
+                    "cached": false,
+                });
+                let _ = client_clone.post("https://api.mangadex.network/report").header(reqwest::header::CONTENT_TYPE, "application/json").body(payload.to_string()).send().await;
+            });
+        }
         return Err(format!("http status {}", resp.status()));
     }
     let parent = target.parent().unwrap_or(target);
@@ -819,6 +876,21 @@ async fn fetch_page_to_file(
     match tokio::fs::rename(&tmp_path, target).await {
         Ok(_) => {
             guard.0 = None;
+            if is_mdx_network {
+                let duration = start_time.elapsed().as_millis() as u64;
+                let url_str = abs_url.to_string();
+                let client_clone = client.clone();
+                tokio::spawn(async move {
+                    let payload = serde_json::json!({
+                        "url": url_str,
+                        "success": true,
+                        "bytes": size,
+                        "duration": duration,
+                        "cached": false,
+                    });
+                    let _ = client_clone.post("https://api.mangadex.network/report").header(reqwest::header::CONTENT_TYPE, "application/json").body(payload.to_string()).send().await;
+                });
+            }
         }
         Err(e) => {
             return Err(format!("persist: {e}"));
@@ -831,6 +903,46 @@ async fn fetch_and_cache_chapter_pages(
     client: &reqwest::Client,
     req: &DownloadRequest,
 ) -> Result<Vec<serde_json::Value>, String> {
+    if req.chapter_permalink.starts_with("mdx:") {
+        let chapter_id = req.chapter_permalink.trim_start_matches("mdx:");
+        let at_home_url = format!("https://api.mangadex.org/at-home/server/{}", chapter_id);
+        let resp = crate::commands::http::send_with_redirects(
+            client,
+            "GET",
+            &at_home_url,
+            None,
+            None,
+            None,
+            Some(FETCH_TIMEOUT_MS),
+        )
+        .await
+        .map_err(|e| format!("fetch mangadex at-home failed: {e}"))?;
+        if !resp.status().is_success() {
+            return Err(format!("fetch mangadex at-home status {}", resp.status()));
+        }
+        let body_bytes = crate::commands::http::read_body_capped(resp, MAX_CHAPTER_JSON_BYTES).await?;
+        let v: serde_json::Value = serde_json::from_slice(&body_bytes).map_err(|e| format!("parse at-home: {e}"))?;
+        let base_url = v.get("baseUrl").and_then(|b| b.as_str()).unwrap_or("");
+        let chapter_obj = v.get("chapter");
+        let hash = chapter_obj.and_then(|c| c.get("hash")).and_then(|h| h.as_str()).unwrap_or("");
+        let filenames = chapter_obj
+            .and_then(|c| c.get("dataSaver").or_else(|| c.get("data")))
+            .and_then(|d| d.as_array())
+            .cloned()
+            .unwrap_or_default();
+
+        let mut pages = Vec::new();
+        for fn_val in filenames {
+            if let Some(fn_str) = fn_val.as_str() {
+                let page_url = format!("{}/data-saver/{}/{}", base_url, hash, fn_str);
+                pages.push(serde_json::json!({
+                    "url": page_url,
+                }));
+            }
+        }
+        return Ok(pages);
+    }
+
     let chapter_url = format!("https://dynasty-scans.com/chapters/{}.json", req.chapter_permalink);
     let resp = crate::commands::http::send_with_redirects(
         client,
@@ -854,7 +966,6 @@ async fn fetch_and_cache_chapter_pages(
         .and_then(|p| p.as_array())
         .cloned()
         .unwrap_or_default();
-
     // Cache chapter metadata in DB (for BrowseDownloaded etc.)
     {
         let cp = req.chapter_permalink.clone();

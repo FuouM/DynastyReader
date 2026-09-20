@@ -9,6 +9,7 @@ import { isMobile } from "../stores/platform";
 import { uiScale } from "../stores/ui-scale";
 import { t } from "../i18n";
 import { SettingsModal } from "./SettingsModal";
+import { SourceSwitcherModal } from "./SourceSwitcherModal";
 import { HistoryNavButtons } from "./HistoryDropdown";
 import {
   StorageIcon,
@@ -22,7 +23,9 @@ import {
 import { IconButton, SegmentedSwitch } from "./Button";
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
+  const [sourceSwitcherOpen, setSourceSwitcherOpen] = createSignal(false);
   makeEventListener(window, "ds-open-settings", () => setSettingsOpen(true));
+  makeEventListener(window, "ds-open-source-switcher", () => setSourceSwitcherOpen(true));
 
   return (
     <>
@@ -116,6 +119,7 @@ export function Topbar() {
         </div>
       </div>
       <SettingsModal open={settingsOpen()} onClose={() => setSettingsOpen(false)} />
+      <SourceSwitcherModal open={sourceSwitcherOpen()} onClose={() => setSourceSwitcherOpen(false)} />
       <Show when={banner() !== null}>
         <Portal mount={document.body}>
           <div
