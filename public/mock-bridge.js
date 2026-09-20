@@ -64,31 +64,37 @@
           };
         }
         if (sql.includes("FROM CACHED_METADATA")) {
+          const makePages = (num) => Array.from({ length: num }, (_, i) => ({
+            name: `0${i + 1}.svg`,
+            url: `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='1200' viewBox='0 0 800 1200'><rect fill='%233b82f6' width='100%' height='100%'/><text x='400' y='600' font-size='64' font-family='sans-serif' text-anchor='middle' fill='%23ffffff'>Page ${i + 1}</text></svg>`
+          }));
           return {
             rows: [
               {
                 cache_key: "chapter:hana-ni-arashi-ch01",
-                payload: JSON.stringify({
+                json_payload: JSON.stringify({
                   title: "Chapter 1: The Secret",
-                  pagesCount: 20,
-                  seriesPermalink: "hana-ni-arashi",
-                  seriesName: "Hana ni Arashi",
+                  permalink: "hana-ni-arashi-ch01",
+                  pages: makePages(5),
+                  tags: [{ type: "Series", name: "Hana ni Arashi", permalink: "hana-ni-arashi" }],
                 }),
               },
               {
                 cache_key: "chapter:hana-ni-arashi-ch02",
-                payload: JSON.stringify({
+                json_payload: JSON.stringify({
                   title: "Chapter 2: Rooftop Lunch",
-                  pagesCount: 22,
-                  seriesPermalink: "hana-ni-arashi",
-                  seriesName: "Hana ni Arashi",
+                  permalink: "hana-ni-arashi-ch02",
+                  pages: makePages(5),
+                  tags: [{ type: "Series", name: "Hana ni Arashi", permalink: "hana-ni-arashi" }],
                 }),
               },
               {
                 cache_key: "chapter:orphan-ch01",
-                payload: JSON.stringify({
+                json_payload: JSON.stringify({
                   title: "Stand-alone Oneshots Special Chapter",
-                  pagesCount: 15,
+                  permalink: "orphan-ch01",
+                  pages: makePages(3),
+                  tags: [],
                 }),
               },
             ],
@@ -145,14 +151,21 @@
           };
         }
         if (url.includes("/chapters/")) {
+          const makePage = (num, color) => ({
+            url: `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='1200' viewBox='0 0 800 1200'><rect fill='${color}' width='100%' height='100%'/><text x='400' y='600' font-size='64' font-family='sans-serif' text-anchor='middle' fill='%23ffffff'>Page ${num}</text></svg>`,
+            name: `0${num}.svg`
+          });
           return {
             status: 200,
             body: JSON.stringify({
               title: "Chapter 1: The Secret",
               permalink: "hana-ni-arashi-ch01",
               pages: [
-                { url: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='1200'><rect fill='%23ccc' width='100%' height='100%'/></svg>", name: "01.svg" },
-                { url: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='1200'><rect fill='%23aaa' width='100%' height='100%'/></svg>", name: "02.svg" },
+                makePage(1, "%233b82f6"),
+                makePage(2, "%2310b981"),
+                makePage(3, "%23f59e0b"),
+                makePage(4, "%238b5cf6"),
+                makePage(5, "%23ec4899"),
               ],
             }),
             etag: "mock-etag-ch",
