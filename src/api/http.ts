@@ -79,7 +79,7 @@ export async function httpDownloadFull(
 /** Cache-first JSON getter: returns a fresh non-expired copy or fetches + stores with ETag revalidation. */
 export async function cachedJson<T>(key: string, url: string, ttlMs?: number, dataType?: string): Promise<T> {
   const cached = await getCached(key);
-  if (cached && (ttlMs === undefined || Date.now() - cached.cached_at < ttlMs)) {
+  if (cached?.json_payload && (ttlMs === undefined || Date.now() - cached.cached_at < ttlMs)) {
     recordCacheHit(cached.json_payload.length);
     const parsed = tryParseJson<T>(cached.json_payload);
     if (parsed !== null) return parsed;
@@ -92,7 +92,7 @@ export async function cachedJson<T>(key: string, url: string, ttlMs?: number, da
 
   const { status, body, etag } = await httpGetText(url, { headers });
 
-  if (status === 304 && cached) {
+  if (status === 304 && cached?.json_payload) {
     recordCacheHit(cached.json_payload.length);
     await touchCached(key);
     const parsed = tryParseJson<T>(cached.json_payload);
@@ -100,7 +100,7 @@ export async function cachedJson<T>(key: string, url: string, ttlMs?: number, da
   }
 
   if (status !== 200) {
-    if (cached) {
+    if (cached?.json_payload) {
       const parsed = tryParseJson<T>(cached.json_payload);
       if (parsed !== null) return parsed;
     }

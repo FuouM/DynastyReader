@@ -44,16 +44,24 @@ export interface InputFieldProps {
   dropdown?: JSX.Element;
 }
 export function InputField(props: InputFieldProps) {
+  let inputEl: HTMLInputElement | undefined;
   const [value, setValue] = createSignal(props.value ?? "");
 
   createEffect(() => {
-    setValue(props.value ?? "");
+    const nextVal = props.value ?? "";
+    setValue(nextVal);
+    if (inputEl && inputEl.value !== nextVal) {
+      inputEl.value = nextVal;
+    }
   });
 
   return (
     <div class={`input-wrapper${props.wrapperClass ? ` ${props.wrapperClass}` : ""}`} classList={{ "has-value": value().length > 0 }} style={props.wrapperStyle}>
       <input
-        ref={props.ref}
+        ref={(el) => {
+          inputEl = el;
+          props.ref?.(el);
+        }}
         id={props.id}
         type="text"
         class={`input-field has-clear${props.class ? ` ${props.class}` : ""}`}
@@ -95,9 +103,11 @@ export function InputField(props: InputFieldProps) {
         tabIndex={-1}
         title={t("common.clear")}
         onClick={() => {
+          if (inputEl) inputEl.value = "";
           setValue("");
           props.onInput?.("");
           props.onClear?.();
+          inputEl?.focus();
         }}
       >
         <CloseIcon />

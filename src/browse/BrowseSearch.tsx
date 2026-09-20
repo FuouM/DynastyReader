@@ -366,6 +366,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               </div>
               <DsSelect
                 id="ds-search-sort"
+                aria-label={t("browse.search.sortOrder")}
                 className="ds-search-sort"
                 value={sort()}
                 onChange={(val) => {

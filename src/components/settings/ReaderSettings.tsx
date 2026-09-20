@@ -246,6 +246,7 @@ export function ReaderSettings() {
         <SettingsRow divider label={<>{t("settings.reader.fitMode")}:</>} desc={t("settings.reader.fitModeDesc")}>
           <DsSelect
             id="ds-settings-fit-select"
+            aria-label={t("settings.reader.fitMode")}
             className="ds-select--w130"
             value={fitModePref()}
             onChange={(val) => setFitModePref(val as FitMode)}

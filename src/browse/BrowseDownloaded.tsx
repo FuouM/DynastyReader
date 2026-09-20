@@ -184,6 +184,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         onInput={handleInput}
         inputPlaceholder={t("browse.downloaded.filterPlaceholder")}
         onClear={() => {
+          debouncedSetQuery.clear();
           setInputVal("");
           setQuery("");
           setCurrentPage(1);

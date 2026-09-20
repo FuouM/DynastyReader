@@ -62,6 +62,7 @@ export function DisplaySettings() {
             />
             <DsSelect
               id="ds-settings-scale-select"
+              aria-label={t("settings.display.uiScale")}
               className="ds-select--w115"
               value={String(scale())}
               onChange={(val) => {
@@ -213,6 +214,7 @@ export function DisplaySettings() {
               >
                 <input
                   type="color"
+                  aria-label={t("settings.display.accentCustomTooltip")}
                   class="ds-accent-color-native-input"
                   value={isCustomColor() ? accentColor() : "#0078d4"}
                   onInput={(e) => setAccentColor(e.currentTarget.value)}
@@ -258,6 +260,7 @@ export function DisplaySettings() {
         >
           <DsSelect
             id="ds-settings-language-select"
+            aria-label={t("settings.display.language")}
             className="ds-select--w115"
             value={locale()}
             onChange={(val) => setLocale(val as Locale)}
