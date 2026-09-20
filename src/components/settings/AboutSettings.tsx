@@ -14,9 +14,8 @@ import {
   isUpdating,
   updateStatusText,
 } from "../UpdateDialog";
-import { ExternalLinkButton } from "../ExternalLinkButton";
 import { GroupBox } from "../GroupBox";
-import { IconText, IconButton } from "../Button";
+import { IconText, IconButton, ExternalLinkButton } from "../Button";
 import { RefreshIcon, CloudDownloadIcon, Icon } from "../Icon";
 
 export function AboutSettings() {

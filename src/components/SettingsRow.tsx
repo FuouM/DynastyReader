@@ -1,4 +1,5 @@
 import type { JSX } from "solid-js";
+import { DsSwitch } from "./Button";
 
 export interface SettingsRowProps {
   /** Label text (typically `t("settings.reader.someKey")`). */
@@ -36,5 +37,34 @@ export function SettingsRow(props: SettingsRowProps) {
         {props.children}
       </div>
     </div>
+  );
+}
+
+export interface SettingsToggleRowProps {
+  id: string;
+  label: JSX.Element;
+  desc?: JSX.Element;
+  checked: boolean;
+  title?: string;
+  disabled?: boolean;
+  divider?: boolean;
+  onChange: (next: boolean) => void;
+}
+
+/**
+ * Two-column settings row with an integrated toggle switch.
+ * Eliminates boilerplate across Reader, Display, Advanced, and Storage settings.
+ */
+export function SettingsToggleRow(props: SettingsToggleRowProps) {
+  return (
+    <SettingsRow divider={props.divider} label={props.label} desc={props.desc}>
+      <DsSwitch
+        id={props.id}
+        checked={props.checked}
+        title={props.title}
+        disabled={props.disabled}
+        onChange={props.onChange}
+      />
+    </SettingsRow>
   );
 }

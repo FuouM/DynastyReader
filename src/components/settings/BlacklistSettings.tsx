@@ -6,8 +6,7 @@ import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { GroupBox } from "../GroupBox";
 import { BlacklistIcon, AddIcon, CloseIcon } from "../Icon";
-import { IconText, Button } from "../Button";
-import { BlacklistModeSwitch } from "../BlacklistModeSwitch";
+import { IconText, Button, BlacklistModeSwitch } from "../Button";
 export function BlacklistSettings() {
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");

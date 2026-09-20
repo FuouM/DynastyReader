@@ -38,10 +38,9 @@ import type {
   ProcessedCachedChapter,
 } from "../browse/downloads/types";
 import { Pager } from "../components/Pager";
-import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState, Loading, ErrorRetryRow } from "../components/Feedback";
 import { GroupBox } from "../components/GroupBox";
-import { ConfirmDeleteButton, IconText, IconButton, StatCard } from "../components/Button";
+import { ConfirmDeleteButton, IconText, IconButton, StatCard, BackRefreshActions } from "../components/Button";
 import { useCacheActions } from "./useCacheActions";
 import { persistedSignal } from "../lib/persisted-signal";
 import { CacheCeilingGroupBox } from "./CacheCeilingGroupBox";

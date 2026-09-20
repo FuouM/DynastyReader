@@ -12,9 +12,8 @@ import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import { ListItem } from "../components/ListItem";
 import { Cover } from "../components/Cover";
-import { OfflineBadge } from "../components/OfflineBadge";
-import { ExternalLinkButton } from "../components/ExternalLinkButton";
-import { ConfirmDeleteButton, IconButton, IconText } from "../components/Button";
+import { OfflineBadge } from "../components/Badges";
+import { ConfirmDeleteButton, IconButton, IconText, ExternalLinkButton } from "../components/Button";
 import { BlacklistIcon, TrashIcon } from "../components/Icon";
 
 export interface LibraryItemRowProps {

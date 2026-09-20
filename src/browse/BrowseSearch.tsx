@@ -39,7 +39,7 @@ import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import { Pager } from "../components/Pager";
 import { Loading, EmptyState, ErrorRetryRow } from "../components/Feedback";
 import { Typeahead } from "../components/Typeahead";
-import { BlacklistNotice } from "../components/BlacklistNotice";
+import { BlacklistNotice } from "../components/Badges";
 import { GroupBox } from "../components/GroupBox";
 import { DsSelect, IconText, IconButton } from "../components/Button";
 import { SearchResultRow, type SearchRow } from "./SearchResultRow";

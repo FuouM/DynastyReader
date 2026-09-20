@@ -1,7 +1,5 @@
 import { Show } from "solid-js";
-import { Button } from "../components/Button";
-import { AddToCollectionButton } from "../components/AddToCollectionButton";
-import { ExternalLinkButton } from "../components/ExternalLinkButton";
+import { Button, AddToCollectionButton, ExternalLinkButton } from "../components/Button";
 import {
   BlacklistIcon,
   BookmarkIcon,

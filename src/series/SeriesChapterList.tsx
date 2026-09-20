@@ -8,7 +8,7 @@ import { t } from "../i18n";
 import type { ChapterRef } from "../types/routes";
 import type { Series } from "../types/api";
 import type { SeriesProgressRow } from "../types/db";
-import { OfflineBadge } from "../components/OfflineBadge";
+import { OfflineBadge } from "../components/Badges";
 import { Icon, CheckIcon, CloudDownloadIcon } from "../components/Icon";
 import { IconButton } from "../components/Button";
 export interface ChapterMeta extends ChapterRef {

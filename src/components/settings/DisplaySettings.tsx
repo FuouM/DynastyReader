@@ -7,8 +7,8 @@ import { uiMode, setUiMode, type UiMode } from "../../stores/platform";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";
-import { DsSelect, IconText, IconButton, SegmentedSwitch, DsSwitch, Button } from "../Button";
-import { SettingsRow } from "../SettingsRow";
+import { DsSelect, IconText, IconButton, SegmentedSwitch, Button } from "../Button";
+import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
 import { GroupBox } from "../GroupBox";
 import { SCALE_PRESETS } from "./types";
 export function DisplaySettings() {
@@ -241,18 +241,15 @@ export function DisplaySettings() {
         </SettingsRow>
 
         {/* Feed Covers Toggle */}
-        <SettingsRow
+        <SettingsToggleRow
+          divider
           label={t("settings.display.feedCovers")}
           desc={t("settings.display.feedCoversDesc")}
-          divider
-        >
-          <DsSwitch
-            id="ds-settings-covers-toggle"
-            checked={coversEnabled()}
-            title={coversEnabled() ? t("settings.display.coversOn") : t("settings.display.coversOff")}
-            onChange={(next) => { browseCovers.setCoversEnabled(next); setCoversEnabledLocal(next); }}
-          />
-        </SettingsRow>
+          id="ds-settings-covers-toggle"
+          checked={coversEnabled()}
+          title={coversEnabled() ? t("settings.display.coversOn") : t("settings.display.coversOff")}
+          onChange={(next) => { browseCovers.setCoversEnabled(next); setCoversEnabledLocal(next); }}
+        />
 
         {/* Language Selector */}
         <SettingsRow

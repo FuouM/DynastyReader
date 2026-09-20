@@ -36,7 +36,7 @@ import { Pager } from "../components/Pager";
 import { Loading, ErrorRetryRow } from "../components/Feedback";
 import { IconButton } from "../components/Button";
 import { RefreshIcon } from "../components/Icon";
-import { BlacklistNotice } from "../components/BlacklistNotice";
+import { BlacklistNotice } from "../components/Badges";
 import { useTriggerWarning } from "../hooks/useTriggerWarning";
 import { useAddToCollection } from "../hooks/useAddToCollection";
 import { FeedItemRow } from "../components/FeedItemRow";

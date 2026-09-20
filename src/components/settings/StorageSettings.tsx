@@ -15,8 +15,8 @@ import {
 } from "../../utils/download-constraints";
 import { StorageIcon, BlacklistIcon, ExternalLinkIcon, Icon, DownloadIcon } from "../Icon";
 import { GroupBox } from "../GroupBox";
-import { IconText, IconButton, DsSwitch } from "../Button";
-import { SettingsRow } from "../SettingsRow";
+import { IconText, IconButton } from "../Button";
+import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
 export interface StorageSettingsProps {
   onClose: () => void;
 }
@@ -70,36 +70,30 @@ export function StorageSettings(props: StorageSettingsProps) {
           <IconText icon={<DownloadIcon />}>{t("settings.downloads.title")}</IconText>
         </legend>
         <div class="ds-col">
-          <SettingsRow
+          <SettingsToggleRow
             label={<>{t("settings.downloads.wifiOnly")}:</>}
             desc={t("settings.downloads.wifiOnlyDesc")}
-          >
-            <DsSwitch
-              id="ds-settings-download-wifi-only"
-              checked={downloadWifiOnly()}
-              title={t("settings.downloads.wifiOnlyTooltip")}
-              onChange={(next) => {
-                setDownloadWifiOnly(next);
-                void pushDownloadConstraints();
-              }}
-            />
-          </SettingsRow>
+            id="ds-settings-download-wifi-only"
+            checked={downloadWifiOnly()}
+            title={t("settings.downloads.wifiOnlyTooltip")}
+            onChange={(next) => {
+              setDownloadWifiOnly(next);
+              void pushDownloadConstraints();
+            }}
+          />
 
-          <SettingsRow
+          <SettingsToggleRow
             divider
             label={<>{t("settings.downloads.scheduleEnabled")}:</>}
             desc={t("settings.downloads.scheduleEnabledDesc")}
-          >
-            <DsSwitch
-              id="ds-settings-download-schedule-enabled"
-              checked={downloadScheduleEnabled()}
-              title={t("settings.downloads.scheduleEnabledTooltip")}
-              onChange={(next) => {
-                setDownloadScheduleEnabled(next);
-                void pushDownloadConstraints();
-              }}
-            />
-          </SettingsRow>
+            id="ds-settings-download-schedule-enabled"
+            checked={downloadScheduleEnabled()}
+            title={t("settings.downloads.scheduleEnabledTooltip")}
+            onChange={(next) => {
+              setDownloadScheduleEnabled(next);
+              void pushDownloadConstraints();
+            }}
+          />
 
           <Show when={downloadScheduleEnabled()}>
             <SettingsRow

@@ -23,8 +23,7 @@ import { Loading, EmptyState, ErrorRetryRow } from "../components/Feedback";
 import { InputField } from "../components/InputField";
 import { ListItem } from "../components/ListItem";
 import { BlacklistIcon, RefreshIcon } from "../components/Icon";
-import { ExternalLinkButton } from "../components/ExternalLinkButton";
-import { Button, IconText } from "../components/Button";
+import { Button, IconText, ExternalLinkButton } from "../components/Button";
 import { useTriggerWarning } from "../hooks/useTriggerWarning";
 import type { Directory, DirectoryGroup } from "../types/api";
 

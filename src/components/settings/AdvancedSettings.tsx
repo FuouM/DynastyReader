@@ -28,8 +28,8 @@ import {
   type HapticStyle,
 } from "../../utils/haptics";
 import { GroupBox } from "../GroupBox";
-import { SettingsRow } from "../SettingsRow";
-import { DsSwitch, IconButton, IconText } from "../Button";
+import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
+import { IconButton, IconText } from "../Button";
 import { Icon } from "../Icon";
 
 interface HapticCardDef {
@@ -123,47 +123,38 @@ export function AdvancedSettings() {
     >
       <div class="ds-col">
         {/* Master Haptics Switch */}
-        <SettingsRow
+        <SettingsToggleRow
           label={<>{t("settings.advanced.hapticsMaster")}:</>}
           desc={t("settings.advanced.hapticsMasterDesc")}
-        >
-          <DsSwitch
-            id="ds-settings-haptics-master"
-            checked={isHapticsEnabled()}
-            title={isHapticsEnabled() ? t("settings.advanced.hapticsOn") : t("settings.advanced.hapticsOff")}
-            onChange={setHapticsEnabled}
-          />
-        </SettingsRow>
+          id="ds-settings-haptics-master"
+          checked={isHapticsEnabled()}
+          title={isHapticsEnabled() ? t("settings.advanced.hapticsOn") : t("settings.advanced.hapticsOff")}
+          onChange={setHapticsEnabled}
+        />
 
         {/* Granular: Page Turn Haptics */}
-        <SettingsRow
+        <SettingsToggleRow
           divider
           label={<>{t("settings.advanced.pageTurnHaptics")}:</>}
           desc={t("settings.advanced.pageTurnHapticsDesc")}
-        >
-          <DsSwitch
-            id="ds-settings-haptics-pageturn"
-            checked={isPageTurnHapticsEnabled()}
-            disabled={!isHapticsEnabled()}
-            title={isPageTurnHapticsEnabled() ? t("settings.advanced.pageTurnHapticsOn") : t("settings.advanced.pageTurnHapticsOff")}
-            onChange={setPageTurnHapticsEnabled}
-          />
-        </SettingsRow>
+          id="ds-settings-haptics-pageturn"
+          checked={isPageTurnHapticsEnabled()}
+          disabled={!isHapticsEnabled()}
+          title={isPageTurnHapticsEnabled() ? t("settings.advanced.pageTurnHapticsOn") : t("settings.advanced.pageTurnHapticsOff")}
+          onChange={setPageTurnHapticsEnabled}
+        />
 
         {/* Granular: Chapter Overscroll Haptics */}
-        <SettingsRow
+        <SettingsToggleRow
           divider
           label={<>{t("settings.advanced.overscrollHaptics")}:</>}
           desc={t("settings.advanced.overscrollHapticsDesc")}
-        >
-          <DsSwitch
-            id="ds-settings-haptics-overscroll"
-            checked={isOverscrollHapticsEnabled()}
-            disabled={!isHapticsEnabled()}
-            title={isOverscrollHapticsEnabled() ? t("settings.advanced.overscrollHapticsOn") : t("settings.advanced.overscrollHapticsOff")}
-            onChange={setOverscrollHapticsEnabled}
-          />
-        </SettingsRow>
+          id="ds-settings-haptics-overscroll"
+          checked={isOverscrollHapticsEnabled()}
+          disabled={!isHapticsEnabled()}
+          title={isOverscrollHapticsEnabled() ? t("settings.advanced.overscrollHapticsOn") : t("settings.advanced.overscrollHapticsOff")}
+          onChange={setOverscrollHapticsEnabled}
+        />
 
         {/* Vibration Strength & Intensity */}
         <SettingsRow

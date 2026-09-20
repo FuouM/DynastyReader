@@ -4,12 +4,14 @@
  * views. Port of `button.ts`.
  */
 
-import { For, createSignal, createEffect, type JSX } from "solid-js";
+import { For, createSignal, createEffect, type JSX, type Accessor } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../i18n";
-import { CheckIcon } from "./Icon";
+import { CheckIcon, ExternalLinkIcon, FolderIcon, ArrowLeftIcon, RefreshIcon, Icon } from "./Icon";
 import { isMobile } from "../stores/platform";
+import { openExternal } from "../api/navigation";
+import type { BlacklistMode } from "../types/blacklist";
 export interface ButtonProps {
   ref?: HTMLButtonElement | ((el: HTMLButtonElement) => void);
   id?: string;
@@ -355,5 +357,106 @@ export function DsSwitch(props: DsSwitchProps) {
       </span>
       {props.label && <span class="ds-switch-label">{props.label}</span>}
     </button>
+  );
+}
+
+// ── 7. Specialized Action & Navigation Buttons ──────────────────────────────
+
+export interface AddToCollectionButtonProps extends Omit<ButtonProps, "onClick" | "icon"> {
+  onOpen: (anchorEl: HTMLElement) => void;
+}
+
+export function AddToCollectionButton(props: AddToCollectionButtonProps) {
+  return (
+    <Button
+      className={props.className}
+      cssText={props.cssText}
+      title={props.title ?? t("browse.feed.addToFavoritesOrCustom")}
+      icon={<FolderIcon />}
+      text={props.text}
+      textClass={props.textClass}
+      classList={props.classList}
+      disabled={props.disabled}
+      onClick={(ev) => {
+        ev.stopPropagation();
+        props.onOpen(ev.currentTarget as HTMLElement);
+      }}
+    />
+  );
+}
+
+export interface ExternalLinkButtonProps extends Omit<ButtonProps, "onClick" | "icon"> {
+  url: string;
+}
+
+export function ExternalLinkButton(props: ExternalLinkButtonProps) {
+  return (
+    <Button
+      id={props.id}
+      className={props.className ?? (props.text ? "ds-btn-compact" : "ds-btn-icon")}
+      cssText={props.cssText}
+      title={props.title}
+      icon={<ExternalLinkIcon />}
+      text={props.text}
+      textClass={props.textClass}
+      classList={props.classList}
+      disabled={props.disabled}
+      onClick={(ev) => {
+        ev.stopPropagation();
+        void openExternal(props.url);
+      }}
+    />
+  );
+}
+
+export interface BackRefreshActionsProps {
+  backLabel: string;
+  onBack: () => void;
+  onRefresh: () => void;
+}
+
+/** The standard "Back + Refresh" top-bar pair used by the Library sub-views. */
+export function BackRefreshActions(props: BackRefreshActionsProps) {
+  return (
+    <>
+      <IconButton
+        icon={<ArrowLeftIcon />}
+        text={props.backLabel}
+        title={t("actionBar.back")}
+        onClick={props.onBack}
+      />
+      <IconButton
+        icon={<RefreshIcon />}
+        text={t("actionBar.refresh")}
+        title={t("actionBar.refresh")}
+        onClick={props.onRefresh}
+      />
+    </>
+  );
+}
+
+export interface BlacklistModeSwitchProps {
+  id: string;
+  value: Accessor<BlacklistMode>;
+  onChange: (mode: BlacklistMode) => void;
+}
+
+export function BlacklistModeSwitch(props: BlacklistModeSwitchProps) {
+  return (
+    <div class="ds-bl-mode-bar">
+      <span class="ds-bl-mode-label">
+        {t("blacklist.modeHeader")}:
+      </span>
+      <SegmentedSwitch
+        id={props.id}
+        value={props.value()}
+        onChange={(val) => props.onChange(val as BlacklistMode)}
+        options={[
+          { id: `${props.id}-hide`, value: "hide", icon: <Icon name="eye-slash" />, text: t("blacklist.modeHide"), title: t("blacklist.modeHideTooltip") },
+          { id: `${props.id}-ghost`, value: "ghost", icon: <Icon name="eye-slash-fill" />, text: t("blacklist.modeGhost"), title: t("blacklist.modeGhostTooltip") },
+          { id: `${props.id}-warn`, value: "warn", icon: <Icon name="exclamation-triangle" />, text: t("blacklist.modeWarn"), title: t("blacklist.modeWarnTooltip") },
+        ]}
+      />
+    </div>
   );
 }

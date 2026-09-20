@@ -43,32 +43,9 @@ import {
 import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, Icon } from "../Icon";
-import { DsSelect, IconText, IconButton, SegmentedSwitch, DsSwitch } from "../Button";
-import { SettingsRow } from "../SettingsRow";
+import { DsSelect, IconText, IconButton, SegmentedSwitch } from "../Button";
+import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
 import { GroupBox } from "../GroupBox";
-
-interface ToggleSettingRowProps {
-  divider?: boolean;
-  label: string;
-  desc?: string;
-  id: string;
-  checked: boolean;
-  title?: string;
-  onChange: (next: boolean) => void;
-}
-
-function ToggleSettingRow(props: ToggleSettingRowProps) {
-  return (
-    <SettingsRow divider={props.divider} label={<>{props.label}:</>} desc={props.desc}>
-      <DsSwitch
-        id={props.id}
-        checked={props.checked}
-        title={props.title}
-        onChange={props.onChange}
-      />
-    </SettingsRow>
-  );
-}
 
 export function ReaderSettings() {
   const [autoCacheEnabled, setAutoCacheEnabled] = usePersistedSetting(isAutoCacheChapterEnabled, setAutoCacheChapterEnabled);
@@ -173,7 +150,7 @@ export function ReaderSettings() {
           </div>
         </fieldset>
         {/* Long Strip Spread Override */}
-        <ToggleSettingRow
+        <SettingsToggleRow
           divider
           label={t("settings.reader.longStripOverride")}
           desc={t("settings.reader.longStripOverrideDesc")}
@@ -184,7 +161,7 @@ export function ReaderSettings() {
         />
 
         {/* Long Strip Auto Fit Width */}
-        <ToggleSettingRow
+        <SettingsToggleRow
           divider
           label={t("settings.reader.longStripFitWidth")}
           desc={t("settings.reader.longStripFitWidthDesc")}
@@ -195,7 +172,7 @@ export function ReaderSettings() {
         />
 
         {/* Spread Standalone Cover */}
-        <ToggleSettingRow
+        <SettingsToggleRow
           divider
           label={t("settings.reader.coverOffset")}
           desc={t("settings.reader.coverOffsetDesc")}
@@ -206,7 +183,7 @@ export function ReaderSettings() {
         />
 
         {/* Mobile Gestures on Desktop */}
-        <ToggleSettingRow
+        <SettingsToggleRow
           divider
           label={t("settings.reader.mobileGesturesDesktop")}
           desc={t("settings.reader.mobileGesturesDesktopDesc")}
@@ -217,7 +194,7 @@ export function ReaderSettings() {
         />
 
         {/* Hide Status Bar (Android) */}
-        <ToggleSettingRow
+        <SettingsToggleRow
           divider
           label={t("settings.reader.hideStatusBar")}
           desc={t("settings.reader.hideStatusBarDesc")}
@@ -281,14 +258,15 @@ export function ReaderSettings() {
         </SettingsRow>
 
         {/* Auto Cache Entire Chapter */}
-        <SettingsRow divider label={<>{t("settings.reader.autoCache")}:</>} desc={t("settings.reader.autoCacheDesc")}>
-          <DsSwitch
-            id="ds-settings-autocache-toggle"
-            checked={autoCacheEnabled()}
-            title={autoCacheEnabled() ? t("settings.reader.autoCacheTooltipOn") : t("settings.reader.autoCacheTooltipOff")}
-            onChange={setAutoCacheEnabled}
-          />
-        </SettingsRow>
+        <SettingsToggleRow
+          divider
+          label={<>{t("settings.reader.autoCache")}:</>}
+          desc={t("settings.reader.autoCacheDesc")}
+          id="ds-settings-autocache-toggle"
+          checked={autoCacheEnabled()}
+          title={autoCacheEnabled() ? t("settings.reader.autoCacheTooltipOn") : t("settings.reader.autoCacheTooltipOff")}
+          onChange={setAutoCacheEnabled}
+        />
 
         {/* Page Prefetch Buffer */}
         <SettingsRow divider label={<>{t("settings.reader.prefetchBuffer")}:</>} desc={t("settings.reader.prefetchBufferDesc")}>

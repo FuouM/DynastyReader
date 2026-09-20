@@ -12,16 +12,14 @@ import { t } from "../i18n";
 import { getBlacklistMode, getBlacklistedSeries, removeBlacklistedSeries, setBlacklistMode } from "../db/blacklist.repo";
 import type { BlacklistedSeries, BlacklistMode } from "../types/blacklist";
 import { useDelayedSpinner } from "../browse/browse-state";
-import { BackRefreshActions } from "../components/ActionBar";
-import { ExternalLinkButton } from "../components/ExternalLinkButton";
 import {
   BlacklistIcon,
   ListCheckIcon,
   TrashIcon,
 } from "../components/Icon";
 import { Loading, ErrorRetryRow } from "../components/Feedback";
-import { Button, IconText } from "../components/Button";
-import { BlacklistModeSwitch } from "../components/BlacklistModeSwitch";
+import { ListItem } from "../components/ListItem";
+import { Button, IconText, BackRefreshActions, ExternalLinkButton, BlacklistModeSwitch } from "../components/Button";
 import { GroupBox } from "../components/GroupBox";
 export function BlacklistView() {
   const [data, { refetch }] = createResource<BlacklistedSeries[]>(() =>
@@ -120,45 +118,50 @@ export function BlacklistView() {
             <div class="ds-bl-series-list">
               <For each={data()!}>
                 {(item) => (
-                  <div class="ds-bl-series-item">
-                    <div class="ds-bl-series-info">
+                  <ListItem
+                    class="ds-bl-series-item"
+                    leading={
                       <BlacklistIcon
                         filled={true}
                         class="ds-bl-series-icon"
                       />
-                      <div class="ds-bl-series-details">
-                        <div
-                          class="ds-item-title ds-clickable ds-truncate"
-                          onClick={() =>
-                            navigate({
-                              view: "series",
-                              seriesPermalink: item.series_permalink,
-                              seriesName: item.series_name,
-                            })
-                          }
-                        >
-                          {decodeEntities(item.series_name)}
-                        </div>
-                        <div class="ds-muted ds-bl-series-meta">
-                          <span class="ds-etag-tag">{item.series_permalink}</span>
-                          <span>{t("blacklist.blacklistedOn", { date: formatDate(item.created_at) })}</span>
-                        </div>
+                    }
+                    title={
+                      <div
+                        class="ds-item-title ds-clickable ds-truncate"
+                        onClick={() =>
+                          navigate({
+                            view: "series",
+                            seriesPermalink: item.series_permalink,
+                            seriesName: item.series_name,
+                          })
+                        }
+                      >
+                        {decodeEntities(item.series_name)}
                       </div>
-                    </div>
-                    <div class="ds-bl-series-actions">
-                      <ExternalLinkButton
-                        className="ds-btn-icon"
-                        title={t("blacklist.openOnDynastyTooltip")}
-                        url={dynastyUrl("series", item.series_permalink)}
-                      />
-                      <Button
-                        icon={<TrashIcon />}
-                        className="ds-btn-sm"
-                        title={t("blacklist.removeSeriesTooltip")}
-                        onClick={() => void removeSeries(item)}
-                      />
-                    </div>
-                  </div>
+                    }
+                    body={
+                      <div class="ds-muted ds-bl-series-meta">
+                        <span class="ds-etag-tag">{item.series_permalink}</span>
+                        <span>{t("blacklist.blacklistedOn", { date: formatDate(item.created_at) })}</span>
+                      </div>
+                    }
+                    actions={
+                      <>
+                        <ExternalLinkButton
+                          className="ds-btn-icon"
+                          title={t("blacklist.openOnDynastyTooltip")}
+                          url={dynastyUrl("series", item.series_permalink)}
+                        />
+                        <Button
+                          icon={<TrashIcon />}
+                          className="ds-btn-sm"
+                          title={t("blacklist.removeSeriesTooltip")}
+                          onClick={() => void removeSeries(item)}
+                        />
+                      </>
+                    }
+                  />
                 )}
               </For>
             </div>
