@@ -615,6 +615,7 @@
 
 /* Downloaded series fieldsets and cinema matrix */
 .ds-downloaded-series-group {
+  margin-top: 8px;
   margin-bottom: 8px;
   contain: layout style;
 }

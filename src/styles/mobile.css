@@ -823,7 +823,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 #ds-root[data-mobile] .group-box.collapsed {
   min-height: 28px !important;
   padding: 0 !important;
-  margin-top: 4px !important;
+  margin-top: 8px !important;
   margin-bottom: 8px !important;
   display: flex !important;
   align-items: center !important;
