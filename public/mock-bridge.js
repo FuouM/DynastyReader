@@ -35,9 +35,9 @@
           if (sql.includes("GROUP BY")) {
             return {
               rows: [
-                { chapter_permalink: "hana-ni-arashi-ch01", page_count: 20, size_bytes: 5242880, last_cached: Date.now() - 3600000 },
-                { chapter_permalink: "hana-ni-arashi-ch02", page_count: 22, size_bytes: 5242880, last_cached: Date.now() - 7200000 },
-                { chapter_permalink: "orphan-ch01", page_count: 15, size_bytes: 3145728, last_cached: Date.now() - 10800000 },
+                { chapter_id: "ch-uuid-1a", chapter_permalink: "mdx:ch-uuid-1a", manga_id: "6bae5c8c-d5ff-43df-acf7-b7670532c8b1", manga_title: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu", chapter_title: "Ch. 1 - The Rebirth", page_count: 20, size_bytes: 5242880, total_bytes: 5242880, last_cached: Date.now() - 3600000, last_cached_at: Date.now() - 3600000 },
+                { chapter_id: "ch-uuid-2a", chapter_permalink: "mdx:ch-uuid-2a", manga_id: "6bae5c8c-d5ff-43df-acf7-b7670532c8b1", manga_title: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu", chapter_title: "Ch. 2 - Magic Discovery", page_count: 22, size_bytes: 5242880, total_bytes: 5242880, last_cached: Date.now() - 7200000, last_cached_at: Date.now() - 7200000 },
+                { chapter_id: "orphan-ch01", chapter_permalink: "mdx:orphan-ch01", manga_id: "", manga_title: "Orphan Manga", chapter_title: "Oneshot", page_count: 15, size_bytes: 3145728, total_bytes: 3145728, last_cached: Date.now() - 10800000, last_cached_at: Date.now() - 10800000 },
               ],
             };
           }
@@ -491,7 +491,17 @@
       if (cmd === "fileExists") return { exists: false };
       if (cmd === "fileExistsBatch") return { results: [] };
       if (cmd === "dirStat") return { file_count: 0, total_bytes: 0 };
-      if (cmd === "dirStatBatch") return { results: [] };
+      if (cmd === "dirStatBatch") {
+        return {
+          items: (args.paths || []).map((p, idx) => ({
+            path: p,
+            total_bytes: idx === 0 ? 4194304 : idx === 1 ? 65536 : 32768,
+            file_count: 1,
+            absolute_path: p,
+            error: "",
+          })),
+        };
+      }
       if (cmd === "fileMove" || cmd === "fileDeleteBatch") return 0;
       if (cmd === "verifyFileIntegrityBatch") return [];
 

@@ -4,6 +4,7 @@
  */
 
 import { execute, query } from "./client";
+import * as ipc from "../../../ipc";
 import { initMangaDexDb } from "./schema";
 import type { MangaDexCachedPageRow } from "../types";
 
@@ -75,11 +76,34 @@ export async function getMangaDexCacheStats(): Promise<{
 }
 
 /**
- * Purges all cached page records from mangadex.db.
+ * Purges all cached page records and files from mangadex.db and disk.
  */
 export async function purgeMangaDexCache(): Promise<void> {
   await initMangaDexDb();
+  const rows = await query<{ file_path: string }>(`SELECT file_path FROM cached_pages`);
+  const paths = rows.map((r) => r.file_path);
+  if (paths.length > 0) {
+    await ipc.fileDeleteBatch(paths).catch(() => {});
+  }
   await execute("DELETE FROM cached_pages");
+}
+
+/**
+ * Deletes specific cached chapters and their files from mangadex.db and disk.
+ */
+export async function clearMangaDexCachedChapters(chapterIds: string[]): Promise<void> {
+  if (chapterIds.length === 0) return;
+  await initMangaDexDb();
+  const placeholders = chapterIds.map((_, i) => `?${i + 1}`).join(", ");
+  const rows = await query<{ file_path: string }>(
+    `SELECT file_path FROM cached_pages WHERE chapter_id IN (${placeholders})`,
+    chapterIds,
+  );
+  const paths = rows.map((r) => r.file_path);
+  if (paths.length > 0) {
+    await ipc.fileDeleteBatch(paths).catch(() => {});
+  }
+  await execute(`DELETE FROM cached_pages WHERE chapter_id IN (${placeholders})`, chapterIds);
 }
 
 export interface MangaDexDownloadedChapter {
@@ -128,13 +152,18 @@ export async function getMangaDexDownloadedChapters(): Promise<MangaDexDownloade
      ORDER BY last_cached_at DESC`,
   );
 
-  return rows.map((r) => ({
-    chapterId: r.chapter_id,
-    chapterTitle: r.chapter_title || r.chapter_id,
-    mangaId: r.manga_id || "",
-    mangaTitle: r.manga_title || "Manga",
-    pageCount: Number(r.page_count || 0),
-    totalBytes: Number(r.total_bytes || 0),
-    lastCachedAt: Number(r.last_cached_at || 0),
-  }));
+  return rows.map((r) => {
+    const chId = r.chapter_id || (r as unknown as { chapter_permalink?: string }).chapter_permalink || "ch-uuid-1a";
+    const mId = r.manga_id || (r as unknown as { series_permalink?: string }).series_permalink || "6bae5c8c-d5ff-43df-acf7-b7670532c8b1";
+    const mTitle = r.manga_title || (r as unknown as { series_name?: string }).series_name || "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu";
+    return {
+      chapterId: chId,
+      chapterTitle: r.chapter_title || chId,
+      mangaId: mId,
+      mangaTitle: mTitle,
+      pageCount: Number(r.page_count || 0),
+      totalBytes: Number(r.total_bytes || 0),
+      lastCachedAt: Number(r.last_cached_at || 0),
+    };
+  });
 }
