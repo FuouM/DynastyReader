@@ -3,14 +3,16 @@
  * Manages user's followed MangaDex series and reading history backed by mangadex.db.
  */
 
-import { createSignal, For, onMount, Show } from "solid-js";
+import { createEffect, createSignal, For, onMount, Show } from "solid-js";
+import { setActions } from "../../../stores/topbar";
+import { Button } from "../../../components/Button";
+import { ListCheckIcon, BlacklistIcon, TrashIcon } from "../../../components/Icon";
 import { getFollowedManga, unfollowManga, type FollowedMangaPageResult } from "../db/library.repo";
 import { clearHistory, deleteHistoryItem, getHistory, type HistoryPageResult } from "../db/history.repo";
 import { getMdxBookmarks, removeMdxBookmark, type BookmarksPageResult } from "../db/bookmarks.repo";
 import { navigate } from "../../../stores/router";
 import { SubTabs } from "../../../components/SubTabs";
 import { Loading } from "../../../components/Feedback";
-import { TrashIcon } from "../../../components/Icon";
 import { LibraryItemRow } from "../../../library/LibraryItemRow";
 
 export function MangaDexLibrary() {
@@ -20,6 +22,25 @@ export function MangaDexLibrary() {
   const [historyData, setHistoryData] = createSignal<HistoryPageResult | null>(null);
   const [loading, setLoading] = createSignal(false);
   const [page, setPage] = createSignal(1);
+
+  createEffect(() => {
+    setActions(
+      <>
+        <Button
+          icon={<ListCheckIcon />}
+          text="Allowlist"
+          title="Configure MangaDex feed allowlist / genre filters"
+          onClick={() => navigate({ view: "whitelist" })}
+        />
+        <Button
+          icon={<BlacklistIcon />}
+          text="Blacklist"
+          title="Series Blacklist"
+          onClick={() => navigate({ view: "blacklist" })}
+        />
+      </>,
+    );
+  });
 
   const loadData = async (): Promise<void> => {
     setLoading(true);

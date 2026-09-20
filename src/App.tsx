@@ -44,6 +44,7 @@ const SeriesView = lazy(() => import("./series/SeriesView").then((m) => ({ defau
 const ReaderView = lazy(() => import("./reader/ReaderView").then((m) => ({ default: m.ReaderView })));
 const CacheView = lazy(() => import("./cache/CacheView").then((m) => ({ default: m.CacheView })));
 const BlacklistView = lazy(() => import("./blacklist/BlacklistView").then((m) => ({ default: m.BlacklistView })));
+const WhitelistView = lazy(() => import("./providers/mangadex/views/WhitelistView").then((m) => ({ default: m.WhitelistView })));
 export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
   browse: () => null,
   library: () => null,
@@ -51,6 +52,7 @@ export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
   reader: (p) => <ReaderView route={p.route} />,
   cache: () => <CacheView />,
   blacklist: () => <BlacklistView />,
+  whitelist: () => <WhitelistView />,
 };
 
 export function App() {

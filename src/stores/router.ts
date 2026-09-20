@@ -281,6 +281,11 @@ export function routeLabel(r: Route): RouteLabel {
         title: t("routes.seriesBlacklist"),
         icon: "bi-shield-slash",
       };
+    case "whitelist":
+      return {
+        title: "Feed Allowlist",
+        icon: "bi-list-check",
+      };
     default:
       return {
         title: t("routes.unknown"),
