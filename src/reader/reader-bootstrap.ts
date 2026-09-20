@@ -16,6 +16,7 @@ import {
   recordMdxHistory,
 } from "../providers/mangadex/reader";
 import { getMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
+import { extractMangaDexId } from "../api/navigation";
 import { getChapterContainerTag } from "../taxonomy";
 import {
   detectIsLongStrip,
@@ -54,7 +55,7 @@ async function determineStartPage(
   } else if (startPage <= 0) {
     try {
       if (permalink.startsWith("mdx:")) {
-        const prog = await getMdxProgress(permalink.replace(/^mdx:/, ""));
+        const prog = await getMdxProgress(extractMangaDexId(permalink));
         if (prog && prog.completed !== 1 && prog.page_index > 0) {
           startPage = prog.page_index;
         }
@@ -166,7 +167,7 @@ async function hydrateCachedPages(s: ReaderSession, permalink: string, pageCount
   let cachedRows: Array<{ page_index: number; file_path: string }> = [];
   try {
     if (permalink.startsWith("mdx:")) {
-      cachedRows = await getMdxCachedPages(permalink.replace(/^mdx:/, ""));
+      cachedRows = await getMdxCachedPages(extractMangaDexId(permalink));
     } else {
       cachedRows = await getCachedPages(permalink);
     }
@@ -364,8 +365,8 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   try {
     if (permalink.startsWith("mdx:")) {
       await recordMdxHistory(
-        permalink.replace(/^mdx:/, ""),
-        s.seriesPermalink()?.replace(/^mdx:/, "") ?? "",
+        extractMangaDexId(permalink),
+        s.seriesPermalink() ? extractMangaDexId(s.seriesPermalink()!) : "",
         s.seriesName() ?? "",
         s.chapterTitle(),
       );
@@ -384,7 +385,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   let bookmarked = false;
   try {
     if (permalink.startsWith("mdx:")) {
-      bookmarked = (await getMdxBookmark(permalink.replace(/^mdx:/, ""))) !== null;
+      bookmarked = (await getMdxBookmark(extractMangaDexId(permalink))) !== null;
     } else {
       bookmarked = (await getBookmark(permalink)) !== null;
     }

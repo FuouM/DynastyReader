@@ -40,7 +40,7 @@ const atHomeSessions = new Map<string, { baseUrl: string; hash: string; filename
 export async function loadMangaDexChapterForReader(
   permalink: string,
 ): Promise<MangaDexReaderPayload> {
-  const chapterId = permalink.replace(/^mdx:/, "");
+  const chapterId = permalink.replace(/^(mdx:)?(chapter:|series:)?/, "");
   const mdxChapter = await getChapter(chapterId);
 
   // Extract mangaId from relationships

@@ -84,7 +84,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
       if (activeProvider() === "mangadex") {
         const mdxChapters = await getMangaDexDownloadedChapters();
         const rows: FullyCachedChapterRow[] = mdxChapters.map((c) => ({
-          chapterPermalink: `mdx:chapter:${c.chapterId}`,
+          chapterPermalink: `mdx:${c.chapterId}`,
           seriesPermalink: c.mangaId ? `mdx:${c.mangaId}` : null,
           seriesName: c.mangaTitle,
           chapterTitle: c.chapterTitle,

@@ -41,7 +41,7 @@ export async function getFollowedSeriesPage(
         name: m.title,
         cover: m.cover_filename,
         last_checked_at: m.last_checked_at,
-        latest_chapter_permalink: m.latest_chapter_id ? `mdx:chapter:${m.latest_chapter_id}` : null,
+        latest_chapter_permalink: m.latest_chapter_id ? `mdx:${m.latest_chapter_id}` : null,
         latest_chapter_title: m.latest_chapter_title,
         created_at: m.created_at,
       })),
@@ -278,7 +278,7 @@ export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPa
     return {
       rows: res.rows.map((h) => ({
         id: h.id,
-        chapter_permalink: `mdx:chapter:${h.chapter_id}`,
+        chapter_permalink: `mdx:${h.chapter_id}`,
         chapter_title: h.chapter_title,
         series_permalink: h.manga_id ? `mdx:${h.manga_id}` : "",
         series_name: h.manga_title,
@@ -330,7 +330,7 @@ export async function getBookmarksPage(page = 1, pageSize = 15): Promise<Bookmar
     const res = await getMdxBookmarks(page, pageSize);
     return {
       rows: res.rows.map((b) => ({
-        chapter_permalink: `mdx:chapter:${b.chapter_id}`,
+        chapter_permalink: `mdx:${b.chapter_id}`,
         chapter_title: b.chapter_title,
         series_permalink: b.manga_id ? `mdx:${b.manga_id}` : "",
         series_name: b.manga_title,
@@ -394,7 +394,7 @@ export async function addBookmark(p: {
 
 export async function removeBookmark(chapterPermalink: string): Promise<void> {
   if (chapterPermalink.startsWith("mdx:")) {
-    await removeMdxBookmark(chapterPermalink.replace(/^mdx:chapter:/, ""));
+    await removeMdxBookmark(chapterPermalink.replace(/^mdx:/, ""));
     notifyBookmarksChanged();
     return;
   }

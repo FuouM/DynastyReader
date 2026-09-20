@@ -14,7 +14,8 @@ import type {
  * Fetches single chapter metadata with scanlation_group and manga relationships.
  */
 export async function getChapter(id: string): Promise<MangaDexChapter> {
-  const resp = await fetchMangaDex<MangaDexResponse<MangaDexChapter>>(`/chapter/${id}`, {
+  const cleanId = id.startsWith("mdx:") ? id.slice(4) : id;
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexChapter>>(`/chapter/${cleanId}`, {
     includes: ["scanlation_group", "manga"],
   });
   return resp.data;
@@ -28,7 +29,8 @@ export async function getAtHomeServer(
   chapterId: string,
   forcePort443 = false,
 ): Promise<MangaDexAtHomeResponse> {
-  return fetchMangaDex<MangaDexAtHomeResponse>(`/at-home/server/${chapterId}`, {
+  const cleanId = chapterId.startsWith("mdx:") ? chapterId.slice(4) : chapterId;
+  return fetchMangaDex<MangaDexAtHomeResponse>(`/at-home/server/${cleanId}`, {
     forcePort443: forcePort443 ? "true" : undefined,
   });
 }

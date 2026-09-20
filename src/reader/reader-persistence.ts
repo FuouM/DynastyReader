@@ -8,6 +8,7 @@ import { debounce } from "@solid-primitives/scheduled";
 import { isMobile } from "../stores/platform";
 import { setReadingProgress } from "../db/library.repo";
 import { saveMdxProgress } from "../providers/mangadex/reader";
+import { extractMangaDexId } from "../api/navigation";
 import { log } from "../utils/log";
 import type { ReaderState } from "./reader-state";
 
@@ -34,8 +35,8 @@ export function createReaderPersistence(state: ReaderState, permalink: string): 
     try {
       if (permalink.startsWith("mdx:")) {
         await saveMdxProgress(
-          permalink.replace(/^mdx:/, ""),
-          state.seriesPermalink()?.replace(/^mdx:/, "") ?? "",
+          extractMangaDexId(permalink),
+          state.seriesPermalink() ? extractMangaDexId(state.seriesPermalink()!) : "",
           state.seriesName() ?? "",
           state.chapterTitle(),
           state.currentIndex(),

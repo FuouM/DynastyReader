@@ -100,6 +100,12 @@ export function parseDynastyUrl(input: string): ParsedDynastyUrl | null {
   if (!entity) return null;
   return { kind: normalizeToSeriesKind(entity.kind), permalink: entity.permalink };
 }
+/**
+ * Extracts the bare UUID from an mdx: permalink.
+ */
+export function extractMangaDexId(permalink: string): string {
+  return permalink.startsWith("mdx:") ? permalink.slice(4) : permalink;
+}
 
 const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 

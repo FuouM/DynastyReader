@@ -186,13 +186,13 @@ export function BrowseView() {
       if (parsed.kind === "chapter") {
         navigate({
           view: "reader",
-          chapterPermalink: `mdx:chapter:${parsed.id}`,
+          chapterPermalink: `mdx:${parsed.id}`,
           chapterTitle: `Chapter ${parsed.id}`,
         });
       } else {
         navigate({
           view: "series",
-          seriesPermalink: `mdx:series:${parsed.id}`,
+          seriesPermalink: `mdx:${parsed.id}`,
           seriesName: "MangaDex Series",
         });
       }

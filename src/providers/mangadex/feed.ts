@@ -111,7 +111,7 @@ function mapMdxChapterToFeedChapter(
     title,
     series: mangaTitle,
     series_type: "Series",
-    permalink: `mdx:chapter:${ch.id}`,
+    permalink: `mdx:${ch.id}`,
     tags,
     released_on: ch.attributes.readableAt ?? null,
     cover_url: coverUrl,
@@ -179,7 +179,7 @@ export async function fetchMangaDexFeedWithRevalidation(
       console.warn("[MangaDexFeed] Head check error:", err);
     }
 
-    const currentTopId = parsedFeed.chapters[0]?.permalink.replace(/^mdx:chapter:/, "");
+    const currentTopId = parsedFeed.chapters[0]?.permalink.replace(/^mdx:/, "");
     if (newestChapterId && newestChapterId === currentTopId) {
       await touchCachedMdxMetadata(cacheKey).catch(() => {});
       return {
@@ -322,7 +322,7 @@ export async function revalidateMangaDexFeedHead(tabId: string): Promise<FeedHea
     return { hasNew: false, status: "error" };
   }
 
-  const currentTopId = parsedFeed?.chapters?.[0]?.permalink.replace(/^mdx:chapter:/, "");
+  const currentTopId = parsedFeed?.chapters?.[0]?.permalink.replace(/^mdx:/, "");
   if (!currentTopId) {
     return { hasNew: true, status: "new-chapters" };
   }

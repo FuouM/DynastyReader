@@ -42,7 +42,8 @@ export async function searchManga(
  * Fetches a single manga by UUID with cover_art and author relationships.
  */
 export async function getManga(id: string): Promise<MangaDexManga> {
-  const resp = await fetchMangaDex<MangaDexResponse<MangaDexManga>>(`/manga/${id}`, {
+  const cleanId = id.startsWith("mdx:") ? id.slice(4) : id;
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexManga>>(`/manga/${cleanId}`, {
     includes: ["cover_art", "author"],
   });
   return resp.data;
@@ -65,6 +66,7 @@ export async function getMangaFeed(
   id: string,
   options: GetMangaFeedOptions = {},
 ): Promise<MangaDexResponse<MangaDexChapter[]>> {
+  const cleanId = id.startsWith("mdx:") ? id.slice(4) : id;
   const params: Record<string, unknown> = {
     translatedLanguage: options.translatedLanguage ?? ["en"],
     limit: options.limit ?? 100,
@@ -76,7 +78,7 @@ export async function getMangaFeed(
     includeFutureUpdates: 0,
   };
 
-  const resp = await fetchMangaDex<MangaDexResponse<MangaDexChapter[]>>(`/manga/${id}/feed`, params);
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexChapter[]>>(`/manga/${cleanId}/feed`, params);
   if (resp.data) {
     resp.data = resp.data.filter((c) => !c.attributes.externalUrl && (c.attributes.pages ?? 0) > 0);
   }
@@ -91,7 +93,8 @@ export async function getMangaAggregate(
   id: string,
   translatedLanguage: string[] = ["en"],
 ): Promise<MangaDexAggregateResponse> {
-  return fetchMangaDex<MangaDexAggregateResponse>(`/manga/${id}/aggregate`, {
+  const cleanId = id.startsWith("mdx:") ? id.slice(4) : id;
+  return fetchMangaDex<MangaDexAggregateResponse>(`/manga/${cleanId}/aggregate`, {
     translatedLanguage,
   });
 }

@@ -16,6 +16,7 @@ import { HistoryNavButtons } from "../components/HistoryDropdown";
 import { decodeEntities, errorMessage } from "../utils/formatting";
 import { addBookmark, removeBookmark } from "../db/library.repo";
 import { addMdxBookmark, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
+import { extractMangaDexId } from "../api/navigation";
 import { t } from "../i18n";
 import { getReaderNavPosition, getReaderFilterCss } from "./settings";
 import { IconButton } from "../components/Button";
@@ -71,7 +72,7 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
   const handleToggleBookmark = async () => {
     try {
       const isMdx = s.permalink.startsWith("mdx:");
-      const chId = isMdx ? s.permalink.replace(/^mdx:/, "") : "";
+      const chId = isMdx ? extractMangaDexId(s.permalink) : "";
       if (s.bookmarked()) {
         if (isMdx) {
           await removeMdxBookmark(chId);
@@ -84,7 +85,7 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
         if (isMdx) {
           await addMdxBookmark({
             chapterId: chId,
-            mangaId: s.seriesPermalink()?.replace(/^mdx:/, "") ?? "",
+            mangaId: s.seriesPermalink() ? extractMangaDexId(s.seriesPermalink()!) : "",
             mangaTitle: s.seriesName() ?? "",
             chapterTitle: s.chapterTitle(),
             pageIndex: s.currentIndex(),

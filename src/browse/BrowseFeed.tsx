@@ -75,16 +75,16 @@ interface FeedModel {
 async function fetchItemStateSets(permalinks: string[]) {
   const isMdx = permalinks.some((p) => p.startsWith("mdx:"));
   if (isMdx) {
-    const chapterIds = permalinks.map((p) => p.replace(/^mdx:chapter:/, ""));
+    const chapterIds = permalinks.map((p) => p.replace(/^mdx:/, ""));
     const [readSet, bookmarkSet, fullyCachedSet] = await Promise.all([
       getMdxHistoryChapterIds(chapterIds).catch(() => new Set<string>()),
       getMdxBookmarkChapterIds(chapterIds).catch(() => new Set<string>()),
       getFullyCachedMdxChapterIds(chapterIds).catch(() => new Set<string>()),
     ]);
     return {
-      readHistorySet: new Set(Array.from(readSet).map((id) => `mdx:chapter:${id}`)),
-      bookmarkSet: new Set(Array.from(bookmarkSet).map((id) => `mdx:chapter:${id}`)),
-      fullyCachedSet: new Set(Array.from(fullyCachedSet).map((id) => `mdx:chapter:${id}`)),
+      readHistorySet: new Set(Array.from(readSet).map((id) => `mdx:${id}`)),
+      bookmarkSet: new Set(Array.from(bookmarkSet).map((id) => `mdx:${id}`)),
+      fullyCachedSet: new Set(Array.from(fullyCachedSet).map((id) => `mdx:${id}`)),
     };
   }
   const [readHistorySet, bookmarkSet, fullyCachedSet] = await Promise.all([
