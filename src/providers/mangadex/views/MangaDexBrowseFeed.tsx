@@ -17,6 +17,11 @@ import { getMdxHistoryChapterIds } from "../db/history.repo";
 import { getMdxBookmarkChapterIds } from "../db/bookmarks.repo";
 import { getFullyCachedMdxChapterIds } from "../db/cache.repo";
 import {
+  getCachedMdxMetadata,
+  setCachedMdxMetadata,
+  touchCachedMdxMetadata,
+} from "../db/metadata.repo";
+import {
   setPaneError,
   setPaneLoading,
   setTopPagerFor,
@@ -43,7 +48,15 @@ interface FeedModel {
   rows: FeedRowData[];
   totalPages: number;
   totalCount: number;
+  topChapterId?: string;
 }
+interface CachedFeedPayload {
+  rows: FeedRowData[];
+  totalPages: number;
+  totalCount: number;
+  topChapterId?: string;
+}
+
 
 export interface MangaDexBrowseFeedProps {
   tabId: "releases" | "added";
@@ -65,11 +78,80 @@ export function MangaDexBrowseFeed(props: MangaDexBrowseFeedProps) {
       whitelistedTags().map((t) => t.id).join(",").length,
     forceTick: props.forceTick,
     load: async (page) => {
+      const whitelistKey = whitelistEnabled()
+        ? whitelistedTags().map((t) => t.id).sort().join(",")
+        : "all";
+      const cacheKey = `feed:${props.tabId}:${page}:${whitelistKey}`;
+
+      // 1. Try reading from SQLite cache
+      const cachedRecord = await getCachedMdxMetadata(cacheKey).catch(() => null);
+      let cachedPayload: CachedFeedPayload | null = null;
+      if (cachedRecord?.json_payload) {
+        try {
+          cachedPayload = JSON.parse(cachedRecord.json_payload);
+        } catch {
+          cachedPayload = null;
+        }
+      }
+
+      // 2. If page 1 and cachedPayload exists, check if user clicked "Check Updates" (forceTick > 0)
+      // or if the cache is still fresh (< 5 minutes) during regular navigation.
+      const isForceCheck = props.forceTick() > 0;
+      const isCacheFresh = cachedRecord && Date.now() - cachedRecord.cached_at < 5 * 60 * 1000;
+
+      if (page === 1 && cachedPayload && !isForceCheck && isCacheFresh) {
+        return {
+          rows: cachedPayload.rows,
+          totalPages: cachedPayload.totalPages,
+          totalCount: cachedPayload.totalCount,
+          cachedAt: cachedRecord.cached_at,
+        };
+      }
+
+      // 3. Fast Head Revalidation Check (Simulated ETag)
+      // When page 1 and cachedPayload exists, do a lightweight limit: 1 request (~150ms)
+      // to check whether any new chapter was actually uploaded to MangaDex.
+      if (page === 1 && cachedPayload && cachedPayload.topChapterId) {
+        let latestRemoteChapterId: string | null = null;
+        try {
+          if (whitelistEnabled() && whitelistedTags().length > 0) {
+            const tagIds = whitelistedTags().map((t) => t.id);
+            const headManga = await searchManga({
+              includedTags: tagIds,
+              order: { latestUploadedChapter: "desc" },
+              limit: 1,
+            });
+            latestRemoteChapterId = headManga.data?.[0]?.attributes?.latestUploadedChapter || null;
+          } else {
+            const order: Record<string, "asc" | "desc"> =
+              props.tabId === "releases" ? { readableAt: "desc" } : { createdAt: "desc" };
+            const headCh = await searchChapters({
+              limit: 1,
+              order,
+              translatedLanguage: ["en"],
+            });
+            latestRemoteChapterId = headCh.data?.[0]?.id || null;
+          }
+        } catch (err) {
+          console.warn("[MangaDexBrowseFeed] Fast head check failed, falling back to full fetch:", err);
+        }
+
+        if (latestRemoteChapterId && latestRemoteChapterId === cachedPayload.topChapterId) {
+          // Feed head has NOT changed! No new chapters!
+          await touchCachedMdxMetadata(cacheKey).catch(() => {});
+          return {
+            rows: cachedPayload.rows,
+            totalPages: cachedPayload.totalPages,
+            totalCount: cachedPayload.totalCount,
+            cachedAt: Date.now(),
+          };
+        }
+      }
+
       const offset = (page - 1) * PAGE_SIZE;
       let chapters: MangaDexChapter[] = [];
       const mangaMap = new Map<string, MangaDexManga>();
       let totalCount = 0;
-
       if (whitelistEnabled() && whitelistedTags().length > 0) {
         const tagIds = whitelistedTags().map((t) => t.id);
         const mangaResp = await searchManga({
@@ -157,8 +239,18 @@ export function MangaDexBrowseFeed(props: MangaDexBrowseFeedProps) {
       }
 
       const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+      const topChapterId = chapters[0]?.id;
+      const payloadToCache: CachedFeedPayload = {
+        rows,
+        totalPages,
+        totalCount,
+        topChapterId,
+      };
+      void setCachedMdxMetadata(cacheKey, "feed", JSON.stringify(payloadToCache)).catch((err) => {
+        console.warn("[MangaDexBrowseFeed] Failed to cache feed metadata:", err);
+      });
 
-      return { rows, totalPages, totalCount, cachedAt: Date.now() };
+      return { rows, totalPages, totalCount, topChapterId, cachedAt: Date.now() };
     },
   });
 
@@ -182,7 +274,7 @@ export function MangaDexBrowseFeed(props: MangaDexBrowseFeedProps) {
 
   return (
     <div class="ds-feed-pane">
-      <Show when={showSpinner()}>
+      <Show when={showSpinner() && pane.data() === undefined}>
         <div style="display: flex; justify-content: center; padding: 40px 0;">
           <Loading />
         </div>
@@ -195,7 +287,7 @@ export function MangaDexBrowseFeed(props: MangaDexBrowseFeedProps) {
         />
       </Show>
 
-      <Show when={!pane.loading() && !pane.error()}>
+      <Show when={pane.data() !== undefined}>
         <Show
           when={(pane.data()?.rows.length ?? 0) > 0}
           fallback={<EmptyState>No chapters found in this feed.</EmptyState>}
@@ -236,7 +328,35 @@ export function MangaDexBrowseFeed(props: MangaDexBrowseFeedProps) {
             }
             getHost={() => null}
             onCheckUpdates={async () => {
-              pane.reload();
+              let latestRemoteChapterId: string | null = null;
+              try {
+                if (whitelistEnabled() && whitelistedTags().length > 0) {
+                  const tagIds = whitelistedTags().map((t) => t.id);
+                  const headManga = await searchManga({
+                    includedTags: tagIds,
+                    order: { latestUploadedChapter: "desc" },
+                    limit: 1,
+                  });
+                  latestRemoteChapterId = headManga.data?.[0]?.attributes?.latestUploadedChapter || null;
+                } else {
+                  const order: Record<string, "asc" | "desc"> =
+                    props.tabId === "releases" ? { readableAt: "desc" } : { createdAt: "desc" };
+                  const headCh = await searchChapters({
+                    limit: 1,
+                    order,
+                    translatedLanguage: ["en"],
+                  });
+                  latestRemoteChapterId = headCh.data?.[0]?.id || null;
+                }
+              } catch (err) {
+                console.warn("[MangaDexBrowseFeed] onCheckUpdates head check failed:", err);
+              }
+
+              const currentTopId = pane.data()?.topChapterId;
+              if (latestRemoteChapterId && currentTopId && latestRemoteChapterId !== currentTopId) {
+                pane.reload();
+                return "new-chapters";
+              }
               return "unchanged";
             }}
           />

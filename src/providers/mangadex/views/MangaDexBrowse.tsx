@@ -8,7 +8,7 @@
  * - Mobile pull-to-refresh
  */
 
-const CHECK_UPDATES_POLL_DEADLINE_MS = 15_000;
+const CHECK_UPDATES_POLL_DEADLINE_MS = 5_000;
 const CHECK_UPDATES_POLL_INTERVAL_MS = 50;
 const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
@@ -228,6 +228,12 @@ export function MangaDexBrowse() {
           return;
         }
         if (Date.now() > deadline) {
+          cleanup();
+          resolve();
+          return;
+        }
+        // If we never see loading=true within three intervals, pane data was already fresh
+        if (!sawLoading && Date.now() > deadline - CHECK_UPDATES_POLL_DEADLINE_MS + CHECK_UPDATES_POLL_INTERVAL_MS * 3) {
           cleanup();
           resolve();
           return;

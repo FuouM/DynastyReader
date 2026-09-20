@@ -53,6 +53,13 @@ const SCHEMA = [
     cached_at INTEGER NOT NULL,
     PRIMARY KEY (chapter_id, page_index)
   )`,
+  `CREATE TABLE IF NOT EXISTS cached_metadata (
+    cache_key TEXT PRIMARY KEY,
+    data_type TEXT NOT NULL,
+    json_payload TEXT NOT NULL,
+    cached_at INTEGER NOT NULL,
+    etag TEXT
+  )`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_history_read_at ON reading_history(read_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_progress_manga ON reading_progress(manga_id)`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_cached_pages_chapter ON cached_pages(chapter_id)`,
