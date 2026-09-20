@@ -8,6 +8,10 @@ export interface ChapterRef {
   title: string;
   permalink: string;
   released_on?: string;
+  /** MangaDex scanlation group id for sticky-scanlator navigation. */
+  scanlatorGroup?: string;
+  /** MangaDex scanlation group display name. */
+  scanlatorGroupName?: string;
 }
 
 export interface Route {

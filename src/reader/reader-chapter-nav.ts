@@ -38,10 +38,15 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
         const num = ch.attributes.chapter;
         const raw = ch.attributes.title;
         const title = num ? (raw ? `Ch. ${num} - ${raw}` : `Chapter ${num}`) : (raw || "Oneshot");
+        const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
+        const attrs = groupRel?.attributes;
+        const groupName = attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string" ? attrs.name : undefined;
         return {
           title,
           permalink: `mdx:${ch.id}`,
           released_on: ch.attributes.readableAt ? ch.attributes.readableAt.substring(0, 10) : undefined,
+          scanlatorGroup: groupRel?.id,
+          scanlatorGroupName: groupName,
         };
       });
       s.setChapterList(cl);
@@ -134,11 +139,12 @@ export async function gotoAdjacent(s: ReaderSession, direction: "prev" | "next")
     if (s.chapterList().length === 0 && s.chapterListPromise) {
       await s.chapterListPromise;
     }
-    let adj = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
+    let cl = s.chapterList();
+    let adj = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
     let chapter = direction === "prev" ? adj.prevCh : adj.nextCh;
     if (!chapter && s.seriesPermalink()) {
-      const needsForce = s.chapterList().length > 0;
-      const cl = await loadChapterList(s, needsForce);
+      const needsForce = cl.length > 0;
+      cl = await loadChapterList(s, needsForce);
       if (cl.length > 0) {
         const reloaded = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
         chapter = direction === "prev" ? reloaded.prevCh : reloaded.nextCh;
@@ -152,6 +158,43 @@ export async function gotoAdjacent(s: ReaderSession, direction: "prev" | "next")
       }
     }
     if (chapter) {
+      // ── Decision 3D: Sticky scanlator tracking for MangaDex ───────────────
+      // The chapter list may contain multiple uploads for the same chapter
+      // number (different scanlation groups). Prefer the group that translated
+      // the chapter we are navigating FROM so the reader stays with one team.
+      if (s.permalink.startsWith("mdx:") && chapter.permalink.startsWith("mdx:")) {
+        const preferred = s.activeScanlatorGroup();
+        if (preferred) {
+          // The adjacent chapter returned by getAdjacentChapters is positionally
+          // first. Look for an upload by the preferred group at the same chapter
+          // number by scanning the full chapter list for a sibling with matching
+          // scanlatorGroup whose title prefix matches the adjacent chapter title.
+          // Chapter titles share a "Ch. X" prefix even when scanlation groups differ.
+          const adjTitle = chapter.title; // e.g. "Ch. 12 - The Gate"
+          const chNumMatch = adjTitle.match(/^(?:Ch\.|Chapter)\s*([\d.]+)/);
+          if (chNumMatch) {
+            const chNum = chNumMatch[1];
+            const preferred_upload = cl.find(
+              (ref) =>
+                ref.scanlatorGroup === preferred &&
+                ref.title.match(/^(?:Ch\.|Chapter)\s*([\d.]+)/)?.[1] === chNum,
+            );
+            if (preferred_upload) {
+              chapter = preferred_upload;
+            } else {
+              // Preferred group absent for this chapter number → non-blocking toast
+              const groupName = chapter.scanlatorGroupName ?? preferred;
+              showBanner(
+                `[${groupName}] didn't translate this chapter — switching to another scanlation.`,
+              );
+            }
+          }
+        }
+        // Update sticky scanlator from the chapter we're about to navigate to.
+        if (chapter.scanlatorGroup) {
+          s.setActiveScanlatorGroup(chapter.scanlatorGroup);
+        }
+      }
       const target = direction === "prev" && getPrevChapterStartPage() === "last" ? "last" : 0;
       gotoChapter(s, chapter, target);
     } else {

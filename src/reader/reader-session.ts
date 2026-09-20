@@ -7,7 +7,7 @@
  * delegated to reader-viewport.ts.
  */
 
-import { batch, createComponent, createRoot, getOwner, runWithOwner } from "solid-js";
+import { batch, createComponent, createRoot, createSignal, getOwner, runWithOwner } from "solid-js";
 import { createStore } from "solid-js/store";
 import { showBanner, setActions } from "../stores/topbar";
 import { convertFileSrc } from "../ipc";
@@ -150,6 +150,9 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   containerTagPermalink: string | null = null;
   containerTagType: string | null = null;
   chapterListPromise: Promise<ChapterRef[]> | null = null;
+  /** Sticky MangaDex scanlator group id for adjacent chapter preference (Decision 3D). */
+  readonly activeScanlatorGroup: () => string | null;
+  readonly setActiveScanlatorGroup: (v: string | null) => void;
   private actionsDispose: (() => void) | null = null;
   private readonly sessionOwner = getOwner();
   get isHorizontal(): () => boolean { return this.state.isHorizontal; }
@@ -180,6 +183,9 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.route = route;
     this.permalink = route.chapterPermalink ?? "";
     this.state = createReaderState();
+    const [scanlatorGroup, setScanlatorGroup] = createSignal<string | null>(null);
+    this.activeScanlatorGroup = scanlatorGroup;
+    this.setActiveScanlatorGroup = setScanlatorGroup;
     this.queue = new ReaderQueue(this);
     this.persistence = createReaderPersistence(this.state, this.permalink);
   }

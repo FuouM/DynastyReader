@@ -394,6 +394,15 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   }
   s.setBookmarked(bookmarked);
 
+  // Seed sticky scanlator group from the opening chapter's ChapterRef so that
+  // the first gotoAdjacent call already has a preferred group to track (3D).
+  if (permalink.startsWith("mdx:")) {
+    const openRef = s.chapterList().find((ref) => ref.permalink === permalink);
+    if (openRef?.scanlatorGroup) {
+      s.setActiveScanlatorGroup(openRef.scanlatorGroup);
+    }
+  }
+
   s.publishActions();
 
   requestAnimationFrame(() => {
