@@ -221,27 +221,18 @@ export function resolveTapZone(
   s: ReaderSession,
   zone: "left" | "center" | "right",
 ): void {
-  const isRtl = s.direction() === "rtl";
-  if (zone === "left") {
-    const step = isRtl ? 1 : -1;
-    const targetPage = s.currentIndex() + step;
-    if (targetPage >= 0 && targetPage < s.pages().length) {
-      const willActuallyTurn = !s.isSpread() || s.canStepSpread(step as 1 | -1);
-      if (isMobile() && willActuallyTurn) triggerHaptic("page-turn");
-      if (s.isSpread()) s.stepSpread(step as 1 | -1);
-      else s.setPage(targetPage);
-    }
-  } else if (zone === "right") {
-    const step = isRtl ? -1 : 1;
-    const targetPage = s.currentIndex() + step;
-    if (targetPage >= 0 && targetPage < s.pages().length) {
-      const willActuallyTurn = !s.isSpread() || s.canStepSpread(step as 1 | -1);
-      if (isMobile() && willActuallyTurn) triggerHaptic("page-turn");
-      if (s.isSpread()) s.stepSpread(step as 1 | -1);
-      else s.setPage(targetPage);
-    }
-  } else {
+  if (zone === "center") {
     s.toggleToolbarVisible();
+    return;
+  }
+  const isRtl = s.direction() === "rtl";
+  const step = ((zone === "left" ? 1 : -1) * (isRtl ? 1 : -1)) as 1 | -1;
+  const targetPage = s.currentIndex() + step;
+  if (targetPage >= 0 && targetPage < s.pages().length) {
+    const willActuallyTurn = !s.isSpread() || s.canStepSpread(step);
+    if (isMobile() && willActuallyTurn) triggerHaptic("page-turn");
+    if (s.isSpread()) s.stepSpread(step);
+    else s.setPage(targetPage);
   }
 }
 

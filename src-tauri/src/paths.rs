@@ -88,7 +88,7 @@ fn reject_unsafe_components(path: &str) -> Result<(), String> {
                 "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
                 "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
             ];
-            if RESERVED.contains(&stem.as_str()) {
+            if RESERVED.iter().any(|&r| r == stem) {
                 return Err(format!("illegal path component (reserved device name '{stem}')"));
             }
         }
@@ -124,9 +124,7 @@ pub fn canonicalize_ancestor(target: &Path) -> Result<PathBuf, String> {
         .canonicalize()
         .map_err(|e| format!("failed to canonicalize {existing:?}: {e}"))?;
     let mut out = canonical;
-    for comp in tail.into_iter().rev() {
-        out.push(comp);
-    }
+    out.extend(tail.into_iter().rev());
     Ok(out)
 }
 
@@ -155,10 +153,8 @@ pub fn resolve_in_root(raw: &str) -> Result<PathBuf, String> {
             return Err("path escapes data directory".to_string());
         }
         reject_unsafe_components(&normalized_raw)?;
-        for comp in p.components() {
-            if matches!(comp, std::path::Component::ParentDir) {
-                return Err("path escapes data directory".to_string());
-            }
+        if p.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+            return Err("path escapes data directory".to_string());
         }
         root.join(p)
     };

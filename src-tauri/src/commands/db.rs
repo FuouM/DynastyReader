@@ -60,6 +60,11 @@ pub const ALLOWED_PRAGMAS: &[&str] = &[
     "index_info",
 ];
 
+#[inline]
+fn is_allowed_pragma(name: &str) -> bool {
+    ALLOWED_PRAGMAS.iter().any(|&p| p.eq_ignore_ascii_case(name))
+}
+
 /// SQLite native authorizer callback for `dbQuery`.
 /// Strictly enforces read-only access: only SELECT, column reads, scalar functions,
 /// and allowlisted inspection PRAGMAs are permitted.
@@ -70,12 +75,7 @@ pub fn authorize_query(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks
             Authorization::Allow
         }
         AuthAction::Pragma { pragma_name, .. } => {
-            let name = pragma_name.to_ascii_lowercase();
-            if ALLOWED_PRAGMAS.contains(&name.as_str()) {
-                Authorization::Allow
-            } else {
-                Authorization::Deny
-            }
+            if is_allowed_pragma(pragma_name) { Authorization::Allow } else { Authorization::Deny }
         }
         _ => Authorization::Deny,
     }
@@ -111,12 +111,7 @@ pub fn authorize_execute(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hoo
         | AuthAction::DropVtable { .. }
         | AuthAction::CreateVtable { .. } => Authorization::Deny,
         AuthAction::Pragma { pragma_name, .. } => {
-            let name = pragma_name.to_ascii_lowercase();
-            if ALLOWED_PRAGMAS.contains(&name.as_str()) {
-                Authorization::Allow
-            } else {
-                Authorization::Deny
-            }
+            if is_allowed_pragma(pragma_name) { Authorization::Allow } else { Authorization::Deny }
         }
 
         _ => Authorization::Allow,
@@ -223,11 +218,7 @@ fn row_to_json(row: &rusqlite::Row<'_>) -> Result<Value, rusqlite::Error> {
                 .map(Value::Number)
                 .unwrap_or(Value::Null),
             rusqlite::types::ValueRef::Text(v) => {
-                let s = match std::str::from_utf8(v) {
-                    Ok(valid) => valid.to_string(),
-                    Err(_) => String::from_utf8_lossy(v).into_owned(),
-                };
-                Value::String(s)
+                Value::String(String::from_utf8_lossy(v).into_owned())
             }
             rusqlite::types::ValueRef::Blob(v) => match std::str::from_utf8(v) {
                 Ok(s) => Value::String(s.to_string()),
@@ -344,7 +335,7 @@ pub async fn db_backup(
     let ts = crate::util::now_ms();
     let backup_filename = format!("{}.backup.{}.db", normalized, ts);
     let backup_path = crate::paths::data_root().join(&backup_filename);
-    let backup_str = backup_path.to_string_lossy().to_string();
+    let backup_str = backup_path.to_string_lossy().into_owned();
     let size = tokio::task::spawn_blocking(move || {
         // Back up from a dedicated source connection (WAL permits a concurrent
         // reader) so the pooled connection is never blocked for the duration.

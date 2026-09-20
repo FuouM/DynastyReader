@@ -60,11 +60,10 @@ export async function httpDownloadFull(
       const resp = await ipc.httpDownload({ url, outputPath, timeoutMs });
       const sizeBytes = Number(resp.size_bytes ?? 0);
       if (sizeBytes > 0) recordNetworkTraffic(sizeBytes);
-      const result = {
+      return {
         absolutePath: String(resp.absolute_path ?? ""),
         sizeBytes,
       };
-      return result;
     } catch (err) {
       lastErr = err;
       log.debug("http", `httpDownloadFull attempt ${attempt + 1} failed for ${url}:`, err);

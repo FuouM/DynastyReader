@@ -259,7 +259,7 @@ export async function getLocalCover(coverKey: string): Promise<string | null> {
 /**
  * Checks local SQLite cache for an already-downloaded series cover. Zero network traffic.
  */
-export async function getLocalSeriesCover(permalink: string): Promise<string | null> {
+export function getLocalSeriesCover(permalink: string): Promise<string | null> {
   return getLocalCover(`series:${permalink}`);
 }
 

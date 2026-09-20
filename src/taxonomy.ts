@@ -155,7 +155,7 @@ export function getChapterContainerTag(
 
   for (const priority of CHAPTER_CONTAINER_KINDS) {
     const found = tags.find(
-      (t) => resolveKind(t.type) === priority && Boolean(t.permalink && t.permalink.trim().length > 0),
+      (t) => resolveKind(t.type) === priority && Boolean(t.permalink?.trim()),
     );
     if (found && found.permalink) {
       return {
@@ -357,10 +357,13 @@ export interface CategorizedChapterTags {
  * Partitions feed chapter tags into artist, scanlator, and other sorted tags.
  */
 export function categorizeChapterTags(rawTags: ChapterTag[] = []): CategorizedChapterTags {
-  const artistTags = rawTags.filter((t) => isArtistTag(t.type));
-  const groupTags = rawTags.filter((t) => isScanlatorTag(t.type));
-  const otherTags = sortTagsByCategory(
-    rawTags.filter((t) => !isArtistTag(t.type) && !isScanlatorTag(t.type) && (t.type ?? "").toLowerCase() !== "series"),
-  );
-  return { artistTags, groupTags, otherTags };
+  const artistTags: ChapterTag[] = [];
+  const groupTags: ChapterTag[] = [];
+  const unsortedOther: ChapterTag[] = [];
+  for (const t of rawTags) {
+    if (isArtistTag(t.type)) artistTags.push(t);
+    else if (isScanlatorTag(t.type)) groupTags.push(t);
+    else if ((t.type ?? "").toLowerCase() !== "series") unsortedOther.push(t);
+  }
+  return { artistTags, groupTags, otherTags: sortTagsByCategory(unsortedOther) };
 }

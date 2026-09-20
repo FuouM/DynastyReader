@@ -106,15 +106,13 @@ impl Default for DownloadState {
 /// pages. Shared by `download_chapter` (writes) and the cancellation path
 /// (prunes partial downloads).
 fn chapter_pages_rel_dir(req: &DownloadRequest) -> String {
+    let sanitize = |s: &str| s.replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_");
     let clean_series = if req.series_permalink.is_empty() {
         "_singles".to_string()
     } else {
-        req.series_permalink
-            .replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_")
+        sanitize(&req.series_permalink)
     };
-    let clean_chapter = req
-        .chapter_permalink
-        .replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_");
+    let clean_chapter = sanitize(&req.chapter_permalink);
     format!("pages/{}/{}", clean_series, clean_chapter)
 }
 
@@ -598,27 +596,17 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                 Err(_) => return None,
             };
             // busy_timeout/WAL/foreign_keys already applied by open_synced.
-            let mut stmt = match conn.prepare(
+            conn.query_row(
                 "SELECT series_permalink, series_title, chapter_permalink, chapter_title, chapter_index FROM download_queue WHERE status = 'pending' ORDER BY queued_at ASC LIMIT 1",
-            ) {
-                Ok(s) => s,
-                Err(_) => return None,
-            };
-            let mut rows = match stmt.query([]) {
-                Ok(r) => r,
-                Err(_) => return None,
-            };
-            if let Ok(Some(row)) = rows.next() {
-                Some(DownloadRequest {
+                [],
+                |row| Ok(DownloadRequest {
                     series_permalink: row.get::<_, String>(0).unwrap_or_default(),
                     series_title: row.get::<_, String>(1).unwrap_or_default(),
                     chapter_permalink: row.get::<_, String>(2).unwrap_or_default(),
                     chapter_title: row.get::<_, String>(3).unwrap_or_default(),
                     chapter_index: row.get::<_, i64>(4).unwrap_or(0) as usize,
-                })
-            } else {
-                None
-            }
+                }),
+            ).ok()
         })
         .await
         .unwrap_or(None);
@@ -675,7 +663,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         let now = now_ms();
         let req_clone = req.clone();
         let app_clone = app.clone();
-        match result {
+        let (emit_status, pages_done, total_pages) = match result {
             Ok((done, total)) => {
                 let _ = tokio::task::spawn_blocking(move || {
                     if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
@@ -687,18 +675,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                     }
                 })
                 .await;
-                let _ = app_clone.emit(
-                    "download://progress",
-                    DownloadProgressPayload {
-                        chapter_permalink: req.chapter_permalink.clone(),
-                        series_permalink: req.series_permalink.clone(),
-                        pages_done: done,
-                        total_pages: total,
-                        bytes_done: 0,
-                        last_page_bytes: 0,
-                        status: "done".to_string(),
-                    },
-                );
+                ("done", done, total)
             }
             Err(e) if e == "cancelled" => {
                 let cp = req.chapter_permalink.clone();
@@ -723,18 +700,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                     }
                 })
                 .await;
-                let _ = app_clone.emit(
-                    "download://progress",
-                    DownloadProgressPayload {
-                        chapter_permalink: req.chapter_permalink.clone(),
-                        series_permalink: req.series_permalink.clone(),
-                        pages_done: 0,
-                        total_pages: 0,
-                        bytes_done: 0,
-                        last_page_bytes: 0,
-                        status: "cancelled".to_string(),
-                    },
-                );
+                ("cancelled", 0, 0)
             }
             Err(e) => {
                 let cp = req.chapter_permalink.clone();
@@ -748,20 +714,21 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                     }
                 })
                 .await;
-                let _ = app_clone.emit(
-                    "download://progress",
-                    DownloadProgressPayload {
-                        chapter_permalink: req.chapter_permalink.clone(),
-                        series_permalink: req.series_permalink.clone(),
-                        pages_done: 0,
-                        total_pages: 0,
-                        bytes_done: 0,
-                        last_page_bytes: 0,
-                        status: "failed".to_string(),
-                    },
-                );
+                ("failed", 0, 0)
             }
-        }
+        };
+        let _ = app_clone.emit(
+            "download://progress",
+            DownloadProgressPayload {
+                chapter_permalink: req.chapter_permalink.clone(),
+                series_permalink: req.series_permalink.clone(),
+                pages_done,
+                total_pages,
+                bytes_done: 0,
+                last_page_bytes: 0,
+                status: emit_status.to_string(),
+            },
+        );
 
         // Polite inter-chapter delay
         tokio::time::sleep(std::time::Duration::from_millis(1500)).await;

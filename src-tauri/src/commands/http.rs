@@ -220,16 +220,14 @@ pub async fn http_get(
     timeout_ms: Option<u64>,
 ) -> Result<serde_json::Value, String> {
     let method_str = method.as_deref().unwrap_or("GET");
-    let hdrs = headers
-        .and_then(|h| h.as_object().cloned())
-        .unwrap_or_default();
+    let hdrs = headers.as_ref().and_then(serde_json::Value::as_object);
     let resp = send_with_redirects(
         &state.0,
         method_str,
         &url,
         body,
         content_type.as_deref(),
-        Some(&hdrs),
+        hdrs,
         timeout_ms,
     )
     .await?;
@@ -240,13 +238,14 @@ pub async fn http_get(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
-    let mut body_text = String::new();
-    if status != 304 {
+    let body_text = if status != 304 {
         // Never hand a truncated body to the caller — that would fail later in
         // `JSON.parse` with a confusing error. Fail loudly instead.
         let buf = read_body_capped(resp, MAX_GET_BODY).await?;
-        body_text = String::from_utf8_lossy(&buf).into_owned();
-    }
+        String::from_utf8_lossy(&buf).into_owned()
+    } else {
+        String::new()
+    };
     Ok(json!({ "status": status, "body": body_text, "etag": etag }))
 }
 

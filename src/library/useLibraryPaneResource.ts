@@ -69,7 +69,7 @@ export function useLibraryPaneResource<T>(
 
   const [data, { refetch }] = createResource(
     () => ({ page: page(), rev: rev() }),
-    async ({ page: p }) => options.fetcher(p),
+    ({ page: p }) => options.fetcher(p),
   );
 
   // Clamp the page when deletions shrink the result set, otherwise the user

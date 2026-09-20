@@ -116,22 +116,15 @@ async fn convert_one(
 
     let src_buf = src_path.to_string_lossy().into_owned();
     let tgt_buf = tgt_path.to_string_lossy().into_owned();
-    let output_display = tgt_buf.clone();
 
-    let res = tokio::task::spawn_blocking(move || {
-        encode_image(
-            &src_buf,
-            &tgt_buf,
-            &ext,
-            quality,
-            max_dimension,
-            max_bytes,
-        )
+    let res = tokio::task::spawn_blocking({
+        let tgt = tgt_buf.clone();
+        move || encode_image(&src_buf, &tgt, &ext, quality, max_dimension, max_bytes)
     })
     .await;
 
     match res {
-        Ok(Ok(())) => json!({ "source_path": source, "output_path": output_display, "error": "" }),
+        Ok(Ok(())) => json!({ "source_path": source, "output_path": tgt_buf, "error": "" }),
         Ok(Err(e)) => failure(e),
         Err(e) => failure(format!("Task join panicked: {e}")),
     }
@@ -164,16 +157,14 @@ fn encode_image(
     }
     // Bound the larger side, preserving aspect ratio. Single Lanczos3 resize
     // from the original — no cascading resamples.
-    if let Some(md) = max_dimension {
-        if md > 0 {
-            let (w, h) = img.dimensions();
-            let largest = w.max(h);
-            if largest > md {
-                let scale = md as f64 / largest as f64;
-                let nw = ((w as f64 * scale).round() as u32).max(1);
-                let nh = ((h as f64 * scale).round() as u32).max(1);
-                img = img.resize(nw, nh, FilterType::Lanczos3);
-            }
+    if let Some(md) = max_dimension.filter(|&d| d > 0) {
+        let (w, h) = img.dimensions();
+        let largest = w.max(h);
+        if largest > md {
+            let scale = md as f64 / largest as f64;
+            let nw = ((w as f64 * scale).round() as u32).max(1);
+            let nh = ((h as f64 * scale).round() as u32).max(1);
+            img = img.resize(nw, nh, FilterType::Lanczos3);
         }
     }
 

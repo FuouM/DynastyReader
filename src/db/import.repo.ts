@@ -64,8 +64,6 @@ export interface ImportExecutionResult {
   totalImported: number;
 }
 
-export { isValidPermalink, parseValidDynastyUrl };
-
 /**
  * Validates and parses raw import text into a structured, validated payload.
  * Accepts either JSON or Dynasty Scans URL lists.
@@ -287,33 +285,25 @@ function parseJsonImport(
     if (Array.isArray(root.collections)) {
       for (const rawCol of root.collections) {
         if (typeof rawCol === "object" && rawCol !== null) {
-          const colObj = rawCol as Record<string, unknown>;
-          const colName = typeof colObj.name === "string" && colObj.name.trim() ? colObj.name.trim() : "Custom Collection";
-          const isDefault = colObj.isDefault === true;
-          const col = getOrCreateCollection(colName, isDefault);
-          if (Array.isArray(colObj.items)) {
-            for (const item of colObj.items) {
-              addCollectionItem(col, item);
-            }
-          }
+          importCollection(rawCol as Record<string, unknown>, "Custom Collection");
         }
       }
     }
 
     // Case C: Single collection object { collection: { name, items } }
     if (typeof root.collection === "object" && root.collection !== null) {
-      const colObj = root.collection as Record<string, unknown>;
-      const colName = typeof colObj.name === "string" && colObj.name.trim() ? colObj.name.trim() : "Imported Collection";
-      const isDefault = colObj.isDefault === true;
-      const col = getOrCreateCollection(colName, isDefault);
-      if (Array.isArray(colObj.items)) {
-        for (const item of colObj.items) {
-          addCollectionItem(col, item);
-        }
-      }
+      importCollection(root.collection as Record<string, unknown>, "Imported Collection");
     }
   } else {
     errors.push("JSON must be an object or array.");
+  }
+
+  function importCollection(colObj: Record<string, unknown>, fallbackName: string): void {
+    const colName = typeof colObj.name === "string" && colObj.name.trim() ? colObj.name.trim() : fallbackName;
+    const col = getOrCreateCollection(colName, colObj.isDefault === true);
+    if (Array.isArray(colObj.items)) {
+      for (const item of colObj.items) addCollectionItem(col, item);
+    }
   }
 
   const followed = Array.from(followedMap.values());

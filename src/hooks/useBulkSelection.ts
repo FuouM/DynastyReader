@@ -37,7 +37,7 @@ export function useBulkSelection<T>(
   };
 
   const toggleSelectAll = (items: T[]): void => {
-    if (items.length > 0 && selected().size === items.length) {
+    if (isAllSelected(items)) {
       clearSelection();
     } else {
       selectAll(items);

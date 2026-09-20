@@ -26,15 +26,13 @@ export function setupScrollTracker(s: ReaderSession, vpEl: HTMLElement): () => v
       }
       const rect = el.getBoundingClientRect();
 
+      bestIdx = mid;
       if (targetY >= rect.top && targetY < rect.bottom) {
-        bestIdx = mid;
         break;
       } else if (targetY < rect.top) {
         high = mid - 1;
-        bestIdx = mid;
       } else {
         low = mid + 1;
-        bestIdx = mid;
       }
     }
 

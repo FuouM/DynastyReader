@@ -59,10 +59,8 @@ fn is_image(name: &str) -> bool {
 
 fn should_skip(entry: &str) -> bool {
     let lower = entry.to_ascii_lowercase();
-    for pref in SKIP_PREFIXES {
-        if lower.starts_with(pref) {
-            return true;
-        }
+    if SKIP_PREFIXES.iter().any(|pref| lower.starts_with(pref)) {
+        return true;
     }
     let base = lower.rsplit('/').next().unwrap_or(&lower);
     if SKIP_FILES.contains(&base) {
@@ -596,12 +594,11 @@ pub async fn scan_folder(path: String) -> Result<FolderScanResult, String> {
             .and_then(|s| s.to_str())
             .unwrap_or(&path)
             .to_string();
-        let series_title = folder_name.clone();
         let file_names: Vec<String> = files.into_iter().map(|(name, _)| name).collect();
         let page_count = file_names.len();
         Ok(FolderScanResult {
+            series_title: folder_name.clone(),
             folder_name,
-            series_title,
             page_count,
             files: file_names,
         })
@@ -669,7 +666,7 @@ pub async fn import_folder(
             let out_name = format!("p{:03}.{}", idx, ext);
             let out_path = ch_dir.join(&out_name);
             std::fs::copy(src_path, &out_path)
-                .map_err(|e| format!("failed copying page {}: {e}", orig_name))?;
+                .map_err(|e| format!("failed copying page {orig_name}: {e}"))?;
             page_file_names.push(orig_name.clone());
         }
 

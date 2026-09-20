@@ -52,14 +52,16 @@ fn stat_file(target: &std::path::Path, min_size: u64) -> (bool, u64) {
 pub async fn file_exists(path: String, min_size: Option<u64>) -> Result<serde_json::Value, String> {
     let target = crate::paths::resolve_in_root(&path)?;
     let min = min_size.unwrap_or(1);
-    let target_for_stat = target.clone();
-    let (exists, size) = tokio::task::spawn_blocking(move || stat_file(&target_for_stat, min))
-        .await
-        .map_err(|e| format!("file exists task failed: {e}"))?;
+    let (exists, size, abs) = tokio::task::spawn_blocking(move || {
+        let (exists, size) = stat_file(&target, min);
+        (exists, size, target.to_string_lossy().into_owned())
+    })
+    .await
+    .map_err(|e| format!("file exists task failed: {e}"))?;
     Ok(json!({
         "exists": exists,
         "size_bytes": size,
-        "absolute_path": target.to_string_lossy().into_owned(),
+        "absolute_path": abs,
     }))
 }
 
@@ -104,57 +106,26 @@ pub async fn verify_file_integrity_batch(
     tokio::task::spawn_blocking(move || {
         items
             .into_iter()
-            .map(|item| match crate::paths::resolve_in_root(&item.path) {
-                Ok(target) => match target.metadata() {
-                    Ok(meta) if meta.is_file() => {
-                        let size = meta.len();
-                        if size == 0 {
-                            IntegrityCheckResultItem {
-                                id: item.id,
-                                path: item.path,
-                                exists: true,
-                                size_bytes: 0,
-                                is_valid: false,
-                                error: Some("File is 0 bytes (corrupted/empty)".to_string()),
+            .map(|item| {
+                let (exists, size_bytes, is_valid, error) =
+                    match crate::paths::resolve_in_root(&item.path) {
+                        Ok(target) => match target.metadata() {
+                            Ok(meta) if meta.is_file() => {
+                                let size = meta.len();
+                                if size == 0 {
+                                    (true, 0, false, Some("File is 0 bytes (corrupted/empty)".to_string()))
+                                } else {
+                                    match probe_image_file(&target) {
+                                        Ok(_) => (true, size, true, None),
+                                        Err(err) => (true, size, false, Some(err)),
+                                    }
+                                }
                             }
-                        } else {
-                            match probe_image_file(&target) {
-                                Ok(_) => IntegrityCheckResultItem {
-                                    id: item.id,
-                                    path: item.path,
-                                    exists: true,
-                                    size_bytes: size,
-                                    is_valid: true,
-                                    error: None,
-                                },
-                                Err(err) => IntegrityCheckResultItem {
-                                    id: item.id,
-                                    path: item.path,
-                                    exists: true,
-                                    size_bytes: size,
-                                    is_valid: false,
-                                    error: Some(err),
-                                },
-                            }
-                        }
-                    }
-                    Ok(_) | Err(_) => IntegrityCheckResultItem {
-                        id: item.id,
-                        path: item.path,
-                        exists: false,
-                        size_bytes: 0,
-                        is_valid: false,
-                        error: Some("File does not exist on disk".to_string()),
-                    },
-                },
-                Err(e) => IntegrityCheckResultItem {
-                    id: item.id,
-                    path: item.path,
-                    exists: false,
-                    size_bytes: 0,
-                    is_valid: false,
-                    error: Some(e),
-                },
+                            Ok(_) | Err(_) => (false, 0, false, Some("File does not exist on disk".to_string())),
+                        },
+                        Err(e) => (false, 0, false, Some(e)),
+                    };
+                IntegrityCheckResultItem { id: item.id, path: item.path, exists, size_bytes, is_valid, error }
             })
             .collect()
     })
@@ -284,7 +255,7 @@ fn stat_one(target: &std::path::Path) -> (u64, u64) {
     WalkDir::new(target)
         .follow_links(false)
         .into_iter()
-        .filter_map(|e| e.ok())
+        .flatten()
         .filter(|e| e.file_type().is_file())
         .filter_map(|e| e.metadata().ok())
         .fold((0, 0), |(bytes, count), m| (bytes + m.len(), count + 1))

@@ -78,18 +78,13 @@ export function App() {
   });
 
   onMount(() => {
-    makeEventListener(window, "popstate", (ev: PopStateEvent) => {
+    const handleBack = (ev: Event) => {
       ev.preventDefault();
       if (canGoBack()) goBack();
-    });
-    makeEventListener(window, "t-back-button", (ev: Event) => {
-      ev.preventDefault();
-      if (canGoBack()) goBack();
-    });
-    makeEventListener(document, "backbutton", (ev: Event) => {
-      ev.preventDefault();
-      if (canGoBack()) goBack();
-    });
+    };
+    makeEventListener(window, "popstate", handleBack);
+    makeEventListener(window, "t-back-button", handleBack);
+    makeEventListener(document, "backbutton", handleBack);
     makeEventListener(window, "ds-navigate", (ev: Event) => {
       const customEv = ev as CustomEvent<Route>;
       if (customEv.detail) {
@@ -118,16 +113,12 @@ export function App() {
         <div id="ds-pane-library" classList={{ "ds-pane-hidden": route().view !== "library" }}>
           <Dynamic component={viewComponents.library} route={route()} />
         </div>
-        <Show when={!isPersistentView()} keyed>
-          {(show) =>
-            show ? (
-              <div id="ds-pane-dynamic" classList={{ "ds-pane-dynamic--reader": route().view === "reader" }}>
-                <Suspense fallback={<Loading />}>
-                  <Dynamic component={viewComponents[route().view]} route={route()} />
-                </Suspense>
-              </div>
-            ) : null
-          }
+        <Show when={!isPersistentView()}>
+          <div id="ds-pane-dynamic" classList={{ "ds-pane-dynamic--reader": route().view === "reader" }}>
+            <Suspense fallback={<Loading />}>
+              <Dynamic component={viewComponents[route().view]} route={route()} />
+            </Suspense>
+          </div>
         </Show>
       </div>
       </main>

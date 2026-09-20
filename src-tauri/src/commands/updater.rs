@@ -88,18 +88,14 @@ pub fn validate_update_download_url(url: &str) -> Result<(), String> {
 pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>) -> Result<UpdateInfo, String> {
     let current_version = app.package_info().version.to_string();
 
-    let mut headers = serde_json::Map::new();
-    headers.insert(
-        "Accept".to_string(),
-        serde_json::Value::String("application/vnd.github.v3+json".to_string()),
-    );
+    let headers_val = serde_json::json!({ "Accept": "application/vnd.github.v3+json" });
     let resp = crate::commands::http::send_with_redirects(
         &http_state.0,
         "GET",
         "https://api.github.com/repos/FuouM/DynastyReader/releases/latest",
         None,
         None,
-        Some(&headers),
+        headers_val.as_object(),
         None,
     )
     .await
@@ -307,16 +303,12 @@ pub fn cleanup_old_executables() {
     if let Ok(current_exe) = env::current_exe() {
         if let Some(dir) = current_exe.parent() {
             if let Some(file_name) = current_exe.file_name() {
-                let old_exe = dir.join(format!("{}.old", file_name.to_string_lossy()));
-                if old_exe.exists() {
-                    if let Err(e) = fs::remove_file(old_exe) {
-                        log::warn!("failed cleaning up old executable: {e}");
-                    }
-                }
-                let new_exe = dir.join(format!("{}.new", file_name.to_string_lossy()));
-                if new_exe.exists() {
-                    if let Err(e) = fs::remove_file(new_exe) {
-                        log::warn!("failed cleaning up new executable: {e}");
+                for ext in ["old", "new"] {
+                    let p = dir.join(format!("{}.{ext}", file_name.to_string_lossy()));
+                    if p.exists() {
+                        if let Err(e) = fs::remove_file(&p) {
+                            log::warn!("failed cleaning up {ext} executable: {e}");
+                        }
                     }
                 }
             }

@@ -79,11 +79,8 @@ export function matchesHotkey(ev: KeyboardEvent, id: HotkeyActionId): boolean {
  * Helper to check whether an active element or event target is an interactive text input.
  */
 export function isTextInputTarget(target: EventTarget | null): boolean {
-  if (!target || !(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
-  if (target.isContentEditable) return true;
-  return false;
+  if (!(target instanceof HTMLElement)) return false;
+  return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable;
 }
 
 /**

@@ -54,25 +54,12 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
   const mountTime = Date.now();
   const [positionStyle, setPositionStyle] = createSignal("");
   const items = () => {
-    if (props.direction === "back") {
-      const back = historyBackStack();
-      // Most recent back item is at the end of the array, so reverse for top-down list
-      return back
-        .map((r, originalIdx) => ({ route: r, index: originalIdx }))
-        .slice()
-        .reverse();
-    } else {
-      const forward = historyForwardStack();
-      // Most recent forward item is at the end of the array, so reverse for top-down list
-      return forward
-        .map((r, originalIdx) => ({ route: r, index: originalIdx }))
-        .slice()
-        .reverse();
-    }
+    const stack = props.direction === "back" ? historyBackStack() : historyForwardStack();
+    return stack.map((route, index) => ({ route, index })).reverse();
   };
 
   createEffect(() => {
-    if (props.open === false) return;
+    if (!props.open) return;
     const scale = uiScale() || 1;
     const baseStyle = "width:240px;max-width:90vw;";
     const anchor = props.anchorEl;
@@ -108,7 +95,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
   };
 
   return (
-    <Show when={(props.open !== false) && items().length > 0}>
+    <Show when={props.open && items().length > 0}>
       <Portal mount={document.body}>
         <div
           id="ds-history-dropdown-overlay"

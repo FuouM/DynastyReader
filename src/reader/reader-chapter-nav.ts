@@ -144,11 +144,11 @@ export async function gotoAdjacent(s: ReaderSession, direction: "prev" | "next")
   }
 }
 
-export async function gotoPrevChapter(s: ReaderSession): Promise<void> {
+export function gotoPrevChapter(s: ReaderSession): Promise<void> {
   return gotoAdjacent(s, "prev");
 }
 
-export async function gotoNextChapter(s: ReaderSession): Promise<void> {
+export function gotoNextChapter(s: ReaderSession): Promise<void> {
   return gotoAdjacent(s, "next");
 }
 

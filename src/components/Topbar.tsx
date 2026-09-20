@@ -51,30 +51,27 @@ export function Topbar() {
             ]}
           />
           <HistoryNavButtons />
-          <Show when={sessionTab() !== null}>
-            <button
-              type="button"
-              class="win-button ds-nav-tab ds-session-tab"
-              classList={{ active: isInMangaView() }}
-              title={sessionTab()!.title}
-              onClick={() => {
-                const tab = sessionTab();
-                if (tab) navigate(tab.route);
-              }}
-            >
-              <DoublePageIcon />
-              <span class="ds-truncate">
-                {decodeEntities(sessionTab()!.title)}
-              </span>
-              <CloseIcon
-                class="ds-tab-close"
-                title={t("topbar.closeTabTooltip")}
-                onClick={(ev: MouseEvent) => {
-                  ev.stopPropagation();
-                  closeSessionMangaTab();
-                }}
-              />
-            </button>
+          <Show when={sessionTab()}>
+            {(tab) => (
+              <button
+                type="button"
+                class="win-button ds-nav-tab ds-session-tab"
+                classList={{ active: isInMangaView() }}
+                title={tab().title}
+                onClick={() => navigate(tab().route)}
+              >
+                <DoublePageIcon />
+                <span class="ds-truncate">{decodeEntities(tab().title)}</span>
+                <CloseIcon
+                  class="ds-tab-close"
+                  title={t("topbar.closeTabTooltip")}
+                  onClick={(ev: MouseEvent) => {
+                    ev.stopPropagation();
+                    closeSessionMangaTab();
+                  }}
+                />
+              </button>
+            )}
           </Show>
           <span id="ds-title">
             {title()}
