@@ -135,11 +135,15 @@ export function useReaderGestures(s: ReaderSession) {
     let activeTouchSlot: HTMLElement | null = null;
     let touchSlotScrollLeft = 0;
     let touchSlotScrollTop = 0;
+    let isTouchOnEndCard = false;
 
     const onTouchStart = (ev: TouchEvent): void => {
       if (ev.touches.length !== 1) return;
-      if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea, .ds-chapter-end-card")) return;
-      // If any modal/sheet is open, don't capture touch for reader gestures
+      if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea, .ds-chapter-end-card")) {
+        isTouchOnEndCard = !!(ev.target as HTMLElement)?.closest(".ds-chapter-end-card");
+        return;
+      }
+      isTouchOnEndCard = false;
       if (document.querySelector(".ds-modal-backdrop, .ds-reader-sheet-backdrop, .ds-overlay")) return;
       s.cancelScrollAnimation();
       const t = ev.touches[0];
@@ -174,6 +178,7 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onTouchMove = (ev: TouchEvent): void => {
+      if (isTouchOnEndCard || (ev.target as HTMLElement)?.closest(".ds-chapter-end-card")) return;
       if (ev.touches.length !== 1) return;
       const t = ev.touches[0];
       const dx = t.clientX - touchStartX;
@@ -279,6 +284,7 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onTouchEnd = (ev: TouchEvent): void => {
+      isTouchOnEndCard = false;
       lastTouchEndTime = Date.now();
       if (touchLongPressTimer !== null) {
         clearTimeout(touchLongPressTimer);
@@ -434,6 +440,8 @@ export function useReaderGestures(s: ReaderSession) {
     let vpScrollLeft = 0;
     let activeMouseOverscroll: OverscrollActive = null;
 
+    let isMouseOnEndCard = false;
+
     const onMouseDown = (ev: MouseEvent): void => {
       if (ev.button !== 0) return;
       if (
@@ -442,8 +450,11 @@ export function useReaderGestures(s: ReaderSession) {
       ) {
         return;
       }
-      if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea, .ds-chapter-end-card")) return;
-      s.cancelScrollAnimation();
+      if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea, .ds-chapter-end-card")) {
+        isMouseOnEndCard = !!(ev.target as HTMLElement)?.closest(".ds-chapter-end-card");
+        return;
+      }
+      isMouseOnEndCard = false;
       isMouseDown = true;
       mouseStartX = ev.clientX;
       mouseStartY = ev.clientY;
@@ -483,6 +494,7 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onMouseMove = (ev: MouseEvent): void => {
+      if (isMouseOnEndCard || (ev.target as HTMLElement)?.closest(".ds-chapter-end-card")) return;
       if (!isMouseDown) return;
       const dx = ev.clientX - mouseStartX;
       const dy = ev.clientY - mouseStartY;
@@ -581,6 +593,7 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onMouseUp = (ev: MouseEvent): void => {
+      isMouseOnEndCard = false;
       if (!isMouseDown) return;
       isMouseDown = false;
       if (mouseLongPressTimer !== null) {

@@ -40,17 +40,33 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
     }
   };
 
+  let isMouseActive = false;
+
   const handleTouchStart = (ev: TouchEvent) => {
     if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
+    ev.stopPropagation();
     const t0 = ev.changedTouches[0];
     if (!t0) return;
 
-    // If card was displaced or in transition from rapid prior drag, snap to neutral immediately
     resetCardPosition(false);
-
     activeTouchId = t0.identifier;
     touchStartX = t0.clientX;
     touchStartY = t0.clientY;
+    touchStartTime = Date.now();
+    isSwiping = false;
+    currentOffset = 0;
+    lastReady = "none";
+    setSwipeReady("none");
+  };
+
+  const handleMouseDown = (ev: MouseEvent) => {
+    if (ev.button !== 0) return;
+    if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
+    ev.stopPropagation();
+    resetCardPosition(false);
+    isMouseActive = true;
+    touchStartX = ev.clientX;
+    touchStartY = ev.clientY;
     touchStartTime = Date.now();
     isSwiping = false;
     currentOffset = 0;
@@ -176,6 +192,104 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
     resetCardPosition(true);
   };
 
+  const handleMouseMove = (ev: MouseEvent) => {
+    if (!isMouseActive) return;
+    const dx = ev.clientX - touchStartX;
+    const dy = ev.clientY - touchStartY;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (!isSwiping) {
+      if (absX > 8 && absX > absY * 1.1) {
+        isSwiping = true;
+        if (cardRef) cardRef.style.transition = "none";
+      } else if (absY > 8 && absY >= absX) {
+        return;
+      }
+    }
+
+    if (isSwiping) {
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      let clamped = 0;
+      let newReady: "none" | "left" | "right" = "none";
+
+      if (dx > 0) {
+        clamped = Math.min(dx, 120);
+        if (clamped >= SWIPE_THRESHOLD_PX) {
+          newReady = "right";
+        } else if (lastReady === "right" && clamped >= SWIPE_RESET_THRESHOLD_PX) {
+          newReady = "right";
+        } else {
+          newReady = "none";
+        }
+      } else if (dx < 0) {
+        const canNext = Boolean(nextChapter() && !s.chapterNav().nextDisabled);
+        clamped = canNext ? Math.max(dx, -120) : Math.max(dx * 0.25, -40);
+        if (canNext && clamped <= -SWIPE_THRESHOLD_PX) {
+          newReady = "left";
+        } else if (canNext && lastReady === "left" && clamped <= -SWIPE_RESET_THRESHOLD_PX) {
+          newReady = "left";
+        } else if (!canNext && clamped <= -35) {
+          newReady = "none";
+          if (lastReady !== "left") {
+            triggerHaptic("snap");
+            lastReady = "left";
+          }
+        } else {
+          newReady = "none";
+        }
+      }
+
+      currentOffset = clamped;
+      if (cardRef) {
+        cardRef.style.transform = `translate3d(${clamped}px, 0, 0)`;
+      }
+
+      if (newReady !== lastReady) {
+        lastReady = newReady;
+        setSwipeReady(newReady);
+        if (newReady !== "none") {
+          triggerHaptic("snap");
+        }
+      }
+    }
+  };
+
+  const handleMouseUp = (ev: MouseEvent) => {
+    if (!isMouseActive) return;
+    isMouseActive = false;
+    const wasSwiping = isSwiping;
+    isSwiping = false;
+    const offset = currentOffset;
+    const dt = Date.now() - touchStartTime;
+    const ready = lastReady;
+    currentOffset = 0;
+    lastReady = "none";
+    setSwipeReady("none");
+
+    resetCardPosition(true);
+
+    if (wasSwiping) {
+      ev.stopPropagation();
+
+      if (ready === "left" || (offset <= -35 && dt < 300)) {
+        if (nextChapter() && !s.chapterNav().nextDisabled) {
+          triggerHaptic("confirm");
+          s.gotoNextChapter();
+          return;
+        }
+      }
+
+      if (ready === "right" || (offset >= 35 && dt < 300)) {
+        triggerHaptic("confirm");
+        navigate({ view: "browse" });
+        return;
+      }
+    }
+  };
+
   return (
     <div
       ref={cardRef}
@@ -188,6 +302,9 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
     >
       <div class="ds-chapter-end-badge">
         <span class="ds-chapter-end-icon">

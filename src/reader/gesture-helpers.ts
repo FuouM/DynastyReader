@@ -166,6 +166,13 @@ export function tryEngageOverscroll(opts: {
 }): TryEngageOverscrollResult | null {
   const { s, dx, dy, absX, absY, startX, startY, fingerX, fingerY, prevCh, nextCh } = opts;
 
+  // Dragging the end-of-chapter card must never trigger chapter overscroll
+  if (typeof document !== "undefined") {
+    const elAtStart = document.elementFromPoint(startX, startY);
+    if (elAtStart?.closest(".ds-chapter-end-card")) return null;
+    const elAtFinger = document.elementFromPoint(fingerX, fingerY);
+    if (elAtFinger?.closest(".ds-chapter-end-card")) return null;
+  }
   if (s.isHorizontal()) {
     const isRtl = s.direction() === "rtl";
     const cur = s.isSpread() ? s.slideIndex() : s.currentIndex();
