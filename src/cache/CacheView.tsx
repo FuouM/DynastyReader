@@ -27,16 +27,16 @@ import { clearCachedGroupPages, getCacheOverviewStats, getFullyCachedChapters, t
 import { enrichCachedChapters } from "../db/cache-aggregate";
 import { getDbStats, type DbStats } from "../db/db.manage";
 import type { CacheOverviewStats } from "../types/db";
-import { SeriesDownloadedCard } from "../browse/downloaded/SeriesDownloadedCard";
-import { OrphanDownloadedCard } from "../browse/downloaded/OrphanDownloadedCard";
-import { DownloadedLegend } from "../browse/downloaded/DownloadedLegend";
-import { DownloadedToolbar } from "../browse/downloaded/DownloadedToolbar";
-import { buildGroups } from "../browse/downloaded/buildGroups";
+import { SeriesDownloadedCard } from "../browse/downloads/SeriesDownloadedCard";
+import { OrphanDownloadedCard } from "../browse/downloads/OrphanDownloadedCard";
+import { DownloadedLegend } from "../browse/downloads/DownloadedLegend";
+import { DownloadedToolbar } from "../browse/downloads/DownloadedToolbar";
+import { buildGroups } from "../browse/downloads/buildGroups";
 import type {
   DownloadedSortMode,
   DownloadedSeriesGroup,
   ProcessedCachedChapter,
-} from "../browse/downloaded/types";
+} from "../browse/downloads/types";
 import { Pager } from "../components/Pager";
 import { BackRefreshActions } from "../components/ActionBar";
 import { EmptyState, Loading, ErrorRetryRow } from "../components/Feedback";

@@ -4,12 +4,10 @@ import { getBatchCached, deleteCached } from "../db/metadata.repo";
 import { log } from "../utils/log";
 import { slugify } from "../utils/formatting";
 import { isSeriesKind, isDoujinTag, getChapterContainerTag } from "../taxonomy";
-import { CoverMemoryCache, MAX_MEMORY_CACHE, type CoverState } from "./browse-covers-memory-cache";
-import { CoverHydrationPipeline, type CoverTarget, type ItemCoverInfo } from "./browse-covers-hydration";
+import { CoverMemoryCache, MAX_MEMORY_CACHE, CoverHydrationPipeline, type CoverState, type CoverTarget, type ItemCoverInfo } from "./browse-covers-hydration";
 import * as ipc from "../ipc";
 
-export type { CoverState } from "./browse-covers-memory-cache";
-export type { CoverTarget, ItemCoverInfo } from "./browse-covers-hydration";
+export type { CoverState, CoverTarget, ItemCoverInfo } from "./browse-covers-hydration";
 
 // Heal ds_covers_enabled if it was inadvertently set to "false" by the
 // legacy persistedSignal missing-key deserialize bug on clean install.

@@ -1,5 +1,6 @@
 /**
  * Series-level downloaded chapters card with cinema-seats matrix and detailed list views.
+ * Inlines DownloadedChapterRow and ShowMoreToggle to reduce micro-component fragmentation.
  */
 
 import { createMemo, createSignal, For, Show } from "solid-js";
@@ -10,6 +11,7 @@ import { Cover } from "../../components/Cover";
 import { ConfirmDeleteButton } from "../../components/Button";
 import {
   BookIcon,
+  BookmarkIcon,
   CheckIcon,
   PlayIcon,
   ChevronRightIcon,
@@ -17,9 +19,101 @@ import {
   ListCheckIcon,
   TrashIcon,
 } from "../../components/Icon";
+import { t } from "../../i18n";
 import type { DownloadedSeriesGroup, ProcessedCachedChapter } from "./types";
-import { DownloadedChapterRow } from "./DownloadedChapterRow";
-import { ShowMoreToggle } from "./ShowMoreToggle";
+
+// ── 1. Inlined ShowMoreToggle ──────────────────────────────────────────────────
+
+export interface ShowMoreToggleProps {
+  total: number;
+  threshold: number;
+  listLimit: number;
+  onToggle: () => void;
+}
+
+export function ShowMoreToggle(props: ShowMoreToggleProps) {
+  return (
+    <Show when={props.total > props.threshold}>
+      <div style="display:flex;justify-content:center;padding:4px 0;margin-top:2px;">
+        <button
+          type="button"
+          class="win-button ds-btn-sm"
+          onClick={props.onToggle}
+          style="font-size:11px;padding:1px 10px;"
+        >
+          {props.listLimit === -1
+            ? t("downloaded.showFewer")
+            : t("downloaded.showAllChapters", { count: props.total })}
+        </button>
+      </div>
+    </Show>
+  );
+}
+
+// ── 2. Inlined DownloadedChapterRow ────────────────────────────────────────────
+
+export interface DownloadedChapterRowProps {
+  ch: ProcessedCachedChapter;
+  seriesPermalink?: string | null;
+  seriesName?: string | null;
+  onClick?: () => void;
+  onOpen?: (permalink: string) => void;
+  onDelete?: (chapterPermalink: string, chapterTitle?: string) => void;
+  deleteDisabled?: () => boolean;
+}
+
+export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
+  const ch = () => props.ch;
+  const isRead = () => ch().isRead;
+  const isBookmarked = () => ch().isBookmarked;
+
+  const handleClick = () => {
+    if (props.onClick) props.onClick();
+    else if (props.onOpen) props.onOpen(ch().chapterPermalink);
+  };
+
+  return (
+    <div
+      class={`ds-downloaded-chapter-row${isRead() ? " read" : ""}`}
+      onClick={handleClick}
+    >
+      <div class="ds-downloaded-chapter-info">
+        <span class="ds-downloaded-chapter-title">
+          {ch().chapterTitle}
+        </span>
+        <span class="ds-downloaded-chapter-meta">
+          <Show when={isRead()}>
+            <span class="ds-download-tag done"><CheckIcon size={10} /> read</span>
+          </Show>
+          <Show when={isBookmarked()}>
+            <span class="ds-download-tag bookmarked"><BookmarkIcon size={10} filled /> saved</span>
+          </Show>
+          <span class="ds-download-meta-item">
+            {ch().pageCount}p · {formatBytes(ch().totalSizeBytes)}
+          </span>
+          <span class="ds-download-meta-item ds-download-date">
+            {formatDate(ch().lastCachedAt)}
+          </span>
+        </span>
+      </div>
+
+      <div class="ds-downloaded-chapter-actions" onClick={(e) => e.stopPropagation()}>
+        <Show when={props.onDelete && !(props.deleteDisabled?.() ?? false)}>
+          <button
+            type="button"
+            class="win-button ds-download-action-btn ds-download-action-btn--icon danger"
+            title="Delete cached chapter"
+            onClick={() => props.onDelete!(ch().chapterPermalink, ch().chapterTitle)}
+          >
+            <TrashIcon size={11} />
+          </button>
+        </Show>
+      </div>
+    </div>
+  );
+}
+
+// ── 3. Series Downloaded Card ──────────────────────────────────────────────────
 
 function isNumberedSeries(group: DownloadedSeriesGroup): boolean {
   const chs = group.chapters;
@@ -50,7 +144,7 @@ function showVolDivider(
   return list[idx - 1].volumeHeader !== ch.volumeHeader;
 }
 
-interface SeriesDownloadedCardProps {
+export interface SeriesDownloadedCardProps {
   group: DownloadedSeriesGroup;
   defaultViewMode?: "seats" | "list";
   defaultCollapsed?: boolean;
@@ -131,7 +225,6 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
   const partialTotalPages = createMemo(() =>
     partialChapters().reduce((acc, c) => acc + c.pageTotal, 0),
   );
-
 
   const navigateToChapter = (ch: ProcessedCachedChapter) =>
     navigate({
@@ -330,6 +423,7 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
           </For>
         </div>
       </Show>
+
       {/* Mode 2: Detailed Chapter List */}
       <Show when={viewMode() === "list"}>
         <div class="ds-downloaded-chapter-list">

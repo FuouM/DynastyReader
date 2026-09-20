@@ -1,7 +1,6 @@
 /**
  * Shared legend bar for downloaded chapters views.
  * Shows color-coded swatches for Downloaded, Read, and Bookmarked states.
- * Extracted from `BrowseDownloaded.tsx` / `CacheView.tsx` for modularity.
  */
 
 import { CheckIcon } from "../../components/Icon";

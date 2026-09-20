@@ -24,17 +24,17 @@ import {
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading, EmptyState } from "../components/Feedback";
-import { SeriesDownloadedCard } from "./downloaded/SeriesDownloadedCard";
-import { OrphanDownloadedCard } from "./downloaded/OrphanDownloadedCard";
-import { DownloadedLegend } from "./downloaded/DownloadedLegend";
-import { DownloadedToolbar } from "./downloaded/DownloadedToolbar";
-import { buildGroups } from "./downloaded/buildGroups";
+import { SeriesDownloadedCard } from "./downloads/SeriesDownloadedCard";
+import { OrphanDownloadedCard } from "./downloads/OrphanDownloadedCard";
+import { DownloadedLegend } from "./downloads/DownloadedLegend";
+import { DownloadedToolbar } from "./downloads/DownloadedToolbar";
+import { buildGroups } from "./downloads/buildGroups";
 import type {
   DownloadedSortMode,
   DownloadedModel,
   DownloadedSeriesGroup,
   ProcessedCachedChapter,
-} from "./downloaded/types";
+} from "./downloads/types";
 
 const PAGE_SIZE = 15;
 

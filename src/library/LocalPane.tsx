@@ -16,9 +16,12 @@ import { Loading } from "../components/Feedback";
 import { AddIcon, FolderIcon, StorageIcon } from "../components/Icon";
 import { LibraryItemRow } from "./LibraryItemRow";
 import { persistedSignal } from "../lib/persisted-signal";
-import { ArchiveImportModal, type ImportProgressPayload } from "./local/ArchiveImportModal";
-import { FolderImportModal } from "./local/FolderImportModal";
-import { EditLocalSeriesModal } from "./local/EditLocalSeriesModal";
+import {
+  ArchiveImportModal,
+  FolderImportModal,
+  EditLocalSeriesModal,
+  type ImportProgressPayload,
+} from "./LocalModals";
 
 type LocalSortMode = "updated_desc" | "alphabetical" | "page_count" | "date_added";
 

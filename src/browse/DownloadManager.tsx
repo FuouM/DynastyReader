@@ -18,9 +18,9 @@ import {
   PlayIcon,
   PauseIcon,
 } from "../components/Icon";
-import { buildSeriesDownloadGroups } from "./download-manager/buildGroups";
-import { SeriesDownloadCard } from "./download-manager/SeriesDownloadCard";
-import type { SeriesDownloadGroup } from "./download-manager/types";
+import { buildSeriesDownloadGroups } from "./downloads/buildGroups";
+import { SeriesDownloadCard } from "./downloads/SeriesDownloadCard";
+import type { SeriesDownloadGroup } from "./downloads/types";
 export type { SeriesDownloadGroup };
 import {
   downloadSpeedBps as speedBps,

@@ -24,7 +24,7 @@ import { browseCovers } from "../browse/browse-covers";
 import { BookmarkIcon, CheckIcon, Icon } from "./Icon";
 import { IconButton } from "./Button";
 import { ListItem } from "./ListItem";
-import { HydratedCover } from "./HydratedCover";
+import { HydratedCover } from "./Cover";
 import { OfflineBadge } from "./OfflineBadge";
 import { WarningChip } from "./WarningChip";
 import { ExternalLinkButton } from "./ExternalLinkButton";

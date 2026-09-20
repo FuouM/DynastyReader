@@ -1,7 +1,6 @@
 /**
  * Shared toolbar with filter input, sort select, and chapter count display
- * for downloaded chapters views. Extracted from `BrowseDownloaded.tsx` /
- * `CacheView.tsx` for modularity.
+ * for downloaded chapters views.
  */
 
 import { Show } from "solid-js";
@@ -12,7 +11,7 @@ import { DsSelect } from "../../components/Button";
 import { StorageIcon } from "../../components/Icon";
 import type { DownloadedSortMode } from "./types";
 
-interface DownloadedToolbarProps {
+export interface DownloadedToolbarProps {
   inputId: string;
   inputVal: string;
   onInput: (val: string) => void;

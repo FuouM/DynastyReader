@@ -8,10 +8,9 @@ import { BookIcon, TrashIcon } from "../../components/Icon";
 import { GroupBox } from "../../components/GroupBox";
 import { ConfirmDeleteButton } from "../../components/Button";
 import type { ProcessedCachedChapter } from "./types";
-import { DownloadedChapterRow } from "./DownloadedChapterRow";
-import { ShowMoreToggle } from "./ShowMoreToggle";
+import { DownloadedChapterRow, ShowMoreToggle } from "./SeriesDownloadedCard";
 
-interface OrphanDownloadedCardProps {
+export interface OrphanDownloadedCardProps {
   orphans: ProcessedCachedChapter[];
   /** Total orphan count across all pages (defaults to orphans.length). */
   totalCount?: number;
@@ -36,7 +35,6 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
     props.orphans.filter((c) => c.pageTotal > 0 && c.pageCount < c.pageTotal).length,
   );
 
-
   return (
     <GroupBox
       class="ds-downloaded-series-group ds-mb-8"
@@ -46,16 +44,10 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
       title={
         <span class="ds-icon-text">
           <BookIcon />
-          <span>Individual Chapters / Oneshots ({props.totalCount ?? props.orphans.length})</span>
-          <Show when={partialCount() > 0}>
-            <span
-              class="ds-partial-text"
-              style="font-size:11px;margin-left:4px;"
-              title={`${partialCount()} of ${props.orphans.length} individual chapters partially cached`}
-            >
-              ({partialCount()} partial)
-            </span>
-          </Show>
+          <span>Individual Chapters</span>
+          <span class="ds-muted" style="font-weight:normal;font-size:11px;">
+            ({props.totalCount ?? props.orphans.length} chapters)
+          </span>
         </span>
       }
       actions={
@@ -63,12 +55,22 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
           <ConfirmDeleteButton
             icon={<TrashIcon />}
             className="ds-btn-sm ds-btn-icon"
-            title="Clear all individual cached chapters"
+            title="Clear all cached individual chapters"
             onConfirm={props.onDeleteAll!}
           />
         </Show>
       }
     >
+      <div class="ds-downloaded-summary-strip">
+        <div class="ds-downloaded-summary-text ds-muted">
+          <span>{props.orphans.length} standalone chapters</span>
+          <Show when={partialCount() > 0}>
+            <span>·</span>
+            <span class="ds-partial-text">{partialCount()} partial</span>
+          </Show>
+        </div>
+      </div>
+
       <div class="ds-downloaded-chapter-list">
         <For each={visibleOrphans()}>
           {(ch) => (
@@ -77,6 +79,8 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
               onClick={() =>
                 navigate({
                   view: "reader",
+                  seriesPermalink: "_singles",
+                  seriesName: "Individual Chapters",
                   chapterPermalink: ch.chapterPermalink,
                   chapterTitle: ch.chapterTitle,
                 })
@@ -87,7 +91,6 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
           )}
         </For>
 
-        {/* Show more / fewer toggle if > 20 items */}
         <ShowMoreToggle
           total={props.orphans.length}
           threshold={20}
