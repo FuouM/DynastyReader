@@ -114,6 +114,13 @@ export async function fetchSeries(
   if (permalink.startsWith("local:")) {
     return fetchLocalSeries(permalink);
   }
+  if (permalink.startsWith("mdx:")) {
+    const mangaId = permalink.replace(/^mdx:/, "");
+    const { getManga } = await import("../providers/mangadex/api/manga");
+    const { mangaDexToStandardSeries } = await import("../providers/mangadex/mapping");
+    const manga = await getManga(mangaId);
+    return mangaDexToStandardSeries(manga);
+  }
   const key = seriesKey(permalink);
   const cached = await getCached(key);
   const isStale = !cached || Date.now() - cached.cached_at >= SERIES_TTL_MS;

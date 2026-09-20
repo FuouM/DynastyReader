@@ -801,7 +801,27 @@ async fn fetch_page_to_file(
     let is_mdx_network = abs_url.contains("mangadex.network");
     let start_time = std::time::Instant::now();
     if let Some(parent) = target.parent() {
-        tokio::fs::create_dir_all(parent).await.map_err(|e| format!("mkdir: {e}"))?;
+        if let Err(e) = tokio::fs::create_dir_all(parent).await {
+            let is_not_dir = e.raw_os_error() == Some(20) || e.to_string().contains("not a directory");
+            if is_not_dir {
+                let root = crate::paths::data_root();
+                let mut cur = parent;
+                while cur != root && cur != std::path::Path::new("") {
+                    if cur.is_file() {
+                        log::warn!("removing blocking file in directory path: {:?}", cur);
+                        let _ = std::fs::remove_file(cur);
+                    }
+                    if let Some(p) = cur.parent() {
+                        cur = p;
+                    } else {
+                        break;
+                    }
+                }
+                tokio::fs::create_dir_all(parent).await.map_err(|e2| format!("mkdir: {e2}"))?;
+            } else {
+                return Err(format!("mkdir: {e}"));
+            }
+        }
     }
     let resp = crate::commands::http::send_with_redirects(
         client,

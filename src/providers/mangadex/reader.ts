@@ -54,7 +54,7 @@ export async function loadMangaDexChapterForReader(
     }
   }
 
-  const atHome = await getAtHomeServer(chapterId);
+  const atHome = await getAtHomeServer(chapterId, true);
   const quality = mdxImageQuality();
   const filenames = quality === "data-saver" ? atHome.chapter.dataSaver : atHome.chapter.data;
 
@@ -96,7 +96,7 @@ export async function refreshMangaDexNode(
 ): Promise<{ baseUrl: string; hash: string } | null> {
   try {
     log.info("mangadex-failover", `Refreshing dead @Home node for chapter ${chapterId}...`);
-    const atHome = await getAtHomeServer(chapterId);
+    const atHome = await getAtHomeServer(chapterId, true);
     const existing = atHomeSessions.get(chapterId);
     if (existing) {
       existing.baseUrl = atHome.baseUrl;

@@ -1527,6 +1527,7 @@
   font-size: 13px;
   font-weight: 600;
 }
+.ds-chapter-end-prev-btn,
 .ds-chapter-end-series-btn {
   display: inline-flex;
   align-items: center;

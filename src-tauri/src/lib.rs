@@ -36,6 +36,21 @@ pub fn run() {
             paths::set_root(root);
             let root = paths::ensure_root().map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
             log::info!("dynasty-scans-reader: portable data root = {}", root.display());
+            // Clean up legacy `mangadex` regular file if present from early builds,
+            // which prevents `mangadex/pages/` directory from being created (ENOTDIR os error 20).
+            let legacy_mdx_file = root.join("mangadex");
+            if legacy_mdx_file.is_file() {
+                let target_db = root.join("mangadex.db");
+                if !target_db.exists() {
+                    let _ = std::fs::rename(&legacy_mdx_file, &target_db);
+                    let _ = std::fs::rename(root.join("mangadex-wal"), root.join("mangadex.db-wal"));
+                    let _ = std::fs::rename(root.join("mangadex-shm"), root.join("mangadex.db-shm"));
+                } else {
+                    let _ = std::fs::remove_file(&legacy_mdx_file);
+                    let _ = std::fs::remove_file(root.join("mangadex-wal"));
+                    let _ = std::fs::remove_file(root.join("mangadex-shm"));
+                }
+            }
             // The static asset scope in tauri.conf.json is intentionally
             // narrow; grant the resolved portable data root at runtime (a
             // portable install's `<exe dir>/.data` cannot be expressed via

@@ -258,9 +258,29 @@ pub async fn http_download(
 ) -> Result<serde_json::Value, String> {
     let target = crate::paths::resolve_in_root(&output_path)?;
     let parent = target.parent().unwrap_or(&target);
-    tokio::fs::create_dir_all(parent)
-        .await
-        .map_err(|e| format!("failed creating output dir: {e}"))?;
+    if let Err(e) = tokio::fs::create_dir_all(parent).await {
+        let is_not_dir = e.raw_os_error() == Some(20) || e.to_string().contains("not a directory");
+        if is_not_dir {
+            let root = crate::paths::data_root();
+            let mut cur = parent;
+            while cur != root && cur != std::path::Path::new("") {
+                if cur.is_file() {
+                    log::warn!("removing blocking file in directory path: {:?}", cur);
+                    let _ = std::fs::remove_file(cur);
+                }
+                if let Some(p) = cur.parent() {
+                    cur = p;
+                } else {
+                    break;
+                }
+            }
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e2| format!("failed creating output dir: {e2}"))?;
+        } else {
+            return Err(format!("failed creating output dir: {e}"));
+        }
+    }
     let resp = send_with_redirects(&state.0, "GET", &url, None, None, None, timeout_ms).await?;
     if !resp.status().is_success() {
         return Err(format!("http download failed: status {}", resp.status()));

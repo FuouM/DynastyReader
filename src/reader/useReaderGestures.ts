@@ -284,7 +284,10 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onTouchEnd = (ev: TouchEvent): void => {
-      isTouchOnEndCard = false;
+      if (isTouchOnEndCard) {
+        isTouchOnEndCard = false;
+        return;
+      }
       lastTouchEndTime = Date.now();
       if (touchLongPressTimer !== null) {
         clearTimeout(touchLongPressTimer);
