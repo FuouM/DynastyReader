@@ -88,18 +88,24 @@ export async function fetchAndCacheCover(opts: {
   }
 }
 
+function sanitizeCoverFilename(name: string): string {
+  return name.replace(/[:*?"<>|\\/]/g, "_");
+}
+
 export function coverPathsForSeries(permalink: string, coverUrl: string): { rawOutPath: string; webpOutPath: string } {
   const ext = coverExtension(coverUrl);
+  const safeName = sanitizeCoverFilename(permalink);
   return {
-    rawOutPath: `${COVERS_PREFIX}/raw_${permalink}.${ext}`,
-    webpOutPath: `${COVERS_PREFIX}/${permalink}.webp`,
+    rawOutPath: `${COVERS_PREFIX}/raw_${safeName}.${ext}`,
+    webpOutPath: `${COVERS_PREFIX}/${safeName}.webp`,
   };
 }
 
 export function coverPathsForChapter(permalink: string, firstPageUrl: string): { rawOutPath: string; webpOutPath: string } {
   const ext = coverExtension(firstPageUrl);
+  const safeName = sanitizeCoverFilename(permalink);
   return {
-    rawOutPath: `${COVERS_PREFIX}/raw_ch_${permalink}.${ext}`,
-    webpOutPath: `${COVERS_PREFIX}/ch_${permalink}.webp`,
+    rawOutPath: `${COVERS_PREFIX}/raw_ch_${safeName}.${ext}`,
+    webpOutPath: `${COVERS_PREFIX}/ch_${safeName}.webp`,
   };
 }

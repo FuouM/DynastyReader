@@ -84,3 +84,14 @@ export async function clearHistory(): Promise<void> {
   await initMangaDexDb();
   await execute("DELETE FROM reading_history");
 }
+
+export async function getMdxHistoryChapterIds(chapterIds: string[]): Promise<Set<string>> {
+  if (chapterIds.length === 0) return new Set();
+  await initMangaDexDb();
+  const placeholders = chapterIds.map((_, i) => `?${i + 1}`).join(", ");
+  const rows = await query<{ chapter_id: string }>(
+    `SELECT chapter_id FROM reading_history WHERE chapter_id IN (${placeholders})`,
+    chapterIds,
+  );
+  return new Set(rows.map((r) => r.chapter_id));
+}

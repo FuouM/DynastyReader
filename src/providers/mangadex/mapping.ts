@@ -12,6 +12,7 @@ import type {
   MangaDexRelationship,
 } from "./types";
 import type { Chapter, ChapterPage, Series, SeriesTag } from "../../types/api";
+import type { FeedItemData } from "../../components/FeedItemRow";
 
 /**
  * Extracts the most appropriate title for a MangaDex manga based on language preference.
@@ -233,5 +234,103 @@ export function mangaDexToStandardChapter(
     released_on: chapter.attributes.readableAt
       ? chapter.attributes.readableAt.substring(0, 10)
       : null,
+  };
+}
+
+/**
+ * Maps a MangaDexChapter entity with its manga and scanlation_group relationships
+ * to DynastyReader's standard FeedItemData for FeedItemRow.
+ */
+export function mangaDexChapterToFeedItemData(
+  chapter: MangaDexChapter,
+  mangaEntity?: MangaDexManga,
+): FeedItemData & { coverUrl?: string | null } {
+  const chNum = chapter.attributes.chapter;
+  const rawTitle = chapter.attributes.title;
+  const title = chNum
+    ? rawTitle
+      ? `Ch. ${chNum} - ${rawTitle}`
+      : `Chapter ${chNum}`
+    : rawTitle || "Oneshot";
+
+  // Find manga relationship
+  const mangaRel = chapter.relationships?.find((r) => r.type === "manga");
+  let mangaTitle = "Manga";
+  let mangaId = "";
+  if (mangaEntity) {
+    mangaId = mangaEntity.id;
+    mangaTitle = formatMangaTitle(mangaEntity);
+  } else if (mangaRel) {
+    mangaId = mangaRel.id;
+    const attrs = mangaRel.attributes;
+    if (attrs && typeof attrs === "object" && "title" in attrs) {
+      const titleMap = attrs.title as Record<string, string>;
+      mangaTitle = titleMap?.en || Object.values(titleMap || {})[0] || "Manga";
+    }
+  }
+
+  // Find scanlation group relationship
+  const groupRel = chapter.relationships?.find((r) => r.type === "scanlation_group");
+  let groupName: string | undefined;
+  if (groupRel) {
+    const attrs = groupRel.attributes;
+    if (attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string") {
+      groupName = attrs.name;
+    }
+  }
+
+  const tags: { type?: string; name?: string; permalink?: string }[] = [];
+  if (mangaId) {
+    tags.push({
+      type: "Series",
+      name: mangaTitle,
+      permalink: `mdx:${mangaId}`,
+    });
+  }
+
+  // 1. Authors
+  if (mangaEntity) {
+    const authors = getMangaAuthors(mangaEntity);
+    for (const author of authors) {
+      tags.push({
+        type: "Author",
+        name: author,
+        permalink: `mdx-author:${author}`,
+      });
+    }
+  }
+
+  // 2. Scanlator
+  if (groupName && groupRel) {
+    tags.push({
+      type: "Scanlator",
+      name: groupName,
+      permalink: `mdx-group:${groupRel.id}`,
+    });
+  }
+
+  // 3. Tags (genres, themes, formats)
+  const rawMangaTags = mangaEntity?.attributes?.tags || (mangaRel?.attributes && typeof mangaRel.attributes === "object" && "tags" in mangaRel.attributes ? (mangaRel.attributes as { tags?: Array<{ attributes?: { name?: Record<string, string> } }> }).tags : undefined) || [];
+  for (const t of rawMangaTags) {
+    const tagName = t.attributes?.name?.en || (t.attributes?.name ? Object.values(t.attributes.name)[0] : undefined);
+    if (tagName && typeof tagName === "string") {
+      tags.push({
+        type: "General",
+        name: tagName,
+        permalink: `mdx-tag:${tagName}`,
+      });
+    }
+  }
+
+  const coverUrl = mangaEntity ? getMangaCoverUrl(mangaEntity, "256") : null;
+
+  return {
+    permalink: `mdx:${chapter.id}`,
+    title,
+    kind: "chapter",
+    series: mangaTitle,
+    tags,
+    url: `https://mangadex.org/chapter/${chapter.id}`,
+    coverUrl,
   };
 }

@@ -308,8 +308,16 @@ export async function getOrHydrateSeriesCover(
   if (!coverUrl) {
     try {
       onPhase?.("downloading");
-      const s = await fetchSeries(permalink, false, seriesType || undefined);
-      coverUrl = s.cover ?? null;
+      if (permalink.startsWith("mdx:")) {
+        const mangaId = permalink.replace(/^mdx:/, "");
+        const { getManga } = await import("../providers/mangadex/api/manga");
+        const { getMangaCoverUrl } = await import("../providers/mangadex/mapping");
+        const m = await getManga(mangaId);
+        coverUrl = getMangaCoverUrl(m, "256");
+      } else {
+        const s = await fetchSeries(permalink, false, seriesType || undefined);
+        coverUrl = s.cover ?? null;
+      }
     } catch (err) {
       log.debug("api/series", "fetchSeries failed for", permalink, err);
       return null;

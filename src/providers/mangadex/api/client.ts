@@ -4,6 +4,7 @@
  */
 
 import * as ipc from "../../../ipc";
+import { recordNetworkTraffic } from "../../../api/traffic";
 import { log } from "../../../utils/log";
 import {
   MANGADEX_API_BASE,
@@ -113,6 +114,9 @@ export async function fetchMangaDex<T>(
     const status = Number(resp.status ?? 0);
     const text = String(resp.body ?? "");
 
+    if (status >= 200 && status < 300 && text.length > 0) {
+      recordNetworkTraffic(text.length);
+    }
     if (status < 200 || status >= 300) {
       let errorMsg = `MangaDex API error HTTP ${status}`;
       try {

@@ -37,9 +37,6 @@ import { activeProvider } from "./stores/provider";
 const MangaDexBrowse = lazy(() =>
   import("./providers/mangadex/views/MangaDexBrowse").then((m) => ({ default: m.MangaDexBrowse })),
 );
-const MangaDexSeries = lazy(() =>
-  import("./providers/mangadex/views/MangaDexSeries").then((m) => ({ default: m.MangaDexSeries })),
-);
 const MangaDexLibrary = lazy(() =>
   import("./providers/mangadex/views/MangaDexLibrary").then((m) => ({ default: m.MangaDexLibrary })),
 );
@@ -50,12 +47,7 @@ const BlacklistView = lazy(() => import("./blacklist/BlacklistView").then((m) =>
 export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
   browse: () => null,
   library: () => null,
-  series: (p) =>
-    p.route.seriesPermalink?.startsWith("mdx:") || activeProvider() === "mangadex" ? (
-      <MangaDexSeries />
-    ) : (
-      <SeriesView />
-    ),
+  series: () => <SeriesView />,
   reader: (p) => <ReaderView route={p.route} />,
   cache: () => <CacheView />,
   blacklist: () => <BlacklistView />,

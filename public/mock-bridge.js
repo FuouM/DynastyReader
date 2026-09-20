@@ -206,6 +206,98 @@
               }),
             };
           }
+          if (url.includes("/chapter?") || url.endsWith("/chapter")) {
+            return {
+              status: 200,
+              body: JSON.stringify({
+                result: "ok",
+                response: "collection",
+                data: [
+                  {
+                    id: "ch-uuid-1a",
+                    type: "chapter",
+                    attributes: {
+                      volume: "1",
+                      chapter: "1",
+                      title: "The Rebirth",
+                      translatedLanguage: "en",
+                      readableAt: "2024-01-01T00:00:00+00:00",
+                      pages: 20,
+                    },
+                    relationships: [
+                      {
+                        id: "group-alpha",
+                        type: "scanlation_group",
+                        attributes: { name: "Scanlator Alpha" },
+                      },
+                      {
+                        id: "6bae5c8c-d5ff-43df-acf7-b7670532c8b1",
+                        type: "manga",
+                        attributes: {
+                          title: { en: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu" },
+                        },
+                      },
+                    ],
+                  },
+                  {
+                    id: "ch-uuid-2",
+                    type: "chapter",
+                    attributes: {
+                      volume: "1",
+                      chapter: "2",
+                      title: "Magic Discovery",
+                      translatedLanguage: "en",
+                      readableAt: "2024-01-08T00:00:00+00:00",
+                      pages: 22,
+                    },
+                    relationships: [
+                      {
+                        id: "group-alpha",
+                        type: "scanlation_group",
+                        attributes: { name: "Scanlator Alpha" },
+                      },
+                      {
+                        id: "6bae5c8c-d5ff-43df-acf7-b7670532c8b1",
+                        type: "manga",
+                        attributes: {
+                          title: { en: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu" },
+                        },
+                      },
+                    ],
+                  },
+                ],
+                total: 2,
+                limit: 24,
+                offset: 0,
+              }),
+            };
+          }
+          if (url.includes("/manga/tag")) {
+            return {
+              status: 200,
+              body: JSON.stringify({
+                result: "ok",
+                response: "collection",
+                data: [
+                  {
+                    id: "a3c67850-4684-404e-9b7f-c69850ee5da6",
+                    type: "tag",
+                    attributes: { name: { en: "Girls' Love" }, group: "genre" },
+                  },
+                  {
+                    id: "3e2b8dae-350e-4ab8-a8ce-016e844b9f0d",
+                    type: "tag",
+                    attributes: { name: { en: "Romance" }, group: "genre" },
+                  },
+                  {
+                    id: "4d32cc48-9f00-4cca-9b5a-a839f0764984",
+                    type: "tag",
+                    attributes: { name: { en: "Comedy" }, group: "genre" },
+                  },
+                ],
+              }),
+            };
+          }
           if (url.includes("/feed")) {
             return {
               status: 200,
@@ -322,8 +414,9 @@
                       title: { en: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu" },
                       altTitles: [],
                       description: { en: "Ren discovers magic in another world." },
-                      status: "ongoing",
-                      contentRating: "safe",
+                    status: "ongoing",
+                    latestUploadedChapter: "ch-uuid-1a",
+                    contentRating: "safe",
                       tags: [
                         {
                           id: "a3c67850-4684-404e-9b7f-c69850ee5da6",

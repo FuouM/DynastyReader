@@ -259,6 +259,7 @@ export interface MangaDexChapterGroup {
 }
 
 export interface MangaDexSearchFilters {
+  ids?: string[];
   title?: string;
   includedTags?: string[];
   excludedTags?: string[];

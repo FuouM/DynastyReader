@@ -18,6 +18,7 @@ import { decodeEntities, errorMessage, slugify, dynastyUrl } from "../utils/form
 import { categorizeChapterTags, isSeriesKind, seriesTypeToPath, getChapterContainerTag, isDoujinTag } from "../taxonomy";
 import { t } from "../i18n";
 import { addBookmark, getBookmark, removeBookmark } from "../db/library.repo";
+import { addMdxBookmark, getMdxBookmark, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
 import { getBlacklistMode } from "../db/blacklist.repo";
 import type { CollectionItemKind } from "../types/db";
 import { browseCovers } from "../browse/browse-covers";
@@ -70,9 +71,15 @@ export function FeedItemRow(props: FeedItemRowProps) {
 
   onMount(() => {
     if (props.isBookmarked === undefined) {
-      void getBookmark(ch.permalink).then((bm) => {
-        if (bm) setBookmarked(true);
-      });
+      if (ch.permalink.startsWith("mdx:")) {
+        void getMdxBookmark(ch.permalink.replace(/^mdx:/, "")).then((bm) => {
+          if (bm) setBookmarked(true);
+        });
+      } else {
+        void getBookmark(ch.permalink).then((bm) => {
+          if (bm) setBookmarked(true);
+        });
+      }
     }
   });
 
@@ -142,17 +149,31 @@ export function FeedItemRow(props: FeedItemRowProps) {
   const toggleBookmark = async (): Promise<void> => {
     try {
       if (bookmarked()) {
-        await removeBookmark(ch.permalink);
+        if (ch.permalink.startsWith("mdx:")) {
+          await removeMdxBookmark(ch.permalink.replace(/^mdx:/, ""));
+        } else {
+          await removeBookmark(ch.permalink);
+        }
         setBookmarked(false);
         showBanner(t("browse.feed.bookmarkRemovedBanner", { title: ch.title }));
       } else {
-        await addBookmark({
-          chapterPermalink: ch.permalink,
-          seriesPermalink: coverInfo.seriesPermalink || "",
-          seriesName: ch.series ?? "",
-          chapterTitle: ch.title,
-          pageIndex: 0,
-        });
+        if (ch.permalink.startsWith("mdx:")) {
+          await addMdxBookmark({
+            chapterId: ch.permalink.replace(/^mdx:/, ""),
+            chapterTitle: ch.title,
+            mangaId: coverInfo.seriesPermalink?.replace(/^mdx:/, "") || "",
+            mangaTitle: ch.series ?? "",
+            pageIndex: 0,
+          });
+        } else {
+          await addBookmark({
+            chapterPermalink: ch.permalink,
+            seriesPermalink: coverInfo.seriesPermalink || "",
+            seriesName: ch.series ?? "",
+            chapterTitle: ch.title,
+            pageIndex: 0,
+          });
+        }
         setBookmarked(true);
         showBanner(t("browse.feed.bookmarkSavedBanner", { title: ch.title }));
       }

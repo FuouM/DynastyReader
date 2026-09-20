@@ -21,6 +21,7 @@ export async function searchManga(
   filters: MangaDexSearchFilters = {},
 ): Promise<MangaDexResponse<MangaDexManga[]>> {
   const params: Record<string, unknown> = {
+    ids: filters.ids,
     title: filters.title,
     includedTags: filters.includedTags,
     excludedTags: filters.excludedTags,
@@ -70,9 +71,16 @@ export async function getMangaFeed(
     offset: options.offset ?? 0,
     order: options.order ?? { chapter: "asc" },
     includes: ["scanlation_group"],
+    includeExternalUrl: 0,
+    includeEmptyPages: 0,
+    includeFutureUpdates: 0,
   };
 
-  return fetchMangaDex<MangaDexResponse<MangaDexChapter[]>>(`/manga/${id}/feed`, params);
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexChapter[]>>(`/manga/${id}/feed`, params);
+  if (resp.data) {
+    resp.data = resp.data.filter((c) => !c.attributes.externalUrl && (c.attributes.pages ?? 0) > 0);
+  }
+  return resp;
 }
 
 /**

@@ -113,3 +113,14 @@ export async function getMdxBookmarks(
     totalCount,
   };
 }
+
+export async function getMdxBookmarkChapterIds(chapterIds: string[]): Promise<Set<string>> {
+  if (chapterIds.length === 0) return new Set();
+  await initMangaDexDb();
+  const placeholders = chapterIds.map((_, i) => `?${i + 1}`).join(", ");
+  const rows = await query<{ chapter_id: string }>(
+    `SELECT chapter_id FROM bookmarks WHERE chapter_id IN (${placeholders})`,
+    chapterIds,
+  );
+  return new Set(rows.map((r) => r.chapter_id));
+}
