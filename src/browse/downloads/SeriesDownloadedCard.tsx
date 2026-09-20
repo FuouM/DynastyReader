@@ -74,38 +74,47 @@ export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
 
   return (
     <div
-      class={`ds-downloaded-chapter-row${isRead() ? " read" : ""}`}
+      class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
       onClick={handleClick}
     >
-      <div class="ds-downloaded-chapter-info">
-        <span class="ds-downloaded-chapter-title">
-          {ch().chapterTitle}
-        </span>
-        <span class="ds-downloaded-chapter-meta">
-          <Show when={isRead()}>
-            <span class="ds-download-tag done"><CheckIcon size={10} /> read</span>
-          </Show>
-          <Show when={isBookmarked()}>
-            <span class="ds-download-tag bookmarked"><BookmarkIcon size={10} filled /> saved</span>
-          </Show>
-          <span class="ds-download-meta-item">
-            {ch().pageCount}p · {formatBytes(ch().totalSizeBytes)}
-          </span>
-          <span class="ds-download-meta-item ds-download-date">
-            {formatDate(ch().lastCachedAt)}
-          </span>
-        </span>
+      <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
+        <Show when={isRead()}>
+          <CheckIcon size={11} class="ds-seat-check" style="flex-shrink:0;" />
+        </Show>
+        <Show when={isBookmarked()}>
+          <BookmarkIcon filled size={11} style="color:var(--ds-warn-text,#d97706);flex-shrink:0;" />
+        </Show>
+        <span class="ds-truncate" style="font-size:12px;font-weight:500;">{ch().chapterTitle}</span>
       </div>
-
-      <div class="ds-downloaded-chapter-actions" onClick={(e) => e.stopPropagation()}>
+      <div class="ds-chapter-badge ds-muted" style="font-size:11px;font-style:normal;display:flex;gap:6px;align-items:center;flex-shrink:0;">
+        <span>
+          <Show
+            when={ch().pageTotal > 0 && ch().pageCount < ch().pageTotal}
+            fallback={`${ch().pageCount}p`}
+          >
+            <span class="ds-partial-text" title={`${ch().pageCount} of ${ch().pageTotal} pages cached`}>
+              {ch().pageCount}/{ch().pageTotal}
+            </span>
+          </Show>
+        </span>
+        <Show when={ch().totalSizeBytes > 0}>
+          <span>·</span>
+          <span>{formatBytes(ch().totalSizeBytes)}</span>
+        </Show>
+        <span>·</span>
+        <span>{formatDate(ch().lastCachedAt)}</span>
         <Show when={props.onDelete && !(props.deleteDisabled?.() ?? false)}>
           <button
             type="button"
-            class="win-button ds-download-action-btn ds-download-action-btn--icon danger"
-            title="Delete cached chapter"
-            onClick={() => props.onDelete!(ch().chapterPermalink, ch().chapterTitle)}
+            class="win-button ds-btn-sm ds-btn-icon"
+            style="margin-left:4px;width:18px;height:18px;min-height:18px;padding:0;"
+            title={`Delete cached chapter: ${ch().chapterTitle}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              props.onDelete!(ch().chapterPermalink, ch().chapterTitle);
+            }}
           >
-            <TrashIcon size={11} />
+            <TrashIcon size={10} />
           </button>
         </Show>
       </div>

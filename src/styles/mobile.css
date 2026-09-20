@@ -831,6 +831,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   border-radius: 4px !important;
   background: var(--sys-window-bg, #ffffff) !important;
   box-sizing: border-box !important;
+  position: relative !important;
 }
 #ds-root[data-mobile] .group-box.collapsed .group-box-title {
   position: static !important;
@@ -845,7 +846,17 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
+  gap: 4px !important;
   box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+#ds-root[data-mobile] .group-box.collapsed.group-box--has-actions .group-box-title {
+  max-width: calc(100% - var(--ds-group-actions-w, 100px) - 8px) !important;
+}
+#ds-root[data-mobile] .group-box.collapsed .group-box-actions {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  right: 6px !important;
 }
 
 #ds-root[data-mobile] .ds-slot-page-badge {
@@ -1370,8 +1381,29 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 }
 
 #ds-root[data-mobile] .ds-downloaded-series-actions {
-  flex-wrap: wrap !important;
-  gap: 2px !important;
+  flex-wrap: nowrap !important;
+  gap: 3px !important;
+}
+#ds-root[data-mobile] #ds-downloaded-header {
+  gap: 6px !important;
+  padding: 4px 6px !important;
+}
+
+#ds-root[data-mobile] #ds-downloaded-toolbar-left {
+  gap: 6px !important;
+}
+
+#ds-root[data-mobile] #ds-downloaded-toolbar-right {
+  width: 100% !important;
+  justify-content: flex-end !important;
+  font-size: 11px !important;
+  margin-top: -2px !important;
+}
+
+#ds-root[data-mobile] .ds-downloaded-legend {
+  gap: 8px !important;
+  padding: 3px 6px !important;
+  font-size: 11px !important;
 }
 
 /* Unify Downloaded tab chapter list rows to desktop sizing */

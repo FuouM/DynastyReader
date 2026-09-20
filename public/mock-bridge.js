@@ -31,18 +31,87 @@
       if (cmd === "dbQuery") {
         const sql = (args.sql || "").trim().toUpperCase();
         // Aggregates for CacheView and Count queries
+        if (sql.includes("FROM CACHED_PAGES")) {
+          if (sql.includes("GROUP BY")) {
+            return {
+              rows: [
+                { chapter_permalink: "hana-ni-arashi-ch01", page_count: 20, size_bytes: 5242880, last_cached: Date.now() - 3600000 },
+                { chapter_permalink: "hana-ni-arashi-ch02", page_count: 22, size_bytes: 5242880, last_cached: Date.now() - 7200000 },
+                { chapter_permalink: "orphan-ch01", page_count: 15, size_bytes: 3145728, last_cached: Date.now() - 10800000 },
+              ],
+            };
+          }
+          return {
+            rows: [
+              { chapter_permalink: "hana-ni-arashi-ch01", page_index: 0, file_path: "/cached/1.jpg", size_bytes: 250000, cached_at: Date.now() },
+            ],
+          };
+        }
+        // Aggregates for CacheView and Count queries
         if (sql.includes("COUNT(*)")) {
           return {
             rows: [
               {
-                c: 0,
-                count: 0,
-                pages: 0,
-                chapters: 0,
-                total_bytes: 0,
-                chapter_permalink: "",
-                last_cached: Date.now(),
+                c: 2,
+                count: 2,
+                pages: 42,
+                chapters: 3,
+                total_bytes: 10485760,
+                chapter_permalink: "hana-ni-arashi-ch01",
+                last_cached: Date.now() - 3600000,
               },
+            ],
+          };
+        }
+        if (sql.includes("FROM CACHED_METADATA")) {
+          return {
+            rows: [
+              {
+                cache_key: "chapter:hana-ni-arashi-ch01",
+                payload: JSON.stringify({
+                  title: "Chapter 1: The Secret",
+                  pagesCount: 20,
+                  seriesPermalink: "hana-ni-arashi",
+                  seriesName: "Hana ni Arashi",
+                }),
+              },
+              {
+                cache_key: "chapter:hana-ni-arashi-ch02",
+                payload: JSON.stringify({
+                  title: "Chapter 2: Rooftop Lunch",
+                  pagesCount: 22,
+                  seriesPermalink: "hana-ni-arashi",
+                  seriesName: "Hana ni Arashi",
+                }),
+              },
+              {
+                cache_key: "chapter:orphan-ch01",
+                payload: JSON.stringify({
+                  title: "Stand-alone Oneshots Special Chapter",
+                  pagesCount: 15,
+                }),
+              },
+            ],
+          };
+        }
+        if (sql.includes("FROM READING_PROGRESS")) {
+          return {
+            rows: [
+              { chapter_permalink: "hana-ni-arashi-ch01", series_permalink: "hana-ni-arashi", series_name: "Hana ni Arashi", chapter_title: "Chapter 1: The Secret", page_index: 10, page_total: 20, completed: 0, updated_at: Date.now() - 1800000 },
+            ],
+          };
+        }
+        if (sql.includes("FROM READING_HISTORY")) {
+          return {
+            rows: [
+              { id: 1, chapter_permalink: "hana-ni-arashi-ch01", series_permalink: "hana-ni-arashi", series_name: "Hana ni Arashi", chapter_title: "Chapter 1: The Secret", read_at: Date.now() - 1800000 },
+            ],
+          };
+        }
+        if (sql.includes("FROM BOOKMARKS")) {
+          return {
+            rows: [
+              { chapter_permalink: "hana-ni-arashi-ch02", series_permalink: "hana-ni-arashi", series_name: "Hana ni Arashi", chapter_title: "Chapter 2: Rooftop Lunch", page_index: 5, created_at: Date.now() - 3600000 },
             ],
           };
         }

@@ -622,6 +622,13 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: nowrap;
+}
+.ds-downloaded-series-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }
 .ds-downloaded-summary-strip {
   display: flex;
@@ -663,7 +670,6 @@
 .ds-downloaded-chapter-list .ds-chapter-row:hover {
   background: var(--sys-hover-bg) !important;
 }
-
 .ds-downloaded-chapter-list .ds-vol-divider {
   display: flex;
   align-items: center;
