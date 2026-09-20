@@ -15,6 +15,7 @@ import { showBanner } from "../stores/topbar";
 import { HistoryNavButtons } from "../components/HistoryDropdown";
 import { decodeEntities, errorMessage } from "../utils/formatting";
 import { addBookmark, removeBookmark } from "../db/library.repo";
+import { addMdxBookmark, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
 import { t } from "../i18n";
 import { getReaderNavPosition, getReaderFilterCss } from "./settings";
 import { IconButton } from "../components/Button";
@@ -69,18 +70,34 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
   };
   const handleToggleBookmark = async () => {
     try {
+      const isMdx = s.permalink.startsWith("mdx:");
+      const chId = isMdx ? s.permalink.replace(/^mdx:/, "") : "";
       if (s.bookmarked()) {
-        await removeBookmark(s.permalink);
+        if (isMdx) {
+          await removeMdxBookmark(chId);
+        } else {
+          await removeBookmark(s.permalink);
+        }
         s.setBookmarked(false);
         showBanner(t("browse.feed.bookmarkRemovedBanner", { title: s.chapterTitle() }));
       } else {
-        await addBookmark({
-          chapterPermalink: s.permalink,
-          seriesPermalink: s.seriesPermalink() ?? "",
-          seriesName: s.seriesName() ?? "",
-          chapterTitle: s.chapterTitle(),
-          pageIndex: s.currentIndex(),
-        });
+        if (isMdx) {
+          await addMdxBookmark({
+            chapterId: chId,
+            mangaId: s.seriesPermalink()?.replace(/^mdx:/, "") ?? "",
+            mangaTitle: s.seriesName() ?? "",
+            chapterTitle: s.chapterTitle(),
+            pageIndex: s.currentIndex(),
+          });
+        } else {
+          await addBookmark({
+            chapterPermalink: s.permalink,
+            seriesPermalink: s.seriesPermalink() ?? "",
+            seriesName: s.seriesName() ?? "",
+            chapterTitle: s.chapterTitle(),
+            pageIndex: s.currentIndex(),
+          });
+        }
         s.setBookmarked(true);
         showBanner(t("browse.feed.bookmarkSavedBanner", { title: s.chapterTitle() }));
       }

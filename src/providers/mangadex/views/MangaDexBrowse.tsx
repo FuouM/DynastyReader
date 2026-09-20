@@ -1,16 +1,21 @@
 /**
  * MangaDex Browse View
  * Browse and search catalog with Girls' Love default filter, rating chips, and blacklist filtering.
+ * Uses DynastyReader's native ListItem and Cover components for visual parity.
  */
 
 import { createSignal, For, onMount, Show } from "solid-js";
 import { searchManga } from "../api/manga";
 import { GIRLS_LOVE_TAG_ID } from "../api/constants";
-import { formatMangaTitle, getMangaCoverUrl } from "../mapping";
+import { formatMangaTitle, getMangaAuthors, getMangaCoverUrl } from "../mapping";
 import { isItemBlacklisted } from "../../../db/blacklist.repo";
 import { navigate } from "../../../stores/router";
-import { Loading } from "../../../components/Feedback";
-import { SearchIcon } from "../../../components/Icon";
+import { Loading, EmptyState } from "../../../components/Feedback";
+import { Cover } from "../../../components/Cover";
+import { ListItem } from "../../../components/ListItem";
+import { GroupBox } from "../../../components/GroupBox";
+import { Pager } from "../../../components/Pager";
+import { SearchIcon, ExternalLinkIcon } from "../../../components/Icon";
 import type { MangaDexContentRating, MangaDexManga, MangaDexSearchFilters } from "../types";
 
 export function MangaDexBrowse() {
@@ -87,73 +92,76 @@ export function MangaDexBrowse() {
   const totalPages = () => Math.max(1, Math.ceil(totalCount() / limit));
 
   return (
-    <div id="ds-pane-browse" class="ds-pane" style="padding: 12px; overflow-y: auto;">
-      {/* Search and Filters Header */}
-      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <div style="position: relative; flex: 1;">
-            <input
-              type="text"
-              class="win-input"
-              placeholder="Search MangaDex titles..."
-              value={searchQuery()}
-              onInput={(e) => setSearchQuery(e.currentTarget.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setPage(1);
-                  void loadManga();
-                }
-              }}
-              style="width: 100%; padding-left: 28px;"
-            />
-            <div style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); opacity: 0.5;">
-              <SearchIcon size={14} />
+    <div id="ds-pane-browse" class="ds-pane" style="padding: 8px 12px; overflow-y: auto;">
+      {/* Search & Filter Controls */}
+      <GroupBox title="Search MangaDex" class="ds-mb-8">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <div style="position: relative; flex: 1;">
+              <input
+                type="text"
+                class="win-input"
+                placeholder="Search MangaDex titles, authors, genres..."
+                value={searchQuery()}
+                onInput={(e) => setSearchQuery(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setPage(1);
+                    void loadManga();
+                  }
+                }}
+                style="width: 100%; padding-left: 26px; height: 26px;"
+              />
+              <div style="position: absolute; left: 7px; top: 50%; transform: translateY(-50%); opacity: 0.5;">
+                <SearchIcon size={13} />
+              </div>
             </div>
+            <button
+              type="button"
+              class="win-button"
+              onClick={() => {
+                setPage(1);
+                void loadManga();
+              }}
+              style="height: 26px; padding: 0 12px;"
+            >
+              Search
+            </button>
           </div>
-          <button
-            type="button"
-            class="win-button"
-            onClick={() => {
-              setPage(1);
-              void loadManga();
-            }}
-          >
-            Search
-          </button>
+
+          {/* Filter Chips */}
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+            <button
+              type="button"
+              class="win-button ds-chip"
+              classList={{ "win-button--active": glOnly() }}
+              onClick={toggleGl}
+              style="font-size: 11px; padding: 1px 8px; height: 22px;"
+            >
+              Girls' Love (GL) Only
+            </button>
+
+            <span class="ds-muted" style="font-size: 11px; margin: 0 4px;">|</span>
+
+            <For each={(["safe", "suggestive", "erotica", "pornographic"] as MangaDexContentRating[])}>
+              {(r) => {
+                const active = () => ratings().includes(r);
+                return (
+                  <button
+                    type="button"
+                    class="win-button ds-chip"
+                    classList={{ "win-button--active": active() }}
+                    onClick={() => toggleRating(r)}
+                    style="font-size: 11px; padding: 1px 7px; height: 22px; text-transform: capitalize;"
+                  >
+                    {r}
+                  </button>
+                );
+              }}
+            </For>
+          </div>
         </div>
-
-        {/* Filter Chips */}
-        <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
-          <button
-            type="button"
-            class="win-button ds-chip"
-            classList={{ "win-button--active": glOnly() }}
-            onClick={toggleGl}
-            style="font-size: 11px; padding: 2px 8px;"
-          >
-            Girls' Love (GL) Only
-          </button>
-
-          <span class="ds-muted" style="font-size: 11px; margin: 0 4px;">|</span>
-
-          <For each={(["safe", "suggestive", "erotica", "pornographic"] as MangaDexContentRating[])}>
-            {(r) => {
-              const active = () => ratings().includes(r);
-              return (
-                <button
-                  type="button"
-                  class="win-button ds-chip"
-                  classList={{ "win-button--active": active() }}
-                  onClick={() => toggleRating(r)}
-                  style="font-size: 11px; padding: 2px 8px; text-transform: capitalize;"
-                >
-                  {r}
-                </button>
-              );
-            }}
-          </For>
-        </div>
-      </div>
+      </GroupBox>
 
       {/* Content Area */}
       <Show when={loading()}>
@@ -169,19 +177,21 @@ export function MangaDexBrowse() {
       </Show>
 
       <Show when={!loading() && mangaList().length === 0 && !error()}>
-        <div class="ds-empty" style="text-align: center; padding: 40px 0;">
-          No manga found matching your query and filters.
-        </div>
+        <EmptyState>No manga found matching your query and filters.</EmptyState>
       </Show>
 
       <Show when={!loading() && mangaList().length > 0}>
-        <div
-          style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px;"
-        >
+        <div class="ds-feed-list" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
           <For each={mangaList()}>
             {(manga) => {
               const title = formatMangaTitle(manga);
               const coverUrl = getMangaCoverUrl(manga, "256");
+              const authors = getMangaAuthors(manga);
+              const tags = (manga.attributes.tags || []).map(
+                (t) => t.attributes.name.en || Object.values(t.attributes.name)[0] || "",
+              ).filter(Boolean);
+              const descMap = manga.attributes.description;
+              const desc = descMap?.en || Object.values(descMap || {})[0] || "";
 
               const handleClick = () => {
                 navigate({
@@ -192,69 +202,93 @@ export function MangaDexBrowse() {
               };
 
               return (
-                <div
-                  class="ds-card win-button"
-                  style="display: flex; flex-direction: column; padding: 6px; cursor: pointer; text-align: left;"
+                <ListItem
+                  class="ds-feed-item"
                   onClick={handleClick}
-                >
-                  <div style="width: 100%; aspect-ratio: 2/3; overflow: hidden; margin-bottom: 6px; background: var(--ds-bg-sunken); border-radius: 2px;">
-                    <Show when={coverUrl} fallback={<div class="ds-cover-placeholder" />}>
-                      <img
-                        src={coverUrl!}
+                  cssText="cursor: pointer; padding: 4px 6px;"
+                  leading={
+                    <div class="ds-feed-cover-wrap">
+                      <Cover
+                        path={coverUrl}
                         alt={title}
-                        loading="lazy"
-                        style="width: 100%; height: 100%; object-fit: cover;"
+                        imgClass="ds-feed-cover"
+                        placeholderClass="ds-feed-cover-placeholder"
                       />
-                    </Show>
-                  </div>
-                  <span
-                    class="ds-truncate-2"
-                    style="font-size: 11px; font-weight: 600; line-height: 1.3;"
-                    title={title}
-                  >
-                    {title}
-                  </span>
-                  <div style="display: flex; gap: 4px; margin-top: auto; padding-top: 4px;">
-                    <span
-                      class="ds-chip ds-muted"
-                      style="font-size: 9px; padding: 0 4px; text-transform: capitalize;"
+                    </div>
+                  }
+                  title={
+                    <div class="ds-item-title ds-inline-flex-center-6" style="margin-bottom: 2px;">
+                      <span class="ds-truncate" style="font-weight: 600; font-size: 13px;">
+                        {title}
+                      </span>
+                      <span
+                        class="ds-chip ds-muted"
+                        style="font-size: 10px; padding: 0 4px; text-transform: capitalize; flex-shrink: 0;"
+                      >
+                        {manga.attributes.contentRating}
+                      </span>
+                      <span
+                        class="ds-chip"
+                        style="font-size: 10px; padding: 0 4px; text-transform: capitalize; flex-shrink: 0;"
+                      >
+                        {manga.attributes.status}
+                      </span>
+                    </div>
+                  }
+                  body={
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                      <Show when={authors.length > 0}>
+                        <div class="ds-muted" style="font-size: 11px;">
+                          By {authors.join(", ")}
+                        </div>
+                      </Show>
+                      <Show when={tags.length > 0}>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0;">
+                          <For each={tags.slice(0, 5)}>
+                            {(tName) => (
+                              <span class="ds-chip ds-muted" style="font-size: 9px; padding: 0 4px;">
+                                {tName}
+                              </span>
+                            )}
+                          </For>
+                        </div>
+                      </Show>
+                      <Show when={desc}>
+                        <div class="ds-muted ds-truncate-2" style="font-size: 11px; line-height: 1.35;">
+                          {desc}
+                        </div>
+                      </Show>
+                    </div>
+                  }
+                  actions={
+                    <a
+                      href={`https://mangadex.org/title/${manga.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="win-button ds-btn-icon"
+                      title="Open on MangaDex"
+                      onClick={(e) => e.stopPropagation()}
+                      style="display: inline-flex; align-items: center; justify-content: center;"
                     >
-                      {manga.attributes.contentRating}
-                    </span>
-                  </div>
-                </div>
+                      <ExternalLinkIcon size={12} />
+                    </a>
+                  }
+                />
               );
             }}
           </For>
         </div>
 
         {/* Pager */}
-        <div style="display: flex; justify-content: center; align-items: center; gap: 12px; padding: 12px 0;">
-          <button
-            type="button"
-            class="win-button"
-            disabled={page() <= 1}
-            onClick={() => {
-              setPage((p) => Math.max(1, p - 1));
+        <div style="display: flex; justify-content: center; padding: 8px 0 16px 0;">
+          <Pager
+            totalPages={totalPages()}
+            currentPage={page()}
+            onPage={(p) => {
+              setPage(p);
               void loadManga();
             }}
-          >
-            Previous
-          </button>
-          <span style="font-size: 12px;">
-            Page {page()} of {totalPages()}
-          </span>
-          <button
-            type="button"
-            class="win-button"
-            disabled={page() >= totalPages()}
-            onClick={() => {
-              setPage((p) => p + 1);
-              void loadManga();
-            }}
-          >
-            Next
-          </button>
+          />
         </div>
       </Show>
     </div>

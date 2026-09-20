@@ -26,6 +26,8 @@ import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type 
 import { clearCachedGroupPages, getCacheOverviewStats, getFullyCachedChapters, type FullyCachedChapterRow } from "../db/cache.repo";
 import { enrichCachedChapters } from "../db/cache-aggregate";
 import { getDbStats, type DbStats } from "../db/db.manage";
+import { activeProvider } from "../stores/provider";
+import { getMangaDexCacheStats, purgeMangaDexCache } from "../providers/mangadex/db/cache.repo";
 import type { CacheOverviewStats } from "../types/db";
 import { SeriesDownloadedCard } from "../browse/downloads/SeriesDownloadedCard";
 import { OrphanDownloadedCard } from "../browse/downloads/OrphanDownloadedCard";
@@ -72,6 +74,48 @@ export function CacheView() {
   });
 
   const [data, { refetch }] = createResource<CacheData>(async () => {
+    if (activeProvider() === "mangadex") {
+      const mdxStats = await getMangaDexCacheStats();
+      const stats: CacheOverviewStats = {
+        totalCachedPages: mdxStats.pageCount,
+        totalCachedChapters: mdxStats.chapterCount,
+        totalSizeBytes: mdxStats.totalBytes,
+        totalMetadataEntries: 0,
+      };
+      const dbStats: DbStats = {
+        file: {
+          dbSizeBytes: 0,
+          walSizeBytes: 0,
+          shmSizeBytes: 0,
+          totalSizeBytes: 0,
+        },
+        counts: {
+          followedSeries: 0,
+          readingProgress: 0,
+          readingHistory: 0,
+          bookmarks: 0,
+          cachedMetadata: 0,
+          cachedPages: mdxStats.pageCount,
+          tagBlacklist: 0,
+          seriesBlacklist: 0,
+          collections: 0,
+          collectionItems: 0,
+          directoryEntries: 0,
+          localSeries: 0,
+          downloadQueue: 0,
+        },
+        totalRows: mdxStats.pageCount,
+      };
+      return {
+        stats,
+        dbStats,
+        rows: [],
+        bookmarkSet: new Set(),
+        readHistoryMap: new Map(),
+        volumeMap: new Map(),
+      };
+    }
+
     const [stats, dbStats, rows] = await Promise.all([
       getCacheOverviewStats(),
       getDbStats(),
@@ -103,9 +147,17 @@ export function CacheView() {
     debouncedSetFilter(val);
   };
 
-  const { purgeAll, purgePages, purgeCovers, wipeDb, backupDb, restoreFromPicker } = useCacheActions(
-    refetch as unknown as () => void,
-  );
+  const cacheActions = useCacheActions(refetch as unknown as () => void);
+  const purgeAll = async (): Promise<void> => {
+    if (activeProvider() === "mangadex") {
+      await purgeMangaDexCache();
+      showBanner("MangaDex cache purged.");
+      void refetch();
+    } else {
+      await cacheActions.purgeAll();
+    }
+  };
+  const { purgePages, purgeCovers, wipeDb, backupDb, restoreFromPicker } = cacheActions;
 
   // Chapters with an in-flight download must not be purged: the queue keeps
   // writing pages after the deletion query, leaving stale DB rows (D-M3).

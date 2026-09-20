@@ -5,16 +5,19 @@
 
 import { createSignal, For, onMount, Show } from "solid-js";
 import { getManga, getMangaFeed } from "../api/manga";
-import { formatMangaTitle, getMangaAuthors, getMangaCoverUrl, groupChaptersByNumber } from "../mapping";
+import { formatMangaTitle, getMangaAuthors, getMangaCoverUrl, groupChaptersByNumber, parseChapterNumber } from "../mapping";
 import { followManga, isMangaFollowed, unfollowManga } from "../db/library.repo";
 import { getMangaReadingProgress } from "../db/progress.repo";
 import { navigate, route } from "../../../stores/router";
+import { showBanner } from "../../../stores/topbar";
+import { enqueueChapters } from "../../../ipc";
 import { Loading } from "../../../components/Feedback";
 import { GroupBox } from "../../../components/GroupBox";
 import {
   CheckIcon,
   ExternalLinkIcon,
   StarIcon,
+  DownloadIcon,
 } from "../../../components/Icon";
 import type {
   MangaDexChapterGroup,
@@ -105,6 +108,23 @@ export function MangaDexSeries() {
       seriesPermalink: `mdx:${m.id}`,
       seriesName: title,
     });
+  };
+  const handleDownload = async (upload: MangaDexChapterUpload, m: MangaDexManga, ev: MouseEvent): Promise<void> => {
+    ev.stopPropagation();
+    try {
+      await enqueueChapters([
+        {
+          series_permalink: `mdx:${m.id}`,
+          series_title: formatMangaTitle(m),
+          chapter_permalink: `mdx:${upload.id}`,
+          chapter_title: upload.title || (upload.chapterNumber ? `Ch. ${upload.chapterNumber}` : "Chapter"),
+          chapter_index: Math.max(0, Math.floor(parseChapterNumber(upload.chapterNumber))),
+        },
+      ]);
+      showBanner(`Download queued for ${upload.chapterNumber ? `Ch. ${upload.chapterNumber}` : "Chapter"}`);
+    } catch (err) {
+      showBanner(`Download failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   };
 
   return (
@@ -239,6 +259,15 @@ export function MangaDexSeries() {
                                 <span class="ds-muted" style="font-size: 11px;">
                                   {group.uploads[0].scanlatorName}
                                 </span>
+                                <button
+                                  type="button"
+                                  class="win-button ds-btn-icon"
+                                  title="Download chapter"
+                                  onClick={(e) => handleDownload(group.uploads[0], m(), e)}
+                                  style="padding: 2px;"
+                                >
+                                  <DownloadIcon size={12} />
+                                </button>
                               </Show>
                               <Show when={hasMultiple()}>
                                 <span
@@ -274,8 +303,19 @@ export function MangaDexSeries() {
                                           {upload.scanlatorName}
                                         </span>
                                       </div>
-                                      <div class="ds-muted" style="font-size: 10px;">
-                                        {upload.readableAt ? upload.readableAt.substring(0, 10) : ""}
+                                      <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="ds-muted" style="font-size: 10px;">
+                                          {upload.readableAt ? upload.readableAt.substring(0, 10) : ""}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          class="win-button ds-btn-icon"
+                                          title="Download scanlation"
+                                          onClick={(e) => handleDownload(upload, m(), e)}
+                                          style="padding: 2px;"
+                                        >
+                                          <DownloadIcon size={12} />
+                                        </button>
                                       </div>
                                     </div>
                                   );

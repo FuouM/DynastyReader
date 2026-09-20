@@ -205,6 +205,7 @@ export function mangaDexToStandardSeries(
 export function mangaDexToStandardChapter(
   chapter: MangaDexChapter,
   pages?: ChapterPage[],
+  seriesContext?: { mangaId: string; mangaTitle: string },
 ): Chapter {
   const chNum = chapter.attributes.chapter;
   const rawTitle = chapter.attributes.title;
@@ -214,11 +215,21 @@ export function mangaDexToStandardChapter(
       : `Chapter ${chNum}`
     : rawTitle || "Oneshot";
 
+  const tags = [];
+  if (seriesContext?.mangaId && seriesContext?.mangaTitle) {
+    tags.push({
+      type: "Series",
+      name: seriesContext.mangaTitle,
+      permalink: `mdx:${seriesContext.mangaId}`,
+    });
+  }
+
   return {
     title,
     long_title: title,
     permalink: `mdx:${chapter.id}`,
     pages: pages ?? [],
+    tags,
     released_on: chapter.attributes.readableAt
       ? chapter.attributes.readableAt.substring(0, 10)
       : null,

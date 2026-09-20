@@ -69,7 +69,11 @@ export async function loadMangaDexChapterForReader(
     url: buildPageUrl(atHome.baseUrl, atHome.chapter.hash, fn, quality),
   }));
 
-  const standardChapter = mangaDexToStandardChapter(mdxChapter, pages);
+  const standardChapter = mangaDexToStandardChapter(
+    mdxChapter,
+    pages,
+    mangaId ? { mangaId, mangaTitle } : undefined,
+  );
 
   return {
     chapter: standardChapter,

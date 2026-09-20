@@ -5,7 +5,7 @@
 
 import * as ipc from "../../../ipc";
 
-export const MANGADEX_DB_NAME = "mangadex";
+export const MANGADEX_DB_NAME = "mangadex.db";
 
 export type Row = Record<string, unknown>;
 

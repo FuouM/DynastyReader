@@ -15,6 +15,7 @@ import {
   getMdxProgress,
   recordMdxHistory,
 } from "../providers/mangadex/reader";
+import { getMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
 import { getChapterContainerTag } from "../taxonomy";
 import {
   detectIsLongStrip,
@@ -382,7 +383,11 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
 
   let bookmarked = false;
   try {
-    bookmarked = (await getBookmark(permalink)) !== null;
+    if (permalink.startsWith("mdx:")) {
+      bookmarked = (await getMdxBookmark(permalink.replace(/^mdx:/, ""))) !== null;
+    } else {
+      bookmarked = (await getBookmark(permalink)) !== null;
+    }
   } catch (err) {
     log.debug("reader-bootstrap", "getBookmark failed:", err);
     bookmarked = false;

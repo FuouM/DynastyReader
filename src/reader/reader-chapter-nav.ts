@@ -7,6 +7,7 @@ import type { ReaderSession } from "./reader-session";
 import type { ChapterRef } from "../types/routes";
 import type { Series } from "../types/api";
 import { fetchSeries } from "../api/series";
+import { getMangaFeed } from "../providers/mangadex/api/manga";
 import { navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
@@ -29,6 +30,27 @@ export function gotoChapter(s: ReaderSession, c: ChapterRef, targetPage?: number
 export async function loadChapterList(s: ReaderSession, force = false): Promise<ChapterRef[]> {
   const permalink = s.seriesPermalink();
   if (!permalink) return [];
+  if (permalink.startsWith("mdx:")) {
+    const mangaId = permalink.replace(/^mdx:/, "");
+    try {
+      const feed = await getMangaFeed(mangaId, { limit: 500, order: { chapter: "asc" } });
+      const cl: ChapterRef[] = feed.data.map((ch) => {
+        const num = ch.attributes.chapter;
+        const raw = ch.attributes.title;
+        const title = num ? (raw ? `Ch. ${num} - ${raw}` : `Chapter ${num}`) : (raw || "Oneshot");
+        return {
+          title,
+          permalink: `mdx:${ch.id}`,
+          released_on: ch.attributes.readableAt ? ch.attributes.readableAt.substring(0, 10) : undefined,
+        };
+      });
+      s.setChapterList(cl);
+      return cl;
+    } catch (err) {
+      log.warn("reader-chapter-nav", "MangaDex loadChapterList failed:", err);
+      return [];
+    }
+  }
   let lastCl: ChapterRef[] = [];
   for (let attempt = 0; attempt < 2; attempt++) {
     const useForce = force || attempt === 1;

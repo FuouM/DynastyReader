@@ -766,7 +766,7 @@ async fn record_page_progress(
     let is_mdx = cp.starts_with("mdx:");
     tokio::task::spawn_blocking(move || {
         if is_mdx {
-            let mdx_path = crate::paths::data_root().join("mangadex");
+            let mdx_path = crate::paths::data_root().join("mangadex.db");
             if let Ok(conn) = crate::commands::db::open_synced(&mdx_path) {
                 let now = crate::util::now_ms();
                 let ch_id = cp.trim_start_matches("mdx:");

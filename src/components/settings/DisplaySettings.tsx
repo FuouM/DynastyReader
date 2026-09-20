@@ -5,7 +5,8 @@ import { accentColor, setAccentColor, ACCENT_COLOR_PRESETS, getContrastText } fr
 import { uiScale, setUiScale } from "../../stores/ui-scale";
 import { uiMode, setUiMode, type UiMode } from "../../stores/platform";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
-import { activeProvider, PROVIDERS } from "../../stores/provider";
+import { activeProvider, type ContentProvider } from "../../stores/provider";
+import { switchProvider } from "../../stores/router";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";
 import { DsSelect, IconText, IconButton, SegmentedSwitch, Button } from "../Button";
@@ -52,15 +53,16 @@ export function DisplaySettings() {
         {/* Content Source */}
         <SettingsRow
           label="Content Source"
-          desc={`Currently using ${PROVIDERS[activeProvider()].name} (${PROVIDERS[activeProvider()].badge})`}
+          desc="Choose active catalog: Dynasty Scans (Yuri/GL) or MangaDex (All Genres)."
         >
-          <button
-            type="button"
-            class="win-button"
-            onClick={() => window.dispatchEvent(new CustomEvent("ds-open-source-switcher"))}
+          <DsSelect
+            id="ds-settings-provider-select"
+            value={activeProvider()}
+            onChange={(val) => switchProvider(val as ContentProvider)}
           >
-            Switch Source...
-          </button>
+            <option value="dynasty">Dynasty Scans (Yuri / GL)</option>
+            <option value="mangadex">MangaDex (All Genres)</option>
+          </DsSelect>
         </SettingsRow>
         {/* Scale Factor */}
         <SettingsRow

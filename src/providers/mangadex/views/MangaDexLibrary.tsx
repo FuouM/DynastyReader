@@ -6,14 +6,17 @@
 import { createSignal, For, onMount, Show } from "solid-js";
 import { getFollowedManga, unfollowManga, type FollowedMangaPageResult } from "../db/library.repo";
 import { clearHistory, deleteHistoryItem, getHistory, type HistoryPageResult } from "../db/history.repo";
+import { getMdxBookmarks, removeMdxBookmark, type BookmarksPageResult } from "../db/bookmarks.repo";
 import { navigate } from "../../../stores/router";
 import { SubTabs } from "../../../components/SubTabs";
 import { Loading } from "../../../components/Feedback";
 import { TrashIcon } from "../../../components/Icon";
+import { LibraryItemRow } from "../../../library/LibraryItemRow";
 
 export function MangaDexLibrary() {
-  const [activeTab, setActiveTab] = createSignal<"followed" | "history">("followed");
+  const [activeTab, setActiveTab] = createSignal<"followed" | "bookmarks" | "history">("followed");
   const [followedData, setFollowedData] = createSignal<FollowedMangaPageResult | null>(null);
+  const [bookmarksData, setBookmarksData] = createSignal<BookmarksPageResult | null>(null);
   const [historyData, setHistoryData] = createSignal<HistoryPageResult | null>(null);
   const [loading, setLoading] = createSignal(false);
   const [page, setPage] = createSignal(1);
@@ -24,6 +27,9 @@ export function MangaDexLibrary() {
       if (activeTab() === "followed") {
         const res = await getFollowedManga(page(), 24);
         setFollowedData(res);
+      } else if (activeTab() === "bookmarks") {
+        const res = await getMdxBookmarks(page(), 24);
+        setBookmarksData(res);
       } else {
         const res = await getHistory(page(), 30);
         setHistoryData(res);
@@ -38,22 +44,11 @@ export function MangaDexLibrary() {
   });
 
   const handleTabChange = (tabId: string): void => {
-    setActiveTab(tabId as "followed" | "history");
+    setActiveTab(tabId as "followed" | "bookmarks" | "history");
     setPage(1);
     void loadData();
   };
 
-  const handleUnfollow = async (mangaId: string, ev: MouseEvent): Promise<void> => {
-    ev.stopPropagation();
-    await unfollowManga(mangaId);
-    void loadData();
-  };
-
-  const handleDeleteHistory = async (id: number, ev: MouseEvent): Promise<void> => {
-    ev.stopPropagation();
-    await deleteHistoryItem(id);
-    void loadData();
-  };
 
   const handleClearHistory = async (): Promise<void> => {
     await clearHistory();
@@ -67,6 +62,7 @@ export function MangaDexLibrary() {
         <SubTabs
           tabs={[
             { id: "followed", label: "Followed Manga", shortLabel: "Followed" },
+            { id: "bookmarks", label: "Bookmarks", shortLabel: "Bookmarks" },
             { id: "history", label: "Reading History", shortLabel: "History" },
           ]}
           activeTab={activeTab()}
@@ -102,54 +98,67 @@ export function MangaDexLibrary() {
             </div>
           }
         >
-          <div
-            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px;"
-          >
+          <div class="ds-library-panel" style="display: flex; flex-direction: column; gap: 2px;">
             <For each={followedData()?.rows}>
-              {(row) => {
-                const coverUrl = row.cover_filename;
-                const handleClick = () => {
-                  navigate({
-                    view: "series",
-                    seriesPermalink: `mdx:${row.manga_id}`,
-                    seriesName: row.title,
-                  });
-                };
+              {(row) => (
+                <LibraryItemRow
+                  title={row.title}
+                  subtitle={row.latest_chapter_title ? `Latest: ${row.latest_chapter_title}` : undefined}
+                  cover={row.cover_filename}
+                  onOpen={() => {
+                    navigate({
+                      view: "series",
+                      seriesPermalink: `mdx:${row.manga_id}`,
+                      seriesName: row.title,
+                    });
+                  }}
+                  onDelete={async () => {
+                    await unfollowManga(row.manga_id);
+                    void loadData();
+                  }}
+                  deleteTitle="Unfollow"
+                  externalUrl={`https://mangadex.org/title/${row.manga_id}`}
+                />
+              )}
+            </For>
+          </div>
+        </Show>
+      </Show>
 
-                return (
-                  <div
-                    class="ds-card win-button"
-                    style="display: flex; flex-direction: column; padding: 6px; cursor: pointer; text-align: left; position: relative;"
-                    onClick={handleClick}
-                  >
-                    <div style="width: 100%; aspect-ratio: 2/3; overflow: hidden; margin-bottom: 6px; background: var(--ds-bg-sunken); border-radius: 2px;">
-                      <Show when={coverUrl} fallback={<div class="ds-cover-placeholder" />}>
-                        <img
-                          src={coverUrl!}
-                          alt={row.title}
-                          loading="lazy"
-                          style="width: 100%; height: 100%; object-fit: cover;"
-                        />
-                      </Show>
-                    </div>
-                    <span
-                      class="ds-truncate-2"
-                      style="font-size: 11px; font-weight: 600; line-height: 1.3;"
-                      title={row.title}
-                    >
-                      {row.title}
-                    </span>
-                    <button
-                      type="button"
-                      class="win-button ds-btn-sm"
-                      onClick={(e) => handleUnfollow(row.manga_id, e)}
-                      style="margin-top: auto; padding: 2px 4px; font-size: 10px; width: 100%;"
-                    >
-                      Unfollow
-                    </button>
-                  </div>
-                );
-              }}
+      {/* Bookmarks Tab Content */}
+      <Show when={!loading() && activeTab() === "bookmarks"}>
+        <Show
+          when={(bookmarksData()?.rows.length ?? 0) > 0}
+          fallback={
+            <div class="ds-empty" style="text-align: center; padding: 40px 0;">
+              You have no bookmarked MangaDex chapters.
+            </div>
+          }
+        >
+          <div class="ds-library-panel" style="display: flex; flex-direction: column; gap: 2px;">
+            <For each={bookmarksData()?.rows}>
+              {(bm) => (
+                <LibraryItemRow
+                  title={bm.manga_title}
+                  subtitle={`${bm.chapter_title} (Page ${bm.page_index + 1})`}
+                  onOpen={() => {
+                    navigate({
+                      view: "reader",
+                      chapterPermalink: `mdx:${bm.chapter_id}`,
+                      chapterTitle: bm.chapter_title,
+                      seriesPermalink: `mdx:${bm.manga_id}`,
+                      seriesName: bm.manga_title,
+                      startPage: bm.page_index,
+                    });
+                  }}
+                  onDelete={async () => {
+                    await removeMdxBookmark(bm.chapter_id);
+                    void loadData();
+                  }}
+                  deleteTitle="Remove bookmark"
+                  externalUrl={`https://mangadex.org/chapter/${bm.chapter_id}`}
+                />
+              )}
             </For>
           </div>
         </Show>
@@ -165,52 +174,29 @@ export function MangaDexLibrary() {
             </div>
           }
         >
-          <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div class="ds-library-panel" style="display: flex; flex-direction: column; gap: 2px;">
             <For each={historyData()?.rows}>
-              {(item) => {
-                const handleOpen = () => {
-                  navigate({
-                    view: "reader",
-                    chapterPermalink: `mdx:${item.chapter_id}`,
-                    chapterTitle: item.chapter_title,
-                    seriesPermalink: `mdx:${item.manga_id}`,
-                    seriesName: item.manga_title,
-                  });
-                };
-
-                return (
-                  <div
-                    class="ds-chapter-row"
-                    style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer;"
-                    onClick={handleOpen}
-                  >
-                    <div style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;">
-                      <span class="ds-truncate" style="font-size: 12px; font-weight: 600;">
-                        {item.manga_title}
-                      </span>
-                      <span class="ds-truncate ds-muted" style="font-size: 11px;">
-                        {item.chapter_title}
-                        {item.scanlator_name ? ` — [${item.scanlator_name}]` : ""}
-                      </span>
-                    </div>
-
-                    <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
-                      <span class="ds-muted" style="font-size: 10px;">
-                        {new Date(item.read_at).toLocaleDateString()}
-                      </span>
-                      <button
-                        type="button"
-                        class="win-button ds-btn-icon"
-                        onClick={(e) => handleDeleteHistory(item.id, e)}
-                        title="Remove from history"
-                        style="padding: 2px;"
-                      >
-                        <TrashIcon size={12} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              }}
+              {(item) => (
+                <LibraryItemRow
+                  title={item.manga_title}
+                  subtitle={`${item.chapter_title}${item.scanlator_name ? ` — [${item.scanlator_name}]` : ""} • ${new Date(item.read_at).toLocaleDateString()}`}
+                  onOpen={() => {
+                    navigate({
+                      view: "reader",
+                      chapterPermalink: `mdx:${item.chapter_id}`,
+                      chapterTitle: item.chapter_title,
+                      seriesPermalink: `mdx:${item.manga_id}`,
+                      seriesName: item.manga_title,
+                    });
+                  }}
+                  onDelete={async () => {
+                    await deleteHistoryItem(item.id);
+                    void loadData();
+                  }}
+                  deleteTitle="Remove from history"
+                  externalUrl={`https://mangadex.org/chapter/${item.chapter_id}`}
+                />
+              )}
             </For>
           </div>
         </Show>
