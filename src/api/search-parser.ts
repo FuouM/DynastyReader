@@ -3,7 +3,7 @@ import { KIND_BY_PATH_SEGMENT, tagKindToType } from "../taxonomy";
 import type { ChapterTag, SearchResultItem, SearchResultPage } from "../types/api";
 
 /** Extracts kind and permalink from a relative Dynasty Scans href. */
-export function parseDynastyHref(href: string): {
+function parseDynastyHref(href: string): {
   kind: SearchResultItem["kind"];
   permalink: string;
 } {

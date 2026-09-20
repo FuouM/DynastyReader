@@ -14,13 +14,13 @@ const strNull = () =>
 const arrDef = <T extends z.ZodTypeAny>(itemSchema: T) =>
   z.preprocess((v) => (Array.isArray(v) ? v : []), z.array(itemSchema).default([]));
 
-export const ChapterTagSchema = z.looseObject({
+const ChapterTagSchema = z.looseObject({
   type: strDef("General"),
   name: strDef(""),
   permalink: strDef(""),
 });
 
-export const ChapterPageSchema = z.looseObject({
+const ChapterPageSchema = z.looseObject({
   name: strDef(""),
   url: z.string(),
 });
@@ -35,7 +35,7 @@ export const ChapterSchema = z.looseObject({
   added_on: strNull(),
 });
 
-export const FeedChapterSchema = z.looseObject({
+const FeedChapterSchema = z.looseObject({
   title: strDef(""),
   permalink: z.string(),
   series: strNull(),
@@ -53,13 +53,13 @@ export const FeedSchema = z.looseObject({
   total_pages: z.preprocess((v) => (typeof v === "number" ? v : 1), z.number().default(1)),
 });
 
-export const SeriesTagSchema = z.looseObject({
+const SeriesTagSchema = z.looseObject({
   type: strDef("General"),
   name: strDef(""),
   permalink: strDef(""),
 });
 
-export const SeriesTaggingSchema = z.looseObject({
+const SeriesTaggingSchema = z.looseObject({
   header: strNull(),
   title: strNull(),
   permalink: strNull(),
@@ -67,7 +67,7 @@ export const SeriesTaggingSchema = z.looseObject({
   tags: arrDef(SeriesTagSchema),
 });
 
-export const SeriesTaggableSchema = z.looseObject({
+const SeriesTaggableSchema = z.looseObject({
   name: strDef(""),
   permalink: z.string(),
   type: strDef(""),
