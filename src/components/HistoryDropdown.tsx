@@ -45,9 +45,13 @@ export function useHistoryHoldMenu() {
     }
   };
 
+  const markHeld = (): void => {
+    didHold = true;
+  };
+
   onCleanup(() => cancelHold());
 
-  return { historyMenu, setHistoryMenu, startHold, cancelHold, didHold: () => didHold };
+  return { historyMenu, setHistoryMenu, startHold, cancelHold, didHold: () => didHold, markHeld };
 }
 export function HistoryDropdown(props: HistoryDropdownProps) {
   const items = () => {
@@ -67,7 +71,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
 
   return (
     <AnchoredPopover
-      open={!!(props.open && items().length > 0)}
+      open={!!((props.open ?? true) && items().length > 0)}
       anchorEl={props.anchorEl}
       onClose={props.onClose}
       width={240}
@@ -122,7 +126,7 @@ export function HistoryDropdown(props: HistoryDropdownProps) {
 }
 
 export function HistoryNavButtons() {
-  const { historyMenu, setHistoryMenu, startHold, cancelHold, didHold } = useHistoryHoldMenu();
+  const { historyMenu, setHistoryMenu, startHold, cancelHold, didHold, markHeld } = useHistoryHoldMenu();
 
   return (
     <>
@@ -136,10 +140,12 @@ export function HistoryNavButtons() {
           disabled={!canGoBack()}
           onPointerDown={(ev) => {
             if (ev.button === 0 && canGoBack()) {
+              try { (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId); } catch {}
               startHold("back", ev.currentTarget);
             }
           }}
           onPointerUp={(ev) => {
+            try { (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
             if (didHold()) ev.preventDefault();
             cancelHold();
           }}
@@ -148,6 +154,7 @@ export function HistoryNavButtons() {
           onContextMenu={(ev) => {
             ev.preventDefault();
             if (canGoBack()) {
+              markHeld();
               setHistoryMenu({ direction: "back", anchorEl: ev.currentTarget });
             }
           }}
@@ -168,10 +175,12 @@ export function HistoryNavButtons() {
           disabled={!canGoForward()}
           onPointerDown={(ev) => {
             if (ev.button === 0 && canGoForward()) {
+              try { (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId); } catch {}
               startHold("forward", ev.currentTarget);
             }
           }}
           onPointerUp={(ev) => {
+            try { (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
             if (didHold()) ev.preventDefault();
             cancelHold();
           }}
@@ -180,6 +189,7 @@ export function HistoryNavButtons() {
           onContextMenu={(ev) => {
             ev.preventDefault();
             if (canGoForward()) {
+              markHeld();
               setHistoryMenu({ direction: "forward", anchorEl: ev.currentTarget });
             }
           }}
@@ -194,6 +204,7 @@ export function HistoryNavButtons() {
       </div>
       <Show when={historyMenu() !== null}>
         <HistoryDropdown
+          open={true}
           direction={historyMenu()!.direction}
           anchorEl={historyMenu()!.anchorEl}
           onClose={() => setHistoryMenu(null)}

@@ -27,10 +27,11 @@ export interface AnchoredPopoverProps {
 export function AnchoredPopover(props: AnchoredPopoverProps) {
   const [positionStyle, setPositionStyle] = createSignal("");
   let popoverRef: HTMLDivElement | undefined;
+  let openedAt = 0;
 
   createEffect(() => {
     if (!props.open) return;
-    const openedAt = Date.now();
+    openedAt = Date.now();
 
     const onKeyDown = (ev: KeyboardEvent): void => {
       if (ev.key === "Escape") {
@@ -118,7 +119,13 @@ export function AnchoredPopover(props: AnchoredPopoverProps) {
         <div
           id={props.overlayId}
           class={`ds-overlay${props.overlayClass ? ` ${props.overlayClass}` : ""}`}
-          onClick={() => props.onClose()}
+          onClick={() => {
+            if (Date.now() - openedAt < 350) return;
+            props.onClose();
+          }}
+          onContextMenu={(ev) => {
+            if (Date.now() - openedAt < 350) ev.preventDefault();
+          }}
         >
           <div
             ref={popoverRef}

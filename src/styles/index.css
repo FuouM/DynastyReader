@@ -215,6 +215,8 @@ body {
   font-size: var(--font-md);
   flex-shrink: 0;
   box-sizing: border-box;
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 /* ── WinForms Toggle Switch Control ───────────────────────────────────────── */
 .ds-switch {
