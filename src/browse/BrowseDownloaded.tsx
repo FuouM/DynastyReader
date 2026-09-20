@@ -23,8 +23,7 @@ import {
   useTabPane,
 } from "./browse-state";
 import { Pager } from "../components/Pager";
-import { Loading } from "../components/Loading";
-import { EmptyState } from "../components/EmptyState";
+import { Loading, EmptyState } from "../components/Feedback";
 import { SeriesDownloadedCard } from "./downloaded/SeriesDownloadedCard";
 import { OrphanDownloadedCard } from "./downloaded/OrphanDownloadedCard";
 import { DownloadedLegend } from "./downloaded/DownloadedLegend";

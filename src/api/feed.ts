@@ -1,11 +1,10 @@
-import { absUrl } from "../utils/url";
+import { absUrl, tryParseJson } from "../utils/formatting";
 import { getCached, setCached, touchCached } from "../db/metadata.repo";
 import { httpGetText } from "./http";
 import { recordCacheHit } from "./traffic";
-import { tryParseJson } from "../utils/json";
 import { FeedSchema } from "./schemas";
 import { log } from "../utils/log";
-import { persistSuggestEntries } from "./cache-persist";
+import { persistSuggestEntries } from "./directory";
 import type { Feed, FeedRevalidationResult, RevalidateOnlineResult } from "../types/api";
 
 export const FEED_TTL_MS = 60 * 60 * 1000;

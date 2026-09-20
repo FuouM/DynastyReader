@@ -4,7 +4,7 @@
 
 import { For, Show } from "solid-js";
 import { navigate } from "../stores/router";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import type { Series } from "../types/api";
 import { StorageIcon, BookIcon } from "../components/Icon";

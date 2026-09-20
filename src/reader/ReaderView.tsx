@@ -10,7 +10,7 @@ import { ReaderViewport } from "./ReaderViewport";
 import { ReaderStrip } from "./ReaderStrip";
 import { ReaderShortcuts } from "./ReaderShortcuts";
 import { ReaderWheel } from "./ReaderWheel";
-import { Loading } from "../components/Loading";
+import { Loading } from "../components/Feedback";
 import { IconButton } from "../components/Button";
 import { RefreshIcon } from "../components/Icon";
 import { theme } from "../stores/theme";

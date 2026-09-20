@@ -3,7 +3,7 @@ import { httpGetText } from "./http";
 import { parseSearchHtml } from "./search-parser";
 import { getCached, setCached } from "../db/metadata.repo";
 import { recordCacheHit } from "./traffic";
-import { persistSuggestEntries } from "./cache-persist";
+import { persistSuggestEntries } from "./directory";
 import type { SearchParams, SearchResultPage } from "../types/api";
 
 const SEARCH_CACHE_PREFIX = "search_v2:";

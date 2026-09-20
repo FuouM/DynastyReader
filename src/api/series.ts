@@ -4,13 +4,12 @@ import { getCached, setCached, deleteCached, touchCached } from "../db/metadata.
 import { query } from "../db/client";
 import { getLocalSeriesByPermalink } from "../db/local.repo";
 import { seriesKey, seriesCoverKey, chapterCoverKey } from "../lib/cache-keys";
-import { httpGetText } from "./http";
+import { httpGetText, cachedJson } from "./http";
 import { recordCacheHit } from "./traffic";
-import { fileResolve } from "./fs";
-import { fetchChapter } from "./chapter";
+import { fileResolve } from "../ipc";
 import { log } from "../utils/log";
 import type { Series } from "../types/api";
-import { SeriesSchema } from "./schemas";
+import { SeriesSchema, ChapterSchema, type ValidatedChapter } from "./schemas";
 import { coverPathsForChapter, coverPathsForSeries, fetchAndCacheCover } from "./cover-pipeline";
 const SERIES_PRIMARY_TIMEOUT_MS = 15_000;
 const SERIES_FALLBACK_TIMEOUT_MS = 5_000;
@@ -375,4 +374,10 @@ export async function getOrHydrateItemCover(opts: HydrateItemCoverOpts): Promise
     log.debug("api/series", `getOrHydrateItemCover fallback failed for chapter "${chapterPermalink}":`, err);
   }
   return null;
+}
+
+/** Chapter detail (pages + tags). Cached forever; refreshed manually if needed. */
+export async function fetchChapter(permalink: string): Promise<ValidatedChapter> {
+  const raw = await cachedJson<unknown>(`chapter:${permalink}`, `${SITE_ROOT}/chapters/${permalink}.json`);
+  return ChapterSchema.parse(raw);
 }

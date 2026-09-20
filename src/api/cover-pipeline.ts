@@ -1,9 +1,8 @@
-import { absUrl } from "../utils/url";
+import { absUrl } from "../utils/formatting";
 import { COVERS_PREFIX } from "../constants";
 import { isMobile } from "../stores/platform";
 import { getCached, setCached, deleteCached } from "../db/metadata.repo";
 import { httpDownloadFull } from "./http";
-import { fileDelete, fileExists } from "./fs";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 
@@ -35,7 +34,7 @@ async function transcodeCover(url: string, rawOutPath: string, webpOutPath: stri
     if (results && results.length > 0 && results[0].output_path && !results[0].error) {
       finalPath = results[0].output_path;
       try {
-        await fileDelete(rawOutPath);
+        await ipc.fileDelete(rawOutPath);
       } catch (delErr) {
         log.debug("api/cover-pipeline", `raw cover delete failed for ${rawOutPath}:`, delErr);
       }
@@ -64,7 +63,7 @@ export async function fetchAndCacheCover(opts: {
   const cached = await getCached(cacheKey);
   if (cached && cached.json_payload) {
     try {
-      if (await fileExists(cached.json_payload)) {
+      if ((await ipc.fileExists(cached.json_payload)).exists) {
         return cached.json_payload;
       }
       log.debug("api/cover-pipeline", "fetchAndCacheCover: cached file missing on disk:", cached.json_payload);

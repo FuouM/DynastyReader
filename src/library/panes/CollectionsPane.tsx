@@ -5,10 +5,10 @@
 import { For, Show } from "solid-js";
 import { showBanner } from "../../stores/topbar";
 import { t } from "../../i18n";
-import { errorMessage } from "../../utils/errors";
+import { errorMessage } from "../../utils/formatting";
 import { getCollections, getCollectionsRevision, onCollectionsChanged, deleteCollection } from "../../db/collections.repo";
 import type { CollectionRow } from "../../types/db";
-import { Loading } from "../../components/Loading";
+import { Loading } from "../../components/Feedback";
 import { FolderIcon } from "../../components/Icon";
 import { LibraryItemRow } from "../LibraryItemRow";
 import { useLibraryPaneResource, type LibraryPaneProps } from "../useLibraryPaneResource";

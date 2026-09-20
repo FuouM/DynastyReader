@@ -17,17 +17,13 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import { extractVolumeHeader } from "../utils/volume";
+import { extractVolumeHeader, decodeEntities, dynastyUrl, errorMessage } from "../utils/formatting";
 import { isMobile } from "../stores/platform";
 import { navigate, route, setSessionTab } from "../stores/router";
 import { setActions, setTitle, showBanner } from "../stores/topbar";
-import { decodeEntities } from "../utils/html";
-import { dynastyUrl } from "../utils/url";
 import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
-import { errorMessage } from "../utils/errors";
-import { fetchChapter } from "../api/chapter";
-import { fetchSeries, getSeriesCover } from "../api/series";
+import { fetchChapter, fetchSeries, getSeriesCover } from "../api/series";
 import { enqueueChapters } from "../ipc";
 import { persistedSignal } from "../lib/persisted-signal";
 import { getQueuePageTotals } from "../db/cache-aggregate";
@@ -37,9 +33,8 @@ import { getCachedPageCounts, getCacheRevision } from "../db/cache.repo";
 import type { SeriesProgressRow } from "../types/db";
 import type { Series } from "../types/api";
 import { useDelayedSpinner } from "../browse/browse-state";
-import { Loading } from "../components/Loading";
-import { useAddToCollection } from "../components/hooks/useAddToCollection";
-import { ErrorRetryRow } from "../components/ErrorRetryRow";
+import { Loading, ErrorRetryRow } from "../components/Feedback";
+import { useAddToCollection } from "../hooks/useAddToCollection";
 import { BlacklistIcon } from "../components/Icon";
 import { SeriesHeader } from "./SeriesHeader";
 import { SeriesChapterList, type ChapterMeta } from "./SeriesChapterList";

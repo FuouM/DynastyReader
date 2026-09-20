@@ -1,8 +1,7 @@
 import { browseCovers } from "../browse/browse-covers";
 import { t } from "../i18n";
 import { showBanner } from "../stores/topbar";
-import { formatBytes } from "../utils/formatting";
-import { errorMessage } from "../utils/errors";
+import { formatBytes, errorMessage } from "../utils/formatting";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { log } from "../utils/log";
 import { backupDatabase, restoreDatabaseFromPath, wipeDatabase } from "../db/db.manage";

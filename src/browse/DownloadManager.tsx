@@ -7,7 +7,7 @@ import {
   retryChapterDownload,
   retryFailedDownloads,
 } from "../ipc";
-import { errorMessage } from "../utils/errors";
+import { errorMessage } from "../utils/formatting";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
 import { GroupBox } from "../components/GroupBox";

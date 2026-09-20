@@ -5,7 +5,7 @@ import { inClause } from "./paging";
 import { seriesCoverKey, isCoverFilePath } from "../lib/cache-keys";
 import { notifyFollowedChanged, updateFollowedSeriesCover } from "./library.repo";
 import { notifyCollectionsChanged, updateCollectionItemCoverByPermalink } from "./collections.repo";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities } from "../utils/formatting";
 import { titleFromPermalink } from "../taxonomy";
 import { getOrHydrateSeriesCover } from "../api/series";
 import { isValidPermalink, parseDynastyEntityUrl as parseValidDynastyUrl } from "../api/navigation";

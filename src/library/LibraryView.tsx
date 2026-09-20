@@ -18,7 +18,7 @@ import { navigate, route, setRoute } from "../stores/router";
 import { setActions, showBanner } from "../stores/topbar";
 import { isMobile } from "../stores/platform";
 import { t } from "../i18n";
-import { errorMessage } from "../utils/errors";
+import { errorMessage } from "../utils/formatting";
 import { createMediaQuery } from "@solid-primitives/media";
 import { clearHistory } from "../db/library.repo";
 import { createCollection } from "../db/collections.repo";

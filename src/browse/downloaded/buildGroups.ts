@@ -4,7 +4,7 @@
  */
 
 import type { FullyCachedChapterRow } from "../../db/cache.repo";
-import { extractVolumeHeader } from "../../utils/volume";
+import { extractVolumeHeader } from "../../utils/formatting";
 import type { DownloadedSeriesGroup, DownloadedSortMode, ProcessedCachedChapter } from "./types";
 
 const titleCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });

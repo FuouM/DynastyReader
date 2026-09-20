@@ -10,7 +10,7 @@
 
 import { createEffect, createSignal, createUniqueId, onCleanup, For, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities } from "../utils/formatting";
 import { InputField } from "./InputField";
 
 export interface TypeaheadItem {

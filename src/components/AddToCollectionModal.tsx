@@ -9,7 +9,7 @@ import { createEffect, createSignal, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../i18n";
-import { errorMessage } from "../utils/errors";
+import { errorMessage } from "../utils/formatting";
 import { FolderIcon,
   CloseIcon,
   StarIcon,

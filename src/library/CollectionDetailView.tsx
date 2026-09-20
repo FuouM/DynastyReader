@@ -15,10 +15,7 @@ import {
 } from "solid-js";
 import { navigate } from "../stores/router";
 import { setActions, setTitle, showBanner } from "../stores/topbar";
-import { decodeEntities } from "../utils/html";
-import { formatDate } from "../utils/formatting";
-import { dynastyUrl } from "../utils/url";
-import { errorMessage } from "../utils/errors";
+import { decodeEntities, formatDate, dynastyUrl, errorMessage } from "../utils/formatting";
 import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api/series";
@@ -28,7 +25,7 @@ import { deleteCached } from "../db/metadata.repo";
 import { seriesCoverKey } from "../lib/cache-keys";
 import type { CollectionItemRow, CollectionRow } from "../types/db";
 import { useDelayedSpinner } from "../browse/browse-state";
-import { Loading } from "../components/Loading";
+import { Loading } from "../components/Feedback";
 import {
   FolderIcon,
   StarIcon,

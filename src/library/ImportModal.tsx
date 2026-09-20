@@ -8,7 +8,7 @@ import {
 } from "solid-js";
 import { t } from "../i18n";
 import { showBanner } from "../stores/topbar";
-import { errorMessage } from "../utils/errors";
+import { errorMessage } from "../utils/formatting";
 import { Modal } from "../components/Modal";
 import { IconButton, DsSelect, type SelectOption } from "../components/Button";
 import { InputField } from "../components/InputField";

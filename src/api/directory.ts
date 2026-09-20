@@ -1,11 +1,54 @@
-import { absUrl } from "../utils/url";
+import { absUrl, tryParseJson } from "../utils/formatting";
 import { cachedJson, httpGetText } from "./http";
 import { FEED_TTL_MS } from "./feed";
-import { tryParseJson } from "../utils/json";
-import { directoryGroups } from "../utils/directory";
 import { log } from "../utils/log";
-import { persistDirectoryEntries, persistSuggestEntries } from "./cache-persist";
+import { saveDirectoryEntries, saveSuggestEntries } from "../db/directory.repo";
 import type { Directory, DirectoryGroup, SuggestResult } from "../types/api";
+
+/** Normalized, ordered letter → entries groups from a directory payload. */
+export function directoryGroups(d: unknown): DirectoryGroup[] {
+  if (!d || typeof d !== "object") return [];
+  const obj = d as { tags?: unknown };
+  const rawList = obj.tags ?? (Array.isArray(d) ? d : []);
+  if (!Array.isArray(rawList)) return [];
+  return rawList
+    .map((item) => {
+      if (item && typeof item === "object") {
+        const letter = Object.keys(item)[0] ?? "?";
+        const entries = Array.isArray((item as Record<string, unknown>)[letter])
+          ? ((item as Record<string, unknown>)[letter] as DirectoryGroup["entries"])
+          : [];
+        return { letter, entries };
+      }
+      return { letter: "?", entries: [] };
+    })
+    .filter((g) => g.entries.length > 0);
+}
+
+export async function persistSuggestEntries(
+  entries: { name: string; type: string }[],
+  label: string,
+): Promise<void> {
+  if (entries.length === 0) return;
+  try {
+    await saveSuggestEntries(entries);
+  } catch (err) {
+    log.warn(`api/${label}`, "saveSuggestEntries failed:", err);
+  }
+}
+
+export async function persistDirectoryEntries(
+  kind: "series" | "tags",
+  groups: DirectoryGroup[],
+  label = "directory",
+): Promise<void> {
+  if (groups.length === 0) return;
+  try {
+    await saveDirectoryEntries(kind, groups);
+  } catch (err) {
+    log.warn(`api/${label}`, `saveDirectoryEntries failed for ${kind}:`, err);
+  }
+}
 
 export async function fetchDirectory(urlPath: string, key: string, kind?: "series" | "tags"): Promise<Directory> {
   const dir = await cachedJson<Directory>(key, absUrl(urlPath), FEED_TTL_MS);

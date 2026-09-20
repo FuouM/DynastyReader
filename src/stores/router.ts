@@ -10,7 +10,7 @@
 import { batch, createSignal } from "solid-js";
 import { setActions } from "./topbar";
 import { isMobile } from "./platform";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import type { Route, SessionMangaTab } from "../types/routes";
 export type { Route, ViewName, ChapterRef, SessionMangaTab } from "../types/routes";

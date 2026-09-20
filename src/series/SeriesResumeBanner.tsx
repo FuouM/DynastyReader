@@ -2,7 +2,7 @@ import { createMemo, Show } from "solid-js";
 import { CheckIcon } from "../components/Icon";
 import { navigate } from "../stores/router";
 import { t } from "../i18n";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities } from "../utils/formatting";
 import type { ChapterMeta } from "./SeriesChapterList";
 import type { Series } from "../types/api";
 import type { SeriesProgressRow } from "../types/db";

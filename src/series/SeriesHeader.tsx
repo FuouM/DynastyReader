@@ -3,11 +3,10 @@
  */
 
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import { openExternal } from "../api/navigation";
-import { groupSeriesTags } from "../taxonomy";
-import type { GroupedSeriesTags } from "../types/taxonomy";
+import { groupSeriesTags, type GroupedSeriesTags } from "../taxonomy";
 import type { Series } from "../types/api";
 import { TagRow } from "../components/TagRow";
 import { Cover } from "../components/Cover";

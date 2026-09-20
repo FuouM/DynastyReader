@@ -1,6 +1,6 @@
 import { execute, query } from "./client";
 import { initBlacklistCache } from "./blacklist.repo";
-import { directoryGroups } from "../utils/directory";
+import { directoryGroups } from "../api/directory";
 import { log } from "../utils/log";
 
 const SCHEMA = [

@@ -155,6 +155,33 @@ export async function fileExists(path: string, minSize?: number): Promise<FileEx
   return invoke<FileExistsResult>("fileExists", { path, minSize });
 }
 
+/** Resolves a plugin-relative path to its absolute path if the file exists and is non-empty. */
+export async function fileResolve(path: string): Promise<string | null> {
+  try {
+    const resp = await fileExists(path);
+    if (!resp.exists) return null;
+    return String(resp.absolute_path);
+  } catch {
+    return null;
+  }
+}
+
+/** Resolves a path to its absolute path and size if present and non-empty. */
+export async function fileResolveWithStat(
+  path: string,
+): Promise<{ absolutePath: string; sizeBytes: number } | null> {
+  try {
+    const resp = await fileExists(path);
+    if (!resp.exists) return null;
+    return {
+      absolutePath: String(resp.absolute_path),
+      sizeBytes: Number(resp.size_bytes ?? 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export interface FileExistsBatchItem {
   path: string;
   exists: boolean;

@@ -14,7 +14,7 @@ import { createSignal, type JSX } from "solid-js";
 import {
   AddToCollectionModal,
   type AddToCollectionItem,
-} from "../AddToCollectionModal";
+} from "../components/AddToCollectionModal";
 
 export interface AddToCollectionRequest {
   item: AddToCollectionItem;
@@ -39,12 +39,16 @@ export function useAddToCollection(): AddToCollectionApi {
     setAddToCol({ item, anchorEl });
   };
 
-  const host = (
+  const close = (): void => {
+    setAddToCol(null);
+  };
+
+  const host: JSX.Element = (
     <AddToCollectionModal
       open={addToCol() !== null}
       item={addToCol()?.item ?? { permalink: "", title: "" }}
       anchorEl={addToCol()?.anchorEl ?? null}
-      onClose={() => setAddToCol(null)}
+      onClose={close}
     />
   );
 

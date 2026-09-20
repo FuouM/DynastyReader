@@ -1,7 +1,6 @@
 import { query } from "./client";
-import { dynastyUrl } from "../utils/url";
+import { dynastyUrl, decodeEntities } from "../utils/formatting";
 import { itemKindToPath } from "../taxonomy";
-import { decodeEntities } from "../utils/html";
 
 export type ExportScope = "all" | "followed" | "collections" | "collection" | "selected_collections";
 export type ExportFormat = "json-pretty" | "json-compact" | "text" | "markdown" | "urls";

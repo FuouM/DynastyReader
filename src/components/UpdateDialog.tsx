@@ -8,7 +8,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { UpdateInfo, DownloadProgress } from "../types/api";
 import * as ipc from "../ipc";
 import { t } from "../i18n";
-import { errorMessage } from "../utils/errors";
+import { errorMessage } from "../utils/formatting";
 import { log } from "../utils/log";
 
 export const [updateInfo, setUpdateInfo] = createSignal<UpdateInfo | null>(null);

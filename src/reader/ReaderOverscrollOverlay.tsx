@@ -7,7 +7,7 @@
 import { Show } from "solid-js";
 import type { ChapterRef } from "../types/routes";
 import type { ReadingDirection } from "../types/reader";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 
 function TargetCard(props: { badge: string; title?: string; hint: string; hintClass?: string }) {

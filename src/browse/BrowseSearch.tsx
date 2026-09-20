@@ -20,9 +20,8 @@ import {
   type JSX,
 } from "solid-js";
 import { showBanner } from "../stores/topbar";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
-import { errorMessage } from "../utils/errors";
 import { searchDynasty } from "../api/search";
 import { suggest } from "../api/directory";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
@@ -38,16 +37,14 @@ import {
 import { createSearchFilters } from "./useSearchFilters";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import { Pager } from "../components/Pager";
-import { Loading } from "../components/Loading";
+import { Loading, EmptyState, ErrorRetryRow } from "../components/Feedback";
 import { Typeahead } from "../components/Typeahead";
 import { BlacklistNotice } from "../components/BlacklistNotice";
-import { EmptyState } from "../components/EmptyState";
 import { GroupBox } from "../components/GroupBox";
 import { DsSelect, IconText, IconButton } from "../components/Button";
 import { SearchResultRow, type SearchRow } from "./SearchResultRow";
-import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
-import { useAddToCollection } from "../components/hooks/useAddToCollection";
-import { ErrorRetryRow } from "../components/ErrorRetryRow";
+import { useTriggerWarning } from "../hooks/useTriggerWarning";
+import { useAddToCollection } from "../hooks/useAddToCollection";
 import type {
   SearchClass,
   SearchResultPage,

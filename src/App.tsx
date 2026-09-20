@@ -27,7 +27,7 @@ import { GlobalShortcuts } from "./hotkeys/GlobalShortcuts";
 import { HotkeyCheatsheetModal } from "./components/HotkeyCheatsheetModal";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
-import { Loading } from "./components/Loading";
+import { Loading } from "./components/Feedback";
 import { t } from "./i18n";
 import type { ViewName, Route } from "./types/routes";
 import { isHideStatusBarEnabled } from "./reader/settings";

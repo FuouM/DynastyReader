@@ -1,4 +1,4 @@
-import { decodeEntities } from "../utils/html";
+import { decodeEntities } from "../utils/formatting";
 import type { ChapterTag, SeriesTag } from "../types/api";
 import type { ReadingDirection, SpreadGroup } from "../types/reader";
 import type { ChapterRef } from "../types/routes";

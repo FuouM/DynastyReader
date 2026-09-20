@@ -1,7 +1,7 @@
 import type { GetTextOptions, HttpResponseText } from "../types/api";
 import { getCached, setCached, touchCached } from "../db/metadata.repo";
 import { recordNetworkTraffic, recordCacheHit } from "./traffic";
-import { tryParseJson } from "../utils/json";
+import { tryParseJson } from "../utils/formatting";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 

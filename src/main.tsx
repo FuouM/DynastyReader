@@ -8,7 +8,7 @@ import { setDbReady, navigate } from "./stores/router";
 import { initGlobalDownloadListener } from "./stores/download";
 import { t } from "./i18n";
 import { initDb } from "./db/schema";
-import { errorMessage } from "./utils/errors";
+import { errorMessage } from "./utils/formatting";
 import { log } from "./utils/log";
 import { App } from "./App";
 

@@ -10,8 +10,7 @@ import {
 import { updateFollowedSeriesCover } from "../db/library.repo";
 import { updateCollectionItemCover } from "../db/collections.repo";
 import { getCached } from "../db/metadata.repo";
-import { getOrHydrateSeriesCover, getOrHydrateItemCover } from "../api/series";
-import { fetchChapter } from "../api/chapter";
+import { getOrHydrateSeriesCover, getOrHydrateItemCover, fetchChapter } from "../api/series";
 import { getChapterContainerTag } from "../taxonomy";
 import { browseCovers } from "../browse/browse-covers";
 import { log } from "../utils/log";

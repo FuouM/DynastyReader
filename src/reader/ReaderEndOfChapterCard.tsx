@@ -6,7 +6,7 @@
 import { createSignal, createMemo, Show } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import { getAdjacentChapters } from "./reader-spread";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import { navigate } from "../stores/router";
 import { triggerHaptic } from "../utils/haptics";

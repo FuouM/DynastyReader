@@ -5,7 +5,7 @@
 
 import { getCached } from "../db/metadata.repo";
 import { checkFeedOnline } from "../api/feed";
-import { tryParseJson } from "../utils/json";
+import { tryParseJson } from "../utils/formatting";
 import { log } from "../utils/log";
 import type { Feed } from "../types/api";
 

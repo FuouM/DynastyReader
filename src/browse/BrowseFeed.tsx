@@ -33,15 +33,14 @@ import {
   useTabPane,
 } from "./browse-state";
 import { Pager } from "../components/Pager";
-import { Loading } from "../components/Loading";
+import { Loading, ErrorRetryRow } from "../components/Feedback";
 import { IconButton } from "../components/Button";
 import { RefreshIcon } from "../components/Icon";
 import { BlacklistNotice } from "../components/BlacklistNotice";
-import { useTriggerWarning } from "../components/hooks/useTriggerWarning";
-import { useAddToCollection } from "../components/hooks/useAddToCollection";
+import { useTriggerWarning } from "../hooks/useTriggerWarning";
+import { useAddToCollection } from "../hooks/useAddToCollection";
 import { FeedItemRow } from "../components/FeedItemRow";
-import { ErrorRetryRow } from "../components/ErrorRetryRow";
-import { errorMessage } from "../utils/errors";
+import { errorMessage } from "../utils/formatting";
 import { log } from "../utils/log";
 import {
   revalidateFeedHead,

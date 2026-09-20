@@ -11,8 +11,15 @@
 
 import type { BootstrapIconName } from "./components/Icon";
 import type { ChapterTag, SeriesTag, SeriesTaggings } from "./types/api";
-import type { GroupedSeriesTags } from "./types/taxonomy";
-export type { GroupedSeriesTags };
+export interface GroupedSeriesTags {
+  authorTags: SeriesTag[];
+  groupTags: SeriesTag[];
+  doujinTags: SeriesTag[];
+  pairingTags: SeriesTag[];
+  characterTags: SeriesTag[];
+  statusTags: SeriesTag[];
+  otherTags: SeriesTag[];
+}
 
 // ── 1. Canonical Domain Entity Types ──────────────────────────────────────────
 

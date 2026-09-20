@@ -5,10 +5,9 @@
 
 import { Show } from "solid-js";
 import { navigate } from "../stores/router";
-import { decodeEntities } from "../utils/html";
+import { decodeEntities, dynastyUrl } from "../utils/formatting";
 import { isContentKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
-import { dynastyUrl } from "../utils/url";
 import { ListItem } from "../components/ListItem";
 import { WarningChip } from "../components/WarningChip";
 import { ExternalLinkButton } from "../components/ExternalLinkButton";

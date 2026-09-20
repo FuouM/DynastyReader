@@ -4,14 +4,12 @@
 
 import { For, Show } from "solid-js";
 import { navigate } from "../../stores/router";
-import { decodeEntities } from "../../utils/html";
-import { formatDate } from "../../utils/formatting";
-import { dynastyUrl } from "../../utils/url";
+import { decodeEntities, formatDate, dynastyUrl } from "../../utils/formatting";
 import { t } from "../../i18n";
 import { getBookmarksPage, getBookmarksRevision, onBookmarksChanged, removeBookmark, removeBookmarksBatch } from "../../db/library.repo";
 import { getFullyCachedChapterPermalinks } from "../../db/cache.repo";
 import type { BookmarkRow, BookmarkPageResult } from "../../types/db";
-import { Loading } from "../../components/Loading";
+import { Loading } from "../../components/Feedback";
 import { Pager } from "../../components/Pager";
 import { LibraryItemRow } from "../LibraryItemRow";
 import { useLibraryPaneResource, type LibraryPaneProps } from "../useLibraryPaneResource";

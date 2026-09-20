@@ -9,7 +9,7 @@
  */
 
 import { createSignal, type JSX } from "solid-js";
-import { TriggerWarningModal } from "../TriggerWarning";
+import { TriggerWarningModal } from "../components/TriggerWarning";
 
 export interface WarningRequest {
   title: string;
@@ -33,13 +33,21 @@ export function useTriggerWarning(): TriggerWarningApi {
     setWarning({ title, matchedTags, onProceed });
   };
 
-  const host = (
+  const close = (): void => {
+    setWarning(null);
+  };
+
+  const host: JSX.Element = (
     <TriggerWarningModal
       open={warning() !== null}
       title={warning()?.title ?? ""}
       matchedTags={warning()?.matchedTags ?? []}
-      onClose={() => setWarning(null)}
-      onProceed={warning()?.onProceed ?? (() => {})}
+      onClose={close}
+      onProceed={() => {
+        const fn = warning()?.onProceed;
+        close();
+        fn?.();
+      }}
     />
   );
 

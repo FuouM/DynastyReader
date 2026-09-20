@@ -7,7 +7,7 @@ import * as ipc from "../ipc";
 import { log } from "../utils/log";
 import { getBookmarkPermalinks, getHistoryMap } from "./library.repo";
 import { getBatchCached } from "./metadata.repo";
-import { isVolumeOrSectionHeader } from "../utils/volume";
+import { isVolumeOrSectionHeader } from "../utils/formatting";
 export interface ChapterAggRow {
   chapterPermalink: string;
   pageCount: number;

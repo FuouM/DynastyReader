@@ -7,11 +7,8 @@
 import { createEffect, createResource, createSignal, For, Show } from "solid-js";
 import { navigate } from "../stores/router";
 import { setActions, showBanner } from "../stores/topbar";
-import { decodeEntities } from "../utils/html";
-import { formatDate } from "../utils/formatting";
-import { dynastyUrl } from "../utils/url";
+import { decodeEntities, formatDate, dynastyUrl, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
-import { errorMessage } from "../utils/errors";
 import { getBlacklistMode, getBlacklistedSeries, removeBlacklistedSeries, setBlacklistMode } from "../db/blacklist.repo";
 import type { BlacklistedSeries, BlacklistMode } from "../types/blacklist";
 import { useDelayedSpinner } from "../browse/browse-state";
@@ -22,11 +19,10 @@ import {
   ListCheckIcon,
   TrashIcon,
 } from "../components/Icon";
-import { Loading } from "../components/Loading";
+import { Loading, ErrorRetryRow } from "../components/Feedback";
 import { Button, IconText } from "../components/Button";
 import { BlacklistModeSwitch } from "../components/BlacklistModeSwitch";
 import { GroupBox } from "../components/GroupBox";
-import { ErrorRetryRow } from "../components/ErrorRetryRow";
 export function BlacklistView() {
   const [data, { refetch }] = createResource<BlacklistedSeries[]>(() =>
     getBlacklistedSeries(),

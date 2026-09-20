@@ -13,8 +13,7 @@ import {
   setCacheAutoPruneEnabled,
   setCacheCeilingBytes,
 } from "../utils/cache-quota";
-import { errorMessage } from "../utils/errors";
-import { formatBytes } from "../utils/formatting";
+import { errorMessage, formatBytes } from "../utils/formatting";
 
 const GB = 1024 * 1024 * 1024;
 const MB = 1024 * 1024;

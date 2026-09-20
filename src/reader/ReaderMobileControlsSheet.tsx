@@ -11,7 +11,7 @@ import { theme, setTheme } from "../stores/theme";
 import { isMobile } from "../stores/platform";
 import { navigate } from "../stores/router";
 import { openExternal } from "../api/navigation";
-import { dynastyUrl } from "../utils/url";
+import { dynastyUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import {
   getPrevChapterStartPage,

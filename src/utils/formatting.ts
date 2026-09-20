@@ -1,8 +1,10 @@
 /**
- * Date/time and file-size formatting helpers.
+ * Date/time, file-size, URL, entity decoding, and text formatting helpers.
  */
+import { decode as heDecode } from "html-entities";
+import { SITE_ROOT } from "../constants";
 import { t } from "../i18n";
-
+import { log } from "./log";
 const shortDateFormatter = new Intl.DateTimeFormat("en-CA", {
   year: "numeric",
   month: "2-digit",
@@ -73,5 +75,74 @@ export function formatEta(seconds: number): string {
   const hours = Math.floor(mins / 60);
   const remMins = mins % 60;
   return `~${hours}h ${remMins}m`;
+}
+
+/**
+ * Extracts a human-readable message from an unknown caught value.
+ */
+export function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/** Absolute URL from a possibly-relative site path (e.g. `/system/.../01.webp`). */
+export function absUrl(u: string): string {
+  if (/^https?:\/\//i.test(u)) return u;
+  return SITE_ROOT + u;
+}
+
+/** Constructs a full Dynasty Scans URL for the given path and permalink. */
+export function dynastyUrl(path: string, permalink: string): string {
+  return `${SITE_ROOT}/${path}/${permalink}`;
+}
+
+/** Parses JSON text; logs and returns null on failure (never throws). */
+export function tryParseJson<T>(text: string): T | null {
+  try {
+    return JSON.parse(text) as T;
+  } catch (err) {
+    log.error("json", "Failed to parse JSON payload:", err);
+    return null;
+  }
+}
+
+/**
+ * Decodes HTML entities into clean human-readable unicode text for safe DOM textContent rendering.
+ * Uses html-entities to handle all HTML5 named entities, numeric codes, hex codes,
+ * and surrogate pairs cleanly without manual regex lists.
+ */
+export function decodeEntities(str: string | null | undefined): string {
+  if (!str) return "";
+  const s = String(str);
+  if (!s.includes("&")) return s;
+  let decoded = heDecode(s, { level: "html5" });
+  // Iterative unescape for double-escaped payloads (e.g. &amp;quot; -> &quot; -> ")
+  if (decoded.includes("&")) {
+    decoded = heDecode(decoded, { level: "html5" });
+  }
+  return decoded;
+}
+
+/**
+ * Extracts a normalized "Volume N" label from a chapter or tag title.
+ * Handles bracketed formats [Vol. 1], leading Vol. 1, and embedded Volume 2.
+ */
+export function extractVolumeHeader(title: string): string | undefined {
+  if (!title) return undefined;
+  const bracketed = title.match(/[\[\(【]\s*(?:vol(?:ume)?\.?|v)\s*(\d+)\s*[\]\)】]/i);
+  if (bracketed) return `Volume ${parseInt(bracketed[1], 10)}`;
+  const match = title.match(/\b(?:vol(?:ume)?\.?|v)\s*(\d+)\b/i);
+  if (match) return `Volume ${parseInt(match[1], 10)}`;
+  return undefined;
+}
+
+/**
+ * Checks whether a tagging header string from metadata is a genuine volume or story section header.
+ */
+export function isVolumeOrSectionHeader(header: string): boolean {
+  if (!header) return false;
+  const h = header.trim();
+  if (/^(?:volume|vol\.?|book|part|season|act|arc)\b/i.test(h)) return true;
+  if (/^(?:side\s*story|specials?|extras?|oneshots?|pre-?serialis?ation|april\s*fools?|blu-?ray|prologue|epilogue)\b/i.test(h)) return true;
+  return false;
 }
 
