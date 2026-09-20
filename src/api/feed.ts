@@ -6,6 +6,8 @@ import { FeedSchema } from "./schemas";
 import { log } from "../utils/log";
 import { persistSuggestEntries } from "./directory";
 import type { Feed, FeedRevalidationResult, RevalidateOnlineResult } from "../types/api";
+import { activeProvider } from "../stores/provider";
+import { fetchMangaDexFeedWithRevalidation } from "../providers/mangadex/feed";
 
 export const FEED_TTL_MS = 60 * 60 * 1000;
 
@@ -62,6 +64,9 @@ export async function fetchFeedWithRevalidation(
   urlPath: string,
   key: string,
 ): Promise<FeedRevalidationResult> {
+  if (activeProvider() === "mangadex") {
+    return fetchMangaDexFeedWithRevalidation(urlPath, key);
+  }
   const url = absUrl(urlPath);
   const cached = await getCached(key);
   const isStale = !cached || Date.now() - cached.cached_at >= FEED_TTL_MS;

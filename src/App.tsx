@@ -32,19 +32,11 @@ import { t } from "./i18n";
 import type { ViewName, Route } from "./types/routes";
 import { isHideStatusBarEnabled } from "./reader/settings";
 import { syncReaderStatusBar } from "./utils/status-bar";
-import { activeProvider } from "./stores/provider";
 
-const MangaDexBrowse = lazy(() =>
-  import("./providers/mangadex/views/MangaDexBrowse").then((m) => ({ default: m.MangaDexBrowse })),
-);
-const MangaDexLibrary = lazy(() =>
-  import("./providers/mangadex/views/MangaDexLibrary").then((m) => ({ default: m.MangaDexLibrary })),
-);
 const SeriesView = lazy(() => import("./series/SeriesView").then((m) => ({ default: m.SeriesView })));
 const ReaderView = lazy(() => import("./reader/ReaderView").then((m) => ({ default: m.ReaderView })));
 const CacheView = lazy(() => import("./cache/CacheView").then((m) => ({ default: m.CacheView })));
 const BlacklistView = lazy(() => import("./blacklist/BlacklistView").then((m) => ({ default: m.BlacklistView })));
-const WhitelistView = lazy(() => import("./providers/mangadex/views/WhitelistView").then((m) => ({ default: m.WhitelistView })));
 export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
   browse: () => null,
   library: () => null,
@@ -52,7 +44,7 @@ export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
   reader: (p) => <ReaderView route={p.route} />,
   cache: () => <CacheView />,
   blacklist: () => <BlacklistView />,
-  whitelist: () => <WhitelistView />,
+  whitelist: () => <BlacklistView initialTab="whitelist" />,
 };
 
 export function App() {
@@ -117,14 +109,10 @@ export function App() {
       <main id="ds-main-content" tabIndex={-1}>
       <div id="ds-view">
         <div id="ds-pane-browse" classList={{ "ds-pane-hidden": route().view !== "browse" }}>
-          <Show when={activeProvider() === "mangadex"} fallback={<BrowseView />}>
-            <MangaDexBrowse />
-          </Show>
+          <BrowseView />
         </div>
         <div id="ds-pane-library" classList={{ "ds-pane-hidden": route().view !== "library" }}>
-          <Show when={activeProvider() === "mangadex"} fallback={<LibraryView />}>
-            <MangaDexLibrary />
-          </Show>
+          <LibraryView />
         </div>
         <Show when={!isPersistentView()}>
           <div id="ds-pane-dynamic" classList={{ "ds-pane-dynamic--reader": route().view === "reader" }}>

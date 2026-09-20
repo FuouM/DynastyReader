@@ -101,6 +101,41 @@ export function parseDynastyUrl(input: string): ParsedDynastyUrl | null {
   return { kind: normalizeToSeriesKind(entity.kind), permalink: entity.permalink };
 }
 
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+/**
+ * Parses a MangaDex URL (e.g. mangadex.org/title/... or mangadex.org/chapter/...) or raw UUID.
+ */
+export function parseMangaDexUrl(input: string): { kind: "series" | "chapter"; id: string } | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  if (UUID_REGEX.test(trimmed)) {
+    return { kind: "series", id: trimmed.toLowerCase() };
+  }
+
+  try {
+    const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+    const host = url.hostname.toLowerCase();
+    if (!host.includes("mangadex.org")) return null;
+
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (parts.length >= 2) {
+      const type = parts[0].toLowerCase();
+      const rawId = parts[1].toLowerCase();
+      if (type === "title" || type === "manga") {
+        if (UUID_REGEX.test(rawId)) return { kind: "series", id: rawId };
+      } else if (type === "chapter") {
+        if (UUID_REGEX.test(rawId)) return { kind: "chapter", id: rawId };
+      }
+    }
+  } catch {
+    // ignore URL parse failure
+  }
+
+  return null;
+}
+
 /** Builds the on-disk output path for a chapter page image. */
 export function pageOutputPath(
   seriesPermalink: string,

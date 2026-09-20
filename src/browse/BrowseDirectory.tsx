@@ -12,6 +12,9 @@ import { t } from "../i18n";
 import { fetchDirectory, searchAllDirectoryEntries, syncAllDirectoryPages, directoryGroups } from "../api/directory";
 import { getBlacklistMode, isSeriesBlacklisted } from "../db/blacklist.repo";
 import type { BlacklistMode } from "../types/blacklist";
+import { activeProvider } from "../stores/provider";
+import { searchManga, getTags } from "../providers/mangadex/api/manga";
+import { formatMangaTitle } from "../providers/mangadex/mapping";
 import {
   setPaneLoading,
   setTopPagerFor,
@@ -25,7 +28,7 @@ import { ListItem } from "../components/ListItem";
 import { BlacklistIcon, RefreshIcon } from "../components/Icon";
 import { Button, IconText, ExternalLinkButton } from "../components/Button";
 import { useTriggerWarning } from "../hooks/useTriggerWarning";
-import type { Directory, DirectoryGroup } from "../types/api";
+import type { Directory, DirectoryEntry, DirectoryGroup } from "../types/api";
 
 interface DirectoryModel {
   dir: Directory;
@@ -84,7 +87,9 @@ function DirectoryRow(props: {
           className="ds-btn-icon"
           title={props.kind === "series" ? t("browse.directory.openSeriesTooltip") : t("browse.directory.searchTagTooltip")}
           url={
-            props.kind === "series"
+            props.entry.permalink.startsWith("mdx:")
+              ? `https://mangadex.org/title/${props.entry.permalink.replace(/^mdx:/, "")}`
+              : props.kind === "series"
               ? dynastyUrl("series", props.entry.permalink)
               : `${SITE_ROOT}/search?q=${encodeURIComponent(props.entry.name)}`
           }
@@ -108,6 +113,58 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
     revision: props.revision,
     forceTick: props.forceTick,
     load: async (page) => {
+      if (activeProvider() === "mangadex") {
+        if (props.kind === "series") {
+          const resp = await searchManga({
+            limit: 30,
+            offset: (page - 1) * 30,
+            order: { title: "asc" },
+          });
+          const entries: DirectoryEntry[] = (resp.data || []).map((m) => ({
+            name: formatMangaTitle(m),
+            permalink: `mdx:${m.id}`,
+          }));
+          const totalPages = Math.max(1, Math.ceil((resp.total ?? 0) / 30));
+          const letterMap = new Map<string, DirectoryEntry[]>();
+          for (const entry of entries) {
+            const letter = (entry.name[0] || "#").toUpperCase();
+            if (!letterMap.has(letter)) letterMap.set(letter, []);
+            letterMap.get(letter)!.push(entry);
+          }
+          const groups: DirectoryGroup[] = Array.from(letterMap.entries()).map(([letter, groupEntries]) => ({
+            letter,
+            entries: groupEntries,
+          }));
+          const dir: Directory = {
+            current_page: page,
+            total_pages: totalPages,
+            tags: [],
+          };
+          return { dir, groups, blMode: getBlacklistMode() };
+        } else {
+          const tags = await getTags();
+          const entries: DirectoryEntry[] = tags.map((t) => ({
+            name: t.attributes.name.en || Object.values(t.attributes.name)[0] || t.id,
+            permalink: `mdx-tag:${t.id}`,
+          }));
+          const letterMap = new Map<string, DirectoryEntry[]>();
+          for (const entry of entries) {
+            const letter = (entry.name[0] || "#").toUpperCase();
+            if (!letterMap.has(letter)) letterMap.set(letter, []);
+            letterMap.get(letter)!.push(entry);
+          }
+          const groups: DirectoryGroup[] = Array.from(letterMap.entries()).map(([letter, groupEntries]) => ({
+            letter,
+            entries: groupEntries,
+          }));
+          const dir: Directory = {
+            current_page: 1,
+            total_pages: 1,
+            tags: [],
+          };
+          return { dir, groups, blMode: getBlacklistMode() };
+        }
+      }
       const url = props.kind === "series" ? `/series.json?page=${page}` : `/tags.json?page=${page}`;
       const key = `${props.kind === "series" ? "dir:series" : "dir:tags"}:${page}`;
       const dir = await fetchDirectory(url, key, props.kind);

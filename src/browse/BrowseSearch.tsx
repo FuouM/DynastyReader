@@ -25,6 +25,9 @@ import { t } from "../i18n";
 import { searchDynasty } from "../api/search";
 import { suggest } from "../api/directory";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
+import { activeProvider } from "../stores/provider";
+import { searchManga } from "../providers/mangadex/api/manga";
+import { formatMangaTitle, getMangaAuthors } from "../providers/mangadex/mapping";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
 import type { BlacklistMode } from "../types/blacklist";
 import {
@@ -47,6 +50,7 @@ import { useTriggerWarning } from "../hooks/useTriggerWarning";
 import { useAddToCollection } from "../hooks/useAddToCollection";
 import type {
   SearchClass,
+  SearchResultItem,
   SearchResultPage,
   SearchSort,
 } from "../types/api";
@@ -96,6 +100,35 @@ export function BrowseSearch(props: BrowseSearchProps) {
     revision: props.revision,
     forceTick: props.forceTick,
     load: async (page) => {
+      if (activeProvider() === "mangadex") {
+        const mdxRes = await searchManga({
+          title: q() || undefined,
+          limit: 20,
+          offset: (page - 1) * 20,
+        });
+        const totalPages = Math.max(1, Math.ceil((mdxRes.total ?? 0) / 20));
+        const items: SearchResultItem[] = (mdxRes.data || []).map((m) => {
+          const authors = getMangaAuthors(m);
+          return {
+            kind: "series",
+            title: formatMangaTitle(m),
+            permalink: `mdx:${m.id}`,
+            author: authors[0] ? { name: authors[0], permalink: `mdx-author:${authors[0]}` } : undefined,
+            tags: (m.attributes.tags || []).map((t) => ({
+              type: "Tag",
+              name: t.attributes?.name?.en || t.id,
+              permalink: `mdx-tag:${t.id}`,
+            })),
+          };
+        });
+        const pageData: SearchResultPage = {
+          items,
+          currentPage: page,
+          totalPages,
+          query: q(),
+        };
+        return { pageData, fullyCachedSet: new Set<string>(), blMode: getBlacklistMode() };
+      }
       const params = {
         q: q(),
         classes: classes().size > 0 ? Array.from(classes()) : undefined,

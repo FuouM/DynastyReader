@@ -22,6 +22,11 @@ import { t } from "../i18n";
 import { triggerHaptic } from "../utils/haptics";
 import { parseDynastyUrl } from "../api/navigation";
 import { suggest } from "../api/directory";
+import { activeProvider } from "../stores/provider";
+import { parseMangaDexUrl } from "../api/navigation";
+import { useWhitelistRevision } from "../providers/mangadex/db/whitelist.repo";
+import { searchManga } from "../providers/mangadex/api/manga";
+import { formatMangaTitle } from "../providers/mangadex/mapping";
 import { Pager } from "../components/Pager";
 import { SubTabs } from "../components/SubTabs";
 import { GroupBox } from "../components/GroupBox";
@@ -52,6 +57,19 @@ import { BrowseDownloaded } from "./BrowseDownloaded";
 import { BrowseSearch } from "./BrowseSearch";
 import { getCacheRevision } from "../db/cache.repo";
 import { getBookmarksRevision, getHistoryRevision, getProgressRevision } from "../db/library.repo";
+async function suggestMangaDex(query: string): Promise<Array<{ name: string; type: string }>> {
+  if (!query.trim()) return [];
+  try {
+    const res = await searchManga({ title: query.trim(), limit: 8 });
+    return (res.data || []).map((m) => ({
+      name: formatMangaTitle(m),
+      type: "Series",
+    }));
+  } catch {
+    return [];
+  }
+}
+
 
 export type BrowseTabId =
   | "releases"
@@ -108,12 +126,14 @@ export function BrowseView() {
     if (pollTimer !== null) window.clearTimeout(pollTimer);
   });
   const blacklistRev = useBlacklistRevision();
+  const whitelistRev = useWhitelistRevision();
   const revision = () =>
     blacklistRev() +
     getCacheRevision() +
     getHistoryRevision() +
     getBookmarksRevision() +
-    getProgressRevision();
+    getProgressRevision() +
+    (activeProvider() === "mangadex" ? whitelistRev() : 0);
   const [pendingSearch, setPendingSearch] = createSignal<{
     searchQuery?: string;
     withTag?: string;
@@ -155,6 +175,27 @@ export function BrowseView() {
     const raw = urlValue().trim();
     if (!raw) {
       showBanner(t("browse.searchAndGo.emptyUrlWarning"));
+      return;
+    }
+    if (activeProvider() === "mangadex") {
+      const parsed = parseMangaDexUrl(raw);
+      if (!parsed) {
+        showBanner("Unrecognized MangaDex URL. Expected mangadex.org/title/... or mangadex.org/chapter/...");
+        return;
+      }
+      if (parsed.kind === "chapter") {
+        navigate({
+          view: "reader",
+          chapterPermalink: `mdx:chapter:${parsed.id}`,
+          chapterTitle: `Chapter ${parsed.id}`,
+        });
+      } else {
+        navigate({
+          view: "series",
+          seriesPermalink: `mdx:series:${parsed.id}`,
+          seriesName: "MangaDex Series",
+        });
+      }
       return;
     }
     const parsed = parseDynastyUrl(raw);
@@ -348,11 +389,11 @@ export function BrowseView() {
           <div class="ds-row">
             <div class="ds-search-wrap ds-flex-1">
               <Typeahead
-                fetcher={suggest}
+                fetcher={activeProvider() === "mangadex" ? suggestMangaDex : suggest}
                 onSelect={(item) => runSearch(item.name)}
                 onEnter={(value) => runSearch(value)}
                 onInputValue={(value) => setSearchBoxValue(value)}
-                placeholder={t("browse.searchAndGo.inputPlaceholder")}
+                placeholder={activeProvider() === "mangadex" ? "Search MangaDex titles, authors, genres..." : t("browse.searchAndGo.inputPlaceholder")}
                 maxItems={8}
                 debounceMs={250}
               />
@@ -367,7 +408,7 @@ export function BrowseView() {
           <div class="ds-row">
             <InputField
               id="ds-url-input"
-              placeholder={t("browse.searchAndGo.urlPlaceholder")}
+              placeholder={activeProvider() === "mangadex" ? "MangaDex URL (https://mangadex.org/title/...) or UUID" : t("browse.searchAndGo.urlPlaceholder")}
               wrapperClass="ds-flex-1"
               value={urlValue()}
               onInput={(val) => setUrlValue(val)}
@@ -388,7 +429,7 @@ export function BrowseView() {
             />
           </div>
           <div class="ds-muted ds-mt-2">
-            {t("browse.searchAndGo.acceptedNotice")}
+            {activeProvider() === "mangadex" ? "Accepted: MangaDex title (mangadex.org/title/...), chapter (mangadex.org/chapter/...), or UUID" : t("browse.searchAndGo.acceptedNotice")}
           </div>
       </GroupBox>
 

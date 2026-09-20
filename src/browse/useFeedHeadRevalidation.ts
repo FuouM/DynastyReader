@@ -8,6 +8,8 @@ import { checkFeedOnline } from "../api/feed";
 import { tryParseJson } from "../utils/formatting";
 import { log } from "../utils/log";
 import type { Feed } from "../types/api";
+import { activeProvider } from "../stores/provider";
+import { revalidateMangaDexFeedHead } from "../providers/mangadex/feed";
 
 export const STALE_REVALIDATION_THRESHOLD_MS = 90_000;
 
@@ -50,6 +52,9 @@ export interface FeedHeadRevalidationResult {
  * deletion at the feed head does not raise a false "new chapters" banner.
  */
 export async function revalidateFeedHead(tabId: string): Promise<FeedHeadRevalidationResult> {
+  if (activeProvider() === "mangadex") {
+    return revalidateMangaDexFeedHead(tabId);
+  }
   const url = FEED_TAB_TO_URL[tabId];
   const key = `${FEED_TAB_TO_KEY[tabId]}:1`;
   const cached = await getCached(key);

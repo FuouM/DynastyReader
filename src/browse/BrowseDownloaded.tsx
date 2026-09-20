@@ -11,6 +11,8 @@ import { createEffect, createMemo, createSignal, For, Show, type Accessor } from
 import { debounce } from "@solid-primitives/scheduled";
 import { route } from "../stores/router";
 import { t } from "../i18n";
+import { activeProvider } from "../stores/provider";
+import { getMangaDexDownloadedChapters } from "../providers/mangadex/db/cache.repo";
 import { persistedSignal } from "../lib/persisted-signal";
 import { DownloadManager } from "./DownloadManager";
 import { getFullyCachedChapters, type FullyCachedChapterRow } from "../db/cache.repo";
@@ -79,6 +81,22 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     revision: props.revision,
     forceTick: props.forceTick,
     load: async () => {
+      if (activeProvider() === "mangadex") {
+        const mdxChapters = await getMangaDexDownloadedChapters();
+        const rows: FullyCachedChapterRow[] = mdxChapters.map((c) => ({
+          chapterPermalink: `mdx:chapter:${c.chapterId}`,
+          seriesPermalink: c.mangaId ? `mdx:${c.mangaId}` : null,
+          seriesName: c.mangaTitle,
+          chapterTitle: c.chapterTitle,
+          pageCount: c.pageCount,
+          pageTotal: c.pageCount,
+          totalSizeBytes: c.totalBytes,
+          lastCachedAt: c.lastCachedAt,
+          coverPath: null,
+        }));
+        const enriched = await enrichCachedChapters(rows);
+        return { rows, ...enriched };
+      }
       const rows = await getFullyCachedChapters();
       const enriched = await enrichCachedChapters(rows);
       return { rows, ...enriched };

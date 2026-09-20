@@ -4,6 +4,10 @@ import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { createChangeNotifier } from "../lib/change-notifier";
 import type { FollowedSeriesRow, FollowedSeriesPageResult, ReadingProgressRow, SeriesProgressRow, HistoryRow, HistoryPageResult, BookmarkRow, BookmarkPageResult } from "../types/db";
+import { activeProvider } from "../stores/provider";
+import { getFollowedManga, unfollowManga } from "../providers/mangadex/db/library.repo";
+import { getHistory, deleteHistoryItem, clearHistory as clearMdxHistory } from "../providers/mangadex/db/history.repo";
+import { getMdxBookmarks, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
 const followedNotifier = createChangeNotifier("library.repo:followed");
 export const getFollowedRevision = followedNotifier.getRevision;
 export const onFollowedChanged = followedNotifier.onChanged;
@@ -29,6 +33,23 @@ export async function getFollowedSeriesPage(
   page = 1,
   pageSize = 10,
 ): Promise<FollowedSeriesPageResult> {
+  if (activeProvider() === "mangadex") {
+    const res = await getFollowedManga(page, pageSize);
+    return {
+      rows: res.rows.map((m) => ({
+        permalink: `mdx:${m.manga_id}`,
+        name: m.title,
+        cover: m.cover_filename,
+        last_checked_at: m.last_checked_at,
+        latest_chapter_permalink: m.latest_chapter_id ? `mdx:chapter:${m.latest_chapter_id}` : null,
+        latest_chapter_title: m.latest_chapter_title,
+        created_at: m.created_at,
+      })),
+      totalCount: res.totalCount,
+      totalPages: res.totalPages,
+      currentPage: res.currentPage,
+    };
+  }
   return queryPaged<FollowedSeriesRow>(
     `SELECT COUNT(*) as count FROM followed_series`,
     `SELECT permalink, name, cover, last_checked_at, latest_chapter_permalink,
@@ -81,6 +102,11 @@ export async function followSeries(row: {
 }
 
 export async function unfollowSeries(permalink: string): Promise<void> {
+  if (permalink.startsWith("mdx:")) {
+    await unfollowManga(permalink.replace(/^mdx:/, ""));
+    notifyFollowedChanged();
+    return;
+  }
   await execute(`DELETE FROM followed_series WHERE permalink = ?`, [permalink]);
   notifyFollowedChanged();
 }
@@ -216,6 +242,11 @@ export async function addHistory(p: {
 }
 
 export async function removeHistory(id: number): Promise<void> {
+  if (activeProvider() === "mangadex") {
+    await deleteHistoryItem(id);
+    notifyHistoryChanged();
+    return;
+  }
   await execute(`DELETE FROM reading_history WHERE id = ?`, [id]);
   notifyHistoryChanged();
 }
@@ -232,11 +263,35 @@ export async function removeHistoryBatch(ids: number[]): Promise<void> {
 }
 
 export async function clearHistory(): Promise<void> {
+  if (activeProvider() === "mangadex") {
+    await clearMdxHistory();
+    notifyHistoryChanged();
+    return;
+  }
   await execute(`DELETE FROM reading_history`);
   notifyHistoryChanged();
 }
 
 export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
+  if (activeProvider() === "mangadex") {
+    const res = await getHistory(page, pageSize);
+    return {
+      rows: res.rows.map((h) => ({
+        id: h.id,
+        chapter_permalink: `mdx:chapter:${h.chapter_id}`,
+        chapter_title: h.chapter_title,
+        series_permalink: h.manga_id ? `mdx:${h.manga_id}` : "",
+        series_name: h.manga_title,
+        read_at: h.read_at,
+        page_index: 0,
+        page_total: 0,
+        completed: 1,
+      })),
+      totalCount: res.totalCount,
+      totalPages: res.totalPages,
+      currentPage: res.currentPage,
+    };
+  }
   return queryPaged<HistoryRow>(
     `SELECT COUNT(*) as count FROM reading_history`,
     `SELECT rh.id, rh.chapter_permalink, rh.series_permalink, rh.series_name, rh.chapter_title, rh.read_at,
@@ -271,6 +326,23 @@ export async function getHistoryPermalinks(permalinks: string[]): Promise<Set<st
 
 
 export async function getBookmarksPage(page = 1, pageSize = 15): Promise<BookmarkPageResult> {
+  if (activeProvider() === "mangadex") {
+    const res = await getMdxBookmarks(page, pageSize);
+    return {
+      rows: res.rows.map((b) => ({
+        chapter_permalink: `mdx:chapter:${b.chapter_id}`,
+        chapter_title: b.chapter_title,
+        series_permalink: b.manga_id ? `mdx:${b.manga_id}` : "",
+        series_name: b.manga_title,
+        page_index: b.page_index,
+        scanlator_name: b.scanlator_name,
+        created_at: b.created_at,
+      })),
+      totalCount: res.totalCount,
+      totalPages: res.totalPages,
+      currentPage: res.currentPage,
+    };
+  }
   return queryPaged<BookmarkRow>(
     `SELECT COUNT(*) as count FROM bookmarks`,
     `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
@@ -321,6 +393,11 @@ export async function addBookmark(p: {
 }
 
 export async function removeBookmark(chapterPermalink: string): Promise<void> {
+  if (chapterPermalink.startsWith("mdx:")) {
+    await removeMdxBookmark(chapterPermalink.replace(/^mdx:chapter:/, ""));
+    notifyBookmarksChanged();
+    return;
+  }
   await execute(`DELETE FROM bookmarks WHERE chapter_permalink = ?`, [chapterPermalink]);
   notifyBookmarksChanged();
 }
