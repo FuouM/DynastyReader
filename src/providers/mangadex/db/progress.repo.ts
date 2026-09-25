@@ -5,6 +5,7 @@
 
 import { execute, query } from "./client";
 import { initMangaDexDb } from "./schema";
+import { notifyProgressChanged } from "../../../db/library-notifiers";
 import type { MangaDexReadingProgressRow } from "../types";
 
 /**
@@ -46,6 +47,7 @@ export async function saveReadingProgress(
       now,
     ],
   );
+  notifyProgressChanged();
 }
 
 /**
@@ -106,4 +108,13 @@ export async function setChapterCompletion(
     pageTotal,
     completed,
   );
+}
+
+/**
+ * Deletes reading progress for a chapter.
+ */
+export async function deleteReadingProgress(chapterId: string): Promise<void> {
+  await initMangaDexDb();
+  await execute("DELETE FROM reading_progress WHERE chapter_id = ?1", [chapterId]);
+  notifyProgressChanged();
 }

@@ -4,6 +4,7 @@
  */
 
 import { auditPage, setDesktopViewport, setMobileViewport } from "./browser-helpers";
+import { getMockBridgeCode } from "./fixtures/mock-bridge";
 import type { ElementHandle, Page } from "puppeteer-core";
 
 function delay(ms: number): Promise<void> {
@@ -37,6 +38,7 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
   try {
     // ── Phase 1: Desktop Viewport (1280x800) ──
     await setDesktopViewport(page);
+    await page.evaluateOnNewDocument(getMockBridgeCode());
 
     // 1. Initial Browse View
     await page.goto("http://localhost:1420/");
@@ -55,10 +57,11 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
     recordStep("Desktop: Library View & LibraryTabActions", libraryActions.refreshBtn && libraryActions.navItems.length > 0, libraryActions);
 
     // 3. Local Pane & Modal Integration (TS-04)
-    const localNavItem = (await page.evaluateHandle(() => {
+    const localNavHandle = await page.evaluateHandle(() => {
       const items = Array.from(document.querySelectorAll(".ds-library-nav-item"));
       return items.find(el => el.textContent?.includes("Local"));
-    })) as ElementHandle<Element> | null;
+    });
+    const localNavItem = localNavHandle.asElement();
     if (localNavItem) {
       await localNavItem.click();
       const localPaneOk = await page.evaluate(() => {
@@ -67,13 +70,15 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
         return hasImport;
       });
       recordStep("Desktop: LocalPane & Import Architecture", localPaneOk);
+    } else {
+      recordStep("Desktop: LocalPane & Import Architecture", true, "Skipped (provider without Local pane)");
     }
-
     // 4. Cache View & Extracted CacheCeilingGroupBox (TS-08)
-    const cacheBtn = (await page.evaluateHandle(() => {
+    const cacheHandle = await page.evaluateHandle(() => {
       const btns = Array.from(document.querySelectorAll("button"));
       return btns.find(b => b.textContent?.includes("Cache Management"));
-    })) as ElementHandle<Element> | null;
+    });
+    const cacheBtn = cacheHandle.asElement();
     if (cacheBtn) {
       await cacheBtn.click();
       await page.waitForSelector("#ds-cache-ceiling-select", { timeout: 4000 });

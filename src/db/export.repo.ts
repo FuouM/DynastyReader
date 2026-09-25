@@ -3,6 +3,7 @@ import { dynastyUrl, decodeEntities } from "../utils/formatting";
 import { itemKindToPath } from "../taxonomy";
 import { activeProvider } from "../stores/provider";
 import { getAllMdxBookmarks } from "../providers/mangadex/db/bookmarks.repo";
+import { getAllFollowedManga } from "../providers/mangadex/db/library.repo";
 
 export type ExportScope = "all" | "followed" | "collections" | "collection" | "selected_collections" | "bookmarks";
 export type ExportFormat = "json-pretty" | "json-compact" | "text" | "markdown" | "urls";
@@ -75,6 +76,19 @@ export interface ExportCounts {
  * Executes in a single fast query.
  */
 export async function getAllFollowedSeries(): Promise<ExportFollowedItem[]> {
+  if (activeProvider() === "mangadex") {
+    const rows = await getAllFollowedManga();
+    return rows.map((r) => ({
+      name: decodeEntities(r.title),
+      permalink: `mdx:${r.manga_id}`,
+      url: `https://mangadex.org/title/${r.manga_id}`,
+      cover: r.cover_filename ?? null,
+      followedAt: Number(r.created_at),
+      latestChapterTitle: r.latest_chapter_title ? decodeEntities(r.latest_chapter_title) : null,
+      latestChapterPermalink: r.latest_chapter_id ? `mdx:${r.latest_chapter_id}` : null,
+    }));
+  }
+
   interface FollowedDbRow {
     permalink: string;
     name: string;

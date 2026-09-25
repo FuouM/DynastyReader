@@ -5,13 +5,26 @@
 
 import { createEffect, createResource, createSignal, onCleanup, onMount, type Accessor, type Resource } from "solid-js";
 import { useDelayedSpinner } from "../browse/browse-state";
-
+import { activeProvider } from "../stores/provider";
 /**
  * In-session memory of each pane's current page so navigating away from the
  * Library and back restores the user's place. Keyed by the pane's stable
  * `getRevision` function reference (each pane passes a distinct accessor).
  */
-const panePageMemory = new Map<unknown, number>();
+const panePageMemory = new Map<string, Map<unknown, number>>();
+
+function getProviderPage(provider: string, key: unknown): number {
+  return panePageMemory.get(provider)?.get(key) ?? 1;
+}
+
+function setProviderPage(provider: string, key: unknown, page: number): void {
+  let m = panePageMemory.get(provider);
+  if (!m) {
+    m = new Map();
+    panePageMemory.set(provider, m);
+  }
+  m.set(key, page);
+}
 
 /** Reads `totalPages` from a pane fetch result, tolerating a nested `res` wrapper. */
 function extractTotalPages(d: unknown): number | undefined {
@@ -52,14 +65,20 @@ export function useLibraryPaneResource<T>(
   options: UseLibraryPaneResourceOptions<T>,
 ): LibraryPaneResourceResult<T> {
   const pageKey = options.getRevision;
-  const [page, setPageRaw] = createSignal(panePageMemory.get(pageKey) ?? 1);
+  const [page, setPageRaw] = createSignal(getProviderPage(activeProvider(), pageKey));
   const setPage = (p: number | ((prev: number) => number)): void => {
     setPageRaw((prev) => {
       const next = typeof p === "function" ? p(prev) : p;
-      panePageMemory.set(pageKey, next);
+      setProviderPage(activeProvider(), pageKey, next);
       return next;
     });
   };
+
+  createEffect(() => {
+    const prov = activeProvider();
+    setPageRaw(getProviderPage(prov, pageKey));
+  });
+
   const [rev, setRev] = createSignal(options.getRevision());
 
   onMount(() => {
@@ -68,7 +87,7 @@ export function useLibraryPaneResource<T>(
   });
 
   const [data, { refetch }] = createResource(
-    () => ({ page: page(), rev: rev() }),
+    () => ({ page: page(), rev: rev(), provider: activeProvider() }),
     ({ page: p }) => options.fetcher(p),
   );
 

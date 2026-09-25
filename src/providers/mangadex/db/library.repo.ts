@@ -5,6 +5,7 @@
 
 import { execute, query } from "./client";
 import { initMangaDexDb } from "./schema";
+import { notifyFollowedChanged } from "../../../db/library-notifiers";
 import type { MangaDexFollowedRow } from "../types";
 
 export interface FollowedMangaPageResult {
@@ -33,6 +34,7 @@ export async function followManga(
        last_checked_at = excluded.last_checked_at`,
     [mangaId, title, coverFilename, now],
   );
+  notifyFollowedChanged();
 }
 
 /**
@@ -41,6 +43,7 @@ export async function followManga(
 export async function unfollowManga(mangaId: string): Promise<void> {
   await initMangaDexDb();
   await execute("DELETE FROM followed_manga WHERE manga_id = ?1", [mangaId]);
+  notifyFollowedChanged();
 }
 
 /**
@@ -101,5 +104,18 @@ export async function updateFollowedLatestChapter(
      SET latest_chapter_id = ?1, latest_chapter_title = ?2, last_checked_at = ?3
      WHERE manga_id = ?4`,
     [chapterId, chapterTitle, Date.now(), mangaId],
+  );
+  notifyFollowedChanged();
+}
+
+/**
+ * Retrieves all followed manga sorted alphabetically.
+ */
+export async function getAllFollowedManga(): Promise<MangaDexFollowedRow[]> {
+  await initMangaDexDb();
+  return query<MangaDexFollowedRow>(
+    `SELECT manga_id, title, cover_filename, last_checked_at, latest_chapter_id, latest_chapter_title, created_at
+     FROM followed_manga
+     ORDER BY title COLLATE NOCASE ASC`,
   );
 }

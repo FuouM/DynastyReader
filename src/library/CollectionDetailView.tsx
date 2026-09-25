@@ -396,7 +396,11 @@ function CollectionItemCard(props: {
       onCoverRetry={handleCoverError}
       actionLabel={isChapterLike() ? t("common.read") : t("common.open")}
       actionIcon={isChapterLike() ? "bi-book" : "bi-folder2-open"}
-      externalUrl={dynastyUrl(endpoint(), props.it.item_permalink)}
+      externalUrl={
+        props.it.item_permalink.startsWith("mdx:")
+          ? `https://mangadex.org/${isChapterLike() ? "chapter" : "title"}/${props.it.item_permalink.replace(/^mdx:/, "")}`
+          : dynastyUrl(endpoint(), props.it.item_permalink)
+      }
       deleteTitle={t("library.removeFromCollectionTooltip")}
       onDelete={async () => {
         await removeItemFromCollection(props.collectionId, props.it.item_permalink);

@@ -5,6 +5,7 @@
 
 import { execute, query } from "./client";
 import { initMangaDexDb } from "./schema";
+import { notifyHistoryChanged } from "../../../db/library-notifiers";
 import type { MangaDexHistoryRow } from "../types";
 
 export interface HistoryPageResult {
@@ -33,6 +34,7 @@ export async function recordHistory(
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
     [chapterId, mangaId, mangaTitle, chapterTitle, scanlatorName ?? null, now],
   );
+  notifyHistoryChanged();
 }
 
 /**
@@ -75,6 +77,7 @@ export async function getHistory(
 export async function deleteHistoryItem(id: number): Promise<void> {
   await initMangaDexDb();
   await execute("DELETE FROM reading_history WHERE id = ?1", [id]);
+  notifyHistoryChanged();
 }
 
 /**
@@ -83,6 +86,7 @@ export async function deleteHistoryItem(id: number): Promise<void> {
 export async function clearHistory(): Promise<void> {
   await initMangaDexDb();
   await execute("DELETE FROM reading_history");
+  notifyHistoryChanged();
 }
 
 export async function getMdxHistoryChapterIds(chapterIds: string[]): Promise<Set<string>> {

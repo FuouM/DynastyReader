@@ -9,6 +9,7 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
 import { navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
+import { activeProvider } from "../stores/provider";
 import { decodeEntities, formatDate, dynastyUrl, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
 import { getOrHydrateSeriesCover } from "../api/series";
@@ -38,6 +39,7 @@ import {
   removeHistoryBatch,
 } from "../db/library.repo";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
+import { getFullyCachedMdxChapterIds } from "../providers/mangadex/db/cache.repo";
 import { deleteCached } from "../db/metadata.repo";
 import { seriesCoverKey } from "../lib/cache-keys";
 import type {
@@ -146,7 +148,14 @@ export function BookmarksPane(props: LibraryPaneProps) {
     fetcher: async (p) => {
       const res = await getBookmarksPage(p, 15);
       const permalinks = res.rows.map((r) => r.chapter_permalink);
-      const fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
+      let fullyCachedSet: Set<string>;
+      if (activeProvider() === "mangadex") {
+        const chapterIds = permalinks.map((pl) => pl.replace(/^mdx:/, ""));
+        const mdxCached = await getFullyCachedMdxChapterIds(chapterIds).catch(() => new Set<string>());
+        fullyCachedSet = new Set(Array.from(mdxCached).map((id) => `mdx:${id}`));
+      } else {
+        fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
+      }
       return { res, fullyCachedSet };
     },
     register: props.register,
@@ -210,7 +219,11 @@ export function BookmarksPane(props: LibraryPaneProps) {
                     startPage: row.page_index,
                   })
                 }
-                externalUrl={dynastyUrl("chapters", row.chapter_permalink)}
+                externalUrl={
+                  row.chapter_permalink.startsWith("mdx:")
+                    ? `https://mangadex.org/chapter/${row.chapter_permalink.replace(/^mdx:/, "")}`
+                    : dynastyUrl("chapters", row.chapter_permalink)
+                }
                 selectionMode={selectMode()}
                 selected={selected().has(row.chapter_permalink)}
                 onToggleSelect={() => toggleRow(row.chapter_permalink)}
@@ -350,7 +363,11 @@ function FollowedSeriesRowCard(props: {
       actionIcon="bi-folder2-open"
       playTitle={t("library.continueReading")}
       onPlay={props.row.latest_chapter_permalink ? continueReading : undefined}
-      externalUrl={dynastyUrl("series", props.row.permalink)}
+      externalUrl={
+        props.row.permalink.startsWith("mdx:")
+          ? `https://mangadex.org/title/${props.row.permalink.replace(/^mdx:/, "")}`
+          : dynastyUrl("series", props.row.permalink)
+      }
       deleteTitle={t("library.unfollowTooltip")}
       onDelete={async () => {
         try {
@@ -388,7 +405,14 @@ export function HistoryPane(props: LibraryPaneProps) {
     fetcher: async (p) => {
       const res = await getHistoryPage(p, 15);
       const permalinks = res.rows.map((r) => r.chapter_permalink);
-      const fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
+      let fullyCachedSet: Set<string>;
+      if (activeProvider() === "mangadex") {
+        const chapterIds = permalinks.map((pl) => pl.replace(/^mdx:/, ""));
+        const mdxCached = await getFullyCachedMdxChapterIds(chapterIds).catch(() => new Set<string>());
+        fullyCachedSet = new Set(Array.from(mdxCached).map((id) => `mdx:${id}`));
+      } else {
+        fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
+      }
       return { res, fullyCachedSet };
     },
     register: props.register,
@@ -454,7 +478,11 @@ export function HistoryPane(props: LibraryPaneProps) {
                     seriesName: row.series_name,
                   })
                 }
-                externalUrl={dynastyUrl("chapters", row.chapter_permalink)}
+                externalUrl={
+                  row.chapter_permalink.startsWith("mdx:")
+                    ? `https://mangadex.org/chapter/${row.chapter_permalink.replace(/^mdx:/, "")}`
+                    : dynastyUrl("chapters", row.chapter_permalink)
+                }
                 selectionMode={selectMode()}
                 selected={selected().has(row.id)}
                 onToggleSelect={() => toggleRow(row.id)}

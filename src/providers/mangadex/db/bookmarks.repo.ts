@@ -5,6 +5,7 @@
 
 import { execute, query } from "./client";
 import { initMangaDexDb } from "./schema";
+import { notifyBookmarksChanged } from "../../../db/library-notifiers";
 
 export interface MangaDexBookmarkRow {
   chapter_id: string;
@@ -56,6 +57,7 @@ export async function addMdxBookmark(opts: {
       now,
     ],
   );
+  notifyBookmarksChanged();
 }
 
 /**
@@ -64,6 +66,7 @@ export async function addMdxBookmark(opts: {
 export async function removeMdxBookmark(chapterId: string): Promise<void> {
   await initMangaDexDb();
   await execute("DELETE FROM bookmarks WHERE chapter_id = ?1", [chapterId]);
+  notifyBookmarksChanged();
 }
 
 /**

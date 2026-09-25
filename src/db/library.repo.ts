@@ -2,32 +2,59 @@ import { query, execute } from "./client";
 import { inClause, queryPaged } from "./paging";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
-import { createChangeNotifier } from "../lib/change-notifier";
-import type { FollowedSeriesRow, FollowedSeriesPageResult, ReadingProgressRow, SeriesProgressRow, HistoryRow, HistoryPageResult, BookmarkRow, BookmarkPageResult } from "../types/db";
+import { MANGADEX_DB_NAME } from "../providers/mangadex/db/client";
+import type {
+  FollowedSeriesRow,
+  FollowedSeriesPageResult,
+  ReadingProgressRow,
+  SeriesProgressRow,
+  HistoryRow,
+  HistoryPageResult,
+  BookmarkRow,
+  BookmarkPageResult,
+} from "../types/db";
 import { activeProvider } from "../stores/provider";
 import { getFollowedManga, unfollowManga } from "../providers/mangadex/db/library.repo";
-import { getHistory, deleteHistoryItem, clearHistory as clearMdxHistory } from "../providers/mangadex/db/history.repo";
+import {
+  getHistory,
+  deleteHistoryItem,
+  clearHistory as clearMdxHistory,
+  recordHistory,
+} from "../providers/mangadex/db/history.repo";
 import { getMdxBookmarks, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
-const followedNotifier = createChangeNotifier("library.repo:followed");
-export const getFollowedRevision = followedNotifier.getRevision;
-export const onFollowedChanged = followedNotifier.onChanged;
-export const notifyFollowedChanged = followedNotifier.notifyChanged;
-
-const bookmarksNotifier = createChangeNotifier("library.repo:bookmarks");
-export const getBookmarksRevision = bookmarksNotifier.getRevision;
-export const onBookmarksChanged = bookmarksNotifier.onChanged;
-export const notifyBookmarksChanged = bookmarksNotifier.notifyChanged;
-
-const historyNotifier = createChangeNotifier("library.repo:history");
-export const getHistoryRevision = historyNotifier.getRevision;
-export const onHistoryChanged = historyNotifier.onChanged;
-export const notifyHistoryChanged = historyNotifier.notifyChanged;
-
-const progressNotifier = createChangeNotifier("library.repo:progress");
-export const getProgressRevision = progressNotifier.getRevision;
-export const onProgressChanged = progressNotifier.onChanged;
-export const notifyProgressChanged = progressNotifier.notifyChanged;
-
+import {
+  getMangaReadingProgress,
+  saveReadingProgress,
+  deleteReadingProgress,
+} from "../providers/mangadex/db/progress.repo";
+import {
+  getFollowedRevision,
+  onFollowedChanged,
+  notifyFollowedChanged,
+  getBookmarksRevision,
+  onBookmarksChanged,
+  notifyBookmarksChanged,
+  getHistoryRevision,
+  onHistoryChanged,
+  notifyHistoryChanged,
+  getProgressRevision,
+  onProgressChanged,
+  notifyProgressChanged,
+} from "./library-notifiers";
+export {
+  getFollowedRevision,
+  onFollowedChanged,
+  notifyFollowedChanged,
+  getBookmarksRevision,
+  onBookmarksChanged,
+  notifyBookmarksChanged,
+  getHistoryRevision,
+  onHistoryChanged,
+  notifyHistoryChanged,
+  getProgressRevision,
+  onProgressChanged,
+  notifyProgressChanged,
+};
 
 export async function getFollowedSeriesPage(
   page = 1,
@@ -120,6 +147,16 @@ export async function updateFollowedSeriesCover(
   cover: string | null,
   notify = false,
 ): Promise<void> {
+  if (permalink.startsWith("mdx:")) {
+    const mangaId = permalink.replace(/^mdx:/, "");
+    await ipc.dbExecute(
+      MANGADEX_DB_NAME,
+      `UPDATE followed_manga SET cover_filename = ? WHERE manga_id = ?`,
+      [cover, mangaId],
+    );
+    if (notify) notifyFollowedChanged();
+    return;
+  }
   await execute(`UPDATE followed_series SET cover = ? WHERE permalink = ?`, [cover, permalink]);
   if (notify) notifyFollowedChanged();
 }
@@ -174,6 +211,16 @@ export async function setReadingProgress(p: {
 
 /** Reading progress for every chapter of a series (one query, no per-chapter calls). */
 export async function getProgressForSeries(seriesPermalink: string): Promise<SeriesProgressRow[]> {
+  if (seriesPermalink.startsWith("mdx:")) {
+    const mangaId = seriesPermalink.replace(/^mdx:/, "");
+    const dict = await getMangaReadingProgress(mangaId);
+    return Object.values(dict).map((r) => ({
+      chapter_permalink: `mdx:${r.chapter_id}`,
+      page_index: r.page_index,
+      page_total: r.page_total,
+      completed: r.completed,
+    }));
+  }
   return query<SeriesProgressRow>(
     `SELECT chapter_permalink, page_index, page_total, completed
      FROM reading_progress WHERE series_permalink = ?`,
@@ -189,6 +236,15 @@ export async function markChapterRead(p: {
   chapterTitle: string;
   pageTotal?: number;
 }): Promise<void> {
+  if (p.chapterPermalink.startsWith("mdx:")) {
+    const chapterId = p.chapterPermalink.replace(/^mdx:/, "");
+    const mangaId = p.seriesPermalink.replace(/^mdx:/, "");
+    await Promise.all([
+      saveReadingProgress(chapterId, mangaId, p.seriesName, p.chapterTitle, 0, p.pageTotal ?? 1, true),
+      recordHistory(chapterId, mangaId, p.seriesName, p.chapterTitle),
+    ]);
+    return;
+  }
   await Promise.all([
     setReadingProgress({
       chapterPermalink: p.chapterPermalink,
@@ -208,8 +264,16 @@ export async function markChapterRead(p: {
   ]);
 }
 
-/** Manually marks a chapter as unread by deleting its progress and history records. */
 export async function markChapterUnread(chapterPermalink: string): Promise<void> {
+  if (chapterPermalink.startsWith("mdx:")) {
+    const chapterId = chapterPermalink.replace(/^mdx:/, "");
+    await Promise.all([
+      deleteReadingProgress(chapterId),
+      ipc.dbExecute(MANGADEX_DB_NAME, `DELETE FROM reading_history WHERE chapter_id = ?`, [chapterId]),
+    ]);
+    notifyHistoryChanged();
+    return;
+  }
   await Promise.all([
     execute(`DELETE FROM reading_progress WHERE chapter_permalink = ?`, [chapterPermalink]),
     execute(`DELETE FROM reading_history WHERE chapter_permalink = ?`, [chapterPermalink]),
@@ -254,6 +318,15 @@ export async function removeHistory(id: number): Promise<void> {
 /** Bulk-delete history rows in a single dbExecuteBatch (one transaction). */
 export async function removeHistoryBatch(ids: number[]): Promise<void> {
   if (ids.length === 0) return;
+  if (activeProvider() === "mangadex") {
+    await ipc.dbExecuteBatch(
+      MANGADEX_DB_NAME,
+      [`DELETE FROM reading_history WHERE id IN (${inClause(ids.length)})`],
+      [ids],
+    );
+    notifyHistoryChanged();
+    return;
+  }
   await ipc.dbExecuteBatch(
     DB_NAME,
     [`DELETE FROM reading_history WHERE id IN (${inClause(ids.length)})`],
@@ -405,6 +478,16 @@ export async function removeBookmark(chapterPermalink: string): Promise<void> {
 /** Bulk-delete bookmarks in a single dbExecuteBatch (one transaction). */
 export async function removeBookmarksBatch(chapterPermalinks: string[]): Promise<void> {
   if (chapterPermalinks.length === 0) return;
+  if (activeProvider() === "mangadex") {
+    const chapterIds = chapterPermalinks.map((p) => p.replace(/^mdx:/, ""));
+    await ipc.dbExecuteBatch(
+      MANGADEX_DB_NAME,
+      [`DELETE FROM bookmarks WHERE chapter_id IN (${inClause(chapterIds.length)})`],
+      [chapterIds],
+    );
+    notifyBookmarksChanged();
+    return;
+  }
   await ipc.dbExecuteBatch(
     DB_NAME,
     [`DELETE FROM bookmarks WHERE chapter_permalink IN (${inClause(chapterPermalinks.length)})`],

@@ -18,6 +18,7 @@ import { navigate, route, setRoute } from "../stores/router";
 import { setActions, showBanner } from "../stores/topbar";
 import { isMobile } from "../stores/platform";
 import { t } from "../i18n";
+import { activeProvider } from "../stores/provider";
 import { errorMessage } from "../utils/formatting";
 import { createMediaQuery } from "@solid-primitives/media";
 import { clearHistory } from "../db/library.repo";
@@ -69,38 +70,62 @@ export interface LibraryTabDef {
   icon: string;
 }
 
-export const getLibraryTabs = (): readonly LibraryTabDef[] => [
-  {
-    id: "followed",
-    get label() { return t("library.tabs.followed"); },
-    get shortLabel() { return t("library.tabsShort.followed"); },
-    icon: "bi-bookmark-heart",
-  },
-  {
-    id: "collections",
-    get label() { return t("library.tabs.collections"); },
-    get shortLabel() { return t("library.tabsShort.collections"); },
-    icon: "bi-folder2-open",
-  },
-  {
-    id: "bookmarks",
-    get label() { return t("library.tabs.bookmarks"); },
-    get shortLabel() { return t("library.tabsShort.bookmarks"); },
-    icon: "bi-bookmark",
-  },
-  {
-    id: "history",
-    get label() { return t("library.tabs.history"); },
-    get shortLabel() { return t("library.tabsShort.history"); },
-    icon: "bi-clock-history",
-  },
-  {
-    id: "local",
-    get label() { return "Local"; },
-    get shortLabel() { return "Local"; },
-    icon: "bi-folder",
-  },
-];
+export const getLibraryTabs = (): readonly LibraryTabDef[] => {
+  if (activeProvider() === "mangadex") {
+    return [
+      {
+        id: "followed",
+        get label() { return t("library.tabs.followed"); },
+        get shortLabel() { return t("library.tabsShort.followed"); },
+        icon: "bi-bookmark-heart",
+      },
+      {
+        id: "bookmarks",
+        get label() { return t("library.tabs.bookmarks"); },
+        get shortLabel() { return t("library.tabsShort.bookmarks"); },
+        icon: "bi-bookmark",
+      },
+      {
+        id: "history",
+        get label() { return t("library.tabs.history"); },
+        get shortLabel() { return t("library.tabsShort.history"); },
+        icon: "bi-clock-history",
+      },
+    ];
+  }
+  return [
+    {
+      id: "followed",
+      get label() { return t("library.tabs.followed"); },
+      get shortLabel() { return t("library.tabsShort.followed"); },
+      icon: "bi-bookmark-heart",
+    },
+    {
+      id: "collections",
+      get label() { return t("library.tabs.collections"); },
+      get shortLabel() { return t("library.tabsShort.collections"); },
+      icon: "bi-folder2-open",
+    },
+    {
+      id: "bookmarks",
+      get label() { return t("library.tabs.bookmarks"); },
+      get shortLabel() { return t("library.tabsShort.bookmarks"); },
+      icon: "bi-bookmark",
+    },
+    {
+      id: "history",
+      get label() { return t("library.tabs.history"); },
+      get shortLabel() { return t("library.tabsShort.history"); },
+      icon: "bi-clock-history",
+    },
+    {
+      id: "local",
+      get label() { return "Local"; },
+      get shortLabel() { return "Local"; },
+      icon: "bi-folder",
+    },
+  ];
+};
 
 function LibraryGrid() {
   const [refreshing, setRefreshing] = createSignal(false);
@@ -128,7 +153,19 @@ function LibraryGrid() {
 
   const isNarrowOrMobile = () => isNarrow() || isMobile();
 
-  const activeTab = (): LibraryTabId => (route().libraryTab ?? "followed") as LibraryTabId;
+  const activeTab = (): LibraryTabId => {
+    const raw = (route().libraryTab ?? "followed") as LibraryTabId;
+    const allowed = getLibraryTabs();
+    return allowed.some((t) => t.id === raw) ? raw : "followed";
+  };
+
+  createEffect(() => {
+    const tabs = getLibraryTabs();
+    const current = route().libraryTab;
+    if (current && !tabs.some((t) => t.id === current)) {
+      setRoute((r) => ({ ...r, libraryTab: "followed" }));
+    }
+  });
 
   const switchTab = (tabId: LibraryTabId): void => {
     setRoute((r) => ({ ...r, libraryTab: tabId }));
@@ -493,13 +530,15 @@ function LibraryTabActions(props: {
   return (
     <>
       <Show when={props.activeTab === "followed"}>
-        <IconButton
-          icon={<Icon name="box-arrow-in-down" />}
-          text={t("library.importButton")}
-          className={btnClass}
-          title={t("library.importFollowedTooltip")}
-          onClick={() => props.onOpenImport("followed")}
-        />
+        <Show when={activeProvider() !== "mangadex"}>
+          <IconButton
+            icon={<Icon name="box-arrow-in-down" />}
+            text={t("library.importButton")}
+            className={btnClass}
+            title={t("library.importFollowedTooltip")}
+            onClick={() => props.onOpenImport("followed")}
+          />
+        </Show>
         <IconButton
           icon={<Icon name="box-arrow-up" />}
           text={t("library.exportButton")}
