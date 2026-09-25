@@ -15,7 +15,7 @@ import { debounce } from "@solid-primitives/scheduled";
 import { createStore } from "solid-js/store";
 import type { Accessor } from "solid-js";
 import { getBlacklistRevision, onBlacklistChanged } from "../db/blacklist.repo";
-
+import { activeProvider } from "../stores/provider";
 export interface TopPagerConfig {
   totalPages: number;
   currentPage: number;
@@ -26,12 +26,12 @@ const [pagers, setPagers] = createStore<Record<string, TopPagerConfig | undefine
 
 /** Saves the top-pager config for a tab so switching back restores it instantly. */
 export function setTopPagerFor(tabId: string, cfg: TopPagerConfig): void {
-  setPagers(tabId, cfg);
+  setPagers(`${activeProvider()}:${tabId}`, cfg);
 }
 
 /** Reads the saved top-pager config for a tab (undefined when never loaded). */
 export function getTopPagerFor(tabId: string): TopPagerConfig | undefined {
-  return pagers[tabId];
+  return pagers[`${activeProvider()}:${tabId}`];
 }
 
 /** Scrolls the browse scroll container to the top. */
@@ -59,22 +59,22 @@ const [paneErrorMap, setPaneErrorMap] = createStore<Record<string, boolean>>({})
 
 /** Reports a pane's resource loading state so the Check Updates button can settle. */
 export function setPaneLoading(tabId: string, loading: boolean): void {
-  setPaneLoadingMap(tabId, loading);
+  setPaneLoadingMap(`${activeProvider()}:${tabId}`, loading);
 }
 
 /** Reads a pane's current resource loading state. */
 export function getPaneLoading(tabId: string): boolean {
-  return paneLoadingMap[tabId];
+  return !!paneLoadingMap[`${activeProvider()}:${tabId}`];
 }
 
 /** Reports whether a pane encountered an error during its latest load. */
 export function setPaneError(tabId: string, error: boolean): void {
-  setPaneErrorMap(tabId, error);
+  setPaneErrorMap(`${activeProvider()}:${tabId}`, error);
 }
 
 /** Reads whether a pane currently has an error state. */
 export function getPaneError(tabId: string): boolean {
-  return paneErrorMap[tabId] ?? false;
+  return paneErrorMap[`${activeProvider()}:${tabId}`] ?? false;
 }
 
 export interface TabPaneOptions<T> {
@@ -110,15 +110,17 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
 
   const source = () => {
     if (!opts.active()) return false;
-    const key = `${page()}:${loadSeq()}:${opts.revision()}:${opts.forceTick()}`;
+    const provider = activeProvider();
+    const key = `${provider}:${page()}:${loadSeq()}:${opts.revision()}:${opts.forceTick()}`;
     // If we already satisfied these exact query parameters, do not re-fetch on tab return.
     if (key === lastLoadedKey && data()) return false;
     return {
       key,
       page: page(),
+      provider,
     };
   };
-  const [data] = createResource(
+  const [data, { mutate }] = createResource(
     source,
     async (params) => {
       const p = typeof params === "object" && params !== null ? params.page : page();
@@ -128,6 +130,13 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
       return opts.load(p);
     },
   );
+
+  createEffect(() => {
+    activeProvider();
+    setPage(1);
+    lastLoadedKey = "";
+    mutate(undefined);
+  });
 
   createEffect(() => {
     if (opts.forceTick() > 0 && opts.active()) {

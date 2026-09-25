@@ -19,6 +19,7 @@ import {
 } from "solid-js";
 import { t } from "../i18n";
 import { showBanner } from "../stores/topbar";
+import { activeProvider } from "../stores/provider";
 import { fetchFeedWithRevalidation } from "../api/feed";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
 import { getHistoryPermalinks, getBookmarkPermalinks } from "../db/library.repo";
@@ -110,10 +111,11 @@ async function loadFeedModel(tabId: string, page: number): Promise<FeedModel> {
   // Dedupe rows across pages: a chapter inserted server-side between page
   // fetches shifts boundary rows, re-showing a chapter from the previous page.
   // Backward/repeat navigation resets the seen set for a fresh run.
-  let seenEntry = feedSeenByTab.get(tabId);
+  const seenKey = `${activeProvider()}:${tabId}`;
+  let seenEntry = feedSeenByTab.get(seenKey);
   if (!seenEntry || page <= seenEntry.page) {
     seenEntry = { page, seen: new Set() };
-    feedSeenByTab.set(tabId, seenEntry);
+    feedSeenByTab.set(seenKey, seenEntry);
   }
   const deduped = feed.chapters.filter((c) => !seenEntry!.seen.has(c.permalink));
   for (const c of deduped) seenEntry.seen.add(c.permalink);
@@ -182,7 +184,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
   const [hostEl, setHostEl] = createSignal<HTMLElement | null>(null);
   const handleUpdateBannerClick = (): void => {
     setUpdateBanner(false);
-    feedSeenByTab.delete(props.tabId);
+    feedSeenByTab.delete(`${activeProvider()}:${props.tabId}`);
     pane.goToPage(1);
     pane.reload();
     scrollBrowseToTop();

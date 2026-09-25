@@ -136,7 +136,7 @@ export function BrowseView() {
   createEffect(() => {
     if (route().view === "browse") {
       const tab = activeTab();
-      const saved = tabScrollPositions.get(tab);
+      const saved = tabScrollPositions.get(`${activeProvider()}:${tab}`);
       if (saved !== undefined && saved > 0) {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
@@ -360,7 +360,7 @@ export function BrowseView() {
     makeEventListener(paneEl, "touchcancel", onTouchCancel, { passive: true });
     const onScroll = (): void => {
       if (route().view === "browse") {
-        tabScrollPositions.set(activeTab(), paneEl.scrollTop);
+        tabScrollPositions.set(`${activeProvider()}:${activeTab()}`, paneEl.scrollTop);
       }
     };
     makeEventListener(paneEl, "scroll", onScroll, { passive: true });
