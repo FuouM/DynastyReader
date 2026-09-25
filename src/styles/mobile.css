@@ -236,16 +236,6 @@
   #ds-root[data-mobile]:not(:has(#ds-reader-container)) #ds-view {
     padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
   }
-  #ds-root[data-mobile] .ds-feed-status-bar {
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-  }
-  #ds-root[data-mobile] .ds-feed-status-right {
-    width: auto !important;
-    justify-content: flex-end !important;
-    margin-left: auto !important;
-  }
 }
 
 /* Mobile Bottom Navigation Bar (Styled identical to WinForms segmented switch) */
@@ -540,22 +530,24 @@
   align-items: stretch;
 }
 
-#ds-root[data-mobile] .ds-feed-status-left {
+#ds-root[data-mobile] .ds-feed-status-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  width: 100%;
+  align-items: center;
 }
-
-#ds-root[data-mobile] .ds-feed-status-right {
-  display: flex;
+#ds-root[data-mobile] .ds-feed-status-row-1 {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#ds-root[data-mobile] .ds-feed-status-row-2 {
   justify-content: space-between;
   align-items: center;
-  width: 100%;
 }
-#ds-root[data-mobile] .ds-feed-status-pager-wrap {
-  display: flex;
+#ds-root[data-mobile] .ds-feed-status-row-3 {
+  justify-content: space-between;
   align-items: center;
-  justify-content: flex-end !important;
+}
+#ds-root[data-mobile] .ds-feed-status-row-3 .ds-scroll-top-btn {
   margin-left: auto;
 }
 

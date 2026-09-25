@@ -145,7 +145,8 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
 
   return (
     <div class="ds-feed-status-bar">
-      <div class="ds-feed-status-left">
+      {/* Row 1: Database metadata & cache status */}
+      <div class="ds-feed-status-row ds-feed-status-row-1">
         <span
           class="ds-status-item ds-status-db"
           title={t("browse.feed.statusDbTitle", { date: formatDateTime(props.state.cachedAt) })}
@@ -165,6 +166,10 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
             <HashIcon /> <span class="ds-etag-hash">{props.state.etag!.replace(/^"|"$/g, "").slice(0, 8)}</span>
           </span>
         </Show>
+      </div>
+
+      {/* Row 2: Traffic session stats & Check Updates */}
+      <div class="ds-feed-status-row ds-feed-status-row-2">
         <span
           class="ds-status-item ds-status-traffic"
           title={t("browse.feed.statusTrafficTooltip", {
@@ -180,8 +185,6 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
         >
           <IconText icon={<TrafficIcon />}>{formatBytes(traffic().bytesDownloaded, "", 1)}</IconText>
         </span>
-      </div>
-      <div class="ds-feed-status-right">
         <IconButton
           className="ds-status-refresh-btn"
           title={t("browse.feed.statusForceCheckTooltip")}
@@ -190,13 +193,17 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
           icon={checkBtnIcon()}
           text={checkBtnText()}
         />
-        <div class="ds-feed-status-pager-wrap ds-ml-auto">
+      </div>
+
+      {/* Row 3: Pager (left) & Scroll to Top (bottom right) */}
+      <div class="ds-feed-status-row ds-feed-status-row-3">
+        <div class="ds-feed-status-pager-wrap">
           <Show when={props.pager}>{props.pager}</Show>
         </div>
         <IconButton
           icon={<ArrowUpIcon />}
           text={t("common.top")}
-          className="ds-scroll-top-btn"
+          className="ds-scroll-top-btn ds-ml-auto"
           title={t("browse.feed.statusScrollTopTooltip")}
           onClick={onScrollTop}
         />

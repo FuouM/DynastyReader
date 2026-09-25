@@ -7,6 +7,7 @@
 import { createEffect, createMemo, createResource, createSignal, For, Show } from "solid-js";
 import { navigate } from "../stores/router";
 import { setActions, showBanner } from "../stores/topbar";
+import { activeProvider } from "../stores/provider";
 import { decodeEntities, formatDate, dynastyUrl, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
 import { getBlacklistMode, getBlacklistedSeries, removeBlacklistedSeries, setBlacklistMode } from "../db/blacklist.repo";
@@ -121,16 +122,18 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
       id="ds-blacklist-view-container"
       class="ds-bl-view"
     >
-      <div style="margin-bottom: 12px;">
-        <SubTabs
-          tabs={[
-            { id: "blacklist", label: "Series Blacklist", shortLabel: "Blacklist" },
-            { id: "whitelist", label: "Feed Allowlist", shortLabel: "Allowlist" },
-          ]}
-          activeTab={activeTab()}
-          onSwitch={(id) => setActiveTab(id as "blacklist" | "whitelist")}
-        />
-      </div>
+      <Show when={activeProvider() === "mangadex"}>
+        <div style="margin-bottom: 12px;">
+          <SubTabs
+            tabs={[
+              { id: "blacklist", label: "Series Blacklist", shortLabel: "Blacklist" },
+              { id: "whitelist", label: "Feed Allowlist", shortLabel: "Allowlist" },
+            ]}
+            activeTab={activeTab()}
+            onSwitch={(id) => setActiveTab(id as "blacklist" | "whitelist")}
+          />
+        </div>
+      </Show>
       <Show when={activeTab() === "blacklist"}>
       <Show
         when={data() !== undefined}

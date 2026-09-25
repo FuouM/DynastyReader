@@ -112,7 +112,7 @@ export function SettingsModal(props: SettingsModalProps) {
 
           <div class="ds-settings-content" ref={contentRef} onScroll={handleScroll}>
             <DisplaySettings />
-            <BlacklistSettings />
+            <BlacklistSettings onClose={props.onClose} />
             <ReaderSettings />
 
             {/* Hotkeys Section trigger banner */}

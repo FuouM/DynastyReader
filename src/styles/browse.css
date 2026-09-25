@@ -228,24 +228,33 @@
 /* Feed bottom status bar */
 .ds-feed-status-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
-  padding: 6px 10px;
+  padding: 8px 12px;
   margin-top: 10px;
   background: var(--sys-control-bg);
   border: 1px solid var(--sys-border-light);
   border-radius: var(--radius-2);
   font-size: var(--font-sm);
 }
-.ds-feed-status-left {
+.ds-feed-status-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+}
+.ds-feed-status-row-1 {
   flex-wrap: wrap;
   color: var(--sys-text-muted);
-  font-size: var(--font-sm);
+}
+.ds-feed-status-row-2 {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ds-feed-status-row-3 {
+  justify-content: space-between;
+  align-items: center;
 }
 .ds-status-item {
   display: inline-flex;

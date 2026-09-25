@@ -485,7 +485,7 @@ function LibraryTabActions(props: {
   activeTab: LibraryTabId;
   compact?: boolean;
   onOpenImport: (target: "followed" | "collections") => void;
-  onOpenExport: (target: "followed" | "collections") => void;
+  onOpenExport: (target: ExportScope) => void;
   onCreateCollection: () => void;
   onClearHistory: () => Promise<void>;
 }) {
@@ -506,6 +506,15 @@ function LibraryTabActions(props: {
           className={btnClass}
           title={t("library.exportFollowedTooltip")}
           onClick={() => props.onOpenExport("followed")}
+        />
+      </Show>
+      <Show when={props.activeTab === "bookmarks"}>
+        <IconButton
+          icon={<Icon name="box-arrow-up" />}
+          text={t("library.exportButton")}
+          className={btnClass}
+          title={t("library.exportBookmarksTooltip")}
+          onClick={() => props.onOpenExport("bookmarks")}
         />
       </Show>
       <Show when={props.activeTab === "collections"}>

@@ -1,8 +1,10 @@
 import { query } from "./client";
 import { dynastyUrl, decodeEntities } from "../utils/formatting";
 import { itemKindToPath } from "../taxonomy";
+import { activeProvider } from "../stores/provider";
+import { getAllMdxBookmarks } from "../providers/mangadex/db/bookmarks.repo";
 
-export type ExportScope = "all" | "followed" | "collections" | "collection" | "selected_collections";
+export type ExportScope = "all" | "followed" | "collections" | "collection" | "selected_collections" | "bookmarks";
 export type ExportFormat = "json-pretty" | "json-compact" | "text" | "markdown" | "urls";
 
 export interface ExportFollowedItem {
@@ -35,6 +37,16 @@ export interface ExportCollection {
   items: ExportCollectionItem[];
 }
 
+export interface ExportBookmarkItem {
+  chapterTitle: string;
+  chapterPermalink: string;
+  seriesName: string | null;
+  seriesPermalink: string | null;
+  pageIndex: number;
+  url: string;
+  bookmarkedAt: number;
+}
+
 export interface ExportPayload {
   version: 1;
   generator: "DynastyReader";
@@ -44,15 +56,18 @@ export interface ExportPayload {
     followed: number;
     collections: number;
     collectionItems: number;
+    bookmarks?: number;
   };
   followed?: ExportFollowedItem[];
   collections?: ExportCollection[];
+  bookmarks?: ExportBookmarkItem[];
 }
 
 export interface ExportCounts {
   followed: number;
   collections: number;
   collectionItems: number;
+  bookmarks?: number;
 }
 
 /**
@@ -175,6 +190,46 @@ export async function getAllCollections(collectionIds?: number | number[]): Prom
 }
 
 /**
+ * Retrieves all bookmarks sorted by date added.
+ */
+export async function getAllBookmarks(): Promise<ExportBookmarkItem[]> {
+  if (activeProvider() === "mangadex") {
+    const mdx = await getAllMdxBookmarks();
+    return mdx.map((b) => ({
+      chapterTitle: decodeEntities(b.chapter_title),
+      chapterPermalink: `mdx:${b.chapter_id}`,
+      seriesName: b.manga_title ? decodeEntities(b.manga_title) : null,
+      seriesPermalink: b.manga_id ? `mdx:${b.manga_id}` : null,
+      pageIndex: b.page_index,
+      url: `https://mangadex.org/chapter/${b.chapter_id}`,
+      bookmarkedAt: Number(b.created_at),
+    }));
+  }
+  interface BookmarkDbRow {
+    chapter_permalink: string;
+    series_permalink: string | null;
+    series_name: string | null;
+    chapter_title: string;
+    page_index: number;
+    created_at: number;
+  }
+  const rows = await query<BookmarkDbRow>(
+    `SELECT chapter_permalink, series_permalink, series_name, chapter_title, page_index, created_at
+     FROM bookmarks
+     ORDER BY created_at DESC`,
+  );
+  return rows.map((r) => ({
+    chapterTitle: decodeEntities(r.chapter_title),
+    chapterPermalink: r.chapter_permalink,
+    seriesName: r.series_name ? decodeEntities(r.series_name) : null,
+    seriesPermalink: r.series_permalink,
+    pageIndex: r.page_index,
+    url: r.chapter_permalink.startsWith("local:") ? "" : dynastyUrl("chapters", r.chapter_permalink),
+    bookmarkedAt: Number(r.created_at),
+  }));
+}
+
+/**
  * Fetches the raw data required for the given export scope.
  */
 export async function fetchExportData(
@@ -183,10 +238,12 @@ export async function fetchExportData(
 ): Promise<{
   followed?: ExportFollowedItem[];
   collections?: ExportCollection[];
+  bookmarks?: ExportBookmarkItem[];
   counts: ExportCounts;
 }> {
   let followed: ExportFollowedItem[] | undefined;
   let collections: ExportCollection[] | undefined;
+  let bookmarks: ExportBookmarkItem[] | undefined;
 
   if (scope === "all" || scope === "followed") {
     followed = await getAllFollowedSeries();
@@ -196,19 +253,27 @@ export async function fetchExportData(
     const ids = scope === "all" ? undefined : collectionIds;
     collections = await getAllCollections(ids);
   }
+
+  if (scope === "all" || scope === "bookmarks") {
+    bookmarks = await getAllBookmarks();
+  }
+
   const followedCount = followed ? followed.length : 0;
   const collectionsCount = collections ? collections.length : 0;
   const collectionItemsCount = collections
     ? collections.reduce((acc, c) => acc + c.items.length, 0)
     : 0;
+  const bookmarksCount = bookmarks ? bookmarks.length : 0;
 
   return {
     followed,
     collections,
+    bookmarks,
     counts: {
       followed: followedCount,
       collections: collectionsCount,
       collectionItems: collectionItemsCount,
+      bookmarks: bookmarksCount,
     },
   };
 }
@@ -221,11 +286,12 @@ export function formatExportData(
     scope: ExportScope;
     followed?: ExportFollowedItem[];
     collections?: ExportCollection[];
+    bookmarks?: ExportBookmarkItem[];
     counts: ExportCounts;
   },
   format: ExportFormat,
 ): string {
-  const { scope, followed, collections, counts } = data;
+  const { scope, followed, collections, bookmarks, counts } = data;
 
   if (format === "json-pretty" || format === "json-compact") {
     const payload: ExportPayload = {
@@ -237,7 +303,7 @@ export function formatExportData(
     };
     if (followed !== undefined) payload.followed = followed;
     if (collections !== undefined) payload.collections = collections;
-
+    if (bookmarks !== undefined) payload.bookmarks = bookmarks;
     return format === "json-pretty"
       ? JSON.stringify(payload, null, 2)
       : JSON.stringify(payload);
@@ -255,6 +321,11 @@ export function formatExportData(
         for (const item of col.items) {
           urls.push(item.url);
         }
+      }
+    }
+    if (bookmarks) {
+      for (const b of bookmarks) {
+        urls.push(b.url);
       }
     }
     // Remove duplicate consecutive URLs while preserving order
@@ -303,6 +374,20 @@ export function formatExportData(
       lines.push("*(No collections found)*");
       lines.push("");
     }
+    if (bookmarks && bookmarks.length > 0) {
+      lines.push(`# Bookmarks (${bookmarks.length})`);
+      lines.push("");
+      for (const b of bookmarks) {
+        const extra = b.seriesName ? ` *(${b.seriesName})*` : "";
+        lines.push(`- [${b.chapterTitle}](${b.url})${extra}`);
+      }
+      lines.push("");
+    } else if (scope === "bookmarks") {
+      lines.push("# Bookmarks (0)");
+      lines.push("");
+      lines.push("*(No bookmarks found)*");
+      lines.push("");
+    }
     return lines.join("\n").trimEnd();
   }
 
@@ -340,6 +425,21 @@ export function formatExportData(
     lines.push("(No collections found)");
   }
 
+  if (bookmarks && bookmarks.length > 0) {
+    if (scope === "all") {
+      lines.push(`=== Bookmarks (${bookmarks.length}) ===`);
+    }
+    for (const b of bookmarks) {
+      const extra = b.seriesName ? ` [${b.seriesName}]` : "";
+      lines.push(`${b.chapterTitle}${extra} — ${b.url}`);
+    }
+    if (scope === "all") {
+      lines.push("");
+    }
+  } else if (scope === "bookmarks") {
+    lines.push("(No bookmarks found)");
+  }
+
   return lines.join("\n").trimEnd();
 }
 
@@ -362,6 +462,7 @@ export async function fetchAndFormatExport(opts: {
       scope: opts.scope,
       followed: data.followed,
       collections: data.collections,
+      bookmarks: data.bookmarks,
       counts: data.counts,
     },
     opts.format,

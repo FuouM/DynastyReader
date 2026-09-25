@@ -1,6 +1,5 @@
 import { Show } from "solid-js";
 import { navigate } from "../../stores/router";
-import { activeProvider } from "../../stores/provider";
 import { t } from "../../i18n";
 import * as ipc from "../../ipc";
 import {
@@ -14,7 +13,7 @@ import {
   setDownloadScheduleEnd,
   pushDownloadConstraints,
 } from "../../utils/download-constraints";
-import { StorageIcon, BlacklistIcon, ExternalLinkIcon, Icon, DownloadIcon, ListCheckIcon } from "../Icon";
+import { StorageIcon, BlacklistIcon, ExternalLinkIcon, Icon, DownloadIcon } from "../Icon";
 import { GroupBox } from "../GroupBox";
 import { IconText, IconButton } from "../Button";
 import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
@@ -50,20 +49,6 @@ export function StorageSettings(props: StorageSettingsProps) {
             }}
           />
         </SettingsRow>
-        <Show when={activeProvider() === "mangadex"}>
-          <SettingsRow label="Feed Allowlist (Whitelist)" divider>
-            <IconButton
-              id="ds-settings-goto-whitelist"
-              title="Configure MangaDex feed allowlist and genre filters"
-              icon={<ListCheckIcon />}
-              text="Open Whitelist"
-              onClick={() => {
-                props.onClose();
-                navigate({ view: "whitelist" });
-              }}
-            />
-          </SettingsRow>
-        </Show>
 
         <SettingsRow label={t("settings.storage.troubleshooting")} divider>
           <IconButton

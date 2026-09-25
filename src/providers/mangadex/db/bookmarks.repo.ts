@@ -124,3 +124,12 @@ export async function getMdxBookmarkChapterIds(chapterIds: string[]): Promise<Se
   );
   return new Set(rows.map((r) => r.chapter_id));
 }
+
+export async function getAllMdxBookmarks(): Promise<MangaDexBookmarkRow[]> {
+  await initMangaDexDb();
+  return query<MangaDexBookmarkRow>(
+    `SELECT chapter_id, manga_id, manga_title, chapter_title, page_index, scanlator_name, created_at
+     FROM bookmarks
+     ORDER BY created_at DESC`,
+  );
+}

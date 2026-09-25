@@ -191,6 +191,7 @@ export function ExportModal(props: ExportModalProps) {
   const scopeOptions = (): SelectOption[] => {
     const opts: SelectOption[] = [
       { value: "followed", label: t("library.exportScopeFollowed") },
+      { value: "bookmarks", label: t("library.exportScopeBookmarks") },
       { value: "selected_collections", label: t("library.exportScopeSelectedCollections") },
       { value: "collections", label: t("library.exportScopeCollections") },
       { value: "all", label: t("library.exportScopeAll") },

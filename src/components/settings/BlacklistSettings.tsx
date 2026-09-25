@@ -5,9 +5,11 @@ import { suggest } from "../../api/directory";
 import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { GroupBox } from "../GroupBox";
-import { BlacklistIcon, AddIcon, CloseIcon } from "../Icon";
-import { IconText, Button, BlacklistModeSwitch } from "../Button";
-export function BlacklistSettings() {
+import { BlacklistIcon, AddIcon, CloseIcon, ListCheckIcon } from "../Icon";
+import { IconText, Button, IconButton, BlacklistModeSwitch } from "../Button";
+import { activeProvider } from "../../stores/provider";
+import { navigate } from "../../stores/router";
+export function BlacklistSettings(props: { onClose?: () => void }) {
   const [blMode, setBlMode] = createSignal(getBlacklistMode());
   const [blInput, setBlInput] = createSignal("");
   const [blacklist, { refetch }] = createResource(() => getBlacklistedTags());
@@ -108,6 +110,28 @@ export function BlacklistSettings() {
             </For>
           </Show>
         </div>
+        <Show when={activeProvider() === "mangadex"}>
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ds-border, #e0e0e0);">
+            <div class="ds-row-between">
+              <div>
+                <div class="ds-label">MangaDex Feed Allowlist (Whitelist)</div>
+                <div class="ds-muted" style="font-size: 11px;">
+                  Configure MangaDex feed allowlist and allowed genre filters
+                </div>
+              </div>
+              <IconButton
+                id="ds-settings-goto-whitelist"
+                title="Configure MangaDex feed allowlist and genre filters"
+                icon={<ListCheckIcon />}
+                text="Open Whitelist"
+                onClick={() => {
+                  props.onClose?.();
+                  navigate({ view: "whitelist" });
+                }}
+              />
+            </div>
+          </div>
+        </Show>
       </div>
     </GroupBox>
   );
