@@ -2,7 +2,7 @@ import { createSignal, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { route, navigate, closeSessionMangaTab, isInMangaView, sessionTab } from "../stores/router";
-import { title, banner, actions } from "../stores/topbar";
+import { title, banner, bannerAction, dismissBanner, actions } from "../stores/topbar";
 import { activeDownloadCount, downloadSpeedBps } from "../stores/download";
 import { formatSpeed, decodeEntities } from "../utils/formatting";
 import { isMobile } from "../stores/platform";
@@ -124,8 +124,18 @@ export function Topbar() {
         <Portal mount={document.body}>
           <div
             id="ds-banner"
-            classList={{ "ds-banner--mobile": isMobile() }}
-            style={uiScale() !== 1.0 ? { zoom: String(uiScale()) } : undefined}
+            classList={{ "ds-banner--mobile": isMobile(), "ds-banner--clickable": !!bannerAction() }}
+            style={{
+              ...(uiScale() !== 1.0 ? { zoom: String(uiScale()) } : {}),
+              ...(bannerAction() ? { cursor: "pointer" } : {}),
+            }}
+            onClick={() => {
+              const action = bannerAction();
+              if (action) {
+                action();
+                dismissBanner();
+              }
+            }}
           >
             {banner()}
           </div>

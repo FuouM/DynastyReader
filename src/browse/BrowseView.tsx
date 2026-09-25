@@ -56,7 +56,6 @@ import { BrowseDirectory } from "./BrowseDirectory";
 import { BrowseDownloaded } from "./BrowseDownloaded";
 import { BrowseSearch } from "./BrowseSearch";
 import { getCacheRevision } from "../db/cache.repo";
-import { getBookmarksRevision, getHistoryRevision, getProgressRevision } from "../db/library.repo";
 async function suggestMangaDex(query: string): Promise<Array<{ name: string; type: string }>> {
   if (!query.trim()) return [];
   try {
@@ -130,10 +129,26 @@ export function BrowseView() {
   const revision = () =>
     blacklistRev() +
     getCacheRevision() +
-    getHistoryRevision() +
-    getBookmarksRevision() +
-    getProgressRevision() +
     (activeProvider() === "mangadex" ? whitelistRev() : 0);
+
+  const tabScrollPositions = new Map<string, number>();
+
+  createEffect(() => {
+    if (route().view === "browse") {
+      const tab = activeTab();
+      const saved = tabScrollPositions.get(tab);
+      if (saved !== undefined && saved > 0) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const paneEl = document.getElementById("ds-pane-browse");
+            if (paneEl && route().view === "browse") {
+              paneEl.scrollTop = saved;
+            }
+          });
+        });
+      }
+    }
+  });
   const [pendingSearch, setPendingSearch] = createSignal<{
     searchQuery?: string;
     withTag?: string;
@@ -343,6 +358,12 @@ export function BrowseView() {
     makeEventListener(paneEl, "touchmove", onTouchMove, { passive: false });
     makeEventListener(paneEl, "touchend", onTouchEnd, { passive: true });
     makeEventListener(paneEl, "touchcancel", onTouchCancel, { passive: true });
+    const onScroll = (): void => {
+      if (route().view === "browse") {
+        tabScrollPositions.set(activeTab(), paneEl.scrollTop);
+      }
+    };
+    makeEventListener(paneEl, "scroll", onScroll, { passive: true });
   });
 
   const checkBtnIcon = (): JSX.Element => {

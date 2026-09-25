@@ -18,6 +18,7 @@ import {
   type JSX,
 } from "solid-js";
 import { t } from "../i18n";
+import { showBanner } from "../stores/topbar";
 import { fetchFeedWithRevalidation } from "../api/feed";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
 import { getHistoryPermalinks, getBookmarkPermalinks } from "../db/library.repo";
@@ -179,6 +180,20 @@ export function BrowseFeed(props: BrowseFeedProps) {
   const addToCol = useAddToCollection();
 
   const [hostEl, setHostEl] = createSignal<HTMLElement | null>(null);
+  const handleUpdateBannerClick = (): void => {
+    setUpdateBanner(false);
+    feedSeenByTab.delete(props.tabId);
+    pane.goToPage(1);
+    pane.reload();
+    scrollBrowseToTop();
+  };
+
+  const notifyNewChapters = (): void => {
+    setUpdateBanner(true);
+    showBanner(t("browse.feed.newChaptersNotice"), {
+      onClick: handleUpdateBannerClick,
+    });
+  };
 
   createEffect(() => {
     setPaneLoading(props.tabId, pane.loading());
@@ -241,10 +256,10 @@ export function BrowseFeed(props: BrowseFeedProps) {
         if (reval) {
           const freshTopTs = feedHeadTimestamp(reval.data.chapters);
           if (freshTopTs !== undefined && currentTopTs !== undefined) {
-            if (freshTopTs > currentTopTs) setUpdateBanner(true);
+            if (freshTopTs > currentTopTs) notifyNewChapters();
           } else {
             const freshTop = reval.data.chapters?.[0]?.permalink;
-            if (freshTop && freshTop !== currentTop) setUpdateBanner(true);
+            if (freshTop && freshTop !== currentTop) notifyNewChapters();
           }
           setFooterState({
             cachedAt: Date.now(),
@@ -286,7 +301,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
       });
       void revalidateFeedHead(props.tabId).then((head) => {
         if (hostEl() !== browseCovers.currentHydrationHost) return;
-        if (head.hasNew) setUpdateBanner(true);
+        if (head.hasNew) notifyNewChapters();
       });
     }
   });
@@ -305,7 +320,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
       if (last > 0 && Date.now() - last > STALE_REVALIDATION_THRESHOLD_MS) {
         setLoadedAt(Date.now());
         void revalidateFeedHead(props.tabId).then((head) => {
-          if (props.active() && head.hasNew) setUpdateBanner(true);
+          if (props.active() && head.hasNew) notifyNewChapters();
         });
       }
     }
@@ -323,7 +338,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
           etagStatus: t("browse.feed.statusUpdated"),
           isStale: false,
         });
-        setUpdateBanner(true);
+        notifyNewChapters();
         return "new-chapters";
       } else if (head.status === "unchanged") {
         setFooterState({
@@ -362,13 +377,6 @@ export function BrowseFeed(props: BrowseFeedProps) {
       onAddToCol={addToCol.onAddToCol}
     />
   );
-  const handleUpdateBannerClick = (): void => {
-    setUpdateBanner(false);
-    feedSeenByTab.delete(props.tabId);
-    pane.goToPage(1);
-    pane.reload();
-    scrollBrowseToTop();
-  };
 
   return (
     <div ref={setHostEl}>

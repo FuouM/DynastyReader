@@ -407,6 +407,18 @@
   box-sizing: border-box;
   border-radius: 0;
 }
+
+#ds-root[data-mobile] #ds-pane-browse .ds-subtabs-left {
+  padding-right: 0;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+#ds-root[data-mobile] #ds-pane-browse .ds-subtab {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 4px;
+}
 #ds-root[data-mobile] .ds-subtabs-right {
   display: flex;
   justify-content: space-between;
