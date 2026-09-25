@@ -10,9 +10,8 @@ import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { useReader } from "./reader-context";
 import { isMobile } from "../stores/platform";
-import { closeSessionMangaTab } from "../stores/router";
+import { exitReader } from "../stores/router";
 import { showBanner } from "../stores/topbar";
-import { HistoryNavButtons } from "../components/HistoryDropdown";
 import { decodeEntities, errorMessage } from "../utils/formatting";
 import { addBookmark, removeBookmark } from "../db/library.repo";
 import { addMdxBookmark, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
@@ -25,7 +24,7 @@ import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
 import {
   ToolIcon,
   BookmarkIcon,
-  CloseIcon,
+  ArrowLeftIcon,
 } from "../components/Icon";
 
 
@@ -116,7 +115,13 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
       >
         <Show when={isMobile()}>
           <div class="ds-reader-nav-row nav-main ds-reader-mobile-row--full">
-            <HistoryNavButtons />
+            <IconButton
+              className="ds-btn-icon ds-reader-mobile-back-btn"
+              icon={<ArrowLeftIcon />}
+              title={t("common.back")}
+              aria-label={t("common.back")}
+              onClick={() => exitReader()}
+            />
             <div class="ds-reader-mobile-title--flex" onClick={handleOpenSeries} title={s.seriesPermalink() ? t("reader.toolbar.viewSeries") : undefined}>
               <span class="ds-truncate ds-text-13-600">
                 {decodeEntities(s.chapterTitle() || s.permalink)}
@@ -141,12 +146,6 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
                 icon={<ToolIcon />}
                 title={t("reader.toolbar.toggleControlsTooltip")}
                 onClick={() => s.setControlsOpen(!s.controlsOpen())}
-              />
-              <IconButton
-                className="ds-btn-icon"
-                icon={<CloseIcon />}
-                title={t("topbar.closeTabTooltip")}
-                onClick={() => closeSessionMangaTab()}
               />
             </div>
           </div>

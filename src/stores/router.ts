@@ -228,6 +228,18 @@ export function closeSessionMangaTab(): void {
   });
 }
 
+/** Exits the reader view to the originating non-reader route, or browse view. */
+export function exitReader(): void {
+  const back = historyBackStack();
+  for (let i = back.length - 1; i >= 0; i--) {
+    if (back[i].view !== "reader") {
+      goBackTo(i);
+      return;
+    }
+  }
+  navigate({ view: "browse" });
+}
+
 export interface RouteLabel {
   title: string;
   subtitle?: string;
