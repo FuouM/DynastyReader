@@ -11,7 +11,7 @@ import type {
   MangaDexManga,
   MangaDexRelationship,
 } from "./types";
-import type { Chapter, ChapterPage, Series, SeriesTag } from "../../types/api";
+import type { Chapter, ChapterPage, ChapterTag, Series, SeriesTag } from "../../types/api";
 import type { FeedItemData } from "../../components/FeedItemRow";
 
 /**
@@ -216,12 +216,26 @@ export function mangaDexToStandardChapter(
       : `Chapter ${chNum}`
     : rawTitle || "Oneshot";
 
-  const tags = [];
+  const tags: ChapterTag[] = [];
   if (seriesContext?.mangaId && seriesContext?.mangaTitle) {
     tags.push({
       type: "Series",
       name: seriesContext.mangaTitle,
       permalink: `mdx:${seriesContext.mangaId}`,
+    });
+  }
+
+  const groupRel = chapter.relationships?.find((r) => r.type === "scanlation_group");
+  let groupName: string | undefined;
+  const attrs = groupRel?.attributes;
+  if (attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string" && attrs.name) {
+    groupName = attrs.name;
+  }
+  if (groupName && groupRel) {
+    tags.push({
+      type: "Scanlator",
+      name: groupName,
+      permalink: `mdx-group:${groupRel.id}`,
     });
   }
 

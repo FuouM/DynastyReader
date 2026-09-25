@@ -50,6 +50,9 @@ function ChapterRow(props: {
     if (props.cachedCount > 0) {
       list.push(t("series.cachedBadge", { count: props.cachedCount }));
     }
+    if (props.ch.scanlatorGroupName) {
+      list.push(props.ch.scanlatorGroupName);
+    }
     if (props.ch.released_on) {
       list.push(props.ch.released_on);
     }

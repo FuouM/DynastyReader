@@ -56,11 +56,14 @@ function collectChapters(series: Series): ChapterMeta[] {
       continue;
     }
     if (t.permalink) {
+      const scanlatorTag = t.tags?.find((tag) => tag.type === "Scanlator");
       out.push({
         title: t.title || t.permalink,
         permalink: t.permalink,
         released_on: t.released_on ?? undefined,
         volumeHeader: volumeHeader || extractVolumeHeader(t.title || t.permalink),
+        scanlatorGroup: scanlatorTag?.permalink ? scanlatorTag.permalink.replace(/^mdx-group:/, "") : undefined,
+        scanlatorGroupName: scanlatorTag?.name,
       });
     }
   }
@@ -138,10 +141,25 @@ export function SeriesView() {
           const num = ch.attributes.chapter;
           const raw = ch.attributes.title;
           const chTitle = num ? (raw ? `Chapter ${num}: ${raw}` : `Chapter ${num}`) : (raw || "Oneshot");
+          const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
+          const groupAttrs = groupRel?.attributes;
+          let groupName: string | undefined;
+          if (groupAttrs && typeof groupAttrs === "object" && "name" in groupAttrs && typeof groupAttrs.name === "string" && groupAttrs.name) {
+            groupName = groupAttrs.name;
+          }
+          const chTags: SeriesTag[] = [];
+          if (groupName && groupRel) {
+            chTags.push({
+              type: "Scanlator",
+              name: groupName,
+              permalink: `mdx-group:${groupRel.id}`,
+            });
+          }
           taggings.push({
             title: chTitle,
             permalink: `mdx:${ch.id}`,
             released_on: ch.attributes.readableAt ? ch.attributes.readableAt.substring(0, 10) : null,
+            tags: chTags,
           });
         }
 
@@ -521,7 +539,7 @@ export function SeriesView() {
             onToggleBlacklist={() => void handleToggleBlacklist()}
             onRefresh={() => setForceTick((t) => t + 1)}
             onOpenAddToCol={handleOpenAddToCol}
-            openUrl={data()!.series.type === "local" ? "" : dynastyUrl(seriesTypeToPath(data()!.series.type), encodeURIComponent(data()!.series.permalink))}
+            openUrl={data()!.series.link || (data()!.series.type === "local" ? "" : dynastyUrl(seriesTypeToPath(data()!.series.type), encodeURIComponent(data()!.series.permalink)))}
             seriesType={data()!.series.type}
             onDownloadAll={data()!.series.type === "local" ? undefined : () => void handleDownloadAll()}
           />

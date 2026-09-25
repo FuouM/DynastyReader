@@ -6,7 +6,7 @@
 
 import * as ipc from "../../../ipc";
 import { log } from "../../../utils/log";
-import { MANGADEX_NETWORK_REPORT, MANGADEX_UPLOADS_BASE } from "./constants";
+import { MANGADEX_NETWORK_REPORT, MANGADEX_UPLOADS_BASE, MANGADEX_USER_AGENT } from "./constants";
 import type { MangaDexAtHomeReport } from "../types";
 
 /**
@@ -27,6 +27,9 @@ export function reportAtHome(report: MangaDexAtHomeReport): void {
         method: "POST",
         body: JSON.stringify(report),
         contentType: "application/json",
+        headers: {
+          "User-Agent": MANGADEX_USER_AGENT,
+        },
         timeoutMs: 10000,
       });
     } catch (err) {
