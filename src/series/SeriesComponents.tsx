@@ -87,6 +87,7 @@ export function SeriesActions(props: SeriesActionsProps) {
       <Show when={props.openUrl}>
         <ExternalLinkButton
           className="ds-btn-icon"
+          style={{ "aspect-ratio": "1 / 1" }}
           title={t("series.openInBrowserTooltip", {
             type: props.seriesType ? props.seriesType.toLowerCase() : "series",
           })}

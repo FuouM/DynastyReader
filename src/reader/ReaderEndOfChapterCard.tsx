@@ -110,21 +110,13 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
 
       if (dx > 0) {
         // Swipe right -> Previous chapter (if available) or Series / Browse
-        const canPrev = Boolean(prevChapter() && !s.chapterNav().prevDisabled);
-        clamped = canPrev ? Math.min(dx, 120) : Math.min(dx * 0.25, 40);
-        if (canPrev && clamped >= SWIPE_THRESHOLD_PX) {
+        clamped = Math.min(dx, 120);
+        if (clamped >= SWIPE_THRESHOLD_PX) {
           newReady = "right";
-        } else if (canPrev && lastReady === "right" && clamped >= SWIPE_RESET_THRESHOLD_PX) {
+        } else if (lastReady === "right" && clamped >= SWIPE_RESET_THRESHOLD_PX) {
           newReady = "right";
-        } else if (!canPrev && clamped >= 35) {
-          newReady = "none";
-          if (boundaryVibrated !== "right") {
-            triggerHaptic("snap");
-            boundaryVibrated = "right";
-          }
         } else {
           newReady = "none";
-          if (clamped < 20) boundaryVibrated = "none";
         }
       } else if (dx < 0) {
         // Swipe left -> Next chapter
@@ -241,21 +233,13 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
       let newReady: "none" | "left" | "right" = "none";
 
       if (dx > 0) {
-        const canPrev = Boolean(prevChapter() && !s.chapterNav().prevDisabled);
-        clamped = canPrev ? Math.min(dx, 120) : Math.min(dx * 0.25, 40);
-        if (canPrev && clamped >= SWIPE_THRESHOLD_PX) {
+        clamped = Math.min(dx, 120);
+        if (clamped >= SWIPE_THRESHOLD_PX) {
           newReady = "right";
-        } else if (canPrev && lastReady === "right" && clamped >= SWIPE_RESET_THRESHOLD_PX) {
+        } else if (lastReady === "right" && clamped >= SWIPE_RESET_THRESHOLD_PX) {
           newReady = "right";
-        } else if (!canPrev && clamped >= 35) {
-          newReady = "none";
-          if (boundaryVibrated !== "right") {
-            triggerHaptic("snap");
-            boundaryVibrated = "right";
-          }
         } else {
           newReady = "none";
-          if (clamped < 20) boundaryVibrated = "none";
         }
       } else if (dx < 0) {
         const canNext = Boolean(nextChapter() && !s.chapterNav().nextDisabled);

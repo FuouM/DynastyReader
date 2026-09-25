@@ -96,6 +96,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
     series: ch.series || "",
     tags: rawTags,
   });
+  const containerTag = getChapterContainerTag(rawTags);
 
   const blMode = () => getBlacklistMode();
 
@@ -120,7 +121,6 @@ export function FeedItemRow(props: FeedItemRowProps) {
   };
 
   const openChapter = (): void => {
-    const containerTag = getChapterContainerTag(rawTags);
     navigate({
       view: "reader",
       chapterPermalink: ch.permalink,
@@ -274,7 +274,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
                 onClick={(ev) => {
                   ev.stopPropagation();
                   guardedOpen(ch.series!, () =>
-                    openSeries(coverInfo.seriesPermalink || ch.series!, ch.series!),
+                    openSeries(coverInfo.seriesPermalink || containerTag?.permalink || (ch.series ? slugify(ch.series) : ch.permalink), ch.series!),
                   );
                 }}
               >

@@ -13,7 +13,6 @@ import { SeriesSchema, ChapterSchema, type ValidatedChapter } from "./schemas";
 import { coverPathsForChapter, coverPathsForSeries, fetchAndCacheCover } from "./cover-pipeline";
 const SERIES_PRIMARY_TIMEOUT_MS = 15_000;
 const SERIES_FALLBACK_TIMEOUT_MS = 5_000;
-const SERIES_TTL_MS = 10 * 60 * 1000; // 10 minutes cache freshness
 
 /** Ordered candidate JSON endpoints for a series-style permalink. */
 export function seriesEndpoints(permalink: string, preferredType?: string): string[] {
@@ -123,62 +122,12 @@ export async function fetchSeries(
   }
   const key = seriesKey(permalink);
   const cached = await getCached(key);
-  const isStale = !cached || Date.now() - cached.cached_at >= SERIES_TTL_MS;
-
-  // Fast path: fresh cache
-  if (!force && cached && !isStale) {
-    try {
-      const parsed = SeriesSchema.parse(JSON.parse(cached.json_payload));
-      recordCacheHit(cached.json_payload.length);
-      return parsed;
-    } catch (parseErr) {
-      log.warn("api/series", `cached JSON parse failed for series "${permalink}":`, parseErr);
-    }
-  }
-
-  // Stale cache: return cached immediately for 0ms latency, but revalidate in background
-  if (!force && cached) {
-    let parsed: Series | null = null;
-    try {
-      parsed = SeriesSchema.parse(JSON.parse(cached.json_payload));
-    } catch (parseErr) {
-      log.warn("api/series", `stale cached JSON parse failed for series "${permalink}":`, parseErr);
-    }
-    if (parsed) {
-      recordCacheHit(cached.json_payload.length);
-      void (async () => {
-        try {
-          const headers: Record<string, string> = {};
-          if (cached.etag) headers["If-None-Match"] = cached.etag;
-          const endpoints = seriesEndpoints(permalink, preferredType);
-          for (let i = 0; i < endpoints.length; i++) {
-            const url = endpoints[i];
-            const timeoutMs = i === 0 ? SERIES_PRIMARY_TIMEOUT_MS : SERIES_FALLBACK_TIMEOUT_MS;
-            const { status, body, etag } = await httpGetText(url, { headers, timeoutMs });
-            if (status === 304) {
-              await touchCached(key);
-              break;
-            }
-            if (status === 200 && body) {
-              await setCached(key, "series", body, etag);
-              break;
-            }
-          }
-        } catch (err) {
-          log.warn("api/series", "background series revalidation failed:", err);
-        }
-      })();
-      return parsed;
-    }
-  }
-
-  // Network fetch (forced or cache miss)
-  let lastErr: Error | null = null;
   const headers: Record<string, string> = {};
   if (cached?.etag && !force) {
     headers["If-None-Match"] = cached.etag;
   }
 
+  let lastErr: Error | null = null;
   const endpoints = seriesEndpoints(permalink, preferredType);
   for (let i = 0; i < endpoints.length; i++) {
     const url = endpoints[i];
@@ -187,6 +136,7 @@ export async function fetchSeries(
       const { status, body, etag } = await httpGetText(url, { headers, timeoutMs });
       if (status === 304 && cached) {
         await touchCached(key);
+        recordCacheHit(cached.json_payload.length);
         return SeriesSchema.parse(JSON.parse(cached.json_payload));
       }
       if (status === 200 && body) {
@@ -197,7 +147,6 @@ export async function fetchSeries(
       lastErr = e instanceof Error ? e : new Error(String(e));
     }
   }
-
   if (cached) {
     try {
       return SeriesSchema.parse(JSON.parse(cached.json_payload));
