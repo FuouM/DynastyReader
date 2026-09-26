@@ -141,7 +141,11 @@ interface BookmarksPaneData {
   fullyCachedSet: Set<string>;
 }
 
-export function BookmarksPane(props: LibraryPaneProps) {
+export interface BookmarksPaneProps extends LibraryPaneProps {
+  onExport?: () => void;
+}
+
+export function BookmarksPane(props: BookmarksPaneProps) {
   const { setPage, data, refetch, showSpinner } = useLibraryPaneResource<BookmarksPaneData>({
     getRevision: getBookmarksRevision,
     onChanged: onBookmarksChanged,
@@ -182,6 +186,14 @@ export function BookmarksPane(props: LibraryPaneProps) {
         >
           <div class="ds-bulk-actions-bar">
             <Show when={!selectMode()}>
+              <Show when={props.onExport}>
+                <Button
+                  icon={<Icon name="box-arrow-up" />}
+                  text={t("library.exportButton")}
+                  title={t("library.exportBookmarksTooltip")}
+                  onClick={props.onExport}
+                />
+              </Show>
               <Button text={t("library.selectModeButton")} onClick={toggleSelectMode} />
             </Show>
             <Show when={selectMode()}>
@@ -391,7 +403,11 @@ interface HistoryPaneData {
   fullyCachedSet: Set<string>;
 }
 
-export function HistoryPane(props: LibraryPaneProps) {
+export interface HistoryPaneProps extends LibraryPaneProps {
+  onClearHistory?: () => Promise<void>;
+}
+
+export function HistoryPane(props: HistoryPaneProps) {
   const { setPage, data, refetch, showSpinner } = useLibraryPaneResource<HistoryPaneData>({
     getRevision: () => getHistoryRevision() + getProgressRevision(),
     onChanged: (cb) => {
@@ -439,6 +455,14 @@ export function HistoryPane(props: LibraryPaneProps) {
         >
           <div class="ds-bulk-actions-bar">
             <Show when={!selectMode()}>
+              <Show when={props.onClearHistory}>
+                <ConfirmDeleteButton
+                  icon={<TrashIcon />}
+                  text={t("library.clearHistoryButton")}
+                  title={t("library.clearHistoryTooltip")}
+                  onConfirm={props.onClearHistory!}
+                />
+              </Show>
               <Button text={t("library.selectModeButton")} onClick={toggleSelectMode} />
             </Show>
             <Show when={selectMode()}>

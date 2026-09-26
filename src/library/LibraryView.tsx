@@ -23,7 +23,7 @@ import { errorMessage } from "../utils/formatting";
 import { createMediaQuery } from "@solid-primitives/media";
 import { clearHistory } from "../db/library.repo";
 import { createCollection } from "../db/collections.repo";
-import { Button, ConfirmDeleteButton, IconText, IconButton } from "../components/Button";
+import { Button, IconText, IconButton } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import { SubTabs } from "../components/SubTabs";
@@ -36,7 +36,6 @@ import {
   BookmarkIcon,
   FolderIcon,
   AddIcon,
-  TrashIcon,
   Icon,
 } from "../components/Icon";
 import { FollowedPane, CollectionsPane, BookmarksPane, HistoryPane } from "./LibraryPanes";
@@ -247,14 +246,20 @@ function LibraryGrid() {
         class="ds-library-tab-pane"
         classList={{ "ds-hidden": activeTab() !== "bookmarks" }}
       >
-        <BookmarksPane register={register("bookmarks")} />
+        <BookmarksPane
+          register={register("bookmarks")}
+          onExport={() => openExport("bookmarks")}
+        />
       </div>
       <div
         id="ds-library-tab-history"
         class="ds-library-tab-pane"
         classList={{ "ds-hidden": activeTab() !== "history" }}
       >
-        <HistoryPane register={register("history")} />
+        <HistoryPane
+          register={register("history")}
+          onClearHistory={clearHistoryAll}
+        />
       </div>
       <div
         id="ds-library-tab-local"
@@ -319,15 +324,16 @@ function LibraryGrid() {
                 </span>
               }
               actions={
-                <div class="ds-library-detail-actions">
-                  <LibraryTabActions
-                    activeTab={activeTab()}
-                    onOpenImport={openImport}
-                    onOpenExport={openExport}
-                    onCreateCollection={() => setCreating(true)}
-                    onClearHistory={clearHistoryAll}
-                  />
-                </div>
+                (activeTab() === "followed" || activeTab() === "collections") ? (
+                  <div class="ds-library-detail-actions">
+                    <LibraryTabActions
+                      activeTab={activeTab()}
+                      onOpenImport={openImport}
+                      onOpenExport={openExport}
+                      onCreateCollection={() => setCreating(true)}
+                    />
+                  </div>
+                ) : undefined
               }
             >
               <div class="ds-library-detail-content">
@@ -344,14 +350,15 @@ function LibraryGrid() {
           onSwitch={(id) => switchTab(id as LibraryTabId)}
           compact={isNarrowOrMobile()}
           right={
-            <LibraryTabActions
-              activeTab={activeTab()}
-              compact
-              onOpenImport={openImport}
-              onOpenExport={openExport}
-              onCreateCollection={() => setCreating(true)}
-              onClearHistory={clearHistoryAll}
-            />
+            (activeTab() === "followed" || activeTab() === "collections") ? (
+              <LibraryTabActions
+                activeTab={activeTab()}
+                compact
+                onOpenImport={openImport}
+                onOpenExport={openExport}
+                onCreateCollection={() => setCreating(true)}
+              />
+            ) : undefined
           }
         />
 
@@ -524,7 +531,6 @@ function LibraryTabActions(props: {
   onOpenImport: (target: "followed" | "collections") => void;
   onOpenExport: (target: ExportScope) => void;
   onCreateCollection: () => void;
-  onClearHistory: () => Promise<void>;
 }) {
   const btnClass = props.compact ? "ds-btn-sm" : undefined;
   return (
@@ -545,15 +551,6 @@ function LibraryTabActions(props: {
           className={btnClass}
           title={t("library.exportFollowedTooltip")}
           onClick={() => props.onOpenExport("followed")}
-        />
-      </Show>
-      <Show when={props.activeTab === "bookmarks"}>
-        <IconButton
-          icon={<Icon name="box-arrow-up" />}
-          text={t("library.exportButton")}
-          className={btnClass}
-          title={t("library.exportBookmarksTooltip")}
-          onClick={() => props.onOpenExport("bookmarks")}
         />
       </Show>
       <Show when={props.activeTab === "collections"}>
@@ -577,15 +574,6 @@ function LibraryTabActions(props: {
           className={btnClass}
           title={t("library.createCollectionTooltip")}
           onClick={props.onCreateCollection}
-        />
-      </Show>
-      <Show when={props.activeTab === "history"}>
-        <ConfirmDeleteButton
-          icon={<TrashIcon />}
-          text={t("library.clearHistoryButton")}
-          className={props.compact ? "ds-btn-compact" : undefined}
-          title={t("library.clearHistoryTooltip")}
-          onConfirm={props.onClearHistory}
         />
       </Show>
     </>
