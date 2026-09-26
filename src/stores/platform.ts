@@ -37,14 +37,18 @@ export const setUiMode = (mode: UiMode): void => {
   setUiModeSignal(mode);
 };
 
-export const isMobile: Accessor<boolean> = () => {
-  const mode = uiModeSignal();
-  if (mode === "mobile") return true;
-  if (mode === "desktop") return false;
+export const isNarrowOrTouchScreen: Accessor<boolean> = () => {
   const native = isNativeMobileDevice();
   const mq = matchesMediaQuery();
   const narrow = typeof window !== "undefined" && (window.innerWidth <= 768 || (window.innerHeight <= 550 && window.innerWidth <= 1024));
   return native || mq || narrow;
+};
+
+export const isMobile: Accessor<boolean> = () => {
+  const mode = uiModeSignal();
+  if (mode === "mobile") return true;
+  if (mode === "desktop") return false;
+  return isNarrowOrTouchScreen();
 };
 
 /** Reactive signal for whether the webview has a network connection. */
