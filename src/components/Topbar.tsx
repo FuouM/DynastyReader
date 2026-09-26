@@ -40,14 +40,14 @@ export function Topbar() {
                 id: "ds-tab-browse",
                 value: "browse",
                 icon: <Icon name="compass" />,
-                text: route().view === "reader" ? undefined : t("topbar.browse"),
+                text: t("topbar.browse"),
                 title: t("topbar.browseRecent"),
               },
               {
                 id: "ds-tab-library",
                 value: "library",
                 icon: <StorageIcon />,
-                text: route().view === "reader" ? undefined : t("topbar.library"),
+                text: t("topbar.library"),
                 title: t("topbar.library"),
               },
             ]}
@@ -98,15 +98,13 @@ export function Topbar() {
                   </Show>
                 </button>
               </Show>
-              <Show when={route().view !== "reader" && route().view !== "cache" && route().view !== "blacklist"}>
-                <IconButton
-                  className="ds-btn-icon"
-                  id="ds-page-refresh-btn"
-                  icon={<RefreshIcon />}
-                  title={t("topbar.refreshPageTooltip")}
-                  onClick={() => window.location.reload()}
-                />
-              </Show>
+              <IconButton
+                className="ds-btn-icon"
+                id="ds-page-refresh-btn"
+                icon={<RefreshIcon />}
+                title={t("topbar.refreshPageTooltip")}
+                onClick={() => window.location.reload()}
+              />
               <IconButton
                 className="ds-btn-icon"
                 id="ds-settings-btn"
