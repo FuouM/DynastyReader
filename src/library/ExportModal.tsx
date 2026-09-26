@@ -258,16 +258,14 @@ export function ExportModal(props: ExportModalProps) {
                 <div style="display: flex; gap: 6px;">
                   <button
                     type="button"
-                    class="win-button ds-btn-sm"
-                    style="font-size: 10px; padding: 1px 6px;"
+                    class="win-button ds-btn-xs"
                     onClick={selectAllCollections}
                   >
                     {t("common.selectAll") ?? "Select All"}
                   </button>
                   <button
                     type="button"
-                    class="win-button ds-btn-sm"
-                    style="font-size: 10px; padding: 1px 6px;"
+                    class="win-button ds-btn-xs"
                     onClick={deselectAllCollections}
                   >
                     {t("library.exportDeselectAll")}

@@ -57,24 +57,24 @@ export function ChapterDownloadRow(props: ChapterDownloadRowProps) {
         <Show when={isChFail()}>
           <button
             type="button"
-            class="win-button ds-download-action-btn ds-download-action-btn--icon"
+            class="win-button ds-btn-icon ds-chapter-action-btn"
             onClick={() => props.onRetry(ch().chapter_permalink)}
             disabled={props.isBusy}
             title={t("download.retryChapterTooltip")}
           >
-            <RefreshIcon size={11} />
+            <RefreshIcon size={12} />
           </button>
         </Show>
 
         <Show when={!isChDone()}>
           <button
             type="button"
-            class="win-button ds-download-action-btn ds-download-action-btn--icon"
+            class="win-button ds-btn-icon ds-chapter-action-btn"
             onClick={() => props.onCancel(ch().chapter_permalink)}
             disabled={props.isBusy}
             title={t("download.cancelChapterTooltip")}
           >
-            <CloseIcon size={11} />
+            <CloseIcon size={12} />
           </button>
         </Show>
       </div>
@@ -175,7 +175,7 @@ export function SeriesDownloadCard(props: SeriesDownloadCardProps) {
 
           <button
             type="button"
-            class="win-button ds-btn-sm ds-btn-icon"
+            class="win-button ds-btn-icon"
             onClick={props.onToggleExpand}
             title={props.isExpanded ? t("download.hideChapters") : t("download.showChapters")}
           >

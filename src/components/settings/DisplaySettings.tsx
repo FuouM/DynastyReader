@@ -247,8 +247,7 @@ export function DisplaySettings() {
                 <span class="ds-accent-hex-pill">{activeColorLabel()}</span>
                 <button
                   type="button"
-                  class="win-button ds-btn-sm"
-                  style="height: 18px; min-height: 18px; padding: 0 6px; font-size: 10px;"
+                  class="win-button ds-btn-xs"
                   onClick={() => setAccentColor("default")}
                 >
                   {t("settings.display.accentDefault")}

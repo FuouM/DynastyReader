@@ -33,14 +33,12 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
         <div class="ds-modal-footer-actions">
           <DsButton
             className="ds-modal-cancel"
-            cssText="min-width:70px;"
             onClick={props.onClose}
           >
             {t("dialogs.triggerWarning.cancelButton")}
           </DsButton>
           <IconButton
             className="ds-modal-proceed ds-danger"
-            cssText="min-width:85px;"
             icon={<ExternalLinkIcon />}
             text={t("dialogs.triggerWarning.proceedButton")}
             onClick={() => {

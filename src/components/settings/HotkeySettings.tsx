@@ -157,7 +157,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
             when={resetConfirm()}
             fallback={
               <Button
-                cssText="font-size:11px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;"
+                className="ds-btn-compact"
                 title={t("settings.hotkeys.resetAllTooltip")}
                 icon={<RefreshIcon />}
                 text={t("settings.hotkeys.resetAllButton")}
@@ -167,8 +167,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
           >
             <span class="ds-muted">{t("settings.hotkeys.resetConfirmPrompt")}</span>
             <Button
-              className="primary"
-              cssText="font-size:10px;padding:1px 6px;"
+              className="primary ds-btn-xs"
               text={t("common.yes")}
               onClick={() => {
                 resetAllHotkeys();
@@ -176,7 +175,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               }}
             />
             <Button
-              cssText="font-size:10px;padding:1px 6px;"
+              className="ds-btn-xs"
               text={t("common.no")}
               onClick={() => setResetConfirm(false)}
             />
@@ -204,13 +203,12 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               </div>
               <div class="ds-conflict-actions">
                 <Button
-                  cssText="font-size:10px;padding:2px 8px;"
+                  className="ds-btn-compact"
                   text={t("common.cancel")}
                   onClick={() => resolveConflict(false)}
                 />
                 <Button
-                  className="primary"
-                  cssText="font-size:10px;padding:2px 8px;"
+                  className="primary ds-btn-compact"
                   text={t("settings.hotkeys.reassignButton", { action: targetDef()?.label ?? "New Action" })}
                   onClick={() => resolveConflict(true)}
                 />

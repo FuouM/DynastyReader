@@ -143,7 +143,7 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
             id="ds-cache-ceiling-select"
             aria-label={t("cache.ceilingLabel")}
             value={dropdownValue()}
-            style="height:24px;min-width:110px;"
+            style="min-width:110px;"
             options={[
               ...CACHE_CEILING_PRESETS.map((p) => ({
                 value: String(p.bytes),
@@ -160,7 +160,7 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
                 id="ds-cache-ceiling-input"
                 class="input-field"
                 aria-label={t("cache.ceilingCustomInput")}
-                style="width:72px;height:24px;text-align:right;padding-right:4px;"
+                style="width:72px;text-align:right;padding-right:4px;"
                 min="0"
                 step="any"
                 placeholder="0"
@@ -170,7 +170,7 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
               <DsSelect
                 id="ds-cache-ceiling-unit"
                 value={ceilingUnit()}
-                style="height:24px;width:68px;"
+                style="width:68px;"
                 options={[
                   { value: "GB", label: "GB" },
                   { value: "MB", label: "MB" },

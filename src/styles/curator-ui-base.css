@@ -249,6 +249,16 @@ button:focus-visible {
   font-size: 11px;
   padding: 1px 6px;
 }
+.group-box-actions .ds-btn-icon,
+.group-box-actions .ds-btn-icon-sm {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  max-width: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  padding: 0;
+}
 .ds-icon-text {
   display: inline-flex;
   align-items: center;

@@ -122,9 +122,8 @@ export function SettingsModal(props: SettingsModalProps) {
                   {t("settings.hotkeys.bannerTitle")}
                 </div>
                 <IconButton
-                  className=""
                   id="ds-settings-open-hotkeys"
-                  cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
+                  className="ds-btn-compact"
                   icon={<Icon name="keyboard" />}
                   text={t("settings.openHotkeysModal")}
                   onClick={() => setCurrentPage("hotkeys")}
@@ -141,9 +140,8 @@ export function SettingsModal(props: SettingsModalProps) {
                   {t("settings.advanced.bannerTitle")}
                 </div>
                 <IconButton
-                  className=""
                   id="ds-settings-open-advanced"
-                  cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
+                  className="ds-btn-compact"
                   icon={<Icon name="sliders" />}
                   text={t("settings.advanced.openAdvancedButton")}
                   onClick={() => setCurrentPage("advanced")}
@@ -160,8 +158,7 @@ export function SettingsModal(props: SettingsModalProps) {
         <div class="ds-settings-subpage">
           <div class="ds-settings-subpage-header">
             <IconButton
-              className="ds-btn-sm"
-              cssText="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
+              className="ds-btn-compact ds-font-600"
               icon={<Icon name="arrow-left" />}
               text={t("settings.backToSettings")}
               onClick={() => setCurrentPage("main")}
@@ -180,8 +177,7 @@ export function SettingsModal(props: SettingsModalProps) {
         <div class="ds-settings-subpage">
           <div class="ds-settings-subpage-header">
             <IconButton
-              className="ds-btn-sm"
-              cssText="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
+              className="ds-btn-compact ds-font-600"
               icon={<Icon name="arrow-left" />}
               text={t("settings.backToSettings")}
               onClick={() => setCurrentPage("main")}

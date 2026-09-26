@@ -613,13 +613,19 @@
   margin-left: 5px;
   font-size: var(--font-xs);
 }
-
-.ds-chapter-cancel-btn {
-  height: 16px !important;
-  min-height: 16px !important;
-  width: 16px !important;
-  padding: 0 !important;
-  font-size: 8px !important;
+.ds-download-action-btn {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  max-width: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 /* Downloaded series fieldsets and cinema matrix */

@@ -54,7 +54,7 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
         <Show when={props.onDeleteAll && !(props.hideDeleteAll?.() ?? false)}>
           <ConfirmDeleteButton
             icon={<TrashIcon />}
-            className="ds-btn-sm ds-btn-icon"
+            className="ds-btn-icon"
             title="Clear all cached individual chapters"
             onConfirm={props.onDeleteAll!}
           />

@@ -72,7 +72,7 @@ export function BlacklistSettings(props: { onClose?: () => void }) {
           </div>
           <Button
             id="ds-settings-blacklist-add"
-            cssText="font-size:11px;padding:2px 10px;"
+            className="ds-btn-compact"
             icon={<AddIcon />}
             text={t("blacklist.addTagButton")}
             onClick={() => void addTag(blInput())}

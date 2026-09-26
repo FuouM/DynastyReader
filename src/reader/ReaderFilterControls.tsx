@@ -195,7 +195,6 @@ export function ReaderFilterPopover(props: ReaderFilterPopoverProps) {
               <div class="ds-filter-popover-actions">
                 <IconButton
                   className="ds-btn-icon"
-                  style={{ width: "20px", height: "20px" }}
                   icon={<RefreshIcon />}
                   title={t("settings.reader.filterResetTooltip")}
                   disabled={isReaderFilterDefault()}
@@ -203,7 +202,6 @@ export function ReaderFilterPopover(props: ReaderFilterPopoverProps) {
                 />
                 <IconButton
                   className="ds-btn-icon"
-                  style={{ width: "20px", height: "20px" }}
                   icon={<CloseIcon />}
                   title={t("common.close")}
                   onClick={() => props.onClose()}

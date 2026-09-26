@@ -227,7 +227,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                         />
                         <Button
                           icon={<TrashIcon />}
-                          className="ds-btn-sm"
+                          className="ds-btn-icon"
                           title={t("blacklist.removeSeriesTooltip")}
                           onClick={() => void removeSeries(item)}
                         />
@@ -301,7 +301,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                     actions={
                       <Button
                         icon={<TrashIcon />}
-                        className="ds-btn-sm"
+                        className="ds-btn-icon"
                         title={`Remove "${tag.name}" from allowlist`}
                         onClick={() => {
                           removeWhitelistedTag(tag.id);
@@ -347,8 +347,8 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
               <SearchIcon />
               <input
                 type="text"
-                class="win-input"
-                style="flex: 1; height: 26px; padding: 0 8px;"
+                class="input-field"
+                style="flex: 1;"
                 placeholder="Search MangaDex tags (e.g. Yuri, Isekai, Villainess, Mecha)..."
                 value={searchQuery()}
                 onInput={(e) => setSearchQuery(e.currentTarget.value)}

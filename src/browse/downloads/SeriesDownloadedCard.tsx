@@ -39,7 +39,6 @@ export function ShowMoreToggle(props: ShowMoreToggleProps) {
           type="button"
           class="win-button ds-btn-sm"
           onClick={props.onToggle}
-          style="font-size:11px;padding:1px 10px;"
         >
           {props.listLimit === -1
             ? t("downloaded.showFewer")
@@ -106,15 +105,14 @@ export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
         <Show when={props.onDelete && !(props.deleteDisabled?.() ?? false)}>
           <button
             type="button"
-            class="win-button ds-btn-sm ds-btn-icon"
-            style="margin-left:4px;width:18px;height:18px;min-height:18px;padding:0;"
+            class="win-button ds-btn-icon ds-chapter-action-btn"
             title={`Delete cached chapter: ${ch().chapterTitle}`}
             onClick={(e) => {
               e.stopPropagation();
               props.onDelete!(ch().chapterPermalink, ch().chapterTitle);
             }}
           >
-            <TrashIcon size={10} />
+            <TrashIcon size={12} />
           </button>
         </Show>
       </div>
@@ -297,8 +295,7 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
 
           {/* View Mode Toggle (available for all series) */}
           <button
-            type="button"
-            class="win-button ds-btn-sm ds-btn-icon"
+            class="win-button ds-btn-icon"
             onClick={() => setViewMode((m) => (m === "seats" ? "list" : "seats"))}
             title={viewMode() === "seats" ? "Switch to detailed chapter list" : "Switch to compact chapter seats matrix"}
           >
@@ -316,7 +313,7 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
           <Show when={props.onDelete && !(props.hideDelete?.() ?? false)}>
             <ConfirmDeleteButton
               icon={<TrashIcon />}
-              className="ds-btn-sm ds-btn-icon"
+              className="ds-btn-icon"
               title={`Clear cached chapters for ${props.group.seriesName || props.group.seriesPermalink}`}
               onConfirm={props.onDelete!}
             />

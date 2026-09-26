@@ -41,9 +41,8 @@ export function SourceSwitcherModal(props: SourceSwitcherModalProps) {
             const isSelected = () => activeProvider() === p.id;
             return (
               <div
-                class="win-button"
+                class="win-button ds-source-provider-card"
                 classList={{ "win-button--active": isSelected() }}
-                style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; text-align: left;"
                 onClick={() => handleSelect(p.id)}
               >
                 <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">

@@ -315,7 +315,6 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <Button
                   icon={<Icon name="compass" />}
                   text={t("bottomNav.browse")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => {
                     requestClose();
                     navigate({ view: "browse" });
@@ -324,7 +323,6 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <Button
                   icon={<StorageIcon />}
                   text={t("bottomNav.library")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => {
                     requestClose();
                     navigate({ view: "library" });
@@ -334,7 +332,6 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   <Button
                     icon={<StorageIcon />}
                     text={t("reader.toolbar.seriesButton")}
-                    cssText="height:32px;font-size:11.5px;justify-content:center;"
                     onClick={() => {
                       requestClose();
                       s.gotoSeries();
@@ -344,19 +341,16 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <Button
                   icon={s.isFullyCached() ? <CheckIcon /> : <CloudDownloadIcon />}
                   text={s.isFullyCached() ? t("reader.toolbar.cachedShort") : t("reader.toolbar.cacheShort")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => s.cacheFullChapter()}
                 />
                 <Button
                   icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
                   text={copied() ? t("common.copied") : t("reader.toolbar.copyLinkShort")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={handleCopyLink}
                 />
                 <Button
                   icon={<ExternalLinkIcon />}
                   text={t("reader.toolbar.openInBrowserShort")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => void openExternal(dynastyUrl("chapters", s.permalink))}
                 />
               </div>
@@ -365,7 +359,6 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
             <div class="ds-reader-sheet-footer">
               <Button
                 className="primary"
-                cssText="min-width:70px;"
                 text={t("settings.done")}
                 onClick={requestClose}
               />

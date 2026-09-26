@@ -467,12 +467,12 @@
 
 #ds-root[data-mobile] #ds-browse-check-updates-btn {
   padding: 0 !important;
-  width: 32px !important;
-  min-width: 32px !important;
-  max-width: 32px !important;
-  height: 32px !important;
-  min-height: 32px !important;
-  max-height: 32px !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
   font-size: 13px;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1547,11 +1547,31 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   padding: 0 10px !important;
 }
 
-[data-mobile] .ds-settings-scale-controls .win-button {
+[data-mobile] .ds-settings-scale-controls .ds-btn-icon {
   width: 36px !important;
   height: 36px !important;
   min-width: 36px !important;
   min-height: 36px !important;
+}
+[data-mobile] #ds-settings-scale-reset {
+  width: auto !important;
+  min-width: 48px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 8px !important;
+  font-size: 12px !important;
+}
+[data-mobile] .ds-prefetch-row .ds-btn-icon {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+}
+[data-mobile] .ds-prefetch-row .win-button:not(.ds-btn-icon) {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 8px !important;
+  font-size: 12px !important;
 }
 
 [data-mobile] .ds-settings-row-control .ds-switch {
@@ -1803,5 +1823,112 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   padding: 5px 8px !important;
   gap: 0 !important;
   font-size: var(--font-md) !important;
+}
+
+/* Mobile GroupBox actions and Download Actions sizing */
+#ds-root[data-mobile] .group-box-actions .win-button {
+  height: 28px !important;
+  min-height: 28px !important;
+  font-size: 12px !important;
+  padding: 0 8px !important;
+}
+#ds-root[data-mobile] .group-box-actions .ds-btn-icon {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  padding: 0 !important;
+}
+#ds-root[data-mobile] .ds-download-series-actions .win-button {
+  height: 32px !important;
+  min-height: 32px !important;
+  font-size: 12px !important;
+  padding: 0 10px !important;
+}
+#ds-root[data-mobile] .ds-download-series-actions .ds-btn-icon {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  padding: 0 !important;
+}
+
+/* Mobile Bulk Actions bar */
+#ds-root[data-mobile] .ds-bulk-actions-bar .win-button {
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  font-size: 12px !important;
+  padding: 0 10px !important;
+}
+
+/* Mobile Chapter Seat Matrix */
+#ds-root[data-mobile] .ds-chapter-matrix {
+  gap: 4px !important;
+  padding: 4px 0 !important;
+}
+#ds-root[data-mobile] .ds-chapter-seat {
+  min-width: 32px !important;
+  height: 30px !important;
+  font-size: 12px !important;
+  padding: 0 6px !important;
+}
+#ds-root[data-mobile] .ds-downloaded-series-group .ds-btn-sm:not(.ds-chapter-seat) {
+  min-height: 28px !important;
+  font-size: 12px !important;
+  padding: 2px 8px !important;
+}
+
+/* Mobile Typeahead suggestions & Input Clear Button */
+#ds-root[data-mobile] .ds-typeahead-item {
+  min-height: 36px !important;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+}
+#ds-root[data-mobile] .input-clear-btn {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  max-width: 22px !important;
+  font-size: 12px !important;
+  right: 4px !important;
+  position: absolute !important;
+}
+#ds-root[data-mobile] .input-clear-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
+}
+
+/* Mobile Search & Go input & buttons */
+#ds-root[data-mobile] #ds-search-btn,
+#ds-root[data-mobile] #ds-url-paste-btn,
+#ds-root[data-mobile] #ds-url-btn {
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  font-size: 12px !important;
+}
+#ds-root[data-mobile] #ds-url-paste-btn,
+#ds-root[data-mobile] #ds-url-btn {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 0 8px !important;
+  flex: 0 0 auto !important;
+}
+#ds-root[data-mobile] #ds-url-input,
+#ds-root[data-mobile] #ds-pane-browse .ds-search-wrap .input-field {
+  height: 28px !important;
+  line-height: 28px !important;
 }
 }
