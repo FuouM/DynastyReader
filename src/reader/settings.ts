@@ -17,15 +17,21 @@ export type MobileLandscapeReaderModeSetting = "default" | "scroll" | "paged";
 export type MobileLandscapePagedLayoutSetting = "default" | "single" | "spread";
 export type MobileLandscapeFitModeSetting = "default" | "height";
 const boolDeserialize = (v: string) => v === "true" || v === "1";
+// Read pre-fetch (while reading)
+const [isReaderPrefetchEnabled, setReaderPrefetch] = persistedSignal(true, {
+  name: "ds-reader-prefetch-enabled",
+  serialize: String,
+  deserialize: boolDeserialize,
+});
+export { isReaderPrefetchEnabled, setReaderPrefetch as setReaderPrefetchEnabled };
 
-// Auto-cache chapter
+// Auto-cache chapter (background full chapter download)
 const [isAutoCacheChapterEnabled, setAutoCache] = persistedSignal(true, {
   name: "ds-auto-cache-chapter",
   serialize: String,
   deserialize: boolDeserialize,
 });
 export { isAutoCacheChapterEnabled, setAutoCache as setAutoCacheChapterEnabled };
-
 // Prefetch buffer
 const [getPrefetchBuffer, _setPrefetch] = persistedSignal(isMobile() ? 3 : 5, {
   name: "ds-reader-prefetch",

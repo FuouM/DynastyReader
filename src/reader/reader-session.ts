@@ -26,7 +26,7 @@ import { anchorPageOf, spreadIndexOf } from "./reader-spread";
 import { ReaderQueue, type ReaderQueueHost, type SlotStateKind } from "./reader-queue";
 import {
   getPrefetchBuffer,
-  isAutoCacheChapterEnabled,
+  isReaderPrefetchEnabled,
   setCoverOffsetDefaultEnabled,
   setDefaultFitMode,
   setDefaultPagedLayout,
@@ -415,30 +415,31 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     const pageCount = this.pages().length;
     if (pageCount === 0) return;
     let anyEnqueued = false;
-    // 1. Current page: highest priority
+    // 1. Current page: highest priority (always loaded)
     if (this.getCachedPath(index) === undefined) {
       this.enqueue(index, true);
       anyEnqueued = true;
     }
-    // 2. Next 3 pages: priority
-    for (let offset = 1; offset <= 3; offset++) {
-      const nextIdx = index + offset;
-      if (nextIdx < pageCount && this.getCachedPath(nextIdx) === undefined) {
-        this.enqueue(nextIdx, true);
-        anyEnqueued = true;
+    // 2. Prefetch upcoming pages ahead if Read Pre-Fetch is enabled
+    if (isReaderPrefetchEnabled()) {
+      const prefetchCount = Math.max(1, getPrefetchBuffer());
+      const priorityCount = Math.min(prefetchCount, 2);
+      for (let offset = 1; offset <= priorityCount; offset++) {
+        const nextIdx = index + offset;
+        if (nextIdx < pageCount && this.getCachedPath(nextIdx) === undefined) {
+          this.enqueue(nextIdx, true);
+          anyEnqueued = true;
+        }
       }
-    }
-    // 3. Preceding page (backwards scrolling / flip back): priority
-    if (index > 0 && this.getCachedPath(index - 1) === undefined) {
-      this.enqueue(index - 1, true);
-      anyEnqueued = true;
-    }
-    // 4. Prefetch lookahead: standard priority
-    const prefetchCount = Math.max(getPrefetchBuffer(), 6);
-    for (let offset = 4; offset <= prefetchCount; offset++) {
-      const nextIdx = index + offset;
-      if (nextIdx < pageCount && this.getCachedPath(nextIdx) === undefined) {
-        this.enqueue(nextIdx, false);
+      for (let offset = priorityCount + 1; offset <= prefetchCount; offset++) {
+        const nextIdx = index + offset;
+        if (nextIdx < pageCount && this.getCachedPath(nextIdx) === undefined) {
+          this.enqueue(nextIdx, false);
+          anyEnqueued = true;
+        }
+      }
+      if (index > 0 && this.getCachedPath(index - 1) === undefined) {
+        this.enqueue(index - 1, true);
         anyEnqueued = true;
       }
     }
@@ -447,19 +448,14 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     }
   }
 
-  /** Enqueues spreads near the current position, respecting auto-cache / prefetch buffer. */
+  /** Enqueues spreads near the current position, respecting read prefetch settings. */
   private enqueueSpreadNeighborhood(): void {
     if (this.spreads().length === 0) return;
     const cur = spreadIndexOf(this.spreads(), this.currentIndex());
-    let end: number;
-    if (isAutoCacheChapterEnabled()) {
-      end = Math.min(this.spreads().length - 1, cur + 2);
-    } else {
-      const prefetchCount = getPrefetchBuffer();
-      const spreadsAhead = Math.ceil(prefetchCount / 2);
-      end = Math.min(this.spreads().length - 1, cur + spreadsAhead);
-    }
-
+    const prefetchEnabled = isReaderPrefetchEnabled();
+    const prefetchCount = prefetchEnabled ? Math.max(1, getPrefetchBuffer()) : 0;
+    const spreadsAhead = Math.ceil(prefetchCount / 2);
+    const end = Math.min(this.spreads().length - 1, cur + spreadsAhead);
     // 1. Enqueue active spread pages with top priority
     const active = this.spreads()[cur];
     if (active) {
@@ -470,6 +466,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       }
     }
 
+    if (!prefetchEnabled) return;
     // 2. Enqueue immediate next spread with priority so next page turn is instant
     if (cur + 1 < this.spreads().length) {
       const next = this.spreads()[cur + 1];

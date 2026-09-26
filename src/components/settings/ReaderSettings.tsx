@@ -1,5 +1,8 @@
+import { Show } from "solid-js";
 import { usePersistedSetting } from "../../lib/persisted-helpers";
 import {
+  isReaderPrefetchEnabled,
+  setReaderPrefetchEnabled,
   isAutoCacheChapterEnabled,
   setAutoCacheChapterEnabled,
   getPrefetchBuffer,
@@ -48,6 +51,7 @@ import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
 import { GroupBox } from "../GroupBox";
 
 export function ReaderSettings() {
+  const [readPrefetchEnabled, setReadPrefetchEnabled] = usePersistedSetting(isReaderPrefetchEnabled, setReaderPrefetchEnabled);
   const [autoCacheEnabled, setAutoCacheEnabled] = usePersistedSetting(isAutoCacheChapterEnabled, setAutoCacheChapterEnabled);
   const [prefetchBuffer, setPrefetchBufferLocal] = usePersistedSetting(getPrefetchBuffer, setPrefetchBuffer);
   const [navPosition, setNavPosition] = usePersistedSetting(getReaderNavPosition, setReaderNavPosition);
@@ -258,6 +262,42 @@ export function ReaderSettings() {
           />
         </SettingsRow>
 
+        {/* Read Pre-Fetch Toggle */}
+        <SettingsToggleRow
+          divider
+          label={<>{t("settings.reader.readPrefetch")}:</>}
+          desc={t("settings.reader.readPrefetchDesc")}
+          id="ds-settings-read-prefetch-toggle"
+          checked={readPrefetchEnabled()}
+          title={readPrefetchEnabled() ? t("settings.reader.readPrefetchTooltipOn") : t("settings.reader.readPrefetchTooltipOff")}
+          onChange={setReadPrefetchEnabled}
+        />
+
+        {/* Page Prefetch Buffer */}
+        <Show when={readPrefetchEnabled()}>
+          <SettingsRow divider label={<>{t("settings.reader.prefetchBuffer")}:</>} desc={t("settings.reader.prefetchBufferDesc")}>
+            <div class="ds-prefetch-row">
+              <IconButton
+                className="ds-btn-icon"
+                id="ds-settings-prefetch-dec"
+                icon={<Icon name="dash-lg" />}
+                title="−"
+                onClick={() => setPrefetchBufferLocal(Math.max(1, prefetchBuffer() - 1))}
+              />
+              <span id="ds-settings-prefetch-val" class="ds-prefetch-val">
+                {prefetchBuffer() === 1 ? t("settings.reader.prefetchBufferPage", { count: prefetchBuffer() }) : t("settings.reader.prefetchBufferPages", { count: prefetchBuffer() })}
+              </span>
+              <IconButton
+                className="ds-btn-icon"
+                id="ds-settings-prefetch-inc"
+                icon={<Icon name="plus-lg" />}
+                title="+"
+                onClick={() => setPrefetchBufferLocal(Math.min(10, prefetchBuffer() + 1))}
+              />
+            </div>
+          </SettingsRow>
+        </Show>
+
         {/* Auto Cache Entire Chapter */}
         <SettingsToggleRow
           divider
@@ -268,29 +308,6 @@ export function ReaderSettings() {
           title={autoCacheEnabled() ? t("settings.reader.autoCacheTooltipOn") : t("settings.reader.autoCacheTooltipOff")}
           onChange={setAutoCacheEnabled}
         />
-
-        {/* Page Prefetch Buffer */}
-        <SettingsRow divider label={<>{t("settings.reader.prefetchBuffer")}:</>} desc={t("settings.reader.prefetchBufferDesc")}>
-          <div class="ds-prefetch-row">
-            <IconButton
-              className="ds-btn-icon"
-              id="ds-settings-prefetch-dec"
-              icon={<Icon name="dash-lg" />}
-              title="−"
-              onClick={() => setPrefetchBufferLocal(Math.max(0, prefetchBuffer() - 1))}
-            />
-            <span id="ds-settings-prefetch-val" class="ds-prefetch-val">
-              {prefetchBuffer() === 0 ? t("settings.reader.prefetchBufferOff") : prefetchBuffer() === 1 ? t("settings.reader.prefetchBufferPage", { count: prefetchBuffer() }) : t("settings.reader.prefetchBufferPages", { count: prefetchBuffer() })}
-            </span>
-            <IconButton
-              className="ds-btn-icon"
-              id="ds-settings-prefetch-inc"
-              icon={<Icon name="plus-lg" />}
-              title="+"
-              onClick={() => setPrefetchBufferLocal(Math.min(10, prefetchBuffer() + 1))}
-            />
-          </div>
-        </SettingsRow>
 
         {/* Navigation Bar Position */}
         <SettingsRow divider label={<>{t("settings.reader.navPosition")}:</>} desc={t("settings.reader.navPositionDesc")}>

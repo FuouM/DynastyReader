@@ -12,7 +12,7 @@ import type { ReaderSession } from "./reader-session";
 import { useReader } from "./reader-context";
 import { convertFileSrc } from "../ipc";
 import { spreadIndexOf } from "./reader-spread";
-import { getPrefetchBuffer } from "./settings";
+import { getPrefetchBuffer, isReaderPrefetchEnabled } from "./settings";
 import { useReaderGestures } from "./useReaderGestures";
 import {
   ReaderOverscrollOverlay,
@@ -31,17 +31,20 @@ export function ReaderViewport(props: { session?: ReaderSession; children?: JSX.
     const observer = new IntersectionObserver(
       (entries) => {
         if (s.isHorizontal()) return;
-        const prefetchCount = Math.max(getPrefetchBuffer(), 4);
+        const prefetchEnabled = isReaderPrefetchEnabled();
+        const prefetchCount = prefetchEnabled ? Math.max(getPrefetchBuffer(), 2) : 0;
         for (const entry of entries) {
           if (entry.isIntersecting) {
             const idx = Number((entry.target as HTMLElement).dataset.index);
             if (s.getCachedPath(idx) === undefined) {
               s.enqueue(idx, true);
             }
-            for (let offset = 1; offset <= prefetchCount; offset++) {
-              const nextIdx = idx + offset;
-              if (nextIdx < s.pages().length && s.getCachedPath(nextIdx) === undefined) {
-                s.enqueue(nextIdx, offset <= 2);
+            if (prefetchEnabled) {
+              for (let offset = 1; offset <= prefetchCount; offset++) {
+                const nextIdx = idx + offset;
+                if (nextIdx < s.pages().length && s.getCachedPath(nextIdx) === undefined) {
+                  s.enqueue(nextIdx, offset <= 1);
+                }
               }
             }
           }
@@ -58,6 +61,7 @@ export function ReaderViewport(props: { session?: ReaderSession; children?: JSX.
 
   // Warm upcoming cached images across page turns & scrolling
   createEffect(() => {
+    if (!isReaderPrefetchEnabled()) return;
     const cur = s.currentIndex();
     const isSpread = s.isSpread();
     const spreads = s.spreads();
