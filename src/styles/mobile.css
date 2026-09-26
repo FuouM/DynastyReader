@@ -638,16 +638,20 @@
 }
 #ds-root[data-mobile] #ds-library-container {
   padding-top: 0;
+  gap: 4px;
 }
 
 #ds-root[data-mobile] #ds-library-container .ds-subtabs-right {
   justify-content: flex-end;
 }
 
+#ds-root[data-mobile] .ds-library-tab-content {
+  margin-top: 0;
+}
+
 #ds-root[data-mobile] .ds-library-tab-pane {
   padding: 0;
 }
-
 #ds-root[data-mobile] #ds-banner,
 #ds-banner.ds-banner--mobile,
 body:has(#ds-root[data-mobile]) #ds-banner {
