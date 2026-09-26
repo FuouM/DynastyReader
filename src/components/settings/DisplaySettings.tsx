@@ -296,6 +296,7 @@ export function DisplaySettings() {
           label={t("settings.display.uiMode")}
           desc={t("settings.display.uiModeDesc")}
           divider
+          stacked
         >
           <SegmentedSwitch
             id="ds-settings-uimode-switch"

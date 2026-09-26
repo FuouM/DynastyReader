@@ -187,6 +187,9 @@ body {
 .ds-segmented-btn:hover {
   background: var(--sys-button-hover, #e5f1fb);
 }
+.ds-segmented-btn:active:not(:disabled) {
+  background: var(--sys-button-active, #cce4f7);
+}
 .ds-segmented-btn.active {
   background: var(--sys-highlight-bg, #0078d7);
   color: var(--sys-highlight-text) !important;
@@ -1214,6 +1217,7 @@ code,
   flex: 1;
   min-width: 0;
   overflow-y: scroll;
+  overflow-x: hidden;
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -1277,6 +1281,8 @@ code,
   align-items: center;
   gap: 4px;
   min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .ds-settings-row-control .ds-segmented-switch {
   height: 24px;

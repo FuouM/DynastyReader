@@ -21,7 +21,7 @@ import { t } from "../i18n";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { CloseIcon } from "./Icon";
 import { IconButton } from "./Button";
-import { isMobile } from "../stores/platform";
+import { isMobile, isNarrowOrTouchScreen } from "../stores/platform";
 export interface ModalProps {
   /** Controls whether the modal is rendered. */
   open: boolean;
@@ -119,7 +119,7 @@ export function Modal(props: ModalProps) {
           ref={backdropEl}
           class="ds-modal-backdrop"
           id={props.backdropId}
-          data-mobile={isMobile() ? "1" : undefined}
+          data-mobile={isMobile() || isNarrowOrTouchScreen() ? "1" : undefined}
           onClick={(ev) => {
             if (ev.target === backdropEl) close();
           }}
@@ -127,7 +127,7 @@ export function Modal(props: ModalProps) {
           <div
             ref={windowEl}
             class="ds-modal-window"
-            data-mobile={isMobile() ? "1" : undefined}
+            data-mobile={isMobile() || isNarrowOrTouchScreen() ? "1" : undefined}
             role="dialog"
             aria-modal="true"
             aria-labelledby={props.title !== undefined ? titleId : undefined}
