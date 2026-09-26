@@ -162,6 +162,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
           <span>{state()?.message}</span>
           <DsButton
             className="ds-btn-xs"
+            aria-label={`${t("common.retry")} (Page ${props.index + 1})`}
             onClick={() => s.retrySlot(props.index)}
           >
             {t("common.retry")}

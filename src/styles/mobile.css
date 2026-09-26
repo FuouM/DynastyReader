@@ -103,8 +103,11 @@
 }
 #ds-root[data-mobile] #ds-nav-history {
   display: inline-flex;
-  align-items: stretch;
+  align-items: center;
   height: 24px;
+  border: none !important;
+  background: transparent !important;
+  gap: 2px;
 }
 
 #ds-root[data-mobile] #ds-view-switch,
@@ -121,6 +124,9 @@
   min-width: 24px !important;
   max-width: 24px !important;
   aspect-ratio: 1 / 1 !important;
+  border: 1px solid var(--sys-button-border, #707070) !important;
+  border-radius: var(--radius-sm, 2px) !important;
+  background: var(--sys-button-face, #e1e1e1) !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -129,6 +135,22 @@
   font-size: 13px !important;
   touch-action: none;
   -webkit-touch-callout: none;
+  position: relative;
+}
+#ds-root[data-mobile] #ds-topbar .win-button,
+#ds-root[data-mobile] #ds-nav-history .ds-segmented-btn {
+  position: relative;
+}
+#ds-root[data-mobile] #ds-topbar .win-button::after,
+#ds-root[data-mobile] #ds-nav-history .ds-segmented-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
 }
 
 #ds-root[data-mobile] #ds-title {
@@ -386,9 +408,9 @@
 #ds-root[data-mobile] .ds-subtab {
   flex: 0 0 auto;
   white-space: nowrap;
-  height: 24px;
-  min-height: 24px;
-  font-size: 11px;
+  height: 32px;
+  min-height: 32px;
+  font-size: 12px;
   padding: 0 8px;
   display: inline-flex;
   align-items: center;
@@ -422,7 +444,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  max-height: 24px;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
   padding: 0 6px;
   font-size: 11px;
   flex-shrink: 0;
@@ -434,18 +458,29 @@
 
 #ds-root[data-mobile] #ds-browse-check-updates-btn {
   padding: 0 !important;
-  width: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
-  height: 24px !important;
-  min-height: 24px !important;
-  max-height: 24px !important;
-  font-size: 11px;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  font-size: 13px;
   white-space: nowrap;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+#ds-root[data-mobile] #ds-browse-check-updates-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
 }
 #ds-root[data-mobile] #ds-browse-top-pager {
   display: flex;
@@ -472,10 +507,10 @@
 }
 #ds-root[data-mobile] .ds-pager-input {
   width: 44px !important;
-  height: 24px !important;
-  min-height: 24px !important;
-  max-height: 24px !important;
-  font-size: 11px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  font-size: 12px !important;
   padding: 1px 2px !important;
   text-align: center;
   box-sizing: border-box;
@@ -487,29 +522,51 @@
 }
 
 #ds-root[data-mobile] .ds-pager-widget .ds-btn-icon {
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
-  min-height: 24px !important;
-  max-height: 24px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
   aspect-ratio: 1 / 1;
   padding: 0 !important;
+  position: relative;
+}
+#ds-root[data-mobile] .ds-pager-widget .ds-btn-icon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
 }
 
 #ds-root[data-mobile] .ds-pager-widget .ds-pager-go-btn {
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  max-width: 24px !important;
-  min-height: 24px !important;
-  max-height: 24px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
   aspect-ratio: 1 / 1 !important;
   padding: 0 !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  position: relative;
+}
+#ds-root[data-mobile] .ds-pager-widget .ds-pager-go-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
 }
 
 #ds-root[data-mobile] .tag-pill {
@@ -636,14 +693,84 @@
   justify-self: center;
   padding: 0;
 }
+
+#ds-root[data-mobile] .ds-series-resume-btn {
+  width: 100%;
+  min-height: 38px;
+  justify-content: center;
+  font-size: 13px;
+  padding: 8px 14px;
+  box-sizing: border-box;
+}
+
+#ds-root[data-mobile] .ds-chapter-action-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  font-size: 14px !important;
+  opacity: 1 !important;
+}
+
+#ds-root[data-mobile] .ds-chapter-list-header .win-button {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
 #ds-root[data-mobile] #ds-library-container {
   padding-top: 0;
 }
 
+#ds-root[data-mobile] #ds-library-container .ds-subtabs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+#ds-root[data-mobile] #ds-library-container .ds-subtabs-left {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+
 #ds-root[data-mobile] #ds-library-container .ds-subtabs-right {
+  flex: 0 0 auto;
+  width: auto;
   justify-content: flex-end;
 }
 
+#ds-root[data-mobile] #ds-library-container .ds-subtabs-right .win-button {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#ds-root[data-mobile] .ds-chapter-end-primary-btn {
+  min-height: 40px;
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+#ds-root[data-mobile] .ds-chapter-end-actions button {
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+#ds-root[data-mobile] .ds-slot-error .win-button {
+  min-height: 36px;
+  min-width: 80px;
+  padding: 6px 16px;
+  font-size: 13px;
+}
 #ds-root[data-mobile] .ds-library-tab-pane {
   padding: 0;
 }
@@ -690,6 +817,21 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   background: var(--ds-reader-bg, var(--sys-window-bg, #f5f5f5)) !important;
   border-top: 1px solid var(--sys-border-light, #ccc) !important;
   color: var(--sys-window-text, #000000);
+}
+#ds-root[data-mobile] .ds-reader-nav-top .win-button,
+#ds-root[data-mobile] .ds-reader-mobile-bottom-row .win-button {
+  position: relative;
+}
+#ds-root[data-mobile] .ds-reader-nav-top .win-button::after,
+#ds-root[data-mobile] .ds-reader-mobile-bottom-row .win-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
 }
 
 #ds-root[data-mobile] .ds-reader-nav.ds-toolbar-hidden {
@@ -977,8 +1119,8 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 .ds-reader-sheet-window .ds-segmented-switch {
   width: 100%;
   display: flex;
-  height: 24px !important;
-  min-height: 24px !important;
+  height: 36px !important;
+  min-height: 36px !important;
   box-sizing: border-box;
 }
 
@@ -986,9 +1128,9 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   flex: 1 1 0;
   min-width: 0;
   height: 100% !important;
-  min-height: 100% !important;
-  font-size: 11px !important;
-  padding: 0 6px !important;
+  min-height: 34px !important;
+  font-size: 13px !important;
+  padding: 0 8px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1007,7 +1149,34 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   display: inline-flex;
   align-items: center;
   line-height: 1;
-  font-size: 13px;
+  font-size: 14px;
+}
+
+.ds-reader-sheet-window .ds-filter-slider {
+  min-height: 36px;
+}
+
+.ds-reader-sheet-window .ds-filter-slider input[type="range"] {
+  height: 28px;
+}
+
+.ds-reader-sheet-window .ds-filter-slider input[type="range"]::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+}
+
+.ds-reader-sheet-window .ds-filter-reset-row .win-button {
+  min-height: 32px;
+  font-size: 12px;
+}
+
+.ds-reader-sheet-window .ds-switch {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  padding: 10px 4px;
+  margin: -10px -4px;
 }
 
 .ds-reader-sheet-footer {
@@ -1016,6 +1185,14 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   display: flex;
   justify-content: flex-end;
   flex-shrink: 0;
+}
+
+.ds-reader-sheet-footer .win-button {
+  min-height: 36px !important;
+  min-width: 90px !important;
+  padding: 0 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
 }
 
 @keyframes ds-modal-fade {
@@ -1123,11 +1300,12 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   gap: 4px !important;
 }
 [data-mobile] #ds-settings-modal-backdrop .ds-modal-close {
-  min-width: 24px !important;
-  width: 24px !important;
-  height: 24px !important;
+  min-width: 32px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
   padding: 0 !important;
-  font-size: 12px !important;
+  font-size: 14px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1160,11 +1338,12 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 }
 
 [data-mobile] #ds-settings-modal-backdrop #ds-settings-done-btn {
-  min-width: 80px !important;
-  height: 24px !important;
-  min-height: 24px !important;
-  font-size: 12px !important;
+  min-width: 90px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
+  padding: 0 16px !important;
 }
 [data-mobile] .ds-settings-layout {
   display: flex !important;
@@ -1292,13 +1471,92 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   justify-content: flex-end !important;
 }
 [data-mobile] #ds-settings-sec-storage .ds-settings-row-control .win-button {
-  width: 155px !important;
+  width: auto !important;
   min-width: 155px !important;
   justify-content: flex-start !important;
-  padding: 0 8px !important;
-  height: 24px !important;
-  min-height: 24px !important;
+  padding: 0 10px !important;
+  height: 32px !important;
+  min-height: 32px !important;
   box-sizing: border-box !important;
+}
+
+/* Settings interactive touch adaptations (MOB-B) */
+[data-mobile] .ds-winforms-color-cell {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  position: relative;
+}
+[data-mobile] .ds-winforms-color-cell::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
+}
+
+[data-mobile] .group-box-collapse-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  font-size: 13px !important;
+  position: relative;
+}
+[data-mobile] .group-box-collapse-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
+}
+
+[data-mobile] .ds-settings-content select,
+[data-mobile] .ds-settings-content .ds-select {
+  height: 36px !important;
+  min-height: 36px !important;
+  font-size: 14px !important;
+  padding: 4px 8px !important;
+}
+
+[data-mobile] .ds-settings-row-control .ds-segmented-switch {
+  height: 36px !important;
+  min-height: 36px !important;
+}
+[data-mobile] .ds-settings-row-control .ds-segmented-switch .ds-segmented-btn {
+  height: 100% !important;
+  min-height: 34px !important;
+  font-size: 13px !important;
+  padding: 0 10px !important;
+}
+
+[data-mobile] .ds-settings-scale-controls .win-button {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+}
+
+[data-mobile] .ds-settings-row-control .ds-switch {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  padding: 10px 4px;
+  margin: -10px -4px;
+}
+
+[data-mobile] .ds-settings-content .win-button:not(.ds-segmented-btn):not(.ds-modal-close):not(#ds-settings-done-btn) {
+  min-height: 32px;
+  font-size: 12px;
+  padding: 4px 10px;
 }
 
 [data-mobile] .ds-settings-row-label {
