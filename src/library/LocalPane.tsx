@@ -324,8 +324,8 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
 
   return (
     <div class="ds-local-pane">
-      <div class="ds-local-pane-actions" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <div style="display:flex;align-items:center;gap:8px;">
+      <div class="ds-local-pane-actions" style="margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
+        <div style="display:flex;align-items:center;gap:4px;">
           <div ref={importMenuRef} style="position:relative;">
             <IconButton
               icon={<AddIcon />}

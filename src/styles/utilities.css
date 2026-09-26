@@ -725,8 +725,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: 4px;
+  margin-bottom: 0;
 }
 
 .ds-bulk-actions-bar .win-button {
