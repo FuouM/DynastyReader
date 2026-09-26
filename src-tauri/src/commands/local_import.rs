@@ -697,7 +697,10 @@ pub async fn import_folder(
 
         // Cover: explicit path wins; otherwise first page.
         let cover_out = series_dir.join("cover.webp");
-        let cover_bytes: Option<Vec<u8>> = if let Some(ref p) = meta.cover_path {
+        let cover_bytes: Option<Vec<u8>> = if let Some(p) = &meta.cover_path {
+            if !is_image(p) {
+                return Err(format!("cover path does not have an allowed image extension: {p}"));
+            }
             Some(std::fs::read(p).map_err(|e| format!("failed reading cover image: {e}"))?)
         } else {
             std::fs::read(&files[0].1).ok()
@@ -1073,7 +1076,10 @@ pub async fn update_local_series(
         // --- Optional cover replacement ---
         // Do this before touching the DB so the cover path stored is correct.
         let cover_abs = series_dir.join("cover.webp").to_string_lossy().into_owned();
-        if let Some(ref src) = meta.new_cover_path {
+        if let Some(src) = &meta.new_cover_path {
+            if !is_image(src) {
+                return Err(format!("new cover path does not have an allowed image extension: {src}"));
+            }
             let src_bytes = std::fs::read(src)
                 .map_err(|e| format!("failed reading new cover image: {e}"))?;
             let cover_out = series_dir.join("cover.webp");

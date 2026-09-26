@@ -17,7 +17,7 @@ export function getMockBridgeCode(): string {
   return `
 (() => {
   if (typeof window === "undefined") return;
-  if (window.__TAURI_MOCK_INITIALIZED__ && window.__TAURI_INTERNALS__) return;
+  if (window.__TAURI_INTERNALS__ && !window.__TAURI_IS_MOCK__) return;
 
   window.__TAURI_MOCK_INITIALIZED__ = true;
   window.__TAURI_IS_MOCK__ = true;

@@ -17,3 +17,18 @@ export const MANGADEX_RATE_LIMIT_DELAY_MS = 250; // 4 req/sec
 
 /** Default feed page limit (MangaDex max is 500) */
 export const MANGADEX_FEED_PAGE_LIMIT = 100;
+
+/** Standard MangaDex v4/v5 entity UUID pattern (8-4-4-4-12 hex). */
+export const MANGADEX_UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+/**
+ * Strips the optional `mdx:` prefix and validates that the result is a strict UUID
+ * before URL interpolation to prevent path traversal or API parameter injection.
+ */
+export function cleanMangaDexId(id: string): string {
+  const clean = id.startsWith("mdx:") ? id.slice(4) : id;
+  if (!MANGADEX_UUID_REGEX.test(clean)) {
+    throw new Error(`Invalid MangaDex entity UUID: "${id}"`);
+  }
+  return encodeURIComponent(clean);
+}

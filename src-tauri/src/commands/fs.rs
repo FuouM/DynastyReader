@@ -139,6 +139,9 @@ pub async fn file_delete_batch(paths: Vec<String>) -> Result<usize, String> {
         let mut deleted = 0;
         for path in paths {
             if let Ok(target) = crate::paths::resolve_in_root(&path) {
+                if crate::paths::is_protected_path(&target).unwrap_or(true) {
+                    continue;
+                }
                 if target.is_file() && std::fs::remove_file(&target).is_ok() {
                     deleted += 1;
                 }
@@ -165,11 +168,11 @@ fn file_move_blocking(src: String, dst: String) -> Result<serde_json::Value, Str
     }
     let src_target = crate::paths::resolve_in_root(&src)?;
     let dst_target = crate::paths::resolve_in_root(&dst)?;
-    if crate::paths::is_root_dir(&src_target)? {
-        return Err("cannot move root data directory".to_string());
+    if crate::paths::is_protected_path(&src_target)? {
+        return Err("cannot move protected database or system directory".to_string());
     }
-    if crate::paths::is_root_dir(&dst_target)? {
-        return Err("cannot overwrite root data directory".to_string());
+    if crate::paths::is_protected_path(&dst_target)? {
+        return Err("cannot overwrite protected database or system directory".to_string());
     }
     if let Some(parent) = dst_target.parent() {
         std::fs::create_dir_all(parent)
@@ -229,8 +232,8 @@ pub async fn file_delete(path: String) -> Result<serde_json::Value, String> {
         return Err("cannot delete root data directory".to_string());
     }
     let target = crate::paths::resolve_in_root(&path)?;
-    if crate::paths::is_root_dir(&target)? {
-        return Err("cannot delete root data directory".to_string());
+    if crate::paths::is_protected_path(&target)? {
+        return Err("cannot delete protected database or system directory".to_string());
     }
     tokio::task::spawn_blocking(move || {
         if target.is_dir() {
@@ -388,5 +391,16 @@ mod tests {
         assert!(!corrupt_path.exists());
         assert!(valid_path.exists());
 
+
+        // Verify protected files (e.g. databases) cannot be deleted
+        let db_file = root.join("dynasty_reader.db");
+        std::fs::write(&db_file, b"sqlite format 3").unwrap();
+        assert!(file_delete("dynasty_reader.db".to_string()).await.is_err());
+        assert!(db_file.exists());
+
+        let del_count = file_delete_batch(vec!["dynasty_reader.db".to_string()]).await.unwrap();
+        assert_eq!(del_count, 0);
+        assert!(db_file.exists());
+        let _ = std::fs::remove_file(&db_file);
     }
 }

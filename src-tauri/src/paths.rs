@@ -114,6 +114,8 @@ pub fn canonicalize_ancestor(target: &Path) -> Result<PathBuf, String> {
             Some(parent) if parent != existing => {
                 if let Some(name) = existing.file_name() {
                     tail.push(name.to_os_string());
+                } else {
+                    return Err("invalid path component".to_string());
                 }
                 existing = parent.to_path_buf();
             }
@@ -122,7 +124,7 @@ pub fn canonicalize_ancestor(target: &Path) -> Result<PathBuf, String> {
     }
     let canonical = existing
         .canonicalize()
-        .map_err(|e| format!("failed to canonicalize {existing:?}: {e}"))?;
+        .map_err(|e| format!("failed to canonicalize path: {e}"))?;
     let mut out = canonical;
     out.extend(tail.into_iter().rev());
     Ok(out)
@@ -145,15 +147,14 @@ pub fn resolve_in_root(raw: &str) -> Result<PathBuf, String> {
     // `dev.ps1` double-slash bug (`K:\path\\.data` / `K:/path//.data`).
     let normalized_raw = raw.replace("\\\\", "\\").replace("//", "/");
     let p = Path::new(&normalized_raw);
+    if p.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+        return Err("path escapes data directory".to_string());
+    }
+    reject_unsafe_components(&normalized_raw)?;
     let target = if p.is_absolute() {
-        reject_unsafe_components(&normalized_raw)?;
         p.to_path_buf()
     } else {
         if p.has_root() {
-            return Err("path escapes data directory".to_string());
-        }
-        reject_unsafe_components(&normalized_raw)?;
-        if p.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
             return Err("path escapes data directory".to_string());
         }
         root.join(p)
@@ -182,6 +183,41 @@ pub fn is_root_dir(target: &Path) -> Result<bool, String> {
     let canonical_root = canonicalize_ancestor(&root)?;
     let canonical_target = canonicalize_ancestor(target)?;
     Ok(canonical_target == canonical_root)
+}
+
+/// Returns true if `target` is a vital database file or core directory that
+/// must never be deleted, overwritten, or moved via filesystem IPC commands.
+pub fn is_protected_path(target: &Path) -> Result<bool, String> {
+    if is_root_dir(target)? {
+        return Ok(true);
+    }
+    if let Some(file_name) = target.file_name() {
+        let name = file_name.to_string_lossy().to_ascii_lowercase();
+        if name.ends_with(".db")
+            || name.ends_with(".db-wal")
+            || name.ends_with(".db-shm")
+            || name.ends_with(".sqlite")
+            || name.ends_with(".sqlite-wal")
+            || name.ends_with(".sqlite-shm")
+        {
+            return Ok(true);
+        }
+    }
+    // Core top-level directories directly inside data_root must not be wiped wholesale
+    let root = data_root();
+    let canonical_root = canonicalize_ancestor(&root)?;
+    let canonical_target = canonicalize_ancestor(target)?;
+    if let Some(parent) = canonical_target.parent() {
+        if parent == canonical_root {
+            if let Some(name) = canonical_target.file_name() {
+                let name = name.to_string_lossy().to_ascii_lowercase();
+                if matches!(name.as_str(), "pages" | "local" | "logs") {
+                    return Ok(true);
+                }
+            }
+        }
+    }
+    Ok(false)
 }
 
 #[cfg(test)]
@@ -218,7 +254,13 @@ mod tests {
 
         let outside = std::env::temp_dir().join("dsreader-outside.txt");
         assert!(resolve_in_root(&outside.to_string_lossy()).is_err());
+        // Absolute paths with ParentDir components must be rejected
+        let abs_escape = root.join("..").join("outside.txt");
+        assert!(resolve_in_root(&abs_escape.to_string_lossy()).is_err());
+        let abs_traversal = root.join("pages").join("..").join("..").join("outside.txt");
+        assert!(resolve_in_root(&abs_traversal.to_string_lossy()).is_err());
     }
+
 
     #[test]
     fn reject_unsafe_components_directly() {
@@ -236,5 +278,23 @@ mod tests {
         assert!(is_root_dir(&root).unwrap());
         assert!(is_root_dir(&resolve_in_root("").unwrap()).unwrap());
         assert!(!is_root_dir(&resolve_in_root("pages/ch1").unwrap()).unwrap());
+    }
+
+    #[test]
+    fn test_is_protected_path() {
+        let root = temp_root("shared");
+        set_root(root.clone());
+
+        assert!(is_protected_path(&root).unwrap());
+        assert!(is_protected_path(&root.join("dynasty_reader.db")).unwrap());
+        assert!(is_protected_path(&root.join("dynasty_reader.db-wal")).unwrap());
+        assert!(is_protected_path(&root.join("mangadex.db")).unwrap());
+        assert!(is_protected_path(&root.join("pages")).unwrap());
+        assert!(is_protected_path(&root.join("local")).unwrap());
+        assert!(is_protected_path(&root.join("logs")).unwrap());
+
+        // Nested items inside directories are not protected directories themselves
+        assert!(!is_protected_path(&root.join("pages").join("ch1").join("001.webp")).unwrap());
+        assert!(!is_protected_path(&root.join("local").join("series_slug")).unwrap());
     }
 }

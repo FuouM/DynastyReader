@@ -11,6 +11,23 @@ import { openExternal } from "../api/navigation";
 
 /** Wraps a value as a JSX.Element (SolidJS requires this coercion for mixed text/element arrays). */
 const el = (v: JSX.Element): JSX.Element => v as JSX.Element;
+const DISCARDED_TAGS = new Set([
+  "script",
+  "style",
+  "noscript",
+  "template",
+  "textarea",
+  "iframe",
+  "object",
+  "embed",
+  "svg",
+  "canvas",
+  "form",
+  "input",
+  "button",
+  "select",
+]);
+
 
 function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {
   const out: JSX.Element[] = [];
@@ -21,6 +38,9 @@ function renderSanitizedNodes(nodes: Node[]): JSX.Element[] {
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const htmlEl = node as HTMLElement;
       const tag = htmlEl.tagName.toLowerCase();
+      if (DISCARDED_TAGS.has(tag)) {
+        continue;
+      }
       const kids = () => renderSanitizedNodes(Array.from(htmlEl.childNodes));
       if (tag === "p") {
         const children = kids();
