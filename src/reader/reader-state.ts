@@ -88,6 +88,8 @@ export interface ReaderState {
   setControlsOpen: (v: boolean) => void;
   cachedCount: () => number;
   setCachedCount: (v: number) => void;
+  estimatedAspectRatio: () => number;
+  setEstimatedAspectRatio: (v: number) => void;
   // Stores
   cachedPages: ReturnType<typeof createStore<Record<number, string | undefined>>>;
   slotStates: ReturnType<typeof createStore<Record<number, SlotStateRecord | undefined>>>;
@@ -143,9 +145,10 @@ export function createReaderState(): ReaderState {
   const [empty, setEmpty] = createSignal(false);
   const [bookmarked, setBookmarked] = createSignal(false);
   const [restoring, setRestoring] = createSignal(false);
-  const [cachedCount, setCachedCount] = createSignal(0);
   const [toolbarVisible, setToolbarVisible] = createSignal(true);
   const [controlsOpen, setControlsOpen] = createSignal(false);
+  const [cachedCount, setCachedCount] = createSignal(0);
+  const [estimatedAspectRatio, setEstimatedAspectRatio] = createSignal(0);
   const cachedPages = createStore<Record<number, string | undefined>>({});
   const slotStates = createStore<Record<number, SlotStateRecord | undefined>>({});
   const pageDimensions = createStore<Record<number, { width: number; height: number } | undefined>>({});
@@ -290,6 +293,8 @@ export function createReaderState(): ReaderState {
     setControlsOpen,
     cachedCount,
     setCachedCount,
+    estimatedAspectRatio,
+    setEstimatedAspectRatio,
     cachedPages,
     slotStates,
     pageDimensions,

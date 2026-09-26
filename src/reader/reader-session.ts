@@ -119,6 +119,8 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   get pageDimensions(): ReturnType<typeof createStore<Record<number, { width: number; height: number } | undefined>>> { return this.state.pageDimensions; }
   get cachedCount(): () => number { return this.state.cachedCount; }
   get setCachedCount(): (val: number) => void { return this.state.setCachedCount; }
+  get estimatedAspectRatio(): () => number { return this.state.estimatedAspectRatio; }
+  get setEstimatedAspectRatio(): (val: number) => void { return this.state.setEstimatedAspectRatio; }
   // DOM refs ----------------------------------------------------------------
   containerEl: HTMLDivElement | null = null;
   viewportEl: HTMLElement | null = null;
@@ -199,6 +201,9 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   }
 
   setCachedPath(index: number, path: string): void {
+    if (this.cachedPages[0][index] === path) {
+      return;
+    }
     this.retrying.delete(index);
     this.cachedPages[1](index, path);
     this.slotStates[1](index, undefined);
@@ -206,7 +211,19 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     if (typeof window !== "undefined") {
       const img = new Image();
       img.src = convertFileSrc(path);
-      if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      if (typeof img.decode === "function") {
+        img.decode().then(() => {
+          if (!this.disposedFlag && img.naturalWidth > 0) {
+            this.imgErrorCount.delete(index);
+            this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
+          }
+        }).catch(() => {
+          if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+            this.imgErrorCount.delete(index);
+            this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
+          }
+        });
+      } else if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
         this.imgErrorCount.delete(index);
         this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
       } else {
@@ -280,15 +297,14 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
 
   // Queue access ------------------------------------------------------------
   enqueue(index: number, priority = false): void {
-    if (index >= 0 && index < this.pages().length) {
-      const slotState = this.slotStates[0][index];
-      if (
-        this.getCachedPath(index) === undefined &&
-        !this.queue.isFailed(index) &&
-        slotState?.kind === "idle"
-      ) {
-        this.setSlotState(index, "spinner", t("reader.session.slotState.downloading"));
-      }
+    if (index < 0 || index >= this.pages().length) return;
+    if (this.getCachedPath(index) !== undefined) return;
+    const slotState = this.slotStates[0][index];
+    if (
+      !this.queue.isFailed(index) &&
+      slotState?.kind === "idle"
+    ) {
+      this.setSlotState(index, "spinner", t("reader.session.slotState.downloading"));
     }
     this.queue.enqueue(index, priority);
   }
@@ -378,20 +394,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     if (this.isSpread()) {
       this.enqueueSpreadNeighborhood();
     } else {
-      this.enqueue(this.currentIndex(), true);
-      for (let offset = 1; offset <= 4; offset++) {
-        const nextIdx = this.currentIndex() + offset;
-        if (nextIdx < this.pages().length && this.getCachedPath(nextIdx) === undefined) {
-          this.enqueue(nextIdx, true);
-        }
-      }
-      const prefetchCount = Math.max(getPrefetchBuffer(), 6);
-      for (let offset = 5; offset <= prefetchCount; offset++) {
-        const nextIdx = this.currentIndex() + offset;
-        if (nextIdx < this.pages().length && this.getCachedPath(nextIdx) === undefined) {
-          this.enqueue(nextIdx, false);
-        }
-      }
+      this.prioritizeReadingWindow(this.currentIndex());
     }
     this.slideTo(index, instant, scrollToBottom);
   }
@@ -402,7 +405,48 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.updateIndexAndNotifyEnd(clamped);
     this.schedulePersist();
     if (this.atEnd()) void this.persistNow();
+    if (!this.isSpread()) {
+      this.prioritizeReadingWindow(clamped);
+    }
   }
+
+  /** Prioritizes immediate reading window and nearby pages for instant loading. */
+  prioritizeReadingWindow(index: number): void {
+    const pageCount = this.pages().length;
+    if (pageCount === 0) return;
+    let anyEnqueued = false;
+    // 1. Current page: highest priority
+    if (this.getCachedPath(index) === undefined) {
+      this.enqueue(index, true);
+      anyEnqueued = true;
+    }
+    // 2. Next 3 pages: priority
+    for (let offset = 1; offset <= 3; offset++) {
+      const nextIdx = index + offset;
+      if (nextIdx < pageCount && this.getCachedPath(nextIdx) === undefined) {
+        this.enqueue(nextIdx, true);
+        anyEnqueued = true;
+      }
+    }
+    // 3. Preceding page (backwards scrolling / flip back): priority
+    if (index > 0 && this.getCachedPath(index - 1) === undefined) {
+      this.enqueue(index - 1, true);
+      anyEnqueued = true;
+    }
+    // 4. Prefetch lookahead: standard priority
+    const prefetchCount = Math.max(getPrefetchBuffer(), 6);
+    for (let offset = 4; offset <= prefetchCount; offset++) {
+      const nextIdx = index + offset;
+      if (nextIdx < pageCount && this.getCachedPath(nextIdx) === undefined) {
+        this.enqueue(nextIdx, false);
+        anyEnqueued = true;
+      }
+    }
+    if (anyEnqueued) {
+      this.queue.resort();
+    }
+  }
+
   /** Enqueues spreads near the current position, respecting auto-cache / prefetch buffer. */
   private enqueueSpreadNeighborhood(): void {
     if (this.spreads().length === 0) return;
@@ -643,6 +687,9 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     const cur = this.pageDimensions[0][index];
     if (cur?.width === width && cur?.height === height) return;
     this.pageDimensions[1](index, { width, height });
+    if (width > 0 && height > 0 && this.estimatedAspectRatio() === 0) {
+      this.setEstimatedAspectRatio(width / height);
+    }
     if (index === 0) {
       this.updateFirstSlotHeight();
     }

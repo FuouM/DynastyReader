@@ -12,7 +12,7 @@ import type { ReaderSession } from "./reader-session";
 import { useReader } from "./reader-context";
 import { convertFileSrc } from "../ipc";
 import { spreadIndexOf } from "./reader-spread";
-import { getPrefetchBuffer, isAutoCacheChapterEnabled } from "./settings";
+import { getPrefetchBuffer } from "./settings";
 import { useReaderGestures } from "./useReaderGestures";
 import {
   ReaderOverscrollOverlay,
@@ -31,23 +31,17 @@ export function ReaderViewport(props: { session?: ReaderSession; children?: JSX.
     const observer = new IntersectionObserver(
       (entries) => {
         if (s.isHorizontal()) return;
-        const autoCache = isAutoCacheChapterEnabled();
         const prefetchCount = Math.max(getPrefetchBuffer(), 4);
         for (const entry of entries) {
           if (entry.isIntersecting) {
             const idx = Number((entry.target as HTMLElement).dataset.index);
-            s.enqueue(idx);
-            if (autoCache) {
-              for (let offset = 1; offset <= 4; offset++) {
-                if (idx + offset < s.pages().length) {
-                  s.enqueue(idx + offset);
-                }
-              }
-            } else {
-              for (let offset = 1; offset <= prefetchCount; offset++) {
-                if (idx + offset < s.pages().length) {
-                  s.enqueue(idx + offset);
-                }
+            if (s.getCachedPath(idx) === undefined) {
+              s.enqueue(idx, true);
+            }
+            for (let offset = 1; offset <= prefetchCount; offset++) {
+              const nextIdx = idx + offset;
+              if (nextIdx < s.pages().length && s.getCachedPath(nextIdx) === undefined) {
+                s.enqueue(nextIdx, offset <= 2);
               }
             }
           }
@@ -62,28 +56,46 @@ export function ReaderViewport(props: { session?: ReaderSession; children?: JSX.
     void stripKey;
   });
 
-  // Warm next spreads' image cache on page turn (paged / spread mode only)
+  // Warm upcoming cached images across page turns & scrolling
   createEffect(() => {
-    if (!s.isHorizontal()) return;
     const cur = s.currentIndex();
     const isSpread = s.isSpread();
     const spreads = s.spreads();
     const cached = s.cachedPages[0];
-    void cur; void isSpread; void spreads.length;
+    const isHoriz = s.isHorizontal();
+    void cur; void isSpread; void spreads.length; void isHoriz;
     const toWarm = new Set<number>();
-    if (isSpread && spreads.length > 0) {
+    if (isHoriz && isSpread && spreads.length > 0) {
       const curSpread = spreadIndexOf(spreads, cur);
       for (const p of spreads[curSpread + 1]?.pageIndices ?? []) toWarm.add(p);
       for (const p of spreads[curSpread + 2]?.pageIndices ?? []) toWarm.add(p);
+      if (curSpread > 0) {
+        for (const p of spreads[curSpread - 1]?.pageIndices ?? []) toWarm.add(p);
+      }
     } else {
-      for (let i = cur + 1; i <= Math.min(s.pages().length - 1, cur + 6); i++) if (cached[i]) toWarm.add(i);
+      const lookahead = isHoriz ? 6 : 4;
+      for (let i = cur + 1; i <= Math.min(s.pages().length - 1, cur + lookahead); i++) {
+        if (cached[i]) toWarm.add(i);
+      }
+      if (cur > 0 && cached[cur - 1]) toWarm.add(cur - 1);
     }
     for (const idx of toWarm) {
       const p = cached[idx];
       if (!p) continue;
+      if (s.pageDimensions[0][idx]) continue;
       const img = new Image();
       img.src = convertFileSrc(p);
-      if (img.complete && img.naturalWidth > 0) {
+      if (typeof img.decode === "function") {
+        img.decode().then(() => {
+          if (!s.disposedFlag && img.naturalWidth > 0) {
+            s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
+          }
+        }).catch(() => {
+          if (img.complete && img.naturalWidth > 0 && !s.disposedFlag) {
+            s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
+          }
+        });
+      } else if (img.complete && img.naturalWidth > 0) {
         s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
       } else {
         img.onload = () => {

@@ -36,10 +36,12 @@ export interface ReaderQueueHost {
  * chapter (the priority-sorted queue keeps order sensible).
  */
 export class ReaderQueue {
-  private static readonly MAX_CONCURRENT = 4;
+  private static readonly MAX_CONCURRENT = 6;
+  private static readonly MAX_BACKGROUND = 2;
   private readonly queue: number[] = [];
   private readonly priorityIndices = new Set<number>();
   private readonly inFlight = new Set<number>();
+  private readonly inFlightPriority = new Set<number>();
   private readonly retrying = new Set<number>();
   private readonly failed = new Set<number>();
   private firstErrorShown = false;
@@ -66,18 +68,8 @@ export class ReaderQueue {
     this.retrying.add(index);
   }
 
-  /** Marks a page as needing a (re)download. Priorities jump to the queue head. */
-  enqueue(index: number, priority = false): void {
-    const pages = this.c.pages();
-    if (index < 0 || index >= pages.length) return;
-    if (this.inFlight.has(index) || this.failed.has(index)) return;
-    if (priority) {
-      this.priorityIndices.add(index);
-    }
-    if (!this.queue.includes(index)) {
-      this.queue.push(index);
-    }
-    // Keep queue sorted by priority first, then proximity to the user's reading position
+  /** Re-sorts the queue by priority and proximity to the current reading position, then pumps. */
+  resort(): void {
     const current = this.c.currentIndex();
     this.queue.sort((a, b) => {
       const prioA = this.priorityIndices.has(a) ? 0 : 1;
@@ -90,14 +82,42 @@ export class ReaderQueue {
     this.pump();
   }
 
+  /** Marks a page as needing a (re)download. Priorities jump to the queue head. */
+  enqueue(index: number, priority = false): void {
+    const pages = this.c.pages();
+    if (index < 0 || index >= pages.length) return;
+    if (this.c.getCachedPath(index) !== undefined) return;
+    if (this.inFlight.has(index) || this.failed.has(index)) return;
+    if (priority) {
+      this.priorityIndices.add(index);
+    }
+    if (!this.queue.includes(index)) {
+      this.queue.push(index);
+    }
+    this.resort();
+  }
+
   private pump(): void {
     while (this.inFlight.size < ReaderQueue.MAX_CONCURRENT && this.queue.length > 0) {
+      const nextIdx = this.queue[0];
+      const isPriority = this.priorityIndices.has(nextIdx);
+      const backgroundInFlight = this.inFlight.size - this.inFlightPriority.size;
+
+      // Reserve slots: background auto-cache is limited to MAX_BACKGROUND so active reading never stalls
+      if (!isPriority && backgroundInFlight >= ReaderQueue.MAX_BACKGROUND) {
+        break;
+      }
+
       const idx = this.queue.shift() as number;
       if (this.inFlight.has(idx)) continue;
       this.inFlight.add(idx);
+      if (isPriority) {
+        this.inFlightPriority.add(idx);
+      }
       this.priorityIndices.delete(idx);
       void this.downloadPage(idx).finally(() => {
         this.inFlight.delete(idx);
+        this.inFlightPriority.delete(idx);
         this.pump();
       });
     }

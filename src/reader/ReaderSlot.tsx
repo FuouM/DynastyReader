@@ -4,7 +4,7 @@
  * Port of `reader-slots.ts`' render helpers into a reactive JSX component.
  */
 
-import { createSignal, onCleanup, Show, type JSX } from "solid-js";
+import { onCleanup, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import { useReader } from "./reader-context";
 import type { SlotStateKind } from "./reader-queue";
@@ -54,13 +54,11 @@ export function ReaderSlot(props: ReaderSlotProps) {
 /** Cached page: page badge + `<img>` with re-download + wide-spread detection. */
 function SlotImgContent(props: { session: ReaderSession; index: number; path: string }) {
   const s = props.session;
-  const [loaded, setLoaded] = createSignal(false);
   let handledDimension = false;
 
   const handleDimension = (naturalWidth: number, naturalHeight: number) => {
     if (handledDimension || naturalWidth <= 0 || naturalHeight <= 0) return;
     handledDimension = true;
-    setLoaded(true);
     s.setPageDimension(props.index, naturalWidth, naturalHeight);
     if (props.index === 0) s.updateFirstSlotHeight();
     if (props.index === s.pages().length - 1) s.updateLastSlotHeight();
@@ -83,21 +81,23 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
     if (d && d.width > 0 && d.height > 0) {
       return { "aspect-ratio": `${d.width} / ${d.height}` };
     }
-    return undefined;
+    const est = s.estimatedAspectRatio();
+    if (est > 0) {
+      return { "aspect-ratio": `${est}` };
+    }
+    return { "aspect-ratio": "1 / 1.414" };
   };
 
   return (
     <div class="ds-page-wrap" style={aspectStyle()}>
-      <Show when={loaded() || !!dim()}>
-        <div class="ds-slot-page-badge">
-          {props.index + 1} / {s.pages().length}
-        </div>
-      </Show>
+      <div class="ds-slot-page-badge">
+        {props.index + 1} / {s.pages().length}
+      </div>
       <img
         class="ds-page-img"
         alt={t("reader.session.slot.pageAlt", { page: props.index + 1 })}
         src={convertFileSrc(props.path)}
-        decoding="async"
+        decoding="auto"
         loading="eager"
         onError={(ev) => {
           log.error("reader-slot", "img onError for slot", props.index, "src:", (ev.currentTarget as HTMLImageElement).src?.slice(0, 100));
@@ -124,12 +124,26 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
   const kind = (): SlotStateKind => state()?.kind ?? "idle";
   const pct = (): number =>
     s.pages().length > 0 ? Math.round((s.cachedCount() / s.pages().length) * 100) : 0;
+  const aspectStyle = () => {
+    if (s.isHorizontal()) return undefined;
+    const est = s.estimatedAspectRatio();
+    if (est > 0) return { "aspect-ratio": `${est}` };
+    return { "aspect-ratio": "1 / 1.414" };
+  };
+
   return (
-    <div class={`ds-slot-state${kind() === "error" ? " ds-slot-error" : ""}`}>
+    <div
+      class={`ds-slot-state ds-slot-state-${kind()}${kind() === "error" ? " ds-slot-error" : ""}`}
+      style={aspectStyle()}
+    >
+      <div class="ds-slot-page-badge">
+        {props.index + 1} / {s.pages().length}
+      </div>
+      <div class="ds-slot-skeleton-loader">
         <Show when={kind() === "spinner"}>
           <Icon
             name="cloud-arrow-down"
-            size="20px"
+            size="22px"
             color="var(--sys-link, var(--sys-primary, #0078d4))"
           />
           <div class="ds-slot-pulse-wrap">
@@ -145,11 +159,11 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
           </span>
         </Show>
         <Show when={kind() === "offline"}>
-          <Icon name="wifi-off" size="20px" />
+          <Icon name="wifi-off" size="22px" />
           <span>{state()?.message}</span>
         </Show>
         <Show when={kind() === "idle"}>
-          <Icon name="book" size="20px" color="var(--sys-text-muted,#888)" />
+          <Icon name="book" size="22px" color="var(--sys-text-muted,#888)" />
           <span>
             {t("reader.session.slot.waitingToRead", {
               current: props.index + 1,
@@ -158,7 +172,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
           </span>
         </Show>
         <Show when={kind() === "error"}>
-          <Icon name="exclamation-triangle" size="20px" />
+          <Icon name="exclamation-triangle" size="22px" />
           <span>{state()?.message}</span>
           <DsButton
             className="ds-btn-xs"
@@ -168,6 +182,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
             {t("common.retry")}
           </DsButton>
         </Show>
+      </div>
     </div>
   );
 }

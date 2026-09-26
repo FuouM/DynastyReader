@@ -206,7 +206,17 @@ function preloadInitialDimensions(s: ReaderSession, pageCount: number): void {
     if (!p) continue;
     const img = new Image();
     img.src = convertFileSrc(p);
-    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+    if (typeof img.decode === "function") {
+      img.decode().then(() => {
+        if (!s.disposedFlag && img.naturalWidth > 0 && img.naturalHeight > 0) {
+          s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
+        }
+      }).catch(() => {
+        if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0 && !s.disposedFlag) {
+          s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
+        }
+      });
+    } else if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
       s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
     } else {
       img.onload = () => {
@@ -220,18 +230,23 @@ function preloadInitialDimensions(s: ReaderSession, pageCount: number): void {
 
 function initSlotStatesAndQueue(s: ReaderSession, pageCount: number): void {
   const autoCacheAll = isAutoCacheChapterEnabled();
+  const online = isOnline();
+
+  // 1. Initialize slot visual states without enqueuing
   for (let i = 0; i < pageCount; i++) {
     if (s.getCachedPath(i) !== undefined) continue;
-    if (!isOnline()) {
+    if (!online) {
       s.setSlotState(i, "offline", t("reader.session.slotState.offline"));
     } else if (autoCacheAll) {
       s.setSlotState(i, "spinner", t("reader.session.slotState.queued"));
-      s.enqueue(i);
     } else {
       s.setSlotState(i, "idle", t("reader.session.slotState.waiting"));
     }
   }
 
+  if (!online) return;
+
+  // 2. PRIORITY FIRST: Enqueue current reading window before any background caching
   const cur = s.currentIndex();
   if (s.isSpread() && s.spreads().length > 0) {
     const curSpread = spreadIndexOf(s.spreads(), cur);
@@ -254,11 +269,14 @@ function initSlotStatesAndQueue(s: ReaderSession, pageCount: number): void {
       }
     }
   } else {
-    if (s.getCachedPath(cur) === undefined) s.enqueue(cur, true);
-    for (let offset = 1; offset <= 4; offset++) {
-      const nextIdx = cur + offset;
-      if (nextIdx < pageCount && s.getCachedPath(nextIdx) === undefined) {
-        s.enqueue(nextIdx, true);
+    s.prioritizeReadingWindow(cur);
+  }
+
+  // 3. BACKGROUND AFTER: If auto-cache is enabled, enqueue remaining chapter pages with background priority
+  if (autoCacheAll) {
+    for (let i = 0; i < pageCount; i++) {
+      if (s.getCachedPath(i) === undefined) {
+        s.enqueue(i, false);
       }
     }
   }
