@@ -109,7 +109,9 @@ pub fn authorize_execute(ctx: rusqlite::hooks::AuthContext<'_>) -> rusqlite::hoo
         | AuthAction::DropView { .. }
         | AuthAction::DropTrigger { .. }
         | AuthAction::DropVtable { .. }
-        | AuthAction::CreateVtable { .. } => Authorization::Deny,
+        | AuthAction::CreateVtable { .. }
+        | AuthAction::CreateTrigger { .. }
+        | AuthAction::CreateView { .. } => Authorization::Deny,
         AuthAction::Pragma { pragma_name, .. } => {
             if is_allowed_pragma(pragma_name) { Authorization::Allow } else { Authorization::Deny }
         }
@@ -516,6 +518,8 @@ mod tests {
         assert!(conn.execute("PRAGMA writable_schema = 1", []).is_err());
         assert!(conn.execute("PRAGMA load_extension('evil.dll')", []).is_err());
 
+        assert!(conn.execute("CREATE TRIGGER evil_trig AFTER INSERT ON test BEGIN DELETE FROM test; END", []).is_err());
+        assert!(conn.execute("CREATE VIEW evil_view AS SELECT * FROM test", []).is_err());
         // 3. execute_batch is also checked by the authorizer
         assert!(conn.execute_batch("SELECT 1; ATTACH 'evil.db' AS evil;").is_err());
         assert!(conn.execute_batch("SELECT 1; DROP TABLE test2;").is_err());

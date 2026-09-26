@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter, State};
 use crate::commands::http::HttpState;
 
@@ -78,6 +78,33 @@ pub fn validate_update_download_url(url: &str) -> Result<(), String> {
     if !matches_target_extension(url) {
         let target_ext = get_target_extension();
         return Err(format!("Update asset must have the expected extension ({target_ext})"));
+    }
+
+    Ok(())
+}
+
+/// Verifies the binary magic header to ensure only genuine native executables
+/// can be executed or activated as an update.
+pub fn verify_executable_header(path: &Path) -> Result<(), String> {
+    use std::io::Read;
+    let mut f = std::fs::File::open(path)
+        .map_err(|e| format!("cannot open update binary for validation: {e}"))?;
+    let mut header = [0u8; 4];
+    f.read_exact(&mut header)
+        .map_err(|e| format!("update binary too small or corrupted: {e}"))?;
+
+    #[cfg(target_os = "windows")]
+    {
+        if header[0..2] != [b'M', b'Z'] {
+            return Err("downloaded update is not a valid Windows executable (missing MZ header)".to_string());
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if header != [0x7f, b'E', b'L', b'F'] {
+            return Err("downloaded update is not a valid Linux ELF binary".to_string());
+        }
     }
 
     Ok(())
@@ -230,6 +257,10 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
         let _ = tokio::fs::remove_file(&new_exe).await;
         return Err(err);
     }
+    if let Err(err) = verify_executable_header(&new_exe) {
+        let _ = tokio::fs::remove_file(&new_exe).await;
+        return Err(format!("update security verification failed: {err}"));
+    }
     log::info!("Download complete ({downloaded} bytes). Applying self-replacement...");
 
     #[cfg(target_os = "windows")]
@@ -357,4 +388,21 @@ mod tests {
             assert!(validate_update_download_url("").is_err());
         }
     }
+
+    #[test]
+    fn test_verify_executable_header() {
+        let dir = std::env::temp_dir();
+        let bad_file = dir.join(format!("dsreader-test-bad-exe-{}", std::process::id()));
+        std::fs::write(&bad_file, b"NOT AN EXE").unwrap();
+        assert!(verify_executable_header(&bad_file).is_err());
+        let _ = std::fs::remove_file(&bad_file);
+
+        #[cfg(target_os = "windows")]
+        {
+            let good_file = dir.join(format!("dsreader-test-good-exe-{}", std::process::id()));
+            std::fs::write(&good_file, b"MZ\x90\x00extra bytes for header").unwrap();
+            assert!(verify_executable_header(&good_file).is_ok());
+            let _ = std::fs::remove_file(&good_file);
+        }
+}
 }

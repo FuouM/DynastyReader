@@ -13,6 +13,15 @@ pub fn open_url(app: tauri::AppHandle, url: String) -> Result<serde_json::Value,
     if !(lower.starts_with("http://") || lower.starts_with("https://")) {
         return Err("only http/https URLs may be opened".to_string());
     }
+    if lower.contains("://localhost")
+        || lower.contains("://127.0.0.1")
+        || lower.contains(".localhost")
+        || lower.contains(".local")
+        || lower.contains(".internal")
+        || lower.contains(".localdomain")
+    {
+        return Err("opening internal or local URLs is not permitted".to_string());
+    }
     app.opener()
         .open_url(&url, None::<&str>)
         .map_err(|e| format!("failed to open url: {e}"))?;

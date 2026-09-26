@@ -42,12 +42,24 @@ pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
     match parsed.host() {
         Some(url::Host::Domain(host_str)) => {
             let host_lower = host_str.to_ascii_lowercase();
-            if host_lower == "localhost"
+            let is_blocked = host_lower == "localhost"
                 || host_lower.ends_with(".localhost")
                 || host_lower.ends_with(".local")
                 || host_lower.ends_with(".internal")
                 || host_lower.ends_with(".localdomain")
-            {
+                || host_lower == "nip.io"
+                || host_lower.ends_with(".nip.io")
+                || host_lower == "sslip.io"
+                || host_lower.ends_with(".sslip.io")
+                || host_lower == "vcap.me"
+                || host_lower.ends_with(".vcap.me")
+                || host_lower == "localtest.me"
+                || host_lower.ends_with(".localtest.me")
+                || host_lower == "lvh.me"
+                || host_lower.ends_with(".lvh.me")
+                || host_lower == "metadata.google.internal"
+                || host_lower == "instance-data";
+            if is_blocked {
                 return Err(format!("requests to local/internal host '{host_str}' are forbidden"));
             }
         }
@@ -258,6 +270,9 @@ pub async fn http_download(
 ) -> Result<serde_json::Value, String> {
     let target = crate::paths::resolve_in_root(&output_path)?;
     let parent = target.parent().unwrap_or(&target);
+    if crate::paths::is_protected_path(&target)? {
+        return Err("cannot write to protected database or system path".to_string());
+    }
     if let Err(e) = tokio::fs::create_dir_all(parent).await {
         let is_not_dir = e.raw_os_error() == Some(20) || e.to_string().contains("not a directory");
         if is_not_dir {
@@ -265,6 +280,9 @@ pub async fn http_download(
             let mut cur = parent;
             while cur != root && cur != std::path::Path::new("") {
                 if cur.is_file() {
+                    if crate::paths::is_protected_path(cur).unwrap_or(true) {
+                        return Err(format!("cannot remove protected blocking path component: {cur:?}"));
+                    }
                     log::warn!("removing blocking file in directory path: {:?}", cur);
                     let _ = std::fs::remove_file(cur);
                 }
@@ -340,6 +358,9 @@ mod tests {
         assert!(validate_http_url("http://service.localhost/").is_err());
         assert!(validate_http_url("http://printer.local/").is_err());
         assert!(validate_http_url("http://server.internal/").is_err());
+        assert!(validate_http_url("http://127.0.0.1.nip.io/").is_err());
+        assert!(validate_http_url("http://localtest.me/").is_err());
+        assert!(validate_http_url("http://metadata.google.internal/").is_err());
 
         // Block private/loopback IP ranges
         assert!(validate_http_url("http://127.0.0.1:8080/").is_err());

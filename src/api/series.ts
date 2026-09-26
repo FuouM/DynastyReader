@@ -342,6 +342,7 @@ export async function getOrHydrateItemCover(opts: HydrateItemCoverOpts): Promise
 
 /** Chapter detail (pages + tags). Cached forever; refreshed manually if needed. */
 export async function fetchChapter(permalink: string): Promise<ValidatedChapter> {
-  const raw = await cachedJson<unknown>(`chapter:${permalink}`, `${SITE_ROOT}/chapters/${permalink}.json`);
+  const enc = encodeURIComponent(permalink);
+  const raw = await cachedJson<unknown>(`chapter:${permalink}`, `${SITE_ROOT}/chapters/${enc}.json`);
   return ChapterSchema.parse(raw);
 }

@@ -808,6 +808,9 @@ async fn fetch_page_to_file(
                 let mut cur = parent;
                 while cur != root && cur != std::path::Path::new("") {
                     if cur.is_file() {
+                        if crate::paths::is_protected_path(cur).unwrap_or(true) {
+                            return Err(format!("cannot remove protected blocking path component: {cur:?}"));
+                        }
                         log::warn!("removing blocking file in directory path: {:?}", cur);
                         let _ = std::fs::remove_file(cur);
                     }
@@ -1151,10 +1154,19 @@ async fn download_chapter(
         };
 
         // Compute output path like ReaderQueue: pages/<series>/<chapter>/page_0001.ext
-        let ext = abs_url.rsplit('.').next().and_then(|e| e.split('?').next()).unwrap_or("webp");
+        let raw_ext = abs_url
+            .rsplit('.')
+            .next()
+            .and_then(|e| e.split('?').next())
+            .unwrap_or("webp")
+            .to_ascii_lowercase();
+        let ext = if ["webp", "jpg", "jpeg", "png", "gif", "avif", "bmp"].contains(&raw_ext.as_str()) {
+            raw_ext.as_str()
+        } else {
+            "webp"
+        };
         let pad = format!("{:04}", idx + 1);
         let rel_path = format!("{}/page_{}.{}", rel_dir, pad, ext);
-
         // Skip if already exists and non-empty (resume safety)
         let target = crate::paths::resolve_in_root(&rel_path).map_err(|e| format!("resolve path: {e}"))?;
         if target.is_file() {
