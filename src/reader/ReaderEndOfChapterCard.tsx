@@ -374,16 +374,19 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
         </Show>
       </Show>
       <div class="ds-chapter-end-actions">
-        <Show when={prevChapter() && !s.chapterNav().prevDisabled}>
-          <button
-            type="button"
-            class="win-button ds-chapter-end-prev-btn"
-            onClick={() => s.gotoPrevChapter()}
-            title={t("reader.endOfChapterCard.swipeRightPrev")}
-          >
-            <ArrowLeftIcon />
-            <span>{t("reader.endOfChapterCard.prevChapter")}</span>
-          </button>
+        <Show when={prevChapter()}>
+          {(prev) => (
+            <button
+              type="button"
+              class="win-button ds-chapter-end-prev-btn"
+              onClick={() => s.gotoPrevChapter()}
+              title={decodeEntities(prev().title || prev().permalink)}
+            >
+              <ArrowLeftIcon />
+              <span class="ds-chapter-end-prev-label">{t("reader.endOfChapterCard.prevChapter")}:</span>
+              <span class="ds-chapter-end-prev-title">{decodeEntities(prev().title || prev().permalink)}</span>
+            </button>
+          )}
         </Show>
         <Show when={s.seriesPermalink()}>
           <button

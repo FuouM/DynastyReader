@@ -324,7 +324,7 @@ export async function revalidateMangaDexFeedHead(tabId: string): Promise<FeedHea
 
   const currentTopId = parsedFeed?.chapters?.[0]?.permalink.replace(/^mdx:/, "");
   if (!currentTopId) {
-    return { hasNew: true, status: "new-chapters" };
+    return { hasNew: false, status: "no-baseline" };
   }
 
   if (newestChapterId && newestChapterId !== currentTopId) {

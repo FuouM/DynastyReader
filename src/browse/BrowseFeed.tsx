@@ -18,7 +18,6 @@ import {
   type JSX,
 } from "solid-js";
 import { t } from "../i18n";
-import { showBanner } from "../stores/topbar";
 import { activeProvider } from "../stores/provider";
 import { fetchFeedWithRevalidation } from "../api/feed";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
@@ -191,10 +190,9 @@ export function BrowseFeed(props: BrowseFeedProps) {
   };
 
   const notifyNewChapters = (): void => {
+    if (updateBanner()) return;
+    if (!props.active()) return;
     setUpdateBanner(true);
-    showBanner(t("browse.feed.newChaptersNotice"), {
-      onClick: handleUpdateBannerClick,
-    });
   };
 
   createEffect(() => {
@@ -254,7 +252,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
 
     if (page === 1) {
       void revalidatePromise.then((reval) => {
-        if (hostEl() !== browseCovers.currentHydrationHost) return;
+        if (!props.active() || hostEl() !== browseCovers.currentHydrationHost) return;
         if (reval) {
           const freshTopTs = feedHeadTimestamp(reval.data.chapters);
           if (freshTopTs !== undefined && currentTopTs !== undefined) {
@@ -282,7 +280,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
       });
     } else {
       void revalidatePromise.then((reval) => {
-        if (hostEl() !== browseCovers.currentHydrationHost) return;
+        if (!props.active() || hostEl() !== browseCovers.currentHydrationHost) return;
         if (reval) {
           setFooterState({
             cachedAt: Date.now(),
@@ -302,7 +300,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
         }
       });
       void revalidateFeedHead(props.tabId).then((head) => {
-        if (hostEl() !== browseCovers.currentHydrationHost) return;
+        if (!props.active() || hostEl() !== browseCovers.currentHydrationHost) return;
         if (head.hasNew) notifyNewChapters();
       });
     }

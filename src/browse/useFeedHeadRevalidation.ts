@@ -33,8 +33,9 @@ export const feedHeadTimestamp = (chapters: Feed["chapters"] | undefined): numbe
   if (!chapters || chapters.length === 0) return undefined;
   let max = 0;
   for (const c of chapters) {
-    if (!c.released_on) continue;
-    const ts = Date.parse(c.released_on);
+    const raw = c.added_on || c.released_on;
+    if (!raw) continue;
+    const ts = Date.parse(raw);
     if (!Number.isNaN(ts) && ts > max) max = ts;
   }
   return max > 0 ? max : undefined;

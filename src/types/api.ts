@@ -66,6 +66,7 @@ export interface FeedChapter {
   permalink: string;
   tags: SeriesTag[];
   released_on?: string | null;
+  added_on?: string | null;
   cover_url?: string | null;
 }
 

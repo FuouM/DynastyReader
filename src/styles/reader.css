@@ -1548,12 +1548,31 @@
   font-size: 13px;
   font-weight: 600;
 }
+.ds-chapter-end-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
 .ds-chapter-end-prev-btn,
 .ds-chapter-end-series-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
+  max-width: 100%;
+}
+.ds-chapter-end-prev-label {
+  flex-shrink: 0;
+}
+.ds-chapter-end-prev-title {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
 }
 .ds-chapter-end-browse-btn {
   display: inline-flex;
