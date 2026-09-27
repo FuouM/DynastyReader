@@ -151,6 +151,7 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
   };
 
   const goToPage = (p: number): void => {
+    lastLoadedKey = "";
     if (p === page()) {
       reload();
     } else {

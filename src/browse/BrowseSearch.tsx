@@ -26,7 +26,7 @@ import { searchDynasty } from "../api/search";
 import { suggest } from "../api/directory";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
 import { activeProvider } from "../stores/provider";
-import { searchManga } from "../providers/mangadex/api/manga";
+import { getTags, searchManga } from "../providers/mangadex/api/manga";
 import { formatMangaTitle, getMangaAuthors } from "../providers/mangadex/mapping";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
 import type { BlacklistMode } from "../types/blacklist";
@@ -73,6 +73,7 @@ const getAllClasses = (): { id: SearchClass; label: string }[] => [
   { id: "General", label: t("browse.search.classes.general") },
   { id: "Pairing", label: t("browse.search.classes.pairing") },
 ];
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 interface SearchModel {
   pageData: SearchResultPage;
@@ -101,8 +102,54 @@ export function BrowseSearch(props: BrowseSearchProps) {
     forceTick: props.forceTick,
     load: async (page) => {
       if (activeProvider() === "mangadex") {
+        let includedTags: string[] | undefined;
+        let excludedTags: string[] | undefined;
+        const currentWith = withTags();
+        const currentWithout = withoutTags();
+
+        if (currentWith.length > 0 || currentWithout.length > 0) {
+          try {
+            const allTags = await getTags();
+            const tagMap = new Map<string, string>();
+            for (const t of allTags) {
+              const enName = t.attributes?.name?.en?.toLowerCase();
+              if (enName) tagMap.set(enName, t.id);
+              for (const val of Object.values(t.attributes?.name || {})) {
+                if (val) tagMap.set(val.toLowerCase(), t.id);
+              }
+            }
+            if (currentWith.length > 0) {
+              includedTags = currentWith
+                .map((t) => tagMap.get(t.toLowerCase()) || (t.startsWith("mdx-tag:") ? t.slice(8) : (UUID_REGEX.test(t) ? t : undefined)))
+                .filter(Boolean) as string[];
+            }
+            if (currentWithout.length > 0) {
+              excludedTags = currentWithout
+                .map((t) => tagMap.get(t.toLowerCase()) || (t.startsWith("mdx-tag:") ? t.slice(8) : (UUID_REGEX.test(t) ? t : undefined)))
+                .filter(Boolean) as string[];
+            }
+          } catch (e) {
+            log.warn("browse-search", "failed to resolve MangaDex tags:", e);
+          }
+        }
+
+        const currentSort = sort();
+        const order: Record<string, "asc" | "desc"> = {};
+        if (currentSort === "name") {
+          order.title = "asc";
+        } else if (currentSort === "created_at") {
+          order.createdAt = "desc";
+        } else if (currentSort === "released_on") {
+          order.latestUploadedChapter = "desc";
+        } else {
+          order.latestUploadedChapter = "desc";
+        }
+
         const mdxRes = await searchManga({
           title: q() || undefined,
+          includedTags: includedTags && includedTags.length > 0 ? includedTags : undefined,
+          excludedTags: excludedTags && excludedTags.length > 0 ? excludedTags : undefined,
+          order,
           limit: 20,
           offset: (page - 1) * 20,
         });
@@ -125,7 +172,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
           items,
           currentPage: page,
           totalPages,
-          query: q(),
+          query: q() || currentWith.join(", "),
         };
         return { pageData, fullyCachedSet: new Set<string>(), blMode: getBlacklistMode() };
       }
@@ -205,6 +252,25 @@ export function BrowseSearch(props: BrowseSearchProps) {
   const removeWithoutTag = (t: string): void => {
     filters.removeWithoutTag(t);
     pane.goToPage(1);
+  };
+  const tagSuggest = async (query: string): Promise<Array<{ name: string; type: string }>> => {
+    if (activeProvider() === "mangadex") {
+      try {
+        const allTags = await getTags();
+        const qLower = query.toLowerCase().trim();
+        const matches: Array<{ name: string; type: string }> = [];
+        for (const t of allTags) {
+          const name = t.attributes?.name?.en || Object.values(t.attributes?.name || {})[0] || "";
+          if (name && (!qLower || name.toLowerCase().includes(qLower))) {
+            matches.push({ name, type: "Tag" });
+          }
+        }
+        return matches.slice(0, 10);
+      } catch {
+        return [];
+      }
+    }
+    return suggest(query);
   };
 
   const [hostEl, setHostEl] = createSignal<HTMLElement | null>(null);
@@ -341,7 +407,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 <Typeahead
                   value={withDraft()}
                   onInputValue={setWithDraft}
-                  fetcher={suggest}
+                  fetcher={tagSuggest}
                   onSelect={(item) => addWithTag(item.name)}
                   onEnter={(value) => addWithTag(value)}
                   placeholder={t("browse.search.withTagsPlaceholder")}
@@ -371,7 +437,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 <Typeahead
                   value={withoutDraft()}
                   onInputValue={setWithoutDraft}
-                  fetcher={suggest}
+                  fetcher={tagSuggest}
                   onSelect={(item) => addWithoutTag(item.name)}
                   onEnter={(value) => addWithoutTag(value)}
                   placeholder={t("browse.search.withoutTagsPlaceholder")}
