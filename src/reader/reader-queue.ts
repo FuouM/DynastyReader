@@ -36,7 +36,7 @@ export interface ReaderQueueHost {
  * chapter (the priority-sorted queue keeps order sensible).
  */
 export class ReaderQueue {
-  private static readonly MAX_CONCURRENT = 6;
+  private static readonly MAX_CONCURRENT = 8;
   private static readonly MAX_BACKGROUND = 2;
   private readonly queue: number[] = [];
   private readonly priorityIndices = new Set<number>();
@@ -99,17 +99,23 @@ export class ReaderQueue {
 
   private pump(): void {
     while (this.inFlight.size < ReaderQueue.MAX_CONCURRENT && this.queue.length > 0) {
-      const nextIdx = this.queue[0];
-      const isPriority = this.priorityIndices.has(nextIdx);
       const backgroundInFlight = this.inFlight.size - this.inFlightPriority.size;
 
-      // Reserve slots: background auto-cache is limited to MAX_BACKGROUND so active reading never stalls
-      if (!isPriority && backgroundInFlight >= ReaderQueue.MAX_BACKGROUND) {
+      // Find the next schedulable index: priority items bypass the background cap
+      const targetPos = this.queue.findIndex((candidate) => {
+        const isPriority = this.priorityIndices.has(candidate);
+        if (isPriority) return true;
+        return backgroundInFlight < ReaderQueue.MAX_BACKGROUND;
+      });
+
+      if (targetPos === -1) {
+        // No item can be scheduled right now (background cap reached, no priority items pending)
         break;
       }
 
-      const idx = this.queue.shift() as number;
+      const idx = this.queue.splice(targetPos, 1)[0];
       if (this.inFlight.has(idx)) continue;
+      const isPriority = this.priorityIndices.has(idx);
       this.inFlight.add(idx);
       if (isPriority) {
         this.inFlightPriority.add(idx);

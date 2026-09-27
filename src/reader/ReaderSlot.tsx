@@ -30,8 +30,11 @@ export function ReaderSlot(props: ReaderSlotProps) {
   let elRef: HTMLElement | undefined;
 
   onCleanup(() => {
-    // Release the session's slot ref so disposed elements are not pinned (RD-H1).
-    if (elRef && s.slotEls[props.index] === elRef) s.slotEls[props.index] = null;
+    // Release the session's slot ref and unobserve so disposed elements are not pinned (RD-H1).
+    if (elRef) {
+      s.unobserveSlot(elRef);
+      if (s.slotEls[props.index] === elRef) s.slotEls[props.index] = null;
+    }
   });
 
   return (
@@ -42,6 +45,7 @@ export function ReaderSlot(props: ReaderSlotProps) {
       ref={(el) => {
         elRef = el;
         s.slotEls[props.index] = el;
+        s.observeSlot(el);
       }}
     >
       <Show when={cachedPath() !== undefined} fallback={<SlotStateContent session={s} index={props.index} />}>

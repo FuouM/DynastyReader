@@ -1,6 +1,7 @@
 import type { ReaderSession } from "./reader-session";
 
 export function setupScrollTracker(s: ReaderSession, vpEl: HTMLElement): () => void {
+  let lastPrefetchedLeadingIdx = -1;
   const computeCurrentPageFromScroll = (force = false): void => {
     if (s.isHorizontal() || s.isProgrammaticScroll || s.restoring() || (!force && s.isToolbarAnimating)) return;
     const vp = s.viewportEl;
@@ -34,6 +35,24 @@ export function setupScrollTracker(s: ReaderSession, vpEl: HTMLElement): () => v
       } else {
         low = mid + 1;
       }
+    }
+
+    // Proactively prefetch upcoming pages from the leading visible edge of the viewport
+    let leadingIdx = bestIdx;
+    for (let i = bestIdx + 1; i < totalSlots; i++) {
+      const el = s.slotEls[i];
+      if (!el) break;
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= vpRect.bottom + 1200) {
+        leadingIdx = i;
+      } else {
+        break;
+      }
+    }
+
+    if (leadingIdx !== lastPrefetchedLeadingIdx) {
+      lastPrefetchedLeadingIdx = leadingIdx;
+      s.prioritizeReadingWindow(leadingIdx);
     }
 
     if (bestIdx !== s.currentIndex()) {

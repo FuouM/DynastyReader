@@ -132,6 +132,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   readonly retrying = new Set<number>();
   readonly imgErrorCount = new Map<number, number>();
   private persistence!: ReaderPersistence;
+  private slotObserver: IntersectionObserver | null = null;
   disposedFlag = false;
   isProgrammaticScroll = false;
   programmaticScrollTimer: number | null = null;
@@ -281,6 +282,10 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.clearFullscreenRelayoutTimers();
     for (const fn of this.cleanupFns) fn();
     this.cleanupFns.length = 0;
+    if (this.slotObserver) {
+      this.slotObserver.disconnect();
+      this.slotObserver = null;
+    }
     // Drop all slot DOM refs so detached elements are not pinned (RD-H1).
     this.slotEls.length = 0;
     this.spreadSlotEls.length = 0;
@@ -307,6 +312,56 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       this.setSlotState(index, "spinner", t("reader.session.slotState.downloading"));
     }
     this.queue.enqueue(index, priority);
+  }
+
+  observeSlot(el: HTMLElement): void {
+    if (this.isHorizontal() || this.disposedFlag || typeof IntersectionObserver === "undefined") return;
+    if (!this.slotObserver) {
+      this.slotObserver = new IntersectionObserver(
+        (entries) => {
+          if (this.isHorizontal() || this.disposedFlag) return;
+          const prefetchEnabled = isReaderPrefetchEnabled();
+          const prefetchCount = prefetchEnabled ? Math.max(1, getPrefetchBuffer()) : 0;
+          let anyEnqueued = false;
+
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              const idx = Number((entry.target as HTMLElement).dataset.index);
+              if (!Number.isNaN(idx)) {
+                if (this.getCachedPath(idx) === undefined) {
+                  this.enqueue(idx, true);
+                  anyEnqueued = true;
+                }
+                if (prefetchEnabled) {
+                  for (let offset = 1; offset <= prefetchCount; offset++) {
+                    const nextIdx = idx + offset;
+                    if (nextIdx < this.pages().length && this.getCachedPath(nextIdx) === undefined) {
+                      this.enqueue(nextIdx, true);
+                      anyEnqueued = true;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          if (anyEnqueued) {
+            this.queue.resort();
+          }
+        },
+        {
+          root: this.viewportEl ?? undefined,
+          rootMargin: "3000px 0px 3000px 0px",
+          threshold: 0.01,
+        },
+      );
+    }
+    this.slotObserver.observe(el);
+  }
+
+  unobserveSlot(el: HTMLElement): void {
+    if (this.slotObserver) {
+      this.slotObserver.unobserve(el);
+    }
   }
 
   /** Image-load failure: bounded retry before settling into an error state. */
@@ -394,7 +449,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     if (this.isSpread()) {
       this.enqueueSpreadNeighborhood();
     } else {
-      this.prioritizeReadingWindow(this.currentIndex());
+      this.prioritizeReadingWindow(index);
     }
     this.slideTo(index, instant, scrollToBottom);
   }
@@ -423,24 +478,19 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     // 2. Prefetch upcoming pages ahead if Read Pre-Fetch is enabled
     if (isReaderPrefetchEnabled()) {
       const prefetchCount = Math.max(1, getPrefetchBuffer());
-      const priorityCount = Math.min(prefetchCount, 2);
-      for (let offset = 1; offset <= priorityCount; offset++) {
+      for (let offset = 1; offset <= prefetchCount; offset++) {
         const nextIdx = index + offset;
         if (nextIdx < pageCount && this.getCachedPath(nextIdx) === undefined) {
           this.enqueue(nextIdx, true);
           anyEnqueued = true;
         }
       }
-      for (let offset = priorityCount + 1; offset <= prefetchCount; offset++) {
-        const nextIdx = index + offset;
-        if (nextIdx < pageCount && this.getCachedPath(nextIdx) === undefined) {
-          this.enqueue(nextIdx, false);
+      for (let offset = 1; offset <= Math.min(2, prefetchCount); offset++) {
+        const prevIdx = index - offset;
+        if (prevIdx >= 0 && this.getCachedPath(prevIdx) === undefined) {
+          this.enqueue(prevIdx, true);
           anyEnqueued = true;
         }
-      }
-      if (index > 0 && this.getCachedPath(index - 1) === undefined) {
-        this.enqueue(index - 1, true);
-        anyEnqueued = true;
       }
     }
     if (anyEnqueued) {
@@ -477,11 +527,14 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       }
     }
 
-    // 3. Prefetch further upcoming spreads
+    // 3. Prefetch further upcoming spreads with priority
     for (let s = cur + 2; s <= end; s++) {
-      for (const pageIndex of this.spreads()[s].pageIndices) {
-        if (this.getCachedPath(pageIndex) === undefined) {
-          this.enqueue(pageIndex, false);
+      const spread = this.spreads()[s];
+      if (spread) {
+        for (const pageIndex of spread.pageIndices) {
+          if (this.getCachedPath(pageIndex) === undefined) {
+            this.enqueue(pageIndex, true);
+          }
         }
       }
     }
@@ -491,7 +544,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       if (prev) {
         for (const pageIndex of prev.pageIndices) {
           if (this.getCachedPath(pageIndex) === undefined) {
-            this.enqueue(pageIndex, false);
+            this.enqueue(pageIndex, true);
           }
         }
       }
@@ -519,6 +572,10 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   // Layout controls ---------------------------------------------------------
   setMode(mode: ReaderMode): void {
     if (mode === this.mode()) return;
+    if (mode === "paged" && this.slotObserver) {
+      this.slotObserver.disconnect();
+      this.slotObserver = null;
+    }
     this.setModeSignal(mode);
     setDefaultReaderMode(mode);
     this.applyLayoutMode();
