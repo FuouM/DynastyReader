@@ -123,7 +123,7 @@ export function parseMangaDexUrl(input: string): { kind: "series" | "chapter"; i
   try {
     const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
     const host = url.hostname.toLowerCase();
-    if (!host.includes("mangadex.org")) return null;
+    if (host !== "mangadex.org" && !host.endsWith(".mangadex.org")) return null;
 
     const parts = url.pathname.split("/").filter(Boolean);
     if (parts.length >= 2) {

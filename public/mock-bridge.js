@@ -156,7 +156,11 @@
       // HTTP
       if (cmd === "httpGet") {
         const url = (args && args.url) || "";
-        if (url.includes("api.mangadex.org")) {
+        let host = "";
+        try {
+          host = new URL(url).hostname.toLowerCase();
+        } catch (_) {}
+        if (host === "api.mangadex.org" || host.endsWith(".mangadex.org")) {
           if (url.includes("/at-home/server/")) {
             return {
               status: 200,
