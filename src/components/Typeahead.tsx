@@ -27,6 +27,7 @@ export interface TypeaheadProps {
   placeholder?: string;
   maxItems?: number;
   debounceMs?: number;
+  type?: string;
   /** Optional controlled value; when provided the input mirrors it externally. */
   value?: string;
 }
@@ -115,7 +116,7 @@ export function Typeahead(props: TypeaheadProps) {
         scrollIndexIntoView(next);
         return next;
       });
-    } else if (ev.key === "Enter") {
+    } else if (ev.key === "Enter" || ev.keyCode === 13 || ev.which === 13) {
       const idx = selectedIndex();
       if (idx >= 0 && idx < items.length) {
         ev.preventDefault();
@@ -173,6 +174,7 @@ export function Typeahead(props: TypeaheadProps) {
         autocomplete="off"
         inputmode="search"
         enterkeyhint="search"
+        type={props.type ?? "search"}
         onInput={(v) => {
           setInputValue(v);
           props.onInputValue?.(v);

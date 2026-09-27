@@ -58,7 +58,14 @@ export function Pager(props: PagerProps) {
         icon={<ChevronLeftIcon />}
       />
 
-      <div class="ds-pager-row">
+      <form
+        class="ds-pager-row"
+        action="javascript:void(0)"
+        onSubmit={(ev) => {
+          ev.preventDefault();
+          doJump();
+        }}
+      >
         <span class="ds-progress-text ds-pager-label">
           {t("dialogs.pager.pageLabel")}
         </span>
@@ -72,7 +79,7 @@ export function Pager(props: PagerProps) {
           title={t("dialogs.pager.jumpPrompt")}
           onInput={(ev) => setJumpValue((ev.target as HTMLInputElement).value)}
           onKeyDown={(ev) => {
-            if (ev.key === "Enter") {
+            if (ev.key === "Enter" || ev.keyCode === 13 || ev.which === 13) {
               ev.preventDefault();
               doJump();
             }
@@ -82,13 +89,14 @@ export function Pager(props: PagerProps) {
           {t("dialogs.pager.ofTotal", { total: props.totalPages })}
         </span>
         <Button
+          type="submit"
           className="ds-btn-icon ds-pager-go-btn"
           icon={<CheckIcon size={12} />}
           title={t("dialogs.pager.jumpButton")}
           aria-label={t("dialogs.pager.jumpButton")}
           onClick={doJump}
         />
-      </div>
+      </form>
 
       <Button
         className="ds-btn-icon"

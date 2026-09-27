@@ -31,6 +31,7 @@ export interface ButtonProps {
   textClass?: string;
   reverse?: boolean;
   onClick?: (ev: MouseEvent) => void;
+  type?: "button" | "submit" | "reset";
   children?: JSX.Element;
 }
 
@@ -69,7 +70,7 @@ export function Button(props: ButtonProps) {
 
   return (
     <button
-      type="button"
+      type={props.type ?? "button"}
       ref={props.ref}
       id={props.id}
       class={`win-button ${resolvedClass()}`.trim()}

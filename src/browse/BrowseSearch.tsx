@@ -335,7 +335,16 @@ export function BrowseSearch(props: BrowseSearchProps) {
         title={<IconText icon={<SearchIcon />}>{t("browse.search.panelTitle")}</IconText>}
       >
         <div class="ds-col">
-          <div class="ds-flex-row">
+          <form
+            role="search"
+            action="javascript:void(0)"
+            class="ds-flex-row"
+            onSubmit={(ev) => {
+              ev.preventDefault();
+              (document.activeElement as HTMLElement)?.blur();
+              runSearch(q());
+            }}
+          >
             <div class="ds-search-wrap ds-flex-1 ds-relative">
               <Typeahead
                 value={q()}
@@ -345,26 +354,30 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   setQ(item.name);
                   pane.goToPage(1);
                 }}
-                onEnter={(value) => runSearch(value)}
+                onEnter={(value) => {
+                  (document.activeElement as HTMLElement)?.blur();
+                  runSearch(value);
+                }}
                 placeholder={t("browse.search.inputPlaceholder")}
                 debounceMs={SEARCH_TYPEAHEAD_DEBOUNCE_MS}
               />
             </div>
             <IconButton
               id="ds-tab-search-submit"
+              type="submit"
               cssText="font-weight:600;"
               icon={<SearchIcon />}
               text={t("browse.search.searchButton")}
-              onClick={() => runSearch(q())}
             />
             <IconButton
               id="ds-tab-search-reset"
+              type="button"
               title={t("browse.search.resetFiltersTooltip")}
               icon={<ClearIcon />}
               text={t("common.clear")}
               onClick={clearAll}
             />
-          </div>
+          </form>
 
           <div class="ds-col-4">
             <div class="ds-label-sm">

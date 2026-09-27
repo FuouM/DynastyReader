@@ -13,6 +13,7 @@ import { CloseIcon } from "./Icon";
 export interface InputFieldProps {
   id?: string;
   ref?: (el: HTMLInputElement) => void;
+  type?: string;
   value?: string;
   placeholder?: string;
   class?: string;
@@ -63,7 +64,7 @@ export function InputField(props: InputFieldProps) {
           props.ref?.(el);
         }}
         id={props.id}
-        type="text"
+        type={props.type ?? "text"}
         class={`input-field has-clear${props.class ? ` ${props.class}` : ""}`}
         style={props.style}
         placeholder={props.placeholder}
@@ -89,7 +90,7 @@ export function InputField(props: InputFieldProps) {
         onKeyDown={(ev) => {
           props.onKeyDown?.(ev);
           if (ev.defaultPrevented) return;
-          if (ev.key === "Enter") {
+          if (ev.key === "Enter" || ev.keyCode === 13 || ev.which === 13) {
             ev.preventDefault();
             props.onEnter?.();
           } else if (ev.key === "Escape") {

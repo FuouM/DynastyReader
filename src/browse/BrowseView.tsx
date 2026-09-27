@@ -407,12 +407,24 @@ export function BrowseView() {
         onToggle={toggleSearchGo}
         title={<IconText icon={<SearchIcon />}>{t("browse.searchAndGo.title")}</IconText>}
       >
-          <div class="ds-row">
+          <form
+            role="search"
+            action="javascript:void(0)"
+            class="ds-row"
+            onSubmit={(ev) => {
+              ev.preventDefault();
+              (document.activeElement as HTMLElement)?.blur();
+              runSearch(searchBoxValue());
+            }}
+          >
             <div class="ds-search-wrap ds-flex-1">
               <Typeahead
                 fetcher={activeProvider() === "mangadex" ? suggestMangaDex : suggest}
                 onSelect={(item) => runSearch(item.name)}
-                onEnter={(value) => runSearch(value)}
+                onEnter={(value) => {
+                  (document.activeElement as HTMLElement)?.blur();
+                  runSearch(value);
+                }}
                 onInputValue={(value) => setSearchBoxValue(value)}
                 placeholder={activeProvider() === "mangadex" ? "Search MangaDex titles, authors, genres..." : t("browse.searchAndGo.inputPlaceholder")}
                 maxItems={8}
@@ -421,22 +433,34 @@ export function BrowseView() {
             </div>
             <IconButton
               id="ds-search-btn"
+              type="submit"
               icon={<SearchIcon />}
               text={t("browse.searchAndGo.searchButton")}
-              onClick={() => runSearch(searchBoxValue())}
             />
-          </div>
-          <div class="ds-row">
+          </form>
+          <form
+            action="javascript:void(0)"
+            class="ds-row"
+            onSubmit={(ev) => {
+              ev.preventDefault();
+              (document.activeElement as HTMLElement)?.blur();
+              openByUrl();
+            }}
+          >
             <InputField
               id="ds-url-input"
               placeholder={activeProvider() === "mangadex" ? "MangaDex URL (https://mangadex.org/title/...) or UUID" : t("browse.searchAndGo.urlPlaceholder")}
               wrapperClass="ds-flex-1"
               value={urlValue()}
               onInput={(val) => setUrlValue(val)}
-              onEnter={() => openByUrl()}
+              onEnter={() => {
+                (document.activeElement as HTMLElement)?.blur();
+                openByUrl();
+              }}
             />
             <IconButton
               id="ds-url-paste-btn"
+              type="button"
               icon={<ClipboardIcon />}
               text={t("browse.searchAndGo.pasteButton")}
               title={t("browse.searchAndGo.pasteTooltip")}
@@ -444,11 +468,11 @@ export function BrowseView() {
             />
             <IconButton
               id="ds-url-btn"
+              type="submit"
               icon={<ExternalLinkIcon />}
               text={t("browse.searchAndGo.openButton")}
-              onClick={openByUrl}
             />
-          </div>
+          </form>
           <div class="ds-muted ds-mt-2">
             {activeProvider() === "mangadex" ? "Accepted: MangaDex title (mangadex.org/title/...), chapter (mangadex.org/chapter/...), or UUID" : t("browse.searchAndGo.acceptedNotice")}
           </div>
