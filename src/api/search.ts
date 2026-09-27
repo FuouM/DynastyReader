@@ -29,7 +29,11 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
   }
   // ── CASE 2: Keyword Query or Standard Search ────────────────────────────────
   const searchParams = new URLSearchParams();
-  if (query) searchParams.set("q", query);
+  if (query) {
+    searchParams.set("q", query);
+  } else if (withTags.length > 0) {
+    searchParams.set("q", withTags.join(" "));
+  }
   for (const c of params.classes ?? []) {
     if (c) searchParams.append("classes[]", c);
   }

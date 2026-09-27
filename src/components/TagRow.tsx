@@ -1,7 +1,7 @@
 import { For, Show } from "solid-js";
 import type { SeriesTag } from "../types/api";
 import { navigate } from "../stores/router";
-import { isArtistTag, isContainerKind, isScanlatorTag, tagClass } from "../taxonomy";
+import { tagClass } from "../taxonomy";
 import { t } from "../i18n";
 
 export interface TagPillProps {
@@ -14,10 +14,7 @@ export interface TagPillProps {
 export function TagPill(props: TagPillProps) {
   const activate = (ev: Event) => {
     ev.stopPropagation();
-    if (
-      props.permalink &&
-      (isContainerKind(props.type) || isArtistTag(props.type) || isScanlatorTag(props.type))
-    ) {
+    if (props.permalink && !props.permalink.startsWith("mdx-")) {
       navigate({
         view: "series",
         seriesPermalink: props.permalink,
