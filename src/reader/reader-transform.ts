@@ -59,22 +59,3 @@ export function setStripAnimated(
   el.style.transform = stripTranslateX(slideIndex, dir);
 }
 
-/** Resets strip to current slide, with `smooth` toggle. */
-export function resetStripTo(
-  el: HTMLElement,
-  slideIndex: number,
-  dir: ReadingDirection,
-  smooth: boolean,
-): void {
-  const value = stripTranslateX(slideIndex, dir);
-  if (!smooth) {
-    el.style.transition = "none";
-    void el.offsetWidth;
-    el.style.transform = value;
-    requestAnimationFrame(() => {
-      if (el) el.style.transition = "";
-    });
-  } else {
-    el.style.transform = value;
-  }
-}

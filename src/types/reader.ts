@@ -19,21 +19,3 @@ export interface SpreadGroup {
   isWide: boolean;
 }
 
-export interface PageDownloadTask {
-  index: number;
-  url: string;
-  outputPath: string;
-}
-
-export interface ViewportState {
-  currentIndex: number;
-  pageTotal: number;
-  cachedCount: number;
-}
-
-export interface PageSlot {
-  index: number;
-  el: HTMLElement;
-}
-
-export type SlotRenderKind = "spinner" | "offline" | "error";

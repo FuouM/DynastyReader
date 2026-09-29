@@ -19,10 +19,10 @@ import { getFullyCachedChapters, type FullyCachedChapterRow } from "../db/cache.
 import { enrichCachedChapters } from "../db/cache-aggregate";
 import {
   scrollBrowseToTop,
-  setPaneLoading,
   setTopPagerFor,
   useDelayedSpinner,
   useTabPane,
+  type BrowsePaneApi,
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading, EmptyState } from "../components/Feedback";
@@ -43,7 +43,7 @@ export interface BrowseDownloadedProps {
   tabId: string;
   active: Accessor<boolean>;
   revision: Accessor<number>;
-  forceTick: Accessor<number>;
+  register?: (api: BrowsePaneApi) => void;
 }
 
 export function BrowseDownloaded(props: BrowseDownloadedProps) {
@@ -79,7 +79,6 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
   const pane = useTabPane<DownloadedModel>({
     active: props.active,
     revision: props.revision,
-    forceTick: props.forceTick,
     load: async () => {
       if (activeProvider() === "mangadex") {
         const mdxChapters = await getMangaDexDownloadedChapters();
@@ -102,11 +101,9 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
       return { rows, ...enriched };
     },
   });
+  props.register?.({ reload: pane.reload, reset: pane.reset });
   const showSpinner = useDelayedSpinner(() => pane.loading());
 
-  createEffect(() => {
-    setPaneLoading("downloaded", pane.loading());
-  });
 
   const model = () => pane.data();
 

@@ -99,18 +99,6 @@ export interface CacheOverviewStats {
   totalMetadataEntries: number;
 }
 
-export interface CachedSeriesGroup {
-  seriesPermalink: string;
-  seriesName: string;
-  isStandalone: boolean;
-  coverPath: string | null;
-  chapterCount: number;
-  pageCount: number;
-  totalSizeBytes: number;
-  lastCachedAt: number;
-  chapterPermalinks: string[];
-}
-
 export interface CollectionRow {
   id: number;
   name: string;

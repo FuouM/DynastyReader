@@ -8,8 +8,6 @@
  *  - transient search directives consumed at this dispatch boundary
  */
 
-const CHECK_UPDATES_POLL_DEADLINE_MS = 15_000;
-const CHECK_UPDATES_POLL_INTERVAL_MS = 50;
 const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
 import { makeEventListener } from "@solid-primitives/event-listener";
@@ -44,12 +42,11 @@ import {
 } from "../components/Icon";
 import { log } from "../utils/log";
 import {
-  getPaneError,
-  getPaneLoading,
   getTopPagerFor,
   scrollBrowseToBottom,
   scrollBrowseToTop,
   useBlacklistRevision,
+  type BrowsePaneApi,
 } from "./browse-state";
 import { BrowseFeed } from "./BrowseFeed";
 import { BrowseDirectory } from "./BrowseDirectory";
@@ -116,13 +113,14 @@ export function BrowseView() {
   const [searchBoxValue, setSearchBoxValue] = createSignal("");
   const [urlValue, setUrlValue] = createSignal("");
   const [checkBtn, setCheckBtn] = createSignal<"idle" | "checking" | "updated" | "error">("idle");
-  const [forceTick, setForceTick] = createSignal(0);
+  const paneApis: Record<string, BrowsePaneApi> = {};
+  const register = (key: string) => (api: BrowsePaneApi) => {
+    paneApis[key] = api;
+  };
   let checkTimer: number | null = null;
-  let pollTimer: number | null = null;
 
   onCleanup(() => {
     if (checkTimer !== null) window.clearTimeout(checkTimer);
-    if (pollTimer !== null) window.clearTimeout(pollTimer);
   });
   const blacklistRev = useBlacklistRevision();
   const whitelistRev = useWhitelistRevision();
@@ -258,28 +256,18 @@ export function BrowseView() {
   const checkUpdates = async (): Promise<void> => {
     if (checkBtn() === "checking") return;
     setCheckBtn("checking");
-    setForceTick((t) => t + 1);
     const tabId = activeTab();
-    await new Promise<void>((resolve) => {
-      const deadline = Date.now() + CHECK_UPDATES_POLL_DEADLINE_MS;
-      let sawLoading = false;
-      let timer: number | null = null;
-      const cleanup = () => { if (timer !== null) { window.clearTimeout(timer); timer = null; } };
-      const tick = (): void => {
-        const loading = getPaneLoading(tabId);
-        if (loading) sawLoading = true;
-        if (sawLoading && !loading) { cleanup(); resolve(); return; }
-        if (Date.now() > deadline) { cleanup(); resolve(); return; }
-        // If we never see loading=true within one interval, the pane data was
-        // already fresh — resolve immediately instead of waiting the full deadline.
-        if (!sawLoading && Date.now() > deadline - CHECK_UPDATES_POLL_DEADLINE_MS + CHECK_UPDATES_POLL_INTERVAL_MS * 3) {
-          cleanup(); resolve(); return;
-        }
-        timer = window.setTimeout(tick, CHECK_UPDATES_POLL_INTERVAL_MS);
-      };
-      tick();
-    });
-    const hasError = getPaneError(tabId);
+    const api = paneApis[tabId];
+    let hasError = false;
+    if (api) {
+      try {
+        api.reset();
+        await api.reload();
+      } catch (err) {
+        hasError = true;
+        log.warn("browse-view", `Failed checking updates for tab ${tabId}:`, err);
+      }
+    }
     setCheckBtn(hasError ? "error" : "updated");
     if (checkTimer !== null) window.clearTimeout(checkTimer);
     checkTimer = window.setTimeout(() => {
@@ -527,7 +515,7 @@ export function BrowseView() {
             tabId="releases"
             active={activeFor("releases")}
             revision={revision}
-            forceTick={forceTick}
+            register={register("releases")}
           />
         </div>
         <div
@@ -539,7 +527,7 @@ export function BrowseView() {
             tabId="added"
             active={activeFor("added")}
             revision={revision}
-            forceTick={forceTick}
+            register={register("added")}
           />
         </div>
         <div
@@ -548,11 +536,11 @@ export function BrowseView() {
           classList={{ "ds-hidden": !activeFor("downloaded")() }}
         >
           <BrowseDownloaded
-              tabId="downloaded"
-              active={activeFor("downloaded")}
-              revision={revision}
-              forceTick={forceTick}
-            />
+            tabId="downloaded"
+            active={activeFor("downloaded")}
+            revision={revision}
+            register={register("downloaded")}
+          />
         </div>
         <div
           id="ds-browse-tab-series-dir"
@@ -564,7 +552,7 @@ export function BrowseView() {
             tabId="series-dir"
             active={activeFor("series-dir")}
             revision={revision}
-            forceTick={forceTick}
+            register={register("series-dir")}
           />
         </div>
         <div
@@ -577,7 +565,7 @@ export function BrowseView() {
             tabId="tags-dir"
             active={activeFor("tags-dir")}
             revision={revision}
-            forceTick={forceTick}
+            register={register("tags-dir")}
           />
         </div>
         <div
@@ -588,9 +576,9 @@ export function BrowseView() {
           <BrowseSearch
             active={activeFor("search")}
             revision={revision}
-            forceTick={forceTick}
             transient={pendingSearch()}
             onTransientConsumed={() => setPendingSearch(null)}
+            register={register("search")}
           />
         </div>
       </div>

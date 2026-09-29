@@ -80,8 +80,6 @@ export function updateDownloadQueueSnapshot(items: DownloadQueueItem[]): void {
 }
 
 let initialized = false;
-let pollIntervalId: number | null = null;
-let unlistenProgress: (() => void) | null = null;
 let wasAutoPausedByVisibility = false;
 
 let boundRefreshState: (() => Promise<void>) | null = null;
@@ -124,24 +122,6 @@ const onPageShow = () => {
   }
 };
 
-export function disposeGlobalDownloadListener(): void {
-  if (!initialized) return;
-  if (pollIntervalId !== null) {
-    window.clearInterval(pollIntervalId);
-    pollIntervalId = null;
-  }
-  if (unlistenProgress) {
-    unlistenProgress();
-    unlistenProgress = null;
-  }
-  if (typeof document !== "undefined") {
-    document.removeEventListener("visibilitychange", onVisibilityChange);
-    window.removeEventListener("pagehide", onPageHide);
-    window.removeEventListener("pageshow", onPageShow);
-  }
-  boundRefreshState = null;
-  initialized = false;
-}
 
 export function initGlobalDownloadListener(): void {
   if (initialized) return;
@@ -283,20 +263,13 @@ export function initGlobalDownloadListener(): void {
           }
         }
       }
-    }).then((unlisten) => {
-      // Guard against the race where dispose() runs before this promise settles.
-      if (!initialized) {
-        unlisten();
-      } else {
-        unlistenProgress = unlisten;
-      }
     });
   } catch {
     // Outside Tauri
   }
 
   // Poll every 3 seconds while downloads exist
-  pollIntervalId = window.setInterval(() => {
+  window.setInterval(() => {
     if (activeDownloadCount() > 0) {
       void refreshState();
       // Keep metered status / timezone offset fresh while downloading so a

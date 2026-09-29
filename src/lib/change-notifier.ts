@@ -18,18 +18,20 @@ export interface ChangeNotifier {
 
 export function createChangeNotifier(_name = "change-notifier"): ChangeNotifier {
   const [revision, setRevision] = createSignal(0);
-  const target = new EventTarget();
+  const listeners = new Set<ChangeListener>();
 
   const getRevision = (): number => revision();
 
   const onChanged = (fn: ChangeListener): (() => void) => {
-    target.addEventListener("change", fn);
-    return () => target.removeEventListener("change", fn);
+    listeners.add(fn);
+    return () => listeners.delete(fn);
   };
 
   const notifyChanged = (): void => {
     setRevision((r) => r + 1);
-    target.dispatchEvent(new Event("change"));
+    for (const fn of listeners) {
+      fn();
+    }
   };
 
   return { getRevision, onChanged, notifyChanged };

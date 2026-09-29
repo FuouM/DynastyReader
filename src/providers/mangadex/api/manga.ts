@@ -6,7 +6,6 @@
 import { fetchMangaDex } from "./client";
 import { cleanMangaDexId } from "./constants";
 import type {
-  MangaDexAggregateResponse,
   MangaDexChapter,
   MangaDexManga,
   MangaDexResponse,
@@ -86,19 +85,6 @@ export async function getMangaFeed(
   return resp;
 }
 
-/**
- * Fetches the volume/chapter aggregate tree for a manga.
- * Extremely efficient for getting the complete chapter index and duplicate translation counts.
- */
-export async function getMangaAggregate(
-  id: string,
-  translatedLanguage: string[] = ["en"],
-): Promise<MangaDexAggregateResponse> {
-  const cleanId = cleanMangaDexId(id);
-  return fetchMangaDex<MangaDexAggregateResponse>(`/manga/${cleanId}/aggregate`, {
-    translatedLanguage,
-  });
-}
 
 /** Cache tag taxonomy in memory to avoid repeated network calls */
 let cachedTags: MangaDexTag[] | null = null;

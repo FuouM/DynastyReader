@@ -36,6 +36,3 @@ export async function touchCachedMdxMetadata(key: string): Promise<void> {
   await execute(`UPDATE cached_metadata SET cached_at = ? WHERE cache_key = ?`, [Date.now(), key]);
 }
 
-export async function deleteCachedMdxMetadata(key: string): Promise<void> {
-  await execute(`DELETE FROM cached_metadata WHERE cache_key = ?`, [key]);
-}

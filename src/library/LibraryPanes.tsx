@@ -16,25 +16,20 @@ import { getOrHydrateSeriesCover } from "../api/series";
 import {
   getCollections,
   getCollectionsRevision,
-  onCollectionsChanged,
   deleteCollection,
 } from "../db/collections.repo";
 import {
   getBookmarksPage,
   getBookmarksRevision,
-  onBookmarksChanged,
   removeBookmark,
   removeBookmarksBatch,
   getFollowedSeriesPage,
   getFollowedRevision,
-  onFollowedChanged,
   unfollowSeries,
   updateFollowedSeriesCover,
   getHistoryPage,
   getHistoryRevision,
-  onHistoryChanged,
   getProgressRevision,
-  onProgressChanged,
   removeHistory,
   removeHistoryBatch,
 } from "../db/library.repo";
@@ -69,7 +64,6 @@ export interface CollectionsPaneProps extends LibraryPaneProps {
 export function CollectionsPane(props: CollectionsPaneProps) {
   const { data, refetch, showSpinner } = useLibraryPaneResource({
     getRevision: getCollectionsRevision,
-    onChanged: onCollectionsChanged,
     fetcher: async () => getCollections(),
     register: props.register,
   });
@@ -148,7 +142,6 @@ export interface BookmarksPaneProps extends LibraryPaneProps {
 export function BookmarksPane(props: BookmarksPaneProps) {
   const { setPage, data, refetch, showSpinner } = useLibraryPaneResource<BookmarksPaneData>({
     getRevision: getBookmarksRevision,
-    onChanged: onBookmarksChanged,
     fetcher: async (p) => {
       const res = await getBookmarksPage(p, 15);
       const permalinks = res.rows.map((r) => r.chapter_permalink);
@@ -266,7 +259,6 @@ export function BookmarksPane(props: BookmarksPaneProps) {
 export function FollowedPane(props: LibraryPaneProps) {
   const { setPage, data, refetch, showSpinner } = useLibraryPaneResource({
     getRevision: getFollowedRevision,
-    onChanged: onFollowedChanged,
     fetcher: (p) => getFollowedSeriesPage(p, 10),
     register: props.register,
   });
@@ -410,14 +402,6 @@ export interface HistoryPaneProps extends LibraryPaneProps {
 export function HistoryPane(props: HistoryPaneProps) {
   const { setPage, data, refetch, showSpinner } = useLibraryPaneResource<HistoryPaneData>({
     getRevision: () => getHistoryRevision() + getProgressRevision(),
-    onChanged: (cb) => {
-      const u1 = onHistoryChanged(cb);
-      const u2 = onProgressChanged(cb);
-      return () => {
-        u1();
-        u2();
-      };
-    },
     fetcher: async (p) => {
       const res = await getHistoryPage(p, 15);
       const permalinks = res.rows.map((r) => r.chapter_permalink);

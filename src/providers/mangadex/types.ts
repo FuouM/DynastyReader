@@ -173,24 +173,6 @@ export interface MangaDexAtHomeReport {
   cached: boolean;
 }
 
-export interface MangaDexAggregateChapter {
-  chapter: string;
-  id: string;
-  others: string[];
-  count: number;
-}
-
-export interface MangaDexAggregateVolume {
-  volume: string;
-  count: number;
-  chapters: Record<string, MangaDexAggregateChapter>;
-}
-
-export interface MangaDexAggregateResponse {
-  result: "ok" | "error";
-  volumes: Record<string, MangaDexAggregateVolume>;
-}
-
 // ── 3. SQLite Database Models (mangadex.db) ─────────────────────────────────
 
 export interface MangaDexFollowedRow {
@@ -238,25 +220,6 @@ export interface MangaDexCachedPageRow {
 
 // ── 4. UI Domain Models (Multi-Scanlator Accordion & Search) ────────────────
 
-export interface MangaDexChapterUpload {
-  id: string;
-  chapterNumber: string | null;
-  volume: string | null;
-  title: string | null;
-  translatedLanguage: string;
-  scanlatorName: string;
-  scanlatorId: string | null;
-  readableAt: string;
-  pages: number;
-  externalUrl: string | null;
-}
-
-export interface MangaDexChapterGroup {
-  chapterNumber: string | null;
-  displayTitle: string;
-  volume: string | null;
-  uploads: MangaDexChapterUpload[];
-}
 
 export interface MangaDexSearchFilters {
   ids?: string[];

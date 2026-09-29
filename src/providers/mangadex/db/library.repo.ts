@@ -91,24 +91,6 @@ export async function getFollowedManga(
 }
 
 /**
- * Updates latest chapter info for a followed manga.
- */
-export async function updateFollowedLatestChapter(
-  mangaId: string,
-  chapterId: string,
-  chapterTitle: string,
-): Promise<void> {
-  await initMangaDexDb();
-  await execute(
-    `UPDATE followed_manga
-     SET latest_chapter_id = ?1, latest_chapter_title = ?2, last_checked_at = ?3
-     WHERE manga_id = ?4`,
-    [chapterId, chapterTitle, Date.now(), mangaId],
-  );
-  notifyFollowedChanged();
-}
-
-/**
  * Retrieves all followed manga sorted alphabetically.
  */
 export async function getAllFollowedManga(): Promise<MangaDexFollowedRow[]> {

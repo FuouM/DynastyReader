@@ -15,8 +15,6 @@ export const MANGADEX_USER_AGENT = "DynastyReader/1.0.0 (https://github.com/Dyna
 /** Max requests per second allowed (polite client threshold) */
 export const MANGADEX_RATE_LIMIT_DELAY_MS = 250; // 4 req/sec
 
-/** Default feed page limit (MangaDex max is 500) */
-export const MANGADEX_FEED_PAGE_LIMIT = 100;
 
 /** Standard MangaDex v4/v5 entity UUID pattern (8-4-4-4-12 hex). */
 export const MANGADEX_UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;

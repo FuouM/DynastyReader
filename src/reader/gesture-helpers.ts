@@ -15,7 +15,6 @@ export const SWIPE_MIN_DIST_MOUSE_PX = 45;
 
 export const OVERSCROLL_COLLISION_RADIUS_PX = 48;
 export const OVERSCROLL_CARD_AVOID_H_PX = 96;
-export const OVERSCROLL_CARD_AVOID_W_PX = 185;
 
 export function getOverscrollCardAvoidW(winW: number): number {
   const cardW = Math.min(260, Math.max(160, winW - 48));

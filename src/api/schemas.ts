@@ -87,5 +87,3 @@ export const SeriesSchema = z.looseObject({
   taggables: arrDef(SeriesTaggableSchema),
 });
 export type ValidatedChapter = z.infer<typeof ChapterSchema>;
-export type ValidatedFeed = z.infer<typeof FeedSchema>;
-export type ValidatedSeries = z.infer<typeof SeriesSchema>;

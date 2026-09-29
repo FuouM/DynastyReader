@@ -66,9 +66,9 @@ async function countTable(table: string): Promise<number> {
 }
 
 /** File size for the main db + wal/shm sidecars. */
-export async function getDbFileStats(): Promise<DbFileStats> {
+export async function getDbFileStats(dbName: string = DB_NAME): Promise<DbFileStats> {
   try {
-    const batch = await ipc.dirStatBatch([DB_NAME, `${DB_NAME}-wal`, `${DB_NAME}-shm`]);
+    const batch = await ipc.dirStatBatch([dbName, `${dbName}-wal`, `${dbName}-shm`]);
     const items = batch?.items ?? [];
     const dbSizeBytes = items[0]?.total_bytes ?? 0;
     const walSizeBytes = items[1]?.total_bytes ?? 0;
@@ -82,7 +82,7 @@ export async function getDbFileStats(): Promise<DbFileStats> {
   } catch (err) {
     log.warn("db/manage", "dirStatBatch failed, attempting single dirStat fallback:", err);
     try {
-      const single = await ipc.dirStat(DB_NAME);
+      const single = await ipc.dirStat(dbName);
       const total = single?.total_bytes ?? 0;
       return { dbSizeBytes: total, walSizeBytes: 0, shmSizeBytes: 0, totalSizeBytes: total };
     } catch (fallbackErr) {

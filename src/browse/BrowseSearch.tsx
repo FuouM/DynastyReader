@@ -31,11 +31,10 @@ import { formatMangaTitle, getMangaAuthors } from "../providers/mangadex/mapping
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
 import type { BlacklistMode } from "../types/blacklist";
 import {
-  setPaneError,
-  setPaneLoading,
   setTopPagerFor,
   useDelayedSpinner,
   useTabPane,
+  type BrowsePaneApi,
 } from "./browse-state";
 import { createSearchFilters } from "./useSearchFilters";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
@@ -84,9 +83,9 @@ interface SearchModel {
 export interface BrowseSearchProps {
   active: Accessor<boolean>;
   revision: Accessor<number>;
-  forceTick: Accessor<number>;
   transient: { searchQuery?: string; withTag?: string; searchClass?: string } | null;
   onTransientConsumed: () => void;
+  register?: (api: BrowsePaneApi) => void;
 }
 
 export function BrowseSearch(props: BrowseSearchProps) {
@@ -99,7 +98,6 @@ export function BrowseSearch(props: BrowseSearchProps) {
   const pane = useTabPane<SearchModel>({
     active: props.active,
     revision: props.revision,
-    forceTick: props.forceTick,
     load: async (page) => {
       if (activeProvider() === "mangadex") {
         let includedTags: string[] | undefined;
@@ -203,12 +201,9 @@ export function BrowseSearch(props: BrowseSearchProps) {
       }
     },
   });
+  props.register?.({ reload: pane.reload, reset: pane.reset });
   const showSpinner = useDelayedSpinner(pane.loading);
 
-  createEffect(() => {
-    setPaneLoading("search", pane.loading());
-    setPaneError("search", pane.error() !== undefined);
-  });
 
   createEffect(() => {
     const t = props.transient;

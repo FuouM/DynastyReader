@@ -67,10 +67,3 @@ export function removeWhitelistedTag(tagIdOrName: string): void {
   setWhitelistRevision((r) => r + 1);
 }
 
-export function isItemWhitelisted(itemTags: { name?: string }[]): boolean {
-  if (!whitelistEnabled()) return true;
-  const list = whitelistedTags();
-  if (list.length === 0) return true;
-  const names = new Set(list.map((t) => t.name.toLowerCase()));
-  return itemTags.some((t) => t.name && names.has(t.name.toLowerCase()));
-}

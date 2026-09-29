@@ -88,27 +88,6 @@ export async function getMangaReadingProgress(
   return dict;
 }
 
-/**
- * Marks a chapter as completed or unread.
- */
-export async function setChapterCompletion(
-  chapterId: string,
-  mangaId: string,
-  mangaTitle: string,
-  chapterTitle: string,
-  completed: boolean,
-  pageTotal = 1,
-): Promise<void> {
-  await saveReadingProgress(
-    chapterId,
-    mangaId,
-    mangaTitle,
-    chapterTitle,
-    completed ? pageTotal - 1 : 0,
-    pageTotal,
-    completed,
-  );
-}
 
 /**
  * Deletes reading progress for a chapter.

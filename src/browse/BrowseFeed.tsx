@@ -30,11 +30,10 @@ import type { BlacklistMode } from "../types/blacklist";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import {
   scrollBrowseToTop,
-  setPaneError,
-  setPaneLoading,
   setTopPagerFor,
   useDelayedSpinner,
   useTabPane,
+  type BrowsePaneApi,
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading, ErrorRetryRow } from "../components/Feedback";
@@ -156,16 +155,16 @@ export interface BrowseFeedProps {
   tabId: "releases" | "added";
   active: Accessor<boolean>;
   revision: Accessor<number>;
-  forceTick: Accessor<number>;
+  register?: (api: BrowsePaneApi) => void;
 }
 
 export function BrowseFeed(props: BrowseFeedProps) {
   const pane = useTabPane<FeedModel>({
     active: props.active,
     revision: props.revision,
-    forceTick: props.forceTick,
     load: (page) => loadFeedModel(props.tabId, page),
   });
+  props.register?.({ reload: pane.reload, reset: pane.reset });
   const showSpinner = useDelayedSpinner(pane.loading);
 
   const [updateBanner, setUpdateBanner] = createSignal(false);
@@ -195,10 +194,6 @@ export function BrowseFeed(props: BrowseFeedProps) {
     setUpdateBanner(true);
   };
 
-  createEffect(() => {
-    setPaneLoading(props.tabId, pane.loading());
-    setPaneError(props.tabId, pane.error() !== undefined);
-  });
 
   // Model change: refresh top pager, footer state, banners
   createEffect(() => {

@@ -16,10 +16,10 @@ import { activeProvider } from "../stores/provider";
 import { searchManga, getTags } from "../providers/mangadex/api/manga";
 import { formatMangaTitle } from "../providers/mangadex/mapping";
 import {
-  setPaneLoading,
   setTopPagerFor,
   useDelayedSpinner,
   useTabPane,
+  type BrowsePaneApi,
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading, EmptyState, ErrorRetryRow } from "../components/Feedback";
@@ -104,14 +104,13 @@ export interface BrowseDirectoryProps {
   tabId: string;
   active: Accessor<boolean>;
   revision: Accessor<number>;
-  forceTick: Accessor<number>;
+  register?: (api: BrowsePaneApi) => void;
 }
 
 export function BrowseDirectory(props: BrowseDirectoryProps) {
   const pane = useTabPane<DirectoryModel>({
     active: props.active,
     revision: props.revision,
-    forceTick: props.forceTick,
     load: async (page) => {
       if (activeProvider() === "mangadex") {
         if (props.kind === "series") {
@@ -171,11 +170,11 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
       return { dir, groups: directoryGroups(dir), blMode: getBlacklistMode() };
     },
   });
+  props.register?.({ reload: pane.reload, reset: pane.reset });
   const showSpinner = useDelayedSpinner(pane.loading);
   const [query, setQuery] = createSignal("");
   const triggerWarning = useTriggerWarning();
 
-  createEffect(() => setPaneLoading(props.tabId, pane.loading()));
 
   const model = (): DirectoryModel | undefined => pane.data();
 

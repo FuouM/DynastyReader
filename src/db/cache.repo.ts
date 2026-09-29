@@ -5,7 +5,7 @@ import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 import { createChangeNotifier } from "../lib/change-notifier";
-import type { CachedPageRow, ChapterCacheCount, CacheOverviewStats, CachedSeriesGroup } from "../types/db";
+import type { CachedPageRow, ChapterCacheCount, CacheOverviewStats } from "../types/db";
 
 const cacheNotifier = createChangeNotifier("cache.repo");
 export const getCacheRevision = cacheNotifier.getRevision;
@@ -70,120 +70,6 @@ export async function getCacheOverviewStats(): Promise<CacheOverviewStats> {
   };
 }
 
-export async function getCachedSeriesGroups(): Promise<CachedSeriesGroup[]> {
-  const { aggs, coverMap, page0Map, chapterMeta } = await loadCachedChapterContext();
-  if (aggs.length === 0) return [];
-
-  const groupMap = new Map<string, CachedSeriesGroup>();
-  for (const row of aggs) {
-    const cp = row.chapterPermalink;
-    const meta = chapterMeta.get(cp);
-    const seriesPermalink = meta?.seriesPermalink || "";
-    const seriesName = seriesPermalink ? (meta?.seriesName || "") : "";
-
-    const groupKey = seriesPermalink ? `series:${seriesPermalink}` : `chapter:${cp}`;
-    let g = groupMap.get(groupKey);
-    if (!g) {
-      // Canonical `cover:series:*` / `cover:chapter:*` keys only; legacy bare
-      // `cover:*` rows are normalized away by migration v1.
-      const coverPath =
-        (seriesPermalink && coverMap.get(`series:${seriesPermalink}`)) ||
-        coverMap.get(`chapter:${cp}`) ||
-        page0Map.get(cp) ||
-        null;
-
-      g = {
-        seriesPermalink: seriesPermalink || cp,
-        seriesName: seriesName || meta?.title || cp,
-        isStandalone: !seriesPermalink,
-        coverPath,
-        chapterCount: 0,
-        pageCount: 0,
-        totalSizeBytes: 0,
-        lastCachedAt: 0,
-        chapterPermalinks: [],
-      };
-      groupMap.set(groupKey, g);
-    }
-    g.chapterCount += 1;
-    g.pageCount += row.pageCount;
-    g.totalSizeBytes += row.sizeBytes;
-    g.lastCachedAt = Math.max(g.lastCachedAt, row.lastCachedAt);
-    g.chapterPermalinks.push(cp);
-  }
-
-  // Exact disk footprint resolution. Directory stats for every group's candidate
-  // paths are resolved in ONE `DirStatBatch` call instead of a per-group IPC
-  // burst; the same applies to the exact-file fallback via `FileExistsBatch`.
-  const dirProbe: { group: CachedSeriesGroup; candidates: string[] }[] = [];
-  for (const g of groupMap.values()) {
-    const clean = g.seriesPermalink.replace(/[^a-zA-Z0-9_-]/g, "_");
-    dirProbe.push({
-      group: g,
-      candidates: g.isStandalone
-        ? [`pages/_singles/${clean}`, `pages/${clean}`]
-        : [`pages/${clean}`],
-    });
-  }
-
-  const allDirPaths = [...new Set(dirProbe.flatMap((p) => p.candidates))];
-  const dirResp = await ipc.dirStatBatch(allDirPaths);
-  const dirBytesByPath = new Map<string, number>();
-  for (const item of dirResp.items ?? []) {
-    dirBytesByPath.set(item.path, Number(item.total_bytes ?? 0));
-  }
-
-  const fileProbe: { group: CachedSeriesGroup; filePaths: string[] }[] = [];
-  for (const p of dirProbe) {
-    let foundBytes = 0;
-    for (const c of p.candidates) {
-      const bytes = dirBytesByPath.get(c) ?? 0;
-      if (bytes > 0) {
-        foundBytes = bytes;
-        break;
-      }
-    }
-    if (foundBytes > 0) {
-      p.group.totalSizeBytes = foundBytes;
-      continue;
-    }
-    if (p.group.chapterPermalinks.length > 0) fileProbe.push({ group: p.group, filePaths: [] });
-  }
-
-  if (fileProbe.length > 0) {
-    const allPermalinks = [...new Set(fileProbe.flatMap((p) => p.group.chapterPermalinks))];
-    const pathRows = allPermalinks.length > 0
-      ? await query<{ chapter_permalink: string; file_path: string }>(
-          `SELECT chapter_permalink, file_path FROM cached_pages WHERE chapter_permalink IN (${inClause(allPermalinks.length)})`,
-          allPermalinks,
-        )
-      : [];
-    const pathsByChapter = new Map<string, string[]>();
-    for (const r of pathRows) {
-      const list = pathsByChapter.get(r.chapter_permalink);
-      if (list) {
-        list.push(r.file_path);
-      } else {
-        pathsByChapter.set(r.chapter_permalink, [r.file_path]);
-      }
-    }
-    const filePathGroups = fileProbe.map((p) => ({
-      group: p.group,
-      filePaths: p.group.chapterPermalinks.flatMap((cp) => pathsByChapter.get(cp) ?? []),
-    }));
-    const allFilePaths = [...new Set(filePathGroups.flatMap((f) => f.filePaths))];
-    const fileResp = await ipc.fileExistsBatch(allFilePaths);
-    const sizeByPath = new Map<string, number>();
-    for (const item of fileResp.items ?? []) {
-      sizeByPath.set(item.path, Number(item.size_bytes ?? 0));
-    }
-    for (const f of filePathGroups) {
-      f.group.totalSizeBytes = f.filePaths.reduce((sum, fp) => sum + (sizeByPath.get(fp) ?? 0), 0);
-    }
-  }
-
-  return Array.from(groupMap.values()).sort((a, b) => b.lastCachedAt - a.lastCachedAt);
-}
 
 /**
  * Deletes files best-effort. Returns the set of paths that were actually

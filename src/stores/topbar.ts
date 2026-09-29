@@ -41,8 +41,3 @@ export function showBanner(message: string, options?: ShowBannerOptions): void {
   dismissBanner();
 }
 
-export function hideBanner(): void {
-  dismissBanner.clear();
-  _setBanner(null);
-  _setBannerAction(null);
-}

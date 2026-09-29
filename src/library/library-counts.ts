@@ -1,16 +1,16 @@
-import { createResource, createSignal, onCleanup, onMount, type Accessor } from "solid-js";
+import { createResource, type Accessor } from "solid-js";
 import { query as dynastyQuery } from "../db/client";
 import { query as mangadexQuery } from "../providers/mangadex/db/client";
 import { initMangaDexDb } from "../providers/mangadex/db/schema";
 import { activeProvider } from "../stores/provider";
 import { dbReady } from "../stores/router";
 import {
-  onFollowedChanged,
-  onBookmarksChanged,
-  onHistoryChanged,
+  getFollowedRevision,
+  getBookmarksRevision,
+  getHistoryRevision,
 } from "../db/library-notifiers";
-import { onCollectionsChanged } from "../db/collections.repo";
-import { onLocalChanged } from "../db/local.repo";
+import { getCollectionsRevision } from "../db/collections.repo";
+import { getLocalRevision } from "../db/local.repo";
 
 export type LibraryTabId = "followed" | "collections" | "bookmarks" | "history" | "local";
 
@@ -67,24 +67,18 @@ export function useLibraryCounts(): {
   counts: Accessor<LibraryCounts>;
   refetchCounts: () => Promise<void>;
 } {
-  const [rev, setRev] = createSignal(0);
-  const bump = () => setRev((v) => v + 1);
-
-  onMount(() => {
-    const unsubs = [
-      onFollowedChanged(bump),
-      onBookmarksChanged(bump),
-      onHistoryChanged(bump),
-      onCollectionsChanged(bump),
-      onLocalChanged(bump),
-    ];
-    onCleanup(() => {
-      for (const unsub of unsubs) unsub();
-    });
-  });
-
   const [countsResource, { refetch }] = createResource(
-    () => (dbReady() ? { provider: activeProvider(), rev: rev() } : undefined),
+    () =>
+      dbReady()
+        ? {
+            provider: activeProvider(),
+            followed: getFollowedRevision(),
+            bookmarks: getBookmarksRevision(),
+            history: getHistoryRevision(),
+            collections: getCollectionsRevision(),
+            local: getLocalRevision(),
+          }
+        : undefined,
     ({ provider }) => fetchLibraryCounts(provider),
   );
   const counts: Accessor<LibraryCounts> = () => countsResource() ?? {};

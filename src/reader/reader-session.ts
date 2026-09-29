@@ -8,19 +8,16 @@
  */
 
 import { batch, createComponent, createRoot, createSignal, getOwner, runWithOwner } from "solid-js";
-import { createStore } from "solid-js/store";
 import { showBanner, setActions } from "../stores/topbar";
 import { convertFileSrc } from "../ipc";
 import { t } from "../i18n";
 import { toggleTheme as toggleThemeStore } from "../stores/theme";
-import type { ChapterPage } from "../types/api";
 import type { ChapterRef, Route } from "../types/routes";
 import type {
   FitMode,
   PagedLayout,
   ReaderMode,
   ReadingDirection,
-  SpreadGroup,
 } from "../types/reader";
 import { anchorPageOf, spreadIndexOf } from "./reader-spread";
 import { ReaderQueue, type ReaderQueueHost, type SlotStateKind } from "./reader-queue";
@@ -37,7 +34,7 @@ import {
 import * as vp from "./reader-viewport";
 import * as nav from "./reader-chapter-nav";
 import * as boot from "./reader-bootstrap";
-import { createReaderState, type ReaderState, type SlotStateRecord } from "./reader-state";
+import { createReaderState, type ReaderState } from "./reader-state";
 import { createReaderPersistence, type ReaderPersistence } from "./reader-persistence";
 import { log } from "../utils/log";
 import { ReaderActions, type ReaderActionsController } from "../components/ReaderActions";
@@ -48,79 +45,13 @@ const FULLSCREEN_RELAYOUT_SECOND_MS = 180;
 export function createReaderSession(route: Route): ReaderSession {
   return new ReaderSession(route);
 }
+export interface ReaderSession extends ReaderState {}
 export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   readonly permalink: string;
   readonly route: Route;
-  private state: ReaderState;
-
-  // Delegating accessors — all reactive state lives in `createReaderState()`.
-  // Getters return the underlying signal/store accessors so call-sites stay
-  // `session.foo()` / `session.setFoo(v)` with zero duplication.
-  get seriesPermalink(): () => string | null { return this.state.seriesPermalink; }
-  get setSeriesPermalink(): (val: string | null) => void { return this.state.setSeriesPermalink; }
-  get seriesType(): () => string | null { return this.state.seriesType; }
-  get setSeriesType(): (val: string | null) => void { return this.state.setSeriesType; }
-  get seriesName(): () => string { return this.state.seriesName; }
-  get setSeriesName(): (val: string) => void { return this.state.setSeriesName; }
-  get chapterPermalink(): () => string { return this.state.chapterPermalink; }
-  get setChapterPermalink(): (val: string) => void { return this.state.setChapterPermalink; }
-  get chapterTitle(): () => string { return this.state.chapterTitle; }
-  get setChapterTitle(): (val: string) => void { return this.state.setChapterTitle; }
-  get chapterList(): () => ChapterRef[] { return this.state.chapterList; }
-  get setChapterList(): (val: ChapterRef[]) => void { return this.state.setChapterList; }
-  get pages(): () => ChapterPage[] { return this.state.pages; }
-  get setPages(): (val: ChapterPage[]) => void { return this.state.setPages; }
-  get currentIndex(): () => number { return this.state.currentIndex; }
-  get setCurrentIndex(): (val: number) => void { return this.state.setCurrentIndex; }
-  get atEnd(): () => boolean { return this.state.atEnd; }
-  get setAtEnd(): (val: boolean) => void { return this.state.setAtEnd; }
-  get mode(): () => ReaderMode { return this.state.mode; }
-  get setModeSignal(): (val: ReaderMode) => void { return this.state.setModeSignal; }
-  get pagedLayout(): () => PagedLayout { return this.state.pagedLayout; }
-  get setPagedLayoutSignal(): (val: PagedLayout) => void { return this.state.setPagedLayoutSignal; }
-  get layoutAutoDetected(): () => boolean { return this.state.layoutAutoDetected; }
-  get setLayoutAutoDetected(): (val: boolean) => void { return this.state.setLayoutAutoDetected; }
-  get isLongStrip(): () => boolean { return this.state.isLongStrip; }
-  get setIsLongStrip(): (val: boolean) => void { return this.state.setIsLongStrip; }
-  get direction(): () => ReadingDirection { return this.state.direction; }
-  get setDirectionSignal(): (val: ReadingDirection) => void { return this.state.setDirectionSignal; }
-  get directionAutoDetected(): () => boolean { return this.state.directionAutoDetected; }
-  get setDirectionAutoDetected(): (val: boolean) => void { return this.state.setDirectionAutoDetected; }
-  get coverOffset(): () => boolean { return this.state.coverOffset; }
-  get setCoverOffsetSignal(): (val: boolean) => void { return this.state.setCoverOffsetSignal; }
-  get widePages(): () => ReadonlySet<number> { return this.state.widePages; }
-  get setWidePagesSignal(): (val: ReadonlySet<number> | ((prev: ReadonlySet<number>) => ReadonlySet<number>)) => void { return this.state.setWidePagesSignal; }
-  get fitMode(): () => FitMode { return this.state.fitMode; }
-  get setFitModeSignal(): (val: FitMode) => void { return this.state.setFitModeSignal; }
-  get zoomScale(): () => number { return this.state.zoomScale; }
-  get setZoomScaleSignal(): (val: number | ((prev: number) => number)) => void { return this.state.setZoomScaleSignal; }
-  get scrollLock(): () => boolean { return this.state.scrollLock; }
-  get setScrollLockSignal(): (val: boolean | ((prev: boolean) => boolean)) => void { return this.state.setScrollLockSignal; }
-  get isFullscreen(): () => boolean { return this.state.isFullscreen; }
-  get setIsFullscreenSignal(): (val: boolean) => void { return this.state.setIsFullscreenSignal; }
-  get loading(): () => boolean { return this.state.loading; }
-  get setLoading(): (val: boolean) => void { return this.state.setLoading; }
-  get error(): () => string | null { return this.state.error; }
-  get setError(): (val: string | null) => void { return this.state.setError; }
-  get empty(): () => boolean { return this.state.empty; }
-  get setEmpty(): (val: boolean) => void { return this.state.setEmpty; }
-  get bookmarked(): () => boolean { return this.state.bookmarked; }
-  get setBookmarked(): (val: boolean) => void { return this.state.setBookmarked; }
-  get restoring(): () => boolean { return this.state.restoring; }
-  get setRestoring(): (val: boolean) => void { return this.state.setRestoring; }
-  get toolbarVisible(): () => boolean { return this.state.toolbarVisible; }
-  get setToolbarVisible(): (val: boolean) => void { return this.state.setToolbarVisible; }
-  get controlsOpen(): () => boolean { return this.state.controlsOpen; }
-  get setControlsOpen(): (val: boolean) => void { return this.state.setControlsOpen; }
+  readonly state: ReaderState;
   private toolbarHideTimer: number | null = null;
   private priorFitMode: FitMode | null = null;
-  get cachedPages(): ReturnType<typeof createStore<Record<number, string | undefined>>> { return this.state.cachedPages; }
-  get slotStates(): ReturnType<typeof createStore<Record<number, SlotStateRecord | undefined>>> { return this.state.slotStates; }
-  get pageDimensions(): ReturnType<typeof createStore<Record<number, { width: number; height: number } | undefined>>> { return this.state.pageDimensions; }
-  get cachedCount(): () => number { return this.state.cachedCount; }
-  get setCachedCount(): (val: number) => void { return this.state.setCachedCount; }
-  get estimatedAspectRatio(): () => number { return this.state.estimatedAspectRatio; }
-  get setEstimatedAspectRatio(): (val: number) => void { return this.state.setEstimatedAspectRatio; }
   // DOM refs ----------------------------------------------------------------
   containerEl: HTMLDivElement | null = null;
   viewportEl: HTMLElement | null = null;
@@ -158,34 +89,11 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   readonly setActiveScanlatorGroup: (v: string | null) => void;
   private actionsDispose: (() => void) | null = null;
   private readonly sessionOwner = getOwner();
-  get isHorizontal(): () => boolean { return this.state.isHorizontal; }
-  get isSpread(): () => boolean { return this.state.isSpread; }
-  get spreads(): () => SpreadGroup[] { return this.state.spreads; }
-  get slideIndex(): () => number { return this.state.slideIndex; }
-  get progress(): () => {
-    full: string;
-    short: string;
-    currentNumStr: string;
-    totalNumStr: string;
-    maxCurrentChars: number;
-    pct: number;
-    width: number;
-    cachedNote: string;
-    title: string;
-    prevDisabled: boolean;
-    nextDisabled: boolean;
-  } { return this.state.progress; }
-  get chapterNav(): () => {
-    prevDisabled: boolean;
-    nextDisabled: boolean;
-  } { return this.state.chapterNav; }
-  get chapterNavigating(): () => boolean { return this.state.chapterNavigating; }
-  get setChapterNavigating(): (val: boolean) => void { return this.state.setChapterNavigating; }
-
   constructor(route: Route) {
     this.route = route;
     this.permalink = route.chapterPermalink ?? "";
     this.state = createReaderState();
+    Object.assign(this, this.state);
     const [scanlatorGroup, setScanlatorGroup] = createSignal<string | null>(null);
     this.activeScanlatorGroup = scanlatorGroup;
     this.setActiveScanlatorGroup = setScanlatorGroup;

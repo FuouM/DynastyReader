@@ -141,11 +141,6 @@ export function isContentKind(kind?: string | null): boolean {
  * Doujin acts as a container for doujinshi/doujin works when no higher-level container exists.
  */
 const CHAPTER_CONTAINER_KINDS = ["series", "anthology", "issue", "doujin"] as const;
-/** Checks whether a tag type represents a chapter container (Series, Anthology, Issue). */
-export function isContainerKind(type?: string | null): boolean {
-  const kind = resolveKind(type);
-  return kind !== undefined && (CHAPTER_CONTAINER_KINDS as readonly string[]).includes(kind);
-}
 
 /**
  * Finds the parent container tag for a chapter in priority order:

@@ -37,5 +37,3 @@ export const [activeProvider, setActiveProviderRaw] = persistedSignal<ContentPro
   { name: "ds-active-provider" },
 );
 
-export const isDynasty = () => activeProvider() === "dynasty";
-export const isMangaDex = () => activeProvider() === "mangadex";

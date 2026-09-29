@@ -14,7 +14,7 @@ import { createEffect, createResource, createSignal } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { createStore } from "solid-js/store";
 import type { Accessor } from "solid-js";
-import { getBlacklistRevision, onBlacklistChanged } from "../db/blacklist.repo";
+import { getBlacklistRevision } from "../db/blacklist.repo";
 import { activeProvider } from "../stores/provider";
 export interface TopPagerConfig {
   totalPages: number;
@@ -46,48 +46,24 @@ export function scrollBrowseToBottom(): void {
   if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
 }
 
-const [blacklistRevision, setBlacklistRevision] = createSignal<number>(getBlacklistRevision());
-onBlacklistChanged(() => setBlacklistRevision(getBlacklistRevision()));
+export const useBlacklistRevision: () => Accessor<number> = () => getBlacklistRevision;
 
-/** Reactive blacklist revision; panes key their loads on it. */
-export function useBlacklistRevision(): Accessor<number> {
-  return blacklistRevision;
-}
-
-const [paneLoadingMap, setPaneLoadingMap] = createStore<Record<string, boolean>>({});
-const [paneErrorMap, setPaneErrorMap] = createStore<Record<string, boolean>>({});
-
-/** Reports a pane's resource loading state so the Check Updates button can settle. */
-export function setPaneLoading(tabId: string, loading: boolean): void {
-  setPaneLoadingMap(`${activeProvider()}:${tabId}`, loading);
-}
-
-/** Reads a pane's current resource loading state. */
-export function getPaneLoading(tabId: string): boolean {
-  return !!paneLoadingMap[`${activeProvider()}:${tabId}`];
-}
-
-/** Reports whether a pane encountered an error during its latest load. */
-export function setPaneError(tabId: string, error: boolean): void {
-  setPaneErrorMap(`${activeProvider()}:${tabId}`, error);
-}
-
-/** Reads whether a pane currently has an error state. */
-export function getPaneError(tabId: string): boolean {
-  return paneErrorMap[`${activeProvider()}:${tabId}`] ?? false;
+export interface BrowsePaneApi {
+  reload: () => Promise<unknown>;
+  reset: () => void;
 }
 
 export interface TabPaneOptions<T> {
   active: Accessor<boolean>;
   revision: Accessor<number>;
-  forceTick: Accessor<number>;
   load: (page: number) => Promise<T>;
 }
 
 export interface TabPane<T> {
   page: Accessor<number>;
   goToPage: (p: number) => void;
-  reload: () => void;
+  reload: () => Promise<unknown>;
+  reset: () => void;
   data: Accessor<T | undefined>;
   loading: Accessor<boolean>;
   error: Accessor<unknown>;
@@ -111,7 +87,7 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
   const source = () => {
     if (!opts.active()) return false;
     const provider = activeProvider();
-    const key = `${provider}:${page()}:${loadSeq()}:${opts.revision()}:${opts.forceTick()}`;
+    const key = `${provider}:${page()}:${loadSeq()}:${opts.revision()}`;
     // If we already satisfied these exact query parameters, do not re-fetch on tab return.
     if (key === lastLoadedKey && data()) return false;
     return {
@@ -120,7 +96,7 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
       provider,
     };
   };
-  const [data, { mutate }] = createResource(
+  const [data, { mutate, refetch }] = createResource(
     source,
     async (params) => {
       const p = typeof params === "object" && params !== null ? params.page : page();
@@ -138,22 +114,21 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
     mutate(undefined);
   });
 
-  createEffect(() => {
-    if (opts.forceTick() > 0 && opts.active()) {
-      setPage(1);
-      scrollBrowseToTop();
-    }
-  });
+  const reset = (): void => {
+    setPage(1);
+    scrollBrowseToTop();
+  };
 
-  const reload = (): void => {
+  const reload = async (): Promise<unknown> => {
     lastLoadedKey = "";
     setLoadSeq((s) => s + 1);
+    return refetch();
   };
 
   const goToPage = (p: number): void => {
     lastLoadedKey = "";
     if (p === page()) {
-      reload();
+      void reload();
     } else {
       setPage(p);
     }
@@ -163,6 +138,7 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
     page,
     goToPage,
     reload,
+    reset,
     data,
     loading: () => data.loading,
     error: () => data.error,

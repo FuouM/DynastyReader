@@ -9,8 +9,6 @@ import {
   createResource,
   createSignal,
   For,
-  onCleanup,
-  onMount,
   Show,
 } from "solid-js";
 import { navigate } from "../stores/router";
@@ -20,7 +18,7 @@ import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api/series";
 import { getBlacklistMode, getBlacklistRevision, isSeriesBlacklisted } from "../db/blacklist.repo";
-import { getCollectionById, getCollectionItems, getCollectionsRevision, onCollectionsChanged, removeItemFromCollection, updateCollectionItemCover, renameCollection } from "../db/collections.repo";
+import { getCollectionById, getCollectionItems, getCollectionsRevision, removeItemFromCollection, updateCollectionItemCover, renameCollection } from "../db/collections.repo";
 import { deleteCached } from "../db/metadata.repo";
 import { seriesCoverKey } from "../lib/cache-keys";
 import type { CollectionItemRow, CollectionRow } from "../types/db";
@@ -57,11 +55,6 @@ function isItemBl(it: CollectionItemRow): boolean {
 
 export function CollectionDetailView(props: CollectionDetailViewProps) {
   const [tick, setTick] = createSignal(0);
-  const [rev, setRev] = createSignal(getCollectionsRevision());
-  onMount(() => {
-    const unsub = onCollectionsChanged(() => setRev(getCollectionsRevision()));
-    onCleanup(unsub);
-  });
 
   const [filter, setFilter] = createSignal("");
   const [exportOpen, setExportOpen] = createSignal(false);
@@ -95,7 +88,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
     }
   };
   const [data] = createResource(
-    () => ({ id: props.collectionId, tick: tick(), rev: rev() }),
+    () => ({ id: props.collectionId, tick: tick(), rev: getCollectionsRevision() }),
     async ({ id }) => {
       const [collection, items] = await Promise.all([
         getCollectionById(id),
