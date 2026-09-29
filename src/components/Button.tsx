@@ -89,15 +89,13 @@ export function Button(props: ButtonProps) {
   );
 }
 
-/** Backward-compatible alias */
-export const IconButton = Button;
 
 export interface ConfirmDeleteButtonProps extends Omit<ButtonProps, "onClick"> {
   onConfirm: () => Promise<void> | void;
 }
 
 /**
- * Two-stage confirmation button built on IconButton: first click shows a
+ * Two-stage confirmation button built on Button: first click shows a
  * "Delete?" prompt with a checkmark; clicking again within 3 seconds
  * invokes `onConfirm()`.
  */
@@ -419,13 +417,13 @@ export interface BackRefreshActionsProps {
 export function BackRefreshActions(props: BackRefreshActionsProps) {
   return (
     <>
-      <IconButton
+      <Button
         icon={<ArrowLeftIcon />}
         text={props.backLabel}
         title={t("actionBar.back")}
         onClick={props.onBack}
       />
-      <IconButton
+      <Button
         icon={<RefreshIcon />}
         text={t("actionBar.refresh")}
         title={t("actionBar.refresh")}

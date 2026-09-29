@@ -15,7 +15,7 @@ import {
 } from "../../utils/download-constraints";
 import { StorageIcon, BlacklistIcon, ExternalLinkIcon, Icon, DownloadIcon } from "../Icon";
 import { GroupBox } from "../GroupBox";
-import { IconText, IconButton } from "../Button";
+import { IconText, Button } from "../Button";
 import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
 export interface StorageSettingsProps {
   onClose: () => void;
@@ -26,7 +26,7 @@ export function StorageSettings(props: StorageSettingsProps) {
     <GroupBox id="ds-settings-sec-storage" title={<IconText icon={<StorageIcon />}>{t("settings.storage.title")}</IconText>}>
       <div class="ds-col">
         <SettingsRow label={t("settings.storage.manageDisk")}>
-          <IconButton
+          <Button
             id="ds-settings-goto-cache"
             icon={<ExternalLinkIcon />}
             text={t("settings.storage.openCacheButton")}
@@ -38,7 +38,7 @@ export function StorageSettings(props: StorageSettingsProps) {
         </SettingsRow>
 
         <SettingsRow label={t("settings.storage.seriesBlacklist")} divider>
-          <IconButton
+          <Button
             id="ds-settings-goto-blacklist"
             title={t("settings.storage.openBlacklistTooltip")}
             icon={<BlacklistIcon />}
@@ -51,7 +51,7 @@ export function StorageSettings(props: StorageSettingsProps) {
         </SettingsRow>
 
         <SettingsRow label={t("settings.storage.troubleshooting")} divider>
-          <IconButton
+          <Button
             id="ds-settings-open-logs"
             title={t("settings.storage.openLogsTooltip")}
             icon={<Icon name="folder2-open" />}

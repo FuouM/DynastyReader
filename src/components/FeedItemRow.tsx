@@ -23,7 +23,7 @@ import { getBlacklistMode } from "../db/blacklist.repo";
 import type { CollectionItemKind } from "../types/db";
 import { browseCovers } from "../browse/browse-covers";
 import { BookmarkIcon, CheckIcon, Icon } from "./Icon";
-import { IconButton, ExternalLinkButton, AddToCollectionButton } from "./Button";
+import { Button, ExternalLinkButton, AddToCollectionButton } from "./Button";
 import { ListItem } from "./ListItem";
 import { HydratedCover } from "./Cover";
 import { OfflineBadge, WarningChip } from "./Badges";
@@ -292,7 +292,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
           </div>
 
           <div class="ds-feed-actions" onClick={(ev) => ev.stopPropagation()}>
-            <IconButton
+            <Button
               icon={<BookmarkIcon filled={bookmarked()} />}
               text={bookmarked() ? t("browse.feed.saved") : t("browse.feed.readLater")}
               textClass="ds-action-btn-text"
@@ -303,7 +303,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
                 void toggleBookmark();
               }}
             />
-            <IconButton
+            <Button
               className="ds-btn-icon"
               icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
               title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}

@@ -3,7 +3,7 @@
  */
 
 import { For, Show } from "solid-js";
-import { Button, IconButton } from "../components/Button";
+import { Button } from "../components/Button";
 import { AddIcon } from "../components/Icon";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
@@ -126,7 +126,7 @@ export function ArchiveImportModal(props: ArchiveImportModalProps) {
       footer={
         <div class="ds-modal-footer-actions">
           <Button text={t("common.cancel")} onClick={props.onCancel} />
-          <IconButton
+          <Button
             icon={<AddIcon />}
             text={props.importing ? t("local.importing") : t("local.importButton")}
             onClick={props.onImport}
@@ -234,7 +234,7 @@ export function FolderImportModal(props: FolderImportModalProps) {
       footer={
         <div class="ds-modal-footer-actions">
           <Button text={t("common.cancel")} onClick={props.onCancel} />
-          <IconButton
+          <Button
             icon={<AddIcon />}
             text={props.importing ? t("local.importing") : t("local.importButton")}
             onClick={props.onImport}
@@ -324,7 +324,7 @@ export function EditLocalSeriesModal(props: EditLocalSeriesModalProps) {
       footer={
         <div class="ds-modal-footer-actions">
           <Button text={t("common.cancel")} onClick={props.onClose} disabled={props.saving} />
-          <IconButton
+          <Button
             icon={<i class="bi bi-check-lg" />}
             text={props.saving ? t("local.saving") : t("local.saveButton")}
             onClick={props.onSave}

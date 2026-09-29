@@ -5,7 +5,7 @@
  * Port of `add-to-collection-modal.ts`.
  */
 
-import { createEffect, createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, For, Show, type JSX } from "solid-js";
 import { t } from "../i18n";
 import { errorMessage } from "../utils/formatting";
 import { AnchoredPopover } from "./AnchoredPopover";
@@ -206,4 +206,38 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
       </div>
     </AnchoredPopover>
   );
+}
+
+export interface AddToCollectionRequest {
+  item: AddToCollectionItem;
+  anchorEl: HTMLElement;
+}
+
+export interface AddToCollectionApi {
+  open: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
+  onAddToCol: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
+  host: JSX.Element;
+}
+
+export function useAddToCollection(): AddToCollectionApi {
+  const [addToCol, setAddToCol] = createSignal<AddToCollectionRequest | null>(null);
+
+  const open = (item: AddToCollectionItem, anchorEl: HTMLElement): void => {
+    setAddToCol({ item, anchorEl });
+  };
+
+  const close = (): void => {
+    setAddToCol(null);
+  };
+
+  const host: JSX.Element = (
+    <AddToCollectionModal
+      open={addToCol() !== null}
+      item={addToCol()?.item ?? { permalink: "", title: "" }}
+      anchorEl={addToCol()?.anchorEl ?? null}
+      onClose={close}
+    />
+  );
+
+  return { open, onAddToCol: open, host };
 }

@@ -44,10 +44,10 @@ import { Loading, EmptyState, ErrorRetryRow } from "../components/Feedback";
 import { Typeahead } from "../components/Typeahead";
 import { BlacklistNotice } from "../components/Badges";
 import { GroupBox } from "../components/GroupBox";
-import { DsSelect, IconText, IconButton } from "../components/Button";
+import { DsSelect, IconText, Button } from "../components/Button";
 import { SearchResultRow, type SearchRow } from "./SearchResultRow";
-import { useTriggerWarning } from "../hooks/useTriggerWarning";
-import { useAddToCollection } from "../hooks/useAddToCollection";
+import { useTriggerWarning } from "../components/TriggerWarning";
+import { useAddToCollection } from "../components/AddToCollectionModal";
 import type {
   SearchClass,
   SearchResultItem,
@@ -362,14 +362,14 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 debounceMs={SEARCH_TYPEAHEAD_DEBOUNCE_MS}
               />
             </div>
-            <IconButton
+            <Button
               id="ds-tab-search-submit"
               type="submit"
               cssText="font-weight:600;"
               icon={<SearchIcon />}
               text={t("browse.search.searchButton")}
             />
-            <IconButton
+            <Button
               id="ds-tab-search-reset"
               type="button"
               title={t("browse.search.resetFiltersTooltip")}
@@ -384,7 +384,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               {t("browse.search.categoryFilter")}
             </div>
             <div id="ds-search-classes-row" class="ds-row-wrap">
-              <IconButton
+              <Button
                 className={`ds-btn-xs${classes().size === 0 ? " active" : ""}`}
                 onClick={() => {
                   setClasses(new Set<SearchClass>());
@@ -397,7 +397,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 {(c) => {
                   const isActive = () => classes().has(c.id);
                   return (
-                    <IconButton
+                    <Button
                       className={`ds-btn-xs${isActive() ? " active" : ""}`}
                       onClick={() => toggleClass(c.id)}
                       icon={isActive() ? <CheckIcon size={11} /> : undefined}

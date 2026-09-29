@@ -23,7 +23,7 @@ import { errorMessage } from "../utils/formatting";
 import { createMediaQuery } from "@solid-primitives/media";
 import { clearHistory } from "../db/library.repo";
 import { createCollection } from "../db/collections.repo";
-import { Button, IconText, IconButton } from "../components/Button";
+import { Button, IconText } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import { SubTabs } from "../components/SubTabs";
@@ -480,7 +480,7 @@ function CreateCollectionModal(props: {
           >
             {t("common.cancel")}
           </button>
-          <IconButton
+          <Button
             icon={<AddIcon />}
             text={t("library.createCollectionConfirm")}
             className="primary ds-modal-submit"
@@ -553,7 +553,7 @@ function LibraryTabActions(props: {
     <>
       <Show when={props.activeTab === "followed"}>
         <Show when={activeProvider() !== "mangadex"}>
-          <IconButton
+          <Button
             icon={<Icon name="box-arrow-in-down" />}
             text={t("library.importButton")}
             className={btnClass}
@@ -561,7 +561,7 @@ function LibraryTabActions(props: {
             onClick={() => props.onOpenImport("followed")}
           />
         </Show>
-        <IconButton
+        <Button
           icon={<Icon name="box-arrow-up" />}
           text={t("library.exportButton")}
           className={btnClass}
@@ -570,21 +570,21 @@ function LibraryTabActions(props: {
         />
       </Show>
       <Show when={props.activeTab === "collections"}>
-        <IconButton
+        <Button
           icon={<Icon name="box-arrow-in-down" />}
           text={t("library.importButton")}
           className={btnClass}
           title={t("library.importCollectionsTooltip")}
           onClick={() => props.onOpenImport("collections")}
         />
-        <IconButton
+        <Button
           icon={<Icon name="box-arrow-up" />}
           text={t("library.exportButton")}
           className={btnClass}
           title={t("library.exportCollectionsTooltip")}
           onClick={() => props.onOpenExport("collections")}
         />
-        <IconButton
+        <Button
           icon={<AddIcon />}
           text={t("library.newCollectionButton")}
           className={btnClass}

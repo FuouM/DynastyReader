@@ -15,7 +15,7 @@ import {
   updateStatusText,
 } from "../../stores/updater";
 import { GroupBox } from "../GroupBox";
-import { IconText, IconButton, ExternalLinkButton } from "../Button";
+import { IconText, Button, ExternalLinkButton } from "../Button";
 import { RefreshIcon, CloudDownloadIcon, Icon } from "../Icon";
 
 export function AboutSettings() {
@@ -45,7 +45,7 @@ export function AboutSettings() {
           </div>
         </div>
         <div class="ds-settings-about-actions">
-          <IconButton
+          <Button
             className="ds-btn-compact"
             id="ds-about-check-update"
             title={t("settings.about.checkUpdates")}
@@ -54,7 +54,7 @@ export function AboutSettings() {
             text={<Show when={updateChecking()} fallback={t("settings.about.checkUpdates")}>{t("settings.about.checkingUpdates")}</Show>}
             onClick={() => void checkUpdates(true)}
           />
-          <IconButton
+          <Button
             className="ds-btn-compact"
             id="ds-about-open-github"
             title={t("settings.about.githubTooltip")}
@@ -144,7 +144,7 @@ export function AboutSettings() {
             </Show>
 
             <div class="ds-update-actions">
-              <IconButton
+              <Button
                 className="primary ds-btn-sm"
                 cssText="min-width:120px;"
                 disabled={isUpdating()}

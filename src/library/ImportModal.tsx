@@ -10,7 +10,7 @@ import { t } from "../i18n";
 import { showBanner } from "../stores/topbar";
 import { errorMessage } from "../utils/formatting";
 import { Modal } from "../components/Modal";
-import { IconButton, DsSelect, type SelectOption } from "../components/Button";
+import { Button, DsSelect, type SelectOption } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Icon, CheckIcon, ClipboardIcon, WarningIcon } from "../components/Icon";
 import { validateAndParseImport, executeImport } from "../db/import.repo";
@@ -215,7 +215,7 @@ export function ImportModal(props: ImportModalProps) {
               </div>
             </Show>
             <div style="align-self: flex-end;">
-              <IconButton
+              <Button
                 icon={<ClipboardIcon />}
                 text={t("library.importPasteButton")}
                 className="ds-btn-sm"
@@ -303,7 +303,7 @@ export function ImportModal(props: ImportModalProps) {
           >
             {t("common.cancel")}
           </button>
-          <IconButton
+          <Button
             icon={<Icon name="box-arrow-in-down" />}
             text={importing() ? t("library.importingButton") : t("library.importConfirmButton")}
             className="primary ds-modal-submit"

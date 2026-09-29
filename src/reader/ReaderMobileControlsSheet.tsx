@@ -21,7 +21,7 @@ import {
   type PrevChapterStartPage,
 } from "./settings";
 import { isHapticsEnabled, setHapticsEnabled } from "../utils/haptics";
-import { Button, IconButton, IconText, SegmentedSwitch, DsSwitch } from "../components/Button";
+import { Button, IconText, SegmentedSwitch, DsSwitch } from "../components/Button";
 import { SettingsRow } from "../components/SettingsRow";
 import { useCopyLink } from "../hooks/useCopyLink";
 import { ReaderFilterControls } from "./ReaderFilterControls";
@@ -133,7 +133,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               <div class="ds-modal-title">
                 <IconText icon={<ToolIcon />}>{t("reader.toolbar.controlsSheetTitle")}</IconText>
               </div>
-              <IconButton
+              <Button
                 className="ds-modal-close"
                 icon={<CloseIcon />}
                 title={t("common.close")}
@@ -235,7 +235,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               <Show when={s.fitMode() === "original"}>
                 <SettingsRow label={t("reader.toolbar.zoom")} divider>
                   <div class="ds-prefetch-row ds-ctrl-zoom-row">
-                    <IconButton
+                    <Button
                       className="ds-btn-icon"
                       icon={<DashIcon />}
                       title={t("reader.toolbar.zoomOutTooltip")}
@@ -251,7 +251,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                     >
                       {Math.round(s.zoomScale() * 100)}%
                     </button>
-                    <IconButton
+                    <Button
                       className="ds-btn-icon"
                       icon={<PlusIcon />}
                       title={t("reader.toolbar.zoomInTooltip")}

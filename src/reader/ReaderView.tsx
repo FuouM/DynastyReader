@@ -11,7 +11,7 @@ import { ReaderViewport } from "./ReaderViewport";
 import { ReaderStrip } from "./ReaderStrip";
 import { useReaderShortcuts, useReaderWheel } from "./reader-inputs";
 import { Loading } from "../components/Feedback";
-import { IconButton } from "../components/Button";
+import { Button } from "../components/Button";
 import { RefreshIcon } from "../components/Icon";
 import { theme } from "../stores/theme";
 import { t } from "../i18n";
@@ -45,7 +45,7 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
         {(msg) => (
           <div class="ds-reader-empty">
             <div class="ds-reader-error">{msg()}</div>
-            <IconButton
+            <Button
               icon={<RefreshIcon />}
               text={t("reader.session.retry")}
               onClick={() => session.retry()}

@@ -39,7 +39,7 @@ import { getMangaReadingProgress, saveReadingProgress as saveMdxProgress } from 
 import { getMdxHistoryChapterIds, recordHistory as recordMdxHistory } from "../providers/mangadex/db/history.repo";
 import { useDelayedSpinner } from "../browse/browse-state";
 import { Loading, ErrorRetryRow } from "../components/Feedback";
-import { useAddToCollection } from "../hooks/useAddToCollection";
+import { useAddToCollection } from "../components/AddToCollectionModal";
 import { BlacklistIcon } from "../components/Icon";
 import { SeriesHeader, SeriesTaggables, SeriesActions, SeriesResumeBanner, chronologicalChapters } from "./SeriesComponents";
 import { SeriesChapterList, type ChapterMeta } from "./SeriesChapterList";

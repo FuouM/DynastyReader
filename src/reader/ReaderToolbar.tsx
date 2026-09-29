@@ -18,7 +18,7 @@ import { addMdxBookmark, removeMdxBookmark } from "../providers/mangadex/db/book
 import { extractMangaDexId } from "../api/navigation";
 import { t } from "../i18n";
 import { getReaderNavPosition, getReaderFilterCss } from "./settings";
-import { IconButton } from "../components/Button";
+import { Button } from "../components/Button";
 import { ReaderMainRow, ReaderControlsRow, ReaderMobileBottomBar } from "./ReaderNavRows";
 import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
 import {
@@ -115,7 +115,7 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
       >
         <Show when={isMobile()}>
           <div class="ds-reader-nav-row nav-main ds-reader-mobile-row--full">
-            <IconButton
+            <Button
               className="ds-btn-icon ds-reader-mobile-back-btn"
               icon={<ArrowLeftIcon />}
               title={t("common.back")}
@@ -133,14 +133,14 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
               </Show>
             </div>
             <div class="ds-reader-mobile-actions">
-              <IconButton
+              <Button
                 className="ds-btn-icon"
                 classList={{ primary: s.bookmarked() }}
                 icon={<BookmarkIcon filled={s.bookmarked()} />}
                 title={s.bookmarked() ? t("browse.feed.removeFromReadLater") : t("browse.feed.saveForReadLater")}
                 onClick={() => void handleToggleBookmark()}
               />
-              <IconButton
+              <Button
                 className="ds-btn-icon"
                 classList={{ primary: s.controlsOpen() }}
                 icon={<ToolIcon />}

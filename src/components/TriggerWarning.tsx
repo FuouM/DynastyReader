@@ -3,10 +3,10 @@
  * items containing blacklisted tags in "Trigger Warning" mode. Port of `trigger-warning.ts`.
  */
 
-import { For } from "solid-js";
+import { For, createSignal, type JSX } from "solid-js";
 import { t } from "../i18n";
 import { Modal } from "./Modal";
-import { Button, IconText, IconButton } from "./Button";
+import { Button, IconText } from "./Button";
 import { WarningIcon, ExternalLinkIcon, BlacklistIcon } from "./Icon";
 
 export interface TriggerWarningModalProps {
@@ -38,7 +38,7 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
           >
             {t("dialogs.triggerWarning.cancelButton")}
           </Button>
-          <IconButton
+          <Button
             className="ds-modal-proceed ds-danger"
             cssText="min-width:85px;"
             icon={<ExternalLinkIcon />}
@@ -74,4 +74,47 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
       </div>
     </Modal>
   );
+}
+
+export interface WarningRequest {
+  title: string;
+  matchedTags: string[];
+  onProceed: () => void;
+}
+
+export interface TriggerWarningApi {
+  warn: (title: string, matchedTags: string[], onProceed: () => void) => void;
+  host: JSX.Element;
+}
+
+export function useTriggerWarning(): TriggerWarningApi {
+  const [warning, setWarning] = createSignal<WarningRequest | null>(null);
+
+  const warn = (
+    title: string,
+    matchedTags: string[],
+    onProceed: () => void,
+  ): void => {
+    setWarning({ title, matchedTags, onProceed });
+  };
+
+  const close = (): void => {
+    setWarning(null);
+  };
+
+  const host: JSX.Element = (
+    <TriggerWarningModal
+      open={warning() !== null}
+      title={warning()?.title ?? ""}
+      matchedTags={warning()?.matchedTags ?? []}
+      onClose={close}
+      onProceed={() => {
+        const fn = warning()?.onProceed;
+        close();
+        fn?.();
+      }}
+    />
+  );
+
+  return { warn, host };
 }

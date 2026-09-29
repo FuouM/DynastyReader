@@ -7,9 +7,8 @@
  * in index.html can stay in sync (HEAD_SCRIPT_SYNC).
  */
 import { makeEventListener } from "@solid-primitives/event-listener";
-import { persistedSignal } from "../lib/persisted-signal";
+import { persistedSignal, parsePersistedString } from "../lib/persisted-signal";
 import { theme, THEME_CHANGE_EVENT, type AppTheme } from "./theme";
-import { parsePersistedString } from "../lib/persisted-helpers";
 import {
   resolveAccentColorHex,
   parseHex,

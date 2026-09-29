@@ -12,7 +12,7 @@
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Modal } from "./Modal";
 import { Icon } from "./Icon";
-import { IconText, IconButton } from "./Button";
+import { IconText, Button } from "./Button";
 import { GroupBox } from "./GroupBox";
 import { t } from "../i18n";
 import { SETTINGS_SECTIONS, SettingsSidebar, type SettingsSectionId } from "./settings/settings-shared";
@@ -121,7 +121,7 @@ export function SettingsModal(props: SettingsModalProps) {
                 <div class="ds-label">
                   {t("settings.hotkeys.bannerTitle")}
                 </div>
-                <IconButton
+                <Button
                   className=""
                   id="ds-settings-open-hotkeys"
                   cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
@@ -140,7 +140,7 @@ export function SettingsModal(props: SettingsModalProps) {
                 <div class="ds-label">
                   {t("settings.advanced.bannerTitle")}
                 </div>
-                <IconButton
+                <Button
                   className=""
                   id="ds-settings-open-advanced"
                   cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
@@ -159,7 +159,7 @@ export function SettingsModal(props: SettingsModalProps) {
       <Show when={currentPage() === "hotkeys"}>
         <div class="ds-settings-subpage">
           <div class="ds-settings-subpage-header">
-            <IconButton
+            <Button
               className="ds-btn-sm"
               cssText="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
               icon={<Icon name="arrow-left" />}
@@ -179,7 +179,7 @@ export function SettingsModal(props: SettingsModalProps) {
       <Show when={currentPage() === "advanced"}>
         <div class="ds-settings-subpage">
           <div class="ds-settings-subpage-header">
-            <IconButton
+            <Button
               className="ds-btn-sm"
               cssText="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
               icon={<Icon name="arrow-left" />}

@@ -21,7 +21,7 @@ import { createEffect, createSignal, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { uiScale } from "../stores/ui-scale";
-import { IconButton } from "../components/Button";
+import { Button } from "../components/Button";
 import { RefreshIcon, SlidersIcon, CloseIcon } from "../components/Icon";
 interface FilterSliderProps {
   label: string;
@@ -103,7 +103,7 @@ export function ReaderFilterControls(props?: { showReset?: boolean }) {
       />
       <Show when={props?.showReset !== false}>
         <div class="ds-filter-reset-row">
-          <IconButton
+          <Button
             className="ds-btn-compact ds-filter-reset-btn"
             icon={<RefreshIcon />}
             text={t("settings.reader.filterResetTooltip")}
@@ -193,7 +193,7 @@ export function ReaderFilterPopover(props: ReaderFilterPopoverProps) {
                 <span>{t("settings.reader.filterGroup")}</span>
               </span>
               <div class="ds-filter-popover-actions">
-                <IconButton
+                <Button
                   className="ds-btn-icon"
                   style={{ width: "20px", height: "20px" }}
                   icon={<RefreshIcon />}
@@ -201,7 +201,7 @@ export function ReaderFilterPopover(props: ReaderFilterPopoverProps) {
                   disabled={isReaderFilterDefault()}
                   onClick={() => resetReaderFilters()}
                 />
-                <IconButton
+                <Button
                   className="ds-btn-icon"
                   style={{ width: "20px", height: "20px" }}
                   icon={<CloseIcon />}

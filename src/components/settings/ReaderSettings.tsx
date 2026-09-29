@@ -1,5 +1,5 @@
 import { Show } from "solid-js";
-import { usePersistedSetting } from "../../lib/persisted-helpers";
+import { usePersistedSetting } from "../../lib/persisted-signal";
 import {
   isReaderPrefetchEnabled,
   setReaderPrefetchEnabled,
@@ -46,7 +46,7 @@ import {
 import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, Icon } from "../Icon";
-import { DsSelect, IconText, IconButton, SegmentedSwitch } from "../Button";
+import { DsSelect, IconText, Button, SegmentedSwitch } from "../Button";
 import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
 import { GroupBox } from "../GroupBox";
 
@@ -277,7 +277,7 @@ export function ReaderSettings() {
         <Show when={readPrefetchEnabled()}>
           <SettingsRow divider label={<>{t("settings.reader.prefetchBuffer")}:</>} desc={t("settings.reader.prefetchBufferDesc")}>
             <div class="ds-prefetch-row">
-              <IconButton
+              <Button
                 className="ds-btn-icon"
                 id="ds-settings-prefetch-dec"
                 icon={<Icon name="dash-lg" />}
@@ -287,7 +287,7 @@ export function ReaderSettings() {
               <span id="ds-settings-prefetch-val" class="ds-prefetch-val">
                 {prefetchBuffer() === 1 ? t("settings.reader.prefetchBufferPage", { count: prefetchBuffer() }) : t("settings.reader.prefetchBufferPages", { count: prefetchBuffer() })}
               </span>
-              <IconButton
+              <Button
                 className="ds-btn-icon"
                 id="ds-settings-prefetch-inc"
                 icon={<Icon name="plus-lg" />}

@@ -10,7 +10,7 @@ import { formatBytes, formatDateTime } from "../utils/formatting";
 import { t } from "../i18n";
 import { getSessionTraffic, subscribeSessionTraffic } from "../api/traffic";
 import { browseCovers } from "./browse-covers";
-import { IconText, IconButton } from "../components/Button";
+import { IconText, Button } from "../components/Button";
 import {
   RefreshIcon,
   CheckIcon,
@@ -185,7 +185,7 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
         >
           <IconText icon={<TrafficIcon />}>{formatBytes(traffic().bytesDownloaded, "", 1)}</IconText>
         </span>
-        <IconButton
+        <Button
           className="ds-status-refresh-btn"
           title={t("browse.feed.statusForceCheckTooltip")}
           disabled={checkState() === "checking"}
@@ -200,7 +200,7 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
         <div class="ds-feed-status-pager-wrap">
           <Show when={props.pager}>{props.pager}</Show>
         </div>
-        <IconButton
+        <Button
           icon={<ArrowUpIcon />}
           text={t("common.top")}
           className="ds-scroll-top-btn ds-ml-auto"

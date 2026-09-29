@@ -4,7 +4,7 @@
 
 import { Show, type JSX } from "solid-js";
 import { Icon, type BootstrapIconName, RefreshIcon } from "./Icon";
-import { IconButton } from "./Button";
+import { Button } from "./Button";
 import { t } from "../i18n";
 
 // ── 1. Loading Spinner ──────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ export function ErrorRetryRow(props: ErrorRetryRowProps) {
   return (
     <div class={`ds-error-row ${props.className ?? ""}`}>
       <span class="ds-muted">{props.message}</span>
-      <IconButton
+      <Button
         icon={<RefreshIcon />}
         text={t("common.retry")}
         onClick={props.onRetry}

@@ -10,8 +10,7 @@
  * Keep `index.html` head-script maps (HEAD_SCRIPT_SYNC) in sync — they are the
  * pre-paint mirror of this registry to prevent flashbang.
  */
-import { persistedSignal } from "../lib/persisted-signal";
-import { parsePersistedId } from "../lib/persisted-helpers";
+import { persistedSignal, parsePersistedId } from "../lib/persisted-signal";
 import { log } from "../utils/log";
 export const THEME_REGISTRY = {
   light: { meta: "#f5f5f5", bg: "#ececec", text: "#000000", colorScheme: "light" as const, label: "Light" },

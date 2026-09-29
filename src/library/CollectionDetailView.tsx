@@ -35,7 +35,7 @@ import {
 } from "../components/Icon";
 import { ExportModal } from "./ExportModal";
 import { ImportModal } from "./ImportModal";
-import { IconButton, Button } from "../components/Button";
+import { Button } from "../components/Button";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import { LibraryItemRow } from "./LibraryItemRow";
@@ -108,33 +108,33 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
   createEffect(() => {
     setActions(
       <>
-        <IconButton
+        <Button
           icon={<ArrowLeftIcon />}
           text={t("library.backToLibrary")}
           title={t("library.backToLibrary")}
           onClick={() => navigate({ view: "library" })}
         />
-        <IconButton
+        <Button
           icon={<Icon name="box-arrow-in-down" />}
           text={t("library.importButton")}
           title={t("library.importCollectionTooltip")}
           onClick={() => setImportOpen(true)}
         />
-        <IconButton
+        <Button
           icon={<Icon name="box-arrow-up" />}
           text={t("library.exportButton")}
           title={t("library.exportCollectionTooltip")}
           onClick={() => setExportOpen(true)}
         />
         <Show when={data()?.collection && !data()!.collection!.is_default}>
-          <IconButton
+          <Button
             icon={<Icon name="pencil" />}
             text={t("library.renameCollection")}
             title={t("library.renameCollectionTooltip")}
             onClick={openRename}
           />
         </Show>
-        <IconButton
+        <Button
           icon={<RefreshIcon />}
           text={t("common.refresh")}
           title={t("common.refresh")}

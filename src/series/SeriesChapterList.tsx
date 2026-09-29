@@ -10,7 +10,7 @@ import type { Series } from "../types/api";
 import type { SeriesProgressRow } from "../types/db";
 import { OfflineBadge } from "../components/Badges";
 import { Icon, CheckIcon, CloudDownloadIcon } from "../components/Icon";
-import { IconButton } from "../components/Button";
+import { Button } from "../components/Button";
 export interface ChapterMeta extends ChapterRef {
   volumeHeader?: string;
 }
@@ -83,7 +83,7 @@ function ChapterRow(props: {
       </Show>
       <div class="ds-chapter-actions" onClick={(e) => e.stopPropagation()}>
         <Show when={props.onToggleRead}>
-          <IconButton
+          <Button
             className="ds-btn-icon ds-chapter-action-btn"
             classList={{ "is-read": isRead() }}
             icon={<CheckIcon size={12} />}
@@ -92,7 +92,7 @@ function ChapterRow(props: {
           />
         </Show>
         <Show when={props.seriesType !== "local" && !isFullyCached() && props.onDownloadChapter}>
-          <IconButton
+          <Button
             className="ds-btn-icon ds-chapter-action-btn"
             icon={<CloudDownloadIcon size={12} />}
             title={t("series.downloadChapterTooltip")}
@@ -126,7 +126,7 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
         <div class="ds-stack-6 ds-mt-10">
           <div class="ds-row-between ds-chapter-list-header">
             <div class="ds-label">{t("series.chaptersCount", { count: props.chapters.length })}</div>
-            <IconButton
+            <Button
               className="ds-btn-compact"
               title={
                 props.sortOrder() === "asc"

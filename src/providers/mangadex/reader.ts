@@ -4,13 +4,15 @@
  */
 
 import { getChapter, getAtHomeServer, buildPageUrl } from "./api/chapter";
-import { reportAtHome } from "./api/report";
+import { MANGADEX_NETWORK_REPORT, MANGADEX_UPLOADS_BASE, MANGADEX_USER_AGENT } from "./api/constants";
+import * as ipc from "../../ipc";
 import { mangaDexToStandardChapter } from "./mapping";
 import { setCachedPage as setMdxCachedPage, getCachedPages as getMdxCachedPages } from "./db/cache.repo";
 import { recordHistory as recordMdxHistory } from "./db/history.repo";
 import { saveReadingProgress as saveMdxProgress, getReadingProgress as getMdxProgress } from "./db/progress.repo";
 import { persistedSignal } from "../../lib/persisted-signal";
 import type { Chapter, ChapterPage } from "../../types/api";
+import type { MangaDexAtHomeReport } from "./types";
 import { log } from "../../utils/log";
 
 /** User image quality preference: "data-saver" (default) or "data" (original) */
@@ -110,11 +112,38 @@ export async function refreshMangaDexNode(
   }
 }
 
+/**
+ * Fires an asynchronous report of a MangaDex@Home image download outcome.
+ * Skips reporting if the URL is served from MangaDex's own static CDN (uploads.mangadex.org).
+ * Fire-and-forget: never throws or blocks the caller.
+ */
+export function reportAtHome(report: MangaDexAtHomeReport): void {
+  if (report.url.startsWith(MANGADEX_UPLOADS_BASE)) {
+    return;
+  }
+
+  void (async () => {
+    try {
+      await ipc.httpGet({
+        url: MANGADEX_NETWORK_REPORT,
+        method: "POST",
+        body: JSON.stringify(report),
+        contentType: "application/json",
+        headers: {
+          "User-Agent": MANGADEX_USER_AGENT,
+        },
+        timeoutMs: 10000,
+      });
+    } catch (err) {
+      log.debug("mangadex-report", "Failed reporting at-home delivery outcome:", err);
+    }
+  })();
+}
+
 export {
   setMdxCachedPage,
   getMdxCachedPages,
   recordMdxHistory,
   saveMdxProgress,
   getMdxProgress,
-  reportAtHome,
 };

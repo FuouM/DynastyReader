@@ -10,7 +10,7 @@ import { t } from "../i18n";
 import { showBanner } from "../stores/topbar";
 import { errorMessage, formatBytes } from "../utils/formatting";
 import { Modal } from "../components/Modal";
-import { IconButton, DsSelect, type SelectOption } from "../components/Button";
+import { Button, DsSelect, type SelectOption } from "../components/Button";
 import { Icon, CheckIcon, ClipboardIcon } from "../components/Icon";
 import { fetchAndFormatExport, type ExportScope, type ExportFormat, type ExportCounts } from "../db/export.repo";
 import { getCollections } from "../db/collections.repo";
@@ -349,7 +349,7 @@ export function ExportModal(props: ExportModalProps) {
           >
             {t("common.cancel")}
           </button>
-          <IconButton
+          <Button
             icon={copied() ? <CheckIcon /> : <ClipboardIcon />}
             text={copied() ? t("library.exportCopiedButton") : t("library.exportCopyButton")}
             className={`ds-modal-submit ${copied() ? "ds-btn-success" : "primary"}`}

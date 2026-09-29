@@ -27,7 +27,7 @@ import { InputField } from "../components/InputField";
 import { ListItem } from "../components/ListItem";
 import { BlacklistIcon, RefreshIcon } from "../components/Icon";
 import { Button, IconText, ExternalLinkButton } from "../components/Button";
-import { useTriggerWarning } from "../hooks/useTriggerWarning";
+import { useTriggerWarning } from "../components/TriggerWarning";
 import type { Directory, DirectoryEntry, DirectoryGroup } from "../types/api";
 
 interface DirectoryModel {

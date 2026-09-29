@@ -29,7 +29,7 @@ import {
 } from "../../utils/haptics";
 import { GroupBox } from "../GroupBox";
 import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
-import { IconButton, IconText } from "../Button";
+import { Button, IconText } from "../Button";
 import { Icon } from "../Icon";
 
 interface HapticCardDef {
@@ -110,7 +110,7 @@ export function AdvancedSettings() {
       id="ds-settings-sec-advanced-view"
       title={<IconText icon={<Icon name="sliders" />}>{t("settings.advanced.title")}</IconText>}
       actions={
-        <IconButton
+        <Button
           className="ds-btn-sm"
           icon={<Icon name="arrow-counterclockwise" />}
           text={t("settings.advanced.resetDefaults")}
@@ -312,7 +312,7 @@ export function AdvancedSettings() {
                         )}
                       </span>
 
-                      <IconButton
+                      <Button
                         className="ds-haptic-test-btn"
                         icon={<Icon name={isTesting() ? "soundwave" : "play-fill"} class={isTesting() ? "ds-haptic-pulse-icon" : undefined} />}
                         text={t("settings.advanced.testButton")}

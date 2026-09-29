@@ -9,7 +9,7 @@ import * as ipc from "../ipc";
 import { showBanner } from "../stores/topbar";
 import { formatBytes, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
-import { Button, DsSelect, IconButton } from "../components/Button";
+import { Button, DsSelect } from "../components/Button";
 import { InputField } from "../components/InputField";
 import type { ArchiveScanResult, FolderScanResult } from "../ipc";
 import { Loading } from "../components/Feedback";
@@ -331,7 +331,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       <div class="ds-local-pane-actions" style="margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
         <div style="display:flex;align-items:center;gap:4px;">
           <div ref={importMenuRef} style="position:relative;">
-            <IconButton
+            <Button
               icon={<AddIcon />}
               text={t("local.importMenuLabel")}
               onClick={() => setImportMenuOpen((v) => !v)}

@@ -8,7 +8,7 @@ import { t } from "../i18n";
 import { decodeEntities } from "../utils/formatting";
 import type { BlacklistMode } from "../types/blacklist";
 import { Icon, WarningIcon, BlacklistIcon } from "./Icon";
-import { IconButton } from "./Button";
+import { Button } from "./Button";
 
 // ── 1. Offline Badge ─────────────────────────────────────────────────────────
 
@@ -78,7 +78,7 @@ export function BlacklistNotice(props: BlacklistNoticeProps) {
         <BlacklistIcon filled={true} color="var(--ds-danger-text)" />
         <span>{message()}</span>
       </div>
-      <IconButton
+      <Button
         className="ds-btn-sm"
         icon={<Icon name={props.showHidden ? "eye-slash" : "eye"} />}
         text={props.showHidden

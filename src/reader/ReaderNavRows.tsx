@@ -9,7 +9,7 @@ import type { FitMode } from "../types/reader";
 import { theme } from "../stores/theme";
 import { isMobile } from "../stores/platform";
 import { t } from "../i18n";
-import { Button, DsSelect, IconButton } from "../components/Button";
+import { Button, DsSelect } from "../components/Button";
 import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
@@ -60,7 +60,7 @@ export function ReaderMainRow(props: NavRowProps) {
 
   return (
     <div class="ds-reader-nav-row nav-main">
-      <IconButton
+      <Button
         className="ds-nav-btn-ch"
         icon={rtl() ? <ChevronDoubleRightIcon /> : <ChevronDoubleLeftIcon />}
         text={showText() ? t("reader.toolbar.chapterShort") : undefined}
@@ -68,34 +68,33 @@ export function ReaderMainRow(props: NavRowProps) {
         disabled={s.chapterNav().prevDisabled}
         onClick={() => s.gotoPrevChapter()}
       />
-      <IconButton
+      <Button
         className="ds-nav-btn-jump ds-btn-icon"
         icon={rtl() ? <ChevronBarRightIcon /> : <ChevronBarLeftIcon />}
         title={t("reader.toolbar.firstPage")}
         onClick={() => s.setPage(0, true)}
       />
-      <IconButton
-        className="ds-nav-btn-page ds-btn-icon"
+      <Button
         icon={rtl() ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         title={t("reader.toolbar.prevPage")}
         disabled={s.progress().prevDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
       />
       <ReaderProgressWrap session={s} {...props.progressProps} />
-      <IconButton
+      <Button
         className="ds-nav-btn-page ds-btn-icon"
         icon={rtl() ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         title={t("reader.toolbar.nextPage")}
         disabled={s.progress().nextDisabled}
         onClick={() => (s.isSpread() ? s.stepSpread(1) : s.setPage(s.currentIndex() + 1))}
       />
-      <IconButton
+      <Button
         className="ds-nav-btn-jump ds-btn-icon"
         icon={rtl() ? <ChevronBarLeftIcon /> : <ChevronBarRightIcon />}
         title={t("reader.toolbar.lastPage", { total: s.pages().length })}
         onClick={() => s.setPage(s.pages().length - 1, true)}
       />
-      <IconButton
+      <Button
         className="ds-nav-btn-ch"
         icon={rtl() ? <ChevronDoubleLeftIcon /> : <ChevronDoubleRightIcon />}
         text={showText() ? t("reader.toolbar.chapterShort") : undefined}
@@ -105,7 +104,7 @@ export function ReaderMainRow(props: NavRowProps) {
         onClick={() => s.gotoNextChapter()}
       />
       <Show when={!isMobile() && s.mode() === "paged" && !props.controlsOpen?.()}>
-        <IconButton
+        <Button
           className="ds-nav-btn ds-btn-compact"
           classList={{ primary: s.pagedLayout() === "spread" }}
           icon={<ColumnsGapIcon />}
@@ -115,7 +114,7 @@ export function ReaderMainRow(props: NavRowProps) {
         />
       </Show>
       <Show when={showControls()}>
-        <IconButton
+        <Button
           className="ds-nav-btn-page ds-btn-icon"
           classList={{ active: !!props.controlsOpen?.() }}
           icon={<ToolIcon />}
@@ -156,7 +155,7 @@ function ScrollLockBtn(props: { session: ReaderSession }) {
   };
 
   return (
-    <IconButton
+    <Button
       className="ds-ctrl-btn"
       classList={{ primary: locked() }}
       icon={icon()}
@@ -174,7 +173,7 @@ export function ReaderControlsRow(props: NavRowProps) {
   return (
     <div class="ds-reader-nav-row nav-controls">
       <ScrollLockBtn session={s} />
-      <IconButton
+      <Button
         className="ds-ctrl-btn"
         icon={s.isHorizontal() ? <DistributeVerticalIcon /> : <ArrowLeftRightIcon />}
         text={s.isHorizontal() ? t("reader.toolbar.scroll") : t("reader.toolbar.paged")}
@@ -182,7 +181,7 @@ export function ReaderControlsRow(props: NavRowProps) {
         onClick={() => s.setMode(s.mode() === "paged" ? "scroll" : "paged")}
       />
       <Show when={s.mode() === "paged"}>
-        <IconButton
+        <Button
           className="ds-ctrl-btn"
           classList={{ primary: s.pagedLayout() === "spread" }}
           icon={<ColumnsGapIcon />}
@@ -194,7 +193,7 @@ export function ReaderControlsRow(props: NavRowProps) {
           }
           onClick={() => s.setPagedLayout(s.pagedLayout() === "spread" ? "single" : "spread")}
         />
-        <IconButton
+        <Button
           className="ds-ctrl-btn"
           classList={{ primary: !s.directionAutoDetected() }}
           icon={s.direction() === "rtl" ? <ArrowLeftIcon /> : <ArrowRightIcon />}
@@ -206,7 +205,7 @@ export function ReaderControlsRow(props: NavRowProps) {
           }
           onClick={() => s.setDirection(s.direction() === "rtl" ? "ltr" : "rtl")}
         />
-        <IconButton
+        <Button
           className="ds-ctrl-btn"
           classList={{ primary: s.coverOffset() }}
           icon={<BookHalfIcon />}
@@ -226,13 +225,13 @@ export function ReaderControlsRow(props: NavRowProps) {
           { value: "original", label: t("reader.toolbar.fitModes.original") },
         ]}
       />
-      <IconButton
+      <Button
         className="ds-ctrl-btn ds-btn-icon"
         icon={theme() === "dark" ? <MoonIcon /> : theme() === "high-contrast" ? <OledIcon /> : <SunIcon />}
         title={t("reader.toolbar.themeToggle")}
         onClick={() => s.toggleTheme()}
       />
-      <IconButton
+      <Button
         ref={setFilterBtnEl}
         className="ds-ctrl-btn ds-btn-icon"
         classList={{ primary: !isReaderFilterDefault() }}
@@ -241,7 +240,7 @@ export function ReaderControlsRow(props: NavRowProps) {
         onClick={() => setFilterOpen(!filterOpen())}
       />
       <Show when={!isMobile()}>
-        <IconButton
+        <Button
           className="ds-ctrl-btn"
           classList={{ primary: s.isFullscreen() }}
           icon={s.isFullscreen() ? <FullscreenExitIcon /> : <ArrowsFullscreenIcon />}
@@ -252,7 +251,7 @@ export function ReaderControlsRow(props: NavRowProps) {
       </Show>
       <Show when={s.fitMode() === "original"}>
         <div class="ds-ctrl-zoom-group">
-          <IconButton
+          <Button
             className="ds-btn-icon"
             icon={<DashIcon />}
             title={t("reader.toolbar.zoomOutTooltip")}
@@ -267,7 +266,7 @@ export function ReaderControlsRow(props: NavRowProps) {
           >
             {Math.round(s.zoomScale() * 100)}%
           </Button>
-          <IconButton
+          <Button
             className="ds-btn-icon"
             icon={<PlusIcon />}
             title={t("reader.toolbar.zoomInTooltip")}
@@ -333,7 +332,7 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
 
   return (
     <div class="ds-reader-mobile-bottom-row">
-      <IconButton
+      <Button
         className="ds-btn-icon ds-mobile-nav-btn"
         icon={isRtl() ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         title={t("reader.toolbar.prevChapter")}
@@ -361,7 +360,7 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
         />
         <span class="ds-mobile-scrubber-text ds-mobile-scrubber-tot">{total()}</span>
       </div>
-      <IconButton
+      <Button
         className="ds-btn-icon ds-mobile-nav-btn"
         icon={isRtl() ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         title={t("reader.toolbar.nextChapter")}

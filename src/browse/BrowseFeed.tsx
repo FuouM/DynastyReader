@@ -38,11 +38,11 @@ import {
 } from "./browse-state";
 import { Pager } from "../components/Pager";
 import { Loading, ErrorRetryRow } from "../components/Feedback";
-import { IconButton } from "../components/Button";
+import { Button } from "../components/Button";
 import { RefreshIcon } from "../components/Icon";
 import { BlacklistNotice } from "../components/Badges";
-import { useTriggerWarning } from "../hooks/useTriggerWarning";
-import { useAddToCollection } from "../hooks/useAddToCollection";
+import { useTriggerWarning } from "../components/TriggerWarning";
+import { useAddToCollection } from "../components/AddToCollectionModal";
 import { FeedItemRow } from "../components/FeedItemRow";
 import { errorMessage } from "../utils/formatting";
 import { log } from "../utils/log";
@@ -383,7 +383,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
       <Show when={model() !== undefined && model()!.feed.chapters.length > 0}>
         <Show when={updateBanner()}>
           <div class="ds-feed-update-banner">
-            <IconButton
+            <Button
               icon={<RefreshIcon />}
               text={t("browse.feed.newChaptersNotice")}
               className="ds-feed-update-btn"

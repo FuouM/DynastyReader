@@ -43,7 +43,7 @@ import type {
 import { Pager } from "../components/Pager";
 import { EmptyState, Loading, ErrorRetryRow } from "../components/Feedback";
 import { GroupBox } from "../components/GroupBox";
-import { ConfirmDeleteButton, IconText, IconButton, StatCard, BackRefreshActions } from "../components/Button";
+import { ConfirmDeleteButton, IconText, Button, StatCard, BackRefreshActions } from "../components/Button";
 import { useCacheActions } from "./useCacheActions";
 import { persistedSignal } from "../lib/persisted-signal";
 import { CacheCeilingGroupBox } from "./CacheCeilingGroupBox";
@@ -426,8 +426,8 @@ function CacheBody(props: {
           <span>{t("cache.seriesBlacklistCount")} <strong>{props.dbStats.counts.seriesBlacklist}</strong></span>
         </div>
         <div class="ds-cache-actions ds-cache-actions--mt">
-          <IconButton icon={<DatabaseIcon />} text={t("cache.dbBackup")} title={t("cache.dbBackupTooltip")} onClick={() => void props.backupDb()} />
-          <IconButton icon={<RefreshIcon />} text={t("cache.dbRestore")} title={t("cache.dbRestoreTooltip")} onClick={() => void props.restoreFromPicker()} />
+          <Button icon={<DatabaseIcon />} text={t("cache.dbBackup")} title={t("cache.dbBackupTooltip")} onClick={() => void props.backupDb()} />
+          <Button icon={<RefreshIcon />} text={t("cache.dbRestore")} title={t("cache.dbRestoreTooltip")} onClick={() => void props.restoreFromPicker()} />
           <ConfirmDeleteButton
             icon={<TrashIcon />}
             text={t("cache.dbWipe")}
@@ -475,7 +475,7 @@ function CacheBody(props: {
             title={t("cache.clearCoversOnlyTooltip")}
             onConfirm={props.purgeCovers}
           />
-          <IconButton
+          <Button
             icon={<Icon name="shield-check" />}
             text={t("cache.verifyIntegrity")}
             title={t("cache.verifyIntegrityTooltip")}

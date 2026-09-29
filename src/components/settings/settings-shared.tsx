@@ -6,7 +6,7 @@
 import { For } from "solid-js";
 import type { BootstrapIconName } from "../Icon";
 import { Icon } from "../Icon";
-import { IconButton } from "../Button";
+import { Button } from "../Button";
 import { t } from "../../i18n";
 
 export type SettingsSectionId =
@@ -48,7 +48,7 @@ export function SettingsSidebar(props: SettingsSidebarProps) {
     <div class="ds-settings-sidebar">
       <For each={getSettingsSections()}>
         {(sec) => (
-          <IconButton
+          <Button
             className="ds-settings-nav-item"
             classList={{ active: props.activeSection === sec.id }}
             title={t("settings.jumpToSectionTooltip", { section: sec.label })}

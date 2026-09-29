@@ -20,7 +20,7 @@ import {
   DownloadIcon,
   Icon,
 } from "./Icon";
-import { IconButton, SegmentedSwitch } from "./Button";
+import { Button, SegmentedSwitch } from "./Button";
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [sourceSwitcherOpen, setSourceSwitcherOpen] = createSignal(false);
@@ -99,7 +99,7 @@ export function Topbar() {
                 </button>
               </Show>
               <Show when={route().view !== "reader" && route().view !== "cache" && route().view !== "blacklist"}>
-                <IconButton
+                <Button
                   className="ds-btn-icon"
                   id="ds-page-refresh-btn"
                   icon={<RefreshIcon />}
@@ -107,7 +107,7 @@ export function Topbar() {
                   onClick={() => window.location.reload()}
                 />
               </Show>
-              <IconButton
+              <Button
                 className="ds-btn-icon"
                 id="ds-settings-btn"
                 icon={<SettingsIcon />}

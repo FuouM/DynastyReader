@@ -32,7 +32,7 @@ import { SubTabs } from "../components/SubTabs";
 import { GroupBox } from "../components/GroupBox";
 import { Typeahead } from "../components/Typeahead";
 import { InputField } from "../components/InputField";
-import { IconText, IconButton } from "../components/Button";
+import { IconText, Button } from "../components/Button";
 import {
   SearchIcon,
   RefreshIcon,
@@ -431,7 +431,7 @@ export function BrowseView() {
                 debounceMs={250}
               />
             </div>
-            <IconButton
+            <Button
               id="ds-search-btn"
               type="submit"
               icon={<SearchIcon />}
@@ -458,7 +458,7 @@ export function BrowseView() {
                 openByUrl();
               }}
             />
-            <IconButton
+            <Button
               id="ds-url-paste-btn"
               type="button"
               icon={<ClipboardIcon />}
@@ -466,7 +466,7 @@ export function BrowseView() {
               title={t("browse.searchAndGo.pasteTooltip")}
               onClick={() => void pasteUrl()}
             />
-            <IconButton
+            <Button
               id="ds-url-btn"
               type="submit"
               icon={<ExternalLinkIcon />}
@@ -486,7 +486,7 @@ export function BrowseView() {
         compact={isMobile()}
         right={
           <>
-            <IconButton
+            <Button
               id="ds-browse-check-updates-btn"
               className="ds-btn-sm"
               title={t("browse.feed.checkBtnTooltip")}
@@ -503,7 +503,7 @@ export function BrowseView() {
                   onPage={topCfg()!.onPage}
                   cssText="align-items:center;justify-content:flex-end;margin:0;"
                 />
-                <IconButton
+                <Button
                   icon={<ArrowDownIcon />}
                   text={t("common.bottom")}
                   className="ds-scroll-top-btn"

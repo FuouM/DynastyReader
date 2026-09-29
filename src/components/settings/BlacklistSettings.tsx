@@ -6,7 +6,7 @@ import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { GroupBox } from "../GroupBox";
 import { BlacklistIcon, AddIcon, CloseIcon, ListCheckIcon } from "../Icon";
-import { IconText, Button, IconButton, BlacklistModeSwitch } from "../Button";
+import { IconText, Button, BlacklistModeSwitch } from "../Button";
 import { activeProvider } from "../../stores/provider";
 import { navigate } from "../../stores/router";
 export function BlacklistSettings(props: { onClose?: () => void }) {
@@ -119,7 +119,7 @@ export function BlacklistSettings(props: { onClose?: () => void }) {
                   Configure MangaDex feed allowlist and allowed genre filters
                 </div>
               </div>
-              <IconButton
+              <Button
                 id="ds-settings-goto-whitelist"
                 title="Configure MangaDex feed allowlist and genre filters"
                 icon={<ListCheckIcon />}

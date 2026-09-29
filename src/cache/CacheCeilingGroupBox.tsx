@@ -1,5 +1,5 @@
 import { createEffect, createSignal, Show } from "solid-js";
-import { DsSelect, DsSwitch, IconButton, IconText } from "../components/Button";
+import { DsSelect, DsSwitch, Button, IconText } from "../components/Button";
 import { GroupBox } from "../components/GroupBox";
 import { RefreshIcon, StorageIcon } from "../components/Icon";
 import { pruneOldestReadCachedPages } from "../db/cache.repo";
@@ -193,7 +193,7 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
             />
             <span class="ds-muted">{t("cache.autoPruneLabel")}</span>
           </label>
-          <IconButton
+          <Button
             icon={<RefreshIcon />}
             text={pruning() ? t("cache.pruneRunning") : t("cache.pruneNow")}
             title={t("cache.pruneNowTooltip")}

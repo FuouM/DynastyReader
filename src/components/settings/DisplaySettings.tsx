@@ -9,7 +9,7 @@ import { activeProvider, type ContentProvider } from "../../stores/provider";
 import { switchProvider } from "../../stores/router";
 import { browseCovers } from "../../browse/browse-covers";
 import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";
-import { DsSelect, IconText, IconButton, SegmentedSwitch, Button } from "../Button";
+import { DsSelect, IconText, SegmentedSwitch, Button } from "../Button";
 import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
 import { GroupBox } from "../GroupBox";
 import { SCALE_PRESETS } from "./settings-shared";
@@ -69,7 +69,7 @@ export function DisplaySettings() {
           label={t("settings.display.uiScale")}
         >
           <div class="ds-settings-scale-controls">
-            <IconButton
+            <Button
               className="ds-btn-icon"
               id="ds-settings-scale-dec"
               icon={<Icon name="dash-lg" />}
@@ -101,7 +101,7 @@ export function DisplaySettings() {
                 </option>
               </Show>
             </DsSelect>
-            <IconButton
+            <Button
               className="ds-btn-icon"
               id="ds-settings-scale-inc"
               icon={<AddIcon />}

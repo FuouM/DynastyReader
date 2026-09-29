@@ -13,7 +13,7 @@ import { t } from "../i18n";
 import { ListItem } from "../components/ListItem";
 import { Cover } from "../components/Cover";
 import { OfflineBadge } from "../components/Badges";
-import { ConfirmDeleteButton, IconButton, IconText, ExternalLinkButton } from "../components/Button";
+import { ConfirmDeleteButton, Button, IconText, ExternalLinkButton } from "../components/Button";
 import { BlacklistIcon, TrashIcon } from "../components/Icon";
 
 export interface LibraryItemRowProps {
@@ -114,7 +114,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
         <Show when={!props.selectionMode}>
           <>
           <Show when={props.actionLabel}>
-            <IconButton
+            <Button
               icon={
                 <Show when={props.actionIcon}>
                   <i class={`bi ${props.actionIcon}`} />
@@ -137,7 +137,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
             />
           </Show>
           <Show when={props.onEdit}>
-            <IconButton
+            <Button
               icon={<i class="bi bi-pencil" />}
               className="ds-btn-icon"
               title={props.editTitle || t("local.editTooltip")}
@@ -148,7 +148,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
             />
           </Show>
           <Show when={props.onPlay}>
-            <IconButton
+            <Button
               icon={<i class="bi bi-play-fill" />}
               className="ds-btn-icon"
               title={props.playTitle || t("library.continueReading")}
@@ -159,7 +159,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
             />
           </Show>
           <Show when={props.onExport}>
-            <IconButton
+            <Button
               icon={<i class="bi bi-box-arrow-up" />}
               className="ds-btn-icon"
               title={props.exportTitle || t("library.exportTooltip")}
