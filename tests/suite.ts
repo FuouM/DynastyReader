@@ -3,7 +3,14 @@
  * Directly interoperable with headless browser tools and evaluation runners.
  */
 
-import { auditPage, setDesktopViewport, setMobileViewport } from "./browser-helpers";
+import {
+  auditPage,
+  setDesktopViewport,
+  setMobileViewport,
+  initInPageLogTrap,
+  assertNoAppErrors,
+  waitForResourceReady,
+} from "./browser-helpers";
 import { getMockBridgeCode } from "./fixtures/mock-bridge";
 import type { ElementHandle, Page } from "puppeteer-core";
 
@@ -41,7 +48,8 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
     await page.evaluateOnNewDocument(getMockBridgeCode());
 
     // 1. Initial Browse View
-    await page.goto("http://localhost:1420/");
+    await page.goto("http://localhost:1420/?mock=1");
+    await initInPageLogTrap(page);
     await page.waitForSelector("#ds-topbar", { timeout: 5000 });
     const hasTopbar = await page.evaluate(() => !!document.getElementById("ds-topbar"));
     recordStep("Desktop: Mount & Topbar Presence", hasTopbar);
@@ -109,10 +117,10 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
     await page.evaluate(() => {
       window.dispatchEvent(new CustomEvent("ds-navigate", { detail: { view: "series", seriesPermalink: "hana-ni-arashi" } }));
     });
-    await delay(600);
+    await waitForResourceReady(page, ".ds-series-head, .ds-series-name", 6000);
     const seriesViewOk = await page.evaluate(() => {
       const text = document.body.innerText;
-      return text.includes("Hana ni Arashi") || document.querySelector(".ds-series-view") !== null;
+      return text.includes("Hana ni Arashi") || document.querySelector(".ds-series-head, .ds-series-view") !== null;
     });
     recordStep("Desktop: Series View & Actions / Resume (CP-01)", seriesViewOk);
 
@@ -120,7 +128,7 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
     await page.evaluate(() => {
       window.dispatchEvent(new CustomEvent("ds-navigate", { detail: { view: "reader", chapterPermalink: "hana-ni-arashi-ch01", seriesPermalink: "hana-ni-arashi" } }));
     });
-    await delay(600);
+    await waitForResourceReady(page, "#ds-reader-viewport, .ds-reader-viewport, .ds-reader-strip", 6000);
     const readerViewOk = await page.evaluate(() => {
       const readerEl = document.querySelector("#ds-reader-viewport, .ds-reader-viewport");
       return !!readerEl || document.querySelector(".ds-reader-strip") !== null;
@@ -157,6 +165,9 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
       mobileAudit.horizontalOverflows.length === 0,
       { overflows: mobileAudit.horizontalOverflows, undersizedCount: mobileAudit.undersizedTouchTargets.length },
     );
+
+    // 11. Assert zero unexpected application exceptions or unhandled rejections
+    await assertNoAppErrors(page);
 
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

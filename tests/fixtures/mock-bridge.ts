@@ -102,6 +102,34 @@ export function getMockBridgeCode(): string {
       // HTTP endpoints
       if (cmd === "httpGet") {
         const url = args.url || "";
+        if (url.includes("hana-ni-arashi")) {
+          if (url.includes("/chapters/")) {
+            return {
+              status: 200,
+              body: JSON.stringify({
+                title: "Chapter 1: The Secret",
+                pages: [
+                  { url: "/page1.jpg", name: "01.jpg" },
+                  { url: "/page2.jpg", name: "02.jpg" },
+                ],
+              }),
+              etag: "mock-etag-ch",
+            };
+          }
+          return { status: 200, body: JSON.stringify(MOCK_SERIES), etag: "mock-etag" };
+        }
+
+        try {
+          const res = await fetch("http://localhost:1422", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(args),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === 200 || data.status === 304) return data;
+          }
+        } catch {}
         if (url.includes("/series/")) {
           return { status: 200, body: JSON.stringify(MOCK_SERIES), etag: "mock-etag" };
         }
@@ -122,6 +150,17 @@ export function getMockBridgeCode(): string {
       }
 
       if (cmd === "httpDownload") {
+        try {
+          const res = await fetch("http://localhost:1422/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(args),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.absolute_path) return data;
+          }
+        } catch {}
         return { written_to: args.outputPath || "", size_bytes: 102400, absolute_path: args.outputPath || "" };
       }
 
@@ -139,7 +178,7 @@ export function getMockBridgeCode(): string {
       // File system
       if (cmd === "dirStat") return { file_count: 42, total_bytes: 52428800 };
       if (cmd === "dirStatBatch") return { results: [{ file_count: 42, total_bytes: 52428800 }] };
-      if (cmd === "fileExists") return { exists: true };
+      if (cmd === "fileExists") return { exists: false, absolute_path: "", size_bytes: 0 };
       if (cmd === "fileExistsBatch") return { results: [{ path: args.paths?.[0] || "", exists: true }] };
       if (cmd === "fileMove" || cmd === "fileDeleteBatch") return 0;
       if (cmd === "verifyFileIntegrityBatch") return [];

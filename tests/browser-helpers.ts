@@ -62,7 +62,7 @@ export async function auditPage(page: Page, isMobile = false): Promise<ViewportA
     }
 
     // 2. Unlabeled inputs
-    const inputs = Array.from(document.querySelectorAll("input, select, textarea")).filter(i => (i as HTMLElement).offsetParent !== null);
+    const inputs = Array.from(document.querySelectorAll<HTMLElement>("input, select, textarea")).filter(i => i.offsetParent !== null);
     for (const input of inputs) {
       const ariaLabel = input.getAttribute("aria-label")?.trim() || "";
       const ariaLabelledBy = input.getAttribute("aria-labelledby")?.trim() || "";
@@ -101,4 +101,77 @@ export async function auditPage(page: Page, isMobile = false): Promise<ViewportA
       undersizedTouchTargets,
     };
   }, isMobile);
+}
+
+export interface CapturedLogEntry {
+  type: "error" | "warn" | "uncaught" | "unhandled";
+  text: string;
+  time: number;
+}
+
+/**
+ * Injects an in-page trap capturing console.error, console.warn, uncaught exceptions,
+ * and unhandled promise rejections directly in the window context.
+ */
+export async function initInPageLogTrap(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    interface LogWindow extends Window {
+      __CAPTURED_LOGS__?: CapturedLogEntry[];
+    }
+    const win = window as LogWindow;
+    win.__CAPTURED_LOGS__ = [];
+    const origErr = console.error;
+    const origWarn = console.warn;
+    console.error = (...args: unknown[]) => {
+      win.__CAPTURED_LOGS__?.push({ type: "error", text: args.map(String).join(" "), time: Date.now() });
+      origErr(...args);
+    };
+    console.warn = (...args: unknown[]) => {
+      win.__CAPTURED_LOGS__?.push({ type: "warn", text: args.map(String).join(" "), time: Date.now() });
+      origWarn(...args);
+    };
+    window.addEventListener("error", (e) => {
+      win.__CAPTURED_LOGS__?.push({ type: "uncaught", text: e.message || String(e), time: Date.now() });
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      win.__CAPTURED_LOGS__?.push({ type: "unhandled", text: String(e.reason), time: Date.now() });
+    });
+  });
+}
+
+/** Retrieves all fatal or unexpected app errors captured by the in-page trap. */
+export async function getCapturedAppErrors(page: Page): Promise<CapturedLogEntry[]> {
+  return await page.evaluate(() => {
+    interface LogWindow extends Window {
+      __CAPTURED_LOGS__?: CapturedLogEntry[];
+    }
+    const win = window as LogWindow;
+    const logs = win.__CAPTURED_LOGS__ ?? [];
+    return logs.filter((l) => l.type === "error" || l.type === "uncaught" || l.type === "unhandled");
+  });
+}
+
+/** Asserts that zero fatal console errors or unhandled rejections occurred during execution. */
+export async function assertNoAppErrors(page: Page): Promise<void> {
+  const errors = await getCapturedAppErrors(page);
+  if (errors.length > 0) {
+    const details = errors.map((e) => `[${e.type.toUpperCase()}] ${e.text}`).join("\n");
+    throw new Error(`Application emitted unexpected errors during test:\n${details}`);
+  }
+}
+
+/**
+ * Semantically waits for SolidJS resource loading spinners to complete
+ * and the target selector to become visible in the DOM.
+ */
+export async function waitForResourceReady(page: Page, targetSelector: string, timeoutMs = 8000): Promise<void> {
+  await page.waitForFunction(
+    (sel: string) => {
+      const hasSpinner = !!document.querySelector(".ds-loading, .ds-spinner");
+      const target = document.querySelector(sel);
+      return !hasSpinner && target instanceof HTMLElement && target.offsetParent !== null;
+    },
+    { timeout: timeoutMs },
+    targetSelector,
+  );
 }

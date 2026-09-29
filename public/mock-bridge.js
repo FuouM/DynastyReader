@@ -156,10 +156,25 @@
       // HTTP
       if (cmd === "httpGet") {
         const url = (args && args.url) || "";
+        if (!url.includes("hana-ni-arashi")) {
+          try {
+            const res = await fetch("http://localhost:1422", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(args),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.status === 200 || data.status === 304) return data;
+            }
+          } catch (e) {
+            console.error("Live proxy httpGet error:", e);
+          }
+        }
         let host = "";
         try {
           host = new URL(url).hostname.toLowerCase();
-        } catch (_) {}
+        } catch {}
         if (host === "api.mangadex.org" || host.endsWith(".mangadex.org")) {
           if (url.includes("/at-home/server/")) {
             return {
@@ -488,6 +503,16 @@
         return { status: 200, body: "[]", etag: "" };
       }
       if (cmd === "httpDownload") {
+        try {
+          const res = await fetch("http://localhost:1422/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(args),
+          });
+          return await res.json();
+        } catch (e) {
+          console.error("Live proxy httpDownload error:", e);
+        }
         return { written_to: args.outputPath || "", size_bytes: 0, absolute_path: "" };
       }
 
