@@ -36,7 +36,7 @@ export function setLocale(loc: Locale): void {
 }
 
 /** Interpolates `{{key}}` and `{key}` place markers in a template string. */
-export function interpolate(template: string, params?: TranslationParams): string {
+function interpolate(template: string, params?: TranslationParams): string {
   if (!params) return template;
   return template.replace(/\{\{(\w+)\}\}|\{(\w+)\}/g, (match, p1, p2) => {
     const key = p1 || p2;

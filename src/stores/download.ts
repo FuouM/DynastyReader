@@ -72,7 +72,7 @@ export function resetDownloadSpeedAccumulators(): void {
 }
 
 /** Feeds the store's ETA estimator with the freshest queue snapshot and resets speed if idle. */
-export function updateDownloadQueueSnapshot(items: DownloadQueueItem[]): void {
+function updateDownloadQueueSnapshot(items: DownloadQueueItem[]): void {
   queueSnapshot = items;
   if (!items.some((i) => i.status === "downloading")) {
     resetDownloadSpeedAccumulators();

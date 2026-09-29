@@ -18,22 +18,21 @@ export type MobileLandscapePagedLayoutSetting = "default" | "single" | "spread";
 export type MobileLandscapeFitModeSetting = "default" | "height";
 const boolDeserialize = (v: string) => v === "true" || v === "1";
 // Read pre-fetch (while reading)
-const [isReaderPrefetchEnabled, setReaderPrefetch] = persistedSignal(true, {
+export const [isReaderPrefetchEnabled, setReaderPrefetchEnabled] = persistedSignal(true, {
   name: "ds-reader-prefetch-enabled",
   serialize: String,
   deserialize: boolDeserialize,
 });
-export { isReaderPrefetchEnabled, setReaderPrefetch as setReaderPrefetchEnabled };
 
 // Auto-cache chapter (background full chapter download)
-const [isAutoCacheChapterEnabled, setAutoCache] = persistedSignal(true, {
+export const [isAutoCacheChapterEnabled, setAutoCacheChapterEnabled] = persistedSignal(true, {
   name: "ds-auto-cache-chapter",
   serialize: String,
   deserialize: boolDeserialize,
 });
-export { isAutoCacheChapterEnabled, setAutoCache as setAutoCacheChapterEnabled };
+
 // Prefetch buffer
-const [getPrefetchBuffer, _setPrefetch] = persistedSignal(isMobile() ? 3 : 5, {
+const [prefetchBufferSignal, _setPrefetch] = persistedSignal(isMobile() ? 3 : 5, {
   name: "ds-reader-prefetch",
   serialize: String,
   deserialize: (v) => {
@@ -41,45 +40,40 @@ const [getPrefetchBuffer, _setPrefetch] = persistedSignal(isMobile() ? 3 : 5, {
     return isNaN(n) ? (isMobile() ? 3 : 5) : Math.max(0, Math.min(10, n));
   },
 });
-export { getPrefetchBuffer };
+export const getPrefetchBuffer = prefetchBufferSignal;
 export const setPrefetchBuffer = (count: number) => _setPrefetch(Math.max(0, Math.min(10, count)));
 
 // Reader mode
-const [getDefaultReaderMode, setDefaultReaderMode] = persistedSignal<ReaderMode>("scroll", {
+export const [getDefaultReaderMode, setDefaultReaderMode] = persistedSignal<ReaderMode>("scroll", {
   name: "ds-reader-mode",
   deserialize: (v) => v === "paged" ? "paged" : "scroll",
 });
-export { getDefaultReaderMode, setDefaultReaderMode };
 
 // Paged layout
-const [getDefaultPagedLayout, setDefaultPagedLayout] = persistedSignal<PagedLayout>("single", {
+export const [getDefaultPagedLayout, setDefaultPagedLayout] = persistedSignal<PagedLayout>("single", {
   name: "ds-reader-layout",
   deserialize: (v) => v === "spread" ? "spread" : "single",
 });
-export { getDefaultPagedLayout, setDefaultPagedLayout };
 
 // Mobile landscape reader mode (default: paged)
-const [getMobileLandscapeReaderMode, setMobileLandscapeReaderMode] = persistedSignal<MobileLandscapeReaderModeSetting>("paged", {
+export const [getMobileLandscapeReaderMode, setMobileLandscapeReaderMode] = persistedSignal<MobileLandscapeReaderModeSetting>("paged", {
   name: "ds-reader-mobile-landscape-mode",
   deserialize: (v) => (v === "scroll" || v === "paged" || v === "default") ? v : "paged",
 });
-export { getMobileLandscapeReaderMode, setMobileLandscapeReaderMode };
 
 // Mobile landscape paged layout (default: spread)
-const [getMobileLandscapePagedLayout, setMobileLandscapePagedLayout] = persistedSignal<MobileLandscapePagedLayoutSetting>("spread", {
+export const [getMobileLandscapePagedLayout, setMobileLandscapePagedLayout] = persistedSignal<MobileLandscapePagedLayoutSetting>("spread", {
   name: "ds-reader-mobile-landscape-layout",
   deserialize: (v) => (v === "single" || v === "spread" || v === "default") ? v : "spread",
 });
-export { getMobileLandscapePagedLayout, setMobileLandscapePagedLayout };
 
 // Mobile landscape fit mode (default: fit-height)
-const [getMobileLandscapeFitMode, setMobileLandscapeFitMode] = persistedSignal<MobileLandscapeFitModeSetting>("height", {
+export const [getMobileLandscapeFitMode, setMobileLandscapeFitMode] = persistedSignal<MobileLandscapeFitModeSetting>("height", {
   name: "ds-reader-mobile-landscape-fit",
   deserialize: (v) => (v === "height" || v === "default") ? v : "height",
 });
-export { getMobileLandscapeFitMode, setMobileLandscapeFitMode };
 
-export function isMobileLandscape(): boolean {
+function isMobileLandscape(): boolean {
   if (!isMobile()) return false;
   if (typeof window === "undefined") return false;
   return window.innerWidth > window.innerHeight;
@@ -114,23 +108,21 @@ export function getEffectiveFitMode(currentFit?: FitMode): FitMode {
   return currentFit ?? getDefaultFitMode();
 }
 // Long strip spread override
-const [isLongStripSpreadOverrideEnabled, setLongStripSpreadOverrideEnabled] = persistedSignal(true, {
+export const [isLongStripSpreadOverrideEnabled, setLongStripSpreadOverrideEnabled] = persistedSignal(true, {
   name: "ds-reader-long-strip-override",
   serialize: String,
   deserialize: boolDeserialize,
 });
-export { isLongStripSpreadOverrideEnabled, setLongStripSpreadOverrideEnabled };
 
 // Long strip fit width
-const [isLongStripFitWidthEnabled, setLongStripFitWidthEnabled] = persistedSignal(true, {
+export const [isLongStripFitWidthEnabled, setLongStripFitWidthEnabled] = persistedSignal(true, {
   name: "ds-reader-long-strip-fit-width",
   serialize: String,
   deserialize: boolDeserialize,
 });
-export { isLongStripFitWidthEnabled, setLongStripFitWidthEnabled };
 
 // Reading direction (with legacy key migration)
-const [getDefaultReadingDirection, setDefaultReadingDirection] = persistedSignal<ReadingDirectionSetting>("auto", {
+export const [getDefaultReadingDirection, setDefaultReadingDirection] = persistedSignal<ReadingDirectionSetting>("auto", {
   name: "ds-reader-direction-mode",
   deserialize: (v) => {
     if (v === "ltr" || v === "rtl" || v === "auto") return v;
@@ -143,59 +135,52 @@ const [getDefaultReadingDirection, setDefaultReadingDirection] = persistedSignal
     return "auto";
   },
 });
-export { getDefaultReadingDirection, setDefaultReadingDirection };
+
 // Cover offset
-const [isCoverOffsetDefaultEnabled, setCoverOffsetDefaultEnabled] = persistedSignal(false, {
+export const [isCoverOffsetDefaultEnabled, setCoverOffsetDefaultEnabled] = persistedSignal(false, {
   name: "ds-reader-cover-offset",
   serialize: String,
   deserialize: boolDeserialize,
 });
-export { isCoverOffsetDefaultEnabled, setCoverOffsetDefaultEnabled };
 
 // Fit mode
-const [getDefaultFitMode, setDefaultFitMode] = persistedSignal<FitMode>("width", {
+export const [getDefaultFitMode, setDefaultFitMode] = persistedSignal<FitMode>("width", {
   name: "ds-reader-fit",
   deserialize: (v) => (v === "height" || v === "original") ? v : "width",
 });
-export { getDefaultFitMode, setDefaultFitMode };
 
 // Nav position
-const [getReaderNavPosition, _setNavPos] = persistedSignal<ReaderNavPosition>("top", {
+export const [getReaderNavPosition, setReaderNavPosition] = persistedSignal<ReaderNavPosition>("top", {
   name: "ds-reader-nav-position",
   deserialize: (v) => v === "bottom" ? "bottom" : "top",
 });
-export { getReaderNavPosition, _setNavPos as setReaderNavPosition };
 
 // Prev chapter start page
-const [getPrevChapterStartPage, setPrevChapterStartPage] = persistedSignal<PrevChapterStartPage>("first", {
+export const [getPrevChapterStartPage, setPrevChapterStartPage] = persistedSignal<PrevChapterStartPage>("first", {
   name: "ds-reader-prev-chapter-page",
   deserialize: (v) => v === "last" ? "last" : "first",
 });
-export { getPrevChapterStartPage, setPrevChapterStartPage };
 
 // Scroll lock
-const [getScrollLock, setScrollLock] = persistedSignal(false, {
+export const [getScrollLock, setScrollLock] = persistedSignal(false, {
   name: "ds-reader-scroll-lock",
   serialize: String,
   deserialize: (v) => v === "true" || v === "1",
 });
-export { getScrollLock, setScrollLock };
 
 // Mobile gestures on desktop (tap-to-turn, drag pull overscroll)
-const [isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled] = persistedSignal(false, {
+export const [isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled] = persistedSignal(false, {
   name: "ds-reader-mobile-gestures-desktop",
   serialize: String,
   deserialize: boolDeserialize,
 });
-export { isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled };
 
 // Hide status bar in reader (Android)
-const [isHideStatusBarEnabled, setHideStatusBarEnabled] = persistedSignal(false, {
+export const [isHideStatusBarEnabled, setHideStatusBarEnabled] = persistedSignal(false, {
   name: "ds-reader-hide-status-bar",
   serialize: String,
   deserialize: boolDeserialize,
 });
-export { isHideStatusBarEnabled, setHideStatusBarEnabled };
 
 // ── Reader image filters (brightness/contrast/grayscale/sepia) ─────────────
 const clampNum = (v: string, def: number, min: number, max: number) => {
@@ -204,33 +189,30 @@ const clampNum = (v: string, def: number, min: number, max: number) => {
   return Math.max(min, Math.min(max, n));
 };
 
-const [getReaderFilterBrightness, setReaderFilterBrightness] = persistedSignal(100, {
+export const [getReaderFilterBrightness, setReaderFilterBrightness] = persistedSignal(100, {
   name: "ds-reader-filter-brightness",
   serialize: String,
   deserialize: (v) => clampNum(v, 100, 10, 200),
 });
-export { getReaderFilterBrightness, setReaderFilterBrightness };
 
-const [getReaderFilterContrast, setReaderFilterContrast] = persistedSignal(100, {
+export const [getReaderFilterContrast, setReaderFilterContrast] = persistedSignal(100, {
   name: "ds-reader-filter-contrast",
   serialize: String,
   deserialize: (v) => clampNum(v, 100, 10, 200),
 });
-export { getReaderFilterContrast, setReaderFilterContrast };
 
-const [getReaderFilterGrayscale, setReaderFilterGrayscale] = persistedSignal(0, {
+export const [getReaderFilterGrayscale, setReaderFilterGrayscale] = persistedSignal(0, {
   name: "ds-reader-filter-grayscale",
   serialize: String,
   deserialize: (v) => clampNum(v, 0, 0, 100),
 });
-export { getReaderFilterGrayscale, setReaderFilterGrayscale };
 
-const [getReaderFilterSepia, setReaderFilterSepia] = persistedSignal(0, {
+export const [getReaderFilterSepia, setReaderFilterSepia] = persistedSignal(0, {
   name: "ds-reader-filter-sepia",
   serialize: String,
   deserialize: (v) => clampNum(v, 0, 0, 100),
 });
-export { getReaderFilterSepia, setReaderFilterSepia };
+
 
 /** Builds the CSS `filter` value for reader page images ("" when all defaults). */
 export function getReaderFilterCss(): string {

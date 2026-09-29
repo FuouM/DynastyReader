@@ -66,17 +66,6 @@ export function getMangaAuthors(manga: MangaDexManga): string[] {
   return authors;
 }
 
-/**
- * Parses numeric chapter value for safe sorting (e.g. "12.5" -> 12.5, null -> -1).
- */
-export function parseChapterNumber(chStr: string | null): number {
-  if (chStr === null || chStr === undefined || chStr.trim() === "") {
-    return -1; // Oneshots / unnumbered extras
-  }
-  const parsed = parseFloat(chStr);
-  return Number.isNaN(parsed) ? -1 : parsed;
-}
-
 
 /**
  * Maps a MangaDexManga entity to DynastyReader's standard Series interface.

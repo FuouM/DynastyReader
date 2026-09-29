@@ -38,8 +38,6 @@ function bs(): DSColorBootstrapApi {
   return api;
 }
 
-export const PRESET_HEX_MAP: Record<string, string> = bs().PRESET_HEX_MAP;
-
 export function resolveAccentColorHex(color: string | null | undefined): string {
   return bs().resolveAccentColorHex(color);
 }

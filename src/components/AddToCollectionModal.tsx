@@ -31,7 +31,7 @@ export interface AddToCollectionItem {
   parentSeriesName?: string | null;
 }
 
-export interface AddToCollectionModalProps {
+interface AddToCollectionModalProps {
   open: boolean;
   item: AddToCollectionItem;
   anchorEl?: HTMLElement | null;
@@ -46,7 +46,7 @@ interface CollectionRow {
   active: boolean;
 }
 
-export function AddToCollectionModal(props: AddToCollectionModalProps) {
+function AddToCollectionModal(props: AddToCollectionModalProps) {
   const [rows, setRows] = createSignal<CollectionRow[]>([]);
   const [loading, setLoading] = createSignal(true);
   const [loadError, setLoadError] = createSignal(false);
@@ -208,7 +208,7 @@ export function AddToCollectionModal(props: AddToCollectionModalProps) {
   );
 }
 
-export interface AddToCollectionRequest {
+interface AddToCollectionRequest {
   item: AddToCollectionItem;
   anchorEl: HTMLElement;
 }

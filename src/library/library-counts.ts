@@ -38,7 +38,7 @@ async function countMdxTable(table: string): Promise<number> {
   }
 }
 
-export async function fetchLibraryCounts(provider = activeProvider()): Promise<LibraryCounts> {
+async function fetchLibraryCounts(provider = activeProvider()): Promise<LibraryCounts> {
   if (provider === "mangadex") {
     try {
       await initMangaDexDb();

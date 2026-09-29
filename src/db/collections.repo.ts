@@ -6,7 +6,6 @@ import { log } from "../utils/log";
 
 const collectionsNotifier = createChangeNotifier();
 export const notifyCollectionsChanged = collectionsNotifier.notifyChanged;
-export const onCollectionsChanged = collectionsNotifier.onChanged;
 export const getCollectionsRevision = collectionsNotifier.getRevision;
 
 /**
@@ -136,7 +135,7 @@ export async function updateCollectionItemCoverByPermalink(
 /**
  * Adds an item to a collection.
  */
-export async function addItemToCollection(
+async function addItemToCollection(
   collectionId: number,
   item: {
     item_permalink: string;

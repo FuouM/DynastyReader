@@ -37,8 +37,7 @@ import { formatMangaTitle, getMangaAuthors, getMangaCoverUrl } from "../provider
 import { followManga, isMangaFollowed, unfollowManga } from "../providers/mangadex/db/library.repo";
 import { getMangaReadingProgress, saveReadingProgress as saveMdxProgress } from "../providers/mangadex/db/progress.repo";
 import { getMdxHistoryChapterIds, recordHistory as recordMdxHistory } from "../providers/mangadex/db/history.repo";
-import { useDelayedSpinner } from "../browse/browse-state";
-import { Loading, ErrorRetryRow } from "../components/Feedback";
+import { Loading, ErrorRetryRow, useDelayedSpinner } from "../components/Feedback";
 import { useAddToCollection } from "../components/AddToCollectionModal";
 import { BlacklistIcon } from "../components/Icon";
 import { SeriesHeader, SeriesTaggables, SeriesActions, SeriesResumeBanner, chronologicalChapters } from "./SeriesComponents";

@@ -12,11 +12,10 @@ import {
   cacheCeilingBytes,
   setCacheAutoPruneEnabled,
   setCacheCeilingBytes,
+  MB,
+  GB,
 } from "../utils/cache-quota";
 import { errorMessage, formatBytes } from "../utils/formatting";
-
-const GB = 1024 * 1024 * 1024;
-const MB = 1024 * 1024;
 
 export interface CacheCeilingGroupBoxProps {
   totalSizeBytes: number;

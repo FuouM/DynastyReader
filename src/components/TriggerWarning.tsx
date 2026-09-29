@@ -9,7 +9,7 @@ import { Modal } from "./Modal";
 import { Button, IconText } from "./Button";
 import { WarningIcon, ExternalLinkIcon, BlacklistIcon } from "./Icon";
 
-export interface TriggerWarningModalProps {
+interface TriggerWarningModalProps {
   open: boolean;
   title: string;
   matchedTags: string[];
@@ -17,7 +17,7 @@ export interface TriggerWarningModalProps {
   onClose: () => void;
 }
 
-export function TriggerWarningModal(props: TriggerWarningModalProps) {
+function TriggerWarningModal(props: TriggerWarningModalProps) {
   return (
     <Modal
       open={props.open}

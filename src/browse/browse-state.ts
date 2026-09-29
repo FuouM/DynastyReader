@@ -11,7 +11,7 @@
  */
 
 import { createEffect, createResource, createSignal } from "solid-js";
-import { debounce } from "@solid-primitives/scheduled";
+
 import { createStore } from "solid-js/store";
 import type { Accessor } from "solid-js";
 import { getBlacklistRevision } from "../db/blacklist.repo";
@@ -145,20 +145,4 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
   };
 }
 
-/**
- * Returns true once `loading` has stayed true for `delayMs`, false otherwise.
- * Matches `attachDelayedLoading`'s 140ms no-flicker threshold.
- */
-export function useDelayedSpinner(loading: Accessor<boolean>, delayMs = 140): Accessor<boolean> {
-  const [show, setShow] = createSignal(false);
-  const triggerShow = debounce(() => setShow(true), delayMs);
-  createEffect(() => {
-    if (loading()) {
-      triggerShow();
-    } else {
-      triggerShow.clear();
-      setShow(false);
-    }
-  });
-  return show;
-}
+export { useDelayedSpinner } from "../components/Feedback";

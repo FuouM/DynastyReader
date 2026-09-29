@@ -2,14 +2,33 @@
  * Shared state-feedback UI components: Loading spinner, Empty state, and Error retry row.
  */
 
-import { Show, type JSX } from "solid-js";
+import { createEffect, createSignal, Show, type Accessor, type JSX } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { Icon, type BootstrapIconName, RefreshIcon } from "./Icon";
 import { Button } from "./Button";
 import { t } from "../i18n";
 
+/**
+ * Returns true once `loading` has stayed true for `delayMs`, false otherwise.
+ * Matches `attachDelayedLoading`'s 140ms no-flicker threshold.
+ */
+export function useDelayedSpinner(loading: Accessor<boolean>, delayMs = 140): Accessor<boolean> {
+  const [show, setShow] = createSignal(false);
+  const triggerShow = debounce(() => setShow(true), delayMs);
+  createEffect(() => {
+    if (loading()) {
+      triggerShow();
+    } else {
+      triggerShow.clear();
+      setShow(false);
+    }
+  });
+  return show;
+}
+
 // ── 1. Loading Spinner ──────────────────────────────────────────────────────────
 
-export const PRAYING_MESSAGES = [
+const PRAYING_MESSAGES = [
   "Girls are now praying",
   "The maidens are praying",
   "The girls are praying",
@@ -17,8 +36,7 @@ export const PRAYING_MESSAGES = [
   "Please watch warmly until it is ready",
 ];
 
-/** Returns a random praying maiden loading message. */
-export function getRandomLoadingMessage(): string {
+function getRandomLoadingMessage(): string {
   const idx = Math.floor(Math.random() * PRAYING_MESSAGES.length);
   return PRAYING_MESSAGES[idx];
 }

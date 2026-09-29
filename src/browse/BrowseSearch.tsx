@@ -26,6 +26,7 @@ import { searchDynasty } from "../api/search";
 import { suggest } from "../api/directory";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
 import { activeProvider } from "../stores/provider";
+import { MANGADEX_UUID_REGEX } from "../providers/mangadex/api/constants";
 import { getTags, searchManga } from "../providers/mangadex/api/manga";
 import { formatMangaTitle, getMangaAuthors } from "../providers/mangadex/mapping";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
@@ -72,8 +73,6 @@ const getAllClasses = (): { id: SearchClass; label: string }[] => [
   { id: "General", label: t("browse.search.classes.general") },
   { id: "Pairing", label: t("browse.search.classes.pairing") },
 ];
-const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-
 interface SearchModel {
   pageData: SearchResultPage;
   fullyCachedSet: Set<string>;
@@ -118,12 +117,12 @@ export function BrowseSearch(props: BrowseSearchProps) {
             }
             if (currentWith.length > 0) {
               includedTags = currentWith
-                .map((t) => tagMap.get(t.toLowerCase()) || (t.startsWith("mdx-tag:") ? t.slice(8) : (UUID_REGEX.test(t) ? t : undefined)))
+                .map((t) => tagMap.get(t.toLowerCase()) || (t.startsWith("mdx-tag:") ? t.slice(8) : (MANGADEX_UUID_REGEX.test(t) ? t : undefined)))
                 .filter(Boolean) as string[];
             }
             if (currentWithout.length > 0) {
               excludedTags = currentWithout
-                .map((t) => tagMap.get(t.toLowerCase()) || (t.startsWith("mdx-tag:") ? t.slice(8) : (UUID_REGEX.test(t) ? t : undefined)))
+                .map((t) => tagMap.get(t.toLowerCase()) || (t.startsWith("mdx-tag:") ? t.slice(8) : (MANGADEX_UUID_REGEX.test(t) ? t : undefined)))
                 .filter(Boolean) as string[];
             }
           } catch (e) {

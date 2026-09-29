@@ -37,7 +37,7 @@ export async function persistSuggestEntries(
   }
 }
 
-export async function persistDirectoryEntries(
+async function persistDirectoryEntries(
   kind: "series" | "tags",
   groups: DirectoryGroup[],
   label = "directory",

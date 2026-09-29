@@ -15,7 +15,7 @@ const SERIES_PRIMARY_TIMEOUT_MS = 15_000;
 const SERIES_FALLBACK_TIMEOUT_MS = 5_000;
 
 /** Ordered candidate JSON endpoints for a series-style permalink. */
-export function seriesEndpoints(permalink: string, preferredType?: string): string[] {
+function seriesEndpoints(permalink: string, preferredType?: string): string[] {
   const enc = encodeURIComponent(permalink);
   const defaultEndpoints = [
     `${SITE_ROOT}/series/${enc}.json`,
@@ -192,7 +192,7 @@ export async function getSeriesCover(
  * Checks local SQLite cache for an already-downloaded cover (series, doujin, or standalone chapter).
  * Also verifies the cached file actually exists on disk; if missing, purges the stale DB record.
  */
-export async function getLocalCover(coverKey: string): Promise<string | null> {
+async function getLocalCover(coverKey: string): Promise<string | null> {
   if (!coverKey) return null;
   const key = `cover:${coverKey}`;
   const cached = await getCached(key);
@@ -214,7 +214,7 @@ export async function getLocalCover(coverKey: string): Promise<string | null> {
 /**
  * Checks local SQLite cache for an already-downloaded series cover. Zero network traffic.
  */
-export function getLocalSeriesCover(permalink: string): Promise<string | null> {
+function getLocalSeriesCover(permalink: string): Promise<string | null> {
   return getLocalCover(`series:${permalink}`);
 }
 
@@ -222,7 +222,7 @@ export function getLocalSeriesCover(permalink: string): Promise<string | null> {
  * Downloads page 1 of a standalone chapter as its cover, automatically
  * optimizing and compressing it into a lightweight WebP thumbnail via the backend media engine.
  */
-export async function getChapterCover(
+async function getChapterCover(
   permalink: string,
   firstPageUrl: string,
   onPhase?: (phase: "downloading" | "processing") => void,

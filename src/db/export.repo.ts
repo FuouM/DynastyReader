@@ -75,7 +75,7 @@ export interface ExportCounts {
  * Retrieves all followed series sorted by name.
  * Executes in a single fast query.
  */
-export async function getAllFollowedSeries(): Promise<ExportFollowedItem[]> {
+async function getAllFollowedSeries(): Promise<ExportFollowedItem[]> {
   if (activeProvider() === "mangadex") {
     const rows = await getAllFollowedManga();
     return rows.map((r) => ({
@@ -120,7 +120,7 @@ export async function getAllFollowedSeries(): Promise<ExportFollowedItem[]> {
  * along with all their items.
  * Uses two fast queries without N+1 loops.
  */
-export async function getAllCollections(collectionIds?: number | number[]): Promise<ExportCollection[]> {
+async function getAllCollections(collectionIds?: number | number[]): Promise<ExportCollection[]> {
   interface CollectionDbRow {
     id: number;
     name: string;
@@ -206,7 +206,7 @@ export async function getAllCollections(collectionIds?: number | number[]): Prom
 /**
  * Retrieves all bookmarks sorted by date added.
  */
-export async function getAllBookmarks(): Promise<ExportBookmarkItem[]> {
+async function getAllBookmarks(): Promise<ExportBookmarkItem[]> {
   if (activeProvider() === "mangadex") {
     const mdx = await getAllMdxBookmarks();
     return mdx.map((b) => ({
@@ -246,7 +246,7 @@ export async function getAllBookmarks(): Promise<ExportBookmarkItem[]> {
 /**
  * Fetches the raw data required for the given export scope.
  */
-export async function fetchExportData(
+async function fetchExportData(
   scope: ExportScope,
   collectionIds?: number | number[],
 ): Promise<{
@@ -295,7 +295,7 @@ export async function fetchExportData(
 /**
  * Formats structured export data into copiable text.
  */
-export function formatExportData(
+function formatExportData(
   data: {
     scope: ExportScope;
     followed?: ExportFollowedItem[];

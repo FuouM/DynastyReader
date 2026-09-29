@@ -22,7 +22,7 @@ import type { MangaDexChapter, MangaDexManga } from "./types";
 
 const PAGE_SIZE = 24;
 
-export function parseTabAndPageFromKey(key: string): { tabId: string; page: number } {
+function parseTabAndPageFromKey(key: string): { tabId: string; page: number } {
   const parts = key.split(":");
   const tabId = parts[1] || "releases";
   const page = parseInt(parts[2] || "1", 10);

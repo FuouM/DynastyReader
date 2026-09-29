@@ -28,7 +28,7 @@ const [hotkeysSignal, setHotkeysSignal] = persistedSignal<CustomHotkeysMap>(getD
 });
 
 export const hotkeysMap = hotkeysSignal;
-export const setHotkeysMap = (val: CustomHotkeysMap | ((prev: CustomHotkeysMap) => CustomHotkeysMap)) => {
+const setHotkeysMap = (val: CustomHotkeysMap | ((prev: CustomHotkeysMap) => CustomHotkeysMap)) => {
   setHotkeysSignal(val);
 };
 export const [isRecordingHotkeys, setIsRecordingHotkeys] = createSignal<boolean>(false);
@@ -37,7 +37,7 @@ export function getHotkeys(id: HotkeyActionId): string[] {
   return hotkeysMap()[id] ?? HOTKEY_DEFINITIONS_MAP[id]?.defaultKeys ?? [];
 }
 
-export function setHotkeys(id: HotkeyActionId, keys: string[]): void {
+function setHotkeys(id: HotkeyActionId, keys: string[]): void {
   const cleanKeys = Array.from(new Set(keys.map(normalizeKeyCombo).filter(Boolean)));
   setHotkeysMap((prev: CustomHotkeysMap) => ({ ...prev, [id]: cleanKeys }));
 }

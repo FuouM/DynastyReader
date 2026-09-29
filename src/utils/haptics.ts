@@ -51,7 +51,7 @@ export function resetHapticStrength(): void {
 }
 
 /** Computes hardware amplitude (1-255) for Android Vibrator from strength percentage. */
-export function getHapticAmplitude(): number {
+function getHapticAmplitude(): number {
   const pct = Math.max(1, Math.min(100, hapticStrength()));
   return Math.round((pct / 100) * 255);
 }
@@ -133,7 +133,7 @@ export function resetAllHapticDurations(): void {
   (Object.keys(DEFAULT_HAPTIC_DURATIONS) as HapticStyle[]).forEach(resetHapticDuration);
 }
 
-export function getVibrationPattern(style: HapticStyle): number | number[] {
+function getVibrationPattern(style: HapticStyle): number | number[] {
   switch (style) {
     case "tap":
       return hapticTapDuration();

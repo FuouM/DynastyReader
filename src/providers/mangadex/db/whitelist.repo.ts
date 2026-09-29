@@ -43,9 +43,7 @@ export const [whitelistedTags, setWhitelistedTags] = persistedSignal<WhitelistTa
 
 const [whitelistRevision, setWhitelistRevision] = createSignal(0);
 
-export function useWhitelistRevision(): () => number {
-  return whitelistRevision;
-}
+export const getWhitelistRevision = whitelistRevision;
 
 export function addWhitelistedTag(tag: WhitelistTag): void {
   setWhitelistedTags((prev) => {

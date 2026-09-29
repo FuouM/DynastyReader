@@ -16,7 +16,7 @@ export interface HistoryDropdownProps {
   open?: boolean;
   onClose: () => void;
 }
-export function useHistoryHoldMenu() {
+function useHistoryHoldMenu() {
   const [historyMenu, setHistoryMenu] = createSignal<{
     direction: "back" | "forward";
     anchorEl: HTMLElement;
@@ -53,7 +53,7 @@ export function useHistoryHoldMenu() {
 
   return { historyMenu, setHistoryMenu, startHold, cancelHold, didHold: () => didHold, markHeld };
 }
-export function HistoryDropdown(props: HistoryDropdownProps) {
+function HistoryDropdown(props: HistoryDropdownProps) {
   const items = () => {
     const stack = props.direction === "back" ? historyBackStack() : historyForwardStack();
     return stack.map((route, index) => ({ route, index })).reverse();

@@ -43,7 +43,7 @@ const ACCENT_COLOR_STORAGE_KEY = "ds-accent-color";
 // Re-export helpers for consumers (DisplaySettings etc.) — single source via lib/color.
 export { resolveAccentColorHex, parseHex, toHex, adjustBrightness, rgbToHsl, hslToRgb, getContrastText, getDeepAccentText, getAccessibleLinkColor };
 
-export function computeAccentPalette(rawColor: string, appTheme: AppTheme = "light"): Record<string, string> {
+function computeAccentPalette(rawColor: string, appTheme: AppTheme = "light"): Record<string, string> {
   const hex = resolveAccentColorHex(rawColor);
   const contrastText = getContrastText(hex);
   const isDark = appTheme === "dark";
@@ -202,7 +202,7 @@ export function computeAccentPalette(rawColor: string, appTheme: AppTheme = "lig
 /** All CSS custom property names managed by the accent color system — derived from the palette to guarantee sync. */
 const MANAGED_VARS = Object.keys(computeAccentPalette("#0078d4")) as readonly string[];
 
-export function applyAccentColorToDom(color: string | null, activeTheme?: AppTheme): void {
+function applyAccentColorToDom(color: string | null, activeTheme?: AppTheme): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   if (!root) return;

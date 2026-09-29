@@ -22,7 +22,8 @@ import { parseDynastyUrl } from "../api/navigation";
 import { suggest } from "../api/directory";
 import { activeProvider } from "../stores/provider";
 import { parseMangaDexUrl } from "../api/navigation";
-import { useWhitelistRevision } from "../providers/mangadex/db/whitelist.repo";
+import { getWhitelistRevision } from "../providers/mangadex/db/whitelist.repo";
+import { getBlacklistRevision } from "../db/blacklist.repo";
 import { searchManga } from "../providers/mangadex/api/manga";
 import { formatMangaTitle } from "../providers/mangadex/mapping";
 import { Pager } from "../components/Pager";
@@ -45,7 +46,7 @@ import {
   getTopPagerFor,
   scrollBrowseToBottom,
   scrollBrowseToTop,
-  useBlacklistRevision,
+
   type BrowsePaneApi,
 } from "./browse-state";
 import { BrowseFeed } from "./BrowseFeed";
@@ -122,12 +123,10 @@ export function BrowseView() {
   onCleanup(() => {
     if (checkTimer !== null) window.clearTimeout(checkTimer);
   });
-  const blacklistRev = useBlacklistRevision();
-  const whitelistRev = useWhitelistRevision();
   const revision = () =>
-    blacklistRev() +
+    getBlacklistRevision() +
     getCacheRevision() +
-    (activeProvider() === "mangadex" ? whitelistRev() : 0);
+    (activeProvider() === "mangadex" ? getWhitelistRevision() : 0);
 
   const tabScrollPositions = new Map<string, number>();
 

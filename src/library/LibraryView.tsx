@@ -70,7 +70,7 @@ export interface LibraryTabDef {
   count?: number;
 }
 
-export const getLibraryTabs = (counts?: LibraryCounts): readonly LibraryTabDef[] => {
+const getLibraryTabs = (counts?: LibraryCounts): readonly LibraryTabDef[] => {
   if (activeProvider() === "mangadex") {
     return [
       {

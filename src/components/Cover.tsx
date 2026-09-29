@@ -1,8 +1,69 @@
-import { createEffect, createSignal, on, onMount, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, on, onCleanup, onMount, Show, type JSX } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { ImageIcon, Icon, BookIcon, type BootstrapIconName } from "./Icon";
-import { useImageRetry } from "../hooks/useImageRetry";
 import { t } from "../i18n";
+
+function useImageRetry(opts?: { maxAttempts?: number; delayMs?: number }) {
+  const maxAttempts = opts?.maxAttempts ?? 2;
+  const delayMs = opts?.delayMs ?? 1200;
+  const [error, setError] = createSignal(false);
+  const [isRetrying, setIsRetrying] = createSignal(false);
+  const [retryNonce, setRetryNonce] = createSignal(0);
+  let retryTimer: number | null = null;
+  let retryAttempts = 0;
+
+  const clearTimer = () => {
+    if (retryTimer !== null) {
+      clearTimeout(retryTimer);
+      retryTimer = null;
+    }
+  };
+
+  onCleanup(() => clearTimer());
+
+  const reset = () => {
+    clearTimer();
+    setError(false);
+    setIsRetrying(false);
+    retryAttempts = 0;
+  };
+
+  const handleError = (onRetry?: () => void) => {
+    clearTimer();
+    setError(true);
+    if (retryAttempts < maxAttempts) {
+      retryAttempts++;
+      setIsRetrying(true);
+      retryTimer = setTimeout(() => {
+        setIsRetrying(false);
+        onRetry?.();
+        setRetryNonce((n) => n + 1);
+        setError(false);
+      }, retryAttempts * delayMs) as unknown as number;
+    } else {
+      setIsRetrying(false);
+    }
+  };
+
+  const retry = (onRetry?: () => void) => {
+    clearTimer();
+    retryAttempts = 0;
+    setIsRetrying(false);
+    onRetry?.();
+    setRetryNonce((n) => n + 1);
+    setError(false);
+  };
+
+  return {
+    error,
+    isRetrying,
+    retryNonce,
+    handleError,
+    retry,
+    reset,
+    showImage: (isValidSource: boolean) => isValidSource && !error(),
+  };
+}
 import { browseCovers, coversEnabledSignal, type CoverState } from "../browse/browse-covers";
 import { log } from "../utils/log";
 export interface CoverProps {
@@ -17,7 +78,7 @@ export interface CoverProps {
   onRetry?: () => void;
 }
 
-export function resolveCoverSrc(path: string | null | undefined): string {
+function resolveCoverSrc(path: string | null | undefined): string {
   if (!path) return "";
   if (
     path.startsWith("http://") ||
@@ -99,7 +160,7 @@ export function Cover(props: CoverProps) {
 }
 
 /** Static placeholder box with a fallback glyph. */
-export function CoverPlaceholder(props: {
+function CoverPlaceholder(props: {
   placeholderClass?: string;
   glyphClass?: string;
   iconName?: BootstrapIconName;

@@ -36,7 +36,7 @@ function scheduleRateLimited(): Promise<void> {
  * Handles arrays with bracket notation: `includes[]=cover_art&includes[]=author`.
  * Handles nested objects: `order[chapter]=asc`.
  */
-export function buildQueryString(params?: Record<string, unknown>): string {
+function buildQueryString(params?: Record<string, unknown>): string {
   if (!params) return "";
   const parts: string[] = [];
 

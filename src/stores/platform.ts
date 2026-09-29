@@ -37,7 +37,7 @@ export const setUiMode = (mode: UiMode): void => {
   setUiModeSignal(mode);
 };
 
-export const isNarrowOrTouchScreen: Accessor<boolean> = () => {
+const isNarrowOrTouchScreen: Accessor<boolean> = () => {
   const native = isNativeMobileDevice();
   const mq = matchesMediaQuery();
   const narrow = typeof window !== "undefined" && (window.innerWidth <= 768 || (window.innerHeight <= 550 && window.innerWidth <= 1024));

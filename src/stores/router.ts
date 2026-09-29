@@ -47,8 +47,8 @@ export const historyForwardStack = () => cur().forward[0]();
 export const sessionTab = () => cur().sessionTab[0]();
 
 export const setRoute: Setter<Route> = (r) => cur().route[1](r);
-export const setHistoryBackStack: Setter<Route[]> = (s) => cur().back[1](s);
-export const setHistoryForwardStack: Setter<Route[]> = (s) => cur().forward[1](s);
+const setHistoryBackStack: Setter<Route[]> = (s) => cur().back[1](s);
+const setHistoryForwardStack: Setter<Route[]> = (s) => cur().forward[1](s);
 export const setSessionTab: Setter<SessionMangaTab | null> = (tVal) => cur().sessionTab[1](tVal);
 /** Switches the active content provider and restores its isolated route and history. */
 export function switchProvider(newProvider: ContentProvider): void {

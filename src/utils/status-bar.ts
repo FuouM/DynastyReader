@@ -17,7 +17,7 @@ declare global {
  * Sets the visibility of the Android system status bar.
  * Safe no-op on non-Android platforms.
  */
-export function setAndroidStatusBarVisible(visible: boolean): void {
+function setAndroidStatusBarVisible(visible: boolean): void {
   if (typeof window !== "undefined" && window.AndroidThemeBridge) {
     try {
       if (typeof window.AndroidThemeBridge.setStatusBarVisible === "function") {

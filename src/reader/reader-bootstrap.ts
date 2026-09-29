@@ -448,7 +448,7 @@ export function retryReaderSession(s: ReaderSession): void {
   void initReaderSession(s);
 }
 
-export function revealAfterRestore(s: ReaderSession, targetPage?: number): void {
+function revealAfterRestore(s: ReaderSession, targetPage?: number): void {
   const target = targetPage ?? s.currentIndex();
   const deadline = window.performance.now() + RESTORE_REVEAL_DEADLINE_MS;
   const poll = (): void => {

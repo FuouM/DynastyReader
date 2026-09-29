@@ -215,12 +215,12 @@ const STATUS_NAMES: Record<string, true> = {
   hiatus: true,
   discontinued: true,
 };
-export function isArtistTag(type?: string | null): boolean {
+function isArtistTag(type?: string | null): boolean {
   const t = (type ?? "").toLowerCase();
   return t === "author" || t === "artist";
 }
 
-export function isScanlatorTag(type?: string | null): boolean {
+function isScanlatorTag(type?: string | null): boolean {
   const t = (type ?? "").toLowerCase();
   return t === "scanlator" || t === "group";
 }

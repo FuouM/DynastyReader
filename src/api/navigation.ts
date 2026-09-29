@@ -1,3 +1,4 @@
+import { MANGADEX_UUID_REGEX } from "../providers/mangadex/api/constants";
 import { PAGES_PREFIX } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
@@ -107,8 +108,6 @@ export function extractMangaDexId(permalink: string): string {
   return permalink.startsWith("mdx:") ? permalink.slice(4) : permalink;
 }
 
-const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-
 /**
  * Parses a MangaDex URL (e.g. mangadex.org/title/... or mangadex.org/chapter/...) or raw UUID.
  */
@@ -116,7 +115,7 @@ export function parseMangaDexUrl(input: string): { kind: "series" | "chapter"; i
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  if (UUID_REGEX.test(trimmed)) {
+  if (MANGADEX_UUID_REGEX.test(trimmed)) {
     return { kind: "series", id: trimmed.toLowerCase() };
   }
 
@@ -130,9 +129,9 @@ export function parseMangaDexUrl(input: string): { kind: "series" | "chapter"; i
       const type = parts[0].toLowerCase();
       const rawId = parts[1].toLowerCase();
       if (type === "title" || type === "manga") {
-        if (UUID_REGEX.test(rawId)) return { kind: "series", id: rawId };
+        if (MANGADEX_UUID_REGEX.test(rawId)) return { kind: "series", id: rawId };
       } else if (type === "chapter") {
-        if (UUID_REGEX.test(rawId)) return { kind: "chapter", id: rawId };
+        if (MANGADEX_UUID_REGEX.test(rawId)) return { kind: "chapter", id: rawId };
       }
     }
   } catch {

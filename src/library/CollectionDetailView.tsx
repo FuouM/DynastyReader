@@ -22,8 +22,7 @@ import { getCollectionById, getCollectionItems, getCollectionsRevision, removeIt
 import { deleteCached } from "../db/metadata.repo";
 import { seriesCoverKey } from "../lib/cache-keys";
 import type { CollectionItemRow, CollectionRow } from "../types/db";
-import { useDelayedSpinner } from "../browse/browse-state";
-import { Loading } from "../components/Feedback";
+import { Loading, useDelayedSpinner } from "../components/Feedback";
 import {
   FolderIcon,
   StarIcon,

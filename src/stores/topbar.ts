@@ -9,25 +9,18 @@
 import { createSignal, type JSX } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 
-const [_banner, _setBanner] = createSignal<string | null>(null);
-const [_bannerAction, _setBannerAction] = createSignal<(() => void) | null>(null);
-export { _banner as banner, _bannerAction as bannerAction };
+export const [banner, setBanner] = createSignal<string | null>(null);
+export const [bannerAction, setBannerAction] = createSignal<(() => void) | null>(null);
 
 export const dismissBanner = debounce(() => {
-  _setBanner(null);
-  _setBannerAction(null);
+  setBanner(null);
+  setBannerAction(null);
 }, 4000);
 
 export type ActionsContent = JSX.Element | null;
 
-const [_actions, _setActions] = createSignal<ActionsContent>(null);
-export const actions = _actions;
-
+export const [actions, setActions] = createSignal<ActionsContent>(null);
 export const [title, setTitle] = createSignal<string>("Browse");
-
-export function setActions(content: ActionsContent): void {
-  _setActions(content);
-}
 
 export interface ShowBannerOptions {
   onClick?: () => void;
@@ -36,8 +29,8 @@ export interface ShowBannerOptions {
 /** Shows a transient error/info banner in the top navigation bar. */
 export function showBanner(message: string, options?: ShowBannerOptions): void {
   dismissBanner.clear();
-  _setBanner(message);
-  _setBannerAction(() => (options?.onClick ?? null));
+  setBanner(message);
+  setBannerAction(() => (options?.onClick ?? null));
   dismissBanner();
 }
 

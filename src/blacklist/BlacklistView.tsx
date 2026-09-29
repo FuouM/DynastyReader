@@ -12,7 +12,7 @@ import { decodeEntities, formatDate, dynastyUrl, errorMessage } from "../utils/f
 import { t } from "../i18n";
 import { getBlacklistMode, getBlacklistedSeries, removeBlacklistedSeries, setBlacklistMode } from "../db/blacklist.repo";
 import type { BlacklistedSeries, BlacklistMode } from "../types/blacklist";
-import { useDelayedSpinner } from "../browse/browse-state";
+import { useDelayedSpinner } from "../components/Feedback";
 import {
   BlacklistIcon,
   ListCheckIcon,

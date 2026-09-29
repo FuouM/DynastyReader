@@ -9,7 +9,6 @@ import type { CachedPageRow, ChapterCacheCount, CacheOverviewStats } from "../ty
 
 const cacheNotifier = createChangeNotifier("cache.repo");
 export const getCacheRevision = cacheNotifier.getRevision;
-export const onCacheChanged = cacheNotifier.onChanged;
 export const notifyCacheChanged = cacheNotifier.notifyChanged;
 export async function getCachedPages(chapterPermalink: string): Promise<CachedPageRow[]> {
   return query<CachedPageRow>(
