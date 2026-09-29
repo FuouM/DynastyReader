@@ -1,6 +1,7 @@
 import { query } from "./client";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
+import { errorMessage } from "../utils/formatting";
 import { createChangeNotifier } from "../lib/change-notifier";
 
 const localNotifier = createChangeNotifier("library.repo:local");
@@ -67,7 +68,7 @@ export async function getLocalSeries(): Promise<LocalSeriesRow[]> {
     }
     return rows;
   } catch (err) {
-    const msg = String((err as Error)?.message ?? err);
+    const msg = errorMessage(err);
     if (msg.includes("no such table")) {
       log.warn("local.repo", "local_series missing (migration pending):", msg);
       return [];
@@ -96,7 +97,7 @@ export async function getLocalSeriesByPermalink(permalink: string): Promise<Loca
     }
     return r;
   } catch (err) {
-    const msg = String((err as Error)?.message ?? err);
+    const msg = errorMessage(err);
     if (msg.includes("no such table")) return null;
     throw err;
   }

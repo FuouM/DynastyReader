@@ -31,10 +31,10 @@ export function Topbar() {
     <>
       <div id="ds-topbar">
         <div id="ds-topbar-main">
-          <SegmentedSwitch
+          <SegmentedSwitch<"browse" | "library">
             id="ds-view-switch"
-            value={route().view}
-            onChange={(val) => navigate({ view: val as "browse" | "library" })}
+            value={route().view === "library" ? "library" : "browse"}
+            onChange={(val) => navigate({ view: val })}
             options={[
               {
                 id: "ds-tab-browse",

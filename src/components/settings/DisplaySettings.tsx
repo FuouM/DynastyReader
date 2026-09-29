@@ -3,7 +3,7 @@ import { makeEventListener } from "@solid-primitives/event-listener";
 import { theme, setTheme, THEME_REGISTRY, type AppTheme } from "../../stores/theme";
 import { accentColor, setAccentColor, ACCENT_COLOR_PRESETS, getContrastText } from "../../stores/accent-color";
 import { uiScale, setUiScale } from "../../stores/ui-scale";
-import { uiMode, setUiMode, type UiMode } from "../../stores/platform";
+import { uiMode, setUiMode } from "../../stores/platform";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { activeProvider, type ContentProvider } from "../../stores/provider";
 import { switchProvider } from "../../stores/router";
@@ -300,7 +300,7 @@ export function DisplaySettings() {
           <SegmentedSwitch
             id="ds-settings-uimode-switch"
             value={uiMode()}
-            onChange={(val) => setUiMode(val as UiMode)}
+            onChange={setUiMode}
             options={[
               { id: "ds-settings-uimode-auto", value: "auto", icon: <Icon name="display" />, text: t("settings.display.uiModeAuto"), title: t("settings.display.uiModeAutoTooltip") },
               { id: "ds-settings-uimode-desktop", value: "desktop", icon: <Icon name="pc-display" />, text: t("settings.display.uiModeDesktop"), title: t("settings.display.uiModeDesktopTooltip") },

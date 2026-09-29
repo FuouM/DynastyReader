@@ -134,7 +134,7 @@ export function CacheView() {
     debouncedSetFilter(val);
   };
 
-  const cacheActions = useCacheActions(refetch as unknown as () => void);
+  const cacheActions = useCacheActions(refetch);
   const purgeAll = async (): Promise<void> => {
     if (activeProvider() === "mangadex") {
       await purgeMangaDexCache();

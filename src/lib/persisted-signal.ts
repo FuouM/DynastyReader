@@ -123,5 +123,5 @@ export function persistedSignal<T>(
 
     return val;
   };
-  return makePersisted(createSignal<T>(initial), opts) as unknown as Signal<T>;
+  return makePersisted(createSignal<T>(initial), opts);
 }

@@ -7,23 +7,6 @@
 import { persistedSignal } from "../lib/persisted-signal";
 import { log } from "./log";
 
-declare global {
-  interface AndroidThemeBridge {
-    triggerHaptic?(style: string): void;
-    triggerHapticAdvanced?(style: string, durationMs: number, amplitude: number): void;
-    triggerHapticConstant?(constant: number): void;
-    openUrl?(url: string): boolean;
-    updateTheme?(isDark: boolean, color: string): void;
-    /** ConnectivityManager.isActiveNetworkMetered (QoL-D5 Wi-Fi-only mode). */
-    isConnectionMetered?(): boolean;
-    setStatusBarVisible?(visible: boolean): void;
-    setStatusBarHidden?(hidden: boolean): void;
-  }
-
-  interface Window {
-    AndroidThemeBridge?: AndroidThemeBridge;
-  }
-}
 
 export type HapticStyle = "snap" | "confirm" | "tap" | "page-turn";
 

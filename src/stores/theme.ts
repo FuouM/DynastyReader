@@ -87,10 +87,9 @@ function applyThemeToDom(t: AppTheme): void {
   if (meta) {
     meta.setAttribute("content", THEME_META[t] ?? "#f5f5f5");
   }
-  const w = window as unknown as { AndroidThemeBridge?: { updateTheme: (isDark: boolean, color: string) => void } };
-  if (typeof window !== "undefined" && w.AndroidThemeBridge?.updateTheme) {
+  if (typeof window !== "undefined" && window.AndroidThemeBridge?.updateTheme) {
     try {
-      w.AndroidThemeBridge.updateTheme(isDark, THEME_META[t] ?? "#f5f5f5");
+      window.AndroidThemeBridge.updateTheme(isDark, THEME_META[t] ?? "#f5f5f5");
     } catch (err) {
       log.debug("theme", "AndroidThemeBridge.updateTheme failed:", err);
     }

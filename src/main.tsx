@@ -17,11 +17,7 @@ import { App } from "./App";
 initAppTheme();
 initAccentColor();
 if (typeof window !== "undefined") {
-  interface DevWindow {
-    __NAVIGATE__?: typeof navigate;
-  }
-  const devWin = window as unknown as DevWindow;
-  devWin.__NAVIGATE__ = navigate;
+  window.__NAVIGATE__ = navigate;
 }
 
 // Mirror browser console output into the tauri-plugin-log backend so the

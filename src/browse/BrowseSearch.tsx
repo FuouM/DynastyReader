@@ -52,7 +52,6 @@ import type {
   SearchClass,
   SearchResultItem,
   SearchResultPage,
-  SearchSort,
 } from "../types/api";
 import {
   SearchIcon,
@@ -82,7 +81,7 @@ interface SearchModel {
 export interface BrowseSearchProps {
   active: Accessor<boolean>;
   revision: Accessor<number>;
-  transient: { searchQuery?: string; withTag?: string; searchClass?: string } | null;
+  transient: { searchQuery?: string; withTag?: string; searchClass?: SearchClass } | null;
   onTransientConsumed: () => void;
   register?: (api: BrowsePaneApi) => void;
 }
@@ -476,7 +475,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 className="ds-search-sort"
                 value={sort()}
                 onChange={(val) => {
-                  setSort(val as SearchSort);
+                  setSort(val);
                   pane.goToPage(1);
                 }}
                 options={[

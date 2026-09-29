@@ -153,9 +153,9 @@ export async function getMangaDexDownloadedChapters(): Promise<MangaDexDownloade
   );
 
   return rows.map((r) => {
-    const chId = r.chapter_id || (r as unknown as { chapter_permalink?: string }).chapter_permalink || "ch-uuid-1a";
-    const mId = r.manga_id || (r as unknown as { series_permalink?: string }).series_permalink || "6bae5c8c-d5ff-43df-acf7-b7670532c8b1";
-    const mTitle = r.manga_title || (r as unknown as { series_name?: string }).series_name || "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu";
+    const chId = r.chapter_id;
+    const mId = r.manga_id ?? "";
+    const mTitle = r.manga_title ?? "Manga";
     return {
       chapterId: chId,
       chapterTitle: r.chapter_title || chId,

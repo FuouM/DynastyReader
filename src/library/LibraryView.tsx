@@ -165,7 +165,7 @@ function LibraryGrid() {
   const isNarrowOrMobile = () => isNarrow() || isMobile();
 
   const activeTab = (): LibraryTabId => {
-    const raw = (route().libraryTab ?? "followed") as LibraryTabId;
+    const raw = route().libraryTab ?? "followed";
     const allowed = getLibraryTabs();
     return allowed.some((t) => t.id === raw) ? raw : "followed";
   };
@@ -363,7 +363,7 @@ function LibraryGrid() {
         <SubTabs
           tabs={tabs()}
           activeTab={activeTab()}
-          onSwitch={(id) => switchTab(id as LibraryTabId)}
+          onSwitch={(id) => switchTab(id)}
           compact={isNarrowOrMobile()}
           right={
             (activeTab() === "followed" || activeTab() === "collections") ? (

@@ -8,25 +8,6 @@
  * imported. Used by src/stores/accent-color.ts.
  */
 
-export interface DSColorBootstrapApi {
-  PRESET_HEX_MAP: Record<string, string>;
-  resolveAccentColorHex(color: string | null | undefined): string;
-  parseHex(color: string): [number, number, number];
-  toHex(r: number, g: number, b: number): string;
-  /** Brightness factor in -1..1 (negative darkens, positive lightens). */
-  adjustBrightnessFactor(hex: string, factor: number): string;
-  rgbToHsl(r: number, g: number, b: number): [number, number, number];
-  hslToRgb(h: number, s: number, l: number): [number, number, number];
-  getContrastText(hex: string): string;
-  getDeepAccentText(hex: string, targetLightness?: number, maxSaturation?: number): string;
-  getAccessibleLinkColor(hex: string, isDark?: boolean): string;
-}
-
-declare global {
-  interface Window {
-    DSColorBootstrap?: DSColorBootstrapApi;
-  }
-}
 
 function bs(): DSColorBootstrapApi {
   const api = window.DSColorBootstrap;

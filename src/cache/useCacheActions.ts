@@ -7,7 +7,7 @@ import { log } from "../utils/log";
 import { backupDatabase, restoreDatabaseFromPath, wipeDatabase } from "../db/db.manage";
 import { clearAllCacheStorage, clearAllCachedCovers, clearAllCachedPages } from "../db/cache.repo";
 
-export function useCacheActions(refetch: () => void) {
+export function useCacheActions(refetch: () => unknown) {
   let isBusy = false;
 
   const withRefresh = async (action: () => Promise<void>, successKey: Parameters<typeof t>[0]) => {

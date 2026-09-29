@@ -203,25 +203,25 @@ export interface IconTextProps {
   style?: string | JSX.CSSProperties;
 }
 
-export interface SelectOption {
-  value: string;
+export interface SelectOption<T extends string = string> {
+  value: T;
   label: string;
 }
 
-export interface DsSelectProps {
+export interface DsSelectProps<T extends string = string> {
   id?: string;
   className?: string;
   style?: string;
-  value: string;
+  value: T;
   disabled?: boolean;
-  options?: SelectOption[];
-  onChange?: (value: string) => void;
+  options?: readonly SelectOption<T>[] | SelectOption<T>[];
+  onChange?: (value: T) => void;
   children?: JSX.Element;
   "aria-label"?: string;
   ariaLabel?: string;
 }
 
-export function DsSelect(props: DsSelectProps) {
+export function DsSelect<T extends string = string>(props: DsSelectProps<T>) {
   return (
     <select
       id={props.id}
@@ -230,7 +230,7 @@ export function DsSelect(props: DsSelectProps) {
       style={props.style}
       value={props.value}
       disabled={props.disabled}
-      onChange={(ev) => props.onChange?.(ev.currentTarget.value)}
+      onChange={(ev) => props.onChange?.(ev.currentTarget.value as T)}
     >
       {props.options
         ? props.options.map((o) => <option value={o.value}>{o.label}</option>)
@@ -252,23 +252,23 @@ export function IconText(props: IconTextProps) {
   );
 }
 
-export interface SegmentedOption {
-  value: string;
+export interface SegmentedOption<T extends string = string> {
+  value: T;
   id?: string;
   icon?: JSX.Element;
   text?: string | JSX.Element;
   title?: string;
 }
 
-export interface SegmentedSwitchProps {
+export interface SegmentedSwitchProps<T extends string = string> {
   id?: string;
   style?: string;
-  value: string;
-  options: SegmentedOption[];
-  onChange?: (value: string) => void;
+  value: T;
+  options: readonly SegmentedOption<T>[] | SegmentedOption<T>[];
+  onChange?: (value: T) => void;
 }
 
-export function SegmentedSwitch(props: SegmentedSwitchProps) {
+export function SegmentedSwitch<T extends string = string>(props: SegmentedSwitchProps<T>) {
   return (
     <div class="ds-segmented-switch" id={props.id} style={props.style}>
       <For each={props.options}>
@@ -448,7 +448,7 @@ export function BlacklistModeSwitch(props: BlacklistModeSwitchProps) {
       <SegmentedSwitch
         id={props.id}
         value={props.value()}
-        onChange={(val) => props.onChange(val as BlacklistMode)}
+        onChange={(val) => props.onChange(val)}
         options={[
           { id: `${props.id}-hide`, value: "hide", icon: <Icon name="eye-slash" />, text: t("blacklist.modeHide"), title: t("blacklist.modeHideTooltip") },
           { id: `${props.id}-ghost`, value: "ghost", icon: <Icon name="eye-slash-fill" />, text: t("blacklist.modeGhost"), title: t("blacklist.modeGhostTooltip") },

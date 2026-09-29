@@ -6,12 +6,6 @@
  */
 import { log } from "./log";
 
-declare global {
-  interface AndroidThemeBridge {
-    setStatusBarVisible?(visible: boolean): void;
-    setStatusBarHidden?(hidden: boolean): void;
-  }
-}
 
 /**
  * Sets the visibility of the Android system status bar.

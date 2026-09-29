@@ -1,18 +1,18 @@
 import { For, Show, type JSX } from "solid-js";
 import { Button } from "./Button";
 
-export interface SubTab {
-  id: string;
+export interface SubTab<T extends string = string> {
+  id: T;
   label: string;
   shortLabel?: string;
   icon?: string;
   count?: number;
 }
 
-export interface SubTabsProps {
-  tabs: readonly SubTab[];
-  activeTab: string;
-  onSwitch: (id: string) => void;
+export interface SubTabsProps<T extends string = string> {
+  tabs: readonly SubTab<T>[];
+  activeTab: T;
+  onSwitch: (id: T) => void;
   /** Whether to use short labels (e.g. on compact breakpoints). */
   compact?: boolean;
   /** Content rendered on the right side of the tab bar. */
@@ -23,7 +23,7 @@ export interface SubTabsProps {
  * Horizontal sub-tab bar with segmented buttons and optional right-side actions.
  * Used by BrowseView and LibraryView for their tab navigation rows.
  */
-export function SubTabs(props: SubTabsProps) {
+export function SubTabs<T extends string = string>(props: SubTabsProps<T>) {
   return (
     <div class="ds-subtabs">
       <div class="ds-subtabs-left">

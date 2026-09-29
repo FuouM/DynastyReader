@@ -6,7 +6,6 @@
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { ReaderSession } from "./reader-session";
-import type { FitMode, ReaderMode, PagedLayout, ReadingDirection } from "../types/reader";
 import { theme, setTheme } from "../stores/theme";
 import { isMobile } from "../stores/platform";
 import { navigate } from "../stores/router";
@@ -18,7 +17,6 @@ import {
   setPrevChapterStartPage,
   isHideStatusBarEnabled,
   setHideStatusBarEnabled,
-  type PrevChapterStartPage,
 } from "./settings";
 import { isHapticsEnabled, setHapticsEnabled } from "../utils/haptics";
 import { Button, IconText, SegmentedSwitch, DsSwitch } from "../components/Button";
@@ -146,7 +144,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               <SettingsRow label={t("settings.reader.defaultMode")}>
                 <SegmentedSwitch
                   value={s.mode()}
-                  onChange={(val) => s.setMode(val as ReaderMode)}
+                  onChange={s.setMode}
                   options={[
                     { id: "ds-ctrl-mode-scroll", value: "scroll", icon: <DistributeVerticalIcon />, text: t("reader.toolbar.scroll") },
                     { id: "ds-ctrl-mode-paged", value: "paged", icon: <ArrowLeftRightIcon />, text: t("reader.toolbar.paged") },
@@ -197,7 +195,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <SettingsRow label={t("settings.reader.readingDirection")} divider>
                   <SegmentedSwitch
                     value={s.direction()}
-                    onChange={(val) => s.setDirection(val as ReadingDirection)}
+                    onChange={s.setDirection}
                     options={[
                       { id: "ds-ctrl-dir-rtl", value: "rtl", icon: <ArrowLeftIcon />, text: "RTL" },
                       { id: "ds-ctrl-dir-ltr", value: "ltr", icon: <ArrowRightIcon />, text: "LTR" },
@@ -209,7 +207,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <SettingsRow label={t("settings.reader.pagedLayout")} divider>
                   <SegmentedSwitch
                     value={s.pagedLayout()}
-                    onChange={(val) => s.setPagedLayout(val as PagedLayout)}
+                    onChange={s.setPagedLayout}
                     options={[
                       { id: "ds-ctrl-layout-single", value: "single", icon: <DoublePageIcon />, text: t("settings.reader.layoutSingleLabel") },
                       { id: "ds-ctrl-layout-spread", value: "spread", icon: <ColumnsGapIcon />, text: t("settings.reader.layoutSpreadLabel") },
@@ -222,7 +220,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               <SettingsRow label={t("settings.reader.fitMode")} divider stacked>
                 <SegmentedSwitch
                   value={s.fitMode()}
-                  onChange={(val) => s.setFitMode(val as FitMode)}
+                  onChange={s.setFitMode}
                   options={[
                     { id: "ds-ctrl-fit-width", value: "width", text: t("reader.toolbar.fitModes.widthShort") || "Width", title: t("reader.toolbar.fitModes.width") },
                     { id: "ds-ctrl-fit-height", value: "height", text: t("reader.toolbar.fitModes.heightShort") || "Height", title: t("reader.toolbar.fitModes.height") },
@@ -271,7 +269,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               <SettingsRow label={t("settings.reader.prevChapterPage")} divider>
                 <SegmentedSwitch
                   value={getPrevChapterStartPage()}
-                  onChange={(val) => setPrevChapterStartPage(val as PrevChapterStartPage)}
+                  onChange={setPrevChapterStartPage}
                   options={[
                     { id: "ds-ctrl-prev-first", value: "first", text: t("settings.reader.prevChapterPageFirst") },
                     { id: "ds-ctrl-prev-last", value: "last", text: t("settings.reader.prevChapterPageLast") },
@@ -283,7 +281,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               <SettingsRow label={t("settings.display.theme")} divider>
                 <SegmentedSwitch
                   value={theme()}
-                  onChange={(val) => setTheme(val as "light" | "dark")}
+                  onChange={setTheme}
                   options={[
                     { id: "ds-ctrl-theme-light", value: "light", icon: <SunIcon />, text: t("settings.display.themeLight").split(" ")[0] },
                     { id: "ds-ctrl-theme-dark", value: "dark", icon: <MoonIcon />, text: t("settings.display.themeDark").split(" ")[0] },

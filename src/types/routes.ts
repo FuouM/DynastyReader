@@ -1,8 +1,20 @@
 /**
  * Router & navigation types for the dynasty-scans plugin.
  */
+import type { SearchClass } from "./api";
+
 
 export type ViewName = "library" | "browse" | "series" | "reader" | "cache" | "blacklist" | "whitelist";
+
+export type BrowseTabId =
+  | "releases"
+  | "added"
+  | "downloaded"
+  | "series-dir"
+  | "tags-dir"
+  | "search";
+
+export type LibraryTabId = "followed" | "collections" | "bookmarks" | "history" | "local";
 
 export interface ChapterRef {
   title: string;
@@ -17,9 +29,9 @@ export interface ChapterRef {
 export interface Route {
   view: ViewName;
   /** Which browse sub-tab to show. */
-  browseTab?: string;
+  browseTab?: BrowseTabId;
   /** Which library sub-tab to show on mobile/narrow view. */
-  libraryTab?: string;
+  libraryTab?: LibraryTabId;
   /** Collection ID when viewing a single custom collection in library. */
   collectionId?: number;
   seriesPermalink?: string;
@@ -33,7 +45,7 @@ export interface Route {
   /** Active search query when opening browse with search tab. */
   searchQuery?: string;
   /** Class filter for search tab. */
-  searchClass?: string;
+  searchClass?: SearchClass;
   /** Initial included tag filter for search tab. */
   withTag?: string;
 }

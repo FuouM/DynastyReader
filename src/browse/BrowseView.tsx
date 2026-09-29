@@ -11,10 +11,11 @@
 const CHECK_BTN_AUTO_DISMISS_MS = 1500;
 
 import { makeEventListener } from "@solid-primitives/event-listener";
+import type { SearchClass } from "../types/api";
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, type JSX } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
 import { isMobile } from "../stores/platform";
-import { navigate, route, setRoute } from "../stores/router";
+import { navigate, route, setRoute, type BrowseTabId } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
 import { triggerHaptic } from "../utils/haptics";
@@ -68,13 +69,6 @@ async function suggestMangaDex(query: string): Promise<Array<{ name: string; typ
 }
 
 
-type BrowseTabId =
-  | "releases"
-  | "added"
-  | "downloaded"
-  | "series-dir"
-  | "tags-dir"
-  | "search";
 
 interface BrowseTabDef {
   id: BrowseTabId;
@@ -149,10 +143,10 @@ export function BrowseView() {
   const [pendingSearch, setPendingSearch] = createSignal<{
     searchQuery?: string;
     withTag?: string;
-    searchClass?: string;
+    searchClass?: SearchClass;
   } | null>(null);
 
-  const activeTab = (): BrowseTabId => (route().browseTab ?? "releases") as BrowseTabId;
+  const activeTab = (): BrowseTabId => route().browseTab ?? "releases";
 
   const activeFor = (tabId: BrowseTabId): (() => boolean) => () =>
     route().view === "browse" && activeTab() === tabId;
@@ -469,7 +463,7 @@ export function BrowseView() {
       <SubTabs
         tabs={getBrowseTabs()}
         activeTab={activeTab()}
-        onSwitch={(id) => switchTab(id as BrowseTabId)}
+        onSwitch={(id) => switchTab(id)}
         compact={isMobile()}
         right={
           <>

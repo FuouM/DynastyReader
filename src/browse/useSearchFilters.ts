@@ -29,11 +29,27 @@ export interface SearchFilters {
   runSearch: (value: string) => void;
   toggleClass: (c: SearchClass) => void;
   clearAll: () => void;
-  applyTransient: (t: { searchQuery?: string; withTag?: string; searchClass?: string } | null) => void;
+  applyTransient: (t: { searchQuery?: string; withTag?: string; searchClass?: SearchClass } | null) => void;
   addWithTag: (tag: string) => void;
   addWithoutTag: (tag: string) => void;
   removeWithTag: (tag: string) => void;
   removeWithoutTag: (tag: string) => void;
+}
+
+const VALID_SEARCH_CLASSES = new Set<string>([
+  "Chapter",
+  "Anthology",
+  "Doujin",
+  "Issue",
+  "Series",
+  "Author",
+  "Scanlator",
+  "General",
+  "Pairing",
+]);
+
+function isSearchClass(v: string): v is SearchClass {
+  return VALID_SEARCH_CLASSES.has(v);
 }
 
 /**
@@ -47,7 +63,7 @@ export function createSearchFilters(): SearchFilters {
   const [classes, setClasses] = persistedSignal<Set<SearchClass>>(new Set(), {
     name: "ds_search_classes",
     serialize: (s) => JSON.stringify([...s]),
-    deserialize: (v) => new Set(parseStringArray(v) as SearchClass[]),
+    deserialize: (v) => new Set(parseStringArray(v).filter(isSearchClass)),
   });
   const [withTags, setWithTags] = persistedSignal<string[]>([], {
     name: "ds_search_with_tags",
@@ -88,7 +104,7 @@ export function createSearchFilters(): SearchFilters {
   const applyTransient = (t: {
     searchQuery?: string;
     withTag?: string;
-    searchClass?: string;
+    searchClass?: SearchClass;
   } | null): void => {
     if (!t) return;
     if (t.searchQuery !== undefined) {
@@ -103,7 +119,7 @@ export function createSearchFilters(): SearchFilters {
       setWithTags([t.withTag]);
     }
     if (t.searchClass !== undefined) {
-      if (t.searchClass) setClasses(new Set([t.searchClass as SearchClass]));
+      if (t.searchClass) setClasses(new Set([t.searchClass]));
       else setClasses(new Set<SearchClass>());
     }
   };

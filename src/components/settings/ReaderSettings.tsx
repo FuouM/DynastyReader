@@ -37,13 +37,7 @@ import {
   setPrevChapterStartPage,
   getScrollLock,
   setScrollLock,
-  type PrevChapterStartPage,
-  type ReadingDirectionSetting,
-  type MobileLandscapeReaderModeSetting,
-  type MobileLandscapePagedLayoutSetting,
-  type MobileLandscapeFitModeSetting,
 } from "../../reader/settings";
-import type { FitMode, ReaderMode, PagedLayout } from "../../types/reader";
 import { t } from "../../i18n";
 import { DoublePageIcon, Icon } from "../Icon";
 import { DsSelect, IconText, Button, SegmentedSwitch } from "../Button";
@@ -77,7 +71,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-direction-switch"
             value={directionPref()}
-            onChange={(val) => setDirectionPref(val as ReadingDirectionSetting)}
+            onChange={setDirectionPref}
             options={[
               { id: "ds-settings-dir-auto", value: "auto", icon: <Icon name="magic" />, text: t("settings.reader.dirAutoLabel"), title: t("settings.reader.dirAutoTooltip") },
               { id: "ds-settings-dir-rtl", value: "rtl", icon: <Icon name="arrow-left" />, text: t("settings.reader.dirRtlLabel"), title: t("settings.reader.dirRtlTooltip") },
@@ -91,7 +85,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-mode-switch"
             value={readerModePref()}
-            onChange={(val) => setReaderModePref(val as ReaderMode)}
+            onChange={setReaderModePref}
             options={[
               { id: "ds-settings-mode-scroll", value: "scroll", icon: <Icon name="view-stacked" />, text: t("settings.reader.modeScrollLabel"), title: t("settings.reader.modeScrollTooltip") },
               { id: "ds-settings-mode-paged", value: "paged", icon: <Icon name="book" />, text: t("settings.reader.modePagedLabel"), title: t("settings.reader.modePagedTooltip") },
@@ -104,7 +98,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-layout-switch"
             value={pagedLayoutPref()}
-            onChange={(val) => setPagedLayoutPref(val as PagedLayout)}
+            onChange={setPagedLayoutPref}
             options={[
               { id: "ds-settings-layout-single", value: "single", icon: <Icon name="file-earmark" />, text: t("settings.reader.layoutSingleLabel"), title: t("settings.reader.layoutSingleTooltip") },
               { id: "ds-settings-layout-spread", value: "spread", icon: <Icon name="columns-gap" />, text: t("settings.reader.layoutSpreadLabel"), title: t("settings.reader.layoutSpreadTooltip") },
@@ -120,7 +114,7 @@ export function ReaderSettings() {
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-mode-switch"
                 value={mobileLandscapeModePref()}
-                onChange={(val) => setMobileLandscapeModePref(val as MobileLandscapeReaderModeSetting)}
+                onChange={setMobileLandscapeModePref}
                 options={[
                   { id: "ds-settings-ml-mode-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeModeDefault"), title: t("settings.reader.mobileLandscapeModeDefaultTooltip") },
                   { id: "ds-settings-ml-mode-scroll", value: "scroll", icon: <Icon name="view-stacked" />, text: t("settings.reader.mobileLandscapeModeScroll"), title: t("settings.reader.mobileLandscapeModeScrollTooltip") },
@@ -132,7 +126,7 @@ export function ReaderSettings() {
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-layout-switch"
                 value={mobileLandscapeLayoutPref()}
-                onChange={(val) => setMobileLandscapeLayoutPref(val as MobileLandscapePagedLayoutSetting)}
+                onChange={setMobileLandscapeLayoutPref}
                 options={[
                   { id: "ds-settings-ml-layout-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeLayoutDefault"), title: t("settings.reader.mobileLandscapeLayoutDefaultTooltip") },
                   { id: "ds-settings-ml-layout-single", value: "single", icon: <Icon name="file-earmark" />, text: t("settings.reader.mobileLandscapeLayoutSingle"), title: t("settings.reader.mobileLandscapeLayoutSingleTooltip") },
@@ -144,7 +138,7 @@ export function ReaderSettings() {
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-fit-switch"
                 value={mobileLandscapeFitPref()}
-                onChange={(val) => setMobileLandscapeFitPref(val as MobileLandscapeFitModeSetting)}
+                onChange={setMobileLandscapeFitPref}
                 options={[
                   { id: "ds-settings-ml-fit-default", value: "default", icon: <Icon name="arrow-return-right" />, text: t("settings.reader.mobileLandscapeFitDefault"), title: t("settings.reader.mobileLandscapeFitDefaultTooltip") },
                   { id: "ds-settings-ml-fit-height", value: "height", icon: <Icon name="arrows-expand" />, text: t("settings.reader.mobileLandscapeFitHeight"), title: t("settings.reader.mobileLandscapeFitHeightTooltip") },
@@ -238,7 +232,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-prev-page-switch"
             value={prevChapterPagePref()}
-            onChange={(val) => setPrevChapterPagePref(val as PrevChapterStartPage)}
+            onChange={setPrevChapterPagePref}
             options={[
               { id: "ds-settings-prev-first", value: "first", icon: <Icon name="file-earmark-arrow-up" />, text: t("settings.reader.prevChapterPageFirst"), title: t("settings.reader.prevChapterPageFirstTooltip") },
               { id: "ds-settings-prev-last", value: "last", icon: <Icon name="file-earmark-arrow-down" />, text: t("settings.reader.prevChapterPageLast"), title: t("settings.reader.prevChapterPageLastTooltip") },
@@ -253,7 +247,7 @@ export function ReaderSettings() {
             aria-label={t("settings.reader.fitMode")}
             className="ds-select--w130"
             value={fitModePref()}
-            onChange={(val) => setFitModePref(val as FitMode)}
+            onChange={setFitModePref}
             options={[
               { value: "width", label: t("settings.reader.fitModes.width") },
               { value: "height", label: t("settings.reader.fitModes.height") },
@@ -314,7 +308,7 @@ export function ReaderSettings() {
           <SegmentedSwitch
             id="ds-settings-nav-pos-switch"
             value={navPosition()}
-            onChange={(val) => setNavPosition(val as "top" | "bottom")}
+            onChange={setNavPosition}
             options={[
               { id: "ds-settings-nav-pos-top", value: "top", icon: <Icon name="align-top" />, text: t("settings.reader.navPosTopLabel"), title: t("settings.reader.navPosTopTooltip") },
               { id: "ds-settings-nav-pos-bottom", value: "bottom", icon: <Icon name="align-bottom" />, text: t("settings.reader.navPosBottomLabel"), title: t("settings.reader.navPosBottomTooltip") },

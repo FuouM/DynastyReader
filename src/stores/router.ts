@@ -14,7 +14,7 @@ import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import { activeProvider, setActiveProviderRaw, type ContentProvider } from "./provider";
 import type { Route, SessionMangaTab } from "../types/routes";
-export type { Route, ViewName, ChapterRef, SessionMangaTab } from "../types/routes";
+export type { Route, ViewName, ChapterRef, SessionMangaTab, BrowseTabId, LibraryTabId } from "../types/routes";
 
 // Per-provider route, history, and session tab storage (Decisions 2B & 3B)
 const navState: Record<ContentProvider, {
