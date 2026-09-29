@@ -467,10 +467,7 @@
      touch-action: none for full custom gesture control.) */
   touch-action: pan-y;
 }
-#ds-reader-viewport.ds-dragging {
-  cursor: grabbing !important;
-  user-select: none !important;
-}
+#ds-reader-viewport.ds-dragging,
 #ds-reader-viewport.ds-dragging * {
   cursor: grabbing !important;
   user-select: none !important;

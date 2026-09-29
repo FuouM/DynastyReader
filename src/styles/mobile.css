@@ -7,47 +7,27 @@
  */
 
 /* Mobile-style narrow disappearing overlay scrollbar */
-#ds-root[data-mobile] *,
-#ds-root[data-mobile] ~ .ds-modal-backdrop *,
-#ds-root[data-mobile] ~ .ds-overlay *,
-#ds-root[data-mobile] .ds-modal-backdrop *,
-#ds-root[data-mobile] .ds-overlay * {
+:is([data-mobile], body[data-mobile]) * {
   -webkit-overflow-scrolling: touch;
 }
 
-#ds-root[data-mobile] ::-webkit-scrollbar,
-#ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar,
-#ds-root[data-mobile] ~ .ds-overlay ::-webkit-scrollbar,
-#ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar,
-#ds-root[data-mobile] .ds-overlay ::-webkit-scrollbar {
+:is([data-mobile], body[data-mobile]) ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
 
-#ds-root[data-mobile] ::-webkit-scrollbar-track,
-#ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-track,
-#ds-root[data-mobile] ~ .ds-overlay ::-webkit-scrollbar-track,
-#ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-track,
-#ds-root[data-mobile] .ds-overlay ::-webkit-scrollbar-track {
+:is([data-mobile], body[data-mobile]) ::-webkit-scrollbar-track {
   background: transparent;
   border: none;
 }
 
-#ds-root[data-mobile] ::-webkit-scrollbar-thumb,
-#ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-thumb,
-#ds-root[data-mobile] ~ .ds-overlay ::-webkit-scrollbar-thumb,
-#ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb,
-#ds-root[data-mobile] .ds-overlay ::-webkit-scrollbar-thumb {
+:is([data-mobile], body[data-mobile]) ::-webkit-scrollbar-thumb {
   background: var(--sys-scrollbar-thumb, rgba(0, 0, 0, 0.22));
   border-radius: 4px;
   border: none;
 }
 
-#ds-root[data-mobile] ::-webkit-scrollbar-thumb:hover,
-#ds-root[data-mobile] ~ .ds-modal-backdrop ::-webkit-scrollbar-thumb:hover,
-#ds-root[data-mobile] ~ .ds-overlay ::-webkit-scrollbar-thumb:hover,
-#ds-root[data-mobile] .ds-modal-backdrop ::-webkit-scrollbar-thumb:hover,
-#ds-root[data-mobile] .ds-overlay ::-webkit-scrollbar-thumb:hover {
+:is([data-mobile], body[data-mobile]) ::-webkit-scrollbar-thumb:hover {
   background: var(--sys-scrollbar-thumb-hover, rgba(0, 0, 0, 0.45));
 }
 
