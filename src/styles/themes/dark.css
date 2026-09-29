@@ -232,6 +232,16 @@
     border-color: var(--sys-primary-border, #2b6cb0) !important;
     color: var(--sys-highlight-text) !important;
   }
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-library-nav-item .ds-nav-count,
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-subtab .ds-subtab-count {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #a1a1aa !important;
+  }
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-library-nav-item.active .ds-nav-count,
+  :is(:root[data-theme="dark"], body.ds-dark) .ds-subtab.active .ds-subtab-count {
+    background: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+  }
   /* ── Group boxes in Dark theme ── */
   :is(:root[data-theme="dark"], body.ds-dark) .group-box {
     background: var(--sys-window-bg) !important;

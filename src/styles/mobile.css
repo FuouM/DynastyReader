@@ -398,6 +398,14 @@
   border-radius: 0;
 }
 
+#ds-root[data-mobile] .ds-subtab-count {
+  font-size: 9.5px;
+  min-width: 15px;
+  height: 14px;
+  padding: 0 4px;
+  margin-left: 4px;
+}
+
 #ds-root[data-mobile] #ds-pane-browse .ds-subtabs-left {
   padding-right: 0;
   mask-image: none;

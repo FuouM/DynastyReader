@@ -6,6 +6,7 @@ export interface SubTab {
   label: string;
   shortLabel?: string;
   icon?: string;
+  count?: number;
 }
 
 export interface SubTabsProps {
@@ -30,11 +31,14 @@ export function SubTabs(props: SubTabsProps) {
           {(tab) => (
             <DsButton
               className={`ds-subtab${props.activeTab === tab.id ? " active" : ""}`}
-              title={tab.label}
+              title={typeof tab.count === "number" ? `${tab.label} (${tab.count})` : tab.label}
               onClick={() => props.onSwitch(tab.id)}
             >
               {tab.icon ? <i class={`bi ${tab.icon} ds-mr-4`} /> : undefined}
-              {props.compact ? (tab.shortLabel ?? tab.label) : tab.label}
+              <span class="ds-subtab-label">{props.compact ? (tab.shortLabel ?? tab.label) : tab.label}</span>
+              <Show when={typeof tab.count === "number"}>
+                <span class="ds-subtab-count">{tab.count}</span>
+              </Show>
             </DsButton>
           )}
         </For>

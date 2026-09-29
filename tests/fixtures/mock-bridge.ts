@@ -59,11 +59,17 @@ export function getMockBridgeCode(): string {
         const sql = (args.sql || "").trim().toUpperCase();
 
         if (sql.includes("COUNT(*)")) {
+          let count = 2;
+          if (sql.includes("FROM FOLLOWED_SERIES") || sql.includes("FROM FOLLOWED_MANGA")) count = 5;
+          else if (sql.includes("FROM COLLECTIONS")) count = 3;
+          else if (sql.includes("FROM BOOKMARKS")) count = 8;
+          else if (sql.includes("FROM READING_HISTORY")) count = 14;
+          else if (sql.includes("FROM LOCAL_SERIES")) count = 2;
           return {
             rows: [
               {
-                c: 2,
-                count: 2,
+                c: count,
+                count: count,
                 pages: 42,
                 chapters: 3,
                 total_bytes: 10485760,

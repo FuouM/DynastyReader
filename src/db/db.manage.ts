@@ -3,6 +3,9 @@ import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 import { initBlacklistCache, notifyBlacklistChanged } from "./blacklist.repo";
+import { notifyFollowedChanged, notifyBookmarksChanged, notifyHistoryChanged } from "./library-notifiers";
+import { notifyCollectionsChanged } from "./collections.repo";
+import { notifyLocalChanged } from "./local.repo";
 export interface DbFileStats {
   dbSizeBytes: number;
   walSizeBytes: number;
@@ -203,6 +206,11 @@ export async function wipeDatabase(): Promise<void> {
   } catch (err) {
     log.warn("db/manage", "re-initializing blacklist cache after wipe failed:", err);
   }
+  notifyFollowedChanged();
+  notifyBookmarksChanged();
+  notifyHistoryChanged();
+  notifyCollectionsChanged();
+  notifyLocalChanged();
 }
 
 /** Creates a timestamped backup via VACUUM INTO. Returns backup filename and size. */

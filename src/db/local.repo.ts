@@ -1,6 +1,12 @@
 import { query } from "./client";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
+import { createChangeNotifier } from "../lib/change-notifier";
+
+const localNotifier = createChangeNotifier("library.repo:local");
+export const getLocalRevision = localNotifier.getRevision;
+export const onLocalChanged = localNotifier.onChanged;
+export const notifyLocalChanged = localNotifier.notifyChanged;
 export interface LocalSeriesRow {
   permalink: string;
   title: string;

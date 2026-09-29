@@ -3,7 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { navigate, dbReady, route, setSessionTab } from "../stores/router";
-import { getLocalSeries } from "../db/local.repo";
+import { getLocalSeries, notifyLocalChanged } from "../db/local.repo";
 import type { LocalSeriesRow } from "../db/local.repo";
 import * as ipc from "../ipc";
 import { showBanner } from "../stores/topbar";
@@ -169,6 +169,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       setScanResult(null);
       setScanPath(null);
       void refetch();
+      notifyLocalChanged();
       // Navigate to series view for imported local series
       navigate({ view: "series", seriesPermalink: permalink, seriesName: title });
     } catch (err) {
@@ -231,6 +232,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       setFolderScanPath(null);
       setFolderCoverPath(null);
       void refetch();
+      notifyLocalChanged();
       navigate({ view: "series", seriesPermalink: permalink, seriesName: title });
     } catch (err) {
       const msg = errorMessage(err);
@@ -265,6 +267,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       }
       showBanner(t("cache.deletedWorkSuccess", { name: permalink }));
       void refetch();
+      notifyLocalChanged();
     } catch (err) {
       showBanner(errorMessage(err));
     }
@@ -315,6 +318,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       setEditRow(null);
       setNewCoverPath(null);
       void refetch();
+      notifyLocalChanged();
     } catch (err) {
       showBanner(errorMessage(err));
     } finally {

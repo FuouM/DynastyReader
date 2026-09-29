@@ -45,6 +45,8 @@ import { CollectionDetailView } from "./CollectionDetailView";
 import { ExportModal } from "./ExportModal";
 import { ImportModal } from "./ImportModal";
 import type { ExportScope } from "../db/export.repo";
+import { useLibraryCounts, type LibraryCounts, type LibraryTabId } from "./library-counts";
+export type { LibraryTabId };
 export function LibraryView() {
   return (
     <Show
@@ -60,16 +62,15 @@ export function LibraryView() {
 // Main grid & Tabbed view
 // ---------------------------------------------------------------------------
 
-export type LibraryTabId = "followed" | "collections" | "bookmarks" | "history" | "local";
-
 export interface LibraryTabDef {
   id: LibraryTabId;
   label: string;
   shortLabel?: string;
   icon: string;
+  count?: number;
 }
 
-export const getLibraryTabs = (): readonly LibraryTabDef[] => {
+export const getLibraryTabs = (counts?: LibraryCounts): readonly LibraryTabDef[] => {
   if (activeProvider() === "mangadex") {
     return [
       {
@@ -77,18 +78,21 @@ export const getLibraryTabs = (): readonly LibraryTabDef[] => {
         get label() { return t("library.tabs.followed"); },
         get shortLabel() { return t("library.tabsShort.followed"); },
         icon: "bi-bookmark-heart",
+        count: counts?.followed,
       },
       {
         id: "bookmarks",
         get label() { return t("library.tabs.bookmarks"); },
         get shortLabel() { return t("library.tabsShort.bookmarks"); },
         icon: "bi-bookmark",
+        count: counts?.bookmarks,
       },
       {
         id: "history",
         get label() { return t("library.tabs.history"); },
         get shortLabel() { return t("library.tabsShort.history"); },
         icon: "bi-clock-history",
+        count: counts?.history,
       },
     ];
   }
@@ -98,35 +102,43 @@ export const getLibraryTabs = (): readonly LibraryTabDef[] => {
       get label() { return t("library.tabs.followed"); },
       get shortLabel() { return t("library.tabsShort.followed"); },
       icon: "bi-bookmark-heart",
+      count: counts?.followed,
     },
     {
       id: "collections",
       get label() { return t("library.tabs.collections"); },
       get shortLabel() { return t("library.tabsShort.collections"); },
       icon: "bi-folder2-open",
+      count: counts?.collections,
     },
     {
       id: "bookmarks",
       get label() { return t("library.tabs.bookmarks"); },
       get shortLabel() { return t("library.tabsShort.bookmarks"); },
       icon: "bi-bookmark",
+      count: counts?.bookmarks,
     },
     {
       id: "history",
       get label() { return t("library.tabs.history"); },
       get shortLabel() { return t("library.tabsShort.history"); },
       icon: "bi-clock-history",
+      count: counts?.history,
     },
     {
       id: "local",
       get label() { return "Local"; },
       get shortLabel() { return "Local"; },
       icon: "bi-folder",
+      count: counts?.local,
     },
   ];
 };
 
 function LibraryGrid() {
+  const { counts, refetchCounts } = useLibraryCounts();
+  const tabs = () => getLibraryTabs(counts());
+
   const [refreshing, setRefreshing] = createSignal(false);
   const [justUpdated, setJustUpdated] = createSignal(false);
   const [creating, setCreating] = createSignal(false);
@@ -181,7 +193,7 @@ function LibraryGrid() {
     try {
       const apis = Object.values(paneApis);
       for (const api of apis) api.reset();
-      await Promise.all(apis.map((api) => api.refetch()));
+      await Promise.all([...apis.map((api) => api.refetch()), refetchCounts()]);
       setJustUpdated(true);
       if (updateTimer !== null) window.clearTimeout(updateTimer);
       updateTimer = window.setTimeout(() => {
@@ -284,17 +296,21 @@ function LibraryGrid() {
               title={<IconText icon={<Icon name="collection" />}>Categories</IconText>}
             >
               <div class="win-listbox ds-library-nav-list">
-                <For each={getLibraryTabs()}>
+                <For each={tabs()}>
                   {(tab) => (
                     <button
                       type="button"
                       class={`win-listbox-item ds-library-nav-item${activeTab() === tab.id ? " active" : ""}`}
                       onClick={() => switchTab(tab.id)}
+                      title={typeof tab.count === "number" ? `${tab.label} (${tab.count})` : tab.label}
                     >
                       <span class="ds-nav-icon">
                         <Icon name={tab.icon.replace(/^bi-/, "")} />
                       </span>
                       <span class="ds-nav-label">{tab.label}</span>
+                      <Show when={typeof tab.count === "number"}>
+                        <span class="ds-nav-count">{tab.count}</span>
+                      </Show>
                     </button>
                   )}
                 </For>
@@ -345,7 +361,7 @@ function LibraryGrid() {
       >
         {/* Mobile SubTabs Layout */}
         <SubTabs
-          tabs={getLibraryTabs()}
+          tabs={tabs()}
           activeTab={activeTab()}
           onSwitch={(id) => switchTab(id as LibraryTabId)}
           compact={isNarrowOrMobile()}
