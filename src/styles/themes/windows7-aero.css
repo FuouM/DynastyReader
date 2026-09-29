@@ -726,14 +726,10 @@
     margin: 0 !important;
     box-shadow: none !important;
   }
-  [data-theme="windows7"] .ds-downloaded-chapter-list .ds-chapter-row:last-child {
-    border-bottom: none !important;
-  }
   [data-theme="windows7"] .ds-downloaded-chapter-list .ds-chapter-row:hover {
     background: linear-gradient(180deg, var(--ds-accent-hover-grad-1, #f3f9ff) 0%, var(--ds-accent-hover-grad-2, #e6f0fd) 100%) !important;
   }
   [data-theme="windows7"] .ds-downloaded-chapter-list .ds-chapter-badge {
-    font-style: normal !important;
     color: #555555 !important;
   }
   [data-theme="windows7"] .ds-vol-header {

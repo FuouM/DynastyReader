@@ -14,7 +14,7 @@ import { t } from "../../i18n";
 
 // ── 1. Inlined Chapter Download Row ────────────────────────────────────────────
 
-export interface ChapterDownloadRowProps {
+interface ChapterDownloadRowProps {
   chapter: DownloadQueueItem;
   progress?: { done: number; total: number; bytes: number };
   isBusy?: boolean;
@@ -22,7 +22,7 @@ export interface ChapterDownloadRowProps {
   onCancel: (chapterPermalink: string) => void;
 }
 
-export function ChapterDownloadRow(props: ChapterDownloadRowProps) {
+function ChapterDownloadRow(props: ChapterDownloadRowProps) {
   const ch = () => props.chapter;
   const isChAct = () => ch().status === "downloading";
   const isChDone = () => ch().status === "done";
@@ -84,7 +84,7 @@ export function ChapterDownloadRow(props: ChapterDownloadRowProps) {
 
 // ── 2. Series Download Card ────────────────────────────────────────────────────
 
-export interface SeriesDownloadCardProps {
+interface SeriesDownloadCardProps {
   group: SeriesDownloadGroup;
   isExpanded: boolean;
   activeProgress: Record<string, { done: number; total: number; bytes: number }>;

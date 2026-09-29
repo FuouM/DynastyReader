@@ -7,7 +7,7 @@
  * session manga tab) are ported verbatim from `router.ts`.
  */
 
-import { batch, createSignal } from "solid-js";
+import { batch, createSignal, type Accessor, type Setter } from "solid-js";
 import { setActions } from "./topbar";
 import { isMobile } from "./platform";
 import { decodeEntities } from "../utils/formatting";
@@ -17,65 +17,39 @@ import type { Route, SessionMangaTab } from "../types/routes";
 export type { Route, ViewName, ChapterRef, SessionMangaTab } from "../types/routes";
 
 // Per-provider route, history, and session tab storage (Decisions 2B & 3B)
-const [dynastyRoute, setDynastyRoute] = createSignal<Route>({ view: "browse" });
-const [mangadexRoute, setMangaDexRoute] = createSignal<Route>({ view: "browse" });
-
-const [dynastyBackStack, setDynastyBackStack] = createSignal<Route[]>([]);
-const [mangadexBackStack, setMangaDexBackStack] = createSignal<Route[]>([]);
-
-const [dynastyForwardStack, setDynastyForwardStack] = createSignal<Route[]>([]);
-const [mangadexForwardStack, setMangaDexForwardStack] = createSignal<Route[]>([]);
-
-const [dynastySessionTab, setDynastySessionTab] = createSignal<SessionMangaTab | null>(null);
-const [mangadexSessionTab, setMangaDexSessionTab] = createSignal<SessionMangaTab | null>(null);
+const navState: Record<ContentProvider, {
+  route: [Accessor<Route>, Setter<Route>];
+  back: [Accessor<Route[]>, Setter<Route[]>];
+  forward: [Accessor<Route[]>, Setter<Route[]>];
+  sessionTab: [Accessor<SessionMangaTab | null>, Setter<SessionMangaTab | null>];
+}> = {
+  dynasty: {
+    route: createSignal<Route>({ view: "browse" }),
+    back: createSignal<Route[]>([]),
+    forward: createSignal<Route[]>([]),
+    sessionTab: createSignal<SessionMangaTab | null>(null),
+  },
+  mangadex: {
+    route: createSignal<Route>({ view: "browse" }),
+    back: createSignal<Route[]>([]),
+    forward: createSignal<Route[]>([]),
+    sessionTab: createSignal<SessionMangaTab | null>(null),
+  },
+};
 
 export const [dbReady, setDbReady] = createSignal(false);
 
-export const route = () => (activeProvider() === "mangadex" ? mangadexRoute() : dynastyRoute());
-export const historyBackStack = () =>
-  activeProvider() === "mangadex" ? mangadexBackStack() : dynastyBackStack();
-export const historyForwardStack = () =>
-  activeProvider() === "mangadex" ? mangadexForwardStack() : dynastyForwardStack();
-export const sessionTab = () =>
-  activeProvider() === "mangadex" ? mangadexSessionTab() : dynastySessionTab();
+const cur = () => navState[activeProvider()];
 
-export function setRoute(r: Route | ((prev: Route) => Route)): void {
-  if (activeProvider() === "mangadex") {
-    setMangaDexRoute(r);
-  } else {
-    setDynastyRoute(r);
-  }
-}
+export const route = () => cur().route[0]();
+export const historyBackStack = () => cur().back[0]();
+export const historyForwardStack = () => cur().forward[0]();
+export const sessionTab = () => cur().sessionTab[0]();
 
-export function setHistoryBackStack(s: Route[] | ((prev: Route[]) => Route[])): void {
-  if (activeProvider() === "mangadex") {
-    setMangaDexBackStack(s);
-  } else {
-    setDynastyBackStack(s);
-  }
-}
-
-export function setHistoryForwardStack(s: Route[] | ((prev: Route[]) => Route[])): void {
-  if (activeProvider() === "mangadex") {
-    setMangaDexForwardStack(s);
-  } else {
-    setDynastyForwardStack(s);
-  }
-}
-
-export function setSessionTab(
-  tVal:
-    | SessionMangaTab
-    | null
-    | ((prev: SessionMangaTab | null) => SessionMangaTab | null),
-): void {
-  if (activeProvider() === "mangadex") {
-    setMangaDexSessionTab(tVal);
-  } else {
-    setDynastySessionTab(tVal);
-  }
-}
-
+export const setRoute: Setter<Route> = (r) => cur().route[1](r);
+export const setHistoryBackStack: Setter<Route[]> = (s) => cur().back[1](s);
+export const setHistoryForwardStack: Setter<Route[]> = (s) => cur().forward[1](s);
+export const setSessionTab: Setter<SessionMangaTab | null> = (tVal) => cur().sessionTab[1](tVal);
 /** Switches the active content provider and restores its isolated route and history. */
 export function switchProvider(newProvider: ContentProvider): void {
   batch(() => {

@@ -21,8 +21,8 @@ import {
   ArrowUpIcon,
 } from "../components/Icon";
 
-export const CHECK_STATE_RESET_MS = 2000;
-export const SCROLL_TOP_POLL_MS = 200;
+const CHECK_STATE_RESET_MS = 2000;
+const SCROLL_TOP_POLL_MS = 200;
 
 export interface FeedStatusFooterState {
   cachedAt?: number;
@@ -32,7 +32,7 @@ export interface FeedStatusFooterState {
   isStale: boolean;
 }
 
-export interface BrowseFeedFooterProps {
+interface BrowseFeedFooterProps {
   state: FeedStatusFooterState;
   pager?: JSX.Element;
   getHost: () => HTMLElement | null;

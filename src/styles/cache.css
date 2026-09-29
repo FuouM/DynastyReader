@@ -231,4 +231,25 @@
   color: #d32f2f;
   background: color-mix(in srgb, #d32f2f 16%, transparent);
 }
+.ds-cache-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ds-stats-grid--4 {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+.ds-cache-actions--mt {
+  margin-top: 10px;
+}
+.ds-cache-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
 }

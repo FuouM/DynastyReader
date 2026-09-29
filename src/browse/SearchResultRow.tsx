@@ -23,7 +23,7 @@ export interface SearchRow {
   matchedTags: string[];
 }
 
-export interface SearchResultRowProps {
+interface SearchResultRowProps {
   row: SearchRow;
   isFullyCached: boolean;
   blMode: BlacklistMode;

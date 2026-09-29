@@ -49,6 +49,7 @@ import "./styles/themes/windows7-aero.css";
 import "./styles/reset.css";
 import "./styles/curator-ui-base.css";
 import "./styles/index.css";
+import "./styles/settings.css";
 import "./styles/library.css";
 import "./styles/browse.css";
 import "./styles/cache.css";

@@ -4,14 +4,19 @@ import * as ipc from "../ipc";
 
 export type { Row };
 
-/** Runs a write query; returns rows affected. */
-export async function execute(sql: string, params: unknown[] = []): Promise<number> {
-  const resp = await ipc.dbExecute(DB_NAME, sql, params);
-  return Number(resp.rows_affected ?? 0);
+export function createDbClient(dbName: string) {
+  return {
+    execute: async (sql: string, params: unknown[] = []): Promise<number> => {
+      const resp = await ipc.dbExecute(dbName, sql, params);
+      return Number(resp.rows_affected ?? 0);
+    },
+    query: async <T extends object = Row>(sql: string, params: unknown[] = []): Promise<T[]> => {
+      const resp = await ipc.dbQuery(dbName, sql, params);
+      return (resp.rows ?? []) as T[];
+    },
+  };
 }
 
-/** Runs a read query; returns rows as plain objects. */
-export async function query<T extends object = Row>(sql: string, params: unknown[] = []): Promise<T[]> {
-  const resp = await ipc.dbQuery(DB_NAME, sql, params);
-  return (resp.rows ?? []) as T[];
-}
+const defaultClient = createDbClient(DB_NAME);
+export const execute = defaultClient.execute;
+export const query = defaultClient.query;

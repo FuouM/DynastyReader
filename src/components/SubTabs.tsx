@@ -1,5 +1,5 @@
 import { For, Show, type JSX } from "solid-js";
-import { DsButton } from "./Button";
+import { Button } from "./Button";
 
 export interface SubTab {
   id: string;
@@ -29,7 +29,7 @@ export function SubTabs(props: SubTabsProps) {
       <div class="ds-subtabs-left">
         <For each={props.tabs}>
           {(tab) => (
-            <DsButton
+            <Button
               className={`ds-subtab${props.activeTab === tab.id ? " active" : ""}`}
               title={typeof tab.count === "number" ? `${tab.label} (${tab.count})` : tab.label}
               onClick={() => props.onSwitch(tab.id)}
@@ -39,7 +39,7 @@ export function SubTabs(props: SubTabsProps) {
               <Show when={typeof tab.count === "number"}>
                 <span class="ds-subtab-count">{tab.count}</span>
               </Show>
-            </DsButton>
+            </Button>
           )}
         </For>
       </div>

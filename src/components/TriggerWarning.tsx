@@ -6,7 +6,7 @@
 import { For } from "solid-js";
 import { t } from "../i18n";
 import { Modal } from "./Modal";
-import { DsButton, IconText, IconButton } from "./Button";
+import { Button, IconText, IconButton } from "./Button";
 import { WarningIcon, ExternalLinkIcon, BlacklistIcon } from "./Icon";
 
 export interface TriggerWarningModalProps {
@@ -31,13 +31,13 @@ export function TriggerWarningModal(props: TriggerWarningModalProps) {
       onClose={props.onClose}
       footer={
         <div class="ds-modal-footer-actions">
-          <DsButton
+          <Button
             className="ds-modal-cancel"
             cssText="min-width:70px;"
             onClick={props.onClose}
           >
             {t("dialogs.triggerWarning.cancelButton")}
-          </DsButton>
+          </Button>
           <IconButton
             className="ds-modal-proceed ds-danger"
             cssText="min-width:85px;"

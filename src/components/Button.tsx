@@ -89,8 +89,7 @@ export function Button(props: ButtonProps) {
   );
 }
 
-/** Backward-compatible aliases */
-export const DsButton = Button;
+/** Backward-compatible alias */
 export const IconButton = Button;
 
 export interface ConfirmDeleteButtonProps extends Omit<ButtonProps, "onClick"> {

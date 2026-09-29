@@ -189,9 +189,6 @@
     margin: 0 !important;
     box-shadow: none !important;
   }
-  :is(:root[data-theme="dark"], body.ds-dark) .ds-downloaded-chapter-list .ds-chapter-row:last-child {
-    border-bottom: none !important;
-  }
   :is(:root[data-theme="dark"], body.ds-dark) .ds-downloaded-chapter-list .ds-chapter-row:hover {
     background: #2a2a2d !important;
   }

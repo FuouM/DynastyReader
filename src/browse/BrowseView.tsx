@@ -70,7 +70,7 @@ async function suggestMangaDex(query: string): Promise<Array<{ name: string; typ
 }
 
 
-export type BrowseTabId =
+type BrowseTabId =
   | "releases"
   | "added"
   | "downloaded"
@@ -78,13 +78,13 @@ export type BrowseTabId =
   | "tags-dir"
   | "search";
 
-export interface BrowseTabDef {
+interface BrowseTabDef {
   id: BrowseTabId;
   label: string;
   shortLabel?: string;
 }
 
-export const getBrowseTabs = (): readonly BrowseTabDef[] => [
+const getBrowseTabs = (): readonly BrowseTabDef[] => [
   { id: "releases", label: t("browse.tabs.releases"), shortLabel: t("browse.tabsShort.releases") },
   { id: "added", label: t("browse.tabs.added"), shortLabel: t("browse.tabsShort.added") },
   { id: "downloaded", label: t("browse.tabs.downloaded"), shortLabel: t("browse.tabsShort.downloaded") },

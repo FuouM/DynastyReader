@@ -9,7 +9,7 @@ import type { FitMode } from "../types/reader";
 import { theme } from "../stores/theme";
 import { isMobile } from "../stores/platform";
 import { t } from "../i18n";
-import { DsButton, DsSelect, IconButton } from "../components/Button";
+import { Button, DsSelect, IconButton } from "../components/Button";
 import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
@@ -259,14 +259,14 @@ export function ReaderControlsRow(props: NavRowProps) {
             disabled={s.zoomScale() <= 0.25}
             onClick={() => s.zoomOut()}
           />
-          <DsButton
+          <Button
             className=""
             cssText="min-width:38px;padding:2px 4px;"
             title={t("reader.toolbar.zoomResetTooltip")}
             onClick={() => s.resetZoom()}
           >
             {Math.round(s.zoomScale() * 100)}%
-          </DsButton>
+          </Button>
           <IconButton
             className="ds-btn-icon"
             icon={<PlusIcon />}

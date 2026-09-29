@@ -916,4 +916,41 @@
 .ds-rotate-180 {
   transform: rotate(180deg);
 }
+.ds-search-panel {
+  margin-bottom: 8px;
+  padding: 8px;
+}
+.ds-search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+.ds-results-header {
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 2px;
+  border-bottom: 1px solid var(--sys-border-light);
+  margin-bottom: 6px;
+}
+.ds-results-title {
+  font-size: var(--font-md);
+  font-weight: 600;
+}
+.ds-results-summary {
+  font-weight: normal;
+  font-size: var(--font-sm);
+}
+.ds-empty-title {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.ds-empty-muted {
+  padding: 12px 0;
+  text-align: center;
+  font-size: var(--font-sm);
+}
+.ds-browse-content {
+  margin-top: 8px;
+}
 }
