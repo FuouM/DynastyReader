@@ -14,7 +14,9 @@ import type {
   BookmarkPageResult,
 } from "../types/db";
 import { activeProvider } from "../stores/provider";
-import { getFollowedManga, unfollowManga } from "../providers/mangadex/db/library.repo";
+import { getFollowedManga, unfollowManga, getAllFollowedManga } from "../providers/mangadex/db/library.repo";
+import { getChapterContainerTag } from "../taxonomy";
+import { decodeEntities, slugify } from "../utils/formatting";
 import {
   getHistory,
   deleteHistoryItem,
@@ -161,6 +163,102 @@ export async function updateFollowedSeriesCover(
   if (notify) notifyFollowedChanged();
 }
 
+
+export interface FollowedLookup {
+  permalinks: Set<string>;
+  names: Set<string>;
+}
+
+/**
+ * Returns sets of followed series permalinks and normalized names for rapid O(1) checks.
+ * Accounts for active provider (Dynasty or MangaDex).
+ */
+export async function getFollowedLookup(): Promise<FollowedLookup> {
+  if (activeProvider() === "mangadex") {
+    const mangaList = await getAllFollowedManga().catch(() => []);
+    const permalinks = new Set<string>();
+    const names = new Set<string>();
+    for (const m of mangaList) {
+      if (m.manga_id) {
+        permalinks.add(m.manga_id);
+        permalinks.add(`mdx:${m.manga_id}`);
+      }
+      if (m.title) {
+        names.add(decodeEntities(m.title).trim().toLowerCase());
+      }
+    }
+    return { permalinks, names };
+  }
+
+  const rows = await query<{ permalink: string; name: string }>(
+    `SELECT permalink, name FROM followed_series`,
+  ).catch(() => []);
+  const permalinks = new Set<string>();
+  const names = new Set<string>();
+  for (const r of rows) {
+    if (r.permalink) permalinks.add(r.permalink);
+    if (r.name) names.add(decodeEntities(r.name).trim().toLowerCase());
+  }
+  return { permalinks, names };
+}
+
+/**
+ * Determines whether a chapter item belongs to a followed series.
+ * Matches against container tags (Series, Anthology, Issue), the item's series attribute,
+ * and any Series-type tags.
+ */
+export function isChapterFollowed(
+  item: {
+    permalink?: string;
+    series?: string | null;
+    tags?: { type?: string; name?: string; permalink?: string }[];
+  },
+  lookup: FollowedLookup,
+): boolean {
+  if (!lookup || (lookup.permalinks.size === 0 && lookup.names.size === 0)) {
+    return false;
+  }
+
+  const rawTags = item.tags ?? [];
+
+  // 1. Direct container tag check (Series, Anthology, Issue)
+  const containerTag = getChapterContainerTag(rawTags);
+  if (containerTag) {
+    if (containerTag.permalink && lookup.permalinks.has(containerTag.permalink)) {
+      return true;
+    }
+    if (containerTag.name && lookup.names.has(decodeEntities(containerTag.name).trim().toLowerCase())) {
+      return true;
+    }
+  }
+
+  // 2. ch.series property check
+  if (item.series && item.series.trim().length > 0) {
+    const decoded = decodeEntities(item.series).trim().toLowerCase();
+    if (lookup.names.has(decoded)) {
+      return true;
+    }
+    const slug = slugify(item.series);
+    if (slug && lookup.permalinks.has(slug)) {
+      return true;
+    }
+  }
+
+  // 3. MangaDex and other Series/Anthology tag checks
+  for (const t of rawTags) {
+    const k = t.type?.toLowerCase();
+    if (k === "series" || k === "anthology") {
+      if (t.permalink && lookup.permalinks.has(t.permalink)) {
+        return true;
+      }
+      if (t.name && lookup.names.has(decodeEntities(t.name).trim().toLowerCase())) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
 export async function getReadingProgress(
   chapterPermalink: string,
 ): Promise<ReadingProgressRow | null> {

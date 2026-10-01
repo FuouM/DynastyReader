@@ -758,6 +758,7 @@ body {
 
 /* Library & Browse item rows */
 .ds-item {
+  position: relative;
   display: flex;
   align-items: flex-start;
   border: 1px solid var(--sys-border-light, #e0e0e0);

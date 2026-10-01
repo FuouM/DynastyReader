@@ -48,6 +48,7 @@ export interface FeedItemRowProps {
   isBlacklisted?: boolean;
   matchedTags?: string[];
   isFullyCached?: boolean;
+  isFollowed?: boolean;
   coverPath?: string | null;
   extraMeta?: JSX.Element;
   onWarn?: (title: string, matchedTags: string[], proceed: () => void) => void;
@@ -60,7 +61,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
   const matchedTags = () => props.matchedTags ?? [];
   const isFullyCached = () => props.isFullyCached ?? false;
   const isRead = () => props.isRead ?? false;
-
+  const isFollowed = () => props.isFollowed ?? false;
   const [bookmarked, setBookmarked] = createSignal(props.isBookmarked ?? false);
 
   createEffect(() => {
@@ -229,6 +230,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
       cssText="cursor:pointer;"
       read={isRead()}
       blacklisted={isBlacklisted()}
+      followed={isFollowed()}
       onClick={() => guardedOpen(ch.title, openMainTarget)}
       leading={
         <HydratedCover

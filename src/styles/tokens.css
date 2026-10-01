@@ -62,6 +62,9 @@
     --ds-warn-border: #f5c2c7;
     --ds-partial-text: #92400e;
     --ds-partial-border: #d97706;
+    /* Followed series indicator tokens — dynamically tracks user accent color */
+    --ds-followed-corner: var(--sys-accent, var(--sys-primary, #0078d4));
+    --ds-followed-corner-hover: var(--sys-primary-hover, var(--sys-accent, #005a9e));
     /* Accent colorization tokens */
     --ds-accent-aero-light: #4da6ff;
     --ds-accent-aero-mid: #0078d4;

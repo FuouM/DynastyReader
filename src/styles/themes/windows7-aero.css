@@ -507,6 +507,10 @@
     border-color: var(--sys-border-focus, #3c7fb1);
   }
 
+  [data-theme="windows7"] .ds-item-corner-mark {
+    border-color: var(--sys-accent, var(--ds-accent-aero-mid, #2f7dd6)) transparent transparent transparent;
+  }
+
   /* ── Tag pills retain Aero borders ── */
   [data-theme="windows7"] .tag-pill {
     border-radius: 3px;

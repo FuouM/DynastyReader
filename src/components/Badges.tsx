@@ -89,3 +89,28 @@ export function BlacklistNotice(props: BlacklistNoticeProps) {
     </div>
   );
 }
+
+// ── 4. Followed Badge ──────────────────────────────────────────────────────────
+
+export interface FollowedBadgeProps {
+  /** Renders nothing when false. */
+  when?: boolean;
+}
+
+/**
+ * Inline "Followed" badge shown next to titles of chapters
+ * that belong to followed series.
+ */
+export function FollowedBadge(props: FollowedBadgeProps) {
+  return (
+    <Show when={props.when ?? true}>
+      <span
+        class="ds-followed-badge"
+        title={t("browse.feed.followedBadgeTooltip")}
+      >
+        <Icon name="bookmark-heart" class="ds-followed-icon" />
+        <span class="ds-followed-text">{t("browse.feed.followedBadge")}</span>
+      </span>
+    </Show>
+  );
+}

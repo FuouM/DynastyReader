@@ -25,6 +25,7 @@ import { activeProvider } from "../stores/provider";
 import { parseMangaDexUrl } from "../api/navigation";
 import { getWhitelistRevision } from "../providers/mangadex/db/whitelist.repo";
 import { getBlacklistRevision } from "../db/blacklist.repo";
+import { getFollowedRevision } from "../db/library-notifiers";
 import { searchManga } from "../providers/mangadex/api/manga";
 import { formatMangaTitle } from "../providers/mangadex/mapping";
 import { Pager } from "../components/Pager";
@@ -120,6 +121,7 @@ export function BrowseView() {
   const revision = () =>
     getBlacklistRevision() +
     getCacheRevision() +
+    getFollowedRevision() +
     (activeProvider() === "mangadex" ? getWhitelistRevision() : 0);
 
   const tabScrollPositions = new Map<string, number>();

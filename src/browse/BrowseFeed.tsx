@@ -21,7 +21,7 @@ import { t } from "../i18n";
 import { activeProvider } from "../stores/provider";
 import { fetchFeedWithRevalidation } from "../api/feed";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
-import { getHistoryPermalinks, getBookmarkPermalinks } from "../db/library.repo";
+import { getHistoryPermalinks, getBookmarkPermalinks, getFollowedLookup, isChapterFollowed } from "../db/library.repo";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
 import { getMdxHistoryChapterIds } from "../providers/mangadex/db/history.repo";
 import { getMdxBookmarkChapterIds } from "../providers/mangadex/db/bookmarks.repo";
@@ -63,6 +63,7 @@ interface FeedRowData {
   isBlacklisted: boolean;
   matchedTags: string[];
   isFullyCached: boolean;
+  isFollowed?: boolean;
 }
 
 interface FeedModel {
@@ -121,8 +122,11 @@ async function loadFeedModel(tabId: string, page: number): Promise<FeedModel> {
   feed = { ...feed, chapters: deduped };
 
   const permalinks = feed.chapters.map((c) => c.permalink);
-  const { readHistorySet: readSet, bookmarkSet, fullyCachedSet } =
-    await fetchItemStateSets(permalinks);
+  const [{ readHistorySet: readSet, bookmarkSet, fullyCachedSet }, followedLookup] =
+    await Promise.all([
+      fetchItemStateSets(permalinks),
+      getFollowedLookup(),
+    ]);
 
   if (browseCovers.coversEnabled) {
     const coverTargets = feed.chapters.map((c) => browseCovers.getItemCoverInfo(c));
@@ -141,6 +145,7 @@ async function loadFeedModel(tabId: string, page: number): Promise<FeedModel> {
       isBlacklisted: check.blacklisted,
       matchedTags: check.matchedTags,
       isFullyCached: fullyCachedSet.has(ch.permalink),
+      isFollowed: isChapterFollowed(ch, followedLookup),
     };
     rows.push(row);
     if (check.blacklisted) blacklistedRows.push(row);
@@ -368,6 +373,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
       isBlacklisted={row.isBlacklisted}
       matchedTags={row.matchedTags}
       isFullyCached={row.isFullyCached}
+      isFollowed={row.isFollowed}
       onWarn={(title, matchedTags, proceed) => triggerWarning.warn(title, matchedTags, proceed)}
       onAddToCol={addToCol.onAddToCol}
     />

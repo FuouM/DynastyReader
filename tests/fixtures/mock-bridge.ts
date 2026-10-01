@@ -81,6 +81,19 @@ export function getMockBridgeCode(): string {
         }
 
         if (sql.includes("FROM FOLLOWED_SERIES")) return { rows: MOCK_FOLLOWED_SERIES };
+        if (sql.includes("FROM FOLLOWED_MANGA")) {
+          return {
+            rows: MOCK_FOLLOWED_SERIES.map((s) => ({
+              manga_id: s.permalink,
+              title: s.name,
+              cover_filename: s.cover,
+              last_checked_at: s.last_checked_at,
+              latest_chapter_id: s.latest_chapter_permalink,
+              latest_chapter_title: s.latest_chapter_title,
+              created_at: s.created_at,
+            })),
+          };
+        }
         if (sql.includes("FROM READING_PROGRESS")) return { rows: MOCK_READING_PROGRESS };
         if (sql.includes("FROM READING_HISTORY")) return { rows: MOCK_READING_HISTORY };
         if (sql.includes("FROM BOOKMARKS")) return { rows: MOCK_BOOKMARKS };

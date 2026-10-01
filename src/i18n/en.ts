@@ -122,6 +122,8 @@ export const en = {
       addToFavoritesOrCustom: "Add to Favorites or custom collections",
       openOnDynastyTooltip: "Open \"{{title}}\" on Dynasty Scans in browser",
       newChaptersNotice: "New chapters available — Click to update",
+      followedBadge: "Followed",
+      followedBadgeTooltip: "Followed series",
       checkBtnChecking: "Checking...",
       checkBtnUpdated: "Updated",
       checkBtnError: "Error",

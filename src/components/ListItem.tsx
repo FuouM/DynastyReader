@@ -11,6 +11,7 @@
  */
 
 import { Show, type JSX } from "solid-js";
+import { t } from "../i18n";
 
 export interface ListItemProps {
   /** Extra classes on the root row (e.g. `ds-feed-item`, `ds-flex-row`). */
@@ -27,6 +28,8 @@ export interface ListItemProps {
   read?: boolean;
   /** Blacklist dimming (opacity + background). */
   blacklisted?: boolean;
+  /** Followed series highlight modifier (`ds-item-followed`). */
+  followed?: boolean;
   /** Title line slot (the full row of title + inline badges). */
   title?: JSX.Element;
   /** Content below the title line (subtitle, links, tag rows). */
@@ -38,11 +41,20 @@ export interface ListItemProps {
 export function ListItem(props: ListItemProps) {
   return (
     <div
-      class={`ds-item${props.read ? " ds-item-read" : ""}${props.class ? ` ${props.class}` : ""}`}
-      classList={{ "ds-item-blacklisted": !!props.blacklisted }}
+      class={`ds-item${props.read ? " ds-item-read" : ""}${props.followed ? " ds-item-followed" : ""}${props.class ? ` ${props.class}` : ""}`}
+      classList={{
+        "ds-item-blacklisted": !!props.blacklisted,
+        "ds-item-followed": !!props.followed,
+      }}
       style={props.cssText}
       onClick={props.onClick}
     >
+      <Show when={props.followed}>
+        <div
+          class="ds-item-corner-mark"
+          title={t("browse.feed.followedBadgeTooltip")}
+        />
+      </Show>
       {props.leading}
       <div class="ds-fill" style={props.fillCssText}>
         {props.title}

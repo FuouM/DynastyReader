@@ -51,6 +51,8 @@
     --ds-warn-bg: #1a0a00;
     --ds-warn-text: #ffaa80;
     --ds-warn-border: #883300;
+    --ds-followed-corner: var(--sys-accent, var(--sys-primary, #66b8ff));
+    --ds-followed-corner-hover: var(--sys-primary-hover, var(--sys-accent, #88ccff));
     --ds-partial-text: #ffaa00;
     --ds-partial-border: #ffaa00;
     /* reader */

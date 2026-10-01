@@ -53,6 +53,8 @@
     --ds-warn-border: #5c3034;
     --ds-partial-text: #fbbf24;
     --ds-partial-border: #f59e0b;
+    --ds-followed-corner: var(--sys-accent, var(--sys-primary, #4da6ff));
+    --ds-followed-corner-hover: var(--sys-primary-hover, var(--sys-accent, #1879cd));
     /* reader-specific */
     --ds-reader-bg: #181818;
     --ds-reader-viewport-bg: #1e1e1e;
