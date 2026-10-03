@@ -66,6 +66,11 @@ jobs:
       - name: Cargo Check
         run: cargo check --manifest-path src-tauri/Cargo.toml
 
+      - name: Cargo Test
+        run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+
+      - name: Cargo Clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --lib -- -D warnings
       - name: Install cargo-audit
         uses: taiki-e/install-action@cargo-audit
 
