@@ -95,7 +95,7 @@ pub fn verify_executable_header(path: &Path) -> Result<(), String> {
 
     #[cfg(target_os = "windows")]
     {
-        if header[0..2] != [b'M', b'Z'] {
+        if header[0..2] != *b"MZ" {
             return Err("downloaded update is not a valid Windows executable (missing MZ header)".to_string());
         }
     }

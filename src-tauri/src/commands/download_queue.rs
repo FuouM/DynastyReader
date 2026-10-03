@@ -561,8 +561,13 @@ fn constraints_blocked(state: &DownloadState) -> bool {
     if c.schedule_enabled {
         if let (Some(start), Some(end)) = (parse_hhmm(&c.schedule_start), parse_hhmm(&c.schedule_end))
         {
+            if start == end {
+                // Equal start and end bounds represent a degenerate 0-minute window;
+                // do not permanently block downloads 24/7.
+                return false;
+            }
             let now = local_minutes_of_day(c.tz_offset_minutes);
-            let in_window = if start <= end {
+            let in_window = if start < end {
                 now >= start && now < end
             } else {
                 now >= start || now < end
@@ -696,11 +701,23 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                             "UPDATE download_queue SET status = 'failed', error_msg = 'cancelled' WHERE chapter_permalink = ?1",
                             rusqlite::params![cp],
                         );
-                        // Drop partial page rows so a re-enqueue starts clean.
-                        let _ = conn.execute(
-                            "DELETE FROM cached_pages WHERE chapter_permalink = ?1",
-                            rusqlite::params![cp],
-                        );
+                        if !cp.starts_with("mdx:") {
+                            // Drop partial page rows so a re-enqueue starts clean.
+                            let _ = conn.execute(
+                                "DELETE FROM cached_pages WHERE chapter_permalink = ?1",
+                                rusqlite::params![cp],
+                            );
+                        }
+                    }
+                    if cp.starts_with("mdx:") {
+                        let mdx_path = crate::paths::data_root().join("mangadex.db");
+                        if let Ok(conn) = crate::commands::db::open_synced(&mdx_path) {
+                            let ch_id = cp.trim_start_matches("mdx:");
+                            let _ = conn.execute(
+                                "DELETE FROM cached_pages WHERE chapter_id = ?1",
+                                rusqlite::params![ch_id],
+                            );
+                        }
                     }
                     // Remove partially downloaded page files for this chapter.
                     if let Ok(dir) = crate::paths::resolve_in_root(&rel_dir) {
@@ -948,16 +965,18 @@ async fn fetch_and_cache_chapter_pages(
         let base_url = v.get("baseUrl").and_then(|b| b.as_str()).unwrap_or("");
         let chapter_obj = v.get("chapter");
         let hash = chapter_obj.and_then(|c| c.get("hash")).and_then(|h| h.as_str()).unwrap_or("");
-        let filenames = chapter_obj
-            .and_then(|c| c.get("dataSaver").or_else(|| c.get("data")))
-            .and_then(|d| d.as_array())
-            .cloned()
-            .unwrap_or_default();
+        let (filenames, mode) = if let Some(arr) = chapter_obj.and_then(|c| c.get("dataSaver")).and_then(|d| d.as_array()) {
+            (arr.clone(), "data-saver")
+        } else if let Some(arr) = chapter_obj.and_then(|c| c.get("data")).and_then(|d| d.as_array()) {
+            (arr.clone(), "data")
+        } else {
+            (Vec::new(), "data-saver")
+        };
 
         let mut pages = Vec::new();
         for fn_val in filenames {
             if let Some(fn_str) = fn_val.as_str() {
-                let page_url = format!("{}/data-saver/{}/{}", base_url, hash, fn_str);
+                let page_url = format!("{}/{}/{}/{}", base_url, mode, hash, fn_str);
                 pages.push(serde_json::json!({
                     "url": page_url,
                 }));
@@ -1030,6 +1049,7 @@ async fn fetch_and_cache_chapter_pages(
     Ok(pages)
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn record_and_emit_page_progress(
     app: &AppHandle,
     req: &DownloadRequest,
@@ -1055,6 +1075,7 @@ async fn record_and_emit_page_progress(
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn fetch_page_with_retries(
     client: &reqwest::Client,
     abs_url: &str,
