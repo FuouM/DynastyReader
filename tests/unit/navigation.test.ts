@@ -28,6 +28,21 @@ describe("api/navigation - Dynasty URL parser", () => {
     const res = parseDynastyEntityUrl("dynasty-scans.com/anthologies/sweet_loves");
     expect(res).toEqual({ kind: "anthology", permalink: "sweet_loves" });
   });
+  it("parses relative paths and entity shorthand paths", () => {
+    expect(parseDynastyEntityUrl("/series/bloom_into_you")).toEqual({
+      kind: "series",
+      permalink: "bloom_into_you",
+    });
+    expect(parseDynastyEntityUrl("series/bloom_into_you")).toEqual({
+      kind: "series",
+      permalink: "bloom_into_you",
+    });
+    expect(parseDynastyEntityUrl("/chapters/chap_1")).toEqual({
+      kind: "chapter",
+      permalink: "chap_1",
+    });
+  });
+
 
   it("normalizes to series kind in parseDynastyUrl", () => {
     const res = parseDynastyUrl("https://dynasty-scans.com/doujins/my_doujin");

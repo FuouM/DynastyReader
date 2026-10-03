@@ -127,7 +127,14 @@ export function parseSearchHtml(
 
     const pageLinks = pagination.querySelectorAll("a, span");
     for (const el of pageLinks) {
-      const pageNum = parseInt(el.textContent?.trim() || "", 10);
+      let pageNum = parseInt(el.textContent?.trim() || "", 10);
+      if (Number.isNaN(pageNum) && el.tagName === "A") {
+        const href = el.getAttribute("href") || "";
+        const m = /[?&]page=(\d+)/.exec(href);
+        if (m) {
+          pageNum = parseInt(m[1], 10);
+        }
+      }
       if (!Number.isNaN(pageNum) && pageNum > totalPages) {
         totalPages = pageNum;
       }

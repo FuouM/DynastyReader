@@ -62,7 +62,12 @@ export function parseDynastyEntityUrl(input: string): {
 } | null {
   try {
     let trimmed = input.trim();
-    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+    if (
+      trimmed.startsWith("/") ||
+      /^(?:series|chapters|anthologies|doujins|issues|authors|scanlators|pairings|tags)\//i.test(trimmed)
+    ) {
+      trimmed = `https://dynasty-scans.com/${trimmed.replace(/^\/+/, "")}`;
+    } else if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
       trimmed = `https://${trimmed}`;
     }
     const url = new URL(trimmed);

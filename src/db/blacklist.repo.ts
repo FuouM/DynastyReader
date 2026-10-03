@@ -2,6 +2,7 @@ import { execute, query } from "./client";
 import { persistedSignal } from "../lib/persisted-signal";
 import { createChangeNotifier } from "../lib/change-notifier";
 import type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode } from "../types/blacklist";
+import { log } from "../utils/log";
 
 export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode };
 
@@ -31,8 +32,8 @@ let blacklistCacheInitPromise: Promise<void> | null = null;
 /**
  * Loads the active tag and series blacklists into memory for ultra-fast synchronous checks.
  */
-export async function initBlacklistCache(): Promise<void> {
-  if (blacklistCacheInitPromise) return blacklistCacheInitPromise;
+export async function initBlacklistCache(force = false): Promise<void> {
+  if (!force && blacklistCacheInitPromise) return blacklistCacheInitPromise;
   blacklistCacheInitPromise = (async () => {
     try {
       const [tagRows, seriesRows] = await Promise.all([
@@ -83,8 +84,9 @@ export async function addBlacklistedTag(name: string, permalink?: string): Promi
     "INSERT INTO tag_blacklist (tag_name, tag_permalink, created_at) VALUES (?, ?, ?) ON CONFLICT(tag_name) DO UPDATE SET tag_permalink = excluded.tag_permalink, created_at = excluded.created_at",
     [trimmed, permalink ? permalink.trim() : null, now],
   );
-
-  await initBlacklistCache();
+  cachedBlacklistNames.add(trimmed.toLowerCase());
+  if (permalink?.trim()) cachedBlacklistNames.add(permalink.toLowerCase().trim());
+  await initBlacklistCache(true);
   notifyBlacklistChanged();
 }
 
@@ -96,7 +98,8 @@ export async function removeBlacklistedTag(name: string): Promise<void> {
   if (!trimmed) return;
 
   await execute("DELETE FROM tag_blacklist WHERE tag_name = ? COLLATE NOCASE", [trimmed]);
-  await initBlacklistCache();
+  cachedBlacklistNames.delete(trimmed.toLowerCase());
+  await initBlacklistCache(true);
   notifyBlacklistChanged();
 }
 
@@ -123,8 +126,9 @@ export async function addBlacklistedSeries(permalink: string, name: string): Pro
     "INSERT INTO series_blacklist (series_permalink, series_name, created_at) VALUES (?, ?, ?) ON CONFLICT(series_permalink) DO UPDATE SET series_name = excluded.series_name, created_at = excluded.created_at",
     [cleanPerm, cleanName, now],
   );
-
-  await initBlacklistCache();
+  cachedBlacklistSeriesPermalinks.add(cleanPerm.toLowerCase());
+  cachedBlacklistSeriesNames.add(cleanName.toLowerCase());
+  await initBlacklistCache(true);
   notifyBlacklistChanged();
 }
 
@@ -136,7 +140,8 @@ export async function removeBlacklistedSeries(permalink: string): Promise<void> 
   if (!cleanPerm) return;
 
   await execute("DELETE FROM series_blacklist WHERE series_permalink = ? COLLATE NOCASE", [cleanPerm]);
-  await initBlacklistCache();
+  cachedBlacklistSeriesPermalinks.delete(cleanPerm.toLowerCase());
+  await initBlacklistCache(true);
   notifyBlacklistChanged();
 }
 
@@ -145,7 +150,7 @@ export async function removeBlacklistedSeries(permalink: string): Promise<void> 
  */
 export function isSeriesBlacklisted(permalink?: string, name?: string): boolean {
   if (!blacklistCacheInitialized && !blacklistCacheInitPromise) {
-    void initBlacklistCache().then(() => notifyBlacklistChanged());
+    void initBlacklistCache().then(() => notifyBlacklistChanged()).catch((err) => log.debug("blacklist.repo", "initBlacklistCache failed:", err));
   }
   if (permalink && cachedBlacklistSeriesPermalinks.has(permalink.toLowerCase().trim())) {
     return true;
@@ -164,7 +169,7 @@ export function isItemBlacklisted(
   seriesInfo?: { permalink?: string; name?: string },
 ): BlacklistCheckResult {
   if (!blacklistCacheInitialized && !blacklistCacheInitPromise) {
-    void initBlacklistCache().then(() => notifyBlacklistChanged());
+    void initBlacklistCache().then(() => notifyBlacklistChanged()).catch((err) => log.debug("blacklist.repo", "initBlacklistCache failed:", err));
   }
   const matched: string[] = [];
 
