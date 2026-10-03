@@ -60,7 +60,7 @@ function snapshot(): SessionTraffic {
 type TrafficListener = (state: SessionTraffic) => void;
 const listeners = new Set<TrafficListener>();
 
-function notify(): void {
+function notifyImmediately(): void {
   const snap = snapshot();
   for (const listener of listeners) {
     try {
@@ -70,6 +70,8 @@ function notify(): void {
     }
   }
 }
+
+const scheduleNotify = throttle(notifyImmediately, 250);
 
 const schedulePersist = throttle(() => {
   setLifetimeMetrics({ ...inMemoryLifetime });
@@ -89,7 +91,7 @@ export function recordNetworkTraffic(bytes: number): void {
   inMemoryLifetime.bytesDownloaded += b;
   inMemoryLifetime.networkRequests += 1;
   schedulePersist();
-  notify();
+  scheduleNotify();
 }
 
 /** Records a local cache hit (saving online bandwidth). */
@@ -100,7 +102,7 @@ export function recordCacheHit(savedBytes = 0): void {
   inMemoryLifetime.cacheHits += 1;
   inMemoryLifetime.bytesSaved += b;
   schedulePersist();
-  notify();
+  scheduleNotify();
 }
 
 /** Returns the current session + lifetime traffic snapshot. */
@@ -118,8 +120,10 @@ export function resetLifetimeTraffic(): void {
   inMemoryLifetime.networkRequests = 0;
   inMemoryLifetime.cacheHits = 0;
   inMemoryLifetime.bytesSaved = 0;
+  schedulePersist.clear();
+  scheduleNotify.clear();
   setLifetimeMetrics({ ...DEFAULT_METRICS });
-  notify();
+  notifyImmediately();
 }
 
 /** Subscribes to live traffic updates. Returns an unsubscribe callback. */
