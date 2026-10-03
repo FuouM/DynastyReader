@@ -42,6 +42,9 @@ export function useReaderShortcuts(session: ReaderSession): void {
     if (isTextInputTarget(ev.target)) return;
     // Another listener (e.g. GlobalShortcuts) already handled this event.
     if (isHotkeyEventConsumed(ev)) return;
+    // Do not turn pages or activate reader hotkeys while a modal dialog or drawer is open.
+    if (document.querySelector(".ds-modal-backdrop, dialog[open], .ds-drawer")) return;
+    if ((ev.target as HTMLElement | null)?.closest(".ds-modal-backdrop, .ds-modal-window, dialog, .ds-drawer")) return;
     // Holding a navigation key would flip pages at the OS repeat rate (RD-M6).
     if (ev.repeat && isNavigationHotkey(ev)) {
       ev.preventDefault();

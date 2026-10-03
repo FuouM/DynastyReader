@@ -221,19 +221,39 @@ fn group_entries(entries: Vec<String>) -> Vec<(String, Vec<String>)> {
     if entries.is_empty() {
         return vec![];
     }
-    // Detect top-level subdirectory grouping
-    let mut top_levels: HashSet<String> = HashSet::new();
-    let mut has_root_files = false;
-    for e in &entries {
-        if let Some(pos) = e.find('/') {
-            top_levels.insert(e[..pos].to_string());
+
+    // Detect if all entries share a single common directory prefix (e.g. "SeriesName/")
+    let common_prefix: String = if let Some(first) = entries.first() {
+        if let Some(pos) = first.find('/') {
+            let candidate = &first[..=pos];
+            if entries.iter().all(|e| e.starts_with(candidate)) {
+                candidate.to_string()
+            } else {
+                String::new()
+            }
         } else {
-            has_root_files = true;
+            String::new()
+        }
+    } else {
+        String::new()
+    };
+
+    // Classify entries by their chapter subdirectory relative to common prefix
+    let mut subdirs: HashSet<String> = HashSet::new();
+    for e in &entries {
+        let rel = if !common_prefix.is_empty() && e.starts_with(&common_prefix) {
+            &e[common_prefix.len()..]
+        } else {
+            e.as_str()
+        };
+
+        if let Some(pos) = rel.find('/') {
+            let dir = rel[..pos].to_string();
+            subdirs.insert(dir);
         }
     }
 
-    let use_groups = !has_root_files && top_levels.len() > 1;
-
+    let use_groups = subdirs.len() > 1;
     if !use_groups {
         // Single chapter — everything together
         return vec![("Chapter 1".to_string(), entries)];
@@ -241,8 +261,19 @@ fn group_entries(entries: Vec<String>) -> Vec<(String, Vec<String>)> {
 
     let mut map: HashMap<String, Vec<String>> = HashMap::new();
     for e in entries {
-        let top = e.split('/').next().unwrap_or("").to_string();
-        map.entry(top.clone()).or_default().push(e);
+        let group_key = {
+            let rel = if !common_prefix.is_empty() && e.starts_with(&common_prefix) {
+                &e[common_prefix.len()..]
+            } else {
+                e.as_str()
+            };
+            if let Some(pos) = rel.find('/') {
+                rel[..pos].to_string()
+            } else {
+                "Cover".to_string()
+            }
+        };
+        map.entry(group_key).or_default().push(e);
     }
     let mut groups: Vec<(String, Vec<String>)> = map.into_iter().collect();
     // Sort groups by first entry path (natural sort already applied globally)
@@ -1199,5 +1230,39 @@ mod tests {
         assert_eq!(s3, "test-series-3");
 
         let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn test_group_entries() {
+        // 1. Flat entries -> 1 chapter
+        let flat = vec!["01.jpg".to_string(), "02.jpg".to_string()];
+        let g_flat = group_entries(flat);
+        assert_eq!(g_flat.len(), 1);
+        assert_eq!(g_flat[0].0, "Chapter 1");
+
+        // 2. Multi-chapter with common root wrapper
+        let nested = vec![
+            "Manga/Ch 1/01.jpg".to_string(),
+            "Manga/Ch 1/02.jpg".to_string(),
+            "Manga/Ch 2/01.jpg".to_string(),
+        ];
+        let g_nested = group_entries(nested);
+        assert_eq!(g_nested.len(), 2);
+        assert_eq!(g_nested[0].0, "Ch 1");
+        assert_eq!(g_nested[1].0, "Ch 2");
+        assert_eq!(g_nested[0].1.len(), 2);
+        assert_eq!(g_nested[1].1.len(), 1);
+
+        // 3. Loose root cover file alongside chapter subdirectories
+        let with_cover = vec![
+            "cover.jpg".to_string(),
+            "Ch 1/01.jpg".to_string(),
+            "Ch 2/01.jpg".to_string(),
+        ];
+        let g_cover = group_entries(with_cover);
+        assert_eq!(g_cover.len(), 3);
+        assert_eq!(g_cover[0].0, "Ch 1");
+        assert_eq!(g_cover[1].0, "Ch 2");
+        assert_eq!(g_cover[2].0, "Cover");
     }
 }
