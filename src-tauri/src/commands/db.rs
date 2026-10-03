@@ -453,9 +453,32 @@ async fn copy_db_file_with_retry(
                     if let Err(e) = std::fs::remove_file(&shm) {
                         log::warn!("failed removing SHM sidecar: {e}");
                     }
-                    std::fs::rename(&tmp_target, &target)
-                        .map_err(|e| format!("failed to rename restore tmp: {e}"))?;
-                    return Ok(());
+                    let mut last_rename_err = None;
+                    for r_attempt in 0..RESTORE_MAX_ATTEMPTS {
+                        match std::fs::rename(&tmp_target, &target) {
+                            Ok(_) => return Ok(()),
+                            Err(e) => {
+                                let is_lock = e.kind() == std::io::ErrorKind::PermissionDenied
+                                    || e.raw_os_error() == Some(32)
+                                    || e.to_string().contains("being used by another process");
+                                if is_lock && r_attempt < RESTORE_MAX_ATTEMPTS - 1 {
+                                    std::thread::sleep(std::time::Duration::from_millis(
+                                        RESTORE_RETRY_BACKOFF_MS * (r_attempt + 1) as u64,
+                                    ));
+                                    continue;
+                                }
+                                last_rename_err = Some(e);
+                                break;
+                            }
+                        }
+                    }
+                    let _ = std::fs::remove_file(&tmp_target);
+                    return Err(format!(
+                        "failed to rename restore tmp after retries: {}",
+                        last_rename_err
+                            .map(|e| e.to_string())
+                            .unwrap_or_else(|| "unknown error".to_string())
+                    ));
                 }
                 Err(e) => {
                     let is_lock = e.kind() == std::io::ErrorKind::PermissionDenied

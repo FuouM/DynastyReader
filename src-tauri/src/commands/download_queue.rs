@@ -219,6 +219,10 @@ fn ensure_processor_running(
         let pending = tokio::task::spawn_blocking(|| {
             crate::commands::db::open_synced(&crate::paths::db_path())
                 .and_then(|conn| {
+                    let _ = conn.execute(
+                        "UPDATE download_queue SET status = 'pending' WHERE status = 'downloading'",
+                        [],
+                    );
                     conn.query_row(
                         "SELECT COUNT(*) FROM download_queue WHERE status = 'pending'",
                         [],

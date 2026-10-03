@@ -106,6 +106,19 @@ fn slugify(input: &str) -> String {
     }
 }
 
+fn disambiguate_series_dir(base_slug: &str, data_root: &std::path::Path) -> (String, std::path::PathBuf) {
+    let mut series_slug = base_slug.to_string();
+    let mut series_dir = data_root.join("local").join(&series_slug);
+    for n in 2.. {
+        if !series_dir.exists() {
+            break;
+        }
+        series_slug = format!("{base_slug}-{n}");
+        series_dir = data_root.join("local").join(&series_slug);
+    }
+    (series_slug, series_dir)
+}
+
 /// Zero-allocation natural/alphanumeric comparator for human file ordering (e.g. `page_2` < `page_10`).
 fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
     let mut a_bytes = a.as_bytes();
@@ -356,15 +369,7 @@ pub async fn import_archive(
         // page files with new metadata. Auto-disambiguate the slug instead.
         let base_slug = slugify(&meta.title);
         let data_root = crate::paths::data_root();
-        let mut series_slug = base_slug.clone();
-        let mut series_dir = data_root.join("local").join(&series_slug);
-        for n in 2.. {
-            if !series_dir.exists() {
-                break;
-            }
-            series_slug = format!("{base_slug}-{n}");
-            series_dir = data_root.join("local").join(&series_slug);
-        }
+        let (series_slug, series_dir) = disambiguate_series_dir(&base_slug, &data_root);
         let series_permalink = format!("local:{}", series_slug);
         let chapters_dir = series_dir.join("chapters");
 
@@ -636,13 +641,10 @@ pub async fn import_folder(
             if t.is_empty() { "Chapter 1".to_string() } else { t.to_string() }
         };
 
-        let series_slug = slugify(&title);
-        let series_permalink = format!("local:{}", series_slug);
+        let base_slug = slugify(&title);
         let data_root = crate::paths::data_root();
-        let series_dir = data_root.join("local").join(&series_slug);
-        if series_dir.exists() {
-            return Err(format!("a series with this title already exists: {title}"));
-        }
+        let (series_slug, series_dir) = disambiguate_series_dir(&base_slug, &data_root);
+        let series_permalink = format!("local:{}", series_slug);
         let chapters_dir = series_dir.join("chapters");
         std::fs::create_dir_all(&chapters_dir).map_err(|e| format!("failed creating series dir: {e}"))?;
 
@@ -1174,5 +1176,28 @@ mod tests {
                 "page_100.jpg",
             ]
         );
+    }
+
+    #[test]
+    fn test_disambiguate_series_dir() {
+        let tmp = std::env::temp_dir().join(format!("ds-disambiguate-test-{}", std::process::id()));
+        let local_dir = tmp.join("local");
+        std::fs::create_dir_all(&local_dir).unwrap();
+
+        // First time: series-slug
+        let (s1, d1) = disambiguate_series_dir("test-series", &tmp);
+        assert_eq!(s1, "test-series");
+        std::fs::create_dir_all(&d1).unwrap();
+
+        // Second time: test-series-2
+        let (s2, d2) = disambiguate_series_dir("test-series", &tmp);
+        assert_eq!(s2, "test-series-2");
+        std::fs::create_dir_all(&d2).unwrap();
+
+        // Third time: test-series-3
+        let (s3, _d3) = disambiguate_series_dir("test-series", &tmp);
+        assert_eq!(s3, "test-series-3");
+
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

@@ -201,7 +201,10 @@ fn encode_image(
     // so a crash mid-write can never leave a truncated, permanently-cached file.
     let tmp_output = format!("{output}.tmp");
     std::fs::write(&tmp_output, &bytes).map_err(|e| format!("Failed to write output file: {e}"))?;
-    std::fs::rename(&tmp_output, output).map_err(|e| format!("Failed to finalize output file: {e}"))
+    std::fs::rename(&tmp_output, output).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp_output);
+        format!("Failed to finalize output file: {e}")
+    })
 }
 
 enum BufferRef<'a> {

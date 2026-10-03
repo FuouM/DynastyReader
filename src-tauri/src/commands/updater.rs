@@ -177,8 +177,16 @@ pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>)
 /// Downloads the new executable and performs the atomic replacement dance on Windows.
 #[tauri::command(rename = "installUpdate")]
 pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, download_url: String) -> Result<(), String> {
-    validate_update_download_url(&download_url)?;
+    #[cfg(target_os = "android")]
+    {
+        let _ = (&app, &http_state, &download_url);
+        return Err(
+            "In-app auto-update is not supported on Android. Please visit https://github.com/FuouM/DynastyReader/releases to download and install the latest APK."
+                .to_string(),
+        );
+    }
 
+    validate_update_download_url(&download_url)?;
     let current_exe = env::current_exe().map_err(|e| format!("Cannot locate current executable: {e}"))?;
     let exe_dir = current_exe
         .parent()
@@ -294,7 +302,7 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
         std::process::exit(0);
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(all(not(target_os = "windows"), not(target_os = "android")))]
     {
         // For Unix / AppImage
         #[cfg(target_family = "unix")]

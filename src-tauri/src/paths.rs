@@ -171,7 +171,8 @@ pub fn resolve_in_root(raw: &str) -> Result<PathBuf, String> {
     {
         let s = target.to_string_lossy();
         if s.len() >= 240 && !s.starts_with("\\\\?\\") {
-            return Ok(PathBuf::from(format!("\\\\?\\{s}")));
+            let normalized = s.replace('/', "\\");
+            return Ok(PathBuf::from(format!("\\\\?\\{normalized}")));
         }
     }
     Ok(target)
@@ -296,5 +297,19 @@ mod tests {
         // Nested items inside directories are not protected directories themselves
         assert!(!is_protected_path(&root.join("pages").join("ch1").join("001.webp")).unwrap());
         assert!(!is_protected_path(&root.join("local").join("series_slug")).unwrap());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_extended_path_slashes_normalized() {
+        let root = temp_root("extended");
+        set_root(root.clone());
+        let long_sub = format!("pages/{}/001.webp", "a".repeat(250));
+        if let Ok(resolved) = resolve_in_root(&long_sub) {
+            let s = resolved.to_string_lossy();
+            if s.starts_with("\\\\?\\") {
+                assert!(!s.contains('/'), "Extended path must not contain forward slashes: {s}");
+            }
+        }
     }
 }
