@@ -110,8 +110,7 @@ jobs:
         shell: bash
         run: |
           cd staging
-          sha256sum * | tee checksums.txt
-
+          sha256sum * | tee checksums-${{ matrix.os_name }}.txt
       - name: Attest Build Provenance
         uses: actions/attest-build-provenance@v2
         with:
@@ -250,8 +249,7 @@ jobs:
         shell: bash
         run: |
           cd staging
-          sha256sum * | tee checksums.txt
-
+          sha256sum * | tee checksums-android.txt
       - name: Attest Build Provenance
         uses: actions/attest-build-provenance@v2
         with:
