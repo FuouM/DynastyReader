@@ -143,6 +143,9 @@ async function getAllCollections(collectionIds?: number | number[]): Promise<Exp
   const ids = collectionIds !== undefined
     ? (Array.isArray(collectionIds) ? collectionIds : [collectionIds])
     : undefined;
+  if (ids !== undefined && ids.length === 0) {
+    return [];
+  }
 
   const hasFilter = ids !== undefined && ids.length > 0;
   const inPlaceholders = hasFilter ? ids.map(() => "?").join(",") : "";

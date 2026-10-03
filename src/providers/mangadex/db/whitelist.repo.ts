@@ -33,7 +33,7 @@ export const [whitelistedTags, setWhitelistedTags] = persistedSignal<WhitelistTa
     deserialize: (raw) => {
       try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_WHITELIST;
+        return Array.isArray(parsed) ? parsed : DEFAULT_WHITELIST;
       } catch {
         return DEFAULT_WHITELIST;
       }
