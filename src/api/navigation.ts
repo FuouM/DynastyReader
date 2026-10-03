@@ -108,17 +108,39 @@ export function extractMangaDexId(permalink: string): string {
   return permalink.startsWith("mdx:") ? permalink.slice(4) : permalink;
 }
 
+export interface ParsedMangaDexUrl {
+  kind: "series" | "chapter";
+  id: string;
+  isBareUuid?: boolean;
+}
+
 /**
- * Parses a MangaDex URL (e.g. mangadex.org/title/... or mangadex.org/chapter/...) or raw UUID.
+ * Parses a MangaDex URL (e.g. mangadex.org/title/... or mangadex.org/chapter/...),
+ * shorthand prefix (e.g. chapter/<uuid>, ch:<uuid>, title/<uuid>, manga:<uuid>),
+ * or raw UUID.
  */
-export function parseMangaDexUrl(input: string): { kind: "series" | "chapter"; id: string } | null {
+export function parseMangaDexUrl(input: string): ParsedMangaDexUrl | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  if (MANGADEX_UUID_REGEX.test(trimmed)) {
-    return { kind: "series", id: trimmed.toLowerCase() };
+  // 1. Shorthand prefixes (e.g. chapter/<uuid>, ch:<uuid>, title/<uuid>, manga:<uuid>, mdx:chapter:<uuid>, mdx:series:<uuid>)
+  const prefixMatch = /^(?:mdx:)?(chapter|ch|c|series|title|manga|m)[:/]([a-f0-9-]+)$/i.exec(trimmed);
+  if (prefixMatch) {
+    const rawKind = prefixMatch[1].toLowerCase();
+    const rawId = prefixMatch[2].toLowerCase();
+    if (MANGADEX_UUID_REGEX.test(rawId)) {
+      const kind = (rawKind === "chapter" || rawKind === "ch" || rawKind === "c") ? "chapter" : "series";
+      return { kind, id: rawId, isBareUuid: false };
+    }
   }
 
+  // 2. Bare UUID (with or without mdx: prefix)
+  const bareUuid = trimmed.replace(/^mdx:/i, "").toLowerCase();
+  if (MANGADEX_UUID_REGEX.test(bareUuid)) {
+    return { kind: "series", id: bareUuid, isBareUuid: true };
+  }
+
+  // 3. Web URL (e.g. https://mangadex.org/title/<uuid> or /chapter/<uuid>)
   try {
     const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
     const host = url.hostname.toLowerCase();
@@ -129,9 +151,9 @@ export function parseMangaDexUrl(input: string): { kind: "series" | "chapter"; i
       const type = parts[0].toLowerCase();
       const rawId = parts[1].toLowerCase();
       if (type === "title" || type === "manga") {
-        if (MANGADEX_UUID_REGEX.test(rawId)) return { kind: "series", id: rawId };
+        if (MANGADEX_UUID_REGEX.test(rawId)) return { kind: "series", id: rawId, isBareUuid: false };
       } else if (type === "chapter") {
-        if (MANGADEX_UUID_REGEX.test(rawId)) return { kind: "chapter", id: rawId };
+        if (MANGADEX_UUID_REGEX.test(rawId)) return { kind: "chapter", id: rawId, isBareUuid: false };
       }
     }
   } catch {

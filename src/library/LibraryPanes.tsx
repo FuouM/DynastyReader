@@ -143,10 +143,11 @@ export function BookmarksPane(props: BookmarksPaneProps) {
   const { setPage, data, refetch, showSpinner } = useLibraryPaneResource<BookmarksPaneData>({
     getRevision: getBookmarksRevision,
     fetcher: async (p) => {
-      const res = await getBookmarksPage(p, 15);
+      const provider = activeProvider();
+      const res = await getBookmarksPage(p, 15, provider);
       const permalinks = res.rows.map((r) => r.chapter_permalink);
       let fullyCachedSet: Set<string>;
-      if (activeProvider() === "mangadex") {
+      if (provider === "mangadex") {
         const chapterIds = permalinks.map((pl) => pl.replace(/^mdx:/, ""));
         const mdxCached = await getFullyCachedMdxChapterIds(chapterIds).catch(() => new Set<string>());
         fullyCachedSet = new Set(Array.from(mdxCached).map((id) => `mdx:${id}`));
@@ -255,7 +256,7 @@ export function BookmarksPane(props: BookmarksPaneProps) {
 export function FollowedPane(props: LibraryPaneProps) {
   const { setPage, data, refetch, showSpinner } = useLibraryPaneResource({
     getRevision: getFollowedRevision,
-    fetcher: (p) => getFollowedSeriesPage(p, 10),
+    fetcher: (p) => getFollowedSeriesPage(p, 10, activeProvider()),
     register: props.register,
   });
 
@@ -395,10 +396,11 @@ export function HistoryPane(props: HistoryPaneProps) {
   const { setPage, data, refetch, showSpinner } = useLibraryPaneResource<HistoryPaneData>({
     getRevision: () => getHistoryRevision() + getProgressRevision(),
     fetcher: async (p) => {
-      const res = await getHistoryPage(p, 15);
+      const provider = activeProvider();
+      const res = await getHistoryPage(p, 15, provider);
       const permalinks = res.rows.map((r) => r.chapter_permalink);
       let fullyCachedSet: Set<string>;
-      if (activeProvider() === "mangadex") {
+      if (provider === "mangadex") {
         const chapterIds = permalinks.map((pl) => pl.replace(/^mdx:/, ""));
         const mdxCached = await getFullyCachedMdxChapterIds(chapterIds).catch(() => new Set<string>());
         fullyCachedSet = new Set(Array.from(mdxCached).map((id) => `mdx:${id}`));

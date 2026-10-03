@@ -19,14 +19,13 @@ import { navigate, route, setRoute, type BrowseTabId } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
 import { triggerHaptic } from "../utils/haptics";
-import { parseDynastyUrl } from "../api/navigation";
+import { parseDynastyUrl, parseMangaDexUrl } from "../api/navigation";
 import { suggest } from "../api/directory";
 import { activeProvider } from "../stores/provider";
-import { parseMangaDexUrl } from "../api/navigation";
 import { getWhitelistRevision } from "../providers/mangadex/db/whitelist.repo";
 import { getBlacklistRevision } from "../db/blacklist.repo";
 import { getFollowedRevision } from "../db/library-notifiers";
-import { searchManga } from "../providers/mangadex/api/manga";
+import { searchManga, resolveMangaDexEntity } from "../providers/mangadex/api/manga";
 import { formatMangaTitle } from "../providers/mangadex/mapping";
 import { Pager } from "../components/Pager";
 import { SubTabs } from "../components/SubTabs";
@@ -179,7 +178,7 @@ export function BrowseView() {
     scrollBrowseToTop();
   };
 
-  const openByUrl = (): void => {
+  const openByUrl = async (): Promise<void> => {
     const raw = urlValue().trim();
     if (!raw) {
       showBanner(t("browse.searchAndGo.emptyUrlWarning"));
@@ -191,7 +190,14 @@ export function BrowseView() {
         showBanner("Unrecognized MangaDex URL. Expected mangadex.org/title/... or mangadex.org/chapter/...");
         return;
       }
-      if (parsed.kind === "chapter") {
+      let kind = parsed.kind;
+      if (parsed.isBareUuid) {
+        const resolved = await resolveMangaDexEntity(parsed.id);
+        if (resolved) {
+          kind = resolved;
+        }
+      }
+      if (kind === "chapter") {
         navigate({
           view: "reader",
           chapterPermalink: `mdx:${parsed.id}`,

@@ -14,6 +14,7 @@ import type {
   BookmarkPageResult,
 } from "../types/db";
 import { activeProvider } from "../stores/provider";
+import type { ContentProvider } from "../stores/provider";
 import { getFollowedManga, unfollowManga, getAllFollowedManga } from "../providers/mangadex/db/library.repo";
 import { getChapterContainerTag } from "../taxonomy";
 import { decodeEntities, slugify } from "../utils/formatting";
@@ -61,8 +62,9 @@ export {
 export async function getFollowedSeriesPage(
   page = 1,
   pageSize = 10,
+  provider: ContentProvider = activeProvider(),
 ): Promise<FollowedSeriesPageResult> {
-  if (activeProvider() === "mangadex") {
+  if (provider === "mangadex") {
     const res = await getFollowedManga(page, pageSize);
     return {
       rows: res.rows.map((m) => ({
@@ -173,8 +175,8 @@ export interface FollowedLookup {
  * Returns sets of followed series permalinks and normalized names for rapid O(1) checks.
  * Accounts for active provider (Dynasty or MangaDex).
  */
-export async function getFollowedLookup(): Promise<FollowedLookup> {
-  if (activeProvider() === "mangadex") {
+export async function getFollowedLookup(provider: ContentProvider = activeProvider()): Promise<FollowedLookup> {
+  if (provider === "mangadex") {
     const mangaList = await getAllFollowedManga().catch(() => []);
     const permalinks = new Set<string>();
     const names = new Set<string>();
@@ -403,8 +405,8 @@ export async function addHistory(p: {
   notifyHistoryChanged();
 }
 
-export async function removeHistory(id: number): Promise<void> {
-  if (activeProvider() === "mangadex") {
+export async function removeHistory(id: number, provider: ContentProvider = activeProvider()): Promise<void> {
+  if (provider === "mangadex") {
     await deleteHistoryItem(id);
     notifyHistoryChanged();
     return;
@@ -414,9 +416,9 @@ export async function removeHistory(id: number): Promise<void> {
 }
 
 /** Bulk-delete history rows in a single dbExecuteBatch (one transaction). */
-export async function removeHistoryBatch(ids: number[]): Promise<void> {
+export async function removeHistoryBatch(ids: number[], provider: ContentProvider = activeProvider()): Promise<void> {
   if (ids.length === 0) return;
-  if (activeProvider() === "mangadex") {
+  if (provider === "mangadex") {
     await ipc.dbExecuteBatch(
       MANGADEX_DB_NAME,
       [`DELETE FROM reading_history WHERE id IN (${inClause(ids.length)})`],
@@ -433,8 +435,8 @@ export async function removeHistoryBatch(ids: number[]): Promise<void> {
   notifyHistoryChanged();
 }
 
-export async function clearHistory(): Promise<void> {
-  if (activeProvider() === "mangadex") {
+export async function clearHistory(provider: ContentProvider = activeProvider()): Promise<void> {
+  if (provider === "mangadex") {
     await clearMdxHistory();
     notifyHistoryChanged();
     return;
@@ -443,8 +445,8 @@ export async function clearHistory(): Promise<void> {
   notifyHistoryChanged();
 }
 
-export async function getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
-  if (activeProvider() === "mangadex") {
+export async function getHistoryPage(page = 1, pageSize = 15, provider: ContentProvider = activeProvider()): Promise<HistoryPageResult> {
+  if (provider === "mangadex") {
     const res = await getHistory(page, pageSize);
     return {
       rows: res.rows.map((h) => ({
@@ -496,8 +498,8 @@ export async function getHistoryPermalinks(permalinks: string[]): Promise<Set<st
 }
 
 
-export async function getBookmarksPage(page = 1, pageSize = 15): Promise<BookmarkPageResult> {
-  if (activeProvider() === "mangadex") {
+export async function getBookmarksPage(page = 1, pageSize = 15, provider: ContentProvider = activeProvider()): Promise<BookmarkPageResult> {
+  if (provider === "mangadex") {
     const res = await getMdxBookmarks(page, pageSize);
     return {
       rows: res.rows.map((b) => ({
@@ -599,20 +601,29 @@ export async function removeBookmark(chapterPermalink: string): Promise<void> {
 /** Bulk-delete bookmarks in a single dbExecuteBatch (one transaction). */
 export async function removeBookmarksBatch(chapterPermalinks: string[]): Promise<void> {
   if (chapterPermalinks.length === 0) return;
-  if (activeProvider() === "mangadex") {
-    const chapterIds = chapterPermalinks.map((p) => p.replace(/^mdx:/, ""));
+  const mdxIds: string[] = [];
+  const dynastyPermalinks: string[] = [];
+  for (const cp of chapterPermalinks) {
+    if (cp.startsWith("mdx:")) {
+      mdxIds.push(cp.replace(/^mdx:/, ""));
+    } else {
+      dynastyPermalinks.push(cp);
+    }
+  }
+
+  if (mdxIds.length > 0) {
     await ipc.dbExecuteBatch(
       MANGADEX_DB_NAME,
-      [`DELETE FROM bookmarks WHERE chapter_id IN (${inClause(chapterIds.length)})`],
-      [chapterIds],
+      [`DELETE FROM bookmarks WHERE chapter_id IN (${inClause(mdxIds.length)})`],
+      [mdxIds],
     );
-    notifyBookmarksChanged();
-    return;
   }
-  await ipc.dbExecuteBatch(
-    DB_NAME,
-    [`DELETE FROM bookmarks WHERE chapter_permalink IN (${inClause(chapterPermalinks.length)})`],
-    [chapterPermalinks],
-  );
+  if (dynastyPermalinks.length > 0) {
+    await ipc.dbExecuteBatch(
+      DB_NAME,
+      [`DELETE FROM bookmarks WHERE chapter_permalink IN (${inClause(dynastyPermalinks.length)})`],
+      [dynastyPermalinks],
+    );
+  }
   notifyBookmarksChanged();
 }

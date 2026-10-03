@@ -5,6 +5,7 @@
 
 import { fetchMangaDex } from "./client";
 import { cleanMangaDexId } from "./constants";
+import { getChapter } from "./chapter";
 import type {
   MangaDexChapter,
   MangaDexManga,
@@ -49,6 +50,25 @@ export async function getManga(id: string): Promise<MangaDexManga> {
   return resp.data;
 }
 
+/**
+ * Resolves whether a bare MangaDex UUID belongs to a manga or a chapter.
+ * Queries both endpoints concurrently with Promise.allSettled.
+ */
+export async function resolveMangaDexEntity(id: string): Promise<"series" | "chapter" | null> {
+  const cleanId = cleanMangaDexId(id);
+  const [mangaRes, chapterRes] = await Promise.allSettled([
+    getManga(cleanId),
+    getChapter(cleanId),
+  ]);
+  if (mangaRes.status === "fulfilled" && mangaRes.value?.id) {
+    return "series";
+  }
+  if (chapterRes.status === "fulfilled" && chapterRes.value?.id) {
+    return "chapter";
+  }
+  return null;
+}
+
 export interface GetMangaFeedOptions {
   translatedLanguage?: string[];
   limit?: number;
@@ -83,6 +103,35 @@ export async function getMangaFeed(
     resp.data = resp.data.filter((c) => !c.attributes.externalUrl && (c.attributes.pages ?? 0) > 0);
   }
   return resp;
+}
+
+/**
+ * Fetches all chapters for a manga across pagination boundaries.
+ * Repeatedly queries `/manga/{id}/feed` in batches of up to 500 until offset >= total.
+ */
+export async function getAllMangaFeed(
+  id: string,
+  options: GetMangaFeedOptions = {},
+): Promise<MangaDexResponse<MangaDexChapter[]>> {
+  const batchLimit = Math.min(options.limit ?? 500, 500);
+  let offset = options.offset ?? 0;
+  const firstResp = await getMangaFeed(id, { ...options, limit: batchLimit, offset });
+  const allChapters = [...firstResp.data];
+  const total = firstResp.total ?? allChapters.length;
+  offset += batchLimit;
+
+  while (offset < total) {
+    const nextResp = await getMangaFeed(id, { ...options, limit: batchLimit, offset });
+    if (!nextResp.data || nextResp.data.length === 0) break;
+    allChapters.push(...nextResp.data);
+    offset += batchLimit;
+  }
+
+  return {
+    ...firstResp,
+    data: allChapters,
+    total: allChapters.length,
+  };
 }
 
 

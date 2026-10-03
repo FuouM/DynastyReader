@@ -7,7 +7,7 @@ import type { ReaderSession } from "./reader-session";
 import type { ChapterRef } from "../types/routes";
 import type { Series } from "../types/api";
 import { fetchSeries } from "../api/series";
-import { getMangaFeed } from "../providers/mangadex/api/manga";
+import { getAllMangaFeed } from "../providers/mangadex/api/manga";
 import { navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
@@ -33,7 +33,7 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
   if (permalink.startsWith("mdx:")) {
     const mangaId = permalink.replace(/^mdx:/, "");
     try {
-      const feed = await getMangaFeed(mangaId, { limit: 500, order: { chapter: "asc" } });
+      const feed = await getAllMangaFeed(mangaId, { limit: 500, order: { chapter: "asc" } });
       const cl: ChapterRef[] = feed.data.map((ch) => {
         const num = ch.attributes.chapter;
         const raw = ch.attributes.title;

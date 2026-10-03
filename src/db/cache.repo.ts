@@ -5,6 +5,11 @@ import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 import { createChangeNotifier } from "../lib/change-notifier";
+import {
+  getMangaDexCacheStats,
+  getMangaDexPruneCandidates,
+  clearMangaDexCachedChapters,
+} from "../providers/mangadex/db/cache.repo";
 import type { CachedPageRow, ChapterCacheCount, CacheOverviewStats } from "../types/db";
 
 const cacheNotifier = createChangeNotifier("cache.repo");
@@ -155,31 +160,47 @@ export async function pruneOldestReadCachedPages(
   excludePermalinks?: ReadonlySet<string>,
 ): Promise<CachePruneResult> {
   if (ceilingBytes <= 0) return { prunedChapters: 0, freedBytes: 0 };
-  const stats = await getCacheOverviewStats();
-  let excess = stats.totalSizeBytes - ceilingBytes;
+  const [dynastyStats, mdxStats] = await Promise.all([
+    getCacheOverviewStats(),
+    getMangaDexCacheStats().catch(() => ({ totalBytes: 0, pageCount: 0, chapterCount: 0 })),
+  ]);
+  const totalSizeBytes = dynastyStats.totalSizeBytes + mdxStats.totalBytes;
+  let excess = totalSizeBytes - ceilingBytes;
   if (excess <= 0) return { prunedChapters: 0, freedBytes: 0 };
 
-  const rows = await query<{ chapter_permalink: string; bytes: number; last_read: number }>(
-    `SELECT cp.chapter_permalink,
-            SUM(COALESCE(cp.size_bytes, 0)) AS bytes,
-            COALESCE((
-              SELECT MAX(rh.read_at) FROM reading_history rh
-              WHERE rh.chapter_permalink = cp.chapter_permalink
-            ), 0) AS last_read
-     FROM cached_pages cp
-     WHERE cp.chapter_permalink NOT LIKE 'local:%'
-     GROUP BY cp.chapter_permalink
-     ORDER BY last_read ASC, bytes DESC`,
-  );
+  const [dynastyRows, mdxRows] = await Promise.all([
+    query<{ chapter_permalink: string; bytes: number; last_read: number }>(
+      `SELECT cp.chapter_permalink,
+              SUM(COALESCE(cp.size_bytes, 0)) AS bytes,
+              COALESCE((
+                SELECT MAX(rh.read_at) FROM reading_history rh
+                WHERE rh.chapter_permalink = cp.chapter_permalink
+              ), 0) AS last_read
+       FROM cached_pages cp
+       WHERE cp.chapter_permalink NOT LIKE 'local:%'
+       GROUP BY cp.chapter_permalink`,
+    ),
+    getMangaDexPruneCandidates().catch(() => []),
+  ]);
 
-  const toDelete: string[] = [];
+  const allRows = [...dynastyRows, ...mdxRows].sort((a, b) => {
+    if (a.last_read !== b.last_read) return a.last_read - b.last_read;
+    return b.bytes - a.bytes;
+  });
+
+  const dynastyToDelete: string[] = [];
+  const mdxToDelete: string[] = [];
   let freedBytes = 0;
   let noProgressStreak = 0;
-  for (const row of rows) {
+  for (const row of allRows) {
     if (excess <= 0) break;
     if (excludePermalinks?.has(row.chapter_permalink)) continue;
     const rowBytes = Math.max(Number(row.bytes) || 0, 1);
-    toDelete.push(row.chapter_permalink);
+    if (row.chapter_permalink.startsWith("mdx:")) {
+      mdxToDelete.push(row.chapter_permalink.replace(/^mdx:/, ""));
+    } else {
+      dynastyToDelete.push(row.chapter_permalink);
+    }
     freedBytes += Number(row.bytes) || 0;
     if (rowBytes <= 1) {
       // Row has no measured size — cap deletions to avoid wiping entire cache.
@@ -190,10 +211,17 @@ export async function pruneOldestReadCachedPages(
       excess -= rowBytes;
     }
   }
-  if (toDelete.length > 0) {
-    await clearCachedGroupPages(toDelete);
+  const prunedChapters = dynastyToDelete.length + mdxToDelete.length;
+  if (dynastyToDelete.length > 0) {
+    await clearCachedGroupPages(dynastyToDelete);
   }
-  return { prunedChapters: toDelete.length, freedBytes };
+  if (mdxToDelete.length > 0) {
+    await clearMangaDexCachedChapters(mdxToDelete);
+  }
+  if (prunedChapters > 0) {
+    notifyCacheChanged();
+  }
+  return { prunedChapters, freedBytes };
 }
 
 export async function clearAllCachedCovers(): Promise<void> {

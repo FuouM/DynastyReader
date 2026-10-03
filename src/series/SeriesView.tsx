@@ -32,7 +32,7 @@ import { followSeries, getFollowedSeriesRow, getHistoryPermalinks, getProgressFo
 import { getCachedPageCounts, getCacheRevision } from "../db/cache.repo";
 import type { SeriesProgressRow } from "../types/db";
 import type { Series, SeriesTag, SeriesTaggings } from "../types/api";
-import { getManga, getMangaFeed } from "../providers/mangadex/api/manga";
+import { getManga, getAllMangaFeed } from "../providers/mangadex/api/manga";
 import { formatMangaTitle, getMangaAuthors, getMangaCoverUrl } from "../providers/mangadex/mapping";
 import { followManga, isMangaFollowed, unfollowManga } from "../providers/mangadex/db/library.repo";
 import { getMangaReadingProgress, saveReadingProgress as saveMdxProgress } from "../providers/mangadex/db/progress.repo";
@@ -100,7 +100,7 @@ export function SeriesView() {
         const mangaId = permalink.replace(/^mdx:/, "");
         const [manga, feed, isFollowed] = await Promise.all([
           getManga(mangaId),
-          getMangaFeed(mangaId, { limit: 500, order: { chapter: "asc" } }),
+          getAllMangaFeed(mangaId, { limit: 500, order: { chapter: "asc" } }),
           isMangaFollowed(mangaId),
         ]);
 

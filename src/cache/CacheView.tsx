@@ -136,7 +136,8 @@ export function CacheView() {
 
   const cacheActions = useCacheActions(refetch);
   const purgeAll = async (): Promise<void> => {
-    if (activeProvider() === "mangadex") {
+    const provider = activeProvider();
+    if (provider === "mangadex") {
       await purgeMangaDexCache();
       showBanner("MangaDex cache purged.");
       void refetch();
@@ -145,7 +146,8 @@ export function CacheView() {
     }
   };
   const purgePages = async (): Promise<void> => {
-    if (activeProvider() === "mangadex") {
+    const provider = activeProvider();
+    if (provider === "mangadex") {
       await purgeMangaDexCache();
       showBanner("MangaDex cached pages purged.");
       void refetch();
@@ -164,7 +166,7 @@ export function CacheView() {
       .map((c) => c.chapterPermalink)
       .filter((cp) => !isChapterDownloading(cp));
     if (perms.length === 0) return;
-    if (activeProvider() === "mangadex") {
+    if (perms.some((p) => p.startsWith("mdx:"))) {
       await clearMangaDexCachedChapters(perms.map((p) => p.replace(/^mdx:/, "")));
     } else {
       await clearCachedGroupPages(perms);
@@ -184,7 +186,7 @@ export function CacheView() {
 
   const deleteChapter = async (chapterPermalink: string): Promise<void> => {
     if (isChapterDownloading(chapterPermalink)) return;
-    if (activeProvider() === "mangadex") {
+    if (chapterPermalink.startsWith("mdx:")) {
       await clearMangaDexCachedChapters([chapterPermalink.replace(/^mdx:/, "")]);
     } else {
       await clearCachedGroupPages([chapterPermalink]);
@@ -203,7 +205,7 @@ export function CacheView() {
   const deleteAllOrphans = async (orphans: ProcessedCachedChapter[]): Promise<void> => {
     const perms = orphans.map((o) => o.chapterPermalink).filter((cp) => !isChapterDownloading(cp));
     if (perms.length === 0) return;
-    if (activeProvider() === "mangadex") {
+    if (perms.some((p) => p.startsWith("mdx:"))) {
       await clearMangaDexCachedChapters(perms.map((p) => p.replace(/^mdx:/, "")));
     } else {
       await clearCachedGroupPages(perms);

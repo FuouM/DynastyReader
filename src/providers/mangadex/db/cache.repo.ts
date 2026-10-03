@@ -106,6 +106,30 @@ export async function clearMangaDexCachedChapters(chapterIds: string[]): Promise
   await execute(`DELETE FROM cached_pages WHERE chapter_id IN (${placeholders})`, chapterIds);
 }
 
+export async function getMangaDexPruneCandidates(): Promise<Array<{
+  chapter_permalink: string;
+  bytes: number;
+  last_read: number;
+}>> {
+  await initMangaDexDb();
+  const rows = await query<{ chapter_id: string; bytes: number; last_read: number }>(
+    `SELECT cp.chapter_id,
+            SUM(COALESCE(cp.size_bytes, 0)) AS bytes,
+            COALESCE((
+              SELECT MAX(rh.read_at) FROM reading_history rh
+              WHERE rh.chapter_id = cp.chapter_id
+            ), 0) AS last_read
+     FROM cached_pages cp
+     GROUP BY cp.chapter_id
+     ORDER BY last_read ASC, bytes DESC`,
+  );
+  return rows.map((r) => ({
+    chapter_permalink: `mdx:${r.chapter_id}`,
+    bytes: Number(r.bytes) || 0,
+    last_read: Number(r.last_read) || 0,
+  }));
+}
+
 export interface MangaDexDownloadedChapter {
   chapterId: string;
   chapterTitle: string;
