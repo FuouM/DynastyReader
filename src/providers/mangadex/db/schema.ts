@@ -4,8 +4,9 @@
  */
 
 import { execute } from "./client";
+import { query as dynastyQuery, execute as dynastyExecute } from "../../../db/client";
+import type { CachedMetadataRow } from "../../../types/db";
 import { log } from "../../../utils/log";
-
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS followed_manga (
     manga_id TEXT PRIMARY KEY,
@@ -66,6 +67,32 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_mdx_followed_created_at ON followed_manga(created_at DESC)`,
 ];
 
+async function migrateLegacyMdxMetadata(): Promise<void> {
+  try {
+    const legacyRows = await dynastyQuery<CachedMetadataRow>(
+      `SELECT cache_key, data_type, json_payload, cached_at, etag
+       FROM cached_metadata
+       WHERE cache_key LIKE '%mdx:%'`,
+    );
+    if (legacyRows.length > 0) {
+      for (const r of legacyRows) {
+        await execute(
+          `INSERT INTO cached_metadata (cache_key, data_type, json_payload, cached_at, etag)
+           VALUES (?1, ?2, ?3, ?4, ?5)
+           ON CONFLICT(cache_key) DO UPDATE SET
+             json_payload = excluded.json_payload,
+             cached_at = excluded.cached_at`,
+          [r.cache_key, r.data_type, r.json_payload, r.cached_at, r.etag],
+        );
+      }
+      await dynastyExecute(`DELETE FROM cached_metadata WHERE cache_key LIKE '%mdx:%'`);
+      log.info("mangadex-db", `Migrated ${legacyRows.length} legacy cover cache entries from dynasty_reader.db to mangadex.db`);
+    }
+  } catch (err) {
+    log.warn("mangadex-db", "Legacy cover metadata migration skipped:", err);
+  }
+}
+
 let initPromise: Promise<void> | null = null;
 
 /**
@@ -79,6 +106,7 @@ export function initMangaDexDb(): Promise<void> {
     for (const ddl of SCHEMA) {
       await execute(ddl);
     }
+    await migrateLegacyMdxMetadata();
     log.info("mangadex-db", "mangadex.db schema initialization complete.");
   })();
 

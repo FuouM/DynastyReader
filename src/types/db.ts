@@ -10,6 +10,11 @@ export interface CachedMetadata {
   etag?: string;
 }
 
+export interface CachedMetadataRow extends CachedMetadata {
+  cache_key: string;
+  data_type: string;
+}
+
 export interface FollowedSeriesRow {
   permalink: string;
   name: string;
