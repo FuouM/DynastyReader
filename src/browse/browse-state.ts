@@ -14,7 +14,6 @@ import { createEffect, createResource, createSignal } from "solid-js";
 
 import { createStore } from "solid-js/store";
 import type { Accessor } from "solid-js";
-import { getBlacklistRevision } from "../db/blacklist.repo";
 import { activeProvider } from "../stores/provider";
 export interface TopPagerConfig {
   totalPages: number;
@@ -45,8 +44,6 @@ export function scrollBrowseToBottom(): void {
   const el = document.getElementById("ds-pane-browse") || document.getElementById("ds-view");
   if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
 }
-
-export const useBlacklistRevision: () => Accessor<number> = () => getBlacklistRevision;
 
 export interface BrowsePaneApi {
   reload: () => Promise<unknown>;

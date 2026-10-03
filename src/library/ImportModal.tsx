@@ -100,13 +100,6 @@ export function ImportModal(props: ImportModalProps) {
 
   const totalDetectedCount = (): number => {
     const p = parsed();
-    const mode = targetMode();
-    if (mode === "followed") {
-      return p.stats.followedCount + p.stats.collectionItemsCount;
-    }
-    if (mode === "collection") {
-      return p.stats.followedCount + p.stats.collectionItemsCount;
-    }
     return p.stats.followedCount + p.stats.collectionItemsCount;
   };
 
