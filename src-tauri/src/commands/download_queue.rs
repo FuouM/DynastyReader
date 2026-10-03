@@ -105,23 +105,38 @@ impl Default for DownloadState {
 /// Directory (relative to the data root) that holds a chapter's downloaded
 /// pages. Shared by `download_chapter` (writes) and the cancellation path
 /// (prunes partial downloads).
+fn sanitize_path_segment(s: &str) -> String {
+    let clean = s.replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_");
+    let lower = clean.to_ascii_lowercase();
+    const WINDOWS_RESERVED: &[&str] = &[
+        "con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7",
+        "com8", "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
+    ];
+    if WINDOWS_RESERVED.contains(&lower.as_str()) {
+        format!("_{clean}")
+    } else if clean.is_empty() {
+        "_".to_string()
+    } else {
+        clean
+    }
+}
+
 fn chapter_pages_rel_dir(req: &DownloadRequest) -> String {
-    let sanitize = |s: &str| s.replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_");
     if req.chapter_permalink.starts_with("mdx:") {
         let clean_series = if req.series_permalink.is_empty() {
             "_singles".to_string()
         } else {
-            sanitize(req.series_permalink.trim_start_matches("mdx:"))
+            sanitize_path_segment(req.series_permalink.trim_start_matches("mdx:"))
         };
-        let clean_chapter = sanitize(req.chapter_permalink.trim_start_matches("mdx:"));
+        let clean_chapter = sanitize_path_segment(req.chapter_permalink.trim_start_matches("mdx:"));
         format!("mangadex/pages/{}/{}", clean_series, clean_chapter)
     } else {
         let clean_series = if req.series_permalink.is_empty() {
             "_singles".to_string()
         } else {
-            sanitize(&req.series_permalink)
+            sanitize_path_segment(&req.series_permalink)
         };
-        let clean_chapter = sanitize(&req.chapter_permalink);
+        let clean_chapter = sanitize_path_segment(&req.chapter_permalink);
         format!("pages/{}/{}", clean_series, clean_chapter)
     }
 }
@@ -1172,10 +1187,12 @@ async fn download_chapter(
             .ok();
             continue;
         }
-        let abs_url = if url.starts_with("http") {
+        let abs_url = if url.starts_with("http://") || url.starts_with("https://") {
             url.to_string()
-        } else {
+        } else if url.starts_with('/') {
             format!("https://dynasty-scans.com{}", url)
+        } else {
+            format!("https://dynasty-scans.com/{}", url)
         };
 
         // Compute output path like ReaderQueue: pages/<series>/<chapter>/page_0001.ext
@@ -1287,5 +1304,39 @@ mod tests {
             let mins = local_minutes_of_day(offset);
             assert!((0..1440).contains(&mins), "Offset {offset} gave out-of-bounds minutes: {mins}");
         }
+    }
+
+    #[test]
+    fn test_sanitize_path_segment() {
+        assert_eq!(sanitize_path_segment("normal_slug-123"), "normal_slug-123");
+        assert_eq!(sanitize_path_segment("CON"), "_CON");
+        assert_eq!(sanitize_path_segment("prn"), "_prn");
+        assert_eq!(sanitize_path_segment("aux"), "_aux");
+        assert_eq!(sanitize_path_segment("NUL"), "_NUL");
+        assert_eq!(sanitize_path_segment("com1"), "_com1");
+        assert_eq!(sanitize_path_segment("lpt9"), "_lpt9");
+        assert_eq!(sanitize_path_segment("invalid/path\\chars:?*"), "invalid_path_chars___");
+        assert_eq!(sanitize_path_segment(""), "_");
+    }
+
+    #[test]
+    fn test_chapter_pages_rel_dir() {
+        let req = DownloadRequest {
+            series_permalink: "con".to_string(),
+            series_title: "CON Series".to_string(),
+            chapter_permalink: "ch1".to_string(),
+            chapter_title: "Chapter 1".to_string(),
+            chapter_index: 0,
+        };
+        assert_eq!(chapter_pages_rel_dir(&req), "pages/_con/ch1");
+
+        let mdx_req = DownloadRequest {
+            series_permalink: "mdx:abc-123".to_string(),
+            series_title: "MangaDex Series".to_string(),
+            chapter_permalink: "mdx:nul".to_string(),
+            chapter_title: "Chapter 1".to_string(),
+            chapter_index: 0,
+        };
+        assert_eq!(chapter_pages_rel_dir(&mdx_req), "mangadex/pages/abc-123/_nul");
     }
 }

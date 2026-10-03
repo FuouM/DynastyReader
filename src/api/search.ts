@@ -28,22 +28,7 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
     return { items: [], totalPages: 1, currentPage: page, query: "" };
   }
   // ── CASE 2: Keyword Query or Standard Search ────────────────────────────────
-  const searchParams = new URLSearchParams();
-  if (query) {
-    searchParams.set("q", query);
-  } else if (withTags.length > 0) {
-    searchParams.set("q", withTags.join(" "));
-  }
-  for (const c of params.classes ?? []) {
-    if (c) searchParams.append("classes[]", c);
-  }
-  for (const t of withTags) searchParams.append("with[]", t);
-  for (const t of withoutTags) searchParams.append("without[]", t);
-  if (params.sort) searchParams.set("sort", params.sort);
-  if (page > 1) searchParams.set("page", String(page));
-
-  const qs = searchParams.toString();
-  const url = `${SITE_ROOT}/search${qs ? `?${qs}` : ""}`;
+  const url = buildDynastySearchUrl(params);
   const cacheKey = `${SEARCH_CACHE_PREFIX}${url}`;
 
   // Check SQLite cache (TTL: 1 hour)
@@ -91,4 +76,29 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
   if (cached) return returnCached();
 
   return { items: [], totalPages: 1, currentPage: page, query: displayQuery };
+}
+
+/**
+ * Builds the canonical Dynasty Scans search URL for the given parameters.
+ */
+export function buildDynastySearchUrl(params: SearchParams): string {
+  const query = (params.q ?? "").trim();
+  const withTags = (params.withTags ?? []).map((t) => t.trim()).filter(Boolean);
+  const withoutTags = (params.withoutTags ?? []).map((t) => t.trim().toLowerCase()).filter(Boolean);
+  const page = Math.max(1, params.page ?? 1);
+
+  const searchParams = new URLSearchParams();
+  if (query) {
+    searchParams.set("q", query);
+  }
+  for (const c of params.classes ?? []) {
+    if (c) searchParams.append("classes[]", c);
+  }
+  for (const t of withTags) searchParams.append("with[]", t);
+  for (const t of withoutTags) searchParams.append("without[]", t);
+  if (params.sort) searchParams.set("sort", params.sort);
+  if (page > 1) searchParams.set("page", String(page));
+
+  const qs = searchParams.toString();
+  return `${SITE_ROOT}/search${qs ? `?${qs}` : ""}`;
 }

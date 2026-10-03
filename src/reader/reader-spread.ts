@@ -141,7 +141,7 @@ export function detectIsLongStrip(
 
 /** Normalizes a chapter or series permalink for consistent routing and comparisons. */
 export function normalizePermalink(p: string): string {
-  let s = (p || "").toLowerCase().replace(/^\/+|\/+$/g, "").trim();
+  let s = (p || "").trim().toLowerCase().replace(/^\/+|\/+$/g, "");
   try {
     s = decodeURIComponent(s);
   } catch (err) {

@@ -6,6 +6,7 @@ import {
   detectReadingDirection,
   detectIsLongStrip,
   getAdjacentChapters,
+  normalizePermalink,
 } from "../../src/reader/reader-spread";
 
 describe("reader/reader-spread - computeSpreads", () => {
@@ -145,5 +146,16 @@ describe("reader/reader-spread - getAdjacentChapters", () => {
     const adj = getAdjacentChapters(chapters, "series/1");
     expect(adj.prevCh?.permalink).toBe("chapter_11");
     expect(adj.nextCh?.permalink).toBe("chapter_2");
+  });
+});
+
+describe("reader/reader-spread - normalizePermalink", () => {
+  it("strips leading and trailing slashes even when surrounded by whitespace", () => {
+    expect(normalizePermalink("  /chapters/citrus_ch01/  ")).toBe("chapters/citrus_ch01");
+    expect(normalizePermalink(" ///series/bloom_into_you/// ")).toBe("series/bloom_into_you");
+  });
+
+  it("strips .json extension after trimming", () => {
+    expect(normalizePermalink(" /chapters/citrus_ch01.json ")).toBe("chapters/citrus_ch01");
   });
 });

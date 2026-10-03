@@ -28,18 +28,20 @@ export function createReaderPersistence(state: ReaderState, permalink: string): 
     // Skip only when neither the page index nor the completion flag moved —
     // re-opening a finished chapter and scrolling back must un-complete it.
     if (lastPersistedIndex === state.currentIndex() && lastPersistedCompleted === completed) return;
-    lastPersistedIndex = state.currentIndex();
-    lastPersistedCompleted = completed;
+    const targetIndex = state.currentIndex();
+    const targetCompleted = completed;
     try {
       await setReadingProgress({
         chapterPermalink: permalink,
         seriesPermalink: state.seriesPermalink() ?? "",
         seriesName: state.seriesName() ?? "",
         chapterTitle: state.chapterTitle(),
-        pageIndex: state.currentIndex(),
+        pageIndex: targetIndex,
         pageTotal: state.pages().length,
-        completed,
+        completed: targetCompleted,
       });
+      lastPersistedIndex = targetIndex;
+      lastPersistedCompleted = targetCompleted;
     } catch (err) {
       log.error("reader-persistence", "failed to persist reading progress:", err);
     }

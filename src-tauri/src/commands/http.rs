@@ -22,13 +22,89 @@ const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 
 pub struct HttpState(pub reqwest::Client);
 
-fn is_ipv4_forbidden(ipv4: &std::net::Ipv4Addr) -> bool {
+pub fn is_ipv4_forbidden(ipv4: &std::net::Ipv4Addr) -> bool {
+    let octets = ipv4.octets();
     ipv4.is_loopback()
         || ipv4.is_private()
         || ipv4.is_link_local()
         || ipv4.is_broadcast()
         || ipv4.is_unspecified()
         || ipv4.is_multicast()
+        // 0.0.0.0/8 (RFC 1122 Section 3.2.1.3 - "This host on this network")
+        || octets[0] == 0
+        // 100.64.0.0/10 (RFC 6598 - Carrier-grade NAT / Shared Address Space)
+        || (octets[0] == 100 && (octets[1] & 0xc0) == 64)
+        // 192.0.0.0/24 (RFC 6890 - IETF Protocol Assignments)
+        || (octets[0] == 192 && octets[1] == 0 && octets[2] == 0)
+        // 192.0.2.0/24 (RFC 5737 - TEST-NET-1)
+        || (octets[0] == 192 && octets[1] == 0 && octets[2] == 2)
+        // 198.18.0.0/15 (RFC 2544 - Benchmark testing)
+        || (octets[0] == 198 && (octets[1] & 0xfe) == 18)
+        // 198.51.100.0/24 (RFC 5737 - TEST-NET-2)
+        || (octets[0] == 198 && octets[1] == 51 && octets[2] == 100)
+        // 203.0.113.0/24 (RFC 5737 - TEST-NET-3)
+        || (octets[0] == 203 && octets[1] == 0 && octets[2] == 113)
+        // 240.0.0.0/4 (RFC 1112 - Reserved / Class E)
+        || (octets[0] & 0xf0) == 240
+}
+
+pub fn is_ipv6_forbidden(ipv6: &std::net::Ipv6Addr) -> bool {
+    if ipv6.is_loopback() || ipv6.is_unspecified() || ipv6.is_multicast() {
+        return true;
+    }
+    // IPv4-mapped or IPv4-compatible IPv6: apply IPv4 forbidden checks.
+    if let Some(v4) = ipv6.to_ipv4() {
+        if is_ipv4_forbidden(&v4) {
+            return true;
+        }
+    }
+    let seg = ipv6.segments();
+    // fe80::/10 link-local or fc00::/7 unique local
+    if (seg[0] & 0xffc0) == 0xfe80 || (seg[0] & 0xfe00) == 0xfc00 {
+        return true;
+    }
+    false
+}
+
+pub fn is_ip_forbidden(ip: &std::net::IpAddr) -> bool {
+    match ip {
+        std::net::IpAddr::V4(v4) => is_ipv4_forbidden(v4),
+        std::net::IpAddr::V6(v6) => is_ipv6_forbidden(v6),
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SafeDnsResolver;
+
+impl reqwest::dns::Resolve for SafeDnsResolver {
+    fn resolve(&self, name: reqwest::dns::Name) -> reqwest::dns::Resolving {
+        Box::pin(async move {
+            let host_str = name.as_str();
+            let addrs: Vec<std::net::SocketAddr> = tokio::net::lookup_host((host_str, 0))
+                .await
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?
+                .collect();
+
+            if addrs.is_empty() {
+                return Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("no DNS records found for host '{host_str}'"),
+                )) as Box<dyn std::error::Error + Send + Sync>);
+            }
+
+            for addr in &addrs {
+                if is_ip_forbidden(&addr.ip()) {
+                    return Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::PermissionDenied,
+                        format!("host '{host_str}' resolved to forbidden private/loopback IP '{}'", addr.ip()),
+                    )) as Box<dyn std::error::Error + Send + Sync>);
+                }
+            }
+
+            let iter: Box<dyn Iterator<Item = std::net::SocketAddr> + Send> = Box::new(addrs.into_iter());
+            Ok(iter)
+        })
+    }
 }
 
 /// Validates that `raw` is a valid HTTP/HTTPS URL and does not target private or loopback networks (SSRF defense).
@@ -69,21 +145,8 @@ pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
             }
         }
         Some(url::Host::Ipv6(ipv6)) => {
-            if ipv6.is_loopback() || ipv6.is_unspecified() || ipv6.is_multicast() {
+            if is_ipv6_forbidden(&ipv6) {
                 return Err(format!("requests to private/loopback IPv6 '{ipv6}' are forbidden"));
-            }
-            // IPv4-mapped IPv6 (::ffff:a.b.c.d): apply the same IPv4 private checks.
-            if let Some(mapped_v4) = ipv6.to_ipv4_mapped() {
-                if is_ipv4_forbidden(&mapped_v4) {
-                    return Err(format!(
-                        "requests to private IPv4-mapped IPv6 '{ipv6}' are forbidden"
-                    ));
-                }
-            }
-            let seg = ipv6.segments();
-            // fe80::/10 link-local or fc00::/7 unique local
-            if (seg[0] & 0xffc0) == 0xfe80 || (seg[0] & 0xfe00) == 0xfc00 {
-                return Err(format!("requests to link-local/unique-local IPv6 '{ipv6}' are forbidden"));
             }
         }
         None => {
@@ -97,6 +160,7 @@ pub fn validate_http_url(raw: &str) -> Result<reqwest::Url, String> {
 pub fn build_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .user_agent(USER_AGENT)
+        .dns_resolver(std::sync::Arc::new(SafeDnsResolver))
         .redirect(reqwest::redirect::Policy::custom(|attempt| {
             if attempt.previous().len() >= MAX_REDIRECTS {
                 attempt.error(format!("too many redirects (>{MAX_REDIRECTS})"))
@@ -371,6 +435,14 @@ mod tests {
         assert!(validate_http_url("http://169.254.169.254/metadata").is_err());
         assert!(validate_http_url("http://0.0.0.0/").is_err());
         assert!(validate_http_url("http://[::1]/").is_err());
+        assert!(validate_http_url("http://0.0.0.1/").is_err());
+        assert!(validate_http_url("http://100.64.0.1/").is_err());
+        assert!(validate_http_url("http://198.18.0.1/").is_err());
+        assert!(validate_http_url("http://240.0.0.1/").is_err());
+        assert!(validate_http_url("http://[::127.0.0.1]/").is_err());
+        assert!(validate_http_url("http://[::ffff:127.0.0.1]/").is_err());
+        assert!(validate_http_url("http://[fc00::1]/").is_err());
+        assert!(validate_http_url("http://[fe80::1]/").is_err());
     }
 
     #[tokio::test]

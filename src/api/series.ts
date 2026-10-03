@@ -55,8 +55,14 @@ async function fetchLocalSeries(permalink: string): Promise<Series> {
 
   // Look up chapters for this local series in cached_metadata
   const chapterRows = await query<{ cache_key: string; json_payload: string }>(
-    `SELECT cache_key, json_payload FROM cached_metadata WHERE data_type = 'chapter' AND cache_key LIKE ?`,
-    [`chapter:local:${slug}%`],
+    `SELECT cache_key, json_payload FROM cached_metadata
+     WHERE data_type = 'chapter'
+       AND (
+         json_extract(json_payload, '$.tags[0].permalink') = ?
+         OR json_extract(json_payload, '$.series_permalink') = ?
+         OR cache_key LIKE ?
+       )`,
+    [permalink, permalink, `chapter:local:${slug}-%`],
   );
 
   const taggings: Array<{ title: string; permalink: string }> = [];
@@ -64,6 +70,11 @@ async function fetchLocalSeries(permalink: string): Promise<Series> {
     try {
       const chData = JSON.parse(row.json_payload);
       if (chData.permalink && chData.title) {
+        const seriesTag = chData.tags?.find((t: { type?: string; permalink?: string }) => t.type === "Series");
+        const chapterSeries = seriesTag?.permalink || chData.series_permalink;
+        if (chapterSeries && chapterSeries !== permalink) {
+          continue;
+        }
         taggings.push({
           title: chData.title,
           permalink: chData.permalink,
@@ -76,7 +87,7 @@ async function fetchLocalSeries(permalink: string): Promise<Series> {
   if (taggings.length === 0) {
     const pageRows = await query<{ chapter_permalink: string }>(
       `SELECT DISTINCT chapter_permalink FROM cached_pages WHERE chapter_permalink LIKE ?`,
-      [`local:${slug}%`],
+      [`local:${slug}-%`],
     );
     for (const r of pageRows) {
       taggings.push({
