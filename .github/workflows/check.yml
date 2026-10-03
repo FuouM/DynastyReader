@@ -60,9 +60,11 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Lint for Bugs
+        run: npm run lint
+
       - name: TypeScript & Vite Build Check
         run: npm run build
-
       - name: Cargo Check
         run: cargo check --manifest-path src-tauri/Cargo.toml
 

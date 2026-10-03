@@ -385,7 +385,7 @@ function parseUrlListImport(
     let urlStr = "";
     let parsedTitle = "";
 
-    const mdMatch = rawLine.match(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/i);
+    const mdMatch = rawLine.match(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/i);
     if (mdMatch) {
       parsedTitle = mdMatch[1].trim();
       urlStr = mdMatch[2].trim();

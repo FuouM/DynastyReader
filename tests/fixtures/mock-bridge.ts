@@ -101,6 +101,15 @@ export function getMockBridgeCode(): string {
         if (sql.includes("FROM SERIES_BLACKLIST")) return { rows: MOCK_BLACKLIST.series };
         if (sql.includes("FROM TAG_BLACKLIST")) return { rows: MOCK_BLACKLIST.tags };
         if (sql.includes("FROM CACHED_PAGES")) {
+          if (sql.includes("GROUP BY")) {
+            return {
+              rows: [
+                { chapter_id: "ch-uuid-1a", chapter_permalink: "mdx:ch-uuid-1a", manga_id: "6bae5c8c-d5ff-43df-acf7-b7670532c8b1", manga_title: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu", chapter_title: "Ch. 1 - The Rebirth", page_count: 20, size_bytes: 5242880, total_bytes: 5242880, last_cached: Date.now() - 3600000, last_cached_at: Date.now() - 3600000 },
+                { chapter_id: "ch-uuid-2a", chapter_permalink: "mdx:ch-uuid-2a", manga_id: "6bae5c8c-d5ff-43df-acf7-b7670532c8b1", manga_title: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu", chapter_title: "Ch. 2 - Magic Discovery", page_count: 22, size_bytes: 5242880, total_bytes: 5242880, last_cached: Date.now() - 7200000, last_cached_at: Date.now() - 7200000 },
+                { chapter_id: "orphan-ch01", chapter_permalink: "mdx:orphan-ch01", manga_id: "", manga_title: "Orphan Manga", chapter_title: "Oneshot", page_count: 15, size_bytes: 3145728, total_bytes: 3145728, last_cached: Date.now() - 10800000, last_cached_at: Date.now() - 10800000 },
+              ],
+            };
+          }
           return {
             rows: [
               { chapter_permalink: "hana-ni-arashi-ch01", page_index: 0, file_path: "/cached/1.jpg", size_bytes: 250000, cached_at: Date.now() },
@@ -143,6 +152,77 @@ export function getMockBridgeCode(): string {
             if (data.status === 200 || data.status === 304) return data;
           }
         } catch {}
+        let host = "";
+        try {
+          host = new URL(url).hostname.toLowerCase();
+        } catch {}
+        if (host === "api.mangadex.org" || host.endsWith(".mangadex.org")) {
+          if (url.includes("/at-home/server/")) {
+            return {
+              status: 200,
+              body: JSON.stringify({
+                result: "ok",
+                baseUrl: "https://uploads.mangadex.org",
+                chapter: { hash: "mockhash123", data: ["1.jpg", "2.jpg"], dataSaver: ["1.jpg", "2.jpg"] },
+              }),
+            };
+          }
+          if (url.includes("/chapter/")) {
+            return {
+              status: 200,
+              body: JSON.stringify({
+                result: "ok",
+                response: "entity",
+                data: {
+                  id: "ch-uuid-1a",
+                  type: "chapter",
+                  attributes: { volume: "1", chapter: "1", title: "The Rebirth", translatedLanguage: "en", readableAt: "2024-01-01T00:00:00+00:00", pages: 2 },
+                  relationships: [{ id: "6bae5c8c-d5ff-43df-acf7-b7670532c8b1", type: "manga", attributes: { title: { en: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu" } } }],
+                },
+              }),
+            };
+          }
+          if (url.includes("/chapter?") || url.endsWith("/chapter")) {
+            return {
+              status: 200,
+              body: JSON.stringify({
+                result: "ok",
+                response: "collection",
+                data: [
+                  {
+                    id: "ch-uuid-1a",
+                    type: "chapter",
+                    attributes: { volume: "1", chapter: "1", title: "The Rebirth", translatedLanguage: "en", readableAt: "2024-01-01T00:00:00+00:00", pages: 20 },
+                    relationships: [{ id: "6bae5c8c-d5ff-43df-acf7-b7670532c8b1", type: "manga", attributes: { title: { en: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu" } } }],
+                  },
+                ],
+                total: 1,
+                limit: 24,
+                offset: 0,
+              }),
+            };
+          }
+          if (url.includes("/manga/")) {
+            return {
+              status: 200,
+              body: JSON.stringify({
+                result: "ok",
+                response: "entity",
+                data: {
+                  id: "6bae5c8c-d5ff-43df-acf7-b7670532c8b1",
+                  type: "manga",
+                  attributes: {
+                    title: { en: "Yoku Wakaranai keredo Isekai ni Tensei Shiteita You Desu" },
+                    description: { en: "I don't really get it, but it looks like I was reincarnated in another world." },
+                    status: "ongoing",
+                    tags: [],
+                  },
+                  relationships: [],
+                },
+              }),
+            };
+          }
+        }
         if (url.includes("/series/")) {
           return { status: 200, body: JSON.stringify(MOCK_SERIES), etag: "mock-etag" };
         }

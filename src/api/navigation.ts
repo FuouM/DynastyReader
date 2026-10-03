@@ -49,7 +49,7 @@ export async function openExternal(url: string): Promise<void> {
   }
 }
 
-const PERMALINK_REGEX = /^(mdx:[a-zA-Z0-9\-]+|local:[a-zA-Z0-9_\-./%]+|[a-zA-Z0-9_\-]+)$/;
+const PERMALINK_REGEX = /^(mdx:[a-zA-Z0-9-]+|local:[a-zA-Z0-9_\-./%]+|[a-zA-Z0-9_-]+)$/;
 
 /**
  * Checks if a candidate string is a safe, valid Dynasty Scans permalink slug.

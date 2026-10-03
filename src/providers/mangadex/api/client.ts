@@ -89,7 +89,7 @@ export async function fetchMangaDex<T>(
   const headers: Record<string, string> = {
     "User-Agent": MANGADEX_USER_AGENT,
     Accept: "application/json",
-    ...(options.headers ?? {}),
+    ...options.headers,
   };
 
   const isPost = options.method === "POST";

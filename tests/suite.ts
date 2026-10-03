@@ -69,7 +69,7 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
       const items = Array.from(document.querySelectorAll(".ds-library-nav-item"));
       return items.find(el => el.textContent?.includes("Local"));
     });
-    const localNavItem = localNavHandle.asElement();
+    const localNavItem = localNavHandle.asElement() as ElementHandle<Element> | null;
     if (localNavItem) {
       await localNavItem.click();
       const localPaneOk = await page.evaluate(() => {
@@ -86,7 +86,7 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
       const btns = Array.from(document.querySelectorAll("button"));
       return btns.find(b => b.textContent?.includes("Cache Management"));
     });
-    const cacheBtn = cacheHandle.asElement();
+    const cacheBtn = cacheHandle.asElement() as ElementHandle<Element> | null;
     if (cacheBtn) {
       await cacheBtn.click();
       await page.waitForSelector("#ds-cache-ceiling-select", { timeout: 4000 });

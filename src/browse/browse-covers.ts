@@ -233,9 +233,9 @@ export class BrowseCovers {
     if (keysToQuery.length > 0) {
       try {
         const cachedMap = await getBatchCached(keysToQuery);
-        const entries = Array.from(cachedMap.entries()).filter(([_, p]) => Boolean(p));
+        const entries = Array.from(cachedMap.entries()).filter(([, p]) => Boolean(p));
         if (entries.length > 0) {
-          const paths = entries.map(([_, p]) => p!);
+          const paths = entries.map(([, p]) => p!);
           const statResp = await ipc.fileExistsBatch(paths);
           const existingPaths = new Set(
             statResp.items?.filter((it) => it.exists).map((it) => it.path) ?? []

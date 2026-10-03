@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "bump": "node scripts/bump-version.js"
+    "bump": "node scripts/bump-version.js",
+    "lint": "oxlint src"
   },
   "dependencies": {
     "@solid-primitives/connectivity": "^0.4.6",
@@ -29,6 +30,8 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
+    "oxlint": "^1.86.0",
+    "puppeteer-core": "^25.12.0",
     "typescript": "^5",
     "vite": "^6",
     "vite-plugin-solid": "^2.11.14"

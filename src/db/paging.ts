@@ -35,5 +35,5 @@ export async function queryPaged<T extends object>(
 /** Builds a `?,?,?` placeholder clause for an IN (...) of `n` items. */
 export function inClause(n: number): string {
   if (n <= 0) return "NULL";
-  return new Array(n).fill("?").join(",");
+  return Array.from({ length: n }, () => "?").join(",");
 }
