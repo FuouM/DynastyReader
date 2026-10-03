@@ -185,7 +185,7 @@ export function getAdjacentChapters(
         const baseNorm = baseSlug.replace(/[-_]+/g, "_");
         curIdx = chapterList.findIndex((x) => {
           const xNorm = normalizePermalink(x.permalink).replace(/[-_]+/g, "_");
-          return xNorm === baseNorm || xNorm.endsWith(`/${baseNorm}`) || xNorm.endsWith(baseNorm);
+          return xNorm === baseNorm || xNorm.endsWith(`/${baseNorm}`) || xNorm.endsWith(`_${baseNorm}`);
         });
       }
     }

@@ -7,6 +7,9 @@ import {
   formatEta,
   slugify,
   decodeEntities,
+  extractVolumeHeader,
+  isVolumeOrSectionHeader,
+  tryParseJson,
 } from "../../src/utils/formatting";
 
 describe("utils/formatting - date formatting", () => {
@@ -77,5 +80,41 @@ describe("utils/formatting - decodeEntities", () => {
     expect(decodeEntities("&quot;Citrus&#39;")).toBe("\"Citrus'");
     expect(decodeEntities("&lt;tag&gt;")).toBe("<tag>");
     expect(decodeEntities("No entities")).toBe("No entities");
+    // Double-escaped entities
+    expect(decodeEntities("&amp;quot;")).toBe("\"");
+  });
+});
+
+describe("utils/formatting - volume and section headers", () => {
+  it("extracts volume numbers from various bracket styles", () => {
+    expect(extractVolumeHeader("[Vol. 1] Chapter 1")).toBe("Volume 1");
+    expect(extractVolumeHeader("(v2) Chapter 5")).toBe("Volume 2");
+    expect(extractVolumeHeader("【Volume 3】 Chapter 10")).toBe("Volume 3");
+    expect(extractVolumeHeader("Chapter 1 - Vol 4")).toBe("Volume 4");
+    expect(extractVolumeHeader("")).toBeUndefined();
+    expect(extractVolumeHeader("Chapter with no volume")).toBeUndefined();
+  });
+
+  it("identifies standard volume and section headers", () => {
+    expect(isVolumeOrSectionHeader("Volume 1")).toBe(true);
+    expect(isVolumeOrSectionHeader("Vol. 2")).toBe(true);
+    expect(isVolumeOrSectionHeader("Book 3")).toBe(true);
+    expect(isVolumeOrSectionHeader("Season 1")).toBe(true);
+    expect(isVolumeOrSectionHeader("Side Story")).toBe(true);
+    expect(isVolumeOrSectionHeader("Prologue")).toBe(true);
+    expect(isVolumeOrSectionHeader("Epilogue")).toBe(true);
+    expect(isVolumeOrSectionHeader("Special")).toBe(true);
+    expect(isVolumeOrSectionHeader("Regular Chapter Title")).toBe(false);
+    expect(isVolumeOrSectionHeader("")).toBe(false);
+  });
+});
+
+describe("utils/formatting - tryParseJson", () => {
+  it("parses valid JSON text into typed object", () => {
+    expect(tryParseJson<{ a: number }>('{"a": 42}')).toEqual({ a: 42 });
+  });
+
+  it("returns null on malformed JSON without throwing", () => {
+    expect(tryParseJson("{ bad json }")).toBeNull();
   });
 });

@@ -1228,3 +1228,64 @@ async fn download_chapter(
 
     Ok((done, total))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_hhmm_valid() {
+        assert_eq!(parse_hhmm("00:00"), Some(0));
+        assert_eq!(parse_hhmm("01:30"), Some(90));
+        assert_eq!(parse_hhmm("12:00"), Some(720));
+        assert_eq!(parse_hhmm("23:59"), Some(1439));
+        assert_eq!(parse_hhmm(" 08:15 "), Some(495));
+    }
+
+    #[test]
+    fn test_parse_hhmm_invalid() {
+        assert_eq!(parse_hhmm(""), None);
+        assert_eq!(parse_hhmm("24:00"), None);
+        assert_eq!(parse_hhmm("12:60"), None);
+        assert_eq!(parse_hhmm("-1:30"), None);
+        assert_eq!(parse_hhmm("12"), None);
+        assert_eq!(parse_hhmm("abc:def"), None);
+    }
+
+    #[test]
+    fn test_daytime_schedule_window() {
+        let start = parse_hhmm("08:00").unwrap(); // 480
+        let end = parse_hhmm("17:00").unwrap();   // 1020
+        let check = |now| now >= start && now < end;
+
+        assert!(!check(479));  // 07:59
+        assert!(check(480));   // 08:00
+        assert!(check(720));   // 12:00
+        assert!(check(1019));  // 16:59
+        assert!(!check(1020)); // 17:00
+    }
+
+    #[test]
+    fn test_overnight_schedule_window() {
+        let start = parse_hhmm("22:00").unwrap(); // 1320
+        let end = parse_hhmm("06:00").unwrap();   // 360
+        let check = |now| now >= start || now < end;
+
+        assert!(!check(1319)); // 21:59
+        assert!(check(1320));  // 22:00
+        assert!(check(1439));  // 23:59
+        assert!(check(0));     // 00:00
+        assert!(check(359));   // 05:59
+        assert!(!check(360));  // 06:00
+        assert!(!check(720));  // 12:00
+    }
+
+    #[test]
+    fn test_local_minutes_modulo_bounds() {
+        // Extreme negative and positive offsets must remain within 0..1440
+        for offset in [-1440, -720, -60, 0, 60, 720, 1440] {
+            let mins = local_minutes_of_day(offset);
+            assert!((0..1440).contains(&mins), "Offset {offset} gave out-of-bounds minutes: {mins}");
+        }
+    }
+}
