@@ -58,6 +58,7 @@ export interface LibraryPaneResourceResult<T> {
   data: Resource<T>;
   refetch: () => Promise<unknown>;
   showSpinner: Accessor<boolean>;
+  error: Accessor<unknown>;
 }
 
 export function useLibraryPaneResource<T>(
@@ -110,5 +111,6 @@ export function useLibraryPaneResource<T>(
     data,
     refetch: async () => refetch(),
     showSpinner,
+    error: () => data.error,
   };
 }

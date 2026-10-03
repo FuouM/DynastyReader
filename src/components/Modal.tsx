@@ -69,20 +69,41 @@ export function Modal(props: ModalProps) {
   createEffect(() => {
     if (!props.open) return;
 
+    function isVisible(el: HTMLElement): boolean {
+      return (
+        !el.hasAttribute("disabled") &&
+        el.getAttribute("aria-hidden") !== "true" &&
+        (el.offsetParent !== null || el.getClientRects().length > 0)
+      );
+    }
+
+    function getFocusableElements(container: HTMLElement): HTMLElement[] {
+      const candidates = container.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      return Array.from(candidates).filter(isVisible);
+    }
+
     const onKeyDown = (ev: KeyboardEvent): void => {
       if (ev.key === "Escape") {
         ev.preventDefault();
         close();
       } else if (ev.key === "Tab" && windowEl) {
-        const focusable = windowEl.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        );
+        const focusable = getFocusableElements(windowEl);
         if (focusable.length === 0) {
           ev.preventDefault();
+          windowEl.focus();
           return;
         }
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
+
+        if (!windowEl.contains(document.activeElement)) {
+          ev.preventDefault();
+          (ev.shiftKey ? last : first).focus();
+          return;
+        }
+
         if (ev.shiftKey) {
           if (document.activeElement === first || document.activeElement === windowEl) {
             ev.preventDefault();
@@ -96,7 +117,20 @@ export function Modal(props: ModalProps) {
         }
       }
     };
+
+    const onFocusIn = (ev: FocusEvent): void => {
+      if (windowEl && !windowEl.contains(ev.target as Node)) {
+        const focusable = getFocusableElements(windowEl);
+        if (focusable.length > 0) {
+          focusable[0].focus();
+        } else {
+          windowEl.focus();
+        }
+      }
+    };
+
     makeEventListener(window, "keydown", onKeyDown);
+    makeEventListener(document, "focusin", onFocusIn);
   });
 
   createEffect(() => {
@@ -105,13 +139,22 @@ export function Modal(props: ModalProps) {
       return;
     }
     const autoFocusEl = windowEl.querySelector<HTMLElement>("[autofocus]");
-    if (autoFocusEl) {
+    if (autoFocusEl && (autoFocusEl.offsetParent !== null || autoFocusEl.getClientRects().length > 0)) {
       autoFocusEl.focus();
     } else {
-      windowEl.focus();
+      const candidates = windowEl.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      const first = Array.from(candidates).find(
+        (el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true" && (el.offsetParent !== null || el.getClientRects().length > 0),
+      );
+      if (first) {
+        first.focus();
+      } else {
+        windowEl.focus();
+      }
     }
   });
-
   return (
     <Show when={props.open}>
       <Portal mount={document.body}>

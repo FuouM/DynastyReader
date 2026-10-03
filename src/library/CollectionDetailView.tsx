@@ -22,7 +22,7 @@ import { getCollectionById, getCollectionItems, getCollectionsRevision, removeIt
 import { deleteCached } from "../db/metadata.repo";
 import { seriesCoverKey } from "../lib/cache-keys";
 import type { CollectionItemRow, CollectionRow } from "../types/db";
-import { Loading, useDelayedSpinner } from "../components/Feedback";
+import { Loading, ErrorRetryRow, useDelayedSpinner } from "../components/Feedback";
 import {
   FolderIcon,
   StarIcon,
@@ -86,7 +86,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
       setRenaming(false);
     }
   };
-  const [data] = createResource(
+  const [data, { refetch }] = createResource(
     () => ({ id: props.collectionId, tick: tick(), rev: getCollectionsRevision() }),
     async ({ id }) => {
       const [collection, items] = await Promise.all([
@@ -176,8 +176,18 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
       <Show
         when={data() !== undefined}
         fallback={
-          <Show when={showSpinner()}>
-            <Loading />
+          <Show
+            when={data.error !== undefined}
+            fallback={
+              <Show when={showSpinner()}>
+                <Loading />
+              </Show>
+            }
+          >
+            <ErrorRetryRow
+              message={errorMessage(data.error)}
+              onRetry={() => void refetch()}
+            />
           </Show>
         }
       >

@@ -145,7 +145,7 @@ export function ImportModal(props: ImportModalProps) {
     }
   };
 
-  const targetModeOptions: SelectOption[] = [
+  const targetModeOptions = (): SelectOption[] => [
     { value: "auto", label: t("library.importTargetAuto") },
     { value: "followed", label: t("library.importTargetFollowed") },
     { value: "collection", label: t("library.importTargetCollection") },
@@ -178,7 +178,7 @@ export function ImportModal(props: ImportModalProps) {
               <label class="ds-form-label-sm">{t("library.importTargetLabel")}</label>
               <DsSelect
                 value={targetMode()}
-                options={targetModeOptions}
+                options={targetModeOptions()}
                 disabled={importing()}
                 onChange={(val) => {
                   setTargetMode(val as "auto" | "followed" | "collection");

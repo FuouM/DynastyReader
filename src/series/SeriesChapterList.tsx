@@ -59,20 +59,30 @@ function ChapterRow(props: {
     return list;
   };
 
+  const openChapter = (): void => {
+    navigate({
+      view: "reader",
+      seriesPermalink: props.seriesPermalink,
+      chapterPermalink: props.ch.permalink,
+      chapterTitle: props.ch.title,
+      seriesName: props.seriesName,
+      chapterList: props.chapters,
+      startPage: props.prog && props.prog.completed !== 1 ? props.prog.page_index : 0,
+    });
+  };
+
   return (
     <div
       class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
-      onClick={() =>
-        navigate({
-          view: "reader",
-          seriesPermalink: props.seriesPermalink,
-          chapterPermalink: props.ch.permalink,
-          chapterTitle: props.ch.title,
-          seriesName: props.seriesName,
-          chapterList: props.chapters,
-          startPage: props.prog && props.prog.completed !== 1 ? props.prog.page_index : 0,
-        })
-      }
+      role="button"
+      tabIndex={0}
+      onClick={openChapter}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          openChapter();
+        }
+      }}
     >
       <div class="ds-chapter-title ds-inline-flex-center-4">
         <span>{decodeEntities(props.ch.title)}</span>

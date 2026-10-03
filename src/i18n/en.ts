@@ -61,6 +61,15 @@ export const en = {
     closeTabTooltip: "Close tab",
     closeTabMobileTooltip: "{{title}} (hold to close)",
     downloadsInProgressTooltip: "Downloads in progress — click to view in Downloaded tab",
+    sourceSwitcherTooltip: "Switch content source",
+    sourceSwitcherAriaLabel: "Current source: {{provider}}. Click to switch.",
+    offline: "Offline",
+    offlineTooltip: "No network connection. Operating in offline cache mode.",
+  },
+  sourceSwitcher: {
+    title: "Select Content Source",
+    description: "Choose an active provider. Each source operates with its own isolated library, history, and search filters.",
+    activeBadge: "Active",
   },
   bottomNav: {
     browse: "Browse",

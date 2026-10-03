@@ -5,7 +5,8 @@ import { route, navigate, closeSessionMangaTab, isInMangaView, sessionTab } from
 import { title, banner, bannerAction, dismissBanner, actions } from "../stores/topbar";
 import { activeDownloadCount, downloadSpeedBps } from "../stores/download";
 import { formatSpeed, decodeEntities } from "../utils/formatting";
-import { isMobile } from "../stores/platform";
+import { isMobile, isOnline } from "../stores/platform";
+import { activeProvider } from "../stores/provider";
 import { uiScale } from "../stores/ui-scale";
 import { t } from "../i18n";
 import { HistoryNavButtons } from "./HistoryDropdown";
@@ -19,13 +20,21 @@ import {
   Icon,
 } from "./Icon";
 import { Button, SegmentedSwitch } from "./Button";
-
+import type { SettingsSectionId } from "./settings/settings-shared";
+import type { OpenSettingsDetail } from "../hotkeys/GlobalShortcuts";
 const SettingsModal = lazy(() => import("./SettingsModal").then((m) => ({ default: m.SettingsModal })));
 const SourceSwitcherModal = lazy(() => import("./SourceSwitcherModal").then((m) => ({ default: m.SourceSwitcherModal })));
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
+  const [settingsPage, setSettingsPage] = createSignal<"main" | "hotkeys" | "advanced">("main");
+  const [settingsSection, setSettingsSection] = createSignal<SettingsSectionId | undefined>(undefined);
   const [sourceSwitcherOpen, setSourceSwitcherOpen] = createSignal(false);
-  makeEventListener(window, "ds-open-settings", () => setSettingsOpen(true));
+  makeEventListener(window, "ds-open-settings", (ev: Event) => {
+    const custom = ev as CustomEvent<OpenSettingsDetail | undefined>;
+    setSettingsPage(custom.detail?.page ?? "main");
+    setSettingsSection(custom.detail?.section);
+    setSettingsOpen(true);
+  });
   makeEventListener(window, "ds-open-source-switcher", () => setSourceSwitcherOpen(true));
 
   return (
@@ -54,6 +63,22 @@ export function Topbar() {
             ]}
           />
           <HistoryNavButtons />
+          <button
+            type="button"
+            id="ds-provider-pill"
+            class="win-button ds-provider-pill"
+            onClick={() => setSourceSwitcherOpen(true)}
+            title={t("topbar.sourceSwitcherTooltip")}
+            aria-label={t("topbar.sourceSwitcherAriaLabel", {
+              provider: activeProvider() === "mangadex" ? "MangaDex" : "Dynasty Scans",
+            })}
+            aria-haspopup="dialog"
+          >
+            <span class="ds-provider-pill-name">
+              {activeProvider() === "mangadex" ? "MangaDex" : "Dynasty"}
+            </span>
+            <Icon name="chevron-down" class="ds-provider-pill-chevron" />
+          </button>
           <Show when={sessionTab()}>
             {(tab) => (
               <button
@@ -84,6 +109,17 @@ export function Topbar() {
               <div id="ds-actions">{actions()}</div>
             </Show>
             <div id="ds-topbar-tools">
+              <Show when={!isOnline()}>
+                <span
+                  class="win-button ds-offline-pill"
+                  id="ds-topbar-offline-pill"
+                  title={t("topbar.offlineTooltip")}
+                  aria-label={t("topbar.offlineTooltip")}
+                >
+                  <Icon name="wifi-off" />
+                  <span class="ds-offline-text">{t("topbar.offline")}</span>
+                </span>
+              </Show>
               <Show when={activeDownloadCount() > 0}>
                 <button
                   type="button"
@@ -113,7 +149,11 @@ export function Topbar() {
                 id="ds-settings-btn"
                 icon={<SettingsIcon />}
                 title={t("topbar.settingsTooltip")}
-                onClick={() => setSettingsOpen(true)}
+                onClick={() => {
+                  setSettingsPage("main");
+                  setSettingsSection(undefined);
+                  setSettingsOpen(true);
+                }}
               />
             </div>
           </div>
@@ -121,7 +161,12 @@ export function Topbar() {
       </div>
       <Show when={settingsOpen()}>
         <Suspense>
-          <SettingsModal open={settingsOpen()} onClose={() => setSettingsOpen(false)} />
+          <SettingsModal
+            open={settingsOpen()}
+            onClose={() => setSettingsOpen(false)}
+            initialPage={settingsPage()}
+            initialSection={settingsSection()}
+          />
         </Suspense>
       </Show>
       <Show when={sourceSwitcherOpen()}>
@@ -133,6 +178,8 @@ export function Topbar() {
         <Portal mount={document.body}>
           <div
             id="ds-banner"
+            role="status"
+            aria-live="polite"
             classList={{ "ds-banner--mobile": isMobile(), "ds-banner--clickable": !!bannerAction() }}
             style={{
               ...(uiScale() !== 1.0 ? { zoom: String(uiScale()) } : {}),

@@ -22,9 +22,9 @@ export function HotkeyCheatsheetModal() {
   const readerShortcuts = HOTKEY_DEFINITIONS.filter((d) => d.scope === "reader");
   const globalShortcuts = HOTKEY_DEFINITIONS.filter((d) => d.scope === "global");
 
-  const handleOpenCustomizer = () => {
+  const handleOpenCustomizer = (): void => {
     setOpen(false);
-    openSettingsDialog();
+    openSettingsDialog({ page: "hotkeys", section: "hotkeys" });
   };
 
   return (

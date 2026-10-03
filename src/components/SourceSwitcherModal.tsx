@@ -9,7 +9,7 @@ import { Modal } from "./Modal";
 import { CheckIcon } from "./Icon";
 import { activeProvider, PROVIDERS, type ContentProvider } from "../stores/provider";
 import { switchProvider } from "../stores/router";
-
+import { t } from "../i18n";
 export interface SourceSwitcherModalProps {
   open: boolean;
   onClose: () => void;
@@ -25,26 +25,49 @@ export function SourceSwitcherModal(props: SourceSwitcherModalProps) {
     props.onClose();
   };
 
+  const handleKeyDown = (ev: KeyboardEvent, index: number, list: Array<{ id: ContentProvider }>): void => {
+    if (ev.key === "ArrowDown" || ev.key === "ArrowRight") {
+      ev.preventDefault();
+      const nextIndex = (index + 1) % list.length;
+      const nextBtn = document.getElementById(`ds-source-option-${list[nextIndex].id}`);
+      nextBtn?.focus();
+    } else if (ev.key === "ArrowUp" || ev.key === "ArrowLeft") {
+      ev.preventDefault();
+      const prevIndex = (index - 1 + list.length) % list.length;
+      const prevBtn = document.getElementById(`ds-source-option-${list[prevIndex].id}`);
+      prevBtn?.focus();
+    }
+  };
+
   return (
     <Modal
       open={props.open}
       onClose={props.onClose}
-      title="Select Content Source"
+      title={t("sourceSwitcher.title")}
       width={460}
     >
-      <div style="display: flex; flex-direction: column; gap: 10px; padding: 4px 0;">
+      <div
+        role="radiogroup"
+        aria-label={t("sourceSwitcher.title")}
+        style="display: flex; flex-direction: column; gap: 10px; padding: 4px 0;"
+      >
         <div class="ds-muted" style="font-size: 12px; margin-bottom: 4px;">
-          Choose an active provider. Each source operates with its own isolated library, history, and search filters.
+          {t("sourceSwitcher.description")}
         </div>
         <For each={providersList()}>
-          {(p) => {
+          {(p, i) => {
             const isSelected = () => activeProvider() === p.id;
             return (
-              <div
+              <button
+                type="button"
+                role="radio"
+                id={`ds-source-option-${p.id}`}
                 class="win-button"
                 classList={{ "win-button--active": isSelected() }}
-                style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; text-align: left;"
+                aria-checked={isSelected()}
+                style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; text-align: left; width: 100%; border: 1px solid var(--sys-button-border, #ccc);"
                 onClick={() => handleSelect(p.id)}
+                onKeyDown={(ev) => handleKeyDown(ev, i(), providersList())}
               >
                 <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -65,7 +88,7 @@ export function SourceSwitcherModal(props: SourceSwitcherModalProps) {
                     <CheckIcon size={16} />
                   </div>
                 </Show>
-              </div>
+              </button>
             );
           }}
         </For>

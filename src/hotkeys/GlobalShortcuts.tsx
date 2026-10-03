@@ -7,11 +7,16 @@ import { makeEventListener } from "@solid-primitives/event-listener";
 import { canGoBack, canGoForward, goBack, goForward, navigate, sessionTab, closeSessionMangaTab } from "../stores/router";
 import { toggleTheme } from "../stores/theme";
 import { consumeHotkeyEvent, isHotkeyEventConsumed, isTextInputTarget, matchesHotkey } from "./hotkeys-store";
+import type { SettingsSectionId } from "../components/settings/settings-shared";
 
-export function openSettingsDialog(): void {
-  window.dispatchEvent(new CustomEvent("ds-open-settings"));
+export interface OpenSettingsDetail {
+  page?: "main" | "hotkeys" | "advanced";
+  section?: SettingsSectionId;
 }
 
+export function openSettingsDialog(detail?: OpenSettingsDetail): void {
+  window.dispatchEvent(new CustomEvent("ds-open-settings", { detail }));
+}
 export function GlobalShortcuts() {
   const onKeyDown = (ev: KeyboardEvent): void => {
     // Ignore if user is currently typing in an input or textarea

@@ -51,7 +51,7 @@ import { useLibraryPaneResource, type LibraryPaneProps } from "./useLibraryPaneR
 import { useBulkSelection } from "../hooks/useBulkSelection";
 import { Button, ConfirmDeleteButton } from "../components/Button";
 import { FolderIcon, TrashIcon, BookmarkIcon, Icon } from "../components/Icon";
-
+import { ErrorRetryRow } from "../components/Feedback";
 // ── 1. Collections Pane ──────────────────────────────────────────────────────
 
 export interface CollectionsPaneProps extends LibraryPaneProps {
@@ -61,12 +61,11 @@ export interface CollectionsPaneProps extends LibraryPaneProps {
 }
 
 export function CollectionsPane(props: CollectionsPaneProps) {
-  const { data, refetch, showSpinner } = useLibraryPaneResource({
+  const { data, refetch, showSpinner, error } = useLibraryPaneResource({
     getRevision: getCollectionsRevision,
     fetcher: async () => getCollections(),
     register: props.register,
   });
-
   const openDetail = (col: CollectionRow): void => {
     props.onOpenDetail(col.id);
   };
@@ -74,7 +73,17 @@ export function CollectionsPane(props: CollectionsPaneProps) {
   return (
     <Show
       when={data() !== undefined}
-      fallback={<Show when={showSpinner()}><Loading /></Show>}
+      fallback={
+        <Show
+          when={error() !== undefined}
+          fallback={<Show when={showSpinner()}><Loading /></Show>}
+        >
+          <ErrorRetryRow
+            message={errorMessage(error())}
+            onRetry={() => void refetch()}
+          />
+        </Show>
+      }
     >
       <Show
         when={data()!.length > 0}
@@ -139,7 +148,7 @@ export interface BookmarksPaneProps extends LibraryPaneProps {
 }
 
 export function BookmarksPane(props: BookmarksPaneProps) {
-  const { setPage, data, refetch, showSpinner } = useLibraryPaneResource<BookmarksPaneData>({
+  const { setPage, data, refetch, showSpinner, error } = useLibraryPaneResource<BookmarksPaneData>({
     getRevision: getBookmarksRevision,
     fetcher: async (p) => {
       const provider = activeProvider();
@@ -150,7 +159,6 @@ export function BookmarksPane(props: BookmarksPaneProps) {
     },
     register: props.register,
   });
-
   const { selectMode, selected, toggleSelectMode, toggleRow, deleteSelected, isAllSelected, toggleSelectAll } =
     useBulkSelection<string>(removeBookmarksBatch, refetch);
 
@@ -159,7 +167,17 @@ export function BookmarksPane(props: BookmarksPaneProps) {
     <>
       <Show
         when={data() !== undefined}
-        fallback={<Show when={showSpinner()}><Loading /></Show>}
+        fallback={
+          <Show
+            when={error() !== undefined}
+            fallback={<Show when={showSpinner()}><Loading /></Show>}
+          >
+            <ErrorRetryRow
+              message={errorMessage(error())}
+              onRetry={() => void refetch()}
+            />
+          </Show>
+        }
       >
         <Show
           when={data()!.res.rows.length > 0}
@@ -246,17 +264,26 @@ export function BookmarksPane(props: BookmarksPaneProps) {
 // ── 3. Followed Series Pane ──────────────────────────────────────────────────
 
 export function FollowedPane(props: LibraryPaneProps) {
-  const { setPage, data, refetch, showSpinner } = useLibraryPaneResource({
+  const { setPage, data, refetch, showSpinner, error } = useLibraryPaneResource({
     getRevision: getFollowedRevision,
     fetcher: (p) => getFollowedSeriesPage(p, 10, activeProvider()),
     register: props.register,
   });
-
   return (
     <>
       <Show
         when={data() !== undefined}
-        fallback={<Show when={showSpinner()}><Loading /></Show>}
+        fallback={
+          <Show
+            when={error() !== undefined}
+            fallback={<Show when={showSpinner()}><Loading /></Show>}
+          >
+            <ErrorRetryRow
+              message={errorMessage(error())}
+              onRetry={() => void refetch()}
+            />
+          </Show>
+        }
       >
         <Show
           when={data()!.rows.length > 0}
@@ -385,7 +412,7 @@ export interface HistoryPaneProps extends LibraryPaneProps {
 }
 
 export function HistoryPane(props: HistoryPaneProps) {
-  const { setPage, data, refetch, showSpinner } = useLibraryPaneResource<HistoryPaneData>({
+  const { setPage, data, refetch, showSpinner, error } = useLibraryPaneResource<HistoryPaneData>({
     getRevision: () => getHistoryRevision() + getProgressRevision(),
     fetcher: async (p) => {
       const provider = activeProvider();
@@ -396,7 +423,6 @@ export function HistoryPane(props: HistoryPaneProps) {
     },
     register: props.register,
   });
-
   const { selectMode, selected, toggleSelectMode, toggleRow, deleteSelected, isAllSelected, toggleSelectAll } =
     useBulkSelection<number>(removeHistoryBatch, refetch);
 
@@ -405,7 +431,17 @@ export function HistoryPane(props: HistoryPaneProps) {
     <>
       <Show
         when={data() !== undefined}
-        fallback={<Show when={showSpinner()}><Loading /></Show>}
+        fallback={
+          <Show
+            when={error() !== undefined}
+            fallback={<Show when={showSpinner()}><Loading /></Show>}
+          >
+            <ErrorRetryRow
+              message={errorMessage(error())}
+              onRetry={() => void refetch()}
+            />
+          </Show>
+        }
       >
         <Show
           when={data()!.res.rows.length > 0}

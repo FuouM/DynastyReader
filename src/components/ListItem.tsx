@@ -47,7 +47,19 @@ export function ListItem(props: ListItemProps) {
         "ds-item-followed": !!props.followed,
       }}
       style={props.cssText}
+      role={props.onClick ? "button" : undefined}
+      tabIndex={props.onClick ? 0 : undefined}
       onClick={props.onClick}
+      onKeyDown={
+        props.onClick
+          ? (ev) => {
+              if (ev.target === ev.currentTarget && (ev.key === "Enter" || ev.key === " ")) {
+                ev.preventDefault();
+                props.onClick?.();
+              }
+            }
+          : undefined
+      }
     >
       <Show when={props.followed}>
         <div

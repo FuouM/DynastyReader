@@ -196,7 +196,7 @@ export function ExportModal(props: ExportModalProps) {
     return opts;
   };
 
-  const formatOptions: SelectOption[] = [
+  const formatOptions = (): SelectOption[] => [
     { value: "json-pretty", label: t("library.exportFormatJsonPretty") },
     { value: "json-compact", label: t("library.exportFormatJsonCompact") },
     { value: "text", label: t("library.exportFormatText") },
@@ -235,7 +235,7 @@ export function ExportModal(props: ExportModalProps) {
               <label class="ds-form-label-sm">{t("library.exportFormatLabel")}</label>
               <DsSelect
                 value={format()}
-                options={formatOptions}
+                options={formatOptions()}
                 disabled={loading()}
                 onChange={(val) => setFormat(val as ExportFormat)}
               />

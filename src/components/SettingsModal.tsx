@@ -27,6 +27,8 @@ import { AboutSettings } from "./settings/AboutSettings";
 export interface SettingsModalProps {
   open: boolean;
   onClose: () => void;
+  initialPage?: "main" | "hotkeys" | "advanced";
+  initialSection?: SettingsSectionId;
 }
 
 export function SettingsModal(props: SettingsModalProps) {
@@ -42,8 +44,8 @@ export function SettingsModal(props: SettingsModalProps) {
       setCurrentPage("main");
       return;
     }
-    setActiveSection("display");
-    setCurrentPage("main");
+    setActiveSection(props.initialSection ?? "display");
+    setCurrentPage(props.initialPage ?? "main");
   });
 
   const scrollToSection = (id: SettingsSectionId): void => {

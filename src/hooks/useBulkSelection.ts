@@ -1,3 +1,5 @@
+import { showBanner } from "../stores/topbar";
+import { errorMessage } from "../utils/formatting";
 import { createSignal } from "solid-js";
 
 /**
@@ -47,10 +49,14 @@ export function useBulkSelection<T>(
   const deleteSelected = async (): Promise<void> => {
     const items = [...selected()];
     if (items.length === 0) return;
-    await onDelete(items);
-    setSelected(new Set<T>());
-    setSelectMode(false);
-    onDeleted?.();
+    try {
+      await onDelete(items);
+      setSelected(new Set<T>());
+      setSelectMode(false);
+      onDeleted?.();
+    } catch (err) {
+      showBanner(errorMessage(err));
+    }
   };
   return {
     selectMode,
