@@ -283,13 +283,19 @@ const MIGRATIONS: Migration[] = [
         const rows = await query<{ cache_key: string; json_payload: string }>(
           `SELECT cache_key, json_payload FROM cached_metadata WHERE cache_key LIKE 'dir:%'`,
         );
-        const { saveDirectoryEntries } = await import("./directory.repo");
+        const insertSql =
+          "INSERT INTO directory_entries (kind, letter, permalink, name, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(kind, permalink) DO UPDATE SET letter = excluded.letter, name = excluded.name, updated_at = excluded.updated_at";
+        const now = Date.now();
         for (const row of rows) {
           const kind = row.cache_key.startsWith("dir:series") ? "series" : "tags";
           try {
             const parsed = JSON.parse(row.json_payload);
             const groups = directoryGroups(parsed);
-            await saveDirectoryEntries(kind, groups);
+            for (const group of groups) {
+              for (const entry of group.entries) {
+                await execute(insertSql, [kind, group.letter, entry.permalink, entry.name, now]);
+              }
+            }
           } catch (rowErr) {
             log.warn("db/schema", `failed to backfill directory row "${row.cache_key}":`, rowErr);
           }

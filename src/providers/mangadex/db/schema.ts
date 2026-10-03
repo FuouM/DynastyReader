@@ -3,7 +3,7 @@
  * Operates on isolated mangadex.db via client.ts.
  */
 
-import { execute } from "./client";
+import { execute, query } from "./client";
 import { query as dynastyQuery, execute as dynastyExecute } from "../../../db/client";
 import type { CachedMetadataRow } from "../../../types/db";
 import { log } from "../../../utils/log";
@@ -93,6 +93,41 @@ async function migrateLegacyMdxMetadata(): Promise<void> {
   }
 }
 
+export const MANGADEX_SCHEMA_VERSION = 1;
+
+export async function getMangaDexSchemaVersion(): Promise<number> {
+  try {
+    const rows = await query<{ user_version: number }>("PRAGMA user_version");
+    return Number(rows[0]?.user_version ?? 0);
+  } catch (err) {
+    log.error("mangadex-db", "failed to read user_version:", err);
+    return 0;
+  }
+}
+
+async function setMangaDexSchemaVersion(version: number): Promise<void> {
+  await execute(`PRAGMA user_version = ${Math.floor(version)}`);
+}
+
+interface MangaDexMigration {
+  version: number;
+  name: string;
+  up: () => Promise<void>;
+}
+
+const MANGADEX_MIGRATIONS: MangaDexMigration[] = [
+  {
+    version: 1,
+    name: "baseline schema and legacy metadata migration",
+    up: async () => {
+      for (const ddl of SCHEMA) {
+        await execute(ddl);
+      }
+      await migrateLegacyMdxMetadata();
+    },
+  },
+];
+
 let initPromise: Promise<void> | null = null;
 
 /**
@@ -102,12 +137,23 @@ export function initMangaDexDb(): Promise<void> {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    log.info("mangadex-db", "Initializing mangadex.db schema...");
-    for (const ddl of SCHEMA) {
-      await execute(ddl);
+    try {
+      const current = await getMangaDexSchemaVersion();
+      if (current < MANGADEX_SCHEMA_VERSION) {
+        log.info("mangadex-db", `Current mangadex.db version: ${current}, migrating to ${MANGADEX_SCHEMA_VERSION}...`);
+        for (const migration of MANGADEX_MIGRATIONS) {
+          if (migration.version <= current) continue;
+          log.debug("mangadex-db", `Applying mangadex.db migration v${migration.version}: ${migration.name}`);
+          await migration.up();
+          await setMangaDexSchemaVersion(migration.version);
+        }
+      }
+      log.info("mangadex-db", "mangadex.db schema initialization complete.");
+    } catch (err) {
+      initPromise = null;
+      log.error("mangadex-db", "initMangaDexDb failed:", err);
+      throw err;
     }
-    await migrateLegacyMdxMetadata();
-    log.info("mangadex-db", "mangadex.db schema initialization complete.");
   })();
 
   return initPromise;

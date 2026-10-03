@@ -46,7 +46,9 @@ export interface CachedChapterContext {
 
 /** Raw `GROUP BY chapter_permalink` aggregate over cached_pages. */
 async function groupCachedPages(limit?: number): Promise<ChapterAggRow[]> {
-  const limitClause = limit !== undefined ? ` LIMIT ${limit}` : "";
+  const safeLimit = typeof limit === "number" && Number.isFinite(limit) && limit >= 0 ? Math.floor(limit) : undefined;
+  const limitClause = safeLimit !== undefined ? " LIMIT ?1" : "";
+  const params = safeLimit !== undefined ? [safeLimit] : [];
   const rows = await query<{
     chapter_permalink: string;
     page_count: number;
@@ -58,6 +60,7 @@ async function groupCachedPages(limit?: number): Promise<ChapterAggRow[]> {
      WHERE chapter_permalink NOT LIKE 'local:%'
      GROUP BY chapter_permalink
      ORDER BY last_cached DESC${limitClause}`,
+    params,
   );
   return rows.map((r) => ({
     chapterPermalink: r.chapter_permalink,

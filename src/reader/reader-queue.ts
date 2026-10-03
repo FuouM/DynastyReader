@@ -16,6 +16,7 @@ export type SlotStateKind = "spinner" | "offline" | "error" | "idle";
  */
 export interface ReaderQueueHost {
   readonly pages: () => ChapterPage[];
+  readonly setPages?: (v: ChapterPage[]) => void;
   readonly permalink: string;
   readonly seriesPermalink: () => string | null;
   readonly currentIndex: () => number;
@@ -129,7 +130,7 @@ export class ReaderQueue {
     }
   }
 
-  private async downloadPage(index: number): Promise<void> {
+  private async downloadPage(index: number, isRetry = false): Promise<void> {
     const c = this.c;
     const pages = c.pages();
     const page = pages[index];
@@ -188,22 +189,30 @@ export class ReaderQueue {
         const newServer = await refreshMangaDexNode(chapterId);
         if (newServer) {
           const currentPages = c.pages();
-          for (let i = 0; i < currentPages.length; i++) {
+          const updatedPages = currentPages.map((p, i) => {
             if (c.getCachedPath(i) === undefined) {
-              const oldUrl = currentPages[i].url;
               try {
-                const u = new URL(oldUrl);
+                const u = new URL(p.url);
                 const newU = new URL(newServer.baseUrl);
                 u.protocol = newU.protocol;
                 u.host = newU.host;
                 u.port = newU.port;
-                currentPages[i].url = u.toString();
-              } catch {}
+                return { ...p, url: u.toString() };
+              } catch {
+                return p;
+              }
             }
+            return p;
+          });
+          if (c.setPages) {
+            c.setPages(updatedPages);
+          }
+
+          if (!isRetry && !c.disposed) {
+            return this.downloadPage(index, true);
           }
         }
       }
-
       this.failed.add(index);
       const msg = errorMessage(err);
       c.setSlotState(index, "error", t("reader.session.slotState.downloadFailed", { msg }));
