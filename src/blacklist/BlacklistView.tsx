@@ -8,7 +8,7 @@ import { createEffect, createMemo, createResource, createSignal, For, Show } fro
 import { navigate } from "../stores/router";
 import { setActions, showBanner } from "../stores/topbar";
 import { activeProvider } from "../stores/provider";
-import { decodeEntities, formatDate, dynastyUrl, errorMessage } from "../utils/formatting";
+import { decodeEntities, formatDate, canonicalUrl, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
 import { getBlacklistMode, getBlacklistedSeries, removeBlacklistedSeries, setBlacklistMode } from "../db/blacklist.repo";
 import type { BlacklistedSeries, BlacklistMode } from "../types/blacklist";
@@ -223,7 +223,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                         <ExternalLinkButton
                           className="ds-btn-icon"
                           title={t("blacklist.openOnDynastyTooltip")}
-                          url={dynastyUrl("series", item.series_permalink)}
+                          url={canonicalUrl("series", item.series_permalink)}
                         />
                         <Button
                           icon={<TrashIcon />}

@@ -17,7 +17,7 @@ import {
   type Accessor,
   type JSX,
 } from "solid-js";
-import { extractVolumeHeader, decodeEntities, dynastyUrl, errorMessage } from "../utils/formatting";
+import { extractVolumeHeader, decodeEntities, canonicalUrl, errorMessage } from "../utils/formatting";
 import { isMobile } from "../stores/platform";
 import { navigate, route, setSessionTab } from "../stores/router";
 import { setActions, setTitle, showBanner } from "../stores/topbar";
@@ -275,9 +275,7 @@ export function SeriesView() {
     const { series, coverPath } = d;
     const seriesPermalink = series.permalink;
     const seriesName = series.name;
-    const openUrl = series.permalink.startsWith("mdx:")
-      ? `https://mangadex.org/title/${series.permalink.replace(/^mdx:/, "")}`
-      : dynastyUrl(seriesTypeToPath(series.type), encodeURIComponent(seriesPermalink));
+    const openUrl = canonicalUrl(seriesTypeToPath(series.type), encodeURIComponent(seriesPermalink));
 
     setTitle(decodeEntities(seriesName));
     setSessionTab((current) => {
@@ -538,7 +536,7 @@ export function SeriesView() {
             onToggleBlacklist={() => void handleToggleBlacklist()}
             onRefresh={() => setForceTick((t) => t + 1)}
             onOpenAddToCol={handleOpenAddToCol}
-            openUrl={data()!.series.link || (data()!.series.type === "local" ? "" : dynastyUrl(seriesTypeToPath(data()!.series.type), encodeURIComponent(data()!.series.permalink)))}
+            openUrl={data()!.series.link || canonicalUrl(seriesTypeToPath(data()!.series.type), data()!.series.permalink)}
             seriesType={data()!.series.type}
             onDownloadAll={data()!.series.type === "local" ? undefined : () => void handleDownloadAll()}
           />

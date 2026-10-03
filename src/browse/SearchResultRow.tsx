@@ -5,7 +5,7 @@
 
 import { Show } from "solid-js";
 import { navigate } from "../stores/router";
-import { decodeEntities, dynastyUrl } from "../utils/formatting";
+import { decodeEntities, canonicalUrl } from "../utils/formatting";
 import { isContentKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { ListItem } from "../components/ListItem";
@@ -140,7 +140,7 @@ function TaxonomicRow(props: { row: SearchRow; blMode: BlacklistMode }) {
         <ExternalLinkButton
           className="ds-btn-icon"
           title={t("browse.search.openExternalTooltip", { kind: item().kind, title: decodeEntities(item().title) })}
-          url={dynastyUrl(seriesTypeToPath(item().kind), item().permalink)}
+          url={canonicalUrl(seriesTypeToPath(item().kind), item().permalink)}
         />
       }
     />

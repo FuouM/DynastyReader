@@ -95,6 +95,19 @@ export function dynastyUrl(path: string, permalink: string): string {
   return `${SITE_ROOT}/${path}/${permalink}`;
 }
 
+/**
+ * Constructs the canonical public web URL for an entity (Dynasty Scans, MangaDex, or empty for local).
+ */
+export function canonicalUrl(path: string, permalink: string): string {
+  if (!permalink || permalink.startsWith("local:")) return "";
+  if (permalink.startsWith("mdx:")) {
+    const id = permalink.slice(4);
+    const isChapter = path === "chapters" || path === "chapter";
+    return `https://mangadex.org/${isChapter ? "chapter" : "title"}/${id}`;
+  }
+  return dynastyUrl(path, permalink);
+}
+
 /** Parses JSON text; logs and returns null on failure (never throws). */
 export function tryParseJson<T>(text: string): T | null {
   try {

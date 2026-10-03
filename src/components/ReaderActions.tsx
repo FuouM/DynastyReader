@@ -9,7 +9,7 @@ import { debounce } from "@solid-primitives/scheduled";
 import { navigate, closeSessionMangaTab } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
-import { errorMessage, dynastyUrl } from "../utils/formatting";
+import { errorMessage, canonicalUrl } from "../utils/formatting";
 import { addBookmark, removeBookmark } from "../db/library.repo";
 import { openExternal } from "../api/navigation";
 import type { ChapterPage } from "../types/api";
@@ -68,7 +68,7 @@ export function ReaderActions(props: ReaderActionsProps) {
 
   const resetCopied = debounce(() => setCopied(false), 2000);
 
-  const chapterUrl = () => dynastyUrl("chapters", props.ctrl.permalink);
+  const chapterUrl = () => canonicalUrl("chapters", props.ctrl.permalink);
 
   const toggleBookmark = async () => {
     if (pending()) return;

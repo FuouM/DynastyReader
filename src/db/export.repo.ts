@@ -1,5 +1,5 @@
 import { query } from "./client";
-import { dynastyUrl, decodeEntities } from "../utils/formatting";
+import { canonicalUrl, decodeEntities } from "../utils/formatting";
 import { itemKindToPath } from "../taxonomy";
 import { activeProvider } from "../stores/provider";
 import { getAllMdxBookmarks } from "../providers/mangadex/db/bookmarks.repo";
@@ -107,7 +107,7 @@ async function getAllFollowedSeries(): Promise<ExportFollowedItem[]> {
   return rows.map((r) => ({
     name: decodeEntities(r.name),
     permalink: r.permalink,
-    url: r.permalink.startsWith("local:") ? "" : dynastyUrl("series", r.permalink),
+    url: canonicalUrl("series", r.permalink),
     cover: r.cover ?? null,
     followedAt: Number(r.created_at),
     latestChapterTitle: r.latest_chapter_title ? decodeEntities(r.latest_chapter_title) : null,
@@ -185,7 +185,7 @@ async function getAllCollections(collectionIds?: number | number[]): Promise<Exp
       title: decodeEntities(item.item_title),
       permalink: item.item_permalink,
       kind: item.item_kind,
-      url: item.item_permalink.startsWith("local:") ? "" : dynastyUrl(path, item.item_permalink),
+      url: canonicalUrl(path, item.item_permalink),
       cover: item.cover ?? null,
       parentSeriesName: item.parent_series_name ? decodeEntities(item.parent_series_name) : null,
       parentSeriesPermalink: item.parent_series_permalink ?? null,
@@ -241,7 +241,7 @@ async function getAllBookmarks(): Promise<ExportBookmarkItem[]> {
     seriesName: r.series_name ? decodeEntities(r.series_name) : null,
     seriesPermalink: r.series_permalink,
     pageIndex: r.page_index,
-    url: r.chapter_permalink.startsWith("local:") ? "" : dynastyUrl("chapters", r.chapter_permalink),
+    url: canonicalUrl("chapters", r.chapter_permalink),
     bookmarkedAt: Number(r.created_at),
   }));
 }

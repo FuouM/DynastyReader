@@ -23,7 +23,7 @@ import {
   clearHistory as clearMdxHistory,
   recordHistory,
 } from "../providers/mangadex/db/history.repo";
-import { getMdxBookmarks, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
+import { getMdxBookmarks, getMdxBookmark, addMdxBookmark, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
 import {
   getMangaReadingProgress,
   saveReadingProgress,
@@ -525,6 +525,18 @@ export async function getBookmarksPage(page = 1, pageSize = 15): Promise<Bookmar
 }
 
 export async function getBookmark(chapterPermalink: string): Promise<BookmarkRow | null> {
+  if (chapterPermalink.startsWith("mdx:")) {
+    const row = await getMdxBookmark(chapterPermalink.replace(/^mdx:/, ""));
+    if (!row) return null;
+    return {
+      chapter_permalink: `mdx:${row.chapter_id}`,
+      series_permalink: row.manga_id ? `mdx:${row.manga_id}` : "",
+      series_name: row.manga_title,
+      chapter_title: row.chapter_title,
+      page_index: row.page_index,
+      created_at: row.created_at,
+    };
+  }
   const rows = await query<BookmarkRow>(
     `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
             page_index, created_at
@@ -551,6 +563,17 @@ export async function addBookmark(p: {
   chapterTitle: string;
   pageIndex: number;
 }): Promise<void> {
+  if (p.chapterPermalink.startsWith("mdx:")) {
+    await addMdxBookmark({
+      chapterId: p.chapterPermalink.replace(/^mdx:/, ""),
+      mangaId: p.seriesPermalink.replace(/^mdx:/, ""),
+      mangaTitle: p.seriesName,
+      chapterTitle: p.chapterTitle,
+      pageIndex: p.pageIndex,
+    });
+    notifyBookmarksChanged();
+    return;
+  }
   await execute(
     `INSERT INTO bookmarks (chapter_permalink, series_permalink, series_name,
        chapter_title, page_index, created_at)

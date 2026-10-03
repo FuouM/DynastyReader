@@ -10,7 +10,7 @@ import { createEffect, createSignal, For, Show } from "solid-js";
 import { navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { activeProvider } from "../stores/provider";
-import { decodeEntities, formatDate, dynastyUrl, errorMessage } from "../utils/formatting";
+import { decodeEntities, formatDate, canonicalUrl, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
 import { getOrHydrateSeriesCover } from "../api/series";
 import {
@@ -224,11 +224,7 @@ export function BookmarksPane(props: BookmarksPaneProps) {
                     startPage: row.page_index,
                   })
                 }
-                externalUrl={
-                  row.chapter_permalink.startsWith("mdx:")
-                    ? `https://mangadex.org/chapter/${row.chapter_permalink.replace(/^mdx:/, "")}`
-                    : dynastyUrl("chapters", row.chapter_permalink)
-                }
+                externalUrl={canonicalUrl("chapters", row.chapter_permalink)}
                 selectionMode={selectMode()}
                 selected={selected().has(row.chapter_permalink)}
                 onToggleSelect={() => toggleRow(row.chapter_permalink)}
@@ -367,11 +363,7 @@ function FollowedSeriesRowCard(props: {
       actionIcon="bi-folder2-open"
       playTitle={t("library.continueReading")}
       onPlay={props.row.latest_chapter_permalink ? continueReading : undefined}
-      externalUrl={
-        props.row.permalink.startsWith("mdx:")
-          ? `https://mangadex.org/title/${props.row.permalink.replace(/^mdx:/, "")}`
-          : dynastyUrl("series", props.row.permalink)
-      }
+      externalUrl={canonicalUrl("series", props.row.permalink)}
       deleteTitle={t("library.unfollowTooltip")}
       onDelete={async () => {
         try {
@@ -486,11 +478,7 @@ export function HistoryPane(props: HistoryPaneProps) {
                     seriesName: row.series_name,
                   })
                 }
-                externalUrl={
-                  row.chapter_permalink.startsWith("mdx:")
-                    ? `https://mangadex.org/chapter/${row.chapter_permalink.replace(/^mdx:/, "")}`
-                    : dynastyUrl("chapters", row.chapter_permalink)
-                }
+                externalUrl={canonicalUrl("chapters", row.chapter_permalink)}
                 selectionMode={selectMode()}
                 selected={selected().has(row.id)}
                 onToggleSelect={() => toggleRow(row.id)}

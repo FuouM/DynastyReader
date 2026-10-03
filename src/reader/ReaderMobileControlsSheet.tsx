@@ -10,7 +10,7 @@ import { theme, setTheme } from "../stores/theme";
 import { isMobile } from "../stores/platform";
 import { navigate } from "../stores/router";
 import { openExternal } from "../api/navigation";
-import { dynastyUrl } from "../utils/formatting";
+import { canonicalUrl } from "../utils/formatting";
 import { t } from "../i18n";
 import {
   getPrevChapterStartPage,
@@ -50,7 +50,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   const [mounted, setMounted] = createSignal(false);
   const [closing, setClosing] = createSignal(false);
   const { copied, handleCopyLink } = useCopyLink({
-    getUrl: () => dynastyUrl("chapters", s.permalink),
+    getUrl: () => canonicalUrl("chapters", s.permalink),
     namespace: "mobile-controls",
     showBanners: true,
   });
@@ -355,7 +355,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   icon={<ExternalLinkIcon />}
                   text={t("reader.toolbar.openInBrowserShort")}
                   cssText="height:32px;font-size:11.5px;justify-content:center;"
-                  onClick={() => void openExternal(dynastyUrl("chapters", s.permalink))}
+                  onClick={() => void openExternal(canonicalUrl("chapters", s.permalink))}
                 />
               </div>
             </div>

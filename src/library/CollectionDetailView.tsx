@@ -13,7 +13,7 @@ import {
 } from "solid-js";
 import { navigate } from "../stores/router";
 import { setActions, setTitle, showBanner } from "../stores/topbar";
-import { decodeEntities, formatDate, dynastyUrl, errorMessage } from "../utils/formatting";
+import { decodeEntities, formatDate, canonicalUrl, errorMessage } from "../utils/formatting";
 import { seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api/series";
@@ -388,11 +388,7 @@ function CollectionItemCard(props: {
       onCoverRetry={handleCoverError}
       actionLabel={isChapterLike() ? t("common.read") : t("common.open")}
       actionIcon={isChapterLike() ? "bi-book" : "bi-folder2-open"}
-      externalUrl={
-        props.it.item_permalink.startsWith("mdx:")
-          ? `https://mangadex.org/${isChapterLike() ? "chapter" : "title"}/${props.it.item_permalink.replace(/^mdx:/, "")}`
-          : dynastyUrl(endpoint(), props.it.item_permalink)
-      }
+      externalUrl={canonicalUrl(endpoint(), props.it.item_permalink)}
       deleteTitle={t("library.removeFromCollectionTooltip")}
       onDelete={async () => {
         await removeItemFromCollection(props.collectionId, props.it.item_permalink);

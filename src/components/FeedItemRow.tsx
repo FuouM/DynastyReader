@@ -14,7 +14,7 @@
 import { createEffect, createSignal, onMount, Show, type JSX } from "solid-js";
 import { navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
-import { decodeEntities, errorMessage, slugify, dynastyUrl } from "../utils/formatting";
+import { decodeEntities, errorMessage, slugify, canonicalUrl } from "../utils/formatting";
 import { categorizeChapterTags, isSeriesKind, seriesTypeToPath, getChapterContainerTag, isDoujinTag } from "../taxonomy";
 import { t } from "../i18n";
 import { addBookmark, getBookmark, removeBookmark } from "../db/library.repo";
@@ -104,7 +104,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
   const externalUrl = (): string => {
     if (ch.url) return ch.url;
     const path = isSeriesKind(ch.kind) ? seriesTypeToPath(ch.kind) : "chapters";
-    return dynastyUrl(path, ch.permalink);
+    return canonicalUrl(path, ch.permalink);
   };
   const { copied, handleCopyLink } = useCopyLink({
     getUrl: externalUrl,
