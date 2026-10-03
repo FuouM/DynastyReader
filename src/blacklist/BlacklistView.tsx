@@ -5,7 +5,7 @@
  */
 
 import { createEffect, createMemo, createResource, createSignal, For, Show } from "solid-js";
-import { navigate } from "../stores/router";
+import { navigate, canGoBack, goBack } from "../stores/router";
 import { setActions, showBanner } from "../stores/topbar";
 import { activeProvider } from "../stores/provider";
 import { decodeEntities, formatDate, canonicalUrl, errorMessage } from "../utils/formatting";
@@ -108,13 +108,18 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
     if (data() === undefined) return;
     setActions(
       <BackRefreshActions
-        backLabel={t("blacklist.backToLibrary")}
-        onBack={() => navigate({ view: "library" })}
+        backLabel={canGoBack() ? t("common.back") : t("blacklist.backToLibrary")}
+        onBack={() => {
+          if (canGoBack()) {
+            goBack();
+          } else {
+            navigate({ view: "library" });
+          }
+        }}
         onRefresh={() => void refetch()}
       />,
     );
   });
-
   const errorText = (): string => errorMessage(data.error);
 
   return (

@@ -36,10 +36,6 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
     async () => getLocalSeries(),
   );
 
-  // Refetch once when dbReady flips from false -> true (bootstrap completed).
-  createEffect(() => {
-    if (dbReady()) setTick((v) => v + 1);
-  });
 
   const [scanning, setScanning] = createSignal(false);
   const [scanResult, setScanResult] = createSignal<ArchiveScanResult | null>(null);

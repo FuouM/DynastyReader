@@ -56,21 +56,27 @@ export function useReaderShortcuts(session: ReaderSession): void {
       return;
     }
 
+    const isRtl = c.isHorizontal() && c.direction() === "rtl";
+    const isArrowRight = ev.key === "ArrowRight";
+    const isArrowLeft = ev.key === "ArrowLeft";
+
     if (matchesHotkey(ev, "reader.nextPage")) {
       consumeHotkeyEvent(ev);
       if (isMobile()) triggerHaptic("page-turn");
+      const step = isRtl && isArrowRight ? -1 : 1;
       if (c.isSpread()) {
-        c.stepSpread(1);
+        c.stepSpread(step);
       } else {
-        c.setPage(c.currentIndex() + 1);
+        c.setPage(c.currentIndex() + step);
       }
     } else if (matchesHotkey(ev, "reader.prevPage")) {
       consumeHotkeyEvent(ev);
       if (isMobile()) triggerHaptic("page-turn");
+      const step = isRtl && isArrowLeft ? 1 : -1;
       if (c.isSpread()) {
-        c.stepSpread(-1);
+        c.stepSpread(step);
       } else {
-        c.setPage(c.currentIndex() - 1);
+        c.setPage(c.currentIndex() + step);
       }
     } else if (matchesHotkey(ev, "reader.firstPage")) {
       consumeHotkeyEvent(ev);

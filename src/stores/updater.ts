@@ -80,5 +80,10 @@ export async function installUpdate(): Promise<void> {
     setUpdateError(t("settings.about.installError", { msg }));
     setUpdateStatusText(t("settings.about.updateFailedNotice"));
     log.error("updater", "Failed to install update:", err);
+  } finally {
+    if (progressUnlisten) {
+      progressUnlisten();
+      progressUnlisten = null;
+    }
   }
 }

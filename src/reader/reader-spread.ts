@@ -163,9 +163,11 @@ export function getAdjacentChapters(
   const curPermalink = normalizePermalink(permalink);
   const curTitle = decodeEntities(chapterTitle || "").trim().toLowerCase();
 
-  let curIdx = chapterList.findIndex((x) => {
-    const p = normalizePermalink(x.permalink);
-    if (curPermalink.length > 0) {
+  let curIdx = -1;
+
+  if (curPermalink.length > 0) {
+    curIdx = chapterList.findIndex((x) => {
+      const p = normalizePermalink(x.permalink);
       if (p === curPermalink || p.endsWith(`/${curPermalink}`) || curPermalink.endsWith(`/${p}`)) {
         return true;
       }
@@ -174,23 +176,27 @@ export function getAdjacentChapters(
       if (pNorm === curNorm || pNorm.endsWith(`/${curNorm}`) || curNorm.endsWith(`/${pNorm}`)) {
         return true;
       }
-    }
-    if (curTitle.length > 0 && x.title) {
-      const xTitle = decodeEntities(x.title).trim().toLowerCase();
-      if (xTitle === curTitle) return true;
-    }
-    return false;
-  });
+      return false;
+    });
 
-  if (curIdx < 0 && curPermalink.length > 0) {
-    const baseSlug = curPermalink.split("/").pop();
-    if (baseSlug) {
-      const baseNorm = baseSlug.replace(/[-_]+/g, "_");
-      curIdx = chapterList.findIndex((x) => {
-        const xNorm = normalizePermalink(x.permalink).replace(/[-_]+/g, "_");
-        return xNorm === baseNorm || xNorm.endsWith(`/${baseNorm}`) || xNorm.endsWith(baseNorm);
-      });
+    if (curIdx < 0) {
+      const baseSlug = curPermalink.split("/").pop();
+      if (baseSlug) {
+        const baseNorm = baseSlug.replace(/[-_]+/g, "_");
+        curIdx = chapterList.findIndex((x) => {
+          const xNorm = normalizePermalink(x.permalink).replace(/[-_]+/g, "_");
+          return xNorm === baseNorm || xNorm.endsWith(`/${baseNorm}`) || xNorm.endsWith(baseNorm);
+        });
+      }
     }
+  }
+
+  if (curIdx < 0 && curTitle.length > 0) {
+    curIdx = chapterList.findIndex((x) => {
+      if (!x.title) return false;
+      const xTitle = decodeEntities(x.title).trim().toLowerCase();
+      return xTitle === curTitle;
+    });
   }
   if (curIdx < 0) {
     // Fallback for new chapter missing from stale cache: treat as newest so prev navigates to last known chapter

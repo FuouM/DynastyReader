@@ -3,7 +3,7 @@
  * Offers intuitive next-chapter progression or return-to-series navigation.
  */
 
-import { createSignal, createMemo, Show } from "solid-js";
+import { createSignal, createMemo, Show, onCleanup } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import { getAdjacentChapters } from "./reader-spread";
 import { decodeEntities } from "../utils/formatting";
@@ -79,7 +79,14 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
     lastReady = "none";
     boundaryVibrated = "none";
     setSwipeReady("none");
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
   };
+
+  onCleanup(() => {
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+  });
 
   const handleTouchMove = (ev: TouchEvent) => {
     if (activeTouchId === null) return;
@@ -278,6 +285,8 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
   const handleMouseUp = (ev: MouseEvent) => {
     if (!isMouseActive) return;
     isMouseActive = false;
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
     const wasSwiping = isSwiping;
     isSwiping = false;
     const offset = currentOffset;
@@ -330,8 +339,7 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
+
     >
       <div class="ds-chapter-end-badge">
         <span class="ds-chapter-end-icon">

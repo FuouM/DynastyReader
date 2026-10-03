@@ -124,8 +124,13 @@ export interface ReaderFilterPopoverProps {
 
 export function ReaderFilterPopover(props: ReaderFilterPopoverProps) {
   const [positionStyle, setPositionStyle] = createSignal("");
-  const mountTime = Date.now();
+  let openTime = 0;
 
+  createEffect(() => {
+    if (props.open) {
+      openTime = Date.now();
+    }
+  });
   createEffect(() => {
     if (!props.open) return;
     const scale = uiScale() || 1;
@@ -177,7 +182,7 @@ export function ReaderFilterPopover(props: ReaderFilterPopoverProps) {
           class="ds-overlay ds-overlay--transparent"
           onClick={(ev) => {
             if (ev.target === ev.currentTarget) {
-              if (Date.now() - mountTime < 150) return;
+              if (Date.now() - openTime < 150) return;
               props.onClose();
             }
           }}

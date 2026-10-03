@@ -122,20 +122,27 @@ export function BrowseView() {
     getCacheRevision() +
     getFollowedRevision() +
     (activeProvider() === "mangadex" ? getWhitelistRevision() : 0);
-
+  const activeTab = (): BrowseTabId => route().browseTab ?? "releases";
   const tabScrollPositions = new Map<string, number>();
+  let lastActiveKey = `${activeProvider()}:${activeTab()}`;
+  let restoringScroll = false;
 
   createEffect(() => {
     if (route().view === "browse") {
-      const tab = activeTab();
-      const saved = tabScrollPositions.get(`${activeProvider()}:${tab}`);
-      if (saved !== undefined && saved > 0) {
+      const currentKey = `${activeProvider()}:${activeTab()}`;
+      if (currentKey !== lastActiveKey) {
+        lastActiveKey = currentKey;
+        const saved = tabScrollPositions.get(currentKey) ?? 0;
+        restoringScroll = true;
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             const paneEl = document.getElementById("ds-pane-browse");
             if (paneEl && route().view === "browse") {
               paneEl.scrollTop = saved;
             }
+            requestAnimationFrame(() => {
+              restoringScroll = false;
+            });
           });
         });
       }
@@ -147,14 +154,16 @@ export function BrowseView() {
     searchClass?: SearchClass;
   } | null>(null);
 
-  const activeTab = (): BrowseTabId => route().browseTab ?? "releases";
 
   const activeFor = (tabId: BrowseTabId): (() => boolean) => () =>
     route().view === "browse" && activeTab() === tabId;
 
   const switchTab = (tabId: BrowseTabId): void => {
+    const paneEl = document.getElementById("ds-pane-browse");
+    if (paneEl) {
+      tabScrollPositions.set(`${activeProvider()}:${activeTab()}`, paneEl.scrollTop);
+    }
     setRoute((r) => ({ ...r, browseTab: tabId }));
-    scrollBrowseToTop();
   };
 
   // Consume transient search directives (search-box submit, tag pill click,
@@ -348,6 +357,7 @@ export function BrowseView() {
     makeEventListener(paneEl, "touchend", onTouchEnd, { passive: true });
     makeEventListener(paneEl, "touchcancel", onTouchCancel, { passive: true });
     const onScroll = (): void => {
+      if (restoringScroll) return;
       if (route().view === "browse") {
         tabScrollPositions.set(`${activeProvider()}:${activeTab()}`, paneEl.scrollTop);
       }

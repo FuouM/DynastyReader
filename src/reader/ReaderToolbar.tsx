@@ -65,7 +65,9 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
     )
   );
   const handleOpenSeries = () => {
-    s.gotoSeries();
+    if (s.seriesPermalink()) {
+      s.gotoSeries();
+    }
   };
   const handleToggleBookmark = async () => {
     try {

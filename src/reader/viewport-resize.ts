@@ -99,15 +99,15 @@ export function setupViewportResize(
     },
   );
 
-  const cleanup = () => {
-    if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
-  };
-  s.onDispose(cleanup);
-
-  window.setTimeout(() => {
+  const initTimer = window.setTimeout(() => {
     s.updateViewportHeight();
     s.applyLayoutMode();
   }, 0);
 
+  const cleanup = () => {
+    if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+    window.clearTimeout(initTimer);
+  };
+  s.onDispose(cleanup);
   return cleanup;
 }
