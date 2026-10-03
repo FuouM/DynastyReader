@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, lazy, Show, Suspense } from "solid-js";
 import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { route, navigate, closeSessionMangaTab, isInMangaView, sessionTab } from "../stores/router";
@@ -8,8 +8,6 @@ import { formatSpeed, decodeEntities } from "../utils/formatting";
 import { isMobile } from "../stores/platform";
 import { uiScale } from "../stores/ui-scale";
 import { t } from "../i18n";
-import { SettingsModal } from "./SettingsModal";
-import { SourceSwitcherModal } from "./SourceSwitcherModal";
 import { HistoryNavButtons } from "./HistoryDropdown";
 import {
   StorageIcon,
@@ -21,6 +19,9 @@ import {
   Icon,
 } from "./Icon";
 import { Button, SegmentedSwitch } from "./Button";
+
+const SettingsModal = lazy(() => import("./SettingsModal").then((m) => ({ default: m.SettingsModal })));
+const SourceSwitcherModal = lazy(() => import("./SourceSwitcherModal").then((m) => ({ default: m.SourceSwitcherModal })));
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [sourceSwitcherOpen, setSourceSwitcherOpen] = createSignal(false);
@@ -118,8 +119,16 @@ export function Topbar() {
           </div>
         </div>
       </div>
-      <SettingsModal open={settingsOpen()} onClose={() => setSettingsOpen(false)} />
-      <SourceSwitcherModal open={sourceSwitcherOpen()} onClose={() => setSourceSwitcherOpen(false)} />
+      <Show when={settingsOpen()}>
+        <Suspense>
+          <SettingsModal open={settingsOpen()} onClose={() => setSettingsOpen(false)} />
+        </Suspense>
+      </Show>
+      <Show when={sourceSwitcherOpen()}>
+        <Suspense>
+          <SourceSwitcherModal open={sourceSwitcherOpen()} onClose={() => setSourceSwitcherOpen(false)} />
+        </Suspense>
+      </Show>
       <Show when={banner() !== null}>
         <Portal mount={document.body}>
           <div

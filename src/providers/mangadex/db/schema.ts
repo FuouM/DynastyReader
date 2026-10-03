@@ -62,6 +62,8 @@ const SCHEMA = [
     etag TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_history_read_at ON reading_history(read_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_mdx_history_chapter ON reading_history(chapter_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_mdx_history_manga ON reading_history(manga_id)`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_progress_manga ON reading_progress(manga_id)`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_cached_pages_chapter ON cached_pages(chapter_id)`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_followed_created_at ON followed_manga(created_at DESC)`,
@@ -93,7 +95,7 @@ async function migrateLegacyMdxMetadata(): Promise<void> {
   }
 }
 
-export const MANGADEX_SCHEMA_VERSION = 1;
+export const MANGADEX_SCHEMA_VERSION = 2;
 
 export async function getMangaDexSchemaVersion(): Promise<number> {
   try {
@@ -124,6 +126,14 @@ const MANGADEX_MIGRATIONS: MangaDexMigration[] = [
         await execute(ddl);
       }
       await migrateLegacyMdxMetadata();
+    },
+  },
+  {
+    version: 2,
+    name: "add reading_history chapter and manga indexes",
+    up: async () => {
+      await execute("CREATE INDEX IF NOT EXISTS idx_mdx_history_chapter ON reading_history(chapter_id)");
+      await execute("CREATE INDEX IF NOT EXISTS idx_mdx_history_manga ON reading_history(manga_id)");
     },
   },
 ];
