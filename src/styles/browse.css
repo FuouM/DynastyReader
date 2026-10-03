@@ -32,14 +32,7 @@
   gap: 2px;
 }
 
-.ds-feed-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
+.ds-feed-actions,
 .ds-item-actions {
   display: inline-flex;
   align-items: center;

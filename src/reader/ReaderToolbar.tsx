@@ -14,8 +14,7 @@ import { exitReader } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { decodeEntities, errorMessage } from "../utils/formatting";
 import { addBookmark, removeBookmark } from "../db/library.repo";
-import { addMdxBookmark, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
-import { extractMangaDexId } from "../api/navigation";
+
 import { t } from "../i18n";
 import { getReaderNavPosition, getReaderFilterCss } from "./settings";
 import { Button } from "../components/Button";
@@ -70,34 +69,18 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
   };
   const handleToggleBookmark = async () => {
     try {
-      const isMdx = s.permalink.startsWith("mdx:");
-      const chId = isMdx ? extractMangaDexId(s.permalink) : "";
       if (s.bookmarked()) {
-        if (isMdx) {
-          await removeMdxBookmark(chId);
-        } else {
-          await removeBookmark(s.permalink);
-        }
+        await removeBookmark(s.permalink);
         s.setBookmarked(false);
         showBanner(t("browse.feed.bookmarkRemovedBanner", { title: s.chapterTitle() }));
       } else {
-        if (isMdx) {
-          await addMdxBookmark({
-            chapterId: chId,
-            mangaId: s.seriesPermalink() ? extractMangaDexId(s.seriesPermalink()!) : "",
-            mangaTitle: s.seriesName() ?? "",
-            chapterTitle: s.chapterTitle(),
-            pageIndex: s.currentIndex(),
-          });
-        } else {
-          await addBookmark({
-            chapterPermalink: s.permalink,
-            seriesPermalink: s.seriesPermalink() ?? "",
-            seriesName: s.seriesName() ?? "",
-            chapterTitle: s.chapterTitle(),
-            pageIndex: s.currentIndex(),
-          });
-        }
+        await addBookmark({
+          chapterPermalink: s.permalink,
+          seriesPermalink: s.seriesPermalink() ?? "",
+          seriesName: s.seriesName() ?? "",
+          chapterTitle: s.chapterTitle(),
+          pageIndex: s.currentIndex(),
+        });
         s.setBookmarked(true);
         showBanner(t("browse.feed.bookmarkSavedBanner", { title: s.chapterTitle() }));
       }

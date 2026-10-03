@@ -3,7 +3,6 @@ import {
   createMemo,
   createSignal,
   For,
-  onMount,
   Show,
 } from "solid-js";
 import { t } from "../i18n";
@@ -50,9 +49,7 @@ export function ImportModal(props: ImportModalProps) {
     }
   };
 
-  onMount(() => {
-    void loadCollections();
-  });
+
 
   // Reset state when opening
   createEffect(() => {

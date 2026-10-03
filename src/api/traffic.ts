@@ -40,6 +40,7 @@ const [lifetimeMetrics, setLifetimeMetrics] = persistedSignal<TrafficMetrics>({ 
     }
   },
 });
+const inMemoryLifetime: TrafficMetrics = { ...lifetimeMetrics() };
 
 const sessionMetrics: TrafficMetrics = {
   bytesDownloaded: 0,
@@ -49,11 +50,10 @@ const sessionMetrics: TrafficMetrics = {
 };
 
 function snapshot(): SessionTraffic {
-  const lt = lifetimeMetrics();
   return {
     ...sessionMetrics,
     session: { ...sessionMetrics },
-    lifetime: { ...lt },
+    lifetime: { ...inMemoryLifetime },
   };
 }
 
@@ -72,21 +72,22 @@ function notify(): void {
 }
 
 const schedulePersist = throttle(() => {
-  const lt = lifetimeMetrics();
-  setLifetimeMetrics({ ...lt });
+  setLifetimeMetrics({ ...inMemoryLifetime });
 }, 2000);
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    setLifetimeMetrics({ ...inMemoryLifetime });
+  });
+}
 
 /** Records inbound network payload traffic. */
 export function recordNetworkTraffic(bytes: number): void {
   const b = Math.max(0, bytes);
   sessionMetrics.bytesDownloaded += b;
   sessionMetrics.networkRequests += 1;
-  setLifetimeMetrics((prev) => ({
-    bytesDownloaded: prev.bytesDownloaded + b,
-    networkRequests: prev.networkRequests + 1,
-    cacheHits: prev.cacheHits,
-    bytesSaved: prev.bytesSaved,
-  }));
+  inMemoryLifetime.bytesDownloaded += b;
+  inMemoryLifetime.networkRequests += 1;
   schedulePersist();
   notify();
 }
@@ -96,12 +97,8 @@ export function recordCacheHit(savedBytes = 0): void {
   const b = Math.max(0, savedBytes);
   sessionMetrics.cacheHits += 1;
   sessionMetrics.bytesSaved += b;
-  setLifetimeMetrics((prev) => ({
-    bytesDownloaded: prev.bytesDownloaded,
-    networkRequests: prev.networkRequests,
-    cacheHits: prev.cacheHits + 1,
-    bytesSaved: prev.bytesSaved + b,
-  }));
+  inMemoryLifetime.cacheHits += 1;
+  inMemoryLifetime.bytesSaved += b;
   schedulePersist();
   notify();
 }
@@ -117,6 +114,10 @@ export function resetLifetimeTraffic(): void {
   sessionMetrics.networkRequests = 0;
   sessionMetrics.cacheHits = 0;
   sessionMetrics.bytesSaved = 0;
+  inMemoryLifetime.bytesDownloaded = 0;
+  inMemoryLifetime.networkRequests = 0;
+  inMemoryLifetime.cacheHits = 0;
+  inMemoryLifetime.bytesSaved = 0;
   setLifetimeMetrics({ ...DEFAULT_METRICS });
   notify();
 }

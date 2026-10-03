@@ -324,13 +324,6 @@ button:focus-visible {
   user-select: none;
   transition: filter 0.15s ease, opacity 0.15s ease;
 }
-.tag-pill.tag-user {
-  background-color: var(--tag-user-bg);
-  border: 1px solid var(--tag-user-border);
-  color: var(--tag-user-text);
-  font-weight: 500;
-}
-.tag-pill.tag-user:hover { background-color: var(--tag-user-hover-bg); border-color: var(--tag-user-hover-border); color: var(--tag-user-hover-text); }
 .tag-pill.tag-character {
   background-color: var(--tag-character-bg);
   border: 1px solid var(--tag-character-border);
@@ -373,18 +366,6 @@ button:focus-visible {
   color: var(--tag-rank-3-text);
 }
 .tag-pill.tag-rank-3:hover { background-color: var(--tag-rank-3-hover-bg); border-color: var(--tag-rank-3-hover-border); color: var(--tag-rank-3-hover-text); }
-.tag-pill.custom-concept {
-  background-color: var(--tag-concept-bg);
-  border: 1px solid var(--tag-concept-border);
-  color: var(--tag-concept-text);
-}
-.tag-pill.custom-concept:hover { background-color: var(--tag-concept-hover-bg); border-color: var(--tag-concept-hover-border); color: var(--tag-concept-hover-text); }
-.tag-pill.tag-identity {
-  background-color: var(--tag-identity-bg);
-  border: 1px solid var(--tag-identity-border);
-  color: var(--tag-identity-text);
-}
-.tag-pill.tag-identity:hover { background-color: var(--tag-identity-hover-bg); border-color: var(--tag-identity-hover-border); color: var(--tag-identity-hover-text); }
 
 
 .ds-loading-screen {

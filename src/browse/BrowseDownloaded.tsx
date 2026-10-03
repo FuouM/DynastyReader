@@ -12,7 +12,7 @@ import { debounce } from "@solid-primitives/scheduled";
 import { route } from "../stores/router";
 import { t } from "../i18n";
 import { activeProvider } from "../stores/provider";
-import { getMangaDexDownloadedChapters } from "../providers/mangadex/db/cache.repo";
+import { getMangaDexDownloadedChapterRows } from "../providers/mangadex/db/cache.repo";
 import { persistedSignal } from "../lib/persisted-signal";
 import { DownloadManager } from "./DownloadManager";
 import { getFullyCachedChapters, type FullyCachedChapterRow } from "../db/cache.repo";
@@ -80,23 +80,10 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     active: props.active,
     revision: props.revision,
     load: async () => {
-      if (activeProvider() === "mangadex") {
-        const mdxChapters = await getMangaDexDownloadedChapters();
-        const rows: FullyCachedChapterRow[] = mdxChapters.map((c) => ({
-          chapterPermalink: `mdx:${c.chapterId}`,
-          seriesPermalink: c.mangaId ? `mdx:${c.mangaId}` : null,
-          seriesName: c.mangaTitle,
-          chapterTitle: c.chapterTitle,
-          pageCount: c.pageCount,
-          pageTotal: c.pageCount,
-          totalSizeBytes: c.totalBytes,
-          lastCachedAt: c.lastCachedAt,
-          coverPath: null,
-        }));
-        const enriched = await enrichCachedChapters(rows);
-        return { rows, ...enriched };
-      }
-      const rows = await getFullyCachedChapters();
+      const rows =
+        activeProvider() === "mangadex"
+          ? await getMangaDexDownloadedChapterRows()
+          : await getFullyCachedChapters();
       const enriched = await enrichCachedChapters(rows);
       return { rows, ...enriched };
     },

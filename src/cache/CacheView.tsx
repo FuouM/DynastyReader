@@ -28,8 +28,7 @@ import { enrichCachedChapters } from "../db/cache-aggregate";
 import { getDbStats, type DbStats } from "../db/db.manage";
 import { activeProvider } from "../stores/provider";
 import { getMangaDexDbStats } from "../providers/mangadex/db/stats";
-import { getMangaDexDownloadedChapters, clearMangaDexCachedChapters } from "../providers/mangadex/db/cache.repo";
-import { getMangaDexCacheStats, purgeMangaDexCache } from "../providers/mangadex/db/cache.repo";
+import { getMangaDexDownloadedChapterRows, clearMangaDexCachedChapters, getMangaDexCacheStats, purgeMangaDexCache } from "../providers/mangadex/db/cache.repo";
 import type { CacheOverviewStats } from "../types/db";
 import { SeriesDownloadedCard } from "../browse/downloads/SeriesDownloadedCard";
 import { OrphanDownloadedCard } from "../browse/downloads/OrphanDownloadedCard";
@@ -77,22 +76,11 @@ export function CacheView() {
 
   const [data, { refetch }] = createResource(activeProvider, async (provider) => {
     if (provider === "mangadex") {
-      const [mdxStats, dbStats, mdxChapters] = await Promise.all([
+      const [mdxStats, dbStats, rows] = await Promise.all([
         getMangaDexCacheStats(),
         getMangaDexDbStats(),
-        getMangaDexDownloadedChapters(),
+        getMangaDexDownloadedChapterRows(),
       ]);
-      const rows: FullyCachedChapterRow[] = mdxChapters.map((c) => ({
-        chapterPermalink: `mdx:${c.chapterId}`,
-        seriesPermalink: c.mangaId ? `mdx:${c.mangaId}` : null,
-        seriesName: c.mangaTitle,
-        chapterTitle: c.chapterTitle,
-        pageCount: c.pageCount,
-        pageTotal: c.pageCount,
-        totalSizeBytes: c.totalBytes,
-        lastCachedAt: c.lastCachedAt,
-        coverPath: null,
-      }));
       const stats: CacheOverviewStats = {
         totalCachedPages: mdxStats.pageCount,
         totalCachedChapters: mdxStats.chapterCount,

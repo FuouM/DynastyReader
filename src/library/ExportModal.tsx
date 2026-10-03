@@ -3,7 +3,6 @@ import {
   createSignal,
   For,
   onCleanup,
-  onMount,
   Show,
 } from "solid-js";
 import { t } from "../i18n";
@@ -56,9 +55,7 @@ export function ExportModal(props: ExportModalProps) {
     }
   };
 
-  onMount(() => {
-    void loadCollections();
-  });
+
 
   // Reset scope and selections when opening
   createEffect(() => {

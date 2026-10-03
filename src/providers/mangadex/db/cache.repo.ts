@@ -7,6 +7,7 @@ import { execute, query } from "./client";
 import * as ipc from "../../../ipc";
 import { initMangaDexDb } from "./schema";
 import type { MangaDexCachedPageRow } from "../types";
+import type { FullyCachedChapterRow } from "../../../db/cache.repo";
 
 /**
  * Records a downloaded page in mangadex.db.
@@ -190,4 +191,22 @@ export async function getMangaDexDownloadedChapters(): Promise<MangaDexDownloade
       lastCachedAt: Number(r.last_cached_at || 0),
     };
   });
+}
+
+/**
+ * Retrieves all MangaDex downloaded chapters mapped to standard FullyCachedChapterRow items.
+ */
+export async function getMangaDexDownloadedChapterRows(): Promise<FullyCachedChapterRow[]> {
+  const mdxChapters = await getMangaDexDownloadedChapters();
+  return mdxChapters.map((c) => ({
+    chapterPermalink: `mdx:${c.chapterId}`,
+    seriesPermalink: c.mangaId ? `mdx:${c.mangaId}` : null,
+    seriesName: c.mangaTitle,
+    chapterTitle: c.chapterTitle,
+    pageCount: c.pageCount,
+    pageTotal: c.pageCount,
+    totalSizeBytes: c.totalBytes,
+    lastCachedAt: c.lastCachedAt,
+    coverPath: null,
+  }));
 }

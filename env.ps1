@@ -1,4 +1,4 @@
-# Local Rust Environment Setup for Project Curator
+# Local Rust Environment Setup for DynastyReader
 $RootPath = $PSScriptRoot
 
 $env:RUSTUP_HOME = "$RootPath\.rust\.rustup"
