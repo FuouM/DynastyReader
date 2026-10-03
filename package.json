@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "bump": "node scripts/bump-version.js",
-    "lint": "oxlint src"
+    "lint": "oxlint src",
+    "test": "vitest run"
   },
   "dependencies": {
     "@solid-primitives/connectivity": "^0.4.6",
@@ -34,6 +35,7 @@
     "puppeteer-core": "^25.12.0",
     "typescript": "^5",
     "vite": "^6",
-    "vite-plugin-solid": "^2.11.14"
+    "vite-plugin-solid": "^2.11.14",
+    "vitest": "^5.0.3"
   }
 }

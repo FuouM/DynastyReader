@@ -13,12 +13,12 @@ import { query, execute } from "../db/client";
 import { inClause, queryPaged } from "../db/paging";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
+import { fetchSeries, fetchChapter } from "../api/series";
 import {
   notifyBookmarksChanged,
   notifyHistoryChanged,
   notifyProgressChanged,
 } from "../db/library-notifiers";
-import { fetchSeries, fetchChapter } from "../api/series";
 import type { FullyCachedChapterRow } from "../db/cache.repo";
 import type {
   FollowedSeriesPageResult,
@@ -30,6 +30,8 @@ import type {
   BookmarkPageResult,
 } from "../types/db";
 import type { Series, Chapter } from "../types/api";
+
+const LOCAL_SLUG_REGEX = /^local:[a-zA-Z0-9_\-]+$/;
 
 export class LocalProvider implements ContentProviderAdapter {
   readonly id = "local" as const;
@@ -55,11 +57,9 @@ export class LocalProvider implements ContentProviderAdapter {
   canonicalUrl(_path: string, _permalink: string): string {
     return "";
   }
-
   isValidPermalink(candidate: unknown): candidate is string {
-    return typeof candidate === "string" && candidate.startsWith("local:") && candidate.length > 6;
+    return typeof candidate === "string" && LOCAL_SLUG_REGEX.test(candidate);
   }
-
   // Followed (Local files cannot be followed from a remote feed)
   async getFollowedPage(_page = 1, _pageSize = 10): Promise<FollowedSeriesPageResult> {
     return {

@@ -15,6 +15,21 @@ import { createSignal, type Signal } from "solid-js";
 import { makePersisted, type PersistenceOptions } from "@solid-primitives/storage";
 import { log } from "../utils/log";
 
+
+const memoryMap = new Map<string, string>();
+const memoryStorage: Storage = {
+  getItem: (key: string) => memoryMap.get(key) ?? null,
+  setItem: (key: string, value: string) => { memoryMap.set(key, String(value)); },
+  removeItem: (key: string) => { memoryMap.delete(key); },
+  clear: () => { memoryMap.clear(); },
+  key: (index: number) => Array.from(memoryMap.keys())[index] ?? null,
+  get length() { return memoryMap.size; },
+};
+
+function getStorage(): Storage {
+  if (typeof localStorage !== "undefined") return localStorage;
+  return memoryStorage;
+}
 /**
  * Bridges a module-level `persistedSignal` getter/setter pair into a
  * locally-reactive signal so SolidJS re-renders when the setting changes.
@@ -60,7 +75,7 @@ export function persistedSignal<T>(
   const isStringType = typeof defaultValue === "string";
   const opts: PersistenceOptions<T, undefined> = {
     name: options.name,
-    storage: localStorage,
+    storage: getStorage(),
   };
   if (options.serialize) {
     opts.serialize = options.serialize;

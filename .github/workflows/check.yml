@@ -63,6 +63,9 @@ jobs:
       - name: Lint for Bugs
         run: npm run lint
 
+      - name: TypeScript Unit Tests
+        run: npm test
+
       - name: TypeScript & Vite Build Check
         run: npm run build
       - name: Cargo Check
