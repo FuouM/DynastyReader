@@ -52,16 +52,16 @@ export function DisplaySettings() {
       <div class="ds-col">
         {/* Content Source */}
         <SettingsRow
-          label="Content Source"
-          desc="Choose active catalog: Dynasty Scans (Yuri/GL) or MangaDex (All Genres)."
+          label={t("settings.display.contentSource")}
+          desc={t("settings.display.contentSourceDesc")}
         >
           <DsSelect
             id="ds-settings-provider-select"
             value={activeProvider()}
             onChange={(val) => switchProvider(val as ContentProvider)}
           >
-            <option value="dynasty">Dynasty Scans (Yuri / GL)</option>
-            <option value="mangadex">MangaDex (All Genres)</option>
+            <option value="dynasty">{t("providers.dynasty.name")} ({t("providers.dynasty.badge")})</option>
+            <option value="mangadex">{t("providers.mangadex.name")} ({t("providers.mangadex.badge")})</option>
           </DsSelect>
         </SettingsRow>
         {/* Scale Factor */}

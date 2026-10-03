@@ -12,6 +12,7 @@ import { recordHistory as recordMdxHistory } from "./db/history.repo";
 import { saveReadingProgress as saveMdxProgress, getReadingProgress as getMdxProgress } from "./db/progress.repo";
 import { persistedSignal } from "../../lib/persisted-signal";
 import type { Chapter, ChapterPage } from "../../types/api";
+import { t } from "../../i18n";
 import type { MangaDexAtHomeReport } from "./types";
 import { log } from "../../utils/log";
 
@@ -48,11 +49,11 @@ export async function loadMangaDexChapterForReader(
   // Extract mangaId from relationships
   const mangaRel = mdxChapter.relationships?.find((r) => r.type === "manga");
   const mangaId = mangaRel?.id || null;
-  let mangaTitle = "Manga";
+  let mangaTitle = t("mangadex.defaultManga");
   if (mangaRel?.attributes && typeof mangaRel.attributes === "object" && "title" in mangaRel.attributes) {
     const rawTitle = mangaRel.attributes.title;
     if (typeof rawTitle === "object" && rawTitle !== null) {
-      mangaTitle = Object.values(rawTitle)[0] || "Manga";
+      mangaTitle = Object.values(rawTitle)[0] || t("mangadex.defaultManga");
     }
   }
 
@@ -67,7 +68,7 @@ export async function loadMangaDexChapterForReader(
   });
 
   const pages: ChapterPage[] = filenames.map((fn, idx) => ({
-    name: `Page ${idx + 1}`,
+    name: t("mangadex.pageTitle", { num: idx + 1 }),
     url: buildPageUrl(atHome.baseUrl, atHome.chapter.hash, fn, quality),
   }));
 

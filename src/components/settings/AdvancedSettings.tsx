@@ -211,7 +211,7 @@ export function AdvancedSettings() {
                 <button
                   type="button"
                   class="win-button ds-haptic-preset-btn"
-                  title="Reset to default 85%"
+                  title={t("settings.advanced.resetDefaultStrength", { pct: 85 })}
                   onClick={resetHapticStrength}
                 >
                   <Icon name="arrow-counterclockwise" size={11} /> 85%
@@ -275,7 +275,7 @@ export function AdvancedSettings() {
                         class="win-button ds-haptic-step-btn"
                         disabled={currentDuration() <= card.min}
                         onClick={stepDown}
-                        title="-1 ms"
+                        title={t("settings.advanced.decreaseDurationTooltip")}
                       >
                         -
                       </button>
@@ -293,7 +293,7 @@ export function AdvancedSettings() {
                         class="win-button ds-haptic-step-btn"
                         disabled={currentDuration() >= card.max}
                         onClick={stepUp}
-                        title="+1 ms"
+                        title={t("settings.advanced.increaseDurationTooltip")}
                       >
                         +
                       </button>

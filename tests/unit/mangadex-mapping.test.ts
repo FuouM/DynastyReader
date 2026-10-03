@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatMangaTitle,
+  formatMangaDexChapterTitle,
   getMangaCoverUrl,
   getMangaAuthors,
   mangaDexToStandardSeries,
@@ -212,5 +213,27 @@ describe("mangadex/mapping - mangaDexToStandardChapter", () => {
       name: "Yuri Translations",
       permalink: "mdx-group:group-uuid-99",
     });
+  });
+});
+
+describe("mangadex/mapping - formatMangaDexChapterTitle", () => {
+  it("formats with chapter number and subtitle", () => {
+    expect(formatMangaDexChapterTitle("1", "Beginning")).toBe("Ch. 1 - Beginning");
+  });
+
+  it("formats chapter number only", () => {
+    expect(formatMangaDexChapterTitle("1", "")).toBe("Chapter 1");
+    expect(formatMangaDexChapterTitle("42", null)).toBe("Chapter 42");
+  });
+
+  it("formats chapter 0 correctly", () => {
+    expect(formatMangaDexChapterTitle("0", "Prequel")).toBe("Ch. 0 - Prequel");
+    expect(formatMangaDexChapterTitle("0", "")).toBe("Chapter 0");
+  });
+
+  it("falls back to rawTitle or Oneshot when chapter number is absent", () => {
+    expect(formatMangaDexChapterTitle(null, "Special Story")).toBe("Special Story");
+    expect(formatMangaDexChapterTitle(null, null)).toBe("Oneshot");
+    expect(formatMangaDexChapterTitle("", "")).toBe("Oneshot");
   });
 });

@@ -63,10 +63,10 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
   const togglePopularGenre = (genre: WhitelistTag): void => {
     if (isTagWhitelisted(genre.id)) {
       removeWhitelistedTag(genre.id);
-      showBanner(`Removed "${genre.name}" from allowlist`);
+      showBanner(t("whitelist.removedBanner", { name: genre.name }));
     } else {
       addWhitelistedTag(genre);
-      showBanner(`Added "${genre.name}" to allowlist`);
+      showBanner(t("whitelist.addedBanner", { name: genre.name }));
     }
   };
 
@@ -251,24 +251,23 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
         <GroupBox
           title={
             <IconText icon={<ListCheckIcon />}>
-              Feed Allowlist (Whitelist)
+              {t("whitelist.title")}
             </IconText>
           }
         >
           <div class="ds-stack-8">
             <div class="ds-muted">
-              Filters MangaDex feeds (Recent Releases, Recently Added) to only include series matching allowed tags/genres.
-              When disabled, all releases across all MangaDex genres are displayed.
+              {t("whitelist.description")}
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <Button
                 className={whitelistEnabled() ? "win-button--active" : ""}
                 icon={whitelistEnabled() ? <CheckIcon /> : undefined}
-                text={whitelistEnabled() ? "Allowlist Filtering: Enabled" : "Allowlist Filtering: Disabled"}
+                text={whitelistEnabled() ? t("whitelist.statusEnabled") : t("whitelist.statusDisabled")}
                 onClick={() => {
                   const next = !whitelistEnabled();
                   setWhitelistEnabled(next);
-                  showBanner(next ? "Allowlist filtering enabled" : "Allowlist filtering disabled");
+                  showBanner(next ? t("whitelist.bannerEnabled") : t("whitelist.bannerDisabled"));
                 }}
               />
             </div>
@@ -279,7 +278,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
         <GroupBox
           title={
             <IconText icon={<ListCheckIcon />}>
-              {`Allowed Tags & Genres (${whitelistedTags().length})`}
+              {t("whitelist.activeTagsTitle", { count: whitelistedTags().length })}
             </IconText>
           }
         >
@@ -287,10 +286,10 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
             when={whitelistedTags().length > 0}
             fallback={
               <div class="ds-bl-empty">
-                No tags in allowlist.
+                {t("whitelist.emptyTitle")}
                 <br />
                 <span class="ds-muted">
-                  Add tags below to filter feeds, or disable allowlist filtering to view all releases.
+                  {t("whitelist.emptyHint")}
                 </span>
               </div>
             }
@@ -307,10 +306,10 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                       <Button
                         icon={<TrashIcon />}
                         className="ds-btn-sm"
-                        title={`Remove "${tag.name}" from allowlist`}
+                        title={t("whitelist.removeTooltip", { name: tag.name })}
                         onClick={() => {
                           removeWhitelistedTag(tag.id);
-                          showBanner(`Removed "${tag.name}" from allowlist`);
+                          showBanner(t("whitelist.removedBanner", { name: tag.name }));
                         }}
                       />
                     }
@@ -322,10 +321,10 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
         </GroupBox>
 
         {/* 3. Quick-Add Common Genres */}
-        <GroupBox title="Quick-Add Popular Genres">
+        <GroupBox title={t("whitelist.quickAddTitle")}>
           <div class="ds-stack-8">
             <div class="ds-muted">
-              Click any genre to toggle it in your feed allowlist:
+              {t("whitelist.quickAddHint")}
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 6px;">
               <For each={POPULAR_GENRES}>
@@ -346,7 +345,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
         </GroupBox>
 
         {/* 4. Search All Official MangaDex Tags */}
-        <GroupBox title="Search & Add Other Tags">
+        <GroupBox title={t("whitelist.searchTagsTitle")}>
           <div class="ds-stack-8">
             <div style="display: flex; gap: 6px; align-items: center;">
               <SearchIcon />
@@ -354,7 +353,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                 type="text"
                 class="win-input"
                 style="flex: 1; height: 26px; padding: 0 8px;"
-                placeholder="Search MangaDex tags (e.g. Yuri, Isekai, Villainess, Mecha)..."
+                placeholder={t("whitelist.searchTagsPlaceholder")}
                 value={searchQuery()}
                 onInput={(e) => setSearchQuery(e.currentTarget.value)}
               />
@@ -383,14 +382,14 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                         <Button
                           className={active() ? "win-button--active" : ""}
                           icon={active() ? <CheckIcon /> : undefined}
-                          text={active() ? "Allowed" : "Add to Allowlist"}
+                          text={active() ? t("whitelist.allowedButton") : t("whitelist.addAllowlistButton")}
                           onClick={() => {
                             if (active()) {
                               removeWhitelistedTag(tag.id);
-                              showBanner(`Removed "${name}" from allowlist`);
+                              showBanner(t("whitelist.removedBanner", { name }));
                             } else {
                               addWhitelistedTag({ id: tag.id, name });
-                              showBanner(`Added "${name}" to allowlist`);
+                              showBanner(t("whitelist.addedBanner", { name }));
                             }
                           }}
                         />

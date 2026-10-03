@@ -10,6 +10,7 @@ import type {
   MangaDexRelationship,
 } from "./types";
 import type { Chapter, ChapterPage, ChapterTag, Series, SeriesTag } from "../../types/api";
+import { t } from "../../i18n";
 
 /**
  * Extracts the most appropriate title for a MangaDex manga based on language preference.
@@ -17,7 +18,7 @@ import type { Chapter, ChapterPage, ChapterTag, Series, SeriesTag } from "../../
  */
 export function formatMangaTitle(manga: MangaDexManga, preferredLang = "en"): string {
   const titleMap = manga.attributes.title;
-  if (!titleMap) return "Untitled";
+  if (!titleMap) return t("mangadex.untitled");
 
   if (titleMap[preferredLang]) return titleMap[preferredLang];
   if (titleMap["ja-ro"]) return titleMap["ja-ro"];
@@ -25,7 +26,20 @@ export function formatMangaTitle(manga: MangaDexManga, preferredLang = "en"): st
   if (titleMap["ja"]) return titleMap["ja"];
 
   const first = Object.values(titleMap)[0];
-  return first || "Untitled";
+  return first || t("mangadex.untitled");
+}
+
+/** Formats chapter title with chapter number and/or subtitle or oneshot fallback. */
+export function formatMangaDexChapterTitle(
+  chNum?: string | null,
+  rawTitle?: string | null,
+): string {
+  if (chNum) {
+    return rawTitle
+      ? t("mangadex.chapterTitleWithSub", { num: chNum, title: rawTitle })
+      : t("mangadex.chapterTitle", { num: chNum });
+  }
+  return rawTitle || t("mangadex.oneshot");
 }
 
 /**
@@ -78,10 +92,10 @@ export function mangaDexToStandardSeries(
   const permalink = `mdx:${manga.id}`;
   const cover = getMangaCoverUrl(manga, "512");
 
-  const tags: SeriesTag[] = (manga.attributes.tags || []).map((t) => ({
-    type: t.attributes.group,
-    name: t.attributes.name.en || Object.values(t.attributes.name)[0] || "Tag",
-    permalink: `mdx-tag:${t.id}`,
+  const tags: SeriesTag[] = (manga.attributes.tags || []).map((tag) => ({
+    type: tag.attributes.group,
+    name: tag.attributes.name.en || Object.values(tag.attributes.name)[0] || t("mangadex.defaultTag"),
+    permalink: `mdx-tag:${tag.id}`,
   }));
 
   const descMap = manga.attributes.description;
@@ -111,13 +125,7 @@ export function mangaDexToStandardChapter(
   pages?: ChapterPage[],
   seriesContext?: { mangaId: string; mangaTitle: string },
 ): Chapter {
-  const chNum = chapter.attributes.chapter;
-  const rawTitle = chapter.attributes.title;
-  const title = chNum
-    ? rawTitle
-      ? `Ch. ${chNum} - ${rawTitle}`
-      : `Chapter ${chNum}`
-    : rawTitle || "Oneshot";
+  const title = formatMangaDexChapterTitle(chapter.attributes.chapter, chapter.attributes.title);
 
   const tags: ChapterTag[] = [];
   if (seriesContext?.mangaId && seriesContext?.mangaTitle) {

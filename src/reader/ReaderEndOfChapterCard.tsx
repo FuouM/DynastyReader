@@ -413,7 +413,7 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
           title={t("reader.endOfChapterCard.swipeRightBrowse")}
         >
           <Icon name="compass" />
-          <span>Browse</span>
+          <span>{t("reader.endOfChapterCard.browseButton")}</span>
         </button>
       </div>
       <div class="ds-chapter-end-swipe-hint ds-muted">

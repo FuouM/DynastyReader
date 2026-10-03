@@ -196,7 +196,7 @@ export function BrowseView() {
     if (activeProvider() === "mangadex") {
       const parsed = parseMangaDexUrl(raw);
       if (!parsed) {
-        showBanner("Unrecognized MangaDex URL. Expected mangadex.org/title/... or mangadex.org/chapter/...");
+        showBanner(t("browse.searchAndGo.unrecognizedMangaDexUrlWarning"));
         return;
       }
       let kind = parsed.kind;

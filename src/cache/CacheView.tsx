@@ -129,7 +129,7 @@ export function CacheView() {
     const provider = activeProvider();
     if (provider === "mangadex") {
       await getProvider("mangadex").purgeCache();
-      showBanner("MangaDex cache purged.");
+      showBanner(t("cache.mdxCachePurgedBanner"));
       void refetch();
     } else {
       await cacheActions.purgeAll();
@@ -139,7 +139,7 @@ export function CacheView() {
     const provider = activeProvider();
     if (provider === "mangadex") {
       await getProvider("mangadex").purgeCache();
-      showBanner("MangaDex cached pages purged.");
+      showBanner(t("cache.mdxPagesPurgedBanner"));
       void refetch();
     } else {
       await cacheActions.purgePages();

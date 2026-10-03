@@ -35,6 +35,15 @@ export function setLocale(loc: Locale): void {
   setLocaleRaw(loc);
 }
 
+/** Returns a random praying/loading message localized to the active locale. */
+export function getRandomLoadingMessage(): string {
+  const currentLocale = localeSignal();
+  const activeDict = dictionaries[currentLocale] ?? en;
+  const messages = activeDict.common.prayingMessages;
+  const idx = Math.floor(Math.random() * messages.length);
+  return messages[idx] ?? activeDict.common.loading;
+}
+
 /** Interpolates `{{key}}` and `{key}` place markers in a template string. */
 function interpolate(template: string, params?: TranslationParams): string {
   if (!params) return template;

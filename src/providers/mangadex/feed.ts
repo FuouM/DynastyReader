@@ -7,9 +7,11 @@ import { searchManga } from "./api/manga";
 import { searchChapters } from "./api/chapter";
 import {
   formatMangaTitle,
+  formatMangaDexChapterTitle,
   getMangaAuthors,
   getMangaCoverUrl,
 } from "./mapping";
+import { t } from "../../i18n";
 import { whitelistEnabled, whitelistedTags } from "./db/whitelist.repo";
 import {
   getCachedMdxMetadata,
@@ -33,15 +35,8 @@ function mapMdxChapterToFeedChapter(
   ch: MangaDexChapter,
   mangaEntity?: MangaDexManga,
 ): FeedChapter {
-  const chNum = ch.attributes.chapter;
-  const rawTitle = ch.attributes.title;
-  const title = chNum
-    ? rawTitle
-      ? `Ch. ${chNum} - ${rawTitle}`
-      : `Chapter ${chNum}`
-    : rawTitle || "Oneshot";
-
-  let mangaTitle = "Manga";
+  const title = formatMangaDexChapterTitle(ch.attributes.chapter, ch.attributes.title);
+  let mangaTitle = t("mangadex.defaultManga");
   let mangaId = "";
   if (mangaEntity) {
     mangaId = mangaEntity.id;
@@ -53,7 +48,7 @@ function mapMdxChapterToFeedChapter(
       const attrs = mangaRel.attributes;
       if (attrs && typeof attrs === "object" && "title" in attrs) {
         const titleMap = attrs.title as Record<string, string>;
-        mangaTitle = titleMap?.en || Object.values(titleMap || {})[0] || "Manga";
+        mangaTitle = titleMap?.en || Object.values(titleMap || {})[0] || t("mangadex.defaultManga");
       }
     }
   }

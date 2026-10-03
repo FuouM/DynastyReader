@@ -28,6 +28,7 @@ import {
   type FullyCachedChapterRow,
 } from "../db/cache.repo";
 import { fetchSeries, fetchChapter } from "../api/series";
+import { t } from "../i18n";
 import type {
   FollowedSeriesRow,
   FollowedSeriesPageResult,
@@ -45,14 +46,16 @@ const DYNASTY_SLUG_REGEX = /^[a-zA-Z0-9_-]+$/;
 export class DynastyProvider implements ContentProviderAdapter {
   readonly id = "dynasty" as const;
 
-  readonly meta: ProviderMetaInfo = {
-    id: "dynasty",
-    name: "Dynasty Scans",
-    shortName: "Dynasty",
-    description: "Curated Yuri & Girls' Love catalog, doujinshi, and scanlations.",
-    badge: "Yuri / GL",
-    isBrowsable: true,
-  };
+  get meta(): ProviderMetaInfo {
+    return {
+      id: "dynasty",
+      name: t("providers.dynasty.name"),
+      shortName: t("providers.dynasty.shortName"),
+      description: t("providers.dynasty.description"),
+      badge: t("providers.dynasty.badge"),
+      isBrowsable: true,
+    };
+  }
 
   matchesPermalink(permalink: string): boolean {
     return (

@@ -9,6 +9,7 @@ import { GroupBox } from "../../components/GroupBox";
 import { ConfirmDeleteButton } from "../../components/Button";
 import type { ProcessedCachedChapter } from "./types";
 import { DownloadedChapterRow, ShowMoreToggle } from "./SeriesDownloadedCard";
+import { t } from "../../i18n";
 
 export interface OrphanDownloadedCardProps {
   orphans: ProcessedCachedChapter[];
@@ -44,10 +45,7 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
       title={
         <span class="ds-icon-text">
           <BookIcon />
-          <span>Individual Chapters</span>
-          <span class="ds-muted" style="font-weight:normal;font-size:11px;">
-            ({props.totalCount ?? props.orphans.length} chapters)
-          </span>
+          <span>{t("downloaded.orphanTitle", { count: props.totalCount ?? props.orphans.length })}</span>
         </span>
       }
       actions={
@@ -55,7 +53,7 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
           <ConfirmDeleteButton
             icon={<TrashIcon />}
             className="ds-btn-sm ds-btn-icon"
-            title="Clear all cached individual chapters"
+            title={t("downloaded.clearOrphansTooltip")}
             onConfirm={props.onDeleteAll!}
           />
         </Show>
@@ -63,10 +61,10 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
     >
       <div class="ds-downloaded-summary-strip">
         <div class="ds-downloaded-summary-text ds-muted">
-          <span>{props.orphans.length} standalone chapters</span>
+          <span>{t("downloaded.standaloneChaptersCount", { count: props.orphans.length })}</span>
           <Show when={partialCount() > 0}>
             <span>·</span>
-            <span class="ds-partial-text">{partialCount()} partial</span>
+            <span class="ds-partial-text">{t("downloaded.partialSummary", { count: partialCount() })}</span>
           </Show>
         </div>
       </div>

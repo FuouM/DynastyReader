@@ -9,6 +9,7 @@ import { decodeEntities } from "../utils/formatting";
 import { titleFromPermalink } from "../taxonomy";
 import { getOrHydrateSeriesCover } from "../api/series";
 import { isValidPermalink, parseDynastyEntityUrl as parseValidDynastyUrl } from "../api/navigation";
+import { t } from "../i18n";
 
 export interface ValidatedFollowedItem {
   permalink: string;
@@ -87,7 +88,7 @@ export function validateAndParseImport(
       collections: [],
       stats: { followedCount: 0, collectionsCount: 0, collectionItemsCount: 0, ignoredCount: 0 },
       warnings: [],
-      errors: ["Input is empty."],
+      errors: [t("library.importErrorEmpty")],
     };
   }
 
@@ -97,7 +98,7 @@ export function validateAndParseImport(
       const parsed: unknown = JSON.parse(text);
       return parseJsonImport(parsed, opts);
     } catch (err) {
-      errors.push(`Invalid JSON syntax: ${err instanceof Error ? err.message : String(err)}`);
+      errors.push(t("library.importErrorInvalidJson", { message: err instanceof Error ? err.message : String(err) }));
       return {
         valid: false,
         detectedFormat: "json",
@@ -295,7 +296,7 @@ function parseJsonImport(
       importCollection(root.collection as Record<string, unknown>, "Imported Collection");
     }
   } else {
-    errors.push("JSON must be an object or array.");
+    errors.push(t("library.importErrorJsonStructure"));
   }
 
   function importCollection(colObj: Record<string, unknown>, fallbackName: string): void {
@@ -312,11 +313,11 @@ function parseJsonImport(
   const valid = followed.length > 0 || collectionItemsCount > 0;
 
   if (!valid && errors.length === 0) {
-    errors.push("No valid Dynasty Scans series or collections found in JSON.");
+    errors.push(t("library.importErrorNoValidJsonSeries"));
   }
 
   if (ignoredCount > 0) {
-    warnings.push(`Ignored ${ignoredCount} invalid or malformed item(s).`);
+    warnings.push(t("library.importWarningIgnoredJsonItems", { count: ignoredCount }));
   }
 
   return {
@@ -446,11 +447,11 @@ function parseUrlListImport(
   const valid = followed.length > 0 || collectionItemsCount > 0;
 
   if (!valid) {
-    errors.push("No valid Dynasty Scans URLs found (URLs must begin with https://dynasty-scans.com/).");
+    errors.push(t("library.importErrorNoValidUrls"));
   }
 
   if (ignoredCount > 0) {
-    warnings.push(`Ignored ${ignoredCount} invalid line(s) (only valid dynasty-scans.com URLs are accepted).`);
+    warnings.push(t("library.importWarningIgnoredUrls", { count: ignoredCount }));
   }
 
   return {
@@ -478,7 +479,7 @@ export async function executeImport(
   opts: ExecuteImportOptions = {},
 ): Promise<ImportExecutionResult> {
   if (!payload.valid) {
-    throw new Error("Cannot execute import on an invalid payload.");
+    throw new Error(t("library.importErrorInvalidPayload"));
   }
 
   const targetMode = opts.targetMode ?? "auto";
@@ -767,7 +768,7 @@ async function getOrCreateCollectionId(name: string, isDefault = false): Promise
     [cleanName],
   );
   if (created.length === 0) {
-    throw new Error(`Failed to create collection "${cleanName}".`);
+    throw new Error(t("library.importErrorCreateCollectionFailed", { name: cleanName }));
   }
   notifyCollectionsChanged();
   return created[0].id;

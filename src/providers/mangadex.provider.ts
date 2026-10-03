@@ -53,6 +53,7 @@ import {
   notifyProgressChanged,
 } from "../db/library-notifiers";
 import { decodeEntities } from "../utils/formatting";
+import { t } from "../i18n";
 import { inClause } from "../db/paging";
 import type { FullyCachedChapterRow } from "../db/cache.repo";
 import type {
@@ -68,14 +69,16 @@ import type { Series, Chapter, SeriesTag, SeriesTaggings } from "../types/api";
 export class MangaDexProvider implements ContentProviderAdapter {
   readonly id = "mangadex" as const;
 
-  readonly meta: ProviderMetaInfo = {
-    id: "mangadex",
-    name: "MangaDex",
-    shortName: "MangaDex",
-    description: "Open community aggregator across all genres with multiple scanlation groups.",
-    badge: "All Genres",
-    isBrowsable: true,
-  };
+  get meta(): ProviderMetaInfo {
+    return {
+      id: "mangadex",
+      name: t("providers.mangadex.name"),
+      shortName: t("providers.mangadex.shortName"),
+      description: t("providers.mangadex.description"),
+      badge: t("providers.mangadex.badge"),
+      isBrowsable: true,
+    };
+  }
 
   matchesPermalink(permalink: string): boolean {
     return typeof permalink === "string" && permalink.startsWith("mdx:");

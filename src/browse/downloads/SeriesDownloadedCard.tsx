@@ -366,13 +366,13 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
         {/* Range Segment Selector for Large Series (>50 chapters) */}
         <Show when={isLarge()}>
           <div class="ds-chapter-range-bar">
-            <span class="ds-muted" style="font-size:11px;margin-right:2px;">Range:</span>
+            <span class="ds-muted" style="font-size:11px;margin-right:2px;">{t("downloaded.rangeLabel")}</span>
             <button
               type="button"
               class={`win-button ds-btn-sm${activeRange() === -1 ? " active primary" : ""}`}
               onClick={() => setActiveRange(-1)}
             >
-              All ({totalChapters()})
+              {t("downloaded.rangeAll")} ({totalChapters()})
             </button>
             <For each={chunks()}>
               {(chunk, idx) => (

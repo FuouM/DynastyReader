@@ -293,7 +293,7 @@ function LibraryGrid() {
             {/* ── Master Left Navigation GroupBox ── */}
             <GroupBox
               class="ds-library-master-box"
-              title={<IconText icon={<Icon name="collection" />}>Categories</IconText>}
+              title={<IconText icon={<Icon name="collection" />}>{t("library.categories")}</IconText>}
             >
               <div class="win-listbox ds-library-nav-list">
                 <For each={tabs()}>

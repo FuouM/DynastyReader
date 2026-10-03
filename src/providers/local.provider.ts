@@ -14,6 +14,7 @@ import { inClause, queryPaged } from "../db/paging";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { fetchSeries, fetchChapter } from "../api/series";
+import { t } from "../i18n";
 import {
   notifyBookmarksChanged,
   notifyHistoryChanged,
@@ -36,14 +37,16 @@ const LOCAL_SLUG_REGEX = /^local:[a-zA-Z0-9_\-]+$/;
 export class LocalProvider implements ContentProviderAdapter {
   readonly id = "local" as const;
 
-  readonly meta: ProviderMetaInfo = {
-    id: "local",
-    name: "Local Library",
-    shortName: "Local",
-    description: "Imported local folders, CBZ, and ZIP archives.",
-    badge: "Local",
-    isBrowsable: false,
-  };
+  get meta(): ProviderMetaInfo {
+    return {
+      id: "local",
+      name: t("providers.local.name"),
+      shortName: t("providers.local.shortName"),
+      description: t("providers.local.description"),
+      badge: t("providers.local.badge"),
+      isBrowsable: false,
+    };
+  }
 
   matchesPermalink(permalink: string): boolean {
     return typeof permalink === "string" && permalink.startsWith("local:");

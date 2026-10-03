@@ -44,7 +44,7 @@ export function DownloadedToolbar(props: DownloadedToolbarProps) {
           </span>
           <DsSelect
             id={props.sortId}
-            aria-label="Sort downloaded series"
+            aria-label={t("downloaded.sortAriaLabel")}
             value={props.sortValue}
             onChange={(val) => props.onSortChange(val as DownloadedSortMode)}
             options={props.sortOptions}

@@ -4,7 +4,7 @@
  */
 
 import { persistedSignal } from "../lib/persisted-signal";
-
+import { t } from "../i18n";
 export type ContentProvider = "dynasty" | "mangadex";
 
 export interface ProviderMeta {
@@ -18,17 +18,33 @@ export interface ProviderMeta {
 export const PROVIDERS: Record<ContentProvider, ProviderMeta> = {
   dynasty: {
     id: "dynasty",
-    name: "Dynasty Scans",
-    shortName: "Dynasty",
-    description: "Curated Yuri & Girls' Love catalog, doujinshi, and scanlations.",
-    badge: "Yuri / GL",
+    get name() {
+      return t("providers.dynasty.name");
+    },
+    get shortName() {
+      return t("providers.dynasty.shortName");
+    },
+    get description() {
+      return t("providers.dynasty.description");
+    },
+    get badge() {
+      return t("providers.dynasty.badge");
+    },
   },
   mangadex: {
     id: "mangadex",
-    name: "MangaDex",
-    shortName: "MangaDex",
-    description: "Open community aggregator across all genres with multiple scanlation groups.",
-    badge: "All Genres",
+    get name() {
+      return t("providers.mangadex.name");
+    },
+    get shortName() {
+      return t("providers.mangadex.shortName");
+    },
+    get description() {
+      return t("providers.mangadex.description");
+    },
+    get badge() {
+      return t("providers.mangadex.badge");
+    },
   },
 };
 

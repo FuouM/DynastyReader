@@ -114,16 +114,16 @@ export function BlacklistSettings(props: { onClose?: () => void }) {
           <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ds-border, #e0e0e0);">
             <div class="ds-row-between">
               <div>
-                <div class="ds-label">MangaDex Feed Allowlist (Whitelist)</div>
+                <div class="ds-label">{t("blacklist.mdxWhitelistTitle")}</div>
                 <div class="ds-muted" style="font-size: 11px;">
-                  Configure MangaDex feed allowlist and allowed genre filters
+                  {t("blacklist.mdxWhitelistDesc")}
                 </div>
               </div>
               <Button
                 id="ds-settings-goto-whitelist"
-                title="Configure MangaDex feed allowlist and genre filters"
+                title={t("blacklist.mdxWhitelistDesc")}
                 icon={<ListCheckIcon />}
-                text="Open Whitelist"
+                text={t("blacklist.openWhitelistButton")}
                 onClick={() => {
                   props.onClose?.();
                   navigate({ view: "whitelist" });

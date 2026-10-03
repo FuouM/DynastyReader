@@ -6,8 +6,7 @@ import { createEffect, createSignal, Show, type Accessor, type JSX } from "solid
 import { debounce } from "@solid-primitives/scheduled";
 import { Icon, type BootstrapIconName, RefreshIcon } from "./Icon";
 import { Button } from "./Button";
-import { t } from "../i18n";
-import { en } from "../i18n/en";
+import { t, getRandomLoadingMessage } from "../i18n";
 /**
  * Returns true once `loading` has stayed true for `delayMs`, false otherwise.
  * Matches `attachDelayedLoading`'s 140ms no-flicker threshold.
@@ -28,11 +27,6 @@ export function useDelayedSpinner(loading: Accessor<boolean>, delayMs = 140): Ac
 
 // ── 1. Loading Spinner ──────────────────────────────────────────────────────────
 
-function getRandomLoadingMessage(): string {
-  const messages = en.common.prayingMessages;
-  const idx = Math.floor(Math.random() * messages.length);
-  return messages[idx] ?? en.common.loading;
-}
 
 export interface LoadingProps {
   message?: string;
