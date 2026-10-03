@@ -52,13 +52,8 @@ export function AnchoredPopover(props: AnchoredPopoverProps) {
       props.onClose();
     };
 
-    const cleanupKey = makeEventListener(window, "keydown", onKeyDown);
-    const cleanupScroll = makeEventListener(window, "scroll", onScroll, { capture: true, passive: true });
-
-    return () => {
-      cleanupKey();
-      cleanupScroll();
-    };
+    makeEventListener(window, "keydown", onKeyDown);
+    makeEventListener(window, "scroll", onScroll, { capture: true, passive: true });
   });
 
   createEffect(() => {

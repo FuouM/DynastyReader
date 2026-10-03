@@ -78,10 +78,11 @@ export function DownloadManager(props: { onComplete?: () => void }) {
     void refreshQueue();
   });
   const totalCount = () => items().length;
-  const activeOrPendingCount = () =>
-    items().filter((i) => i.status === "downloading" || i.status === "pending").length;
-  const allFailedCount = () => items().filter((i) => i.status === "failed").length;
-  const allCompletedCount = () => items().filter((i) => i.status === "done").length;
+  const activeOrPendingCount = createMemo(() =>
+    items().filter((i) => i.status === "downloading" || i.status === "pending").length,
+  );
+  const allFailedCount = createMemo(() => items().filter((i) => i.status === "failed").length);
+  const allCompletedCount = createMemo(() => items().filter((i) => i.status === "done").length);
 
   createEffect(
     on(

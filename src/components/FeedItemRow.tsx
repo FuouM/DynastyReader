@@ -11,7 +11,7 @@
  *  - Actions: Bookmark toggle, Add to collection, Open in browser
  */
 
-import { createEffect, createSignal, onMount, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, onMount, Show, type JSX } from "solid-js";
 import { navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { decodeEntities, errorMessage, slugify, canonicalUrl } from "../utils/formatting";
@@ -56,7 +56,7 @@ export interface FeedItemRowProps {
 }
 
 export function FeedItemRow(props: FeedItemRowProps) {
-  const ch = props.item;
+  const ch = () => props.item;
   const isBlacklisted = () => props.isBlacklisted ?? false;
   const matchedTags = () => props.matchedTags ?? [];
   const isFullyCached = () => props.isFullyCached ?? false;
@@ -72,62 +72,72 @@ export function FeedItemRow(props: FeedItemRowProps) {
 
   onMount(() => {
     if (props.isBookmarked === undefined) {
-      if (ch.permalink.startsWith("mdx:")) {
-        void getMdxBookmark(ch.permalink.replace(/^mdx:/, "")).then((bm) => {
+      const p = ch().permalink;
+      if (p.startsWith("mdx:")) {
+        void getMdxBookmark(p.replace(/^mdx:/, "")).then((bm) => {
           if (bm) setBookmarked(true);
         });
       } else {
-        void getBookmark(ch.permalink).then((bm) => {
+        void getBookmark(p).then((bm) => {
           if (bm) setBookmarked(true);
         });
       }
     }
   });
 
-  const rawTags: SeriesTag[] = (ch.tags ?? []).map((t) => ({
-    type: t.type || "General",
-    name: t.name || "",
-    permalink: t.permalink || "",
-  }));
+  const rawTags = createMemo<SeriesTag[]>(() =>
+    (ch().tags ?? []).map((t) => ({
+      type: t.type || "General",
+      name: t.name || "",
+      permalink: t.permalink || "",
+    })),
+  );
 
-  const coverInfo = browseCovers.getItemCoverInfo({
-    permalink: ch.permalink,
-    title: ch.title,
-    kind: ch.kind,
-    series: ch.series || "",
-    tags: rawTags,
-  });
-  const containerTag = getChapterContainerTag(rawTags);
+  const coverInfo = createMemo(() =>
+    browseCovers.getItemCoverInfo({
+      permalink: ch().permalink,
+      title: ch().title,
+      kind: ch().kind,
+      series: ch().series || "",
+      tags: rawTags(),
+    }),
+  );
+  const containerTag = createMemo(() => getChapterContainerTag(rawTags()));
 
   const blMode = () => getBlacklistMode();
 
   const externalUrl = (): string => {
-    if (ch.url) return ch.url;
-    const path = isSeriesKind(ch.kind) ? seriesTypeToPath(ch.kind) : "chapters";
-    return canonicalUrl(path, ch.permalink);
+    const cur = ch();
+    if (cur.url) return cur.url;
+    const path = isSeriesKind(cur.kind) ? seriesTypeToPath(cur.kind) : "chapters";
+    return canonicalUrl(path, cur.permalink);
   };
   const { copied, handleCopyLink } = useCopyLink({
     getUrl: externalUrl,
     namespace: "feed-item-row",
   });
 
-  const isDirectSeries = isSeriesKind(ch.kind);
+  const isDirectSeries = () => isSeriesKind(ch().kind);
 
   const openMainTarget = (): void => {
-    if (isDirectSeries) {
-      openSeries(ch.permalink, ch.title);
+    const cur = ch();
+    if (isDirectSeries()) {
+      openSeries(cur.permalink, cur.title);
     } else {
       openChapter();
     }
   };
 
   const openChapter = (): void => {
+    const cur = ch();
+    const ci = coverInfo();
+    const ct = containerTag();
     navigate({
       view: "reader",
-      chapterPermalink: ch.permalink,
-      chapterTitle: ch.title,
-      seriesPermalink: coverInfo.seriesPermalink || containerTag?.permalink || undefined,
-      seriesName: coverInfo.seriesName || containerTag?.name || ch.series || undefined,
+      chapterPermalink: cur.permalink,
+      chapterTitle: cur.title,
+      seriesPermalink: ci.seriesPermalink || ct?.permalink || undefined,
+      seriesName: ci.seriesName || ct?.name || cur.series || undefined,
     });
   };
 
@@ -149,34 +159,36 @@ export function FeedItemRow(props: FeedItemRowProps) {
 
   const toggleBookmark = async (): Promise<void> => {
     try {
+      const cur = ch();
+      const ci = coverInfo();
       if (bookmarked()) {
-        if (ch.permalink.startsWith("mdx:")) {
-          await removeMdxBookmark(ch.permalink.replace(/^mdx:/, ""));
+        if (cur.permalink.startsWith("mdx:")) {
+          await removeMdxBookmark(cur.permalink.replace(/^mdx:/, ""));
         } else {
-          await removeBookmark(ch.permalink);
+          await removeBookmark(cur.permalink);
         }
         setBookmarked(false);
-        showBanner(t("browse.feed.bookmarkRemovedBanner", { title: ch.title }));
+        showBanner(t("browse.feed.bookmarkRemovedBanner", { title: cur.title }));
       } else {
-        if (ch.permalink.startsWith("mdx:")) {
+        if (cur.permalink.startsWith("mdx:")) {
           await addMdxBookmark({
-            chapterId: ch.permalink.replace(/^mdx:/, ""),
-            chapterTitle: ch.title,
-            mangaId: coverInfo.seriesPermalink?.replace(/^mdx:/, "") || "",
-            mangaTitle: ch.series ?? "",
+            chapterId: cur.permalink.replace(/^mdx:/, ""),
+            chapterTitle: cur.title,
+            mangaId: ci.seriesPermalink?.replace(/^mdx:/, "") || "",
+            mangaTitle: cur.series ?? "",
             pageIndex: 0,
           });
         } else {
           await addBookmark({
-            chapterPermalink: ch.permalink,
-            seriesPermalink: coverInfo.seriesPermalink || "",
-            seriesName: ch.series ?? "",
-            chapterTitle: ch.title,
+            chapterPermalink: cur.permalink,
+            seriesPermalink: ci.seriesPermalink || "",
+            seriesName: cur.series ?? "",
+            chapterTitle: cur.title,
             pageIndex: 0,
           });
         }
         setBookmarked(true);
-        showBanner(t("browse.feed.bookmarkSavedBanner", { title: ch.title }));
+        showBanner(t("browse.feed.bookmarkSavedBanner", { title: cur.title }));
       }
     } catch (err) {
       const msg = errorMessage(err);
@@ -185,44 +197,51 @@ export function FeedItemRow(props: FeedItemRowProps) {
   };
 
   const openAddToCol = (anchorEl: HTMLElement): void => {
-    if (!coverInfo.isStandalone) {
+    const cur = ch();
+    const ci = coverInfo();
+    const tags = rawTags();
+    if (!ci.isStandalone) {
       const sPermalink =
-        coverInfo.seriesPermalink ||
-        (ch.series ? slugify(ch.series) : ch.permalink);
+        ci.seriesPermalink ||
+        (cur.series ? slugify(cur.series) : cur.permalink);
       props.onAddToCol(
         {
           permalink: sPermalink,
-          title: coverInfo.seriesName || ch.series || ch.title,
-          kind: (coverInfo.seriesType === "anthology" ? "anthology" : "series") as CollectionItemKind,
-          cover: props.coverPath || coverInfo.coverKey,
+          title: ci.seriesName || cur.series || cur.title,
+          kind: (ci.seriesType === "anthology" ? "anthology" : "series") as CollectionItemKind,
+          cover: props.coverPath || ci.coverKey,
         },
         anchorEl,
       );
     } else {
-      const containerTag = getChapterContainerTag(rawTags);
-      const doujinTag = rawTags.find((t) => isDoujinTag(t.type));
-      const kind: CollectionItemKind = containerTag
-        ? (containerTag.type.toLowerCase() === "anthology" ? "anthology" : "series")
+      const cTag = getChapterContainerTag(tags);
+      const doujinTag = tags.find((t) => isDoujinTag(t.type));
+      const kind: CollectionItemKind = cTag
+        ? (cTag.type.toLowerCase() === "anthology" ? "anthology" : "series")
         : doujinTag
           ? "doujin"
           : "oneshot";
       props.onAddToCol(
         {
-          permalink: ch.permalink,
-          title: ch.title,
+          permalink: cur.permalink,
+          title: cur.title,
           kind,
-          cover: props.coverPath || coverInfo.coverKey,
+          cover: props.coverPath || ci.coverKey,
         },
         anchorEl,
       );
     }
   };
 
-  const { artistTags, groupTags, otherTags } = categorizeChapterTags(rawTags);
+  const categorizedTags = createMemo(() => categorizeChapterTags(rawTags()));
 
-  const coverTitle = coverInfo.isStandalone
-    ? t("browse.feed.readChapterTooltip", { title: decodeEntities(ch.title) })
-    : t("browse.feed.viewSeriesTooltip", { series: decodeEntities(coverInfo.seriesName || coverInfo.seriesPermalink) });
+  const coverTitle = () => {
+    const cur = ch();
+    const ci = coverInfo();
+    return ci.isStandalone
+      ? t("browse.feed.readChapterTooltip", { title: decodeEntities(cur.title) })
+      : t("browse.feed.viewSeriesTooltip", { series: decodeEntities(ci.seriesName || ci.seriesPermalink) });
+  };
 
   return (
     <ListItem
@@ -231,24 +250,24 @@ export function FeedItemRow(props: FeedItemRowProps) {
       read={isRead()}
       blacklisted={isBlacklisted()}
       followed={isFollowed()}
-      onClick={() => guardedOpen(ch.title, openMainTarget)}
+      onClick={() => guardedOpen(ch().title, openMainTarget)}
       leading={
         <HydratedCover
           path={props.coverPath}
-          coverKey={coverInfo.coverKey}
-          chapterPermalink={coverInfo.chapterPermalink}
-          seriesPermalink={coverInfo.seriesPermalink}
-          seriesType={coverInfo.seriesType}
-          title={coverTitle}
+          coverKey={coverInfo().coverKey}
+          chapterPermalink={coverInfo().chapterPermalink}
+          seriesPermalink={coverInfo().seriesPermalink}
+          seriesType={coverInfo().seriesType}
+          title={coverTitle()}
           onClick={(ev) => {
             ev.stopPropagation();
-            if (isDirectSeries) {
-              guardedOpen(ch.title, () => openSeries(ch.permalink, ch.title));
-            } else if (coverInfo.isStandalone) {
-              guardedOpen(ch.title, openChapter);
+            if (isDirectSeries()) {
+              guardedOpen(ch().title, () => openSeries(ch().permalink, ch().title));
+            } else if (coverInfo().isStandalone) {
+              guardedOpen(ch().title, openChapter);
             } else {
-              guardedOpen(coverInfo.seriesName || ch.title, () =>
-                openSeries(coverInfo.seriesPermalink, coverInfo.seriesName || coverInfo.seriesPermalink),
+              guardedOpen(coverInfo().seriesName || ch().title, () =>
+                openSeries(coverInfo().seriesPermalink, coverInfo().seriesName || coverInfo().seriesPermalink),
               );
             }
           }}
@@ -261,26 +280,26 @@ export function FeedItemRow(props: FeedItemRowProps) {
               class="ds-item-title ds-feed-title"
               onClick={(ev) => {
                 ev.stopPropagation();
-                guardedOpen(ch.title, openMainTarget);
+                guardedOpen(ch().title, openMainTarget);
               }}
             >
-              <span>{decodeEntities(ch.title)}</span>
+              <span>{decodeEntities(ch().title)}</span>
               <OfflineBadge when={isFullyCached()} />
             </span>
 
-            <Show when={ch.series && ch.series !== ch.title}>
+            <Show when={ch().series && ch().series !== ch().title}>
               <span class="ds-muted ds-text-11">{t("common.in")}</span>
               <span
                 class="ds-series-link"
-                title={t("browse.feed.goToSeriesTooltip", { series: decodeEntities(ch.series!) })}
+                title={t("browse.feed.goToSeriesTooltip", { series: decodeEntities(ch().series!) })}
                 onClick={(ev) => {
                   ev.stopPropagation();
-                  guardedOpen(ch.series!, () =>
-                    openSeries(coverInfo.seriesPermalink || containerTag?.permalink || (ch.series ? slugify(ch.series) : ch.permalink), ch.series!),
+                  guardedOpen(ch().series!, () =>
+                    openSeries(coverInfo().seriesPermalink || containerTag()?.permalink || (ch().series ? slugify(ch().series!) : ch().permalink), ch().series!),
                   );
                 }}
               >
-                {decodeEntities(ch.series!)}
+                {decodeEntities(ch().series!)}
               </span>
             </Show>
 
@@ -314,15 +333,15 @@ export function FeedItemRow(props: FeedItemRowProps) {
             <AddToCollectionButton
               cssText="flex-shrink:0;"
               title={
-                !coverInfo.isStandalone
-                  ? t("browse.feed.addSeriesToCollection", { series: decodeEntities(coverInfo.seriesName || ch.series || "") })
+                !coverInfo().isStandalone
+                  ? t("browse.feed.addSeriesToCollection", { series: decodeEntities(coverInfo().seriesName || ch().series || "") })
                   : t("browse.feed.addToFavoritesOrCustom")
               }
               onOpen={openAddToCol}
             />
             <ExternalLinkButton
               cssText="flex-shrink:0;"
-              title={t("browse.feed.openOnDynastyTooltip", { title: decodeEntities(ch.title) })}
+              title={t("browse.feed.openOnDynastyTooltip", { title: decodeEntities(ch().title) })}
               url={externalUrl()}
             />
           </div>
@@ -330,9 +349,9 @@ export function FeedItemRow(props: FeedItemRowProps) {
       }
       body={
         <>
-          <TagRow label={`${t("series.authorsLabel")}:`} tags={artistTags} />
-          <TagRow label={`${t("series.scanlatorsLabel")}:`} tags={groupTags} />
-          <TagRow label={`${t("series.tagsLabel")}:`} tags={otherTags} />
+          <TagRow label={`${t("series.authorsLabel")}:`} tags={categorizedTags().artistTags} />
+          <TagRow label={`${t("series.scanlatorsLabel")}:`} tags={categorizedTags().groupTags} />
+          <TagRow label={`${t("series.tagsLabel")}:`} tags={categorizedTags().otherTags} />
         </>
       }
     />

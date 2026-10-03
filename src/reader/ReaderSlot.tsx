@@ -4,7 +4,7 @@
  * Port of `reader-slots.ts`' render helpers into a reactive JSX component.
  */
 
-import { onCleanup, Show, type JSX } from "solid-js";
+import { createMemo, onCleanup, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import { useReader } from "./reader-context";
 import type { SlotStateKind } from "./reader-queue";
@@ -80,7 +80,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
     }
   };
   const dim = () => s.pageDimensions[0][props.index];
-  const aspectStyle = () => {
+  const aspectStyle = createMemo<JSX.CSSProperties>(() => {
     const d = dim();
     if (d && d.width > 0 && d.height > 0) {
       return { "aspect-ratio": `${d.width} / ${d.height}` };
@@ -90,7 +90,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
       return { "aspect-ratio": `${est}` };
     }
     return { "aspect-ratio": "1 / 1.414" };
-  };
+  });
 
   return (
     <div class="ds-page-wrap" style={aspectStyle()}>

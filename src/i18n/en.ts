@@ -12,6 +12,13 @@ export const en = {
     delete: "Delete",
     remove: "Remove",
     loading: "Loading...",
+    prayingMessages: [
+      "Girls are now praying",
+      "The maidens are praying",
+      "The girls are praying",
+      "Girls do their best now and are preparing",
+      "Please watch warmly until it is ready",
+    ],
     yes: "Yes",
     no: "No",
     never: "Never",

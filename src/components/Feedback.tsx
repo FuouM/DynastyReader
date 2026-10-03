@@ -7,7 +7,7 @@ import { debounce } from "@solid-primitives/scheduled";
 import { Icon, type BootstrapIconName, RefreshIcon } from "./Icon";
 import { Button } from "./Button";
 import { t } from "../i18n";
-
+import { en } from "../i18n/en";
 /**
  * Returns true once `loading` has stayed true for `delayMs`, false otherwise.
  * Matches `attachDelayedLoading`'s 140ms no-flicker threshold.
@@ -28,17 +28,10 @@ export function useDelayedSpinner(loading: Accessor<boolean>, delayMs = 140): Ac
 
 // ── 1. Loading Spinner ──────────────────────────────────────────────────────────
 
-const PRAYING_MESSAGES = [
-  "Girls are now praying",
-  "The maidens are praying",
-  "The girls are praying",
-  "Girls do their best now and are preparing",
-  "Please watch warmly until it is ready",
-];
-
 function getRandomLoadingMessage(): string {
-  const idx = Math.floor(Math.random() * PRAYING_MESSAGES.length);
-  return PRAYING_MESSAGES[idx];
+  const messages = en.common.prayingMessages;
+  const idx = Math.floor(Math.random() * messages.length);
+  return messages[idx] ?? en.common.loading;
 }
 
 export interface LoadingProps {
@@ -47,7 +40,7 @@ export interface LoadingProps {
 
 /** Centered loading element with a small inline spinning Reimu Yin-Yang orb. */
 export function Loading(props: LoadingProps) {
-  const message = props.message ?? getRandomLoadingMessage();
+  const message = () => props.message ?? getRandomLoadingMessage();
   return (
     <div class="ds-loading-screen">
       <svg class="ds-yinyang-spinner" viewBox="0 0 100 100" width="18" height="18" aria-hidden="true">
@@ -56,7 +49,7 @@ export function Loading(props: LoadingProps) {
         <circle cx="50" cy="27" r="7.5" fill="#e53935" />
         <circle cx="50" cy="73" r="7.5" fill="#ffffff" />
       </svg>
-      <span class="ds-loading-text">{message}…</span>
+      <span class="ds-loading-text">{message()}…</span>
     </div>
   );
 }
