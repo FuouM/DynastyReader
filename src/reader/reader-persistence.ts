@@ -7,8 +7,6 @@
 import { debounce } from "@solid-primitives/scheduled";
 import { isMobile } from "../stores/platform";
 import { setReadingProgress } from "../db/library.repo";
-import { saveMdxProgress } from "../providers/mangadex/reader";
-import { extractMangaDexId } from "../api/navigation";
 import { log } from "../utils/log";
 import type { ReaderState } from "./reader-state";
 
@@ -33,27 +31,15 @@ export function createReaderPersistence(state: ReaderState, permalink: string): 
     lastPersistedIndex = state.currentIndex();
     lastPersistedCompleted = completed;
     try {
-      if (permalink.startsWith("mdx:")) {
-        await saveMdxProgress(
-          extractMangaDexId(permalink),
-          state.seriesPermalink() ? extractMangaDexId(state.seriesPermalink()!) : "",
-          state.seriesName() ?? "",
-          state.chapterTitle(),
-          state.currentIndex(),
-          state.pages().length,
-          completed,
-        );
-      } else {
-        await setReadingProgress({
-          chapterPermalink: permalink,
-          seriesPermalink: state.seriesPermalink() ?? "",
-          seriesName: state.seriesName() ?? "",
-          chapterTitle: state.chapterTitle(),
-          pageIndex: state.currentIndex(),
-          pageTotal: state.pages().length,
-          completed,
-        });
-      }
+      await setReadingProgress({
+        chapterPermalink: permalink,
+        seriesPermalink: state.seriesPermalink() ?? "",
+        seriesName: state.seriesName() ?? "",
+        chapterTitle: state.chapterTitle(),
+        pageIndex: state.currentIndex(),
+        pageTotal: state.pages().length,
+        completed,
+      });
     } catch (err) {
       log.error("reader-persistence", "failed to persist reading progress:", err);
     }

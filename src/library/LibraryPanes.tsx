@@ -34,7 +34,6 @@ import {
   removeHistoryBatch,
 } from "../db/library.repo";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
-import { getFullyCachedMdxChapterIds } from "../providers/mangadex/db/cache.repo";
 import { deleteCached } from "../db/metadata.repo";
 import { seriesCoverKey } from "../lib/cache-keys";
 import type {
@@ -146,14 +145,7 @@ export function BookmarksPane(props: BookmarksPaneProps) {
       const provider = activeProvider();
       const res = await getBookmarksPage(p, 15, provider);
       const permalinks = res.rows.map((r) => r.chapter_permalink);
-      let fullyCachedSet: Set<string>;
-      if (provider === "mangadex") {
-        const chapterIds = permalinks.map((pl) => pl.replace(/^mdx:/, ""));
-        const mdxCached = await getFullyCachedMdxChapterIds(chapterIds).catch(() => new Set<string>());
-        fullyCachedSet = new Set(Array.from(mdxCached).map((id) => `mdx:${id}`));
-      } else {
-        fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
-      }
+      const fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
       return { res, fullyCachedSet };
     },
     register: props.register,
@@ -399,14 +391,7 @@ export function HistoryPane(props: HistoryPaneProps) {
       const provider = activeProvider();
       const res = await getHistoryPage(p, 15, provider);
       const permalinks = res.rows.map((r) => r.chapter_permalink);
-      let fullyCachedSet: Set<string>;
-      if (provider === "mangadex") {
-        const chapterIds = permalinks.map((pl) => pl.replace(/^mdx:/, ""));
-        const mdxCached = await getFullyCachedMdxChapterIds(chapterIds).catch(() => new Set<string>());
-        fullyCachedSet = new Set(Array.from(mdxCached).map((id) => `mdx:${id}`));
-      } else {
-        fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
-      }
+      const fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
       return { res, fullyCachedSet };
     },
     register: props.register,

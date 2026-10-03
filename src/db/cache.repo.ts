@@ -16,6 +16,16 @@ const cacheNotifier = createChangeNotifier("cache.repo");
 export const getCacheRevision = cacheNotifier.getRevision;
 export const notifyCacheChanged = cacheNotifier.notifyChanged;
 export async function getCachedPages(chapterPermalink: string): Promise<CachedPageRow[]> {
+  if (chapterPermalink.startsWith("mdx:")) {
+    const { getCachedPages: getMdxPages } = await import("../providers/mangadex/db/cache.repo");
+    const mdxRows = await getMdxPages(chapterPermalink.slice(4));
+    return mdxRows.map((r) => ({
+      chapter_permalink: chapterPermalink,
+      page_index: r.page_index,
+      file_path: r.file_path,
+      cached_at: r.created_at,
+    }));
+  }
   return query<CachedPageRow>(
     `SELECT chapter_permalink, page_index, file_path, cached_at
      FROM cached_pages WHERE chapter_permalink = ?`,
@@ -347,43 +357,63 @@ export async function getFullyCachedChapters(): Promise<FullyCachedChapterRow[]>
  */
 export async function getFullyCachedChapterPermalinks(permalinks?: string[]): Promise<Set<string>> {
   if (permalinks && permalinks.length === 0) return new Set();
-  const whereClauses = ["cp.chapter_permalink NOT LIKE 'local:%'"];
-  const params: unknown[] = [];
-  if (permalinks) {
-    whereClauses.push(`cp.chapter_permalink IN (${inClause(permalinks.length)})`);
-    params.push(...permalinks);
-  }
-  const whereClause = ` WHERE ${whereClauses.join(" AND ")}`;
-  const rows = await query<{
-    chapter_permalink: string;
-    page_count: number;
-    progress_total: number | null;
-    chapter_payload: string | null;
-  }>(
-    `SELECT cp.chapter_permalink,
-            COUNT(cp.page_index) AS page_count,
-            (SELECT rp.page_total FROM reading_progress rp WHERE rp.chapter_permalink = cp.chapter_permalink) AS progress_total,
-            (SELECT cm.json_payload FROM cached_metadata cm WHERE cm.cache_key = 'chapter:' || cp.chapter_permalink) AS chapter_payload
-     FROM cached_pages cp${whereClause}
-     GROUP BY cp.chapter_permalink`,
-    params,
-  );
+
   const fullyCached = new Set<string>();
-  for (const r of rows) {
-    let totalPages = Number(r.progress_total ?? 0);
-    if (totalPages === 0 && r.chapter_payload) {
-      try {
-        const parsed = JSON.parse(r.chapter_payload) as { pages?: unknown };
-        if (Array.isArray(parsed.pages)) totalPages = parsed.pages.length;
-      } catch (err) {
-        log.error("cache.repo", `invalid chapter payload for ${r.chapter_permalink}:`, err);
+  const mdxPerms: string[] = [];
+  const dynastyPerms: string[] = [];
+
+  if (permalinks) {
+    for (const p of permalinks) {
+      if (p.startsWith("mdx:")) mdxPerms.push(p);
+      else if (!p.startsWith("local:")) dynastyPerms.push(p);
+    }
+  }
+
+  if (mdxPerms.length > 0) {
+    const { getFullyCachedMdxChapterIds } = await import("../providers/mangadex/db/cache.repo");
+    const mdxCached = await getFullyCachedMdxChapterIds(mdxPerms.map((p) => p.slice(4))).catch(() => new Set<string>());
+    for (const id of mdxCached) fullyCached.add(`mdx:${id}`);
+  }
+
+  if (!permalinks || dynastyPerms.length > 0) {
+    const whereClauses = ["cp.chapter_permalink NOT LIKE 'local:%'"];
+    const params: unknown[] = [];
+    if (permalinks && dynastyPerms.length > 0) {
+      whereClauses.push(`cp.chapter_permalink IN (${inClause(dynastyPerms.length)})`);
+      params.push(...dynastyPerms);
+    }
+    const whereClause = ` WHERE ${whereClauses.join(" AND ")}`;
+    const rows = await query<{
+      chapter_permalink: string;
+      page_count: number;
+      progress_total: number | null;
+      chapter_payload: string | null;
+    }>(
+      `SELECT cp.chapter_permalink,
+              COUNT(cp.page_index) AS page_count,
+              (SELECT rp.page_total FROM reading_progress rp WHERE rp.chapter_permalink = cp.chapter_permalink) AS progress_total,
+              (SELECT cm.json_payload FROM cached_metadata cm WHERE cm.cache_key = 'chapter:' || cp.chapter_permalink) AS chapter_payload
+       FROM cached_pages cp${whereClause}
+       GROUP BY cp.chapter_permalink`,
+      params,
+    );
+    for (const r of rows) {
+      let totalPages = Number(r.progress_total ?? 0);
+      if (totalPages === 0 && r.chapter_payload) {
+        try {
+          const parsed = JSON.parse(r.chapter_payload) as { pages?: unknown };
+          if (Array.isArray(parsed.pages)) totalPages = parsed.pages.length;
+        } catch (err) {
+          log.error("cache.repo", `invalid chapter payload for ${r.chapter_permalink}:`, err);
+        }
+      }
+      const pageCount = Number(r.page_count);
+      if (totalPages > 0 ? pageCount >= totalPages : pageCount > 0) {
+        fullyCached.add(r.chapter_permalink);
       }
     }
-    const pageCount = Number(r.page_count);
-    if (totalPages > 0 ? pageCount >= totalPages : pageCount > 0) {
-      fullyCached.add(r.chapter_permalink);
-    }
   }
+
   return fullyCached;
 }
 

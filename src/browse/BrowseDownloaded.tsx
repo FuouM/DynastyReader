@@ -12,10 +12,10 @@ import { debounce } from "@solid-primitives/scheduled";
 import { route } from "../stores/router";
 import { t } from "../i18n";
 import { activeProvider } from "../stores/provider";
-import { getMangaDexDownloadedChapterRows } from "../providers/mangadex/db/cache.repo";
+import { getProvider } from "../providers";
 import { persistedSignal } from "../lib/persisted-signal";
 import { DownloadManager } from "./DownloadManager";
-import { getFullyCachedChapters, type FullyCachedChapterRow } from "../db/cache.repo";
+import type { FullyCachedChapterRow } from "../db/cache.repo";
 import { enrichCachedChapters } from "../db/cache-aggregate";
 import {
   scrollBrowseToTop,
@@ -80,10 +80,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     active: props.active,
     revision: props.revision,
     load: async () => {
-      const rows =
-        activeProvider() === "mangadex"
-          ? await getMangaDexDownloadedChapterRows()
-          : await getFullyCachedChapters();
+      const rows = await getProvider(activeProvider()).getDownloadedChapterRows();
       const enriched = await enrichCachedChapters(rows);
       return { rows, ...enriched };
     },

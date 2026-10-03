@@ -1,3 +1,6 @@
+import { mangadexProvider } from "../providers/mangadex.provider";
+import { getManga } from "../providers/mangadex/api/manga";
+import { getMangaCoverUrl } from "../providers/mangadex/mapping";
 import { SITE_ROOT } from "../constants";
 import { seriesTypeToPath } from "../taxonomy";
 import { getCached, setCached, deleteCached, touchCached } from "../db/metadata.repo";
@@ -114,11 +117,7 @@ export async function fetchSeries(
     return fetchLocalSeries(permalink);
   }
   if (permalink.startsWith("mdx:")) {
-    const mangaId = permalink.replace(/^mdx:/, "");
-    const { getManga } = await import("../providers/mangadex/api/manga");
-    const { mangaDexToStandardSeries } = await import("../providers/mangadex/mapping");
-    const manga = await getManga(mangaId);
-    return mangaDexToStandardSeries(manga);
+    return mangadexProvider.fetchSeries(permalink, force);
   }
   const key = seriesKey(permalink);
   const cached = await getCached(key);
@@ -266,8 +265,6 @@ export async function getOrHydrateSeriesCover(
       onPhase?.("downloading");
       if (permalink.startsWith("mdx:")) {
         const mangaId = permalink.replace(/^mdx:/, "");
-        const { getManga } = await import("../providers/mangadex/api/manga");
-        const { getMangaCoverUrl } = await import("../providers/mangadex/mapping");
         const m = await getManga(mangaId);
         coverUrl = getMangaCoverUrl(m, "256");
       } else {

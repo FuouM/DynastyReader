@@ -6,17 +6,9 @@
 import type { ReaderSession } from "./reader-session";
 import type { Chapter } from "../types/api";
 import { convertFileSrc } from "../ipc";
-import { fetchChapter, fetchSeries } from "../api/series";
+import { fetchSeries } from "../api/series";
 import { addHistory, getBookmark, getReadingProgress } from "../db/library.repo";
 import { getCachedPages } from "../db/cache.repo";
-import {
-  loadMangaDexChapterForReader,
-  getMdxCachedPages,
-  getMdxProgress,
-  recordMdxHistory,
-} from "../providers/mangadex/reader";
-import { getMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
-import { extractMangaDexId } from "../api/navigation";
 import { getChapterContainerTag } from "../taxonomy";
 import {
   detectIsLongStrip,
@@ -54,16 +46,9 @@ async function determineStartPage(
     startPage = Math.max(0, pageCount - 1);
   } else if (startPage <= 0) {
     try {
-      if (permalink.startsWith("mdx:")) {
-        const prog = await getMdxProgress(extractMangaDexId(permalink));
-        if (prog && prog.completed !== 1 && prog.page_index > 0) {
-          startPage = prog.page_index;
-        }
-      } else {
-        const prog = await getReadingProgress(permalink);
-        if (prog && prog.completed !== 1 && prog.page_index > 0) {
-          startPage = prog.page_index;
-        }
+      const prog = await getReadingProgress(permalink);
+      if (prog && prog.completed !== 1 && prog.page_index > 0) {
+        startPage = prog.page_index;
       }
     } catch (err) {
       log.error("reader-bootstrap", "failed to load reading progress:", err);
@@ -166,11 +151,7 @@ function initDisplayPreferences(s: ReaderSession, chapter: Chapter): void {
 async function hydrateCachedPages(s: ReaderSession, permalink: string, pageCount: number): Promise<void> {
   let cachedRows: Array<{ page_index: number; file_path: string }> = [];
   try {
-    if (permalink.startsWith("mdx:")) {
-      cachedRows = await getMdxCachedPages(extractMangaDexId(permalink));
-    } else {
-      cachedRows = await getCachedPages(permalink);
-    }
+    cachedRows = await getCachedPages(permalink);
   } catch (err) {
     showBanner(
       t("reader.session.cacheLookupError", { msg: errorMessage(err) }),
@@ -289,12 +270,9 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
 
   let chapter: Chapter;
   try {
-    if (permalink.startsWith("mdx:")) {
-      const payload = await loadMangaDexChapterForReader(permalink);
-      chapter = payload.chapter;
-    } else {
-      chapter = await fetchChapter(permalink);
-    }
+    const { getProviderForPermalink } = await import("../providers/registry");
+    const payload = await getProviderForPermalink(permalink).fetchChapterForReader(permalink);
+    chapter = payload.chapter;
   } catch (err) {
     if (s.disposed) return;
     const msg = errorMessage(err);
@@ -381,32 +359,19 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
 
   // History + bookmarked state
   try {
-    if (permalink.startsWith("mdx:")) {
-      await recordMdxHistory(
-        extractMangaDexId(permalink),
-        s.seriesPermalink() ? extractMangaDexId(s.seriesPermalink()!) : "",
-        s.seriesName() ?? "",
-        s.chapterTitle(),
-      );
-    } else {
-      await addHistory({
-        chapterPermalink: permalink,
-        seriesPermalink: s.seriesPermalink() ?? "",
-        seriesName: s.seriesName() ?? "",
-        chapterTitle: s.chapterTitle(),
-      });
-    }
+    await addHistory({
+      chapterPermalink: permalink,
+      seriesPermalink: s.seriesPermalink() ?? "",
+      seriesName: s.seriesName() ?? "",
+      chapterTitle: chapter.title,
+    });
   } catch (err) {
     log.error("reader-bootstrap", "failed to record history:", err);
   }
 
   let bookmarked = false;
   try {
-    if (permalink.startsWith("mdx:")) {
-      bookmarked = (await getMdxBookmark(extractMangaDexId(permalink))) !== null;
-    } else {
-      bookmarked = (await getBookmark(permalink)) !== null;
-    }
+    bookmarked = (await getBookmark(permalink)) !== null;
   } catch (err) {
     log.debug("reader-bootstrap", "getBookmark failed:", err);
     bookmarked = false;

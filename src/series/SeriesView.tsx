@@ -28,15 +28,21 @@ import { enqueueChapters } from "../ipc";
 import { persistedSignal } from "../lib/persisted-signal";
 import { getQueuePageTotals } from "../db/cache-aggregate";
 import { addBlacklistedSeries, isSeriesBlacklisted, removeBlacklistedSeries } from "../db/blacklist.repo";
-import { followSeries, getFollowedSeriesRow, getHistoryPermalinks, getProgressForSeries, unfollowSeries, markChapterRead, markChapterUnread, getProgressRevision, getHistoryRevision, getBookmarksRevision } from "../db/library.repo";
+import {
+  followSeries,
+  isSeriesFollowed,
+  getHistoryPermalinks,
+  getProgressForSeries,
+  unfollowSeries,
+  markChapterRead,
+  markChapterUnread,
+  getProgressRevision,
+  getHistoryRevision,
+  getBookmarksRevision,
+} from "../db/library.repo";
 import { getCachedPageCounts, getCacheRevision } from "../db/cache.repo";
 import type { SeriesProgressRow } from "../types/db";
-import type { Series, SeriesTag, SeriesTaggings } from "../types/api";
-import { getManga, getAllMangaFeed } from "../providers/mangadex/api/manga";
-import { formatMangaTitle, getMangaAuthors, getMangaCoverUrl } from "../providers/mangadex/mapping";
-import { followManga, isMangaFollowed, unfollowManga } from "../providers/mangadex/db/library.repo";
-import { getMangaReadingProgress, saveReadingProgress as saveMdxProgress } from "../providers/mangadex/db/progress.repo";
-import { getMdxHistoryChapterIds, recordHistory as recordMdxHistory } from "../providers/mangadex/db/history.repo";
+import type { Series } from "../types/api";
 import { Loading, ErrorRetryRow, useDelayedSpinner } from "../components/Feedback";
 import { useAddToCollection } from "../components/AddToCollectionModal";
 import { BlacklistIcon } from "../components/Icon";
@@ -96,93 +102,10 @@ export function SeriesView() {
       if (!permalink) throw new Error(t("series.missingPermalinkError"));
 
       let series: Series;
-      if (permalink.startsWith("mdx:")) {
-        const mangaId = permalink.replace(/^mdx:/, "");
-        const [manga, feed, isFollowed] = await Promise.all([
-          getManga(mangaId),
-          getAllMangaFeed(mangaId, { limit: 500, order: { chapter: "asc" } }),
-          isMangaFollowed(mangaId),
-        ]);
-
-        const title = formatMangaTitle(manga);
-        const coverUrl = getMangaCoverUrl(manga, "512");
-        const authors = getMangaAuthors(manga);
-
-        // Collect scanlator groups across chapters
-        const scanlatorSet = new Set<string>();
-        for (const ch of feed.data) {
-          const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
-          const attrs = groupRel?.attributes;
-          const groupName = attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string" ? attrs.name : undefined;
-          if (groupName) scanlatorSet.add(groupName);
-        }
-
-        const tags: SeriesTag[] = [
-          ...authors.map((a) => ({ type: "Author", name: a, permalink: `mdx-author:${a}` })),
-          ...Array.from(scanlatorSet).map((s) => ({ type: "Scanlator", name: s, permalink: `mdx-group:${s}` })),
-          { type: "Format", name: manga.attributes.status, permalink: `mdx-status:${manga.attributes.status}` },
-          { type: "Format", name: manga.attributes.contentRating, permalink: `mdx-rating:${manga.attributes.contentRating}` },
-          ...(manga.attributes.tags || []).map((t) => ({
-            type: "General",
-            name: t.attributes.name.en || Object.values(t.attributes.name)[0] || "Tag",
-            permalink: `mdx-tag:${t.id}`,
-          })),
-        ];
-
-        const taggings: SeriesTaggings[] = [];
-        let currentVol: string | null = null;
-        for (const ch of feed.data) {
-          const vol = ch.attributes.volume;
-          if (vol && vol !== currentVol) {
-            currentVol = vol;
-            taggings.push({ header: `Volume ${vol}` });
-          }
-          const num = ch.attributes.chapter;
-          const raw = ch.attributes.title;
-          const chTitle = num ? (raw ? `Chapter ${num}: ${raw}` : `Chapter ${num}`) : (raw || "Oneshot");
-          const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
-          const groupAttrs = groupRel?.attributes;
-          let groupName: string | undefined;
-          if (groupAttrs && typeof groupAttrs === "object" && "name" in groupAttrs && typeof groupAttrs.name === "string" && groupAttrs.name) {
-            groupName = groupAttrs.name;
-          }
-          const chTags: SeriesTag[] = [];
-          if (groupName && groupRel) {
-            chTags.push({
-              type: "Scanlator",
-              name: groupName,
-              permalink: `mdx-group:${groupRel.id}`,
-            });
-          }
-          taggings.push({
-            title: chTitle,
-            permalink: `mdx:${ch.id}`,
-            released_on: ch.attributes.readableAt ? ch.attributes.readableAt.substring(0, 10) : null,
-            tags: chTags,
-          });
-        }
-
-        const descMap = manga.attributes.description;
-        const description = descMap?.en || Object.values(descMap || {})[0] || null;
-
-        series = {
-          name: title,
-          type: "Series",
-          permalink,
-          tags,
-          cover: coverUrl,
-          link: `https://mangadex.org/title/${manga.id}`,
-          description,
-          aliases: (manga.attributes.altTitles || []).map((t) => Object.values(t)[0]).filter(Boolean),
-          taggings,
-        };
-
-        setFollowed(isFollowed);
-        setBlacklisted(isSeriesBlacklisted(permalink, title));
-      } else {
-        try {
-          series = await fetchSeries(permalink, tick > 0);
-        } catch (err) {
+      try {
+        series = await fetchSeries(permalink, tick > 0);
+      } catch (err) {
+        if (!permalink.startsWith("mdx:") && !permalink.startsWith("local:")) {
           try {
             const ch = await fetchChapter(permalink);
             if (ch && ((ch.pages && ch.pages.length > 0) || ch.title)) {
@@ -196,13 +119,14 @@ export function SeriesView() {
           } catch (inner) {
             if (inner instanceof SeriesRedirected) throw inner;
           }
-          throw err;
         }
-        const followedRow = (await getFollowedSeriesRow(permalink)) !== null;
-        const blacklistedVal = isSeriesBlacklisted(permalink, series.name);
-        setFollowed(followedRow);
-        setBlacklisted(blacklistedVal);
+        throw err;
       }
+
+      const followedVal = await isSeriesFollowed(permalink);
+      const blacklistedVal = isSeriesBlacklisted(permalink, series.name);
+      setFollowed(followedVal);
+      setBlacklisted(blacklistedVal);
 
       let coverPath: string | null = null;
       try {
@@ -219,46 +143,20 @@ export function SeriesView() {
       let readHistorySet = new Set<string>();
       let queueTotals = new Map<string, number>();
 
-      if (permalink.startsWith("mdx:")) {
-        const mangaId = permalink.replace(/^mdx:/, "");
-        const [rawProgress, h, qt] = await Promise.all([
-          getMangaReadingProgress(mangaId),
-          getMdxHistoryChapterIds(chapterPermalinks.map((p) => p.replace(/^mdx:/, ""))),
+      try {
+        const [p, c, h, qt] = await Promise.all([
+          getProgressForSeries(permalink),
+          permalink.startsWith("mdx:") ? Promise.resolve([]) : getCachedPageCounts(chapterPermalinks),
+          getHistoryPermalinks(chapterPermalinks),
           getQueuePageTotals(chapterPermalinks),
         ]);
-        progress = new Map(
-          Object.values(rawProgress).map((r) => [
-            `mdx:${r.chapter_id}`,
-            {
-              chapter_permalink: `mdx:${r.chapter_id}`,
-              series_permalink: permalink,
-              series_name: series.name,
-              chapter_title: "",
-              page_index: r.page_index,
-              page_total: r.page_total,
-              completed: r.completed,
-              updated_at: r.updated_at,
-            },
-          ]),
-        );
+        progress = new Map(p.map((r) => [r.chapter_permalink, r]));
+        cacheCounts = new Map(c.map((r) => [r.chapter_permalink, r.n]));
         readHistorySet = h;
         queueTotals = qt;
-      } else {
-        try {
-          const [p, c, h, qt] = await Promise.all([
-            getProgressForSeries(permalink),
-            getCachedPageCounts(chapterPermalinks),
-            getHistoryPermalinks(chapterPermalinks),
-            getQueuePageTotals(chapterPermalinks),
-          ]);
-          progress = new Map(p.map((r) => [r.chapter_permalink, r]));
-          cacheCounts = new Map(c.map((r) => [r.chapter_permalink, r.n]));
-          readHistorySet = h;
-          queueTotals = qt;
-        } catch (err) {
-          const msg = errorMessage(err);
-          showBanner(t("series.progressLoadError", { msg }));
-        }
+      } catch (err) {
+        const msg = errorMessage(err);
+        showBanner(t("series.progressLoadError", { msg }));
       }
 
       return { series, coverPath, chapters, progress, cacheCounts, readHistorySet, queueTotals };
@@ -330,33 +228,20 @@ export function SeriesView() {
     const latest = sorted[sorted.length - 1];
     setBusyFollow(true);
     try {
-      if (seriesPermalink.startsWith("mdx:")) {
-        const mangaId = seriesPermalink.replace(/^mdx:/, "");
-        if (followed()) {
-          await unfollowManga(mangaId);
-          setFollowed(false);
-          showBanner(t("series.unfollowedBanner", { name: seriesName }));
-        } else {
-          await followManga(mangaId, seriesName, coverPath);
-          setFollowed(true);
-          showBanner(t("series.followingBanner", { name: seriesName }));
-        }
+      if (followed()) {
+        await unfollowSeries(seriesPermalink);
+        setFollowed(false);
+        showBanner(t("series.unfollowedBanner", { name: seriesName }));
       } else {
-        if (followed()) {
-          await unfollowSeries(seriesPermalink);
-          setFollowed(false);
-          showBanner(t("series.unfollowedBanner", { name: seriesName }));
-        } else {
-          await followSeries({
-            permalink: seriesPermalink,
-            name: seriesName,
-            cover: coverPath,
-            latestChapterPermalink: latest?.permalink ?? null,
-            latestChapterTitle: latest?.title ?? null,
-          });
-          setFollowed(true);
-          showBanner(t("series.followingBanner", { name: seriesName }));
-        }
+        await followSeries({
+          permalink: seriesPermalink,
+          name: seriesName,
+          cover: coverPath,
+          latestChapterPermalink: latest?.permalink ?? null,
+          latestChapterTitle: latest?.title ?? null,
+        });
+        setFollowed(true);
+        showBanner(t("series.followingBanner", { name: seriesName }));
       }
     } catch (err) {
       const msg = errorMessage(err);
@@ -456,27 +341,16 @@ export function SeriesView() {
     const d = data();
     if (!d) return;
     try {
-      if (ch.permalink.startsWith("mdx:")) {
-        const chapterId = ch.permalink.replace(/^mdx:/, "");
-        const mangaId = d.series.permalink.replace(/^mdx:/, "");
-        if (isCurrentlyRead) {
-          await saveMdxProgress(chapterId, mangaId, d.series.name, ch.title, 0, 0, false);
-        } else {
-          await saveMdxProgress(chapterId, mangaId, d.series.name, ch.title, 0, 0, true);
-          await recordMdxHistory(chapterId, mangaId, d.series.name, ch.title);
-        }
+      if (isCurrentlyRead) {
+        await markChapterUnread(ch.permalink);
       } else {
-        if (isCurrentlyRead) {
-          await markChapterUnread(ch.permalink);
-        } else {
-          await markChapterRead({
-            chapterPermalink: ch.permalink,
-            seriesPermalink: d.series.permalink,
-            seriesName: d.series.name,
-            chapterTitle: ch.title,
-            pageTotal: d.progress.get(ch.permalink)?.page_total,
-          });
-        }
+        await markChapterRead({
+          chapterPermalink: ch.permalink,
+          seriesPermalink: d.series.permalink,
+          seriesName: d.series.name,
+          chapterTitle: ch.title,
+          pageTotal: d.progress.get(ch.permalink)?.page_total,
+        });
       }
       refetch();
     } catch (err) {

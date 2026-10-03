@@ -23,9 +23,6 @@ import { fetchFeedWithRevalidation } from "../api/feed";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
 import { getHistoryPermalinks, getBookmarkPermalinks, getFollowedLookup, isChapterFollowed } from "../db/library.repo";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
-import { getMdxHistoryChapterIds } from "../providers/mangadex/db/history.repo";
-import { getMdxBookmarkChapterIds } from "../providers/mangadex/db/bookmarks.repo";
-import { getFullyCachedMdxChapterIds } from "../providers/mangadex/db/cache.repo";
 import type { BlacklistMode } from "../types/blacklist";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import {
@@ -74,20 +71,6 @@ interface FeedModel {
   blacklistedRows: FeedRowData[];
 }
 async function fetchItemStateSets(permalinks: string[]) {
-  const isMdx = permalinks.some((p) => p.startsWith("mdx:"));
-  if (isMdx) {
-    const chapterIds = permalinks.map((p) => p.replace(/^mdx:/, ""));
-    const [readSet, bookmarkSet, fullyCachedSet] = await Promise.all([
-      getMdxHistoryChapterIds(chapterIds).catch(() => new Set<string>()),
-      getMdxBookmarkChapterIds(chapterIds).catch(() => new Set<string>()),
-      getFullyCachedMdxChapterIds(chapterIds).catch(() => new Set<string>()),
-    ]);
-    return {
-      readHistorySet: new Set(Array.from(readSet).map((id) => `mdx:${id}`)),
-      bookmarkSet: new Set(Array.from(bookmarkSet).map((id) => `mdx:${id}`)),
-      fullyCachedSet: new Set(Array.from(fullyCachedSet).map((id) => `mdx:${id}`)),
-    };
-  }
   const [readHistorySet, bookmarkSet, fullyCachedSet] = await Promise.all([
     getHistoryPermalinks(permalinks).catch(() => new Set<string>()),
     getBookmarkPermalinks(permalinks).catch(() => new Set<string>()),

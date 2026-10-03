@@ -1,3 +1,4 @@
+import { extractEntityId, isValidPermalink } from "../providers";
 import { MANGADEX_UUID_REGEX } from "../providers/mangadex/api/constants";
 import { PAGES_PREFIX } from "../constants";
 import * as ipc from "../ipc";
@@ -49,16 +50,7 @@ export async function openExternal(url: string): Promise<void> {
   }
 }
 
-const PERMALINK_REGEX = /^(mdx:[a-zA-Z0-9-]+|local:[a-zA-Z0-9_\-./%]+|[a-zA-Z0-9_-]+)$/;
-
-/**
- * Checks if a candidate string is a safe, valid Dynasty Scans permalink slug.
- */
-export function isValidPermalink(p: unknown): p is string {
-  if (typeof p !== "string") return false;
-  const clean = p.trim();
-  return clean.length > 0 && clean.length <= 256 && PERMALINK_REGEX.test(clean);
-}
+export { extractEntityId, isValidPermalink };
 
 /**
  * Strict validator and parser for Dynasty Scans URLs.
@@ -105,7 +97,7 @@ export function parseDynastyUrl(input: string): ParsedDynastyUrl | null {
  * Extracts the bare UUID from an mdx: permalink.
  */
 export function extractMangaDexId(permalink: string): string {
-  return permalink.startsWith("mdx:") ? permalink.slice(4) : permalink;
+  return extractEntityId(permalink);
 }
 
 export interface ParsedMangaDexUrl {

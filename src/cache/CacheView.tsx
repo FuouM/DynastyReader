@@ -23,12 +23,13 @@ import { downloadingChapterPermalinks } from "../stores/download";
 import { formatBytes, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
 import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api/traffic";
-import { clearCachedGroupPages, getCacheOverviewStats, getFullyCachedChapters, type FullyCachedChapterRow } from "../db/cache.repo";
+import { getCacheOverviewStats, type FullyCachedChapterRow } from "../db/cache.repo";
 import { enrichCachedChapters } from "../db/cache-aggregate";
 import { getDbStats, type DbStats } from "../db/db.manage";
 import { activeProvider } from "../stores/provider";
+import { getProvider, clearCachedChapters } from "../providers";
 import { getMangaDexDbStats } from "../providers/mangadex/db/stats";
-import { getMangaDexDownloadedChapterRows, clearMangaDexCachedChapters, getMangaDexCacheStats, purgeMangaDexCache } from "../providers/mangadex/db/cache.repo";
+import { getMangaDexCacheStats } from "../providers/mangadex/db/cache.repo";
 import type { CacheOverviewStats } from "../types/db";
 import { SeriesDownloadedCard } from "../browse/downloads/SeriesDownloadedCard";
 import { OrphanDownloadedCard } from "../browse/downloads/OrphanDownloadedCard";
@@ -75,11 +76,12 @@ export function CacheView() {
   });
 
   const [data, { refetch }] = createResource(activeProvider, async (provider) => {
+    const adapter = getProvider(provider);
     if (provider === "mangadex") {
       const [mdxStats, dbStats, rows] = await Promise.all([
         getMangaDexCacheStats(),
         getMangaDexDbStats(),
-        getMangaDexDownloadedChapterRows(),
+        adapter.getDownloadedChapterRows(),
       ]);
       const stats: CacheOverviewStats = {
         totalCachedPages: mdxStats.pageCount,
@@ -94,7 +96,7 @@ export function CacheView() {
     const [stats, dbStats, rows] = await Promise.all([
       getCacheOverviewStats(),
       getDbStats(),
-      getFullyCachedChapters(),
+      adapter.getDownloadedChapterRows(),
     ]);
 
     const enriched = await enrichCachedChapters(rows);
@@ -126,7 +128,7 @@ export function CacheView() {
   const purgeAll = async (): Promise<void> => {
     const provider = activeProvider();
     if (provider === "mangadex") {
-      await purgeMangaDexCache();
+      await getProvider("mangadex").purgeCache();
       showBanner("MangaDex cache purged.");
       void refetch();
     } else {
@@ -136,7 +138,7 @@ export function CacheView() {
   const purgePages = async (): Promise<void> => {
     const provider = activeProvider();
     if (provider === "mangadex") {
-      await purgeMangaDexCache();
+      await getProvider("mangadex").purgeCache();
       showBanner("MangaDex cached pages purged.");
       void refetch();
     } else {
@@ -154,11 +156,7 @@ export function CacheView() {
       .map((c) => c.chapterPermalink)
       .filter((cp) => !isChapterDownloading(cp));
     if (perms.length === 0) return;
-    if (perms.some((p) => p.startsWith("mdx:"))) {
-      await clearMangaDexCachedChapters(perms.map((p) => p.replace(/^mdx:/, "")));
-    } else {
-      await clearCachedGroupPages(perms);
-    }
+    await clearCachedChapters(perms);
     setSessionTab((cur) => {
       if (!cur) return null;
       const sPerm = cur.route.seriesPermalink;
@@ -174,11 +172,7 @@ export function CacheView() {
 
   const deleteChapter = async (chapterPermalink: string): Promise<void> => {
     if (isChapterDownloading(chapterPermalink)) return;
-    if (chapterPermalink.startsWith("mdx:")) {
-      await clearMangaDexCachedChapters([chapterPermalink.replace(/^mdx:/, "")]);
-    } else {
-      await clearCachedGroupPages([chapterPermalink]);
-    }
+    await clearCachedChapters([chapterPermalink]);
     setSessionTab((cur) => {
       if (!cur) return null;
       if (cur.route.chapterPermalink === chapterPermalink) {
@@ -193,11 +187,7 @@ export function CacheView() {
   const deleteAllOrphans = async (orphans: ProcessedCachedChapter[]): Promise<void> => {
     const perms = orphans.map((o) => o.chapterPermalink).filter((cp) => !isChapterDownloading(cp));
     if (perms.length === 0) return;
-    if (perms.some((p) => p.startsWith("mdx:"))) {
-      await clearMangaDexCachedChapters(perms.map((p) => p.replace(/^mdx:/, "")));
-    } else {
-      await clearCachedGroupPages(perms);
-    }
+    await clearCachedChapters(perms);
     setSessionTab((cur) => {
       if (!cur) return null;
       if (cur.route.chapterPermalink && perms.includes(cur.route.chapterPermalink)) {

@@ -1,35 +1,19 @@
-import { query, execute } from "./client";
-import { inClause, queryPaged } from "./paging";
-import { DB_NAME } from "../constants";
-import * as ipc from "../ipc";
-import { MANGADEX_DB_NAME } from "../providers/mangadex/db/client";
+import { query } from "./client";
+import { inClause } from "./paging";
 import type {
   FollowedSeriesRow,
   FollowedSeriesPageResult,
   ReadingProgressRow,
   SeriesProgressRow,
-  HistoryRow,
   HistoryPageResult,
   BookmarkRow,
   BookmarkPageResult,
 } from "../types/db";
 import { activeProvider } from "../stores/provider";
 import type { ContentProvider } from "../stores/provider";
-import { getFollowedManga, unfollowManga, getAllFollowedManga } from "../providers/mangadex/db/library.repo";
+import { getProvider, getProviderForPermalink, type ContentProviderAdapter } from "../providers";
 import { getChapterContainerTag } from "../taxonomy";
 import { decodeEntities, slugify } from "../utils/formatting";
-import {
-  getHistory,
-  deleteHistoryItem,
-  clearHistory as clearMdxHistory,
-  recordHistory,
-} from "../providers/mangadex/db/history.repo";
-import { getMdxBookmarks, getMdxBookmark, addMdxBookmark, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
-import {
-  getMangaReadingProgress,
-  saveReadingProgress,
-  deleteReadingProgress,
-} from "../providers/mangadex/db/progress.repo";
 import {
   getFollowedRevision,
   onFollowedChanged,
@@ -64,42 +48,33 @@ export async function getFollowedSeriesPage(
   pageSize = 10,
   provider: ContentProvider = activeProvider(),
 ): Promise<FollowedSeriesPageResult> {
-  if (provider === "mangadex") {
-    const res = await getFollowedManga(page, pageSize);
-    return {
-      rows: res.rows.map((m) => ({
-        permalink: `mdx:${m.manga_id}`,
-        name: m.title,
-        cover: m.cover_filename,
-        last_checked_at: m.last_checked_at,
-        latest_chapter_permalink: m.latest_chapter_id ? `mdx:${m.latest_chapter_id}` : null,
-        latest_chapter_title: m.latest_chapter_title,
-        created_at: m.created_at,
-      })),
-      totalCount: res.totalCount,
-      totalPages: res.totalPages,
-      currentPage: res.currentPage,
-    };
-  }
-  return queryPaged<FollowedSeriesRow>(
-    `SELECT COUNT(*) as count FROM followed_series`,
-    `SELECT permalink, name, cover, last_checked_at, latest_chapter_permalink,
-            latest_chapter_title, created_at
-     FROM followed_series
-     ORDER BY name COLLATE NOCASE LIMIT ? OFFSET ?`,
-    page,
-    pageSize,
-  );
+  return getProvider(provider).getFollowedPage(page, pageSize);
 }
 
 export async function getFollowedSeriesRow(permalink: string): Promise<FollowedSeriesRow | null> {
+  const isF = await getProviderForPermalink(permalink).isFollowed(permalink);
+  if (!isF) return null;
   const rows = await query<FollowedSeriesRow>(
     `SELECT permalink, name, cover, last_checked_at, latest_chapter_permalink,
             latest_chapter_title, created_at
      FROM followed_series WHERE permalink = ?`,
     [permalink],
   );
-  return rows[0] ?? null;
+  return (
+    rows[0] ?? {
+      permalink,
+      name: "",
+      cover: null,
+      last_checked_at: Date.now(),
+      latest_chapter_permalink: null,
+      latest_chapter_title: null,
+      created_at: Date.now(),
+    }
+  );
+}
+
+export async function isSeriesFollowed(permalink: string): Promise<boolean> {
+  return getProviderForPermalink(permalink).isFollowed(permalink);
 }
 
 export async function followSeries(row: {
@@ -109,37 +84,11 @@ export async function followSeries(row: {
   latestChapterPermalink: string | null;
   latestChapterTitle: string | null;
 }): Promise<void> {
-  await execute(
-    `INSERT INTO followed_series (permalink, name, cover, last_checked_at,
-       latest_chapter_permalink, latest_chapter_title, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(permalink) DO UPDATE SET
-       name = excluded.name,
-       cover = excluded.cover,
-       last_checked_at = excluded.last_checked_at,
-       latest_chapter_permalink = excluded.latest_chapter_permalink,
-       latest_chapter_title = excluded.latest_chapter_title`,
-    [
-      row.permalink,
-      row.name,
-      row.cover,
-      Date.now(),
-      row.latestChapterPermalink,
-      row.latestChapterTitle,
-      Date.now(),
-    ],
-  );
-  notifyFollowedChanged();
+  return getProviderForPermalink(row.permalink).follow(row);
 }
 
 export async function unfollowSeries(permalink: string): Promise<void> {
-  if (permalink.startsWith("mdx:")) {
-    await unfollowManga(permalink.replace(/^mdx:/, ""));
-    notifyFollowedChanged();
-    return;
-  }
-  await execute(`DELETE FROM followed_series WHERE permalink = ?`, [permalink]);
-  notifyFollowedChanged();
+  return getProviderForPermalink(permalink).unfollow(permalink);
 }
 
 /**
@@ -151,18 +100,7 @@ export async function updateFollowedSeriesCover(
   cover: string | null,
   notify = false,
 ): Promise<void> {
-  if (permalink.startsWith("mdx:")) {
-    const mangaId = permalink.replace(/^mdx:/, "");
-    await ipc.dbExecute(
-      MANGADEX_DB_NAME,
-      `UPDATE followed_manga SET cover_filename = ? WHERE manga_id = ?`,
-      [cover, mangaId],
-    );
-    if (notify) notifyFollowedChanged();
-    return;
-  }
-  await execute(`UPDATE followed_series SET cover = ? WHERE permalink = ?`, [cover, permalink]);
-  if (notify) notifyFollowedChanged();
+  return getProviderForPermalink(permalink).updateFollowedCover(permalink, cover, notify);
 }
 
 
@@ -176,32 +114,7 @@ export interface FollowedLookup {
  * Accounts for active provider (Dynasty or MangaDex).
  */
 export async function getFollowedLookup(provider: ContentProvider = activeProvider()): Promise<FollowedLookup> {
-  if (provider === "mangadex") {
-    const mangaList = await getAllFollowedManga().catch(() => []);
-    const permalinks = new Set<string>();
-    const names = new Set<string>();
-    for (const m of mangaList) {
-      if (m.manga_id) {
-        permalinks.add(m.manga_id);
-        permalinks.add(`mdx:${m.manga_id}`);
-      }
-      if (m.title) {
-        names.add(decodeEntities(m.title).trim().toLowerCase());
-      }
-    }
-    return { permalinks, names };
-  }
-
-  const rows = await query<{ permalink: string; name: string }>(
-    `SELECT permalink, name FROM followed_series`,
-  ).catch(() => []);
-  const permalinks = new Set<string>();
-  const names = new Set<string>();
-  for (const r of rows) {
-    if (r.permalink) permalinks.add(r.permalink);
-    if (r.name) names.add(decodeEntities(r.name).trim().toLowerCase());
-  }
-  return { permalinks, names };
+  return getProvider(provider).getFollowedLookup();
 }
 
 /**
@@ -264,13 +177,7 @@ export function isChapterFollowed(
 export async function getReadingProgress(
   chapterPermalink: string,
 ): Promise<ReadingProgressRow | null> {
-  const rows = await query<ReadingProgressRow>(
-    `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
-            page_index, page_total, completed, updated_at
-     FROM reading_progress WHERE chapter_permalink = ?`,
-    [chapterPermalink],
-  );
-  return rows[0] ?? null;
+  return getProviderForPermalink(chapterPermalink).getProgress(chapterPermalink);
 }
 
 export async function setReadingProgress(p: {
@@ -282,50 +189,12 @@ export async function setReadingProgress(p: {
   pageTotal: number;
   completed: boolean;
 }): Promise<void> {
-  await execute(
-    `INSERT INTO reading_progress (chapter_permalink, series_permalink, series_name,
-       chapter_title, page_index, page_total, completed, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(chapter_permalink) DO UPDATE SET
-       series_permalink = excluded.series_permalink,
-       series_name = excluded.series_name,
-       chapter_title = excluded.chapter_title,
-       page_index = excluded.page_index,
-       page_total = excluded.page_total,
-       completed = excluded.completed,
-       updated_at = excluded.updated_at`,
-    [
-      p.chapterPermalink,
-      p.seriesPermalink,
-      p.seriesName,
-      p.chapterTitle,
-      p.pageIndex,
-      p.pageTotal,
-      p.completed ? 1 : 0,
-      Date.now(),
-    ],
-  );
-  notifyProgressChanged();
-  notifyHistoryChanged();
+  return getProviderForPermalink(p.chapterPermalink).saveProgress(p);
 }
 
 /** Reading progress for every chapter of a series (one query, no per-chapter calls). */
 export async function getProgressForSeries(seriesPermalink: string): Promise<SeriesProgressRow[]> {
-  if (seriesPermalink.startsWith("mdx:")) {
-    const mangaId = seriesPermalink.replace(/^mdx:/, "");
-    const dict = await getMangaReadingProgress(mangaId);
-    return Object.values(dict).map((r) => ({
-      chapter_permalink: `mdx:${r.chapter_id}`,
-      page_index: r.page_index,
-      page_total: r.page_total,
-      completed: r.completed,
-    }));
-  }
-  return query<SeriesProgressRow>(
-    `SELECT chapter_permalink, page_index, page_total, completed
-     FROM reading_progress WHERE series_permalink = ?`,
-    [seriesPermalink],
-  );
+  return getProviderForPermalink(seriesPermalink).getProgressForSeries(seriesPermalink);
 }
 
 /** Manually marks a chapter as read in both reading_progress and reading_history. */
@@ -336,50 +205,11 @@ export async function markChapterRead(p: {
   chapterTitle: string;
   pageTotal?: number;
 }): Promise<void> {
-  if (p.chapterPermalink.startsWith("mdx:")) {
-    const chapterId = p.chapterPermalink.replace(/^mdx:/, "");
-    const mangaId = p.seriesPermalink.replace(/^mdx:/, "");
-    await Promise.all([
-      saveReadingProgress(chapterId, mangaId, p.seriesName, p.chapterTitle, 0, p.pageTotal ?? 1, true),
-      recordHistory(chapterId, mangaId, p.seriesName, p.chapterTitle),
-    ]);
-    return;
-  }
-  await Promise.all([
-    setReadingProgress({
-      chapterPermalink: p.chapterPermalink,
-      seriesPermalink: p.seriesPermalink,
-      seriesName: p.seriesName,
-      chapterTitle: p.chapterTitle,
-      pageIndex: 0,
-      pageTotal: p.pageTotal ?? 1,
-      completed: true,
-    }),
-    addHistory({
-      chapterPermalink: p.chapterPermalink,
-      seriesPermalink: p.seriesPermalink,
-      seriesName: p.seriesName,
-      chapterTitle: p.chapterTitle,
-    }),
-  ]);
+  return getProviderForPermalink(p.chapterPermalink).markChapterRead(p);
 }
 
 export async function markChapterUnread(chapterPermalink: string): Promise<void> {
-  if (chapterPermalink.startsWith("mdx:")) {
-    const chapterId = chapterPermalink.replace(/^mdx:/, "");
-    await Promise.all([
-      deleteReadingProgress(chapterId),
-      ipc.dbExecute(MANGADEX_DB_NAME, `DELETE FROM reading_history WHERE chapter_id = ?`, [chapterId]),
-    ]);
-    notifyHistoryChanged();
-    return;
-  }
-  await Promise.all([
-    execute(`DELETE FROM reading_progress WHERE chapter_permalink = ?`, [chapterPermalink]),
-    execute(`DELETE FROM reading_history WHERE chapter_permalink = ?`, [chapterPermalink]),
-  ]);
-  notifyProgressChanged();
-  notifyHistoryChanged();
+  return getProviderForPermalink(chapterPermalink).markChapterUnread(chapterPermalink);
 }
 
 export async function addHistory(p: {
@@ -388,95 +218,25 @@ export async function addHistory(p: {
   seriesName: string;
   chapterTitle: string;
 }): Promise<void> {
-  // Single atomic upsert: reading_history.chapter_permalink is UNIQUE (migration v1),
-  // so re-reading a chapter bumps its read_at instead of creating a duplicate row,
-  // and concurrent readers cannot double-insert (the old read-then-insert TOCTOU).
-  await execute(
-    `INSERT INTO reading_history (chapter_permalink, series_permalink, series_name,
-       chapter_title, read_at)
-     VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(chapter_permalink) DO UPDATE SET
-       series_permalink = excluded.series_permalink,
-       series_name = excluded.series_name,
-       chapter_title = excluded.chapter_title,
-       read_at = excluded.read_at`,
-    [p.chapterPermalink, p.seriesPermalink, p.seriesName, p.chapterTitle, Date.now()],
-  );
-  notifyHistoryChanged();
+  return getProviderForPermalink(p.chapterPermalink).recordHistory(p);
 }
 
 export async function removeHistory(id: number, provider: ContentProvider = activeProvider()): Promise<void> {
-  if (provider === "mangadex") {
-    await deleteHistoryItem(id);
-    notifyHistoryChanged();
-    return;
-  }
-  await execute(`DELETE FROM reading_history WHERE id = ?`, [id]);
-  notifyHistoryChanged();
+  return getProvider(provider).removeHistory(id);
 }
 
 /** Bulk-delete history rows in a single dbExecuteBatch (one transaction). */
 export async function removeHistoryBatch(ids: number[], provider: ContentProvider = activeProvider()): Promise<void> {
-  if (ids.length === 0) return;
-  if (provider === "mangadex") {
-    await ipc.dbExecuteBatch(
-      MANGADEX_DB_NAME,
-      [`DELETE FROM reading_history WHERE id IN (${inClause(ids.length)})`],
-      [ids],
-    );
-    notifyHistoryChanged();
-    return;
-  }
-  await ipc.dbExecuteBatch(
-    DB_NAME,
-    [`DELETE FROM reading_history WHERE id IN (${inClause(ids.length)})`],
-    [ids],
-  );
-  notifyHistoryChanged();
+  return getProvider(provider).removeHistoryBatch(ids);
 }
 
 export async function clearHistory(provider: ContentProvider = activeProvider()): Promise<void> {
-  if (provider === "mangadex") {
-    await clearMdxHistory();
-    notifyHistoryChanged();
-    return;
-  }
-  await execute(`DELETE FROM reading_history`);
-  notifyHistoryChanged();
+  return getProvider(provider).clearHistory();
 }
 
 export async function getHistoryPage(page = 1, pageSize = 15, provider: ContentProvider = activeProvider()): Promise<HistoryPageResult> {
-  if (provider === "mangadex") {
-    const res = await getHistory(page, pageSize);
-    return {
-      rows: res.rows.map((h) => ({
-        id: h.id,
-        chapter_permalink: `mdx:${h.chapter_id}`,
-        chapter_title: h.chapter_title,
-        series_permalink: h.manga_id ? `mdx:${h.manga_id}` : "",
-        series_name: h.manga_title,
-        read_at: h.read_at,
-        page_index: 0,
-        page_total: 0,
-        completed: 1,
-      })),
-      totalCount: res.totalCount,
-      totalPages: res.totalPages,
-      currentPage: res.currentPage,
-    };
-  }
-  return queryPaged<HistoryRow>(
-    `SELECT COUNT(*) as count FROM reading_history`,
-    `SELECT rh.id, rh.chapter_permalink, rh.series_permalink, rh.series_name, rh.chapter_title, rh.read_at,
-            rp.page_index, rp.page_total, rp.completed
-     FROM reading_history rh
-     LEFT JOIN reading_progress rp ON rh.chapter_permalink = rp.chapter_permalink
-     ORDER BY rh.read_at DESC, rh.id DESC LIMIT ? OFFSET ?`,
-    page,
-    pageSize,
-  );
+  return getProvider(provider).getHistoryPage(page, pageSize);
 }
-
 /** Returns a Map of chapter permalinks to their most recent read timestamp (read_at). */
 export async function getHistoryMap(permalinks: string[]): Promise<Map<string, number>> {
   if (permalinks.length === 0) return new Map();
@@ -493,69 +253,58 @@ export async function getHistoryMap(permalinks: string[]): Promise<Map<string, n
 
 /** Returns a Set of chapter permalinks that have been recorded in history. */
 export async function getHistoryPermalinks(permalinks: string[]): Promise<Set<string>> {
-  const map = await getHistoryMap(permalinks);
-  return new Set(map.keys());
+  if (permalinks.length === 0) return new Set();
+  const mdxIds: string[] = [];
+  const dynastyPerms: string[] = [];
+  for (const p of permalinks) {
+    if (p.startsWith("mdx:")) mdxIds.push(p.slice(4));
+    else dynastyPerms.push(p);
+  }
+  const result = new Set<string>();
+  if (mdxIds.length > 0) {
+    const { getMdxHistoryChapterIds } = await import("../providers/mangadex/db/history.repo");
+    const found = await getMdxHistoryChapterIds(mdxIds).catch(() => new Set<string>());
+    for (const id of found) result.add(`mdx:${id}`);
+  }
+  if (dynastyPerms.length > 0) {
+    const map = await getHistoryMap(dynastyPerms);
+    for (const key of map.keys()) result.add(key);
+  }
+  return result;
 }
 
 
 export async function getBookmarksPage(page = 1, pageSize = 15, provider: ContentProvider = activeProvider()): Promise<BookmarkPageResult> {
-  if (provider === "mangadex") {
-    const res = await getMdxBookmarks(page, pageSize);
-    return {
-      rows: res.rows.map((b) => ({
-        chapter_permalink: `mdx:${b.chapter_id}`,
-        chapter_title: b.chapter_title,
-        series_permalink: b.manga_id ? `mdx:${b.manga_id}` : "",
-        series_name: b.manga_title,
-        page_index: b.page_index,
-        scanlator_name: b.scanlator_name,
-        created_at: b.created_at,
-      })),
-      totalCount: res.totalCount,
-      totalPages: res.totalPages,
-      currentPage: res.currentPage,
-    };
-  }
-  return queryPaged<BookmarkRow>(
-    `SELECT COUNT(*) as count FROM bookmarks`,
-    `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
-            page_index, created_at
-     FROM bookmarks ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-    page,
-    pageSize,
-  );
+  return getProvider(provider).getBookmarksPage(page, pageSize);
 }
 
 export async function getBookmark(chapterPermalink: string): Promise<BookmarkRow | null> {
-  if (chapterPermalink.startsWith("mdx:")) {
-    const row = await getMdxBookmark(chapterPermalink.replace(/^mdx:/, ""));
-    if (!row) return null;
-    return {
-      chapter_permalink: `mdx:${row.chapter_id}`,
-      series_permalink: row.manga_id ? `mdx:${row.manga_id}` : "",
-      series_name: row.manga_title,
-      chapter_title: row.chapter_title,
-      page_index: row.page_index,
-      created_at: row.created_at,
-    };
-  }
-  const rows = await query<BookmarkRow>(
-    `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
-            page_index, created_at
-     FROM bookmarks WHERE chapter_permalink = ?`,
-    [chapterPermalink],
-  );
-  return rows[0] ?? null;
+  return getProviderForPermalink(chapterPermalink).getBookmark(chapterPermalink);
 }
 
 /** Returns a Set of chapter permalinks that have been bookmarked. */
 export async function getBookmarkPermalinks(permalinks: string[]): Promise<Set<string>> {
   if (permalinks.length === 0) return new Set();
-  const rows = await query<{ chapter_permalink: string }>(
-    `SELECT chapter_permalink FROM bookmarks WHERE chapter_permalink IN (${inClause(permalinks.length)})`,
-    permalinks,
-  );
-  return new Set(rows.map((r) => r.chapter_permalink));
+  const mdxIds: string[] = [];
+  const dynastyPerms: string[] = [];
+  for (const p of permalinks) {
+    if (p.startsWith("mdx:")) mdxIds.push(p.slice(4));
+    else dynastyPerms.push(p);
+  }
+  const result = new Set<string>();
+  if (mdxIds.length > 0) {
+    const { getMdxBookmarkChapterIds } = await import("../providers/mangadex/db/bookmarks.repo");
+    const found = await getMdxBookmarkChapterIds(mdxIds).catch(() => new Set<string>());
+    for (const id of found) result.add(`mdx:${id}`);
+  }
+  if (dynastyPerms.length > 0) {
+    const rows = await query<{ chapter_permalink: string }>(
+      `SELECT chapter_permalink FROM bookmarks WHERE chapter_permalink IN (${inClause(dynastyPerms.length)})`,
+      dynastyPerms,
+    ).catch(() => []);
+    for (const r of rows) result.add(r.chapter_permalink);
+  }
+  return result;
 }
 
 export async function addBookmark(p: {
@@ -565,65 +314,26 @@ export async function addBookmark(p: {
   chapterTitle: string;
   pageIndex: number;
 }): Promise<void> {
-  if (p.chapterPermalink.startsWith("mdx:")) {
-    await addMdxBookmark({
-      chapterId: p.chapterPermalink.replace(/^mdx:/, ""),
-      mangaId: p.seriesPermalink.replace(/^mdx:/, ""),
-      mangaTitle: p.seriesName,
-      chapterTitle: p.chapterTitle,
-      pageIndex: p.pageIndex,
-    });
-    notifyBookmarksChanged();
-    return;
-  }
-  await execute(
-    `INSERT INTO bookmarks (chapter_permalink, series_permalink, series_name,
-       chapter_title, page_index, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)
-     ON CONFLICT(chapter_permalink) DO UPDATE SET
-       page_index = excluded.page_index,
-       created_at = excluded.created_at`,
-    [p.chapterPermalink, p.seriesPermalink, p.seriesName, p.chapterTitle, p.pageIndex, Date.now()],
-  );
-  notifyBookmarksChanged();
+  return getProviderForPermalink(p.chapterPermalink).addBookmark(p);
 }
 
 export async function removeBookmark(chapterPermalink: string): Promise<void> {
-  if (chapterPermalink.startsWith("mdx:")) {
-    await removeMdxBookmark(chapterPermalink.replace(/^mdx:/, ""));
-    notifyBookmarksChanged();
-    return;
-  }
-  await execute(`DELETE FROM bookmarks WHERE chapter_permalink = ?`, [chapterPermalink]);
-  notifyBookmarksChanged();
+  return getProviderForPermalink(chapterPermalink).removeBookmark(chapterPermalink);
 }
 
-/** Bulk-delete bookmarks in a single dbExecuteBatch (one transaction). */
+/** Bulk-delete bookmarks across providers. */
 export async function removeBookmarksBatch(chapterPermalinks: string[]): Promise<void> {
   if (chapterPermalinks.length === 0) return;
-  const mdxIds: string[] = [];
-  const dynastyPermalinks: string[] = [];
-  for (const cp of chapterPermalinks) {
-    if (cp.startsWith("mdx:")) {
-      mdxIds.push(cp.replace(/^mdx:/, ""));
-    } else {
-      dynastyPermalinks.push(cp);
-    }
+  const byProvider = new Map<ContentProviderAdapter, string[]>();
+  for (const p of chapterPermalinks) {
+    const adapter = getProviderForPermalink(p);
+    const list = byProvider.get(adapter) ?? [];
+    list.push(p);
+    byProvider.set(adapter, list);
   }
-
-  if (mdxIds.length > 0) {
-    await ipc.dbExecuteBatch(
-      MANGADEX_DB_NAME,
-      [`DELETE FROM bookmarks WHERE chapter_id IN (${inClause(mdxIds.length)})`],
-      [mdxIds],
-    );
-  }
-  if (dynastyPermalinks.length > 0) {
-    await ipc.dbExecuteBatch(
-      DB_NAME,
-      [`DELETE FROM bookmarks WHERE chapter_permalink IN (${inClause(dynastyPermalinks.length)})`],
-      [dynastyPermalinks],
-    );
-  }
-  notifyBookmarksChanged();
+  await Promise.all(
+    Array.from(byProvider.entries()).map(([adapter, perms]) =>
+      adapter.removeBookmarksBatch(perms),
+    ),
+  );
 }

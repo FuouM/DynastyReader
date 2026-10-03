@@ -18,7 +18,6 @@ import { decodeEntities, errorMessage, slugify, canonicalUrl } from "../utils/fo
 import { categorizeChapterTags, isSeriesKind, seriesTypeToPath, getChapterContainerTag, isDoujinTag } from "../taxonomy";
 import { t } from "../i18n";
 import { addBookmark, getBookmark, removeBookmark } from "../db/library.repo";
-import { addMdxBookmark, getMdxBookmark, removeMdxBookmark } from "../providers/mangadex/db/bookmarks.repo";
 import { getBlacklistMode } from "../db/blacklist.repo";
 import type { CollectionItemKind } from "../types/db";
 import { browseCovers } from "../browse/browse-covers";
@@ -72,16 +71,9 @@ export function FeedItemRow(props: FeedItemRowProps) {
 
   onMount(() => {
     if (props.isBookmarked === undefined) {
-      const p = ch().permalink;
-      if (p.startsWith("mdx:")) {
-        void getMdxBookmark(p.replace(/^mdx:/, "")).then((bm) => {
-          if (bm) setBookmarked(true);
-        });
-      } else {
-        void getBookmark(p).then((bm) => {
-          if (bm) setBookmarked(true);
-        });
-      }
+      void getBookmark(ch().permalink).then((bm) => {
+        if (bm) setBookmarked(true);
+      });
     }
   });
 
@@ -162,31 +154,17 @@ export function FeedItemRow(props: FeedItemRowProps) {
       const cur = ch();
       const ci = coverInfo();
       if (bookmarked()) {
-        if (cur.permalink.startsWith("mdx:")) {
-          await removeMdxBookmark(cur.permalink.replace(/^mdx:/, ""));
-        } else {
-          await removeBookmark(cur.permalink);
-        }
+        await removeBookmark(cur.permalink);
         setBookmarked(false);
         showBanner(t("browse.feed.bookmarkRemovedBanner", { title: cur.title }));
       } else {
-        if (cur.permalink.startsWith("mdx:")) {
-          await addMdxBookmark({
-            chapterId: cur.permalink.replace(/^mdx:/, ""),
-            chapterTitle: cur.title,
-            mangaId: ci.seriesPermalink?.replace(/^mdx:/, "") || "",
-            mangaTitle: cur.series ?? "",
-            pageIndex: 0,
-          });
-        } else {
-          await addBookmark({
-            chapterPermalink: cur.permalink,
-            seriesPermalink: ci.seriesPermalink || "",
-            seriesName: cur.series ?? "",
-            chapterTitle: cur.title,
-            pageIndex: 0,
-          });
-        }
+        await addBookmark({
+          chapterPermalink: cur.permalink,
+          seriesPermalink: ci.seriesPermalink || "",
+          seriesName: cur.series ?? "",
+          chapterTitle: cur.title,
+          pageIndex: 0,
+        });
         setBookmarked(true);
         showBanner(t("browse.feed.bookmarkSavedBanner", { title: cur.title }));
       }
