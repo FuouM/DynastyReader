@@ -1306,6 +1306,24 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   gap: 6px !important;
 }
 
+[data-mobile] .ds-settings-row-control > .ds-col {
+  width: 100% !important;
+}
+
+[data-mobile] #ds-settings-modal-backdrop .ds-segmented-switch,
+[data-mobile] .ds-settings-row-control .ds-segmented-switch {
+  width: 100% !important;
+  display: flex !important;
+}
+
+[data-mobile] #ds-settings-modal-backdrop .ds-segmented-switch .ds-segmented-btn,
+[data-mobile] .ds-settings-row-control .ds-segmented-switch .ds-segmented-btn {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+  padding: 0 6px !important;
+}
+
 /* Cache View mobile adaptations (layout wrapping only, preserving desktop sizing) */
 #ds-root[data-mobile] .ds-cache-view {
   padding: 0 !important;

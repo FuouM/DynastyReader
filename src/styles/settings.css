@@ -136,11 +136,15 @@
   width: 100% !important;
   flex-shrink: 0 !important;
 }
-.ds-settings-row.is-stacked .ds-settings-row-control .ds-segmented-switch {
+.ds-settings-row.is-stacked .ds-settings-row-control .ds-segmented-switch,
+[data-mobile] #ds-settings-modal-backdrop .ds-segmented-switch,
+[data-mobile] .ds-settings-row-control .ds-segmented-switch {
   width: 100% !important;
   display: flex !important;
 }
-.ds-settings-row.is-stacked .ds-settings-row-control .ds-segmented-switch .ds-segmented-btn {
+.ds-settings-row.is-stacked .ds-settings-row-control .ds-segmented-switch .ds-segmented-btn,
+[data-mobile] #ds-settings-modal-backdrop .ds-segmented-switch .ds-segmented-btn,
+[data-mobile] .ds-settings-row-control .ds-segmented-switch .ds-segmented-btn {
   flex: 1 1 0 !important;
   min-width: 0 !important;
   justify-content: center !important;
