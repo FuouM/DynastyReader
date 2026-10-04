@@ -217,6 +217,7 @@ export interface DsSelectProps<T extends string = string> {
   options?: readonly SelectOption<T>[] | SelectOption<T>[];
   onChange?: (value: T) => void;
   children?: JSX.Element;
+  title?: string;
   "aria-label"?: string;
   ariaLabel?: string;
 }
@@ -225,6 +226,7 @@ export function DsSelect<T extends string = string>(props: DsSelectProps<T>) {
   return (
     <select
       id={props.id}
+      title={props.title}
       aria-label={props["aria-label"] ?? props.ariaLabel}
       class={`input-field ds-select ${props.className ?? ""}`.trim()}
       style={props.style}

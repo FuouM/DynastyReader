@@ -1,12 +1,12 @@
 import { createSignal, lazy, Show, Suspense } from "solid-js";
 import { Portal } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import { route, navigate, closeSessionMangaTab, isInMangaView, sessionTab } from "../stores/router";
+import { route, navigate, switchProvider, closeSessionMangaTab, isInMangaView, sessionTab } from "../stores/router";
 import { title, banner, bannerAction, dismissBanner, actions } from "../stores/topbar";
 import { activeDownloadCount, downloadSpeedBps } from "../stores/download";
 import { formatSpeed, decodeEntities } from "../utils/formatting";
 import { isMobile, isOnline } from "../stores/platform";
-import { activeProvider } from "../stores/provider";
+import { activeProvider, type ContentProvider } from "../stores/provider";
 import { uiScale } from "../stores/ui-scale";
 import { t } from "../i18n";
 import { HistoryNavButtons } from "./HistoryDropdown";
@@ -19,23 +19,25 @@ import {
   DownloadIcon,
   Icon,
 } from "./Icon";
-import { Button, SegmentedSwitch } from "./Button";
+import { DsSelect, Button, SegmentedSwitch } from "./Button";
 import type { SettingsSectionId } from "./settings/settings-shared";
 import type { OpenSettingsDetail } from "../hotkeys/GlobalShortcuts";
 const SettingsModal = lazy(() => import("./SettingsModal").then((m) => ({ default: m.SettingsModal })));
-const SourceSwitcherModal = lazy(() => import("./SourceSwitcherModal").then((m) => ({ default: m.SourceSwitcherModal })));
 export function Topbar() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [settingsPage, setSettingsPage] = createSignal<"main" | "hotkeys" | "advanced">("main");
   const [settingsSection, setSettingsSection] = createSignal<SettingsSectionId | undefined>(undefined);
-  const [sourceSwitcherOpen, setSourceSwitcherOpen] = createSignal(false);
   makeEventListener(window, "ds-open-settings", (ev: Event) => {
     const custom = ev as CustomEvent<OpenSettingsDetail | undefined>;
     setSettingsPage(custom.detail?.page ?? "main");
     setSettingsSection(custom.detail?.section);
     setSettingsOpen(true);
   });
-  makeEventListener(window, "ds-open-source-switcher", () => setSourceSwitcherOpen(true));
+  makeEventListener(window, "ds-open-source-switcher", () => {
+    const el = document.getElementById("ds-source-select") as HTMLSelectElement | null;
+    el?.focus();
+    el?.showPicker?.();
+  });
 
   return (
     <>
@@ -63,22 +65,6 @@ export function Topbar() {
             ]}
           />
           <HistoryNavButtons />
-          <button
-            type="button"
-            id="ds-provider-pill"
-            class="win-button ds-provider-pill"
-            onClick={() => setSourceSwitcherOpen(true)}
-            title={t("topbar.sourceSwitcherTooltip")}
-            aria-label={t("topbar.sourceSwitcherAriaLabel", {
-              provider: activeProvider() === "mangadex" ? "MangaDex" : "Dynasty Scans",
-            })}
-            aria-haspopup="dialog"
-          >
-            <span class="ds-provider-pill-name">
-              {activeProvider() === "mangadex" ? "MangaDex" : "Dynasty"}
-            </span>
-            <Icon name="chevron-down" class="ds-provider-pill-chevron" />
-          </button>
           <Show when={sessionTab()}>
             {(tab) => (
               <button
@@ -135,6 +121,18 @@ export function Topbar() {
                   </Show>
                 </button>
               </Show>
+              <DsSelect<ContentProvider>
+                id="ds-source-select"
+                className="ds-source-select"
+                aria-label={t("topbar.sourceSwitcherTooltip")}
+                title={t("topbar.sourceSwitcherTooltip")}
+                value={activeProvider()}
+                onChange={(val) => switchProvider(val)}
+                options={[
+                  { value: "dynasty", label: "Dynasty" },
+                  { value: "mangadex", label: "MangaDex" },
+                ]}
+              />
               <Show when={route().view !== "reader" && route().view !== "cache" && route().view !== "blacklist"}>
                 <Button
                   className="ds-btn-icon"
@@ -167,11 +165,6 @@ export function Topbar() {
             initialPage={settingsPage()}
             initialSection={settingsSection()}
           />
-        </Suspense>
-      </Show>
-      <Show when={sourceSwitcherOpen()}>
-        <Suspense>
-          <SourceSwitcherModal open={sourceSwitcherOpen()} onClose={() => setSourceSwitcherOpen(false)} />
         </Suspense>
       </Show>
       <Show when={banner() !== null}>

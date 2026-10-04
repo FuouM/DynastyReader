@@ -115,25 +115,6 @@ body {
   color: var(--ds-danger-text, #d9383a);
 }
 
-.ds-provider-pill {
-  height: 24px;
-  padding: 0 6px 0 8px;
-  font-size: var(--font-sm);
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  color: var(--sys-button-text, inherit);
-  user-select: none;
-}
-.ds-provider-pill .ds-provider-pill-chevron {
-  font-size: 10px;
-  opacity: 0.7;
-  flex-shrink: 0;
-}
 
 .ds-offline-pill {
   height: 24px;

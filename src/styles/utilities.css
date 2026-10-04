@@ -722,6 +722,14 @@
   font-size: var(--font-xs);
   color: var(--sys-text-muted);
 }
+.ds-source-select {
+  height: 24px;
+  width: 96px;
+  min-width: 84px;
+  flex-shrink: 0;
+  font-weight: 500;
+  padding: 0 4px 0 6px;
+}
 .ds-feed-title-row {
   display: flex;
   align-items: flex-start;
