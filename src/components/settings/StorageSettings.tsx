@@ -65,10 +65,10 @@ export function StorageSettings(props: StorageSettingsProps) {
         </SettingsRow>
       </div>
 
-      <fieldset class="group-box" style="margin-top:8px;">
-        <legend class="group-box-title">
-          <IconText icon={<DownloadIcon />}>{t("settings.downloads.title")}</IconText>
-        </legend>
+      <GroupBox
+        class="ds-mt-8"
+        title={<IconText icon={<DownloadIcon />}>{t("settings.downloads.title")}</IconText>}
+      >
         <div class="ds-col">
           <SettingsToggleRow
             label={<>{t("settings.downloads.wifiOnly")}:</>}
@@ -129,7 +129,7 @@ export function StorageSettings(props: StorageSettingsProps) {
             </SettingsRow>
           </Show>
         </div>
-      </fieldset>
+      </GroupBox>
     </GroupBox>
   );
 }

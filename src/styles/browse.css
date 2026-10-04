@@ -911,7 +911,7 @@
 }
 .ds-search-panel {
   margin-bottom: 8px;
-  padding: 8px;
+  padding: 14px 8px 8px;
 }
 .ds-search-grid {
   display: grid;

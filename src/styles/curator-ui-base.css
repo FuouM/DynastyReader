@@ -178,7 +178,7 @@ button:focus-visible {
 .group-box {
   border: 1px solid var(--sys-border-medium, #c8d4e2);
   border-radius: 4px;
-  padding: 12px;
+  padding: 14px 10px 10px;
   position: relative;
   background: var(--sys-window-bg, #ffffff);
   margin-top: 8px;
@@ -187,6 +187,9 @@ button:focus-visible {
   position: absolute;
   top: -9px;
   left: 10px;
+  height: 18px;
+  line-height: 14px;
+  font-size: var(--font-sm, 11px);
   background: var(--sys-window-bg, #ffffff);
   border: 1px solid var(--sys-border-medium, #b8cde6);
   border-radius: 3px;

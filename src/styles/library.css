@@ -148,7 +148,7 @@
   flex-direction: column !important;
   margin-top: 8px !important;
   margin-bottom: 0 !important;
-  padding: 16px 0 6px 8px !important;
+  padding: 14px 0 6px 8px !important;
   box-sizing: border-box;
   position: relative;
 }
@@ -253,7 +253,7 @@
   min-height: 0;
   margin-top: 8px !important;
   margin-bottom: 0 !important;
-  padding: 16px 0 6px 8px !important;
+  padding: 14px 0 6px 8px !important;
   position: relative;
 }
 .ds-library-panel > .group-box-body {

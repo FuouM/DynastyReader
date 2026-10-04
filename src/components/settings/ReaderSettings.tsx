@@ -107,10 +107,12 @@ export function ReaderSettings() {
         </SettingsRow>
 
         {/* Mobile Landscape Overrides */}
-        <fieldset class="group-box ds-landscape-override-group" style="margin-top:8px;">
-          <legend class="group-box-title"><IconText icon={<Icon name="phone-landscape" />}>{t("settings.reader.mobileLandscapeGroupTitle")}</IconText></legend>
+        <GroupBox
+          class="ds-landscape-override-group ds-mt-8"
+          title={<IconText icon={<Icon name="phone-landscape" />}>{t("settings.reader.mobileLandscapeGroupTitle")}</IconText>}
+        >
           <div class="ds-landscape-override-stack">
-            <SettingsRow stacked divider label={<>{t("settings.reader.mobileLandscapeMode")}:</>} desc={t("settings.reader.mobileLandscapeModeDesc")}>
+            <SettingsRow stacked label={<>{t("settings.reader.mobileLandscapeMode")}:</>} desc={t("settings.reader.mobileLandscapeModeDesc")}>
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-mode-switch"
                 value={mobileLandscapeModePref()}
@@ -134,7 +136,7 @@ export function ReaderSettings() {
                 ]}
               />
             </SettingsRow>
-            <SettingsRow stacked label={<>{t("settings.reader.mobileLandscapeFitMode")}:</>} desc={t("settings.reader.mobileLandscapeFitModeDesc")}>
+            <SettingsRow stacked divider label={<>{t("settings.reader.mobileLandscapeFitMode")}:</>} desc={t("settings.reader.mobileLandscapeFitModeDesc")}>
               <SegmentedSwitch
                 id="ds-settings-mobile-landscape-fit-switch"
                 value={mobileLandscapeFitPref()}
@@ -146,7 +148,7 @@ export function ReaderSettings() {
               />
             </SettingsRow>
           </div>
-        </fieldset>
+        </GroupBox>
         {/* Long Strip Spread Override */}
         <SettingsToggleRow
           divider

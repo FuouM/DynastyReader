@@ -1240,7 +1240,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   background: var(--sys-window-bg, #ffffff) !important;
   border: 1px solid var(--sys-border-dark, #b0b0b0) !important;
   border-radius: 3px !important;
-  padding: 8px !important;
+  padding: 14px 8px 8px !important;
 }
 
 [data-mobile] .ds-settings-row {
