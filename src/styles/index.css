@@ -672,6 +672,15 @@ body {
   gap: 4px;
   align-items: center;
   flex-wrap: wrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ds-subtabs-left.is-dragging {
+  cursor: grabbing !important;
+}
+.ds-subtabs-left.is-dragging * {
+  cursor: grabbing !important;
+  pointer-events: none !important;
 }
 .ds-subtabs-right {
   display: flex;
