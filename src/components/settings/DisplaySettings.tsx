@@ -53,7 +53,6 @@ export function DisplaySettings() {
         {/* Content Source */}
         <SettingsRow
           label={t("settings.display.contentSource")}
-          desc={t("settings.display.contentSourceDesc")}
         >
           <DsSelect
             id="ds-settings-provider-select"

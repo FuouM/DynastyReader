@@ -116,8 +116,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 4px 0;
+}
+.ds-settings-row:has(.ds-switch) {
+  flex-wrap: nowrap !important;
+}
+.ds-settings-row:has(.ds-switch) .ds-settings-row-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ds-settings-row:has(.ds-switch) .ds-settings-row-control {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 .ds-settings-row.has-divider {
   padding-top: 6px;
@@ -164,6 +176,7 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
+  margin-left: auto;
 }
 .ds-settings-row-control .ds-segmented-switch {
   height: 24px;

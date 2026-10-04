@@ -5,8 +5,9 @@ import { suggest } from "../../api/directory";
 import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
 import { GroupBox } from "../GroupBox";
-import { BlacklistIcon, AddIcon, CloseIcon, ListCheckIcon } from "../Icon";
-import { IconText, Button, BlacklistModeSwitch } from "../Button";
+import { BlacklistIcon, AddIcon, CloseIcon, ListCheckIcon, Icon } from "../Icon";
+import { IconText, Button, SegmentedSwitch } from "../Button";
+import { SettingsRow } from "../SettingsRow";
 import { activeProvider } from "../../stores/provider";
 import { navigate } from "../../stores/router";
 export function BlacklistSettings(props: { onClose?: () => void }) {
@@ -47,11 +48,20 @@ export function BlacklistSettings(props: { onClose?: () => void }) {
           {t("blacklist.settingsDescription")}
         </div>
         {/* Mode Selector */}
-        <BlacklistModeSwitch
-          id="ds-bl-mode-switch"
-          value={blMode}
-          onChange={setMode}
-        />
+        <SettingsRow
+          label={<>{t("blacklist.modeHeader")}:</>}
+        >
+          <SegmentedSwitch
+            id="ds-bl-mode-switch"
+            value={blMode()}
+            onChange={setMode}
+            options={[
+              { id: "ds-bl-mode-hide", value: "hide", icon: <Icon name="eye-slash" />, text: t("blacklist.modeHide"), title: t("blacklist.modeHideTooltip") },
+              { id: "ds-bl-mode-ghost", value: "ghost", icon: <Icon name="eye-slash-fill" />, text: t("blacklist.modeGhost"), title: t("blacklist.modeGhostTooltip") },
+              { id: "ds-bl-mode-warn", value: "warn", icon: <Icon name="exclamation-triangle" />, text: t("blacklist.modeWarn"), title: t("blacklist.modeWarnTooltip") },
+            ]}
+          />
+        </SettingsRow>
 
         {/* Add Tag Input */}
         <div class="ds-bl-input-row">
