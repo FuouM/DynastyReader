@@ -225,8 +225,10 @@ export function useReaderWheel(session: ReaderSession): void {
     ev.preventDefault();
 
     if (ev.ctrlKey) {
-      // Ctrl + Wheel (trackpad pinch): smooth zoom in any fit mode.
-      c.zoomByFactor(Math.pow(1.0015, -ev.deltaY));
+      // Ctrl + Wheel (trackpad pinch): smooth zoom in original fit mode only.
+      if (c.fitMode() === "original") {
+        c.zoomByFactor(Math.pow(1.0015, -ev.deltaY));
+      }
       return;
     }
 

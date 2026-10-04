@@ -51,7 +51,6 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   readonly route: Route;
   readonly state: ReaderState;
   private toolbarHideTimer: number | null = null;
-  private priorFitMode: FitMode | null = null;
   // DOM refs ----------------------------------------------------------------
   containerEl: HTMLDivElement | null = null;
   viewportEl: HTMLElement | null = null;
@@ -526,7 +525,6 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   }
 
   setFitMode(fit: FitMode): void {
-    this.priorFitMode = null;
     this.setFitModeSignal(fit);
     setDefaultFitMode(fit);
     this.applyFitClass(fit);
@@ -540,87 +538,18 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     }
   }
 
-  /**
-   * On-screen scale of the current page image relative to its natural size.
-   * Used to keep visual size continuous when pinch/ctrl+wheel transitions a
-   * fit mode into the zoomed (original-size) rendering state.
-   */
-  private displayScaleFactor(): number {
-    const slot = this.slotEls[this.currentIndex()];
-    const img = slot?.querySelector("img.ds-page-img") as HTMLImageElement | null | undefined;
-    if (img && img.naturalWidth > 0 && img.clientWidth > 0) {
-      const f = img.clientWidth / img.naturalWidth;
-      if (isFinite(f) && f > 0) return f;
-    }
-    return 1;
-  }
 
-  /** Current effective on-screen zoom (fit modes report their display scale). */
-  effectiveZoomScale(): number {
-    return this.fitMode() === "original" ? this.zoomScale() : this.displayScaleFactor();
-  }
-
-  /**
-   * Switch to the zoomed (original-size) rendering state without persisting a
-   * new default fit mode, preserving the current on-screen page size.
-   */
-  private enterZoomedFit(): void {
-    if (this.fitMode() === "original") return;
-    this.priorFitMode = this.fitMode();
-    const factor = Math.max(0.25, Math.min(4, this.displayScaleFactor()));
-    this.setFitModeSignal("original");
-    this.applyFitClass("original");
-    this.setZoomScaleSignal(factor);
-    if (!this.isHorizontal()) {
-      requestAnimationFrame(() => this.updateSlotClearances());
-    } else {
-      this.resetToCurrentPage(false);
-    }
-  }
-
-  private exitZoomedFit(): void {
-    const prior = this.priorFitMode;
-    this.priorFitMode = null;
-    if (prior && prior !== "original") {
-      this.setFitModeSignal(prior);
-      this.applyFitClass(prior);
-      this.setZoomScaleSignal(1.0);
-      if (!this.isHorizontal()) {
-        requestAnimationFrame(() => this.updateSlotClearances());
-      } else {
-        this.resetToCurrentPage(false);
-      }
-    }
-  }
-
-  /** Multiplicative zoom (trackpad ctrl+wheel / pinch) in any fit mode. */
+  /** Multiplicative zoom (trackpad ctrl+wheel / pinch) in original fit mode only. */
   zoomByFactor(f: number): void {
+    if (this.fitMode() !== "original") return;
     if (!isFinite(f) || f <= 0) return;
-    const baseScale = this.displayScaleFactor();
-    if (this.fitMode() !== "original") {
-      // Already at (or below) fitted size — zooming out further is a no-op.
-      if (f <= 1) return;
-      this.enterZoomedFit();
-    }
-    const newScale = this.zoomScale() * f;
-    if (this.priorFitMode && newScale <= baseScale) {
-      this.exitZoomedFit();
-      return;
-    }
-    this.setZoomScaleClamped(newScale);
+    this.setZoomScaleClamped(this.zoomScale() * f);
   }
 
-  /** Absolute zoom target for two-finger pinch in any fit mode. */
+  /** Absolute zoom target for two-finger pinch in original fit mode only. */
   applyPinchZoom(target: number): void {
+    if (this.fitMode() !== "original") return;
     if (!isFinite(target)) return;
-    const baseScale = this.displayScaleFactor();
-    if (this.fitMode() !== "original") {
-      if (target <= baseScale) return;
-      this.enterZoomedFit();
-    } else if (this.priorFitMode && target <= baseScale) {
-      this.exitZoomedFit();
-      return;
-    }
     this.setZoomScaleClamped(target);
   }
 
@@ -629,7 +558,11 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     if (Math.abs(clamped - this.zoomScale()) < 0.0001) return;
     this.setZoomScaleSignal(clamped);
     if (!this.isHorizontal()) {
-      requestAnimationFrame(() => this.updateSlotClearances());
+      if (typeof requestAnimationFrame !== "undefined") {
+        requestAnimationFrame(() => this.updateSlotClearances());
+      } else {
+        this.updateSlotClearances();
+      }
     }
   }
 
@@ -667,7 +600,11 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     if (this.fitMode() !== "original") return;
     this.setZoomScaleSignal((prev) => Math.min(3.0, Math.round((prev + 0.1) * 10) / 10));
     if (!this.isHorizontal()) {
-      requestAnimationFrame(() => this.updateSlotClearances());
+      if (typeof requestAnimationFrame !== "undefined") {
+        requestAnimationFrame(() => this.updateSlotClearances());
+      } else {
+        this.updateSlotClearances();
+      }
     }
   }
 
@@ -675,19 +612,23 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     if (this.fitMode() !== "original") return;
     this.setZoomScaleSignal((prev) => Math.max(0.25, Math.round((prev - 0.1) * 10) / 10));
     if (!this.isHorizontal()) {
-      requestAnimationFrame(() => this.updateSlotClearances());
+      if (typeof requestAnimationFrame !== "undefined") {
+        requestAnimationFrame(() => this.updateSlotClearances());
+      } else {
+        this.updateSlotClearances();
+      }
     }
   }
 
   resetZoom(): void {
     if (this.fitMode() !== "original") return;
-    if (this.priorFitMode) {
-      this.exitZoomedFit();
-      return;
-    }
     this.setZoomScaleSignal(1.0);
     if (!this.isHorizontal()) {
-      requestAnimationFrame(() => this.updateSlotClearances());
+      if (typeof requestAnimationFrame !== "undefined") {
+        requestAnimationFrame(() => this.updateSlotClearances());
+      } else {
+        this.updateSlotClearances();
+      }
     }
   }
   toggleTheme(): void {
@@ -799,7 +740,11 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   /** Reveal the toolbar (if hidden) and focus the page-jump input (QoL-R2). */
   focusPageJump(): void {
     if (!this.toolbarVisible()) this.setToolbarVisible(true);
-    requestAnimationFrame(() => this.pageJumpFocusHook?.());
+    if (typeof requestAnimationFrame !== "undefined") {
+      requestAnimationFrame(() => this.pageJumpFocusHook?.());
+    } else {
+      this.pageJumpFocusHook?.();
+    }
   }
 
   // Publish topbar actions — must run inside a Solid root so

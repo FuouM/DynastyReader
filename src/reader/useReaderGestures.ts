@@ -122,6 +122,22 @@ export function useReaderGestures(s: ReaderSession) {
       }
     };
 
+    let lastScrollTime = 0;
+    let isTouchDown = false;
+    let wasTouchStoppingScroll = false;
+    let wasMouseStoppingScroll = false;
+
+    const onScroll = (): void => {
+      lastScrollTime = Date.now();
+      if (isTouchDown) {
+        wasTouchStoppingScroll = true;
+      }
+      if (isMouseDown) {
+        wasMouseStoppingScroll = true;
+      }
+    };
+    vpEl.addEventListener("scroll", onScroll, { passive: true });
+
     // ── Touch Gesture Engine (Mobile Swipe, Drag-and-Hold Chapter Overscroll, Tap) ──
     let lastTouchEndTime = 0;
     let touchStartX = 0;
@@ -145,6 +161,10 @@ export function useReaderGestures(s: ReaderSession) {
       }
       isTouchOnEndCard = false;
       if (document.querySelector(".ds-modal-backdrop, .ds-reader-sheet-backdrop, .ds-overlay")) return;
+      isTouchDown = true;
+      const wasAnimating = s.scrollAnimRaf !== null || s.isProgrammaticScroll;
+      const wasRecentScroll = Date.now() - lastScrollTime < 150;
+      wasTouchStoppingScroll = wasAnimating || wasRecentScroll;
       s.cancelScrollAnimation();
       const t = ev.touches[0];
       touchStartX = t.clientX;
@@ -264,6 +284,8 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onTouchCancel = (): void => {
+      isTouchDown = false;
+      wasTouchStoppingScroll = false;
       lastTouchEndTime = Date.now();
       if (touchLongPressTimer !== null) {
         clearTimeout(touchLongPressTimer);
@@ -284,6 +306,7 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onTouchEnd = (ev: TouchEvent): void => {
+      isTouchDown = false;
       if (isTouchOnEndCard) {
         isTouchOnEndCard = false;
         return;
@@ -302,6 +325,10 @@ export function useReaderGestures(s: ReaderSession) {
         }
       }
 
+      if (wasTouchStoppingScroll) {
+        wasTouchStoppingScroll = false;
+        return;
+      }
       if (ev.changedTouches.length !== 1) {
         if (activeOverscroll) {
           activeOverscroll = null;
@@ -369,11 +396,12 @@ export function useReaderGestures(s: ReaderSession) {
 
     const onPinchPointerDown = (ev: PointerEvent): void => {
       if (ev.pointerType !== "touch") return;
+      if (s.fitMode() !== "original") return;
       activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
       if (activePointers.size === 2) {
         pinchActive = true;
         pinchStartDist = pinchDistance();
-        pinchStartScale = s.effectiveZoomScale();
+        pinchStartScale = s.zoomScale();
         vpEl.style.touchAction = "none";
         s.cancelScrollAnimation();
       }
@@ -381,6 +409,7 @@ export function useReaderGestures(s: ReaderSession) {
 
     const onPinchPointerMove = (ev: PointerEvent): void => {
       if (ev.pointerType !== "touch" || !activePointers.has(ev.pointerId)) return;
+      if (s.fitMode() !== "original") return;
       activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
       if (pinchActive && activePointers.size >= 2 && pinchStartDist > 0) {
         const d = pinchDistance();
@@ -458,6 +487,10 @@ export function useReaderGestures(s: ReaderSession) {
         return;
       }
       isMouseOnEndCard = false;
+      const wasAnimating = s.scrollAnimRaf !== null || s.isProgrammaticScroll;
+      const wasRecentScroll = Date.now() - lastScrollTime < 150;
+      wasMouseStoppingScroll = wasAnimating || wasRecentScroll;
+      s.cancelScrollAnimation();
       isMouseDown = true;
       mouseStartX = ev.clientX;
       mouseStartY = ev.clientY;
@@ -612,6 +645,11 @@ export function useReaderGestures(s: ReaderSession) {
         }
       }
 
+      if (wasMouseStoppingScroll) {
+        wasMouseStoppingScroll = false;
+        return;
+      }
+
       let wasSlotPanned = false;
       if (activeSlot) {
         activeSlot.classList.remove("ds-dragging");
@@ -692,6 +730,7 @@ export function useReaderGestures(s: ReaderSession) {
       }
       s.toolbarAnimEndHook = null;
       vpEl.removeEventListener("touchstart", onTouchStart);
+      vpEl.removeEventListener("scroll", onScroll);
       vpEl.removeEventListener("touchmove", onTouchMove);
       vpEl.removeEventListener("touchend", onTouchEnd);
       vpEl.removeEventListener("touchcancel", onTouchCancel);
