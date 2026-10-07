@@ -157,7 +157,7 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
                   <Show
                     when={
                       ch.volumeHeader &&
-                      (i() === 0 || props.ordered()[i() - 1].volumeHeader !== ch.volumeHeader)
+                      (i() === 0 || props.ordered()[i() - 1]?.volumeHeader !== ch.volumeHeader)
                     }
                   >
                     <div class="ds-vol-header">{ch.volumeHeader}</div>

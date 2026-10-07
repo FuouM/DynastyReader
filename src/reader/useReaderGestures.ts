@@ -167,6 +167,7 @@ export function useReaderGestures(s: ReaderSession) {
       wasTouchStoppingScroll = wasAnimating || wasRecentScroll;
       s.cancelScrollAnimation();
       const t = ev.touches[0];
+      if (!t) return;
       touchStartX = t.clientX;
       touchStartY = t.clientY;
       touchStartTime = Date.now();
@@ -201,6 +202,7 @@ export function useReaderGestures(s: ReaderSession) {
       if (isTouchOnEndCard || (ev.target as HTMLElement)?.closest(".ds-chapter-end-card")) return;
       if (ev.touches.length !== 1) return;
       const t = ev.touches[0];
+      if (!t) return;
       const dx = t.clientX - touchStartX;
       const dy = t.clientY - touchStartY;
       const absX = Math.abs(dx);
@@ -338,6 +340,7 @@ export function useReaderGestures(s: ReaderSession) {
         return;
       }
       const t = ev.changedTouches[0];
+      if (!t) return;
       const totalDx = t.clientX - touchStartX;
       const totalDy = t.clientY - touchStartY;
       const dt = Date.now() - touchStartTime;
@@ -390,10 +393,11 @@ export function useReaderGestures(s: ReaderSession) {
 
     const pinchDistance = (): number => {
       const pts = [...activePointers.values()];
-      if (pts.length < 2) return 0;
-      return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const p0 = pts[0];
+      const p1 = pts[1];
+      if (!p0 || !p1) return 0;
+      return Math.hypot(p0.x - p1.x, p0.y - p1.y);
     };
-
     const onPinchPointerDown = (ev: PointerEvent): void => {
       if (ev.pointerType !== "touch") return;
       if (s.fitMode() !== "original") return;

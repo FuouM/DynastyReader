@@ -152,6 +152,7 @@ export function goBackTo(index: number): void {
   const back = historyBackStack();
   if (index < 0 || index >= back.length) return;
   const targetRoute = back[index];
+  if (!targetRoute) return;
   const popped = back.slice(index + 1);
   const remaining = back.slice(0, index);
   batch(() => {
@@ -177,6 +178,7 @@ export function goForwardTo(index: number): void {
   const forward = historyForwardStack();
   if (index < 0 || index >= forward.length) return;
   const targetRoute = forward[index];
+  if (!targetRoute) return;
   const remaining = forward.slice(0, index);
   const popped = forward.slice(index + 1);
   batch(() => {
@@ -206,7 +208,8 @@ export function closeSessionMangaTab(): void {
 export function exitReader(): void {
   const back = historyBackStack();
   for (let i = back.length - 1; i >= 0; i--) {
-    if (back[i].view !== "reader") {
+    const r = back[i];
+    if (r && r.view !== "reader") {
       goBackTo(i);
       return;
     }

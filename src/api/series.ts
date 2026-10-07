@@ -141,6 +141,7 @@ export async function fetchSeries(
   const endpoints = seriesEndpoints(permalink, preferredType);
   for (let i = 0; i < endpoints.length; i++) {
     const url = endpoints[i];
+    if (!url) continue;
     const timeoutMs = i === 0 ? SERIES_PRIMARY_TIMEOUT_MS : SERIES_FALLBACK_TIMEOUT_MS;
     try {
       const { status, body, etag } = await httpGetText(url, { headers, timeoutMs });
@@ -332,11 +333,11 @@ export async function getOrHydrateItemCover(opts: HydrateItemCoverOpts): Promise
   try {
     onPhase?.("downloading");
     const ch = await fetchChapter(chapterPermalink);
-    if (ch?.pages && ch.pages.length > 0 && ch.pages[0].url) {
-      const page1Cover = await getChapterCover(chapterPermalink, ch.pages[0].url, onPhase);
+    const firstPage = ch?.pages?.[0];
+    if (firstPage?.url) {
+      const page1Cover = await getChapterCover(chapterPermalink, firstPage.url, onPhase);
       if (page1Cover) {
         onPhase?.("processing");
-        await setCached(`cover:${coverKey}`, "cover", page1Cover);
         return page1Cover;
       }
     } else {

@@ -8,7 +8,7 @@ function parseDynastyHref(href: string): {
   permalink: string;
 } {
   const match = /^\/([a-zA-Z0-9_-]+)\/([^/?#]+)/.exec(href);
-  if (!match) {
+  if (!match || !match[1] || !match[2]) {
     return { kind: "chapter", permalink: href.replace(/^\//, "") };
   }
 
@@ -47,7 +47,7 @@ export function parseSearchHtml(
     if (authorLink && authorLink !== mainLink) {
       const aHref = authorLink.getAttribute("href") || "";
       const aMatch = /\/authors\/([^/?#]+)/.exec(aHref);
-      if (aMatch) {
+      if (aMatch?.[1]) {
         author = {
           name: decodeEntities(authorLink.textContent?.trim() || aMatch[1]),
           permalink: aMatch[1],
@@ -63,7 +63,7 @@ export function parseSearchHtml(
     if (doujinLink && doujinLink !== mainLink) {
       const dHref = doujinLink.getAttribute("href") || "";
       const dMatch = /\/doujins\/([^/?#]+)/.exec(dHref);
-      if (dMatch) {
+      if (dMatch?.[1]) {
         doujin = {
           name: decodeEntities(doujinLink.textContent?.trim() || dMatch[1]),
           permalink: dMatch[1],
@@ -131,7 +131,7 @@ export function parseSearchHtml(
       if (Number.isNaN(pageNum) && el.tagName === "A") {
         const href = el.getAttribute("href") || "";
         const m = /[?&]page=(\d+)/.exec(href);
-        if (m) {
+        if (m?.[1]) {
           pageNum = parseInt(m[1], 10);
         }
       }

@@ -41,7 +41,7 @@ export function ImportModal(props: ImportModalProps) {
       setCollections(cols);
       if (props.initialCollectionId !== undefined) {
         setSelectedCollectionId(props.initialCollectionId);
-      } else if (cols.length > 0) {
+      } else if (cols[0]) {
         setSelectedCollectionId(cols[0].id);
       }
     } catch {

@@ -361,13 +361,13 @@ function parseUrlListImport(
     return col;
   };
 
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i].trim();
+  for (const line of lines) {
+    const rawLine = line.trim();
     if (!rawLine) continue;
 
     // Detect section headers e.g. "=== Followed Series ===" or "# Followed"
     const sectionMatch = rawLine.match(/^(?:===|#+)\s*(.*?)\s*(?:===|#*)$/);
-    if (sectionMatch) {
+    if (sectionMatch && sectionMatch[1]) {
       const headerTitle = sectionMatch[1].trim().toLowerCase();
       if (headerTitle.includes("followed")) {
         currentTarget = "followed";
@@ -387,17 +387,17 @@ function parseUrlListImport(
     let parsedTitle = "";
 
     const mdMatch = rawLine.match(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/i);
-    if (mdMatch) {
+    if (mdMatch?.[1] && mdMatch[2]) {
       parsedTitle = mdMatch[1].trim();
       urlStr = mdMatch[2].trim();
     } else {
       const sepMatch = rawLine.match(/^(.*?)\s*(?:—|–|-|:)\s*(https?:\/\/[^\s]+)$/i);
-      if (sepMatch) {
+      if (sepMatch?.[1] && sepMatch[2]) {
         parsedTitle = sepMatch[1].trim();
         urlStr = sepMatch[2].trim();
       } else {
         const urlOnlyMatch = rawLine.match(/(https?:\/\/[^\s]+)/i);
-        if (urlOnlyMatch) {
+        if (urlOnlyMatch?.[1]) {
           urlStr = urlOnlyMatch[1].trim();
         }
       }
@@ -727,6 +727,7 @@ export function triggerBackgroundCoverHydration(items: {
     async function worker() {
       while (cursor < list.length) {
         const permalink = list[cursor++];
+        if (!permalink) continue;
         try {
           const freshPath = await getOrHydrateSeriesCover(permalink);
           if (freshPath) {
@@ -753,8 +754,9 @@ async function getOrCreateCollectionId(name: string, isDefault = false): Promise
     `SELECT id FROM collections WHERE name = ? COLLATE NOCASE`,
     [cleanName],
   );
-  if (rows.length > 0) {
-    return rows[0].id;
+  const firstRow = rows[0];
+  if (firstRow) {
+    return firstRow.id;
   }
 
   const now = Date.now();
@@ -767,9 +769,10 @@ async function getOrCreateCollectionId(name: string, isDefault = false): Promise
     `SELECT id FROM collections WHERE name = ? COLLATE NOCASE`,
     [cleanName],
   );
-  if (created.length === 0) {
+  const createdFirst = created[0];
+  if (!createdFirst) {
     throw new Error(t("library.importErrorCreateCollectionFailed", { name: cleanName }));
   }
   notifyCollectionsChanged();
-  return created[0].id;
+  return createdFirst.id;
 }

@@ -109,7 +109,7 @@ export async function cachedJson<T>(key: string, url: string, ttlMs?: number, da
 
   const fresh = tryParseJson<T>(body);
   if (fresh === null) throw new Error(`Invalid JSON from ${url}`);
-  const computedType = dataType ?? key.split(":")[0].replace(/_v\d+$/, "");
+  const computedType = dataType ?? (key.split(":")[0] ?? key).replace(/_v\d+$/, "");
   await setCached(key, computedType, body, etag);
   return fresh;
 }

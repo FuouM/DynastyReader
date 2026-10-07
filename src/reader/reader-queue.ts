@@ -115,7 +115,7 @@ export class ReaderQueue {
       }
 
       const idx = this.queue.splice(targetPos, 1)[0];
-      if (this.inFlight.has(idx)) continue;
+      if (idx === undefined || this.inFlight.has(idx)) continue;
       const isPriority = this.priorityIndices.has(idx);
       this.inFlight.add(idx);
       if (isPriority) {

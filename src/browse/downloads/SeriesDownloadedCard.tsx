@@ -150,7 +150,7 @@ function showVolDivider(
 ): boolean {
   if (!hasMultipleVolumes || !ch.volumeHeader) return false;
   if (idx === 0) return false;
-  return list[idx - 1].volumeHeader !== ch.volumeHeader;
+  return list[idx - 1]?.volumeHeader !== ch.volumeHeader;
 }
 
 export interface SeriesDownloadedCardProps {

@@ -130,7 +130,7 @@ export function setTheme(t: AppTheme): void {
 
 export function toggleTheme(): void {
   const idx = VALID_THEMES.indexOf(theme());
-  setTheme(VALID_THEMES[(idx + 1) % VALID_THEMES.length]);
+  setTheme(VALID_THEMES[(idx + 1) % VALID_THEMES.length] ?? "light");
 }
 
 /** Applies the persisted theme on startup. */

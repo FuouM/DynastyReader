@@ -463,7 +463,7 @@ export class MangaDexProvider implements ContentProviderAdapter {
       cover: coverUrl,
       link: `https://mangadex.org/title/${manga.id}`,
       description,
-      aliases: (manga.attributes.altTitles || []).map((t) => Object.values(t)[0]).filter(Boolean),
+      aliases: (manga.attributes.altTitles || []).map((t) => Object.values(t)[0]).filter((x): x is string => Boolean(x)),
       taggings,
     };
   }

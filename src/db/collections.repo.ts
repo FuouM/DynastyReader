@@ -56,11 +56,12 @@ export async function createCollection(name: string): Promise<CollectionRow> {
     "SELECT id, name, is_default, created_at FROM collections WHERE name = ? COLLATE NOCASE",
     [cleanName],
   );
-  if (rows.length === 0) {
+  const row = rows[0];
+  if (!row) {
     throw new Error("Failed to create collection.");
   }
   notifyCollectionsChanged();
-  return { ...rows[0], itemCount: 0 };
+  return { ...row, itemCount: 0 };
 }
 
 
@@ -156,8 +157,9 @@ async function addItemToCollection(
         "SELECT json_payload FROM cached_metadata WHERE cache_key = ? OR cache_key = ?",
         [`cover:series:${resolvedCover}`, `cover:chapter:${resolvedCover}`],
       );
-      if (rows.length > 0 && rows[0].json_payload) {
-        resolvedCover = rows[0].json_payload;
+      const firstRow = rows[0];
+      if (firstRow?.json_payload) {
+        resolvedCover = firstRow.json_payload;
       } else {
         resolvedCover = null;
       }

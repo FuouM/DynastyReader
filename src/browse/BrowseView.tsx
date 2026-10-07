@@ -304,16 +304,18 @@ export function BrowseView() {
       if (!isMobile()) return;
       if (checkBtn() === "checking") return;
       if (paneEl.scrollTop > 2) return;
-      if (ev.touches.length !== 1) return;
-      pullStartY = ev.touches[0].clientY;
+      const t = ev.touches[0];
+      if (!t || ev.touches.length !== 1) return;
+      pullStartY = t.clientY;
       pulling = false;
       setIsPulling(false);
       setPullReady(false);
     };
     const onTouchMove = (ev: TouchEvent): void => {
       if (!isMobile()) return;
-      if (ev.touches.length !== 1) return;
-      const dy = ev.touches[0].clientY - pullStartY;
+      const t = ev.touches[0];
+      if (!t || ev.touches.length !== 1) return;
+      const dy = t.clientY - pullStartY;
       if (!pulling && dy > 10 && paneEl.scrollTop <= 2) {
         pulling = true;
         setIsPulling(true);

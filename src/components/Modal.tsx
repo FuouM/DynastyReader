@@ -97,7 +97,11 @@ export function Modal(props: ModalProps) {
         }
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-
+        if (!first || !last) {
+          ev.preventDefault();
+          windowEl.focus();
+          return;
+        }
         if (!windowEl.contains(document.activeElement)) {
           ev.preventDefault();
           (ev.shiftKey ? last : first).focus();
@@ -121,8 +125,9 @@ export function Modal(props: ModalProps) {
     const onFocusIn = (ev: FocusEvent): void => {
       if (windowEl && !windowEl.contains(ev.target as Node)) {
         const focusable = getFocusableElements(windowEl);
-        if (focusable.length > 0) {
-          focusable[0].focus();
+        const first = focusable[0];
+        if (first) {
+          first.focus();
         } else {
           windowEl.focus();
         }

@@ -81,8 +81,8 @@ describe("db/import.repo - validateAndParseImport", () => {
     expect(res.valid).toBe(true);
     expect(res.detectedFormat).toBe("urls");
     expect(res.stats.followedCount).toBe(2);
-    expect(res.followed[0].permalink).toBe("bloom_into_you");
-    expect(res.followed[1].permalink).toBe("chapter_1");
+    expect(res.followed[0]!.permalink).toBe("bloom_into_you");
+    expect(res.followed[1]!.permalink).toBe("chapter_1");
     expect(res.stats.ignoredCount).toBe(1); // google.com
   });
 

@@ -122,8 +122,9 @@ export async function runIntegrityCheck(
       const results = await ipc.verifyFileIntegrityBatch(reqs);
       for (let j = 0; j < results.length; j++) {
         const res = results[j];
-        const itemMeta = chunk[j].meta;
-
+        const chunkItem = chunk[j];
+        if (!res || !chunkItem) continue;
+        const itemMeta = chunkItem.meta;
         if (res.exists && res.is_valid) {
           totalHealthy++;
         } else if (!res.exists) {
@@ -162,8 +163,7 @@ export async function runIntegrityCheck(
       const errMsg = batchErr instanceof Error ? batchErr.message : String(batchErr);
       log.error("cache-integrity", "Batch verification error:", batchErr);
       scanError = errMsg;
-      for (let j = 0; j < chunk.length; j++) {
-        const item = chunk[j];
+      for (const item of chunk) {
         issues.push({
           type: item.meta.type,
           id: item.req.id,

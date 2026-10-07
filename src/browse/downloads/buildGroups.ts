@@ -104,13 +104,13 @@ const titleCollator = new Intl.Collator(undefined, { numeric: true, sensitivity:
 function extractChapterLabel(title: string, index?: number): string {
   const clean = title.trim();
   const match = clean.match(/\b(?:chapter|ch\.?|c)\s*(\d+(?:\.\d+)?)\b/i);
-  if (match) return match[1];
+  if (match?.[1]) return match[1];
   const volMatch = clean.match(/\b(?:volume|vol\.?|v)\s*(\d+(?:\.\d+)?)\b/i);
-  if (volMatch) return `V${volMatch[1]}`;
+  if (volMatch?.[1]) return `V${volMatch[1]}`;
   const leadingNum = clean.match(/^(\d+(?:\.\d+)?)/);
-  if (leadingNum) return leadingNum[1];
+  if (leadingNum?.[1]) return leadingNum[1];
   const anyNum = clean.match(/\b(\d+(?:\.\d+)?)\b/);
-  if (anyNum) return anyNum[1];
+  if (anyNum?.[1]) return anyNum[1];
   if (/oneshot|one-shot/i.test(clean)) return "OS";
   if (/prologue/i.test(clean)) return "Pro";
   if (/epilogue/i.test(clean)) return "Epi";
@@ -170,12 +170,14 @@ export function buildGroups(
     g.chapters.sort((a, b) => titleCollator.compare(a.chapterTitle, b.chapterTitle));
     const total = g.chapters.length;
     for (let i = 0; i < total; i++) {
-      g.chapters[i].shortLabel = extractChapterLabel(g.chapters[i].chapterTitle, i);
+      const ch = g.chapters[i];
+      if (ch) ch.shortLabel = extractChapterLabel(ch.chapterTitle, i);
     }
   }
   const orphanTotal = orphans.length;
   for (let i = 0; i < orphanTotal; i++) {
-    orphans[i].shortLabel = extractChapterLabel(orphans[i].chapterTitle, i);
+    const ch = orphans[i];
+    if (ch) ch.shortLabel = extractChapterLabel(ch.chapterTitle, i);
   }
 
   const groups = Array.from(map.values());

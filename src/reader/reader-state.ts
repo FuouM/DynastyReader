@@ -192,13 +192,13 @@ export function createReaderState(): ReaderState {
     if (isSpreadActive) {
       const group = spreads()[spreadIndexOf(spreads(), idx)];
       if (group && group.pageIndices.length > 1) {
-        const first = group.pageIndices[0] + 1;
-        const last = group.pageIndices[group.pageIndices.length - 1] + 1;
+        const first = (group.pageIndices[0] ?? idx) + 1;
+        const last = (group.pageIndices[group.pageIndices.length - 1] ?? idx) + 1;
         currentNumStr = `${first}–${last}`;
         fullPageStr = `Pages ${first}–${last} of ${total}`;
         shortPageStr = `${first}–${last} / ${total}`;
       } else if (group) {
-        const first = group.pageIndices[0] + 1;
+        const first = (group.pageIndices[0] ?? idx) + 1;
         currentNumStr = `${first}`;
         fullPageStr = `Page ${first} of ${total}`;
         shortPageStr = `${first} / ${total}`;

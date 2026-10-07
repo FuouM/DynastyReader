@@ -73,7 +73,7 @@ export function SettingsModal(props: SettingsModalProps) {
     if (isProgrammaticScroll || !contentRef) return;
     const containerRect = contentRef.getBoundingClientRect();
 
-    let currentId: SettingsSectionId = SETTINGS_SECTIONS[0].id;
+    let currentId: SettingsSectionId = SETTINGS_SECTIONS[0]?.id ?? "display";
     for (const sec of SETTINGS_SECTIONS) {
       const el = contentRef.querySelector(`#ds-settings-sec-${sec.id}`) as HTMLElement | null;
       if (el) {

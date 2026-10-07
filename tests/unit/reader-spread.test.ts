@@ -19,19 +19,19 @@ describe("reader/reader-spread - computeSpreads", () => {
     // 5 pages: [0, 1], [2, 3], [4]
     const spreads = computeSpreads(5, false, () => false);
     expect(spreads.length).toBe(3);
-    expect(spreads[0].pageIndices).toEqual([0, 1]);
-    expect(spreads[1].pageIndices).toEqual([2, 3]);
-    expect(spreads[2].pageIndices).toEqual([4]);
+    expect(spreads[0]!.pageIndices).toEqual([0, 1]);
+    expect(spreads[1]!.pageIndices).toEqual([2, 3]);
+    expect(spreads[2]!.pageIndices).toEqual([4]);
   });
 
   it("isolates page 0 as standalone cover when coverOffset is true", () => {
     // 5 pages with cover: [0], [1, 2], [3, 4]
     const spreads = computeSpreads(5, true, () => false);
     expect(spreads.length).toBe(3);
-    expect(spreads[0].pageIndices).toEqual([0]);
-    expect(spreads[0].isStandaloneCover).toBe(true);
-    expect(spreads[1].pageIndices).toEqual([1, 2]);
-    expect(spreads[2].pageIndices).toEqual([3, 4]);
+    expect(spreads[0]!.pageIndices).toEqual([0]);
+    expect(spreads[0]!.isStandaloneCover).toBe(true);
+    expect(spreads[1]!.pageIndices).toEqual([1, 2]);
+    expect(spreads[2]!.pageIndices).toEqual([3, 4]);
   });
 
   it("isolates wide (landscape) pages into their own single-page spread", () => {
@@ -39,22 +39,22 @@ describe("reader/reader-spread - computeSpreads", () => {
     const isWide = (idx: number) => idx === 2;
     const spreads = computeSpreads(5, false, isWide);
     expect(spreads.length).toBe(3);
-    expect(spreads[0].pageIndices).toEqual([0, 1]);
-    expect(spreads[1].pageIndices).toEqual([2]);
-    expect(spreads[1].isWide).toBe(true);
-    expect(spreads[2].pageIndices).toEqual([3, 4]);
+    expect(spreads[0]!.pageIndices).toEqual([0, 1]);
+    expect(spreads[1]!.pageIndices).toEqual([2]);
+    expect(spreads[1]!.isWide).toBe(true);
+    expect(spreads[2]!.pageIndices).toEqual([3, 4]);
   });
 
   it("handles consecutive wide pages properly", () => {
     // Pages 1 and 2 are wide: [0] (paired with wide -> standalone), [1] (wide), [2] (wide), [3]
     const isWide = (idx: number) => idx === 1 || idx === 2;
     const spreads = computeSpreads(4, false, isWide);
-    expect(spreads[0].pageIndices).toEqual([0]);
-    expect(spreads[1].pageIndices).toEqual([1]);
-    expect(spreads[1].isWide).toBe(true);
-    expect(spreads[2].pageIndices).toEqual([2]);
-    expect(spreads[2].isWide).toBe(true);
-    expect(spreads[3].pageIndices).toEqual([3]);
+    expect(spreads[0]!.pageIndices).toEqual([0]);
+    expect(spreads[1]!.pageIndices).toEqual([1]);
+    expect(spreads[1]!.isWide).toBe(true);
+    expect(spreads[2]!.pageIndices).toEqual([2]);
+    expect(spreads[2]!.isWide).toBe(true);
+    expect(spreads[3]!.pageIndices).toEqual([3]);
   });
 });
 

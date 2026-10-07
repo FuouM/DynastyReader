@@ -155,7 +155,7 @@ export function mangaDexToStandardSeries(
     description,
     aliases: (manga.attributes.altTitles || [])
       .map((t) => Object.values(t)[0])
-      .filter(Boolean),
+      .filter((x): x is string => Boolean(x)),
     taggings: [],
   };
 }

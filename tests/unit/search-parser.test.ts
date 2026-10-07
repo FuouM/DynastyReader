@@ -37,14 +37,14 @@ describe("api/search-parser - parseSearchHtml", () => {
     const page = parseSearchHtml(SAMPLE_HTML, "test", 1);
     expect(page.items.length).toBe(2);
 
-    const s1 = page.items[0];
+    const s1 = page.items[0]!;
     expect(s1.title).toBe("Bloom Into You");
     expect(s1.kind).toBe("series");
     expect(s1.permalink).toBe("bloom_into_you");
     expect(s1.author?.name).toBe("Nakatani Nio");
     expect(s1.tags.map((t) => t.name)).toEqual(["School Life", "Drama"]);
 
-    const c1 = page.items[1];
+    const c1 = page.items[1]!;
     expect(c1.title).toBe("Citrus Ch. 1");
     expect(c1.kind).toBe("chapter");
     expect(c1.permalink).toBe("citrus_ch01");

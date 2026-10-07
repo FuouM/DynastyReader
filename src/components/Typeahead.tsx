@@ -121,9 +121,11 @@ export function Typeahead(props: TypeaheadProps) {
       if (idx >= 0 && idx < items.length) {
         ev.preventDefault();
         const selected = items[idx];
-        props.onSelect(selected);
-        setOpen(false);
-        setSelectedIndex(-1);
+        if (selected) {
+          props.onSelect(selected);
+          setOpen(false);
+          setSelectedIndex(-1);
+        }
       }
     } else if (ev.key === "Escape") {
       setOpen(false);

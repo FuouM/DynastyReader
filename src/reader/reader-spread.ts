@@ -102,8 +102,10 @@ export function computeSpreads(
 export function spreadIndexOf(spreads: SpreadGroup[], pageIndex: number): number {
   if (pageIndex < 0 || spreads.length === 0) return 0;
   for (let s = 0; s < spreads.length; s++) {
-    const last = spreads[s].pageIndices[spreads[s].pageIndices.length - 1];
-    if (pageIndex <= last) return s;
+    const sp = spreads[s];
+    if (!sp) continue;
+    const last = sp.pageIndices[sp.pageIndices.length - 1];
+    if (last !== undefined && pageIndex <= last) return s;
   }
   return spreads.length - 1;
 }
@@ -112,7 +114,7 @@ export function spreadIndexOf(spreads: SpreadGroup[], pageIndex: number): number
 export function anchorPageOf(spreads: SpreadGroup[], spreadIndex: number): number {
   if (spreads.length === 0) return 0;
   const clamped = Math.max(0, Math.min(spreads.length - 1, spreadIndex));
-  return spreads[clamped].pageIndices[0];
+  return spreads[clamped]?.pageIndices[0] ?? 0;
 }
 
 /**
@@ -205,7 +207,7 @@ export function getAdjacentChapters(
     }
     return { prevCh: null, nextCh: null };
   }
-  const prevCh = curIdx > 0 ? chapterList[curIdx - 1] : null;
-  const nextCh = curIdx < chapterList.length - 1 ? chapterList[curIdx + 1] : null;
+  const prevCh = curIdx > 0 ? (chapterList[curIdx - 1] ?? null) : null;
+  const nextCh = curIdx < chapterList.length - 1 ? (chapterList[curIdx + 1] ?? null) : null;
   return { prevCh, nextCh };
 }

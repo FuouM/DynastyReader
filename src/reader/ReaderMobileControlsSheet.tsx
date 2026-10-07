@@ -85,14 +85,16 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   let touchStartY = 0;
   let touchDiffY = 0;
   const handleTouchStart = (ev: TouchEvent) => {
-    if (ev.touches.length === 1) {
-      touchStartY = ev.touches[0].clientY;
+    const t = ev.touches[0];
+    if (t) {
+      touchStartY = t.clientY;
       touchDiffY = 0;
     }
   };
   const handleTouchMove = (ev: TouchEvent) => {
-    if (ev.touches.length === 1) {
-      touchDiffY = ev.touches[0].clientY - touchStartY;
+    const t = ev.touches[0];
+    if (t) {
+      touchDiffY = t.clientY - touchStartY;
     }
   };
   const handleTouchEnd = () => {

@@ -14,7 +14,7 @@ const COVER_WEBP_MAX_BYTES = 100_000;
 
 function coverExtension(url: string): string {
   const m = /\.([a-zA-Z0-9]+)(?:\?.*)?$/.exec(url);
-  return m ? m[1] : "jpg";
+  return m?.[1] ?? "jpg";
 }
 
 async function transcodeCover(url: string, rawOutPath: string, webpOutPath: string): Promise<string> {
@@ -31,15 +31,16 @@ async function transcodeCover(url: string, rawOutPath: string, webpOutPath: stri
       conversions: [[rawOutPath, webpOutPath]],
     });
     const results = convResp.converted;
-    if (results && results.length > 0 && results[0].output_path && !results[0].error) {
-      finalPath = results[0].output_path;
+    const firstResult = results?.[0];
+    if (firstResult?.output_path && !firstResult.error) {
+      finalPath = firstResult.output_path;
       try {
         await ipc.fileDelete(rawOutPath);
       } catch (delErr) {
         log.debug("api/cover-pipeline", `raw cover delete failed for ${rawOutPath}:`, delErr);
       }
-    } else if (results && results[0]?.error) {
-      log.debug("api/cover-pipeline", "ephemeralConvertImages reported error:", results[0].error);
+    } else if (firstResult?.error) {
+      log.debug("api/cover-pipeline", "ephemeralConvertImages reported error:", firstResult.error);
     }
   } catch (err) {
     log.debug("api/cover-pipeline", "Failed to transcode cover to WebP, keeping raw download:", err);

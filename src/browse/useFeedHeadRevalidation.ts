@@ -57,7 +57,11 @@ export async function revalidateFeedHead(tabId: string): Promise<FeedHeadRevalid
     return revalidateMangaDexFeedHead(tabId);
   }
   const url = FEED_TAB_TO_URL[tabId];
-  const key = `${FEED_TAB_TO_KEY[tabId]}:1`;
+  const baseKey = FEED_TAB_TO_KEY[tabId];
+  if (!url || !baseKey) {
+    return { hasNew: false, status: "unchanged" };
+  }
+  const key = `${baseKey}:1`;
   const cached = await getCached(key);
   const cachedFeed = cached ? tryParseJson<Feed>(cached.json_payload) : undefined;
   const cachedTs = feedHeadTimestamp(cachedFeed?.chapters);

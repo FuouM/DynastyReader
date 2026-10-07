@@ -427,9 +427,11 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     // 2. Enqueue immediate next spread with priority so next page turn is instant
     if (cur + 1 < this.spreads().length) {
       const next = this.spreads()[cur + 1];
-      for (const pageIndex of next.pageIndices) {
-        if (this.getCachedPath(pageIndex) === undefined) {
-          this.enqueue(pageIndex, true);
+      if (next) {
+        for (const pageIndex of next.pageIndices) {
+          if (this.getCachedPath(pageIndex) === undefined) {
+            this.enqueue(pageIndex, true);
+          }
         }
       }
     }

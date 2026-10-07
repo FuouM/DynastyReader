@@ -142,9 +142,9 @@ export function decodeEntities(str: string | null | undefined): string {
 export function extractVolumeHeader(title: string): string | undefined {
   if (!title) return undefined;
   const bracketed = title.match(/[[(【]\s*(?:vol(?:ume)?\.?|v)\s*(\d+)\s*[\])】]/i);
-  if (bracketed) return `Volume ${parseInt(bracketed[1], 10)}`;
+  if (bracketed?.[1]) return `Volume ${parseInt(bracketed[1], 10)}`;
   const match = title.match(/\b(?:vol(?:ume)?\.?|v)\s*(\d+)\b/i);
-  if (match) return `Volume ${parseInt(match[1], 10)}`;
+  if (match?.[1]) return `Volume ${parseInt(match[1], 10)}`;
   return undefined;
 }
 

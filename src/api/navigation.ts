@@ -77,12 +77,15 @@ export function parseDynastyEntityUrl(input: string): {
     }
     const parts = url.pathname.split("/").filter(Boolean);
     if (parts.length < 2) return null;
+    const p0 = parts[0];
+    const p1 = parts[1];
+    if (!p0 || !p1) return null;
 
-    const endpoint = parts[0].toLowerCase();
+    const endpoint = p0.toLowerCase();
     const rawKind = KIND_BY_PATH_SEGMENT[endpoint];
     if (!rawKind) return null;
 
-    const rawPermalink = parts[1].replace(/\.json$/i, "").trim();
+    const rawPermalink = p1.replace(/\.json$/i, "").trim();
     if (!isValidPermalink(rawPermalink)) return null;
 
     return { kind: rawKind, permalink: rawPermalink };
@@ -122,7 +125,7 @@ export function parseMangaDexUrl(input: string): ParsedMangaDexUrl | null {
 
   // 1. Shorthand prefixes (e.g. chapter/<uuid>, ch:<uuid>, title/<uuid>, manga:<uuid>, mdx:chapter:<uuid>, mdx:series:<uuid>)
   const prefixMatch = /^(?:mdx:)?(chapter|ch|c|series|title|manga|m)[:/]([a-f0-9-]+)$/i.exec(trimmed);
-  if (prefixMatch) {
+  if (prefixMatch && prefixMatch[1] && prefixMatch[2]) {
     const rawKind = prefixMatch[1].toLowerCase();
     const rawId = prefixMatch[2].toLowerCase();
     if (MANGADEX_UUID_REGEX.test(rawId)) {
@@ -144,9 +147,11 @@ export function parseMangaDexUrl(input: string): ParsedMangaDexUrl | null {
     if (host !== "mangadex.org" && !host.endsWith(".mangadex.org")) return null;
 
     const parts = url.pathname.split("/").filter(Boolean);
-    if (parts.length >= 2) {
-      const type = parts[0].toLowerCase();
-      const rawId = parts[1].toLowerCase();
+    const p0 = parts[0];
+    const p1 = parts[1];
+    if (parts.length >= 2 && p0 && p1) {
+      const type = p0.toLowerCase();
+      const rawId = p1.toLowerCase();
       if (type === "title" || type === "manga") {
         if (MANGADEX_UUID_REGEX.test(rawId)) return { kind: "series", id: rawId, isBareUuid: false };
       } else if (type === "chapter") {
