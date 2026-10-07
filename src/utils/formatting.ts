@@ -154,7 +154,7 @@ export function extractVolumeHeader(title: string): string | undefined {
 export function isVolumeOrSectionHeader(header: string): boolean {
   if (!header) return false;
   const h = header.trim();
-  if (/^(?:volume|vol\.?|book|part|season|act|arc)\b/i.test(h)) return true;
+  if (/^(?:no\s*volume|volume|vol\.?|book|part|season|act|arc)\b/i.test(h)) return true;
   if (/^(?:side\s*story|specials?|extras?|oneshots?|pre-?serialis?ation|april\s*fools?|blu-?ray|prologue|epilogue)\b/i.test(h)) return true;
   return false;
 }

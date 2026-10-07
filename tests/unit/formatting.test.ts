@@ -104,6 +104,7 @@ describe("utils/formatting - volume and section headers", () => {
     expect(isVolumeOrSectionHeader("Prologue")).toBe(true);
     expect(isVolumeOrSectionHeader("Epilogue")).toBe(true);
     expect(isVolumeOrSectionHeader("Special")).toBe(true);
+    expect(isVolumeOrSectionHeader("No Volume")).toBe(true);
     expect(isVolumeOrSectionHeader("Regular Chapter Title")).toBe(false);
     expect(isVolumeOrSectionHeader("")).toBe(false);
   });

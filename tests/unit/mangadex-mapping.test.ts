@@ -6,6 +6,7 @@ import {
   getMangaAuthors,
   mangaDexToStandardSeries,
   mangaDexToStandardChapter,
+  sortMangaDexChapters,
 } from "../../src/providers/mangadex/mapping";
 import type { MangaDexChapter, MangaDexManga } from "../../src/providers/mangadex/types";
 
@@ -235,5 +236,64 @@ describe("mangadex/mapping - formatMangaDexChapterTitle", () => {
     expect(formatMangaDexChapterTitle(null, "Special Story")).toBe("Special Story");
     expect(formatMangaDexChapterTitle(null, null)).toBe("Oneshot");
     expect(formatMangaDexChapterTitle("", "")).toBe("Oneshot");
+  });
+});
+
+describe("mangadex/mapping - sortMangaDexChapters", () => {
+  it("sorts chapters by volume ascending, then chapter ascending", () => {
+    const chapters = [
+      { id: "c2", attributes: { volume: "2", chapter: "1" } },
+      { id: "c1", attributes: { volume: "1", chapter: "2" } },
+      { id: "c0", attributes: { volume: "1", chapter: "1" } },
+      { id: "c3", attributes: { volume: "2", chapter: "2" } },
+    ] as MangaDexChapter[];
+
+    const sorted = sortMangaDexChapters(chapters);
+    expect(sorted.map((c) => c.id)).toEqual(["c0", "c1", "c2", "c3"]);
+  });
+
+  it("correctly groups repeating chapter numbers across volumes (Comic Girls pattern)", () => {
+    const chapters = [
+      { id: "v3-c0", attributes: { volume: "3", chapter: "0" } },
+      { id: "v2-c0", attributes: { volume: "2", chapter: "0" } },
+      { id: "v1-c0", attributes: { volume: "1", chapter: "0" } },
+      { id: "v1-c1", attributes: { volume: "1", chapter: "1" } },
+      { id: "v3-c1", attributes: { volume: "3", chapter: "1" } },
+      { id: "v2-c1", attributes: { volume: "2", chapter: "1" } },
+      { id: "v7-c79", attributes: { volume: "7", chapter: "79" } },
+    ] as MangaDexChapter[];
+
+    const sorted = sortMangaDexChapters(chapters);
+    expect(sorted.map((c) => c.id)).toEqual([
+      "v1-c0",
+      "v1-c1",
+      "v2-c0",
+      "v2-c1",
+      "v3-c0",
+      "v3-c1",
+      "v7-c79",
+    ]);
+  });
+
+  it("places uncollected chapters with no volume after earlier volumes by chapter number", () => {
+    const chapters = [
+      { id: "v1-c1", attributes: { volume: "1", chapter: "1" } },
+      { id: "novol-c95", attributes: { volume: null, chapter: "95" } },
+      { id: "v8-c93", attributes: { volume: "8", chapter: "93" } },
+    ] as MangaDexChapter[];
+
+    const sorted = sortMangaDexChapters(chapters);
+    expect(sorted.map((c) => c.id)).toEqual(["v1-c1", "v8-c93", "novol-c95"]);
+  });
+
+  it("handles series where early chapters lack volume metadata but later chapters have it", () => {
+    const chapters = [
+      { id: "v15-c114", attributes: { volume: "15", chapter: "114" } },
+      { id: "novol-c1", attributes: { volume: null, chapter: "1" } },
+      { id: "novol-c2", attributes: { volume: null, chapter: "2" } },
+    ] as MangaDexChapter[];
+
+    const sorted = sortMangaDexChapters(chapters);
+    expect(sorted.map((c) => c.id)).toEqual(["novol-c1", "novol-c2", "v15-c114"]);
   });
 });

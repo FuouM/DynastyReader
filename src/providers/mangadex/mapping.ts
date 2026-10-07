@@ -42,6 +42,49 @@ export function formatMangaDexChapterTitle(
   return rawTitle || t("mangadex.oneshot");
 }
 
+function parseNumeric(val?: string | null): number | null {
+  if (val === null || val === undefined || val === "") return null;
+  const n = parseFloat(val);
+  return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * Sorts MangaDex chapters in reading order:
+ * 1. Both have volume: sort by volume ascending, then chapter ascending.
+ * 2. One has volume, one does not (e.g. uncollected magazine chapters vs compiled volumes):
+ *    Compare chapter numbers to place uncollected chapters relative to compiled volumes.
+ * 3. Neither has volume: sort by chapter ascending.
+ */
+export function sortMangaDexChapters(chapters: MangaDexChapter[]): MangaDexChapter[] {
+  return [...chapters].sort((a, b) => {
+    const volA = parseNumeric(a.attributes.volume);
+    const volB = parseNumeric(b.attributes.volume);
+    const chA = parseNumeric(a.attributes.chapter);
+    const chB = parseNumeric(b.attributes.chapter);
+
+    // Both have numeric volumes
+    if (volA !== null && volB !== null) {
+      if (volA !== volB) return volA - volB;
+      if (chA !== null && chB !== null && chA !== chB) return chA - chB;
+      return (a.attributes.chapter || "").localeCompare(b.attributes.chapter || "", undefined, { numeric: true });
+    }
+
+    // One has volume, one does not
+    if (volA !== null && volB === null) {
+      if (chA !== null && chB !== null && chA !== chB) return chA - chB;
+      return -1;
+    }
+    if (volA === null && volB !== null) {
+      if (chA !== null && chB !== null && chA !== chB) return chA - chB;
+      return 1;
+    }
+
+    // Neither has volume
+    if (chA !== null && chB !== null && chA !== chB) return chA - chB;
+    return (a.attributes.chapter || "").localeCompare(b.attributes.chapter || "", undefined, { numeric: true });
+  });
+}
+
 /**
  * Constructs the CDN URL for a MangaDex cover image.
  */

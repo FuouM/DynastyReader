@@ -91,7 +91,7 @@ export async function getMangaFeed(
     translatedLanguage: options.translatedLanguage ?? ["en"],
     limit: options.limit ?? 100,
     offset: options.offset ?? 0,
-    order: options.order ?? { chapter: "asc" },
+    order: options.order ?? { volume: "asc", chapter: "asc" },
     includes: ["scanlation_group"],
     includeExternalUrl: 0,
     includeEmptyPages: 0,

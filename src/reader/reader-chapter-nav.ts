@@ -8,6 +8,7 @@ import type { ChapterRef } from "../types/routes";
 import type { Series } from "../types/api";
 import { fetchSeries } from "../api/series";
 import { getAllMangaFeed } from "../providers/mangadex/api/manga";
+import { sortMangaDexChapters, formatMangaDexChapterTitle } from "../providers/mangadex/mapping";
 import { navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
@@ -33,11 +34,10 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
   if (permalink.startsWith("mdx:")) {
     const mangaId = permalink.replace(/^mdx:/, "");
     try {
-      const feed = await getAllMangaFeed(mangaId, { limit: 500, order: { chapter: "asc" } });
-      const cl: ChapterRef[] = feed.data.map((ch) => {
-        const num = ch.attributes.chapter;
-        const raw = ch.attributes.title;
-        const title = num ? (raw ? `Ch. ${num} - ${raw}` : `Chapter ${num}`) : (raw || "Oneshot");
+      const feed = await getAllMangaFeed(mangaId, { limit: 500, order: { volume: "asc", chapter: "asc" } });
+      const sortedChapters = sortMangaDexChapters(feed.data);
+      const cl: ChapterRef[] = sortedChapters.map((ch) => {
+        const title = formatMangaDexChapterTitle(ch.attributes.chapter, ch.attributes.title);
         const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
         const attrs = groupRel?.attributes;
         const groupName = attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string" ? attrs.name : undefined;

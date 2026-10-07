@@ -44,7 +44,13 @@ import {
   purgeMangaDexCache,
 } from "./mangadex/db/cache.repo";
 import { getManga, getAllMangaFeed } from "./mangadex/api/manga";
-import { formatMangaTitle, getMangaCoverUrl, getMangaAuthors } from "./mangadex/mapping";
+import {
+  formatMangaTitle,
+  getMangaCoverUrl,
+  getMangaAuthors,
+  sortMangaDexChapters,
+  formatMangaDexChapterTitle,
+} from "./mangadex/mapping";
 import { loadMangaDexChapterForReader } from "./mangadex/reader";
 import {
   notifyFollowedChanged,
@@ -367,16 +373,18 @@ export class MangaDexProvider implements ContentProviderAdapter {
     const mangaId = this.extractEntityId(permalink);
     const [manga, feed] = await Promise.all([
       getManga(mangaId),
-      getAllMangaFeed(mangaId, { limit: 500, order: { chapter: "asc" } }),
+      getAllMangaFeed(mangaId, { limit: 500, order: { volume: "asc", chapter: "asc" } }),
     ]);
 
     const title = formatMangaTitle(manga);
     const coverUrl = getMangaCoverUrl(manga, "512");
     const authors = getMangaAuthors(manga);
 
+    const sortedChapters = sortMangaDexChapters(feed.data);
+
     // Collect scanlator groups across chapters
     const scanlatorSet = new Set<string>();
-    for (const ch of feed.data) {
+    for (const ch of sortedChapters) {
       const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
       const attrs = groupRel?.attributes;
       const groupName =
@@ -398,17 +406,19 @@ export class MangaDexProvider implements ContentProviderAdapter {
       })),
     ];
 
+    const hasAnyVolume = sortedChapters.some((ch) => Boolean(ch.attributes.volume));
     const taggings: SeriesTaggings[] = [];
     let currentVol: string | null = null;
-    for (const ch of feed.data) {
+    for (const ch of sortedChapters) {
       const vol = ch.attributes.volume;
-      if (vol && vol !== currentVol) {
-        currentVol = vol;
-        taggings.push({ header: `Volume ${vol}` });
+      const effectiveVol = vol ? `Volume ${vol}` : (hasAnyVolume ? "No Volume" : null);
+      if (effectiveVol !== currentVol) {
+        currentVol = effectiveVol;
+        if (effectiveVol) {
+          taggings.push({ header: effectiveVol });
+        }
       }
-      const num = ch.attributes.chapter;
-      const raw = ch.attributes.title;
-      const chTitle = num ? (raw ? `Chapter ${num}: ${raw}` : `Chapter ${num}`) : (raw || "Oneshot");
+      const chTitle = formatMangaDexChapterTitle(ch.attributes.chapter, ch.attributes.title);
       const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
       const groupAttrs = groupRel?.attributes;
       let groupName: string | undefined;
