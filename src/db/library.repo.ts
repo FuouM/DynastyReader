@@ -3,11 +3,14 @@ import { inClause } from "./paging";
 import type {
   FollowedSeriesRow,
   FollowedSeriesPageResult,
+  GetFollowedPageOptions,
   ReadingProgressRow,
   SeriesProgressRow,
   HistoryPageResult,
+  GetHistoryPageOptions,
   BookmarkRow,
   BookmarkPageResult,
+  GetBookmarksPageOptions,
 } from "../types/db";
 import { activeProvider } from "../stores/provider";
 import type { ContentProvider } from "../stores/provider";
@@ -47,8 +50,9 @@ export async function getFollowedSeriesPage(
   page = 1,
   pageSize = 10,
   provider: ContentProvider = activeProvider(),
+  options?: GetFollowedPageOptions,
 ): Promise<FollowedSeriesPageResult> {
-  return getProvider(provider).getFollowedPage(page, pageSize);
+  return getProvider(provider).getFollowedPage(page, pageSize, options);
 }
 
 export async function getFollowedSeriesRow(permalink: string): Promise<FollowedSeriesRow | null> {
@@ -234,8 +238,13 @@ export async function clearHistory(provider: ContentProvider = activeProvider())
   return getProvider(provider).clearHistory();
 }
 
-export async function getHistoryPage(page = 1, pageSize = 15, provider: ContentProvider = activeProvider()): Promise<HistoryPageResult> {
-  return getProvider(provider).getHistoryPage(page, pageSize);
+export async function getHistoryPage(
+  page = 1,
+  pageSize = 15,
+  provider: ContentProvider = activeProvider(),
+  options?: GetHistoryPageOptions,
+): Promise<HistoryPageResult> {
+  return getProvider(provider).getHistoryPage(page, pageSize, options);
 }
 /** Returns a Map of chapter permalinks to their most recent read timestamp (read_at). */
 export async function getHistoryMap(permalinks: string[]): Promise<Map<string, number>> {
@@ -274,8 +283,13 @@ export async function getHistoryPermalinks(permalinks: string[]): Promise<Set<st
 }
 
 
-export async function getBookmarksPage(page = 1, pageSize = 15, provider: ContentProvider = activeProvider()): Promise<BookmarkPageResult> {
-  return getProvider(provider).getBookmarksPage(page, pageSize);
+export async function getBookmarksPage(
+  page = 1,
+  pageSize = 15,
+  provider: ContentProvider = activeProvider(),
+  options?: GetBookmarksPageOptions,
+): Promise<BookmarkPageResult> {
+  return getProvider(provider).getBookmarksPage(page, pageSize, options);
 }
 
 export async function getBookmark(chapterPermalink: string): Promise<BookmarkRow | null> {

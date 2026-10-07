@@ -3,7 +3,7 @@
  * lifecycle hook for Library panes. Extracted to eliminate 4x duplication in `panes.tsx`.
  */
 
-import { createEffect, createResource, createSignal, onMount, type Accessor, type Resource } from "solid-js";
+import { createEffect, createResource, createSignal, on, onMount, type Accessor, type Resource } from "solid-js";
 import { useDelayedSpinner } from "../components/Feedback";
 import { activeProvider } from "../stores/provider";
 /**
@@ -50,6 +50,7 @@ export interface UseLibraryPaneResourceOptions<T> {
   getRevision: () => number;
   fetcher: (page: number) => Promise<T>;
   register?: (api: LibraryPaneApi) => void;
+  deps?: () => unknown;
 }
 
 export interface LibraryPaneResourceResult<T> {
@@ -79,9 +80,25 @@ export function useLibraryPaneResource<T>(
     setPageRaw(getProviderPage(prov, pageKey));
   });
 
+  if (options.deps) {
+    createEffect(
+      on(
+        options.deps,
+        () => {
+          setPage(1);
+        },
+        { defer: true },
+      ),
+    );
+  }
 
   const [data, { refetch }] = createResource(
-    () => ({ page: page(), rev: options.getRevision(), provider: activeProvider() }),
+    () => ({
+      page: page(),
+      rev: options.getRevision(),
+      provider: activeProvider(),
+      deps: options.deps ? options.deps() : undefined,
+    }),
     ({ page: p }) => options.fetcher(p),
   );
 

@@ -6,6 +6,7 @@
 import { execute, query } from "./client";
 import { initMangaDexDb } from "./schema";
 import { notifyBookmarksChanged } from "../../../db/library-notifiers";
+import type { GetBookmarksPageOptions } from "../../../types/db";
 
 export interface MangaDexBookmarkRow {
   chapter_id: string;
@@ -91,28 +92,43 @@ export async function getMdxBookmark(
 export async function getMdxBookmarks(
   page = 1,
   limit = 24,
+  options?: GetBookmarksPageOptions,
 ): Promise<BookmarksPageResult> {
   await initMangaDexDb();
-  const offset = Math.max(0, (page - 1) * limit);
+  const q = options?.query?.trim();
+  const whereSql = q ? `WHERE (chapter_title LIKE ?1 OR manga_title LIKE ?2)` : "";
+  const countParams: unknown[] = q ? [`%${q}%`, `%${q}%`] : [];
 
   const countRows = await query<{ c: number }>(
-    "SELECT COUNT(*) as c FROM bookmarks",
+    `SELECT COUNT(*) as c FROM bookmarks ${whereSql}`,
+    countParams,
   );
   const totalCount = countRows[0]?.c ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const offset = Math.max(0, (currentPage - 1) * limit);
+
+  let orderSql = `ORDER BY created_at DESC`;
+  if (options?.sort === "oldest") orderSql = `ORDER BY created_at ASC`;
+  else if (options?.sort === "alphabetical") orderSql = `ORDER BY manga_title COLLATE NOCASE ASC, chapter_title COLLATE NOCASE ASC`;
+
+  const queryParams: unknown[] = q ? [`%${q}%`, `%${q}%`, limit, offset] : [limit, offset];
+  const limitIdx = q ? "?3" : "?1";
+  const offsetIdx = q ? "?4" : "?2";
 
   const rows = await query<MangaDexBookmarkRow>(
     `SELECT chapter_id, manga_id, manga_title, chapter_title, page_index, scanlator_name, created_at
      FROM bookmarks
-     ORDER BY created_at DESC
-     LIMIT ?1 OFFSET ?2`,
-    [limit, offset],
+     ${whereSql}
+     ${orderSql}
+     LIMIT ${limitIdx} OFFSET ${offsetIdx}`,
+    queryParams,
   );
 
   return {
     rows,
     totalPages,
-    currentPage: page,
+    currentPage,
     totalCount,
   };
 }

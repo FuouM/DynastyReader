@@ -9,6 +9,11 @@ import type {
   ProviderCacheStats,
   ProviderMetaInfo,
 } from "./types";
+import type {
+  GetFollowedPageOptions,
+  GetBookmarksPageOptions,
+  GetHistoryPageOptions,
+} from "../types/db";
 import * as ipc from "../ipc";
 import { MANGADEX_DB_NAME } from "./mangadex/db/client";
 import { MANGADEX_UUID_REGEX } from "./mangadex/api/constants";
@@ -109,8 +114,8 @@ export class MangaDexProvider implements ContentProviderAdapter {
   }
 
   // Followed
-  async getFollowedPage(page = 1, pageSize = 10): Promise<FollowedSeriesPageResult> {
-    const res = await getFollowedManga(page, pageSize);
+  async getFollowedPage(page = 1, pageSize = 10, options?: GetFollowedPageOptions): Promise<FollowedSeriesPageResult> {
+    const res = await getFollowedManga(page, pageSize, options);
     return {
       rows: res.rows.map((m) => ({
         permalink: `mdx:${m.manga_id}`,
@@ -185,8 +190,8 @@ export class MangaDexProvider implements ContentProviderAdapter {
     };
   }
 
-  async getBookmarksPage(page = 1, pageSize = 15): Promise<BookmarkPageResult> {
-    const res = await getMdxBookmarks(page, pageSize);
+  async getBookmarksPage(page = 1, pageSize = 15, options?: GetBookmarksPageOptions): Promise<BookmarkPageResult> {
+    const res = await getMdxBookmarks(page, pageSize, options);
     return {
       rows: res.rows.map((b) => ({
         chapter_permalink: `mdx:${b.chapter_id}`,
@@ -234,8 +239,8 @@ export class MangaDexProvider implements ContentProviderAdapter {
   }
 
   // History & Progress
-  async getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
-    const res = await getHistory(page, pageSize);
+  async getHistoryPage(page = 1, pageSize = 15, options?: GetHistoryPageOptions): Promise<HistoryPageResult> {
+    const res = await getHistory(page, pageSize, options);
     return {
       rows: res.rows.map((h) => ({
         id: h.id,

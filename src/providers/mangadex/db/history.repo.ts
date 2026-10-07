@@ -6,6 +6,7 @@
 import { execute, query } from "./client";
 import { initMangaDexDb } from "./schema";
 import { notifyHistoryChanged } from "../../../db/library-notifiers";
+import type { GetHistoryPageOptions } from "../../../types/db";
 import type { MangaDexHistoryRow } from "../types";
 
 export interface HistoryPageResult {
@@ -43,30 +44,45 @@ export async function recordHistory(
 export async function getHistory(
   page = 1,
   limit = 30,
+  options?: GetHistoryPageOptions,
 ): Promise<HistoryPageResult> {
   await initMangaDexDb();
-  const offset = Math.max(0, (page - 1) * limit);
+  const q = options?.query?.trim();
+  const whereSql = q ? `WHERE (h.chapter_title LIKE ?1 OR h.manga_title LIKE ?2)` : "";
+  const countParams: unknown[] = q ? [`%${q}%`, `%${q}%`] : [];
 
   const countRows = await query<{ c: number }>(
-    "SELECT COUNT(*) as c FROM reading_history",
+    `SELECT COUNT(*) as c FROM reading_history h ${whereSql}`,
+    countParams,
   );
   const totalCount = countRows[0]?.c ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const offset = Math.max(0, (currentPage - 1) * limit);
+
+  let orderSql = `ORDER BY h.read_at DESC`;
+  if (options?.sort === "oldest") orderSql = `ORDER BY h.read_at ASC`;
+  else if (options?.sort === "alphabetical") orderSql = `ORDER BY h.manga_title COLLATE NOCASE ASC, h.chapter_title COLLATE NOCASE ASC`;
+
+  const queryParams: unknown[] = q ? [`%${q}%`, `%${q}%`, limit, offset] : [limit, offset];
+  const limitIdx = q ? "?3" : "?1";
+  const offsetIdx = q ? "?4" : "?2";
 
   const rows = await query<MangaDexHistoryRow>(
     `SELECT h.id, h.chapter_id, h.manga_id, h.manga_title, h.chapter_title, h.scanlator_name, h.read_at,
             p.page_index, p.page_total, p.completed
      FROM reading_history h
      LEFT JOIN reading_progress p ON h.chapter_id = p.chapter_id
-     ORDER BY h.read_at DESC
-     LIMIT ?1 OFFSET ?2`,
-    [limit, offset],
+     ${whereSql}
+     ${orderSql}
+     LIMIT ${limitIdx} OFFSET ${offsetIdx}`,
+    queryParams,
   );
 
   return {
     rows,
     totalPages,
-    currentPage: page,
+    currentPage,
     totalCount,
   };
 }

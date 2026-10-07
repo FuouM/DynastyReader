@@ -40,16 +40,21 @@ import type {
   CollectionRow,
   BookmarkRow,
   BookmarkPageResult,
+  BookmarkSortMode,
   FollowedSeriesRow,
+  FollowedSortMode,
   HistoryRow,
   HistoryPageResult,
+  HistorySortMode,
 } from "../types/db";
 import { Loading } from "../components/Feedback";
 import { Pager } from "../components/Pager";
 import { LibraryItemRow } from "./LibraryItemRow";
 import { useLibraryPaneResource, type LibraryPaneProps } from "./useLibraryPaneResource";
 import { useBulkSelection } from "../hooks/useBulkSelection";
-import { Button, ConfirmDeleteButton } from "../components/Button";
+import { Button, ConfirmDeleteButton, DsSelect } from "../components/Button";
+import { InputField } from "../components/InputField";
+import { persistedSignal } from "../lib/persisted-signal";
 import { FolderIcon, TrashIcon, BookmarkIcon, Icon } from "../components/Icon";
 import { ErrorRetryRow } from "../components/Feedback";
 // ── 1. Collections Pane ──────────────────────────────────────────────────────
@@ -148,11 +153,21 @@ export interface BookmarksPaneProps extends LibraryPaneProps {
 }
 
 export function BookmarksPane(props: BookmarksPaneProps) {
+  const [searchQuery, setSearchQuery] = createSignal("");
+  const [sortMode, setSortMode] = persistedSignal<BookmarkSortMode>("recent", {
+    name: "ds_bookmarks_sort",
+    deserialize: (v) => (v === "oldest" || v === "alphabetical" ? v : "recent"),
+  });
+
   const { setPage, data, refetch, showSpinner, error } = useLibraryPaneResource<BookmarksPaneData>({
     getRevision: getBookmarksRevision,
+    deps: () => ({ q: searchQuery(), sort: sortMode() }),
     fetcher: async (p) => {
       const provider = activeProvider();
-      const res = await getBookmarksPage(p, 15, provider);
+      const res = await getBookmarksPage(p, 15, provider, {
+        query: searchQuery(),
+        sort: sortMode(),
+      });
       const permalinks = res.rows.map((r) => r.chapter_permalink);
       const fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
       return { res, fullyCachedSet };
@@ -163,32 +178,40 @@ export function BookmarksPane(props: BookmarksPaneProps) {
     useBulkSelection<string>(removeBookmarksBatch, refetch);
 
   const rowKeys = () => data()?.res.rows.map((r) => r.chapter_permalink) ?? [];
+  const isFiltered = () => searchQuery().trim().length > 0;
+  const hasRows = () => (data()?.res.rows.length ?? 0) > 0;
+  const showControls = () => data() !== undefined && (data()!.res.totalCount > 0 || isFiltered());
+
   return (
     <>
-      <Show
-        when={data() !== undefined}
-        fallback={
-          <Show
-            when={error() !== undefined}
-            fallback={<Show when={showSpinner()}><Loading /></Show>}
-          >
-            <ErrorRetryRow
-              message={errorMessage(error())}
-              onRetry={() => void refetch()}
-            />
-          </Show>
-        }
-      >
-        <Show
-          when={data()!.res.rows.length > 0}
-          fallback={
-            <div class="ds-library-empty">
-              <BookmarkIcon size={28} />
-              <span>{t("library.emptyBookmarks")}</span>
-            </div>
-          }
+      <Show when={showControls()}>
+        <div
+          class="ds-library-pane-toolbar"
+          style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-bottom:4px;"
         >
-          <div class="ds-bulk-actions-bar">
+          <Show
+            when={!selectMode()}
+            fallback={<div />}
+          >
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+              <InputField
+                value={searchQuery()}
+                onInput={setSearchQuery}
+                placeholder={t("library.searchBookmarksPlaceholder")}
+                style="width:180px;"
+              />
+              <DsSelect
+                value={sortMode()}
+                onChange={(v) => setSortMode(v as BookmarkSortMode)}
+                options={[
+                  { value: "recent", label: t("library.sortRecentlySaved") },
+                  { value: "oldest", label: t("library.sortOldestSaved") },
+                  { value: "alphabetical", label: t("library.sortAlphabetical") },
+                ]}
+              />
+            </div>
+          </Show>
+          <div class="ds-bulk-actions-bar" style="margin-left:auto;">
             <Show when={!selectMode()}>
               <Show when={props.onExport}>
                 <Button
@@ -215,6 +238,41 @@ export function BookmarksPane(props: BookmarksPaneProps) {
               <Button text={t("common.cancel")} onClick={toggleSelectMode} />
             </Show>
           </div>
+        </div>
+      </Show>
+
+      <Show
+        when={data() !== undefined}
+        fallback={
+          <Show
+            when={error() !== undefined}
+            fallback={<Show when={showSpinner()}><Loading /></Show>}
+          >
+            <ErrorRetryRow
+              message={errorMessage(error())}
+              onRetry={() => void refetch()}
+            />
+          </Show>
+        }
+      >
+        <Show
+          when={hasRows()}
+          fallback={
+            <Show
+              when={isFiltered()}
+              fallback={
+                <div class="ds-library-empty">
+                  <BookmarkIcon size={28} />
+                  <span>{t("library.emptyBookmarks")}</span>
+                </div>
+              }
+            >
+              <div class="ds-muted" style="padding:12px;text-align:center;">
+                {t("library.noSearchResults", { query: searchQuery() })}
+              </div>
+            </Show>
+          }
+        >
           <For each={data()!.res.rows}>
             {(row: BookmarkRow) => (
               <LibraryItemRow
@@ -264,13 +322,63 @@ export function BookmarksPane(props: BookmarksPaneProps) {
 // ── 3. Followed Series Pane ──────────────────────────────────────────────────
 
 export function FollowedPane(props: LibraryPaneProps) {
+  const [searchQuery, setSearchQuery] = createSignal("");
+  const [sortMode, setSortMode] = persistedSignal<FollowedSortMode>("alphabetical", {
+    name: "ds_followed_sort",
+    deserialize: (v) =>
+      v === "recent_checked" || v === "recent_added" ? v : "alphabetical",
+  });
+
   const { setPage, data, refetch, showSpinner, error } = useLibraryPaneResource({
     getRevision: getFollowedRevision,
-    fetcher: (p) => getFollowedSeriesPage(p, 10, activeProvider()),
+    deps: () => ({ q: searchQuery(), sort: sortMode() }),
+    fetcher: (p) =>
+      getFollowedSeriesPage(p, 10, activeProvider(), {
+        query: searchQuery(),
+        sort: sortMode(),
+      }),
     register: props.register,
   });
+
+  const isFiltered = () => searchQuery().trim().length > 0;
+  const hasRows = () => (data()?.rows.length ?? 0) > 0;
+  const showControls = () => data() !== undefined && (data()!.totalCount > 0 || isFiltered());
+
   return (
     <>
+      <Show when={showControls()}>
+        <div
+          class="ds-library-pane-toolbar"
+          style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-bottom:4px;"
+        >
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+            <InputField
+              value={searchQuery()}
+              onInput={setSearchQuery}
+              placeholder={t("library.searchFollowedPlaceholder")}
+              style="width:180px;"
+            />
+            <DsSelect
+              value={sortMode()}
+              onChange={(v) => setSortMode(v as FollowedSortMode)}
+              options={[
+                { value: "alphabetical", label: t("library.sortAlphabetical") },
+                { value: "recent_added", label: t("library.sortDateAdded") },
+                { value: "recent_checked", label: t("library.sortRecentlyUpdated") },
+              ]}
+            />
+          </div>
+          <Show when={data() && data()!.totalCount > 0}>
+            <span class="ds-muted" style="font-size:11.5px;">
+              {t("library.itemsCount", {
+                count: data()!.totalCount,
+                noun: data()!.totalCount === 1 ? t("library.nounItem") : t("library.nounItems"),
+              })}
+            </span>
+          </Show>
+        </div>
+      </Show>
+
       <Show
         when={data() !== undefined}
         fallback={
@@ -286,12 +394,21 @@ export function FollowedPane(props: LibraryPaneProps) {
         }
       >
         <Show
-          when={data()!.rows.length > 0}
+          when={hasRows()}
           fallback={
-            <div class="ds-library-empty">
-              <Icon name="bookmark-heart" style="font-size:28px;margin-bottom:4px;" />
-              <span>{t("library.emptyFollowed")}</span>
-            </div>
+            <Show
+              when={isFiltered()}
+              fallback={
+                <div class="ds-library-empty">
+                  <Icon name="bookmark-heart" style="font-size:28px;margin-bottom:4px;" />
+                  <span>{t("library.emptyFollowed")}</span>
+                </div>
+              }
+            >
+              <div class="ds-muted" style="padding:12px;text-align:center;">
+                {t("library.noSearchResults", { query: searchQuery() })}
+              </div>
+            </Show>
           }
         >
           <For each={data()!.rows}>
@@ -412,11 +529,21 @@ export interface HistoryPaneProps extends LibraryPaneProps {
 }
 
 export function HistoryPane(props: HistoryPaneProps) {
+  const [searchQuery, setSearchQuery] = createSignal("");
+  const [sortMode, setSortMode] = persistedSignal<HistorySortMode>("recent", {
+    name: "ds_history_sort",
+    deserialize: (v) => (v === "oldest" || v === "alphabetical" ? v : "recent"),
+  });
+
   const { setPage, data, refetch, showSpinner, error } = useLibraryPaneResource<HistoryPaneData>({
     getRevision: () => getHistoryRevision() + getProgressRevision(),
+    deps: () => ({ q: searchQuery(), sort: sortMode() }),
     fetcher: async (p) => {
       const provider = activeProvider();
-      const res = await getHistoryPage(p, 15, provider);
+      const res = await getHistoryPage(p, 15, provider, {
+        query: searchQuery(),
+        sort: sortMode(),
+      });
       const permalinks = res.rows.map((r) => r.chapter_permalink);
       const fullyCachedSet = await getFullyCachedChapterPermalinks(permalinks).catch(() => new Set<string>());
       return { res, fullyCachedSet };
@@ -427,32 +554,40 @@ export function HistoryPane(props: HistoryPaneProps) {
     useBulkSelection<number>(removeHistoryBatch, refetch);
 
   const rowKeys = () => data()?.res.rows.map((r) => r.id) ?? [];
+  const isFiltered = () => searchQuery().trim().length > 0;
+  const hasRows = () => (data()?.res.rows.length ?? 0) > 0;
+  const showControls = () => data() !== undefined && (data()!.res.totalCount > 0 || isFiltered());
+
   return (
     <>
-      <Show
-        when={data() !== undefined}
-        fallback={
-          <Show
-            when={error() !== undefined}
-            fallback={<Show when={showSpinner()}><Loading /></Show>}
-          >
-            <ErrorRetryRow
-              message={errorMessage(error())}
-              onRetry={() => void refetch()}
-            />
-          </Show>
-        }
-      >
-        <Show
-          when={data()!.res.rows.length > 0}
-          fallback={
-            <div class="ds-library-empty">
-              <Icon name="clock-history" style="font-size:28px;margin-bottom:4px;" />
-              <span>{t("library.emptyHistory")}</span>
-            </div>
-          }
+      <Show when={showControls()}>
+        <div
+          class="ds-library-pane-toolbar"
+          style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-bottom:4px;"
         >
-          <div class="ds-bulk-actions-bar">
+          <Show
+            when={!selectMode()}
+            fallback={<div />}
+          >
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+              <InputField
+                value={searchQuery()}
+                onInput={setSearchQuery}
+                placeholder={t("library.searchHistoryPlaceholder")}
+                style="width:180px;"
+              />
+              <DsSelect
+                value={sortMode()}
+                onChange={(v) => setSortMode(v as HistorySortMode)}
+                options={[
+                  { value: "recent", label: t("library.sortRecentlyRead") },
+                  { value: "oldest", label: t("library.sortOldestRead") },
+                  { value: "alphabetical", label: t("library.sortAlphabetical") },
+                ]}
+              />
+            </div>
+          </Show>
+          <div class="ds-bulk-actions-bar" style="margin-left:auto;">
             <Show when={!selectMode()}>
               <Show when={props.onClearHistory}>
                 <ConfirmDeleteButton
@@ -479,6 +614,41 @@ export function HistoryPane(props: HistoryPaneProps) {
               <Button text={t("common.cancel")} onClick={toggleSelectMode} />
             </Show>
           </div>
+        </div>
+      </Show>
+
+      <Show
+        when={data() !== undefined}
+        fallback={
+          <Show
+            when={error() !== undefined}
+            fallback={<Show when={showSpinner()}><Loading /></Show>}
+          >
+            <ErrorRetryRow
+              message={errorMessage(error())}
+              onRetry={() => void refetch()}
+            />
+          </Show>
+        }
+      >
+        <Show
+          when={hasRows()}
+          fallback={
+            <Show
+              when={isFiltered()}
+              fallback={
+                <div class="ds-library-empty">
+                  <Icon name="clock-history" style="font-size:28px;margin-bottom:4px;" />
+                  <span>{t("library.emptyHistory")}</span>
+                </div>
+              }
+            >
+              <div class="ds-muted" style="padding:12px;text-align:center;">
+                {t("library.noSearchResults", { query: searchQuery() })}
+              </div>
+            </Show>
+          }
+        >
           <For each={data()!.res.rows}>
             {(row: HistoryRow) => (
               <LibraryItemRow

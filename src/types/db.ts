@@ -32,6 +32,13 @@ export interface FollowedSeriesPageResult {
   totalCount: number;
 }
 
+export type FollowedSortMode = "alphabetical" | "recent_checked" | "recent_added";
+
+export interface GetFollowedPageOptions {
+  query?: string;
+  sort?: FollowedSortMode;
+}
+
 export interface ReadingProgressRow {
   chapter_permalink: string;
   series_permalink: string;
@@ -62,6 +69,13 @@ export interface HistoryRow {
   completed?: number | null;
 }
 
+
+export type HistorySortMode = "recent" | "oldest" | "alphabetical";
+
+export interface GetHistoryPageOptions {
+  query?: string;
+  sort?: HistorySortMode;
+}
 export interface HistoryPageResult {
   rows: HistoryRow[];
   totalPages: number;
@@ -78,6 +92,13 @@ export interface BookmarkRow {
   created_at: number;
 }
 
+
+export type BookmarkSortMode = "recent" | "oldest" | "alphabetical";
+
+export interface GetBookmarksPageOptions {
+  query?: string;
+  sort?: BookmarkSortMode;
+}
 export interface BookmarkPageResult {
   rows: BookmarkRow[];
   totalPages: number;

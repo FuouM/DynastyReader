@@ -32,12 +32,15 @@ import { t } from "../i18n";
 import type {
   FollowedSeriesRow,
   FollowedSeriesPageResult,
+  GetFollowedPageOptions,
   ReadingProgressRow,
   SeriesProgressRow,
   HistoryRow,
   HistoryPageResult,
+  GetHistoryPageOptions,
   BookmarkRow,
   BookmarkPageResult,
+  GetBookmarksPageOptions,
 } from "../types/db";
 import type { Series, Chapter } from "../types/api";
 
@@ -79,15 +82,24 @@ export class DynastyProvider implements ContentProviderAdapter {
   }
 
   // Followed
-  async getFollowedPage(page = 1, pageSize = 10): Promise<FollowedSeriesPageResult> {
+  async getFollowedPage(page = 1, pageSize = 10, options?: GetFollowedPageOptions): Promise<FollowedSeriesPageResult> {
+    const q = options?.query?.trim();
+    const whereSql = q ? `WHERE name LIKE ?` : "";
+    const params: unknown[] = q ? [`%${q}%`] : [];
+    let orderSql = `ORDER BY name COLLATE NOCASE ASC`;
+    if (options?.sort === "recent_added") orderSql = `ORDER BY created_at DESC`;
+    else if (options?.sort === "recent_checked") orderSql = `ORDER BY last_checked_at DESC`;
+
     return queryPaged<FollowedSeriesRow>(
-      `SELECT COUNT(*) as count FROM followed_series`,
+      `SELECT COUNT(*) as count FROM followed_series ${whereSql}`,
       `SELECT permalink, name, cover, last_checked_at, latest_chapter_permalink,
               latest_chapter_title, created_at
        FROM followed_series
-       ORDER BY name COLLATE NOCASE LIMIT ? OFFSET ?`,
+       ${whereSql}
+       ${orderSql} LIMIT ? OFFSET ?`,
       page,
       pageSize,
+      params,
     );
   }
 
@@ -157,14 +169,24 @@ export class DynastyProvider implements ContentProviderAdapter {
     return rows[0] ?? null;
   }
 
-  async getBookmarksPage(page = 1, pageSize = 15): Promise<BookmarkPageResult> {
+  async getBookmarksPage(page = 1, pageSize = 15, options?: GetBookmarksPageOptions): Promise<BookmarkPageResult> {
+    const q = options?.query?.trim();
+    const whereSql = q ? `WHERE (chapter_title LIKE ? OR series_name LIKE ?)` : "";
+    const params: unknown[] = q ? [`%${q}%`, `%${q}%`] : [];
+    let orderSql = `ORDER BY created_at DESC`;
+    if (options?.sort === "oldest") orderSql = `ORDER BY created_at ASC`;
+    else if (options?.sort === "alphabetical") orderSql = `ORDER BY series_name COLLATE NOCASE ASC, chapter_title COLLATE NOCASE ASC`;
+
     return queryPaged<BookmarkRow>(
-      `SELECT COUNT(*) as count FROM bookmarks`,
+      `SELECT COUNT(*) as count FROM bookmarks ${whereSql}`,
       `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
               page_index, created_at
-       FROM bookmarks ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+       FROM bookmarks
+       ${whereSql}
+       ${orderSql} LIMIT ? OFFSET ?`,
       page,
       pageSize,
+      params,
     );
   }
 
@@ -204,16 +226,25 @@ export class DynastyProvider implements ContentProviderAdapter {
   }
 
   // History & Progress
-  async getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
+  async getHistoryPage(page = 1, pageSize = 15, options?: GetHistoryPageOptions): Promise<HistoryPageResult> {
+    const q = options?.query?.trim();
+    const whereSql = q ? `WHERE (rh.chapter_title LIKE ? OR rh.series_name LIKE ?)` : "";
+    const params: unknown[] = q ? [`%${q}%`, `%${q}%`] : [];
+    let orderSql = `ORDER BY rh.read_at DESC, rh.id DESC`;
+    if (options?.sort === "oldest") orderSql = `ORDER BY rh.read_at ASC, rh.id ASC`;
+    else if (options?.sort === "alphabetical") orderSql = `ORDER BY rh.series_name COLLATE NOCASE ASC, rh.chapter_title COLLATE NOCASE ASC`;
+
     return queryPaged<HistoryRow>(
-      `SELECT COUNT(*) as count FROM reading_history rh`,
+      `SELECT COUNT(*) as count FROM reading_history rh ${whereSql}`,
       `SELECT rh.id, rh.chapter_permalink, rh.series_permalink, rh.series_name, rh.chapter_title, rh.read_at,
               rp.page_index, rp.page_total, rp.completed
        FROM reading_history rh
        LEFT JOIN reading_progress rp ON rh.chapter_permalink = rp.chapter_permalink
-       ORDER BY rh.read_at DESC, rh.id DESC LIMIT ? OFFSET ?`,
+       ${whereSql}
+       ${orderSql} LIMIT ? OFFSET ?`,
       page,
       pageSize,
+      params,
     );
   }
 

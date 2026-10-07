@@ -1,10 +1,13 @@
 import type {
   FollowedSeriesPageResult,
+  GetFollowedPageOptions,
   ReadingProgressRow,
   SeriesProgressRow,
   HistoryPageResult,
+  GetHistoryPageOptions,
   BookmarkRow,
   BookmarkPageResult,
+  GetBookmarksPageOptions,
 } from "../types/db";
 import type { FullyCachedChapterRow } from "../db/cache.repo";
 import type { Series, Chapter } from "../types/api";
@@ -88,7 +91,7 @@ export interface ContentProviderAdapter {
   isValidPermalink(candidate: unknown): candidate is string;
 
   // Followed series
-  getFollowedPage(page?: number, pageSize?: number): Promise<FollowedSeriesPageResult>;
+  getFollowedPage(page?: number, pageSize?: number, options?: GetFollowedPageOptions): Promise<FollowedSeriesPageResult>;
   getFollowedLookup(): Promise<FollowedLookup>;
   isFollowed(permalink: string): Promise<boolean>;
   follow(input: FollowSeriesInput): Promise<void>;
@@ -97,13 +100,13 @@ export interface ContentProviderAdapter {
 
   // Bookmarks
   getBookmark(chapterPermalink: string): Promise<BookmarkRow | null>;
-  getBookmarksPage(page?: number, pageSize?: number): Promise<BookmarkPageResult>;
+  getBookmarksPage(page?: number, pageSize?: number, options?: GetBookmarksPageOptions): Promise<BookmarkPageResult>;
   addBookmark(input: BookmarkInput): Promise<void>;
   removeBookmark(chapterPermalink: string): Promise<void>;
   removeBookmarksBatch(chapterPermalinks: string[]): Promise<void>;
 
   // History & Progress
-  getHistoryPage(page?: number, pageSize?: number): Promise<HistoryPageResult>;
+  getHistoryPage(page?: number, pageSize?: number, options?: GetHistoryPageOptions): Promise<HistoryPageResult>;
   removeHistory(id: number): Promise<void>;
   removeHistoryBatch(ids: number[]): Promise<void>;
   clearHistory(): Promise<void>;

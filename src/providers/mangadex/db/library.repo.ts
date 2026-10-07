@@ -7,6 +7,7 @@ import { execute, query } from "./client";
 import { initMangaDexDb } from "./schema";
 import { notifyFollowedChanged } from "../../../db/library-notifiers";
 import type { MangaDexFollowedRow } from "../types";
+import type { GetFollowedPageOptions } from "../../../types/db";
 
 export interface FollowedMangaPageResult {
   rows: MangaDexFollowedRow[];
@@ -64,28 +65,43 @@ export async function isMangaFollowed(mangaId: string): Promise<boolean> {
 export async function getFollowedManga(
   page = 1,
   limit = 24,
+  options?: GetFollowedPageOptions,
 ): Promise<FollowedMangaPageResult> {
   await initMangaDexDb();
-  const offset = Math.max(0, (page - 1) * limit);
+  const q = options?.query?.trim();
+  const whereSql = q ? `WHERE title LIKE ?1` : "";
+  const countParams: unknown[] = q ? [`%${q}%`] : [];
 
   const countRows = await query<{ c: number }>(
-    "SELECT COUNT(*) as c FROM followed_manga",
+    `SELECT COUNT(*) as c FROM followed_manga ${whereSql}`,
+    countParams,
   );
   const totalCount = countRows[0]?.c ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const offset = Math.max(0, (currentPage - 1) * limit);
+
+  let orderSql = `ORDER BY created_at DESC`;
+  if (options?.sort === "alphabetical") orderSql = `ORDER BY title COLLATE NOCASE ASC`;
+  else if (options?.sort === "recent_checked") orderSql = `ORDER BY last_checked_at DESC`;
+
+  const queryParams: unknown[] = q ? [`%${q}%`, limit, offset] : [limit, offset];
+  const limitIdx = q ? "?2" : "?1";
+  const offsetIdx = q ? "?3" : "?2";
 
   const rows = await query<MangaDexFollowedRow>(
     `SELECT manga_id, title, cover_filename, last_checked_at, latest_chapter_id, latest_chapter_title, created_at
      FROM followed_manga
-     ORDER BY created_at DESC
-     LIMIT ?1 OFFSET ?2`,
-    [limit, offset],
+     ${whereSql}
+     ${orderSql}
+     LIMIT ${limitIdx} OFFSET ${offsetIdx}`,
+    queryParams,
   );
 
   return {
     rows,
     totalPages,
-    currentPage: page,
+    currentPage,
     totalCount,
   };
 }

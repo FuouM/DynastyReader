@@ -23,12 +23,15 @@ import {
 import type { FullyCachedChapterRow } from "../db/cache.repo";
 import type {
   FollowedSeriesPageResult,
+  GetFollowedPageOptions,
   ReadingProgressRow,
   SeriesProgressRow,
   HistoryRow,
   HistoryPageResult,
+  GetHistoryPageOptions,
   BookmarkRow,
   BookmarkPageResult,
+  GetBookmarksPageOptions,
 } from "../types/db";
 import type { Series, Chapter } from "../types/api";
 
@@ -64,7 +67,7 @@ export class LocalProvider implements ContentProviderAdapter {
     return typeof candidate === "string" && LOCAL_SLUG_REGEX.test(candidate);
   }
   // Followed (Local files cannot be followed from a remote feed)
-  async getFollowedPage(_page = 1, _pageSize = 10): Promise<FollowedSeriesPageResult> {
+  async getFollowedPage(_page = 1, _pageSize = 10, _options?: GetFollowedPageOptions): Promise<FollowedSeriesPageResult> {
     return {
       rows: [],
       totalCount: 0,
@@ -104,16 +107,24 @@ export class LocalProvider implements ContentProviderAdapter {
     return rows[0] ?? null;
   }
 
-  async getBookmarksPage(page = 1, pageSize = 15): Promise<BookmarkPageResult> {
+  async getBookmarksPage(page = 1, pageSize = 15, options?: GetBookmarksPageOptions): Promise<BookmarkPageResult> {
+    const q = options?.query?.trim();
+    const whereSql = `WHERE chapter_permalink LIKE 'local:%' ${q ? "AND (chapter_title LIKE ? OR series_name LIKE ?)" : ""}`;
+    const params: unknown[] = q ? [`%${q}%`, `%${q}%`] : [];
+    let orderSql = `ORDER BY created_at DESC`;
+    if (options?.sort === "oldest") orderSql = `ORDER BY created_at ASC`;
+    else if (options?.sort === "alphabetical") orderSql = `ORDER BY series_name COLLATE NOCASE ASC, chapter_title COLLATE NOCASE ASC`;
+
     return queryPaged<BookmarkRow>(
-      `SELECT COUNT(*) as count FROM bookmarks WHERE chapter_permalink LIKE 'local:%'`,
+      `SELECT COUNT(*) as count FROM bookmarks ${whereSql}`,
       `SELECT chapter_permalink, series_permalink, series_name, chapter_title,
               page_index, created_at
        FROM bookmarks
-       WHERE chapter_permalink LIKE 'local:%'
-       ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+       ${whereSql}
+       ${orderSql} LIMIT ? OFFSET ?`,
       page,
       pageSize,
+      params,
     );
   }
 
@@ -153,17 +164,25 @@ export class LocalProvider implements ContentProviderAdapter {
   }
 
   // History & Progress
-  async getHistoryPage(page = 1, pageSize = 15): Promise<HistoryPageResult> {
+  async getHistoryPage(page = 1, pageSize = 15, options?: GetHistoryPageOptions): Promise<HistoryPageResult> {
+    const q = options?.query?.trim();
+    const whereSql = `WHERE rh.chapter_permalink LIKE 'local:%' ${q ? "AND (rh.chapter_title LIKE ? OR rh.series_name LIKE ?)" : ""}`;
+    const params: unknown[] = q ? [`%${q}%`, `%${q}%`] : [];
+    let orderSql = `ORDER BY rh.read_at DESC, rh.id DESC`;
+    if (options?.sort === "oldest") orderSql = `ORDER BY rh.read_at ASC, rh.id ASC`;
+    else if (options?.sort === "alphabetical") orderSql = `ORDER BY rh.series_name COLLATE NOCASE ASC, rh.chapter_title COLLATE NOCASE ASC`;
+
     return queryPaged<HistoryRow>(
-      `SELECT COUNT(*) as count FROM reading_history WHERE chapter_permalink LIKE 'local:%'`,
+      `SELECT COUNT(*) as count FROM reading_history rh ${whereSql}`,
       `SELECT rh.id, rh.chapter_permalink, rh.series_permalink, rh.series_name, rh.chapter_title, rh.read_at,
               rp.page_index, rp.page_total, rp.completed
        FROM reading_history rh
        LEFT JOIN reading_progress rp ON rh.chapter_permalink = rp.chapter_permalink
-       WHERE rh.chapter_permalink LIKE 'local:%'
-       ORDER BY rh.read_at DESC, rh.id DESC LIMIT ? OFFSET ?`,
+       ${whereSql}
+       ${orderSql} LIMIT ? OFFSET ?`,
       page,
       pageSize,
+      params,
     );
   }
 
