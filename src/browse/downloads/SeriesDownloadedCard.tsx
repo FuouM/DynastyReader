@@ -438,7 +438,10 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
         <div class="ds-downloaded-chapter-list">
           <For each={visibleListChapters()}>
             {(ch, idx) => {
-              const showVol = () => showVolDivider(hasMultipleVolumes(), ch, visibleListChapters(), idx());
+              const showVol = () =>
+                hasMultipleVolumes() &&
+                !!ch.volumeHeader &&
+                (idx() === 0 || visibleListChapters()[idx() - 1]?.volumeHeader !== ch.volumeHeader);
 
               return (
                 <>

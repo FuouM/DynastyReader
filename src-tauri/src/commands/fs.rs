@@ -335,7 +335,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
         ];
         let valid_path = root.join("valid.png");
-        std::fs::write(&valid_path, &valid_png_bytes).unwrap();
+        std::fs::write(&valid_path, valid_png_bytes).unwrap();
 
         let items = vec![
             IntegrityCheckRequestItem {

@@ -120,6 +120,18 @@ function extractChapterLabel(title: string, index?: number): string {
   return "1";
 }
 
+export function compareCachedChapters(a: ProcessedCachedChapter, b: ProcessedCachedChapter): number {
+  if (a.volumeHeader && b.volumeHeader && a.volumeHeader !== b.volumeHeader) {
+    const v = titleCollator.compare(a.volumeHeader, b.volumeHeader);
+    if (v !== 0) return v;
+  } else if (a.volumeHeader && !b.volumeHeader) {
+    return -1;
+  } else if (!a.volumeHeader && b.volumeHeader) {
+    return 1;
+  }
+  return titleCollator.compare(a.chapterTitle, b.chapterTitle);
+}
+
 export function buildGroups(
   rows: FullyCachedChapterRow[],
   readHistoryMap: Map<string, number>,
@@ -167,7 +179,7 @@ export function buildGroups(
     if (!g.seriesName && r.seriesName) g.seriesName = r.seriesName;
   }
   for (const g of map.values()) {
-    g.chapters.sort((a, b) => titleCollator.compare(a.chapterTitle, b.chapterTitle));
+    g.chapters.sort(compareCachedChapters);
     const total = g.chapters.length;
     for (let i = 0; i < total; i++) {
       const ch = g.chapters[i];

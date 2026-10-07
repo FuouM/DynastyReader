@@ -35,7 +35,7 @@ import type {
 } from "../types/db";
 import type { Series, Chapter } from "../types/api";
 
-const LOCAL_SLUG_REGEX = /^local:[a-zA-Z0-9_\-]+$/;
+const LOCAL_SLUG_REGEX = /^local:[a-zA-Z0-9_-]+$/;
 
 export class LocalProvider implements ContentProviderAdapter {
   readonly id = "local" as const;
