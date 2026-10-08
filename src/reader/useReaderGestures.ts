@@ -174,9 +174,15 @@ export function useReaderGestures(s: ReaderSession) {
       touchMoved = false;
       didTouchLongPress = false;
       hasVibrated = false;
-      activeOverscroll = null;
+      if (activeOverscroll) {
+        activeOverscroll = null;
+        dispatchOverscroll(null);
+        resetStripTransform(false);
+      } else {
+        activeOverscroll = null;
+        dispatchOverscroll(null);
+      }
       activeTouchSlot = null;
-      dispatchOverscroll(null);
 
       if (touchLongPressTimer !== null) clearTimeout(touchLongPressTimer);
       if (s.isHorizontal()) {
@@ -200,7 +206,14 @@ export function useReaderGestures(s: ReaderSession) {
 
     const onTouchMove = (ev: TouchEvent): void => {
       if (isTouchOnEndCard || (ev.target as HTMLElement)?.closest(".ds-chapter-end-card")) return;
-      if (ev.touches.length !== 1) return;
+      if (ev.touches.length !== 1) {
+        if (activeOverscroll) {
+          activeOverscroll = null;
+          dispatchOverscroll(null);
+          resetStripTransform(true);
+        }
+        return;
+      }
       const t = ev.touches[0];
       if (!t) return;
       const dx = t.clientX - touchStartX;
@@ -327,10 +340,8 @@ export function useReaderGestures(s: ReaderSession) {
         }
       }
 
-      if (wasTouchStoppingScroll) {
-        wasTouchStoppingScroll = false;
-        return;
-      }
+      const wasStoppingScroll = wasTouchStoppingScroll;
+      wasTouchStoppingScroll = false;
       if (ev.changedTouches.length !== 1) {
         if (activeOverscroll) {
           activeOverscroll = null;
@@ -373,7 +384,7 @@ export function useReaderGestures(s: ReaderSession) {
         if (handled) return;
       }
       // 2. Tap gesture (without move)
-      if (!touchMoved && dt < TAP_TIME_THRESHOLD_MS) {
+      if (!touchMoved && !wasStoppingScroll && dt < TAP_TIME_THRESHOLD_MS) {
         if (!s.isHorizontal()) {
           s.toggleToolbarVisible();
           return;
@@ -403,6 +414,11 @@ export function useReaderGestures(s: ReaderSession) {
       if (s.fitMode() !== "original") return;
       activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
       if (activePointers.size === 2) {
+        if (activeOverscroll) {
+          activeOverscroll = null;
+          dispatchOverscroll(null);
+          resetStripTransform(true);
+        }
         pinchActive = true;
         pinchStartDist = pinchDistance();
         pinchStartScale = s.zoomScale();
@@ -501,8 +517,14 @@ export function useReaderGestures(s: ReaderSession) {
       mouseStartTime = Date.now();
       mouseMoved = false;
       didMouseLongPress = false;
-      activeMouseOverscroll = null;
-      dispatchOverscroll(null);
+      if (activeMouseOverscroll) {
+        activeMouseOverscroll = null;
+        dispatchOverscroll(null);
+        resetStripTransform(false);
+      } else {
+        activeMouseOverscroll = null;
+        dispatchOverscroll(null);
+      }
 
       if (mouseLongPressTimer !== null) clearTimeout(mouseLongPressTimer);
       if (isMobileGesturesOnDesktopEnabled() && s.isHorizontal()) {
@@ -649,10 +671,8 @@ export function useReaderGestures(s: ReaderSession) {
         }
       }
 
-      if (wasMouseStoppingScroll) {
-        wasMouseStoppingScroll = false;
-        return;
-      }
+      const wasStoppingScroll = wasMouseStoppingScroll;
+      wasMouseStoppingScroll = false;
 
       let wasSlotPanned = false;
       if (activeSlot) {
@@ -692,7 +712,7 @@ export function useReaderGestures(s: ReaderSession) {
       }
 
       // Tap / Click gesture without drag
-      if (!mouseMoved && dt < TAP_TIME_THRESHOLD_MS) {
+      if (!mouseMoved && !wasStoppingScroll && dt < TAP_TIME_THRESHOLD_MS) {
         if (!s.isHorizontal()) {
           s.toggleToolbarVisible();
           return;
@@ -713,6 +733,40 @@ export function useReaderGestures(s: ReaderSession) {
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
 
+    const onBlur = (): void => {
+      isMouseDown = false;
+      isTouchDown = false;
+      wasTouchStoppingScroll = false;
+      wasMouseStoppingScroll = false;
+      if (touchLongPressTimer !== null) {
+        clearTimeout(touchLongPressTimer);
+        touchLongPressTimer = null;
+      }
+      if (mouseLongPressTimer !== null) {
+        clearTimeout(mouseLongPressTimer);
+        mouseLongPressTimer = null;
+      }
+      if (tapZoneGuide()) {
+        setTapZoneGuide(null);
+      }
+      if (activeOverscroll) {
+        activeOverscroll = null;
+        dispatchOverscroll(null);
+        resetStripTransform(true);
+      }
+      if (activeMouseOverscroll) {
+        activeMouseOverscroll = null;
+        dispatchOverscroll(null);
+        resetStripTransform(true);
+      }
+      if (activeSlot) {
+        activeSlot.classList.remove("ds-dragging");
+        activeSlot = null;
+      }
+      vpEl.classList.remove("ds-dragging");
+    };
+
+    window.addEventListener("blur", onBlur);
     vpEl.addEventListener("pointerdown", onPinchPointerDown, { passive: true });
     vpEl.addEventListener("pointermove", onPinchPointerMove, { passive: true });
     vpEl.addEventListener("pointerup", onPinchPointerUp, { passive: true });
@@ -742,6 +796,7 @@ export function useReaderGestures(s: ReaderSession) {
       vpEl.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("blur", onBlur);
       vpEl.removeEventListener("pointerdown", onPinchPointerDown);
       vpEl.removeEventListener("pointermove", onPinchPointerMove);
       vpEl.removeEventListener("pointerup", onPinchPointerUp);
