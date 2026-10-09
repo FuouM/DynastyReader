@@ -265,11 +265,12 @@ export function applyOverscrollTransform(
   result: TryEngageOverscrollResult,
 ): void {
   if (!s.stripEl) return;
+  s.stripEl.style.willChange = "transform";
   if (s.isHorizontal()) {
     const cur = s.isSpread() ? s.slideIndex() : s.currentIndex();
     s.stripEl.style.transform = stripTranslateXWithPull(cur, s.direction(), result.dampedPullPx);
   } else {
-    s.stripEl.style.transform = `translateY(${result.dampedPullPx}px)`;
+    s.stripEl.style.transform = `translate3d(0, ${result.dampedPullPx}px, 0)`;
   }
 }
 

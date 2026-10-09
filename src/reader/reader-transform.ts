@@ -7,7 +7,7 @@ import type { ReadingDirection } from "../types/reader";
 
 export function stripTranslateX(slideIndex: number, dir: ReadingDirection): string {
   const sign = dir === "rtl" ? 1 : -1;
-  return `translateX(${sign * slideIndex * 100}%)`;
+  return `translate3d(${sign * slideIndex * 100}%, 0, 0)`;
 }
 
 export function stripTranslateXWithPull(
@@ -16,7 +16,7 @@ export function stripTranslateXWithPull(
   pullPx: number,
 ): string {
   const sign = dir === "rtl" ? 1 : -1;
-  return `translateX(calc(${sign * slideIndex * 100}% + ${pullPx}px))`;
+  return `translate3d(calc(${sign * slideIndex * 100}% + ${pullPx}px), 0, 0)`;
 }
 
 /** Instant (no animation) strip placement — forces layout commit when `force` is true. */
@@ -33,28 +33,26 @@ export function setStripInstant(
   el.style.willChange = "auto";
 }
 
-/** Animated strip placement — optionally scopes willChange to the transition window. */
+/** Animated strip placement — scopes willChange to the transition window across all platforms. */
 export function setStripAnimated(
   el: HTMLElement,
   slideIndex: number,
   dir: ReadingDirection,
-  isMobile: () => boolean,
+  _isMobile?: () => boolean,
 ): void {
-  if (isMobile()) {
-    el.style.willChange = "transform";
-    // Fallback: transitionend may never fire if interrupted by instant jump.
-    const fallback = window.setTimeout(() => {
+  el.style.willChange = "transform";
+  // Fallback: transitionend may never fire if interrupted by instant jump.
+  const fallback = window.setTimeout(() => {
+    el.style.willChange = "auto";
+  }, 400);
+  el.addEventListener(
+    "transitionend",
+    () => {
+      window.clearTimeout(fallback);
       el.style.willChange = "auto";
-    }, 400);
-    el.addEventListener(
-      "transitionend",
-      () => {
-        window.clearTimeout(fallback);
-        el.style.willChange = "auto";
-      },
-      { once: true },
-    );
-  }
+    },
+    { once: true },
+  );
   el.style.transition = "";
   el.style.transform = stripTranslateX(slideIndex, dir);
 }

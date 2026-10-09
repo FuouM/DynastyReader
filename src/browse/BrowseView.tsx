@@ -385,7 +385,8 @@ export function BrowseView() {
     <div
       class="ds-browse-pull-container"
       style={{
-        transform: pullOffset() > 0 ? `translateY(${pullOffset()}px)` : undefined,
+        transform: pullOffset() > 0 ? `translate3d(0, ${pullOffset()}px, 0)` : undefined,
+        "will-change": isPulling() ? "transform" : "auto",
         transition: isPulling() ? "none" : "transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1)",
       }}
     >

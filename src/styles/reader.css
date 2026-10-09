@@ -735,7 +735,6 @@
   height: 100%;
   /* strip is one full viewport wide per page; translateX drives the slide */
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
 }
 #ds-reader-viewport.horizontal #ds-reader-strip.rtl,
 #ds-reader-viewport.horizontal.rtl #ds-reader-strip {

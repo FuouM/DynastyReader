@@ -95,29 +95,39 @@ export function useReaderGestures(s: ReaderSession) {
         const slideIndex = s.isSpread() ? s.slideIndex() : s.currentIndex();
         const dir = s.direction();
         if (smooth) {
+          s.stripEl.style.willChange = "transform";
           s.stripEl.style.transition = `transform ${TRANSITION_DURATION_MS}ms ease-out`;
           s.stripEl.style.transform = stripTranslateX(slideIndex, dir);
           resetTransformTimer = window.setTimeout(() => {
-            if (s.stripEl) s.stripEl.style.transition = "";
+            if (s.stripEl) {
+              s.stripEl.style.transition = "";
+              s.stripEl.style.willChange = "auto";
+            }
             resetTransformTimer = null;
           }, TRANSITION_DURATION_MS);
         } else {
           s.stripEl.style.transition = "none";
           s.stripEl.style.transform = stripTranslateX(slideIndex, dir);
+          s.stripEl.style.willChange = "auto";
           requestAnimationFrame(() => {
             if (s.stripEl) s.stripEl.style.transition = "";
           });
         }
       } else {
         if (smooth) {
+          s.stripEl.style.willChange = "transform";
           s.stripEl.style.transition = `transform ${TRANSITION_DURATION_MS}ms ease-out`;
-          s.stripEl.style.transform = "translateY(0px)";
+          s.stripEl.style.transform = "translate3d(0, 0px, 0)";
           resetTransformTimer = window.setTimeout(() => {
-            if (s.stripEl) s.stripEl.style.transition = "";
+            if (s.stripEl) {
+              s.stripEl.style.transition = "";
+              s.stripEl.style.willChange = "auto";
+            }
             resetTransformTimer = null;
           }, TRANSITION_DURATION_MS);
         } else {
           s.stripEl.style.transform = "";
+          s.stripEl.style.willChange = "auto";
         }
       }
     };

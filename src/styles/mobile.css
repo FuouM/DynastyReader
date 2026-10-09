@@ -1086,11 +1086,6 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
-
-#ds-root[data-mobile] #ds-reader-viewport.horizontal #ds-reader-strip {
-  will-change: auto;
-}
-
 #ds-root[data-mobile] .ds-reader-progress-fill {
   width: 100% !important;
   transform-origin: left center;
