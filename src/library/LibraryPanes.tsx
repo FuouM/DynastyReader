@@ -346,7 +346,14 @@ export function FollowedPane(props: LibraryPaneProps) {
       }),
     register: props.register,
   });
+  const { selectMode, selected, startSelectionWith, toggleSelectMode, toggleRow, deleteSelected, isAllSelected, toggleSelectAll } =
+    useBulkSelection<string>(async (perms) => {
+      for (const p of perms) {
+        await unfollowSeries(p);
+      }
+    }, refetch);
 
+  const rowKeys = () => data()?.rows.map((r) => r.permalink) ?? [];
   const isFiltered = () => searchQuery().trim().length > 0;
   const hasRows = () => (data()?.rows.length ?? 0) > 0;
   const showControls = () => data() !== undefined && (data()!.totalCount > 0 || isFiltered());
@@ -358,31 +365,44 @@ export function FollowedPane(props: LibraryPaneProps) {
           class="ds-library-pane-toolbar"
           style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-bottom:4px;"
         >
-          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
-            <InputField
-              value={searchQuery()}
-              onInput={setSearchQuery}
-              placeholder={t("library.searchFollowedPlaceholder")}
-              style="width:180px;"
-            />
-            <DsSelect
-              value={sortMode()}
-              onChange={(v) => setSortMode(v as FollowedSortMode)}
-              options={[
-                { value: "alphabetical", label: t("library.sortAlphabetical") },
-                { value: "recent_added", label: t("library.sortDateAdded") },
-                { value: "recent_checked", label: t("library.sortRecentlyUpdated") },
-              ]}
-            />
-          </div>
-          <Show when={data() && data()!.totalCount > 0}>
-            <span class="ds-muted" style="font-size:11.5px;">
-              {t("library.itemsCount", {
-                count: data()!.totalCount,
-                noun: data()!.totalCount === 1 ? t("library.nounItem") : t("library.nounItems"),
-              })}
-            </span>
+          <Show when={!selectMode()} fallback={<div />}>
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+              <InputField
+                value={searchQuery()}
+                onInput={setSearchQuery}
+                placeholder={t("library.searchFollowedPlaceholder")}
+                style="width:180px;"
+              />
+              <DsSelect
+                value={sortMode()}
+                onChange={(v) => setSortMode(v as FollowedSortMode)}
+                options={[
+                  { value: "alphabetical", label: t("library.sortAlphabetical") },
+                  { value: "recent_added", label: t("library.sortDateAdded") },
+                  { value: "recent_checked", label: t("library.sortRecentlyUpdated") },
+                ]}
+              />
+            </div>
           </Show>
+          <div class="ds-bulk-actions-bar" style="margin-left:auto;">
+            <Show when={!selectMode()}>
+              <Button text={t("library.selectModeButton")} onClick={toggleSelectMode} />
+            </Show>
+            <Show when={selectMode()}>
+              <Button
+                text={isAllSelected(rowKeys()) ? t("common.deselectAll") : t("common.selectAll")}
+                onClick={() => toggleSelectAll(rowKeys())}
+              />
+              <span class="ds-muted" style="font-size:12px;">{t("library.selectedCount", { count: selected().size })}</span>
+              <ConfirmDeleteButton
+                icon={<TrashIcon />}
+                text={t("library.deleteSelected", { count: selected().size })}
+                disabled={selected().size === 0}
+                onConfirm={deleteSelected}
+              />
+              <Button text={t("common.cancel")} onClick={toggleSelectMode} />
+            </Show>
+          </div>
         </div>
       </Show>
 
@@ -420,7 +440,20 @@ export function FollowedPane(props: LibraryPaneProps) {
         >
           <For each={data()!.rows}>
             {(row) => (
-              <FollowedSeriesRowCard row={row} refetch={refetch} />
+              <FollowedSeriesRowCard
+                row={row}
+                refetch={refetch}
+                selectionMode={selectMode()}
+                selected={selected().has(row.permalink)}
+                onToggleSelect={() => toggleRow(row.permalink)}
+                onLongPress={() => {
+                  if (!selectMode()) {
+                    startSelectionWith(row.permalink);
+                  } else {
+                    toggleRow(row.permalink);
+                  }
+                }}
+              />
             )}
           </For>
         </Show>
@@ -440,6 +473,10 @@ export function FollowedPane(props: LibraryPaneProps) {
 function FollowedSeriesRowCard(props: {
   row: FollowedSeriesRow;
   refetch: () => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+  onLongPress?: () => void;
 }) {
   const [cover, setCover] = createSignal(props.row.cover);
 
@@ -509,6 +546,10 @@ function FollowedSeriesRowCard(props: {
       onPlay={props.row.latest_chapter_permalink ? continueReading : undefined}
       externalUrl={canonicalUrl("series", props.row.permalink)}
       deleteTitle={t("library.unfollowTooltip")}
+      selectionMode={props.selectionMode}
+      selected={props.selected}
+      onToggleSelect={props.onToggleSelect}
+      onLongPress={props.onLongPress}
       onDelete={async () => {
         try {
           await unfollowSeries(props.row.permalink);

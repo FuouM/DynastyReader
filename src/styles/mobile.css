@@ -40,9 +40,7 @@
   .ds-btn-icon:hover:not(:active),
   .ds-nav-history-btn:hover:not(:active),
   .ds-segmented-btn:hover:not(:active):not(.active),
-  .ds-subtab:hover:not(:active):not(.active),
-  .ds-item:hover:not(:active),
-  .ds-chapter-row:hover:not(:active) {
+  .ds-subtab:hover:not(:active):not(.active) {
     background-color: var(--sys-button-face, transparent);
     border-color: var(--sys-button-border, transparent);
     background-image: none !important;
@@ -972,6 +970,8 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   background: var(--sys-scrollbar-thumb, rgba(0, 0, 0, 0.25));
   margin: 0 auto 4px auto;
   flex-shrink: 0;
+  touch-action: none;
+  cursor: grab;
 }
 
 .ds-reader-sheet-header .ds-modal-close {

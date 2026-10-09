@@ -29,10 +29,11 @@ import {
   CloudDownloadIcon,
   RefreshIcon,
   StorageIcon,
+  Icon,
 } from "../components/Icon";
 import { Button, AddToCollectionButton, ExternalLinkButton, IconText } from "../components/Button";
 import { GroupBox } from "../components/GroupBox";
-
+import { useCopyLink } from "../hooks/useCopyLink";
 // ── 1. Series Actions ────────────────────────────────────────────────────────
 
 export interface SeriesActionsProps {
@@ -50,6 +51,11 @@ export interface SeriesActionsProps {
 }
 
 export function SeriesActions(props: SeriesActionsProps) {
+  const { copied, handleCopyLink } = useCopyLink({
+    getUrl: () => props.openUrl,
+    namespace: "series-actions",
+  });
+
   return (
     <>
       <Button
@@ -85,6 +91,13 @@ export function SeriesActions(props: SeriesActionsProps) {
         />
       </Show>
       <Show when={props.openUrl}>
+        <Button
+          className="ds-btn-icon"
+          style={{ "aspect-ratio": "1 / 1" }}
+          icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
+          title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
+          onClick={handleCopyLink}
+        />
         <ExternalLinkButton
           className="ds-btn-icon"
           style={{ "aspect-ratio": "1 / 1" }}

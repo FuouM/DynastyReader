@@ -93,34 +93,36 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   let isDraggingSheet = false;
   let isDragEligible = false;
 
-  const handleTouchStart = (ev: TouchEvent) => {
+  const clearAnimationOnWindow = () => {
+    if (windowEl && !closing()) {
+      windowEl.style.animation = "none";
+    }
+  };
+
+  const handleDragStart = (clientY: number, target: EventTarget | null) => {
     if (closing()) return;
-    const t = ev.touches[0];
-    if (!t) return;
-    touchStartY = t.clientY;
+    touchStartY = clientY;
     touchDiffY = 0;
     touchStartTime = Date.now();
     isDraggingSheet = false;
 
-    // Drag-to-dismiss is eligible if touch starts on header/handle OR if content is at top of scroll
-    const onHandleOrHeader = !!(ev.target as HTMLElement)?.closest(".ds-sheet-drag-handle, .ds-reader-sheet-header");
+    clearAnimationOnWindow();
+
+    const onHandleOrHeader = !!(target as HTMLElement)?.closest(".ds-sheet-drag-handle, .ds-reader-sheet-header");
     const isAtScrollTop = (windowEl?.scrollTop ?? 0) <= 0;
     isDragEligible = onHandleOrHeader || isAtScrollTop;
   };
 
-  const handleTouchMove = (ev: TouchEvent) => {
-    if (closing()) return;
-    const t = ev.touches[0];
-    if (!t) return;
-    const dy = t.clientY - touchStartY;
+  const handleDragMove = (clientY: number, cancelable: boolean, ev?: Event) => {
+    if (closing() || !isDragEligible) return;
+    const dy = clientY - touchStartY;
     touchDiffY = dy;
 
     if (!isDraggingSheet) {
-      if (!isDragEligible || (windowEl && windowEl.scrollTop > 0)) {
-        return;
-      }
-      if (dy > 8) {
+      if (windowEl && windowEl.scrollTop > 0) return;
+      if (dy > 4) {
         isDraggingSheet = true;
+        clearAnimationOnWindow();
         if (windowEl) {
           windowEl.style.willChange = "transform";
           windowEl.style.transition = "none";
@@ -133,8 +135,8 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
     }
 
     if (isDraggingSheet) {
+      if (cancelable && ev?.cancelable) ev.preventDefault();
       if (dy > 0) {
-        if (ev.cancelable) ev.preventDefault();
         const sheetH = windowEl?.offsetHeight || 400;
         if (windowEl) {
           windowEl.style.transform = `translate3d(0, ${dy}px, 0)`;
@@ -149,7 +151,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleDragEnd = () => {
     if (closing()) return;
     if (isDraggingSheet && windowEl) {
       const dt = Math.max(1, Date.now() - touchStartTime);
@@ -204,12 +206,32 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
     touchDiffY = 0;
   };
 
+  const onPointerDownHandle = (ev: PointerEvent) => {
+    if (ev.pointerType === "mouse" && ev.button !== 0) return;
+    handleDragStart(ev.clientY, ev.target);
+    (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId);
+  };
+  const onPointerMoveHandle = (ev: PointerEvent) => {
+    handleDragMove(ev.clientY, true, ev);
+  };
+  const onPointerUpHandle = () => {
+    handleDragEnd();
+  };
+
   createEffect(() => {
     if (!mounted() || !windowEl) return;
-    makeEventListener(windowEl, "touchstart", handleTouchStart, { passive: true });
-    makeEventListener(windowEl, "touchmove", handleTouchMove, { passive: false });
-    makeEventListener(windowEl, "touchend", handleTouchEnd, { passive: true });
-    makeEventListener(windowEl, "touchcancel", handleTouchEnd, { passive: true });
+    const onTouchStart = (ev: TouchEvent) => {
+      const t = ev.touches[0];
+      if (t) handleDragStart(t.clientY, ev.target);
+    };
+    const onTouchMove = (ev: TouchEvent) => {
+      const t = ev.touches[0];
+      if (t) handleDragMove(t.clientY, true, ev);
+    };
+    makeEventListener(windowEl, "touchstart", onTouchStart, { passive: true });
+    makeEventListener(windowEl, "touchmove", onTouchMove, { passive: false });
+    makeEventListener(windowEl, "touchend", handleDragEnd, { passive: true });
+    makeEventListener(windowEl, "touchcancel", handleDragEnd, { passive: true });
   });
   return (
     <Show when={mounted()}>
@@ -231,11 +253,29 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
             classList={{ "ds-sheet-closing": closing() }}
             onPointerDown={(ev) => ev.stopPropagation()}
             onClick={(ev) => ev.stopPropagation()}
+            onAnimationEnd={(ev) => {
+              if (ev.target === windowEl && !closing()) {
+                clearAnimationOnWindow();
+                if (windowEl) windowEl.style.transform = "translate3d(0, 0, 0)";
+              }
+            }}
             role="dialog"
             aria-modal="true"
           >
-            <div class="ds-sheet-drag-handle" />
-            <div class="ds-reader-sheet-header">
+            <div
+              class="ds-sheet-drag-handle"
+              onPointerDown={onPointerDownHandle}
+              onPointerMove={onPointerMoveHandle}
+              onPointerUp={onPointerUpHandle}
+              onPointerCancel={onPointerUpHandle}
+            />
+            <div
+              class="ds-reader-sheet-header"
+              onPointerDown={onPointerDownHandle}
+              onPointerMove={onPointerMoveHandle}
+              onPointerUp={onPointerUpHandle}
+              onPointerCancel={onPointerUpHandle}
+            >
               <div class="ds-modal-title">
                 <IconText icon={<ToolIcon />}>{t("reader.toolbar.controlsSheetTitle")}</IconText>
               </div>

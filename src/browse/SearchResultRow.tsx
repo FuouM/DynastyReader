@@ -10,9 +10,10 @@ import { isContentKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
 import { ListItem } from "../components/ListItem";
 import { WarningChip } from "../components/Badges";
-import { ExternalLinkButton } from "../components/Button";
+import { ExternalLinkButton, Button } from "../components/Button";
 import { FeedItemRow } from "../components/FeedItemRow";
-import { EntityIcon } from "../components/Icon";
+import { EntityIcon, CheckIcon, Icon } from "../components/Icon";
+import { useCopyLink } from "../hooks/useCopyLink";
 import type { AddToCollectionItem } from "../components/AddToCollectionModal";
 import type { SearchResultItem } from "../types/api";
 import type { BlacklistMode } from "../types/blacklist";
@@ -103,6 +104,11 @@ function TaxonomicRow(props: { row: SearchRow; blMode: BlacklistMode }) {
   const item = () => props.row.item;
   const isBlacklisted = () => props.row.isBlacklisted;
   const matchedTags = () => props.row.matchedTags;
+  const externalUrl = () => canonicalUrl(seriesTypeToPath(item().kind), item().permalink);
+  const { copied, handleCopyLink } = useCopyLink({
+    getUrl: externalUrl,
+    namespace: "search-taxonomic-row",
+  });
 
   const openTaxonomicItem = (): void => {
     if (item().kind === "tag") {
@@ -137,11 +143,20 @@ function TaxonomicRow(props: { row: SearchRow; blMode: BlacklistMode }) {
         </div>
       }
       actions={
-        <ExternalLinkButton
-          className="ds-btn-icon"
-          title={t("browse.search.openExternalTooltip", { kind: item().kind, title: decodeEntities(item().title) })}
-          url={canonicalUrl(seriesTypeToPath(item().kind), item().permalink)}
-        />
+        <>
+          <Button
+            className="ds-btn-icon"
+            style={{ "aspect-ratio": "1 / 1" }}
+            icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
+            title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
+            onClick={handleCopyLink}
+          />
+          <ExternalLinkButton
+            className="ds-btn-icon"
+            title={t("browse.search.openExternalTooltip", { kind: item().kind, title: decodeEntities(item().title) })}
+            url={externalUrl()}
+          />
+        </>
       }
     />
   );

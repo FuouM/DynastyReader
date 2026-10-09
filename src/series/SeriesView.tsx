@@ -89,14 +89,22 @@ export function SeriesView() {
   const [blacklisted, setBlacklisted] = createSignal(false);
   const addToCol = useAddToCollection();
 
+  const [localState, setLocalState] = createSignal<{
+    progress: Map<string, SeriesProgressRow>;
+    cacheCounts: Map<string, number>;
+    readHistorySet: Set<string>;
+    queueTotals: Map<string, number>;
+  }>({
+    progress: new Map(),
+    cacheCounts: new Map(),
+    readHistorySet: new Set(),
+    queueTotals: new Map(),
+  });
+
   const [data, { refetch }] = createResource(
     () => ({
       permalink: route().seriesPermalink,
       forceTick: forceTick(),
-      cacheRev: getCacheRevision(),
-      progressRev: getProgressRevision(),
-      historyRev: getHistoryRevision(),
-      bookmarksRev: getBookmarksRevision(),
     }),
     async ({ permalink, forceTick: tick }) => {
       if (!permalink) throw new Error(t("series.missingPermalinkError"));
@@ -136,13 +144,24 @@ export function SeriesView() {
       }
 
       const chapters = collectChapters(series);
-      const chapterPermalinks = chapters.map((c) => c.permalink);
+      return { series, coverPath, chapters };
+    },
+  );
 
-      let progress = new Map<string, SeriesProgressRow>();
-      let cacheCounts = new Map<string, number>();
-      let readHistorySet = new Set<string>();
-      let queueTotals = new Map<string, number>();
+  // Synchronize local chapter read/cached/progress state reactively without refetching metadata
+  createEffect(() => {
+    const d = data();
+    if (!d) return;
+    const permalink = d.series.permalink;
+    const chapterPermalinks = d.chapters.map((c) => c.permalink);
 
+    // Track SQLite revisions reactively
+    getCacheRevision();
+    getProgressRevision();
+    getHistoryRevision();
+    getBookmarksRevision();
+
+    void (async () => {
       try {
         const [p, c, h, qt] = await Promise.all([
           getProgressForSeries(permalink),
@@ -150,18 +169,18 @@ export function SeriesView() {
           getHistoryPermalinks(chapterPermalinks),
           getQueuePageTotals(chapterPermalinks),
         ]);
-        progress = new Map(p.map((r) => [r.chapter_permalink, r]));
-        cacheCounts = new Map(c.map((r) => [r.chapter_permalink, r.n]));
-        readHistorySet = h;
-        queueTotals = qt;
+        setLocalState({
+          progress: new Map(p.map((r) => [r.chapter_permalink, r])),
+          cacheCounts: new Map(c.map((r) => [r.chapter_permalink, r.n])),
+          readHistorySet: h,
+          queueTotals: qt,
+        });
       } catch (err) {
         const msg = errorMessage(err);
         showBanner(t("series.progressLoadError", { msg }));
       }
-
-      return { series, coverPath, chapters, progress, cacheCounts, readHistorySet, queueTotals };
-    },
-  );
+    })();
+  });
   const showSpinner = useDelayedSpinner(() => data.loading);
 
   // Publish the series top-bar actions and update title whenever the data is ready.
@@ -349,7 +368,7 @@ export function SeriesView() {
           seriesPermalink: d.series.permalink,
           seriesName: d.series.name,
           chapterTitle: ch.title,
-          pageTotal: d.progress.get(ch.permalink)?.page_total,
+          pageTotal: localState().progress.get(ch.permalink)?.page_total,
         });
       }
       refetch();
@@ -383,7 +402,7 @@ export function SeriesView() {
 
   return (
     <>
-      <Show when={!isRedirected() && (showSpinner() || (!data() && data.loading))}>
+      <Show when={!isRedirected() && (!data() && (showSpinner() || data.loading))}>
         <Loading />
       </Show>
       <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
@@ -392,9 +411,17 @@ export function SeriesView() {
           onRetry={() => void refetch()}
         />
       </Show>
-      <Show when={!data.loading && data() !== undefined}>
+      <Show when={data() !== undefined}>
       <SeriesBody
-        data={data()!}
+        data={{
+          series: data()!.series,
+          coverPath: data()!.coverPath,
+          chapters: data()!.chapters,
+          progress: localState().progress,
+          cacheCounts: localState().cacheCounts,
+          readHistorySet: localState().readHistorySet,
+          queueTotals: localState().queueTotals,
+        }}
         ordered={ordered}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}

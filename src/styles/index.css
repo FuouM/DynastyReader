@@ -800,6 +800,9 @@ body {
   background: var(--sys-hover-bg, #f5f5f5);
   border-color: var(--sys-primary-border, #0078d4);
 }
+.ds-item:active {
+  background: var(--sys-active-bg, var(--sys-hover-bg, #ebebeb));
+}
 .ds-item-read {
   opacity: 0.72;
   background: var(--sys-window-bg, #fafafa);

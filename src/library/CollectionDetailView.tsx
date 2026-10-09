@@ -28,11 +28,13 @@ import {
   StarIcon,
   ArrowLeftIcon,
   RefreshIcon,
+  TrashIcon,
   Icon,
 } from "../components/Icon";
 import { ExportModal } from "./ExportModal";
 import { ImportModal } from "./ImportModal";
-import { Button } from "../components/Button";
+import { Button, ConfirmDeleteButton } from "../components/Button";
+import { useBulkSelection } from "../hooks/useBulkSelection";
 import { InputField } from "../components/InputField";
 import { Modal } from "../components/Modal";
 import { LibraryItemRow } from "./LibraryItemRow";
@@ -171,6 +173,14 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
     );
   });
 
+  const { selectMode, selected, startSelectionWith, toggleSelectMode, toggleRow, deleteSelected, isAllSelected, toggleSelectAll } =
+    useBulkSelection<string>(async (perms) => {
+      for (const p of perms) {
+        await removeItemFromCollection(props.collectionId, p);
+      }
+    }, () => setTick((t) => t + 1));
+
+  const permalinks = () => filteredItems().map((it) => it.item_permalink);
   return (
     <div id="ds-collection-detail-container">
       <Show
@@ -191,7 +201,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
           </Show>
         }
       >
-        <div class="ds-collection-header-bar">
+        <div class="ds-collection-header-bar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
           <div class="ds-collection-stats">
             <Show
               when={collection()?.is_default}
@@ -203,12 +213,33 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
               <b>{decodeEntities(collection()?.name ?? "")}</b> — <b>{totalItems()}</b> {totalItems() === 1 ? t("library.nounItem") : t("library.nounItems")}
             </span>
           </div>
-          <InputField
-            placeholder={t("library.filterCollectionPlaceholder")}
-            wrapperClass="ds-collection-filter"
-            value={filter()}
-            onInput={(val) => setFilter(val)}
-          />
+          <Show when={!selectMode()}>
+            <InputField
+              placeholder={t("library.filterCollectionPlaceholder")}
+              wrapperClass="ds-collection-filter"
+              value={filter()}
+              onInput={(val) => setFilter(val)}
+            />
+          </Show>
+          <div class="ds-bulk-actions-bar" style="margin-left:auto;display:flex;align-items:center;gap:4px;">
+            <Show when={!selectMode()}>
+              <Button text={t("library.selectModeButton")} onClick={toggleSelectMode} />
+            </Show>
+            <Show when={selectMode()}>
+              <Button
+                text={isAllSelected(permalinks()) ? t("common.deselectAll") : t("common.selectAll")}
+                onClick={() => toggleSelectAll(permalinks())}
+              />
+              <span class="ds-muted" style="font-size:12px;">{t("library.selectedCount", { count: selected().size })}</span>
+              <ConfirmDeleteButton
+                icon={<TrashIcon />}
+                text={t("library.deleteSelected", { count: selected().size })}
+                disabled={selected().size === 0}
+                onConfirm={deleteSelected}
+              />
+              <Button text={t("common.cancel")} onClick={toggleSelectMode} />
+            </Show>
+          </div>
         </div>
 
         <div class="ds-collection-list">
@@ -230,6 +261,16 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
                   <CollectionItemCard
                     it={it}
                     collectionId={props.collectionId}
+                    selectionMode={selectMode()}
+                    selected={selected().has(it.item_permalink)}
+                    onToggleSelect={() => toggleRow(it.item_permalink)}
+                    onLongPress={() => {
+                      if (!selectMode()) {
+                        startSelectionWith(it.item_permalink);
+                      } else {
+                        toggleRow(it.item_permalink);
+                      }
+                    }}
                     onChanged={() => setTick((t) => t + 1)}
                   />
                 )}
@@ -292,6 +333,10 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
 function CollectionItemCard(props: {
   it: CollectionItemRow;
   collectionId: number;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+  onLongPress?: () => void;
   onChanged: () => void;
 }) {
   const isChapterLike = () =>
@@ -399,6 +444,10 @@ function CollectionItemCard(props: {
       actionLabel={isChapterLike() ? t("common.read") : t("common.open")}
       actionIcon={isChapterLike() ? "bi-book" : "bi-folder2-open"}
       externalUrl={canonicalUrl(endpoint(), props.it.item_permalink)}
+      selectionMode={props.selectionMode}
+      selected={props.selected}
+      onToggleSelect={props.onToggleSelect}
+      onLongPress={props.onLongPress}
       deleteTitle={t("library.removeFromCollectionTooltip")}
       onDelete={async () => {
         await removeItemFromCollection(props.collectionId, props.it.item_permalink);
