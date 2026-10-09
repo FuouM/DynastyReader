@@ -182,6 +182,13 @@ export const [isHideStatusBarEnabled, setHideStatusBarEnabled] = persistedSignal
   deserialize: boolDeserialize,
 });
 
+// Hide page number badge on pages when toolbar is hidden
+export const [isHidePageBadgeWithToolbarEnabled, setHidePageBadgeWithToolbarEnabled] = persistedSignal(false, {
+  name: "ds-reader-hide-page-badge-with-toolbar",
+  serialize: String,
+  deserialize: boolDeserialize,
+});
+
 // ── Reader image filters (brightness/contrast/grayscale/sepia) ─────────────
 const clampNum = (v: string, def: number, min: number, max: number) => {
   const n = parseFloat(v);

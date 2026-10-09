@@ -17,6 +17,8 @@ import {
   setPrevChapterStartPage,
   isHideStatusBarEnabled,
   setHideStatusBarEnabled,
+  isHidePageBadgeWithToolbarEnabled,
+  setHidePageBadgeWithToolbarEnabled,
 } from "./settings";
 import { isHapticsEnabled, setHapticsEnabled } from "../utils/haptics";
 import { Button, IconText, SegmentedSwitch, DsSwitch } from "../components/Button";
@@ -298,6 +300,16 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   checked={isHideStatusBarEnabled()}
                   title={isHideStatusBarEnabled() ? t("settings.reader.hideStatusBarOn") : t("settings.reader.hideStatusBarOff")}
                   onChange={setHideStatusBarEnabled}
+                />
+              </SettingsRow>
+
+              {/* Hide Page Number Badge with Toolbar */}
+              <SettingsRow label={t("settings.reader.hidePageBadgeWithToolbar")} divider>
+                <DsSwitch
+                  id="ds-ctrl-hide-page-badge-toggle"
+                  checked={isHidePageBadgeWithToolbarEnabled()}
+                  title={isHidePageBadgeWithToolbarEnabled() ? t("settings.reader.hidePageBadgeWithToolbarOn") : t("settings.reader.hidePageBadgeWithToolbarOff")}
+                  onChange={setHidePageBadgeWithToolbarEnabled}
                 />
               </SettingsRow>
 

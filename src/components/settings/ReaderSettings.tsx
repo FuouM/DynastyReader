@@ -31,6 +31,8 @@ import {
   setMobileGesturesOnDesktopEnabled,
   isHideStatusBarEnabled,
   setHideStatusBarEnabled,
+  isHidePageBadgeWithToolbarEnabled,
+  setHidePageBadgeWithToolbarEnabled,
   getDefaultFitMode,
   setDefaultFitMode,
   getPrevChapterStartPage,
@@ -60,6 +62,7 @@ export function ReaderSettings() {
   const [coverOffsetPref, setCoverOffsetPref] = usePersistedSetting(isCoverOffsetDefaultEnabled, setCoverOffsetDefaultEnabled);
   const [mobileGesturesDesktopPref, setMobileGesturesDesktopPref] = usePersistedSetting(isMobileGesturesOnDesktopEnabled, setMobileGesturesOnDesktopEnabled);
   const [hideStatusBarPref, setHideStatusBarPref] = usePersistedSetting(isHideStatusBarEnabled, setHideStatusBarEnabled);
+  const [hidePageBadgeWithToolbar, setHidePageBadgeWithToolbar] = usePersistedSetting(isHidePageBadgeWithToolbarEnabled, setHidePageBadgeWithToolbarEnabled);
   const [fitModePref, setFitModePref] = usePersistedSetting(getDefaultFitMode, setDefaultFitMode);
   const [prevChapterPagePref, setPrevChapterPagePref] = usePersistedSetting(getPrevChapterStartPage, setPrevChapterStartPage);
   const [scrollLockPref, setScrollLockPref] = usePersistedSetting(getScrollLock, setScrollLock);
@@ -202,6 +205,17 @@ export function ReaderSettings() {
           checked={hideStatusBarPref()}
           title={t("settings.reader.hideStatusBarTooltip")}
           onChange={setHideStatusBarPref}
+        />
+
+        {/* Hide Page Number Badge with Toolbar */}
+        <SettingsToggleRow
+          divider
+          label={t("settings.reader.hidePageBadgeWithToolbar")}
+          desc={t("settings.reader.hidePageBadgeWithToolbarDesc")}
+          id="ds-settings-hide-page-badge-toggle"
+          checked={hidePageBadgeWithToolbar()}
+          title={t("settings.reader.hidePageBadgeWithToolbarTooltip")}
+          onChange={setHidePageBadgeWithToolbar}
         />
 
         {/* Paged Mode: Slide Animation */}

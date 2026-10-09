@@ -10,6 +10,7 @@ import { ReaderToolbar, ReaderBottomNav } from "./ReaderToolbar";
 import { ReaderViewport } from "./ReaderViewport";
 import { ReaderStrip } from "./ReaderStrip";
 import { useReaderShortcuts, useReaderWheel } from "./reader-inputs";
+import { isHidePageBadgeWithToolbarEnabled } from "./settings";
 import { Loading } from "../components/Feedback";
 import { Button } from "../components/Button";
 import { RefreshIcon } from "../components/Icon";
@@ -73,6 +74,7 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
             "ds-hud-visible": session.toolbarVisible(),
             "is-scroll-locked": session.scrollLock(),
             "is-long-strip": session.isLongStrip(),
+            "ds-hide-page-badge-with-toolbar": isHidePageBadgeWithToolbarEnabled(),
           }}
         >
           <ReaderToolbar session={session} />

@@ -598,6 +598,9 @@
   letter-spacing: 0.3px;
   line-height: 1;
 }
+#ds-reader-container.ds-hide-page-badge-with-toolbar:not(.ds-hud-visible) .ds-slot-page-badge {
+  display: none !important;
+}
 .ds-page-img {
   display: block;
   pointer-events: none;
