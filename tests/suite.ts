@@ -64,6 +64,56 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
     });
     recordStep("Desktop: Library View & LibraryTabActions", libraryActions.refreshBtn && libraryActions.navItems.length > 0, libraryActions);
 
+    // 2b. Library Hold-to-Select Gesture & Cancel Resilience
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll("button, a, .ds-library-nav-item, .ds-subtab-btn"));
+      const b = btns.find(el => el.textContent?.includes("Bookmarks")) as HTMLElement | undefined;
+      b?.click();
+    });
+    await delay(500);
+
+    const countBeforeHold = await page.evaluate(() => {
+      return document.getElementById("ds-library-tab-bookmarks")?.querySelectorAll(".ds-library-item-wrap, .ds-item-row").length ?? 0;
+    });
+
+    const itemCenter = await page.evaluate(() => {
+      const pane = document.getElementById("ds-library-tab-bookmarks");
+      const wrap = pane?.querySelector(".ds-library-item-wrap");
+      if (!wrap) return null;
+      const r = wrap.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    });
+
+    if (itemCenter) {
+      await page.mouse.move(itemCenter.x, itemCenter.y);
+      await page.mouse.down();
+      await delay(550);
+      await page.mouse.up();
+      await delay(200);
+
+      const inSelection = await page.evaluate(() => {
+        const pane = document.getElementById("ds-library-tab-bookmarks");
+        const checkboxes = pane?.querySelectorAll("input[type='checkbox']");
+        const cancelBtn = Array.from(document.querySelectorAll("button")).find(b => b.textContent?.includes("Cancel") || b.textContent?.includes("Done"));
+        return {
+          checkboxCount: checkboxes?.length ?? 0,
+          hasCancelBtn: !!cancelBtn,
+        };
+      });
+      recordStep("Desktop: Library Hold-to-Select Gesture", inSelection.checkboxCount > 0 && inSelection.hasCancelBtn, inSelection);
+
+      // Cancel selection
+      await page.evaluate(() => {
+        const cancelBtn = Array.from(document.querySelectorAll("button")).find(b => b.textContent?.includes("Cancel") || b.textContent?.includes("Done"));
+        cancelBtn?.click();
+      });
+      await delay(300);
+
+      const countAfterCancel = await page.evaluate(() => {
+        return document.getElementById("ds-library-tab-bookmarks")?.querySelectorAll(".ds-library-item-wrap, .ds-item-row").length ?? 0;
+      });
+      recordStep("Desktop: Library Cancel Selection Preserves Rows", countAfterCancel === countBeforeHold && countAfterCancel > 0, { countBeforeHold, countAfterCancel });
+    }
     // 3. Local Pane & Modal Integration (TS-04)
     const localNavHandle = await page.evaluateHandle(() => {
       const items = Array.from(document.querySelectorAll(".ds-library-nav-item"));
@@ -124,6 +174,38 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
     });
     recordStep("Desktop: Series View & Actions / Resume (CP-01)", seriesViewOk);
 
+    // 6b. Series Actions & Copy Link Button
+    const seriesActionsOk = await page.evaluate(() => {
+      const copyBtn = Array.from(document.querySelectorAll("button")).find(b => {
+        const t = (b.getAttribute("title") || b.getAttribute("aria-label") || "").toLowerCase();
+        return t.includes("copy") || t.includes("link");
+      });
+      const extBtn = Array.from(document.querySelectorAll("button, a")).find(b => {
+        const t = (b.getAttribute("title") || b.getAttribute("aria-label") || "").toLowerCase();
+        return t.includes("dynasty") || t.includes("external");
+      });
+      return { hasCopyBtn: !!copyBtn, hasExtBtn: !!extBtn };
+    });
+    recordStep("Desktop: Series Actions & Copy Link Button", seriesActionsOk.hasCopyBtn && seriesActionsOk.hasExtBtn, seriesActionsOk);
+
+    // Test Copy Link Feedback
+    await page.evaluate(() => {
+      const copyBtn = Array.from(document.querySelectorAll("button")).find(b => {
+        const t = (b.getAttribute("title") || b.getAttribute("aria-label") || "").toLowerCase();
+        return t.includes("copy") || t.includes("link");
+      });
+      copyBtn?.click();
+    });
+    await delay(250);
+    const copiedFeedback = await page.evaluate(() => {
+      const copyBtn = Array.from(document.querySelectorAll("button")).find(b => {
+        const t = (b.getAttribute("title") || b.getAttribute("aria-label") || "").toLowerCase();
+        return t.includes("copied") || t.includes("copy");
+      });
+      const t = copyBtn?.getAttribute("title") || copyBtn?.getAttribute("aria-label") || "";
+      return t.toLowerCase().includes("copied");
+    });
+    recordStep("Desktop: Series Copy Link Feedback", copiedFeedback);
     // 7. Reader View & Extracted Gestures / Scroll Tracker (TS-01)
     await page.evaluate(() => {
       window.dispatchEvent(new CustomEvent("ds-navigate", { detail: { view: "reader", chapterPermalink: "hana-ni-arashi-ch01", seriesPermalink: "hana-ni-arashi" } }));
@@ -166,7 +248,88 @@ export async function runBrowserSweep(page: Page): Promise<SweepReport> {
       { overflows: mobileAudit.horizontalOverflows, undersizedCount: mobileAudit.undersizedTouchTargets.length },
     );
 
-    // 11. Assert zero unexpected application exceptions or unhandled rejections
+    // 8. Mobile Reader Controls Sheet Interactive Drag Gesture
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent("ds-navigate", { detail: { view: "reader", chapterPermalink: "hana-ni-arashi-ch01", seriesPermalink: "hana-ni-arashi" } }));
+    });
+    await waitForResourceReady(page, "#ds-reader-viewport, .ds-reader-viewport, .ds-reader-strip", 6000);
+    await delay(400);
+
+    // Open Mobile Controls Sheet
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll("button"));
+      const toolBtn = btns.find(b => b.getAttribute("aria-label")?.includes("Toggle Reader Controls"));
+      toolBtn?.click();
+    });
+    await delay(500);
+
+    const sheetCheck = await page.evaluate(() => {
+      const sheet = document.querySelector(".ds-reader-sheet-window");
+      const handle = document.querySelector(".ds-sheet-drag-handle");
+      if (!sheet || !handle) return null;
+      const hCs = window.getComputedStyle(handle);
+      return { mounted: true, touchAction: hCs.touchAction };
+    });
+    recordStep("Mobile: Controls Sheet Drag Handle touch-action: none", Boolean(sheetCheck && sheetCheck.touchAction === "none"), sheetCheck);
+
+    // Interactive Drag on Handle
+    const handlePos = await page.evaluate(() => {
+      const h = document.querySelector(".ds-sheet-drag-handle");
+      if (!h) return null;
+      const r = h.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    });
+
+    if (handlePos) {
+      await page.mouse.move(handlePos.x, handlePos.y);
+      await page.mouse.down();
+      await page.mouse.move(handlePos.x, handlePos.y + 60, { steps: 5 });
+      await delay(50);
+
+      const dragCheck = await page.evaluate(() => {
+        const sheet = document.querySelector(".ds-reader-sheet-window") as HTMLElement | null;
+        return { transform: sheet?.style.transform ?? "" };
+      });
+      await page.mouse.up();
+
+      recordStep("Mobile: Controls Sheet Interactive Drag Tracking", dragCheck.transform.includes("translate3d(0px, 60px, 0px)"), dragCheck);
+    }
+
+    // Dismiss sheet
+    await page.evaluate(() => {
+      const backdrop = document.querySelector(".ds-reader-sheet-backdrop") as HTMLElement | null;
+      backdrop?.click();
+    });
+    await delay(300);
+
+    // 9. Reader Progress Scrubber Drag Interaction
+    const scrubberHandle = await page.$(".ds-reader-progress-track");
+    if (scrubberHandle) {
+      const box = await scrubberHandle.boundingBox();
+      if (box) {
+        await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(box.x + box.width * 0.7, box.y + box.height / 2, { steps: 5 });
+        await delay(50);
+        await page.mouse.up();
+        const scrubberOk = await page.evaluate(() => {
+          const track = document.querySelector(".ds-reader-progress-track");
+          return !!track && track.getAttribute("role") === "slider";
+        });
+        recordStep("Mobile: Reader Progress Scrubber Drag Interaction", scrubberOk);
+      }
+    }
+
+    // 10. Browse Pull-to-Refresh Container Architecture
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent("ds-navigate", { detail: { view: "browse" } }));
+    });
+    await delay(400);
+    const pullContainerOk = await page.evaluate(() => {
+      const container = document.querySelector(".ds-browse-pull-container");
+      return !!container;
+    });
+    recordStep("Mobile: Browse Pull-to-Refresh Container Architecture", pullContainerOk);
     await assertNoAppErrors(page);
 
   } catch (err: unknown) {

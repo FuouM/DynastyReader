@@ -97,7 +97,8 @@ export function App() {
       if (
         document.activeElement instanceof HTMLElement &&
         document.activeElement.tagName !== "INPUT" &&
-        document.activeElement.tagName !== "TEXTAREA"
+        document.activeElement.tagName !== "TEXTAREA" &&
+        document.activeElement.tagName !== "SELECT"
       ) {
         document.activeElement.blur();
       }

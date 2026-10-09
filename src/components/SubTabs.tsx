@@ -52,7 +52,7 @@ export function SubTabs<T extends string = string>(props: SubTabsProps<T>) {
         isDragging = false;
         startX = e.clientX;
         scrollStart = el.scrollLeft;
-        el.setPointerCapture(e.pointerId);
+        try { el.setPointerCapture(e.pointerId); } catch {}
       }
     };
 

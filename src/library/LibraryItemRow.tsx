@@ -61,6 +61,11 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
       clearTimeout(longPressTimer);
       longPressTimer = null;
     }
+    if (didLongPress) {
+      window.setTimeout(() => {
+        didLongPress = false;
+      }, 200);
+    }
   };
 
   onCleanup(() => {
@@ -74,15 +79,17 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
     didLongPress = false;
     clearLongPress();
 
-    if (props.onLongPress || (props.selectionMode && props.onToggleSelect)) {
+    if (props.selectionMode && props.onToggleSelect) {
       longPressTimer = window.setTimeout(() => {
         didLongPress = true;
         triggerHaptic("snap");
-        if (props.onLongPress) {
-          props.onLongPress();
-        } else if (props.onToggleSelect) {
-          props.onToggleSelect();
-        }
+        props.onToggleSelect?.();
+      }, 450);
+    } else if (props.onLongPress) {
+      longPressTimer = window.setTimeout(() => {
+        didLongPress = true;
+        triggerHaptic("snap");
+        props.onLongPress!();
       }, 450);
     }
   };

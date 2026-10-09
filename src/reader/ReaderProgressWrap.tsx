@@ -53,7 +53,7 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
     if (editing() || s.pages().length <= 1) return;
     e.preventDefault();
     setIsScrubbing(true);
-    trackRef?.setPointerCapture(e.pointerId);
+    try { trackRef?.setPointerCapture(e.pointerId); } catch {}
     lastHapticPage = s.currentIndex();
     lastHapticTime = 0;
     const targetPage = calculatePageFromPointer(e);
@@ -72,9 +72,11 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
   const handleTrackPointerUp = (e: PointerEvent) => {
     if (!isScrubbing()) return;
     setIsScrubbing(false);
-    if (trackRef?.hasPointerCapture(e.pointerId)) {
-      trackRef.releasePointerCapture(e.pointerId);
-    }
+    try {
+      if (trackRef?.hasPointerCapture(e.pointerId)) {
+        trackRef.releasePointerCapture(e.pointerId);
+      }
+    } catch {}
     const targetPage = calculatePageFromPointer(e);
     triggerScrubHaptic(targetPage, true);
     s.setPage(targetPage, true);

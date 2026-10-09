@@ -209,12 +209,13 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   const onPointerDownHandle = (ev: PointerEvent) => {
     if (ev.pointerType === "mouse" && ev.button !== 0) return;
     handleDragStart(ev.clientY, ev.target);
-    (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId);
+    try { (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId); } catch {}
   };
   const onPointerMoveHandle = (ev: PointerEvent) => {
     handleDragMove(ev.clientY, true, ev);
   };
-  const onPointerUpHandle = () => {
+  const onPointerUpHandle = (ev: PointerEvent) => {
+    try { (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
     handleDragEnd();
   };
 
