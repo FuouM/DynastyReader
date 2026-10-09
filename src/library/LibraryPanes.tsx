@@ -174,7 +174,7 @@ export function BookmarksPane(props: BookmarksPaneProps) {
     },
     register: props.register,
   });
-  const { selectMode, selected, toggleSelectMode, toggleRow, deleteSelected, isAllSelected, toggleSelectAll } =
+  const { selectMode, selected, startSelectionWith, toggleSelectMode, toggleRow, deleteSelected, isAllSelected, toggleSelectAll } =
     useBulkSelection<string>(removeBookmarksBatch, refetch);
 
   const rowKeys = () => data()?.res.rows.map((r) => r.chapter_permalink) ?? [];
@@ -297,6 +297,13 @@ export function BookmarksPane(props: BookmarksPaneProps) {
                 selectionMode={selectMode()}
                 selected={selected().has(row.chapter_permalink)}
                 onToggleSelect={() => toggleRow(row.chapter_permalink)}
+                onLongPress={() => {
+                  if (!selectMode()) {
+                    startSelectionWith(row.chapter_permalink);
+                  } else {
+                    toggleRow(row.chapter_permalink);
+                  }
+                }}
                 deleteTitle={t("library.removeBookmarkTooltip")}
                 onDelete={async () => {
                   await removeBookmark(row.chapter_permalink);
@@ -550,7 +557,7 @@ export function HistoryPane(props: HistoryPaneProps) {
     },
     register: props.register,
   });
-  const { selectMode, selected, toggleSelectMode, toggleRow, deleteSelected, isAllSelected, toggleSelectAll } =
+  const { selectMode, selected, startSelectionWith, toggleSelectMode, toggleRow, deleteSelected, isAllSelected, toggleSelectAll } =
     useBulkSelection<number>(removeHistoryBatch, refetch);
 
   const rowKeys = () => data()?.res.rows.map((r) => r.id) ?? [];
@@ -675,6 +682,13 @@ export function HistoryPane(props: HistoryPaneProps) {
                 selectionMode={selectMode()}
                 selected={selected().has(row.id)}
                 onToggleSelect={() => toggleRow(row.id)}
+                onLongPress={() => {
+                  if (!selectMode()) {
+                    startSelectionWith(row.id);
+                  } else {
+                    toggleRow(row.id);
+                  }
+                }}
                 deleteTitle={t("library.removeFromHistoryTooltip")}
                 onDelete={async () => {
                   await removeHistory(row.id);

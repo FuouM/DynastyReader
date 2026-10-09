@@ -17,6 +17,10 @@ export function useBulkSelection<T>(
     setSelectMode((v) => !v);
     setSelected(new Set<T>());
   };
+  const startSelectionWith = (item: T): void => {
+    setSelectMode(true);
+    setSelected(new Set<T>([item]));
+  };
 
   const toggleRow = (item: T): void => {
     setSelected((prev) => {
@@ -61,6 +65,8 @@ export function useBulkSelection<T>(
   return {
     selectMode,
     selected,
+    setSelectMode,
+    startSelectionWith,
     toggleSelectMode,
     toggleRow,
     deleteSelected,
