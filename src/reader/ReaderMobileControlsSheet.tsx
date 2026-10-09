@@ -5,6 +5,7 @@
 
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
+import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { theme, setTheme } from "../stores/theme";
 import { isMobile } from "../stores/platform";
@@ -84,32 +85,137 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
     s.setControlsOpen(false);
   };
 
+  let backdropEl: HTMLDivElement | undefined;
+  let windowEl: HTMLDivElement | undefined;
   let touchStartY = 0;
   let touchDiffY = 0;
+  let touchStartTime = 0;
+  let isDraggingSheet = false;
+  let isDragEligible = false;
+
   const handleTouchStart = (ev: TouchEvent) => {
+    if (closing()) return;
     const t = ev.touches[0];
-    if (t) {
-      touchStartY = t.clientY;
-      touchDiffY = 0;
-    }
+    if (!t) return;
+    touchStartY = t.clientY;
+    touchDiffY = 0;
+    touchStartTime = Date.now();
+    isDraggingSheet = false;
+
+    // Drag-to-dismiss is eligible if touch starts on header/handle OR if content is at top of scroll
+    const onHandleOrHeader = !!(ev.target as HTMLElement)?.closest(".ds-sheet-drag-handle, .ds-reader-sheet-header");
+    const isAtScrollTop = (windowEl?.scrollTop ?? 0) <= 0;
+    isDragEligible = onHandleOrHeader || isAtScrollTop;
   };
+
   const handleTouchMove = (ev: TouchEvent) => {
+    if (closing()) return;
     const t = ev.touches[0];
-    if (t) {
-      touchDiffY = t.clientY - touchStartY;
+    if (!t) return;
+    const dy = t.clientY - touchStartY;
+    touchDiffY = dy;
+
+    if (!isDraggingSheet) {
+      if (!isDragEligible || (windowEl && windowEl.scrollTop > 0)) {
+        return;
+      }
+      if (dy > 8) {
+        isDraggingSheet = true;
+        if (windowEl) {
+          windowEl.style.willChange = "transform";
+          windowEl.style.transition = "none";
+        }
+        if (backdropEl) {
+          backdropEl.style.willChange = "opacity";
+          backdropEl.style.transition = "none";
+        }
+      }
+    }
+
+    if (isDraggingSheet) {
+      if (dy > 0) {
+        if (ev.cancelable) ev.preventDefault();
+        const sheetH = windowEl?.offsetHeight || 400;
+        if (windowEl) {
+          windowEl.style.transform = `translate3d(0, ${dy}px, 0)`;
+        }
+        if (backdropEl) {
+          backdropEl.style.opacity = String(Math.max(0, 1 - (dy / sheetH) * 0.8));
+        }
+      } else {
+        if (windowEl) windowEl.style.transform = "translate3d(0, 0, 0)";
+        if (backdropEl) backdropEl.style.opacity = "";
+      }
     }
   };
+
   const handleTouchEnd = () => {
-    if (touchDiffY > 60) {
-      requestClose();
+    if (closing()) return;
+    if (isDraggingSheet && windowEl) {
+      const dt = Math.max(1, Date.now() - touchStartTime);
+      const velocity = touchDiffY / dt;
+      const sheetH = windowEl.offsetHeight || 400;
+      const shouldDismiss = touchDiffY > 90 || (touchDiffY > 40 && velocity > 0.35);
+
+      if (shouldDismiss) {
+        windowEl.style.transition = "transform 0.18s cubic-bezier(0.4, 0, 1, 1)";
+        windowEl.style.transform = `translate3d(0, ${sheetH}px, 0)`;
+        if (backdropEl) {
+          backdropEl.style.transition = "opacity 0.18s ease";
+          backdropEl.style.opacity = "0";
+        }
+        window.setTimeout(() => {
+          requestClose();
+          if (windowEl) {
+            windowEl.style.willChange = "auto";
+            windowEl.style.transform = "";
+            windowEl.style.transition = "";
+          }
+          if (backdropEl) {
+            backdropEl.style.willChange = "auto";
+            backdropEl.style.opacity = "";
+            backdropEl.style.transition = "";
+          }
+        }, 180);
+      } else {
+        windowEl.style.transition = "transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)";
+        windowEl.style.transform = "translate3d(0, 0, 0)";
+        if (backdropEl) {
+          backdropEl.style.transition = "opacity 0.2s ease";
+          backdropEl.style.opacity = "";
+        }
+        window.setTimeout(() => {
+          if (windowEl) {
+            windowEl.style.willChange = "auto";
+            windowEl.style.transition = "";
+            windowEl.style.transform = "";
+          }
+          if (backdropEl) {
+            backdropEl.style.willChange = "auto";
+            backdropEl.style.transition = "";
+            backdropEl.style.opacity = "";
+          }
+        }, 200);
+      }
     }
+    isDraggingSheet = false;
+    isDragEligible = false;
     touchStartY = 0;
     touchDiffY = 0;
   };
+
+  createEffect(() => {
+    if (!mounted() || !windowEl) return;
+    makeEventListener(windowEl, "touchstart", handleTouchStart, { passive: true });
+    makeEventListener(windowEl, "touchmove", handleTouchMove, { passive: false });
+    makeEventListener(windowEl, "touchend", handleTouchEnd, { passive: true });
+    makeEventListener(windowEl, "touchcancel", handleTouchEnd, { passive: true });
+  });
   return (
     <Show when={mounted()}>
       <Portal mount={document.body}>
         <div
+          ref={backdropEl}
           class="ds-reader-sheet-backdrop"
           classList={{ "ds-sheet-closing": closing() }}
           onPointerDown={(ev) => {
@@ -120,13 +226,11 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
           }}
         >
           <div
+            ref={windowEl}
             class="ds-reader-sheet-window"
             classList={{ "ds-sheet-closing": closing() }}
             onPointerDown={(ev) => ev.stopPropagation()}
             onClick={(ev) => ev.stopPropagation()}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
             role="dialog"
             aria-modal="true"
           >
