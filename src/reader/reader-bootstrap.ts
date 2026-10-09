@@ -41,20 +41,21 @@ async function determineStartPage(
   permalink: string,
   pageCount: number,
 ): Promise<number> {
-  let startPage = route.startPage ?? 0;
-  if (startPage === -1) {
-    startPage = Math.max(0, pageCount - 1);
-  } else if (startPage <= 0) {
-    try {
-      const prog = await getReadingProgress(permalink);
-      if (prog && prog.completed !== 1 && prog.page_index > 0) {
-        startPage = prog.page_index;
-      }
-    } catch (err) {
-      log.error("reader-bootstrap", "failed to load reading progress:", err);
-    }
+  if (route.startPage === -1) {
+    return Math.max(0, pageCount - 1);
   }
-  return Math.min(startPage, Math.max(0, pageCount - 1));
+  if (route.startPage !== undefined) {
+    return Math.min(Math.max(0, route.startPage), Math.max(0, pageCount - 1));
+  }
+  try {
+    const prog = await getReadingProgress(permalink);
+    if (prog && prog.completed !== 1 && prog.page_index > 0) {
+      return Math.min(prog.page_index, Math.max(0, pageCount - 1));
+    }
+  } catch (err) {
+    log.error("reader-bootstrap", "failed to load reading progress:", err);
+  }
+  return 0;
 }
 
 function resolveSeriesContext(s: ReaderSession, chapter: Chapter): void {

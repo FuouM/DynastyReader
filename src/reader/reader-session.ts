@@ -332,7 +332,11 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   private updateIndexAndNotifyEnd(index: number): void {
     batch(() => {
       const wasAtEnd = this.atEnd();
-      const isNowAtEnd = index >= this.pages().length - 1;
+      const isNowAtEnd = this.pages().length > 0 && (
+        this.isSpread() && this.spreads().length > 0
+          ? spreadIndexOf(this.spreads(), index) >= this.spreads().length - 1
+          : index >= this.pages().length - 1
+      );
       this.setCurrentIndex(index);
       this.setAtEnd(isNowAtEnd);
       if (!wasAtEnd && isNowAtEnd && this.pages().length > 1 && !this.loading()) {

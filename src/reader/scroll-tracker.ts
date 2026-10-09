@@ -36,6 +36,9 @@ export function setupScrollTracker(s: ReaderSession, vpEl: HTMLElement): () => v
         low = mid + 1;
       }
     }
+    if (vp.scrollHeight > vp.clientHeight && vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 32) {
+      bestIdx = totalSlots - 1;
+    }
 
     // Proactively prefetch upcoming pages from the leading visible edge of the viewport
     let leadingIdx = bestIdx;
