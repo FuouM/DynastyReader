@@ -63,9 +63,11 @@
     opacity: 0.7;
   }
 }
-.win-button:hover {
-  background-color: var(--sys-button-hover);
-  border-color: var(--sys-border-focus);
+@media (hover: hover) {
+  .win-button:hover {
+    background-color: var(--sys-button-hover);
+    border-color: var(--sys-border-focus);
+  }
 }
 .win-button:active {
   background-color: var(--sys-button-active);
@@ -82,9 +84,11 @@
   color: var(--sys-highlight-text);
   border-color: var(--sys-button-primary-border);
 }
-.win-button.primary:hover {
-  background-color: var(--sys-button-primary-hover);
-  border-color: var(--sys-button-primary-hover);
+@media (hover: hover) {
+  .win-button.primary:hover {
+    background-color: var(--sys-button-primary-hover);
+    border-color: var(--sys-button-primary-hover);
+  }
 }
 .win-button.primary:active {
   background-color: var(--sys-button-primary-active);
@@ -96,9 +100,11 @@
   border-color: var(--sys-button-primary-border);
   font-weight: 600;
 }
-.win-button.active:hover {
-  background-color: var(--sys-button-primary-hover);
-  border-color: var(--sys-button-primary-hover);
+@media (hover: hover) {
+  .win-button.active:hover {
+    background-color: var(--sys-button-primary-hover);
+    border-color: var(--sys-button-primary-hover);
+  }
 }
 .win-button:focus-visible,
 button:focus-visible {

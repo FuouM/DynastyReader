@@ -33,6 +33,48 @@
 
 /* scrollbar colors now token-driven via reset.css — no per-theme overrides needed */
 
+/* ── Mobile Touch Sticky Hover Suppression ── */
+/* On touch release / mobile, prevent buttons and interactive controls from retaining hover styles */
+@media (hover: none) {
+  .win-button:hover:not(:active):not(.primary):not(.active),
+  .ds-btn-icon:hover:not(:active),
+  .ds-nav-history-btn:hover:not(:active),
+  .ds-segmented-btn:hover:not(:active):not(.active),
+  .ds-subtab:hover:not(:active):not(.active),
+  .ds-item:hover:not(:active),
+  .ds-chapter-row:hover:not(:active) {
+    background-color: var(--sys-button-face, transparent);
+    border-color: var(--sys-button-border, transparent);
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+}
+
+:is([data-mobile], body[data-mobile], #ds-root[data-mobile]) .win-button:hover:not(:active):not(.primary):not(.active) {
+  background-color: var(--sys-button-face) !important;
+  border-color: var(--sys-button-border) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:is([data-mobile], body[data-mobile], #ds-root[data-mobile]) .win-button.primary:hover:not(:active) {
+  background-color: var(--sys-button-primary-bg) !important;
+  border-color: var(--sys-button-primary-border) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:is([data-mobile], body[data-mobile], #ds-root[data-mobile]) .ds-segmented-btn:hover:not(:active):not(.active) {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+:is([data-mobile], body[data-mobile], #ds-root[data-mobile]) .ds-subtab:hover:not(:active):not(.active) {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
 
 /* Root viewport sizing */
 #ds-root[data-mobile] {

@@ -92,6 +92,18 @@ export function App() {
         navigate(customEv.detail);
       }
     });
+    // Clear sticky hover/focus on touch release for mobile
+    const handleTouchRelease = () => {
+      if (
+        document.activeElement instanceof HTMLElement &&
+        document.activeElement.tagName !== "INPUT" &&
+        document.activeElement.tagName !== "TEXTAREA"
+      ) {
+        document.activeElement.blur();
+      }
+    };
+    makeEventListener(window, "touchend", handleTouchRelease, { passive: true });
+    makeEventListener(window, "touchcancel", handleTouchRelease, { passive: true });
   });
   return (
     <div
