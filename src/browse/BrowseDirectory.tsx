@@ -71,7 +71,7 @@ function DirectoryRow(props: {
       cssText="justify-content:space-between;padding:3px 6px;cursor:pointer;"
       onClick={openEntry}
       title={
-        <span class="ds-item-title ds-inline-flex-center-6">
+        <span class="ds-item-title ds-inline-flex-center-4">
           {decodeEntities(props.entry.name)}
           <Show when={isBl()}>
             <span

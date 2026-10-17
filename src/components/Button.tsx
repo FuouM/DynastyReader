@@ -169,7 +169,6 @@ export function ConfirmDeleteButton(props: ConfirmDeleteButtonProps) {
         return (props.className ? `${props.className} ds-btn-danger ds-confirming` : "ds-btn-icon ds-btn-danger ds-confirming");
       }
       return (props.className ? `${props.className} ds-btn-danger` : "ds-btn-compact ds-btn-danger")
-        .replace("ds-btn-icon-sm", "ds-btn-compact")
         .replace("ds-btn-icon", "ds-btn-compact");
     }
     return props.className;

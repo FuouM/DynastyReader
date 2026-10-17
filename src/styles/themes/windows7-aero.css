@@ -265,7 +265,6 @@
 
   /* ── Text fields — inset Aero edit control ── */
   [data-theme="windows7"] .input-field,
-  [data-theme="windows7"] .win-textbox,
   [data-theme="windows7"] .ds-select,
   [data-theme="windows7"] .ds-pager-input {
     background: #ffffff;
@@ -273,8 +272,7 @@
     border-top-color: #8e8f8f;
     box-shadow: inset 0 1px 2px rgba(16, 42, 74, 0.08);
   }
-  [data-theme="windows7"] .input-field:hover,
-  [data-theme="windows7"] .win-textbox:hover {
+  [data-theme="windows7"] .input-field:hover {
     border-color: var(--sys-border-focus, #3c7fb1);
   }
 

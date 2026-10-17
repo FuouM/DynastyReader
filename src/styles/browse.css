@@ -54,8 +54,7 @@
   box-sizing: border-box;
   line-height: normal;
 }
-.ds-item-actions .ds-btn-icon,
-.ds-item-actions .ds-btn-icon-sm {
+.ds-item-actions .ds-btn-icon {
   width: 24px;
   height: 24px;
   min-width: 24px;
@@ -607,13 +606,6 @@
   font-size: var(--font-xs);
 }
 
-.ds-chapter-cancel-btn {
-  height: 16px !important;
-  min-height: 16px !important;
-  width: 16px !important;
-  padding: 0 !important;
-  font-size: 8px !important;
-}
 
 /* Downloaded series fieldsets and cinema matrix */
 .ds-downloaded-series-group {

@@ -34,8 +34,7 @@
   padding: 2px 8px;
 }
 /* 2-tier icon-only square button system */
-.ds-btn-icon,
-.ds-btn-icon-sm {
+.ds-btn-icon {
   width: 24px;
   height: 24px;
   min-width: 24px;
@@ -52,8 +51,7 @@
   flex-shrink: 0;
 }
 
-.ds-btn-icon .ds-btn-text,
-.ds-btn-icon-sm .ds-btn-text {
+.ds-btn-icon .ds-btn-text {
   display: none !important;
 }
 .ds-btn-text {
@@ -92,20 +90,6 @@
   vertical-align: middle;
   color: var(--sys-link);
   font-size: var(--font-sm);
-}
-/* win-textbox is the native-input alias of .input-field */
-.win-textbox {
-  background-color: var(--sys-window-bg);
-  color: var(--sys-window-text);
-  border: 1px solid var(--sys-button-border);
-  padding: 0 8px;
-  height: 24px;
-  line-height: 24px;
-  outline: none;
-  font-size: var(--font-md);
-}
-.win-textbox:focus {
-  border-color: var(--sys-border-focus);
 }
 .ds-select {
   height: 24px;
@@ -215,11 +199,6 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 8px;
-}
-.ds-inline-flex-center-6 {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 .ds-warn-badge {
   font-size: var(--font-xs);
