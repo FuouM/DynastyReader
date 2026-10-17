@@ -160,7 +160,7 @@ On desktop platforms, all application data is stored in a self-contained `.data/
 
 ### 7.1. Prerequisites
 
-- **Node.js**: >= 20.x and `npm`
+- **Node.js**: >= 22.12.x and `npm`
 - **Rust**: `stable-x86_64-pc-windows-msvc` (Cargo >= 1.80) or platform equivalent
 - **sccache** *(Optional)*: Automatically used for build caching if present in `.rust/.cargo/bin/sccache.exe`.
 

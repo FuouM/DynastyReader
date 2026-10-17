@@ -12,6 +12,9 @@
     "lint": "oxlint src",
     "test": "vitest run"
   },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "dependencies": {
     "@solid-primitives/connectivity": "^0.4.6",
     "@solid-primitives/event-listener": "^2.4.6",

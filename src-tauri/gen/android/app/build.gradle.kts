@@ -46,11 +46,7 @@ android {
                 storeFile = file(storeFileProp)
                 storePassword = storePasswordProp
             } else {
-                val debugSigning = getByName("debug")
-                keyAlias = debugSigning.keyAlias
-                keyPassword = debugSigning.keyPassword
-                storeFile = debugSigning.storeFile
-                storePassword = debugSigning.storePassword
+                throw GradleException("Release keystore is not properly configured. Refusing to build release artifact with debug signing.")
             }
         }
     }

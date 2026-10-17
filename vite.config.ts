@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
 import type { Plugin as PostCssPlugin } from "postcss";
@@ -35,6 +37,20 @@ export default defineConfig({
     solid(),
     {
       name: "tauri-mock-bridge-injector",
+      apply: "serve",
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url === "/mock-bridge.js" || req.url?.startsWith("/mock-bridge.js?")) {
+            const bridgePath = path.resolve(__dirname, "tests/fixtures/mock-bridge.js");
+            if (fs.existsSync(bridgePath)) {
+              res.setHeader("Content-Type", "application/javascript");
+              res.end(fs.readFileSync(bridgePath, "utf-8"));
+              return;
+            }
+          }
+          next();
+        });
+      },
       transformIndexHtml(html, ctx) {
         if (ctx.originalUrl?.includes("mock=1") || process.env.VITE_TEST_MOCK === "1") {
           return html.replace(
