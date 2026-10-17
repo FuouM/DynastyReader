@@ -5,6 +5,8 @@
 
 import { execute, query } from "./client";
 import * as ipc from "../../../ipc";
+import { inClause } from "../../../db/paging";
+import { log } from "../../../utils/log";
 import { initMangaDexDb } from "./schema";
 import type { MangaDexCachedPageRow } from "../types";
 import type { FullyCachedChapterRow } from "../../../db/cache.repo";
@@ -77,6 +79,36 @@ export async function getMangaDexCacheStats(): Promise<{
 }
 
 /**
+ * Cached-page counts for a batch of MangaDex chapters.
+ */
+export async function getMdxCachedPageCounts(
+  chapterIds: string[],
+): Promise<Array<{ chapter_id: string; n: number }>> {
+  if (chapterIds.length === 0) return [];
+  await initMangaDexDb();
+  return query<{ chapter_id: string; n: number }>(
+    `SELECT chapter_id, COUNT(*) AS n FROM cached_pages
+     WHERE chapter_id IN (${inClause(chapterIds.length)}) GROUP BY chapter_id`,
+    chapterIds,
+  );
+}
+
+async function deleteMdxFiles(paths: string[]): Promise<Set<string>> {
+  const deleted = new Set<string>();
+  await Promise.all(
+    paths.map(async (p) => {
+      try {
+        await ipc.fileDelete(p);
+        deleted.add(p);
+      } catch (err) {
+        log.error("mangadex/cache.repo", "fileDelete failed; keeping DB row to avoid orphan:", p, err);
+      }
+    }),
+  );
+  return deleted;
+}
+
+/**
  * Purges all cached page records and files from mangadex.db and disk.
  */
 export async function purgeMangaDexCache(): Promise<void> {
@@ -84,9 +116,12 @@ export async function purgeMangaDexCache(): Promise<void> {
   const rows = await query<{ file_path: string }>(`SELECT file_path FROM cached_pages`);
   const paths = rows.map((r) => r.file_path);
   if (paths.length > 0) {
-    await ipc.fileDeleteBatch(paths).catch(() => {});
+    const deleted = await deleteMdxFiles(paths);
+    if (deleted.size > 0) {
+      const deletedPaths = [...deleted];
+      await execute(`DELETE FROM cached_pages WHERE file_path IN (${inClause(deletedPaths.length)})`, deletedPaths);
+    }
   }
-  await execute("DELETE FROM cached_pages");
 }
 
 /**
@@ -95,16 +130,21 @@ export async function purgeMangaDexCache(): Promise<void> {
 export async function clearMangaDexCachedChapters(chapterIds: string[]): Promise<void> {
   if (chapterIds.length === 0) return;
   await initMangaDexDb();
-  const placeholders = chapterIds.map((_, i) => `?${i + 1}`).join(", ");
   const rows = await query<{ file_path: string }>(
-    `SELECT file_path FROM cached_pages WHERE chapter_id IN (${placeholders})`,
+    `SELECT file_path FROM cached_pages WHERE chapter_id IN (${inClause(chapterIds.length)})`,
     chapterIds,
   );
   const paths = rows.map((r) => r.file_path);
   if (paths.length > 0) {
-    await ipc.fileDeleteBatch(paths).catch(() => {});
+    const deleted = await deleteMdxFiles(paths);
+    if (deleted.size > 0) {
+      const deletedPaths = [...deleted];
+      await execute(
+        `DELETE FROM cached_pages WHERE chapter_id IN (${inClause(chapterIds.length)}) AND file_path IN (${inClause(deletedPaths.length)})`,
+        [...chapterIds, ...deletedPaths],
+      );
+    }
   }
-  await execute(`DELETE FROM cached_pages WHERE chapter_id IN (${placeholders})`, chapterIds);
 }
 
 export async function getMangaDexPruneCandidates(): Promise<Array<{

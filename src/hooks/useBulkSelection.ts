@@ -1,6 +1,7 @@
 import { showBanner } from "../stores/topbar";
 import { errorMessage } from "../utils/formatting";
-import { createSignal } from "solid-js";
+import { createSignal, createEffect, on } from "solid-js";
+import { activeProvider } from "../stores/provider";
 
 /**
  * Reusable hook for bulk selection mode (e.g. HistoryPane, BookmarksPane).
@@ -12,6 +13,17 @@ export function useBulkSelection<T>(
 ) {
   const [selectMode, setSelectMode] = createSignal(false);
   const [selected, setSelected] = createSignal<Set<T>>(new Set());
+  // Reset selection when switching content providers to prevent deleting mismatched IDs
+  createEffect(
+    on(
+      activeProvider,
+      () => {
+        setSelectMode(false);
+        setSelected(new Set<T>());
+      },
+      { defer: true },
+    ),
+  );
 
   const toggleSelectMode = (): void => {
     setSelectMode((v) => !v);

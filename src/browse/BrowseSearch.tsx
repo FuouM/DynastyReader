@@ -24,6 +24,7 @@ import { decodeEntities, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
 import { searchDynasty } from "../api/search";
 import { suggest } from "../api/directory";
+import { suggestMangaDex } from "./BrowseView";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
 import { activeProvider } from "../stores/provider";
 import { MANGADEX_UUID_REGEX } from "../providers/mangadex/api/constants";
@@ -341,7 +342,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               <Typeahead
                 value={q()}
                 onInputValue={setQ}
-                fetcher={suggest}
+                fetcher={activeProvider() === "mangadex" ? suggestMangaDex : suggest}
                 onSelect={(item) => {
                   setQ(item.name);
                   pane.goToPage(1);

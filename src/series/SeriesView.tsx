@@ -165,7 +165,7 @@ export function SeriesView() {
       try {
         const [p, c, h, qt] = await Promise.all([
           getProgressForSeries(permalink),
-          permalink.startsWith("mdx:") ? Promise.resolve([]) : getCachedPageCounts(chapterPermalinks),
+          getCachedPageCounts(chapterPermalinks),
           getHistoryPermalinks(chapterPermalinks),
           getQueuePageTotals(chapterPermalinks),
         ]);

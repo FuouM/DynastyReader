@@ -88,7 +88,9 @@ function DirectoryRow(props: {
           title={props.kind === "series" ? t("browse.directory.openSeriesTooltip") : t("browse.directory.searchTagTooltip")}
           url={
             props.entry.permalink.startsWith("mdx:")
-              ? `https://mangadex.org/title/${props.entry.permalink.replace(/^mdx:/, "")}`
+              ? `https://mangadex.org/title/${props.entry.permalink.slice(4)}`
+              : props.entry.permalink.startsWith("mdx-tag:")
+              ? `https://mangadex.org/tag/${props.entry.permalink.slice(8)}`
               : props.kind === "series"
               ? dynastyUrl("series", props.entry.permalink)
               : `${SITE_ROOT}/search?q=${encodeURIComponent(props.entry.name)}`
@@ -198,8 +200,8 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
       });
     }
 
-    // Eagerly background-sync all directory pages into SQLite so search covers all 17+ pages
-    if (m.dir.total_pages > 1) {
+    // Eagerly background-sync all directory pages into SQLite so search covers all 17+ pages (Dynasty only)
+    if (activeProvider() !== "mangadex" && m.dir.total_pages > 1) {
       void syncAllDirectoryPages(props.kind, m.dir.total_pages);
     }
   });
@@ -218,6 +220,14 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
     if (!q) {
       const m = model();
       groups = m ? m.groups : [];
+    } else if (activeProvider() === "mangadex") {
+      const m = model();
+      groups = (m ? m.groups : [])
+        .map((g) => ({
+          ...g,
+          entries: g.entries.filter((e) => e.name.toLowerCase().includes(q)),
+        }))
+        .filter((g) => g.entries.length > 0);
     } else {
       const sqlRes = sqlSearchResults();
       if (sqlRes !== null && sqlRes !== undefined) {

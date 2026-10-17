@@ -55,7 +55,7 @@ import { BrowseDirectory } from "./BrowseDirectory";
 import { BrowseDownloaded } from "./BrowseDownloaded";
 import { BrowseSearch } from "./BrowseSearch";
 import { getCacheRevision } from "../db/cache.repo";
-async function suggestMangaDex(query: string): Promise<Array<{ name: string; type: string }>> {
+export async function suggestMangaDex(query: string): Promise<Array<{ name: string; type: string }>> {
   if (!query.trim()) return [];
   try {
     const res = await searchManga({ title: query.trim(), limit: 8 });

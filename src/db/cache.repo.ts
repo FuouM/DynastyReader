@@ -9,6 +9,8 @@ import {
   getMangaDexCacheStats,
   getMangaDexPruneCandidates,
   clearMangaDexCachedChapters,
+  getCachedPages as getMdxPages,
+  getMdxCachedPageCounts,
 } from "../providers/mangadex/db/cache.repo";
 import type { CachedPageRow, ChapterCacheCount, CacheOverviewStats } from "../types/db";
 
@@ -17,13 +19,12 @@ export const getCacheRevision = cacheNotifier.getRevision;
 export const notifyCacheChanged = cacheNotifier.notifyChanged;
 export async function getCachedPages(chapterPermalink: string): Promise<CachedPageRow[]> {
   if (chapterPermalink.startsWith("mdx:")) {
-    const { getCachedPages: getMdxPages } = await import("../providers/mangadex/db/cache.repo");
     const mdxRows = await getMdxPages(chapterPermalink.slice(4));
     return mdxRows.map((r) => ({
       chapter_permalink: chapterPermalink,
       page_index: r.page_index,
       file_path: r.file_path,
-      cached_at: r.created_at,
+      cached_at: r.cached_at,
     }));
   }
   return query<CachedPageRow>(
@@ -51,16 +52,32 @@ export async function setCachedPage(
   notifyCacheChanged();
 }
 
-/** Cached-page counts for a batch of chapters (one query). */
+/** Cached-page counts for a batch of chapters across providers. */
 export async function getCachedPageCounts(
   chapterPermalinks: string[],
 ): Promise<ChapterCacheCount[]> {
   if (chapterPermalinks.length === 0) return [];
-  return query<ChapterCacheCount>(
-    `SELECT chapter_permalink, COUNT(*) AS n FROM cached_pages
-     WHERE chapter_permalink IN (${inClause(chapterPermalinks.length)}) GROUP BY chapter_permalink`,
-    chapterPermalinks,
-  );
+  const mdxPerms: string[] = [];
+  const dynastyPerms: string[] = [];
+  for (const p of chapterPermalinks) {
+    if (p.startsWith("mdx:")) mdxPerms.push(p);
+    else dynastyPerms.push(p);
+  }
+
+  const results: ChapterCacheCount[] = [];
+  if (dynastyPerms.length > 0) {
+    const rows = await query<ChapterCacheCount>(
+      `SELECT chapter_permalink, COUNT(*) AS n FROM cached_pages
+       WHERE chapter_permalink IN (${inClause(dynastyPerms.length)}) GROUP BY chapter_permalink`,
+      dynastyPerms,
+    );
+    results.push(...rows);
+  }
+  if (mdxPerms.length > 0) {
+    const mdxCounts = await getMdxCachedPageCounts(mdxPerms.map((p) => p.slice(4)));
+    results.push(...mdxCounts.map((r) => ({ chapter_permalink: `mdx:${r.chapter_id}`, n: r.n })));
+  }
+  return results;
 }
 
 export async function getCacheOverviewStats(): Promise<CacheOverviewStats> {

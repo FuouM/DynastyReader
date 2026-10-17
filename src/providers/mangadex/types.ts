@@ -215,7 +215,7 @@ export interface MangaDexCachedPageRow {
   page_index: number;
   file_path: string;
   size_bytes: number;
-  created_at: number;
+  cached_at: number;
 }
 
 // ── 4. UI Domain Models (Multi-Scanlator Accordion & Search) ────────────────
