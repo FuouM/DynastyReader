@@ -128,7 +128,7 @@ body {
   border-color: var(--ds-warning-border, #f59e0b);
   background: var(--ds-warning-bg, rgba(245, 158, 11, 0.12));
   cursor: default;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-1);
   user-select: none;
   flex-shrink: 0;
 }

@@ -750,7 +750,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
 }
 
 .ds-mobile-scrubber-cur {
-  color: var(--sys-accent-primary, #0078d7) !important;
+  color: var(--sys-accent, var(--sys-primary, #0078d4)) !important;
   font-weight: 700 !important;
 }
 
@@ -781,7 +781,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   border-radius: 2px !important;
   background: linear-gradient(
     to right,
-    var(--sys-accent-primary, #0078d7) var(--scrubber-pct, 0%),
+    var(--sys-accent, var(--sys-primary, #0078d4)) var(--scrubber-pct, 0%),
     color-mix(in srgb, var(--sys-window-text, #000) 18%, transparent) var(--scrubber-pct, 0%)
   ) !important;
   border: none !important;
@@ -794,7 +794,7 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   height: 16px !important;
   border-radius: 50% !important;
   background: #ffffff !important;
-  border: 2.5px solid var(--sys-accent-primary, #0078d7) !important;
+  border: 2.5px solid var(--sys-accent, var(--sys-primary, #0078d4)) !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
   margin-top: -6px !important;
   transition: transform 0.1s ease, box-shadow 0.1s ease !important;

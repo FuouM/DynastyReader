@@ -286,7 +286,7 @@
   border-color: var(--sys-button-hover-border, #999);
 }
 .ds-reader-progress-pill:not(.ds-reader-progress-pill--editing):focus-visible {
-  outline: 1px dotted var(--sys-focus-border, #0078d4);
+  outline: 1px dotted var(--sys-border-focus, #0078d4);
   outline-offset: 1px;
 }
 .ds-reader-progress-pill.ds-reader-progress-pill--editing {
