@@ -89,7 +89,13 @@ export function setupViewportResize(
                 changed = true;
               }
               if (changed) {
+                if (s.mode() === "paged") {
+                  s.disconnectSlotObserver();
+                }
                 s.applyLayoutMode();
+                if (s.mode() === "scroll") {
+                  s.reobserveAllSlots();
+                }
                 s.resetToCurrentPage(false);
               }
             }

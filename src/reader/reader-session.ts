@@ -9,7 +9,8 @@
 
 import { batch, createComponent, createRoot, createSignal, getOwner, runWithOwner } from "solid-js";
 import { showBanner, setActions } from "../stores/topbar";
-import { convertFileSrc } from "../ipc";
+import { convertFileSrc, fileDelete } from "../ipc";
+import { pageOutputPath } from "../api/navigation";
 import { t } from "../i18n";
 import { toggleTheme as toggleThemeStore } from "../stores/theme";
 import type { ChapterRef, Route } from "../types/routes";
@@ -276,6 +277,12 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     const count = (this.imgErrorCount.get(index) ?? 0) + 1;
     this.imgErrorCount.set(index, count);
     this.cachedPages[1](index, undefined);
+    this.recountCached();
+    const page = this.pages()[index];
+    if (page) {
+      const outPath = pageOutputPath(this.seriesPermalink() ?? "", this.permalink, index, page.url);
+      void fileDelete(outPath).catch(() => {});
+    }
     if (count <= 2) {
       this.setSlotState(index, "spinner", t("reader.session.slotState.redownloading"));
       this.queue.enqueue(index, true);
@@ -293,6 +300,13 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.imgErrorCount.delete(index);
     this.retrying.delete(index);
     this.queue.clearFailed(index);
+    this.cachedPages[1](index, undefined);
+    this.recountCached();
+    const page = this.pages()[index];
+    if (page) {
+      const outPath = pageOutputPath(this.seriesPermalink() ?? "", this.permalink, index, page.url);
+      void fileDelete(outPath).catch(() => {});
+    }
     this.setSlotState(index, "spinner", t("reader.session.slotState.downloading"));
     this.queue.enqueue(index, true);
   }
@@ -485,14 +499,30 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   // Layout controls ---------------------------------------------------------
   setMode(mode: ReaderMode): void {
     if (mode === this.mode()) return;
-    if (mode === "paged" && this.slotObserver) {
-      this.slotObserver.disconnect();
-      this.slotObserver = null;
+    if (mode === "paged") {
+      this.disconnectSlotObserver();
     }
     this.setModeSignal(mode);
     setDefaultReaderMode(mode);
     this.applyLayoutMode();
+    if (mode === "scroll") {
+      this.reobserveAllSlots();
+    }
     this.resetToCurrentPage(false);
+  }
+
+  reobserveAllSlots(): void {
+    if (this.mode() !== "scroll") return;
+    for (const el of this.slotEls) {
+      if (el) this.observeSlot(el);
+    }
+  }
+
+  disconnectSlotObserver(): void {
+    if (this.slotObserver) {
+      this.slotObserver.disconnect();
+      this.slotObserver = null;
+    }
   }
 
   setPagedLayout(layout: PagedLayout): void {

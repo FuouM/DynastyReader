@@ -301,9 +301,9 @@ pub async fn enqueue_chapters(
                     |row| row.get(0),
                 )
                 .map_err(|e| format!("enqueue status lookup failed: {e}"))?;
-            if status == "failed" {
+            if status == "failed" || status == "done" {
                 tx.execute(
-                    "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE chapter_permalink = ?2",
+                    "UPDATE download_queue SET status = 'pending', error_msg = NULL, progress = 0, queued_at = ?1 WHERE chapter_permalink = ?2",
                     rusqlite::params![now, ch.chapter_permalink],
                 )
                 .map_err(|e| format!("enqueue requeue failed: {e}"))?;
@@ -699,17 +699,22 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         let app_clone = app.clone();
         let (emit_status, pages_done, total_pages) = match result {
             Ok((done, total)) => {
+                let status = if done == total && total > 0 { "done" } else { "failed" };
+                let err_msg = if status == "failed" {
+                    if total == 0 { Some("no pages found") } else { Some("incomplete download") }
+                } else {
+                    None
+                };
                 let _ = tokio::task::spawn_blocking(move || {
                     if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                        let status = if done == total && total > 0 { "done" } else { "failed" };
                         let _ = conn.execute(
-                            "UPDATE download_queue SET status = ?1, progress = ?2, total_pages = ?3, completed_at = ?4 WHERE chapter_permalink = ?5",
-                            rusqlite::params![status, done as i64, total as i64, now, req_clone.chapter_permalink],
+                            "UPDATE download_queue SET status = ?1, progress = ?2, total_pages = ?3, completed_at = ?4, error_msg = ?5 WHERE chapter_permalink = ?6",
+                            rusqlite::params![status, done as i64, total as i64, now, err_msg, req_clone.chapter_permalink],
                         );
                     }
                 })
                 .await;
-                ("done", done, total)
+                (status, done, total)
             }
             Err(e) if e == "cancelled" => {
                 let cp = req.chapter_permalink.clone();
@@ -963,7 +968,7 @@ async fn fetch_and_cache_chapter_pages(
     client: &reqwest::Client,
     req: &DownloadRequest,
 ) -> Result<Vec<serde_json::Value>, String> {
-    if req.chapter_permalink.starts_with("mdx:") {
+    let pages = if req.chapter_permalink.starts_with("mdx:") {
         let chapter_id = req.chapter_permalink.trim_start_matches("mdx:");
         let at_home_url = format!("https://api.mangadex.org/at-home/server/{}", chapter_id);
         let resp = crate::commands::http::send_with_redirects(
@@ -985,6 +990,9 @@ async fn fetch_and_cache_chapter_pages(
         let base_url = v.get("baseUrl").and_then(|b| b.as_str()).unwrap_or("");
         let chapter_obj = v.get("chapter");
         let hash = chapter_obj.and_then(|c| c.get("hash")).and_then(|h| h.as_str()).unwrap_or("");
+        if base_url.is_empty() || hash.is_empty() {
+            return Err("missing MangaDex at-home base URL or chapter hash".to_string());
+        }
         let (filenames, mode) = if let Some(arr) = chapter_obj.and_then(|c| c.get("dataSaver")).and_then(|d| d.as_array()) {
             (arr.clone(), "data-saver")
         } else if let Some(arr) = chapter_obj.and_then(|c| c.get("data")).and_then(|d| d.as_array()) {
@@ -1002,8 +1010,8 @@ async fn fetch_and_cache_chapter_pages(
                 }));
             }
         }
-        return Ok(pages);
-    }
+        pages
+    } else {
 
     let chapter_url = format!("https://dynasty-scans.com/chapters/{}.json", req.chapter_permalink);
     let resp = crate::commands::http::send_with_redirects(
@@ -1045,7 +1053,8 @@ async fn fetch_and_cache_chapter_pages(
         .await
         .ok();
     }
-
+    pages
+    };
     let total = pages.len();
     if total == 0 {
         return Err("chapter has no pages".to_string());

@@ -294,6 +294,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
   }
 
   const startPage = await determineStartPage(route, permalink, pageCount);
+  if (s.disposed) return;
   s.setCurrentIndex(startPage);
   s.lastPersistedIndex = startPage;
   // Fetch latest series / anthology chapterList and auto-detect layout
@@ -344,11 +345,13 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
         new Promise<void>((resolve) => setTimeout(resolve, 300)),
       ]);
     }
+    if (s.disposed) return;
   }
 
   initDisplayPreferences(s, chapter);
 
   await hydrateCachedPages(s, permalink, pageCount);
+  if (s.disposed) return;
 
   preloadInitialDimensions(s, pageCount);
   initSlotStatesAndQueue(s, pageCount);
@@ -388,6 +391,7 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
     }
   }
 
+  if (s.disposed) return;
   s.publishActions();
 
   requestAnimationFrame(() => {
