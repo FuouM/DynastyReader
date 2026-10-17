@@ -31,12 +31,6 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
   const s = useReader(props.session);
   const navPos = getReaderNavPosition;
   createEffect(() => {
-    const z = s.zoomScale();
-    if (s.containerEl) {
-      s.containerEl.style.setProperty("--ds-zoom-scale", String(z));
-    }
-  });
-  createEffect(() => {
     const f = getReaderFilterCss();
     if (s.containerEl) {
       s.containerEl.style.setProperty("--ds-reader-filter", f === "" ? "none" : f);

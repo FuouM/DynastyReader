@@ -44,16 +44,7 @@ export function getActiveProviderAdapter(): ContentProviderAdapter {
   return getProvider(activeProvider());
 }
 
-/**
- * Canonical URL resolver for any content item across all providers.
- * Dynasty -> dynasty-scans.com
- * MangaDex -> mangadex.org
- * Local -> ""
- */
-export function canonicalUrl(path: string, permalink: string): string {
-  if (!permalink) return "";
-  return getProviderForPermalink(permalink).canonicalUrl(path, permalink);
-}
+export { canonicalUrl } from "../utils/formatting";
 
 /**
  * Extracts the clean entity ID (e.g. bare UUID for MangaDex, path slug for local, slug for Dynasty).

@@ -60,9 +60,6 @@ export class LocalProvider implements ContentProviderAdapter {
     return permalink.startsWith("local:") ? permalink.slice(6) : permalink;
   }
 
-  canonicalUrl(_path: string, _permalink: string): string {
-    return "";
-  }
   isValidPermalink(candidate: unknown): candidate is string {
     return typeof candidate === "string" && LOCAL_SLUG_REGEX.test(candidate);
   }

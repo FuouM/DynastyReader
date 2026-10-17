@@ -330,7 +330,6 @@ export function BrowseSearch(props: BrowseSearchProps) {
         <div class="ds-col">
           <form
             role="search"
-            action="javascript:void(0)"
             class="ds-flex-row"
             onSubmit={(ev) => {
               ev.preventDefault();

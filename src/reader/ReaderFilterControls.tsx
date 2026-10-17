@@ -172,7 +172,7 @@ export function ReaderFilterPopover(props: ReaderFilterPopoverProps) {
         props.onClose();
       }
     };
-    return makeEventListener(window, "keydown", handleKeyDown);
+    makeEventListener(window, "keydown", handleKeyDown);
   });
 
   return (

@@ -87,7 +87,6 @@ export interface ContentProviderAdapter {
   // Permalinks & URLs
   matchesPermalink(permalink: string): boolean;
   extractEntityId(permalink: string): string;
-  canonicalUrl(path: string, permalink: string): string;
   isValidPermalink(candidate: unknown): candidate is string;
 
   // Followed series

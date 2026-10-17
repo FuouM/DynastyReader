@@ -32,7 +32,7 @@ if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAUR
   restoreStateCurrent(StateFlags.ALL).catch((_err) => {
     // Expected to fail silently on mobile (window-state plugin is desktop-only)
   });
-  window.addEventListener("unload", () => {
+  window.addEventListener("pagehide", () => {
     saveWindowState(StateFlags.ALL).catch((_err) => {});
   });
 }

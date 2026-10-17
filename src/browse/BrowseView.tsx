@@ -260,7 +260,6 @@ export function BrowseView() {
     }
     const next = !searchGoCollapsed();
     setSearchGoCollapsed(next);
-    localStorage.setItem("ds-search-go-collapsed", String(next));
   };
 
   const checkUpdates = async (): Promise<void> => {
@@ -411,7 +410,6 @@ export function BrowseView() {
       >
           <form
             role="search"
-            action="javascript:void(0)"
             class="ds-row"
             onSubmit={(ev) => {
               ev.preventDefault();
@@ -441,7 +439,6 @@ export function BrowseView() {
             />
           </form>
           <form
-            action="javascript:void(0)"
             class="ds-row"
             onSubmit={(ev) => {
               ev.preventDefault();

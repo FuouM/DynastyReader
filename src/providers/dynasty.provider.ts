@@ -13,7 +13,7 @@ import { query, execute } from "../db/client";
 import { inClause, queryPaged } from "../db/paging";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
-import { dynastyUrl, decodeEntities } from "../utils/formatting";
+import { decodeEntities } from "../utils/formatting";
 import {
   notifyFollowedChanged,
   notifyBookmarksChanged,
@@ -72,10 +72,6 @@ export class DynastyProvider implements ContentProviderAdapter {
     return permalink;
   }
 
-  canonicalUrl(path: string, permalink: string): string {
-    if (!permalink) return "";
-    return dynastyUrl(path, permalink);
-  }
 
   isValidPermalink(candidate: unknown): candidate is string {
     return typeof candidate === "string" && DYNASTY_SLUG_REGEX.test(candidate);

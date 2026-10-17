@@ -100,12 +100,6 @@ export class MangaDexProvider implements ContentProviderAdapter {
     return permalink.startsWith("mdx:") ? permalink.slice(4) : permalink;
   }
 
-  canonicalUrl(path: string, permalink: string): string {
-    if (!permalink) return "";
-    const id = this.extractEntityId(permalink);
-    const isChapter = path === "chapters" || path === "chapter";
-    return `https://mangadex.org/${isChapter ? "chapter" : "title"}/${id}`;
-  }
 
   isValidPermalink(candidate: unknown): candidate is string {
     if (typeof candidate !== "string" || !candidate.startsWith("mdx:")) return false;

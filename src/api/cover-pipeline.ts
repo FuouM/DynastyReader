@@ -74,9 +74,6 @@ export async function fetchAndCacheCover(opts: {
     // Stale DB entry — purge so fresh download can set new path
     await deleteCached(cacheKey);
   }
-  if (cacheKey.startsWith("cover:chapter:")) {
-    // Chapter covers may have stale raw download — purge implied via delete above
-  }
   try {
     onPhase?.("downloading");
     const finalPath = await transcodeCover(absUrl(coverUrl), rawOutPath, webpOutPath);

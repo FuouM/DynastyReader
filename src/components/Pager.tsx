@@ -60,7 +60,6 @@ export function Pager(props: PagerProps) {
 
       <form
         class="ds-pager-row"
-        action="javascript:void(0)"
         onSubmit={(ev) => {
           ev.preventDefault();
           doJump();
