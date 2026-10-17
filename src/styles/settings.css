@@ -439,9 +439,9 @@
 }
 
 .ds-haptic-engine-badge.active {
-  color: #107c41;
-  border-color: #107c41;
-  background: rgba(16, 124, 65, 0.08);
+  color: var(--sys-success-accent, #107c41);
+  border-color: var(--sys-success-accent, #107c41);
+  background: color-mix(in srgb, var(--sys-success-accent, #107c41) 12%, transparent);
 }
 
 .ds-haptic-engine-badge.unsupported {
@@ -466,8 +466,8 @@
   max-width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--sys-border-dark, #888888);
-  border-top-color: #666666;
-  border-left-color: #666666;
+  border-top-color: var(--sys-border-dark, #666666);
+  border-left-color: var(--sys-border-dark, #666666);
   border-radius: var(--radius-1);
   box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.15);
 }

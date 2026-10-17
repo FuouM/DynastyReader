@@ -139,11 +139,6 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
             <ReaderControlsRow session={s} />
           </Show>
         </Show>
-        <Show when={!isMobile() && navPos() === "bottom"}>
-          <Show when={s.controlsOpen()}>
-            <ReaderControlsRow session={s} />
-          </Show>
-        </Show>
       </nav>
 
       <Show when={isMobile()}>

@@ -54,7 +54,11 @@ export function eventToKeyCombo(ev: KeyboardEvent): string | null {
 /**
  * Parses and normalizes any stored key string into the canonical format.
  */
+const normalizeCache = new Map<string, string>();
+
 export function normalizeKeyCombo(combo: string): string {
+  const cached = normalizeCache.get(combo);
+  if (cached !== undefined) return cached;
   // A trailing "+" is the key itself, not a separator: "+", "Ctrl++".
   // Split it off first so the modifier scan below sees only real parts.
   const trimmed = combo.trim();
@@ -89,8 +93,12 @@ export function normalizeKeyCombo(combo: string): string {
   if (meta) normalizedParts.push("Meta");
   normalizedParts.push(normalizeKeyName(mainKey));
 
-  return normalizedParts.join("+");
+  const result = normalizedParts.join("+");
+  normalizeCache.set(combo, result);
+  return result;
 }
+
+const eventComboCache = new WeakMap<KeyboardEvent, string | null>();
 
 /**
  * Compares a KeyboardEvent against a canonical key combo string.
@@ -99,7 +107,11 @@ export function matchesEvent(ev: KeyboardEvent, combo: string): boolean {
   const normalizedCombo = normalizeKeyCombo(combo);
   if (!normalizedCombo) return false;
 
-  const eventCombo = eventToKeyCombo(ev);
+  let eventCombo = eventComboCache.get(ev);
+  if (eventCombo === undefined) {
+    eventCombo = eventToKeyCombo(ev);
+    eventComboCache.set(ev, eventCombo);
+  }
   if (!eventCombo) return false;
 
   return normalizedCombo.toLowerCase() === eventCombo.toLowerCase();
