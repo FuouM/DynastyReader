@@ -31,7 +31,6 @@ import {
 } from "../providers/mangadex/db/whitelist.repo";
 import { getTags } from "../providers/mangadex/api/manga";
 import { GIRLS_LOVE_TAG_ID } from "../providers/mangadex/api/constants";
-import type { MangaDexTag } from "../providers/mangadex/types";
 
 const POPULAR_GENRES: WhitelistTag[] = [
   { id: GIRLS_LOVE_TAG_ID, name: "Girls' Love" },
@@ -54,7 +53,10 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
     props.initialTab ?? "blacklist",
   );
   const [searchQuery, setSearchQuery] = createSignal("");
-  const [allTagsResource] = createResource<MangaDexTag[]>(getTags);
+  const [allTagsResource] = createResource(
+    () => (activeProvider() === "mangadex" && activeTab() === "whitelist" ? true : undefined),
+    () => getTags(false),
+  );
 
   const isTagWhitelisted = (tagId: string): boolean => {
     return whitelistedTags().some((t) => t.id === tagId);

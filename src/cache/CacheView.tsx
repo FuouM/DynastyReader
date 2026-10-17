@@ -333,6 +333,7 @@ export function CacheView() {
           deleteSeries={deleteSeries}
           deleteChapter={deleteChapter}
           deleteAllOrphans={deleteAllOrphans}
+          allOrphans={() => grouped().orphans}
           isChapterDownloading={isChapterDownloading}
           onPruned={() => void refetch()}
         />
@@ -369,6 +370,7 @@ function CacheBody(props: {
   deleteSeries: (group: DownloadedSeriesGroup) => Promise<void>;
   deleteChapter: (chapterPermalink: string) => Promise<void>;
   deleteAllOrphans: (orphans: ProcessedCachedChapter[]) => Promise<void>;
+  allOrphans: () => ProcessedCachedChapter[];
   isChapterDownloading: (chapterPermalink: string) => boolean;
   onPruned: () => void;
 }) {
@@ -541,8 +543,7 @@ function CacheBody(props: {
                     <OrphanDownloadedCard
                       orphans={props.visibleOrphans}
                       defaultCollapsed={true}
-                      onDeleteAll={() => void props.deleteAllOrphans(props.visibleOrphans)}
-                      onDeleteChapter={(cp) => void props.deleteChapter(cp)}
+                      onDeleteAll={() => void props.deleteAllOrphans(props.allOrphans())}
                       isChapterDeleteDisabled={props.isChapterDownloading}
                       hideDeleteAll={() => props.visibleOrphans.some((o) => props.isChapterDownloading(o.chapterPermalink))}
                     />

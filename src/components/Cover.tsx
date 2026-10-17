@@ -191,6 +191,7 @@ export interface HydratedCoverProps {
   path?: string | null;
   /** Hydration key (`data-feed-cover`) and `<img alt>`. */
   coverKey: string;
+  alt?: string;
   /** Dataset metadata consumed by `browseCovers` for hydration. */
   chapterPermalink?: string;
   seriesPermalink?: string;
@@ -363,10 +364,10 @@ export function HydratedCover(props: HydratedCoverProps) {
       >
         <img
           class={`ds-feed-cover${size().imgClass ? ` ${size().imgClass}` : ""}`}
-          alt={props.coverKey}
+          alt={props.alt || props.title || ""}
           width={isCache() ? 36 : 42}
           height={isCache() ? 50 : 58}
-          decoding="async"
+          decoding="auto"
           src={imgSrc()}
           onError={handleImageError}
         />

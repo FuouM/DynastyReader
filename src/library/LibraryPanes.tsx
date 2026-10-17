@@ -584,6 +584,7 @@ export function HistoryPane(props: HistoryPaneProps) {
   });
 
   const { setPage, data, refetch, showSpinner, error } = useLibraryPaneResource<HistoryPaneData>({
+    id: "history",
     getRevision: () => getHistoryRevision() + getProgressRevision(),
     deps: () => ({ q: searchQuery(), sort: sortMode() }),
     fetcher: async (p) => {

@@ -47,6 +47,7 @@ export interface LibraryPaneProps {
 }
 
 export interface UseLibraryPaneResourceOptions<T> {
+  id?: string;
   getRevision: () => number;
   fetcher: (page: number) => Promise<T>;
   register?: (api: LibraryPaneApi) => void;
@@ -65,7 +66,7 @@ export interface LibraryPaneResourceResult<T> {
 export function useLibraryPaneResource<T>(
   options: UseLibraryPaneResourceOptions<T>,
 ): LibraryPaneResourceResult<T> {
-  const pageKey = options.getRevision;
+  const pageKey = options.id ?? options.getRevision;
   const [page, setPageRaw] = createSignal(getProviderPage(activeProvider(), pageKey));
   const setPage = (p: number | ((prev: number) => number)): void => {
     setPageRaw((prev) => {
