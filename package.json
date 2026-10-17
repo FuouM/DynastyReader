@@ -29,7 +29,7 @@
     "@tauri-apps/plugin-window-state": "^2.5.0",
     "bootstrap-icons": "^1.11",
     "html-entities": "^2.6.0",
-    "solid-js": "^1.9.15",
+    "solid-js": "^1.9.17",
     "zod": "^4.6.5"
   },
   "devDependencies": {
