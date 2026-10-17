@@ -65,6 +65,7 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
     if (!isScrubbing()) return;
     e.preventDefault();
     const targetPage = calculatePageFromPointer(e);
+    if (targetPage === s.currentIndex()) return;
     triggerScrubHaptic(targetPage, false);
     s.setPage(targetPage, false);
   };

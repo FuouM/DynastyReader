@@ -51,6 +51,7 @@ export function Typeahead(props: TypeaheadProps) {
 
   onCleanup(() => {
     if (blurTimer !== null) window.clearTimeout(blurTimer);
+    debouncedFetch.clear();
   });
   // Mirror externally-controlled value into the internal state.
   createEffect(() => {

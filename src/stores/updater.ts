@@ -76,6 +76,7 @@ export async function installUpdate(): Promise<void> {
     await ipc.installUpdate(info.download_url);
   } catch (err) {
     setIsUpdating(false);
+    setUpdateProgress(null);
     const msg = errorMessage(err);
     setUpdateError(t("settings.about.installError", { msg }));
     setUpdateStatusText(t("settings.about.updateFailedNotice"));

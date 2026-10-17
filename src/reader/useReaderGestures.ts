@@ -566,8 +566,8 @@ export function useReaderGestures(s: ReaderSession) {
     };
 
     const onMouseMove = (ev: MouseEvent): void => {
-      if (isMouseOnEndCard || (ev.target as HTMLElement)?.closest(".ds-chapter-end-card")) return;
       if (!isMouseDown) return;
+      if (isMouseOnEndCard || (ev.target as HTMLElement)?.closest(".ds-chapter-end-card")) return;
       const dx = ev.clientX - mouseStartX;
       const dy = ev.clientY - mouseStartY;
 

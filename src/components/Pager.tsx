@@ -93,7 +93,6 @@ export function Pager(props: PagerProps) {
           icon={<CheckIcon size={12} />}
           title={t("dialogs.pager.jumpButton")}
           aria-label={t("dialogs.pager.jumpButton")}
-          onClick={doJump}
         />
       </form>
 
