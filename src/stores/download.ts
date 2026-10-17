@@ -158,7 +158,7 @@ export function initGlobalDownloadListener(): void {
       const payload = event.payload;
       if (payload) {
         const now = Date.now();
-        const pageBytes = payload.last_page_bytes || 200_000;
+        const pageBytes = payload.last_page_bytes || 0;
 
         if (payload.status === "downloading") {
           setDownloadingChapterPermalinks((prev) => {

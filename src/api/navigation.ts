@@ -176,7 +176,9 @@ export function pageOutputPath(
   const prefix = isMdx ? "mangadex/pages" : PAGES_PREFIX;
   const cleanSeries = (seriesPermalink.replace(/^mdx:/, "") || "_singles").replace(/[^a-zA-Z0-9_-]/g, "_");
   const cleanChapter = (chapterPermalink.replace(/^mdx:/, "") || "chapter").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const ext = pageUrl.split(".").pop()?.split("?")[0] || (isMdx ? "jpg" : "webp");
+  const rawPath = pageUrl.split("?")[0]?.split("#")[0] ?? "";
+  const match = rawPath.match(/\.([a-zA-Z0-9]{2,5})$/);
+  const ext = match ? match[1]!.toLowerCase() : isMdx ? "jpg" : "webp";
   const pad = String(pageIndex + 1).padStart(4, "0");
   return `${prefix}/${cleanSeries}/${cleanChapter}/page_${pad}.${ext}`;
 }

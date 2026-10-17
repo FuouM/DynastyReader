@@ -476,13 +476,13 @@ pub async fn clear_completed_downloads(series_permalink: String) -> Result<(), S
         let conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
         if is_singles_series(&sp) {
             conn.execute(
-                "DELETE FROM download_queue WHERE (series_permalink = '' OR series_permalink IS NULL OR series_permalink = '_singles') AND status IN ('done', 'failed', 'skipped')",
+                "DELETE FROM download_queue WHERE (series_permalink = '' OR series_permalink IS NULL OR series_permalink = '_singles') AND status IN ('done', 'failed')",
                 [],
             )
             .map_err(|e| format!("clear failed: {e}"))?;
         } else {
             conn.execute(
-                "DELETE FROM download_queue WHERE series_permalink = ?1 AND status IN ('done', 'failed', 'skipped')",
+                "DELETE FROM download_queue WHERE series_permalink = ?1 AND status IN ('done', 'failed')",
                 rusqlite::params![sp],
             )
             .map_err(|e| format!("clear failed: {e}"))?;

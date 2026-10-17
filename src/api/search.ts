@@ -53,7 +53,10 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
     if (status === 304 && cached) {
       return returnCached();
     }
-
+    if (status !== 200) {
+      if (cached) return returnCached();
+      throw new Error(`Search request failed with HTTP ${status}`);
+    }
     if (status === 200 && body) {
       await setCached(cacheKey, "search", body, etag);
       const parsedPage = parseSearchHtml(body, displayQuery, page);
