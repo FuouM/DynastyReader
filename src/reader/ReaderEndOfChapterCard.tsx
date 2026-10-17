@@ -5,7 +5,6 @@
 
 import { createSignal, createMemo, Show, onCleanup } from "solid-js";
 import type { ReaderSession } from "./reader-session";
-import { getAdjacentChapters } from "./reader-spread";
 import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import { navigate } from "../stores/router";
@@ -15,11 +14,11 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
   const s = props.session;
   const nextChapter = createMemo(() => {
     if (s.chapterNav().nextDisabled) return null;
-    return getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle()).nextCh;
+    return s.adjacentChapters().nextCh;
   });
   const prevChapter = createMemo(() => {
     if (s.chapterNav().prevDisabled) return null;
-    return getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle()).prevCh;
+    return s.adjacentChapters().prevCh;
   });
   const SWIPE_THRESHOLD_PX = 55;
   const SWIPE_RESET_THRESHOLD_PX = 45;

@@ -113,6 +113,7 @@ export interface ReaderState {
     nextDisabled: boolean;
   };
   chapterNav: () => { prevDisabled: boolean; nextDisabled: boolean };
+  adjacentChapters: () => { prevCh: ChapterRef | null; nextCh: ChapterRef | null };
   chapterNavigating: () => boolean;
   setChapterNavigating: (v: boolean) => void;
 }
@@ -225,8 +226,12 @@ export function createReaderState(): ReaderState {
 
   const [chapterNavigating, setChapterNavigating] = createSignal(false);
 
+  const adjacentChapters = createMemo(() => {
+    return getAdjacentChapters(chapterList(), chapterPermalink(), chapterTitle());
+  });
+
   const chapterNav = createMemo(() => {
-    const { prevCh, nextCh } = getAdjacentChapters(chapterList(), chapterPermalink(), chapterTitle());
+    const { prevCh, nextCh } = adjacentChapters();
     const navigating = chapterNavigating();
     return {
       prevDisabled: prevCh === null || navigating,
@@ -304,6 +309,7 @@ export function createReaderState(): ReaderState {
     slideIndex,
     progress,
     chapterNav,
+    adjacentChapters,
     chapterNavigating,
     setChapterNavigating,
   };

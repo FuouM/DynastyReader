@@ -150,13 +150,11 @@ export class MangaDexProvider implements ContentProviderAdapter {
   async follow(input: FollowSeriesInput): Promise<void> {
     const mangaId = this.extractEntityId(input.permalink);
     await followManga(mangaId, input.name, input.cover ?? null);
-    notifyFollowedChanged();
   }
 
   async unfollow(permalink: string): Promise<void> {
     const mangaId = this.extractEntityId(permalink);
     await unfollowManga(mangaId);
-    notifyFollowedChanged();
   }
 
   async updateFollowedCover(permalink: string, cover: string | null, notify = false): Promise<void> {
@@ -212,13 +210,11 @@ export class MangaDexProvider implements ContentProviderAdapter {
       chapterTitle: input.chapterTitle,
       pageIndex: input.pageIndex,
     });
-    notifyBookmarksChanged();
   }
 
   async removeBookmark(chapterPermalink: string): Promise<void> {
     const chapterId = this.extractEntityId(chapterPermalink);
     await removeMdxBookmark(chapterId);
-    notifyBookmarksChanged();
   }
 
   async removeBookmarksBatch(chapterPermalinks: string[]): Promise<void> {
@@ -255,7 +251,6 @@ export class MangaDexProvider implements ContentProviderAdapter {
 
   async removeHistory(id: number): Promise<void> {
     await deleteHistoryItem(id);
-    notifyHistoryChanged();
   }
 
   async removeHistoryBatch(ids: number[]): Promise<void> {
@@ -270,7 +265,6 @@ export class MangaDexProvider implements ContentProviderAdapter {
 
   async clearHistory(): Promise<void> {
     await clearMdxHistory();
-    notifyHistoryChanged();
   }
 
   async getProgress(chapterPermalink: string): Promise<ReadingProgressRow | null> {
@@ -312,15 +306,12 @@ export class MangaDexProvider implements ContentProviderAdapter {
       input.pageTotal,
       input.completed,
     );
-    notifyProgressChanged();
-    notifyHistoryChanged();
   }
 
   async recordHistory(input: HistoryInput): Promise<void> {
     const chapterId = this.extractEntityId(input.chapterPermalink);
     const mangaId = this.extractEntityId(input.seriesPermalink);
     await recordMdxHistory(chapterId, mangaId, input.seriesName, input.chapterTitle);
-    notifyHistoryChanged();
   }
 
   async markChapterRead(input: MarkChapterReadInput): Promise<void> {
@@ -330,8 +321,6 @@ export class MangaDexProvider implements ContentProviderAdapter {
       saveMdxProgress(chapterId, mangaId, input.seriesName, input.chapterTitle, 0, input.pageTotal ?? 1, true),
       recordMdxHistory(chapterId, mangaId, input.seriesName, input.chapterTitle),
     ]);
-    notifyProgressChanged();
-    notifyHistoryChanged();
   }
 
   async markChapterUnread(chapterPermalink: string): Promise<void> {

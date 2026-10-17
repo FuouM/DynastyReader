@@ -30,12 +30,14 @@ export function useCopyLink(opts: UseCopyLinkOpts) {
   const handleCopyLink = async (ev?: MouseEvent | TouchEvent): Promise<void> => {
     ev?.stopPropagation();
     ev?.preventDefault();
+    const url = opts.getUrl()?.trim();
+    if (!url) return;
     try {
       if (typeof window !== "undefined" && window.focus) {
         window.focus();
       }
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(opts.getUrl());
+        await navigator.clipboard.writeText(url);
         setCopied(true);
         if (showBanners) {
           showBanner(t("reader.toolbar.copiedLinkBanner"));

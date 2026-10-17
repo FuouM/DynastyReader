@@ -127,7 +127,7 @@ export class DynastyProvider implements ContentProviderAdapter {
        VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(permalink) DO UPDATE SET
          name = excluded.name,
-         cover = excluded.cover,
+         cover = COALESCE(excluded.cover, followed_series.cover),
          last_checked_at = excluded.last_checked_at,
          latest_chapter_permalink = excluded.latest_chapter_permalink,
          latest_chapter_title = excluded.latest_chapter_title`,

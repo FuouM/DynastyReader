@@ -64,6 +64,10 @@ export async function loadMangaDexChapterForReader(
     hash: atHome.chapter.hash,
     filenames,
   });
+  if (atHomeSessions.size > 2) {
+    const oldestKey = atHomeSessions.keys().next().value;
+    if (oldestKey) atHomeSessions.delete(oldestKey);
+  }
 
   const pages: ChapterPage[] = filenames.map((fn, idx) => ({
     name: t("mangadex.pageTitle", { num: idx + 1 }),

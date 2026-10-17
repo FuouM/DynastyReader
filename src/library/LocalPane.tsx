@@ -389,6 +389,8 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
             if (!importing()) {
               setScanResult(null);
               setScanPath(null);
+            } else {
+              void ipc.cancelImport().catch(() => {});
             }
           }}
           onImport={() => void doImport()}
@@ -411,6 +413,8 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
               setFolderScanResult(null);
               setFolderScanPath(null);
               setFolderCoverPath(null);
+            } else {
+              void ipc.cancelImport().catch(() => {});
             }
           }}
           onImport={() => void doFolderImport()}

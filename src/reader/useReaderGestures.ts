@@ -8,7 +8,6 @@ import type { ReaderSession } from "./reader-session";
 import { isMobileGesturesOnDesktopEnabled } from "./settings";
 import { setupScrollTracker } from "./scroll-tracker";
 import { setupViewportResize } from "./viewport-resize";
-import { getAdjacentChapters } from "./reader-spread";
 import { triggerHaptic } from "../utils/haptics";
 import { isBlockingOverlayOpen } from "../hotkeys/hotkeys-store";
 import { stripTranslateX } from "./reader-transform";
@@ -290,7 +289,7 @@ export function useReaderGestures(s: ReaderSession) {
         return;
       }
       // Check for overscroll boundary engagement
-      const { prevCh, nextCh } = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
+      const { prevCh, nextCh } = s.adjacentChapters();
       const result = tryEngageOverscroll({
         s, dx, dy, absX, absY,
         startX: touchStartX, startY: touchStartY,
@@ -625,7 +624,7 @@ export function useReaderGestures(s: ReaderSession) {
       }
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
-      const { prevCh, nextCh } = getAdjacentChapters(s.chapterList(), s.permalink, s.chapterTitle());
+      const { prevCh, nextCh } = s.adjacentChapters();
       if (s.isHorizontal() && isMobileGesturesOnDesktopEnabled()) {
         const result = tryEngageOverscroll({
           s, dx, dy, absX, absY,

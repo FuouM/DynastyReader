@@ -109,7 +109,12 @@ export function StorageSettings(props: StorageSettingsProps) {
                   aria-label={t("settings.downloads.scheduleStartAriaLabel")}
                   value={downloadScheduleStart()}
                   onChange={(ev) => {
-                    setDownloadScheduleStart(ev.currentTarget.value);
+                    const val = ev.currentTarget.value.trim();
+                    if (!val) {
+                      ev.currentTarget.value = downloadScheduleStart();
+                      return;
+                    }
+                    setDownloadScheduleStart(val);
                     void pushDownloadConstraints();
                   }}
                 />
@@ -121,7 +126,12 @@ export function StorageSettings(props: StorageSettingsProps) {
                   aria-label={t("settings.downloads.scheduleEndAriaLabel")}
                   value={downloadScheduleEnd()}
                   onChange={(ev) => {
-                    setDownloadScheduleEnd(ev.currentTarget.value);
+                    const val = ev.currentTarget.value.trim();
+                    if (!val) {
+                      ev.currentTarget.value = downloadScheduleEnd();
+                      return;
+                    }
+                    setDownloadScheduleEnd(val);
                     void pushDownloadConstraints();
                   }}
                 />
