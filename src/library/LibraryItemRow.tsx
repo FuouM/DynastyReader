@@ -82,12 +82,14 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
     if (props.selectionMode && props.onToggleSelect) {
       longPressTimer = window.setTimeout(() => {
         didLongPress = true;
+        try { window.getSelection()?.removeAllRanges(); } catch {}
         triggerHaptic("snap");
         props.onToggleSelect?.();
       }, 450);
     } else if (props.onLongPress) {
       longPressTimer = window.setTimeout(() => {
         didLongPress = true;
+        try { window.getSelection()?.removeAllRanges(); } catch {}
         triggerHaptic("snap");
         props.onLongPress!();
       }, 450);
@@ -105,6 +107,12 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
 
   const handlePointerUpOrCancel = () => {
     clearLongPress();
+  };
+
+  // A touch hold is ours: keep the native long-press menu/selection out of it.
+  // Right-click never arms the timer (button !== 0), so its menu is untouched.
+  const handleContextMenu = (ev: MouseEvent) => {
+    if (longPressTimer !== null || didLongPress) ev.preventDefault();
   };
 
   const handleClick = () => {
@@ -126,6 +134,8 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUpOrCancel}
       onPointerCancel={handlePointerUpOrCancel}
+      onContextMenu={handleContextMenu}
+      onSelectStart={(ev) => ev.preventDefault()}
     >
       <ListItem
         class="ds-flex-row ds-clickable ds-library-item"

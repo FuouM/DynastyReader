@@ -1,10 +1,36 @@
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
+import type { Plugin as PostCssPlugin } from "postcss";
 
 const host = process.env.TAURI_DEV_HOST;
 
+/**
+ * Touch taps leave Chromium's emulated `:hover` on the tapped element until the
+ * next tap elsewhere. `App.tsx` sets `<html data-input="touch">` while the last
+ * pointer was a finger; this gates every `:hover` compound on that attribute.
+ * `:where()` adds zero specificity, so the cascade is unchanged for mouse users.
+ * Compounds on a pseudo-element (`::-webkit-scrollbar-thumb:hover`) are left as is:
+ * Chromium rejects `:where()` after scrollbar pseudo-elements and would drop the rule.
+ */
+const TOUCH_HOVER_GUARD = ':where(:not([data-input="touch"] *))';
+const touchSafeHover: PostCssPlugin = {
+  postcssPlugin: "ds-touch-safe-hover",
+  Rule(rule) {
+    if (!rule.selector.includes(":hover") || rule.selector.includes(TOUCH_HOVER_GUARD)) return;
+    rule.selector = rule.selector.replace(/:hover(?![\w-])/g, (match, offset: number, selector: string) => {
+      const compoundStart = Math.max(...[" ", ">", "+", "~", ",", "("].map((c) => selector.lastIndexOf(c, offset)));
+      return selector.slice(compoundStart + 1, offset).includes("::") ? match : `${match}${TOUCH_HOVER_GUARD}`;
+    });
+  },
+};
+
 export default defineConfig({
   clearScreen: false,
+  css: {
+    postcss: {
+      plugins: [touchSafeHover],
+    },
+  },
   plugins: [
     solid(),
     {

@@ -92,7 +92,16 @@ export function App() {
         navigate(customEv.detail);
       }
     });
-    // Clear sticky hover/focus on touch release for mobile
+    // Touch taps leave Chromium's emulated :hover on the tapped element. Every
+    // `:hover` selector is gated on `html:not([data-input="touch"])` at build
+    // time (vite.config.ts `touchSafeHover`), so track the last pointer type here.
+    const syncInputModality = (ev: PointerEvent) => {
+      if (ev.pointerType === "touch") document.documentElement.dataset.input = "touch";
+      else if (ev.pointerType === "mouse") delete document.documentElement.dataset.input;
+    };
+    makeEventListener(window, "pointerdown", syncInputModality, { capture: true, passive: true });
+    makeEventListener(window, "pointermove", syncInputModality, { capture: true, passive: true });
+    // Clear sticky focus on touch release for mobile
     const handleTouchRelease = () => {
       if (
         document.activeElement instanceof HTMLElement &&
