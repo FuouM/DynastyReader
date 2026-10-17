@@ -16,6 +16,8 @@ export type PrevChapterStartPage = "first" | "last";
 export type MobileLandscapeReaderModeSetting = "default" | "scroll" | "paged";
 export type MobileLandscapePagedLayoutSetting = "default" | "single" | "spread";
 export type MobileLandscapeFitModeSetting = "default" | "height";
+export const ZOOM_MIN = 0.25;
+export const ZOOM_MAX = 4.0;
 const boolDeserialize = (v: string) => v === "true" || v === "1";
 // Read pre-fetch (while reading)
 export const [isReaderPrefetchEnabled, setReaderPrefetchEnabled] = persistedSignal(true, {

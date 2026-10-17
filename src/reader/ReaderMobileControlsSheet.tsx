@@ -13,6 +13,7 @@ import { navigate } from "../stores/router";
 import { openExternal } from "../api/navigation";
 import { canonicalUrl } from "../utils/formatting";
 import { t } from "../i18n";
+import { ZOOM_MIN, ZOOM_MAX } from "./settings";
 import {
   getPrevChapterStartPage,
   setPrevChapterStartPage,
@@ -262,6 +263,14 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
             }}
             role="dialog"
             aria-modal="true"
+            aria-label={t("reader.toolbar.controlsSheetTitle")}
+            tabIndex={-1}
+            onKeyDown={(ev) => {
+              if (ev.key === "Escape") {
+                ev.stopPropagation();
+                requestClose();
+              }
+            }}
           >
             <div
               class="ds-sheet-drag-handle"
@@ -386,7 +395,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                       className="ds-btn-icon"
                       icon={<DashIcon />}
                       title={t("reader.toolbar.zoomOutTooltip")}
-                      disabled={s.zoomScale() <= 0.25}
+                      disabled={s.zoomScale() <= ZOOM_MIN}
                       onClick={() => s.zoomOut()}
                     />
                     <button
@@ -402,7 +411,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                       className="ds-btn-icon"
                       icon={<PlusIcon />}
                       title={t("reader.toolbar.zoomInTooltip")}
-                      disabled={s.zoomScale() >= 3.0}
+                      disabled={s.zoomScale() >= ZOOM_MAX}
                       onClick={() => s.zoomIn()}
                     />
                   </div>

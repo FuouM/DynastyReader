@@ -23,6 +23,8 @@ import type {
 import { anchorPageOf, spreadIndexOf } from "./reader-spread";
 import { ReaderQueue, type ReaderQueueHost, type SlotStateKind } from "./reader-queue";
 import {
+  ZOOM_MIN,
+  ZOOM_MAX,
   getPrefetchBuffer,
   isReaderPrefetchEnabled,
   setCoverOffsetDefaultEnabled,
@@ -590,7 +592,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   }
 
   setZoomScaleClamped(scale: number): void {
-    const clamped = Math.max(0.25, Math.min(4, scale));
+    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, scale));
     if (Math.abs(clamped - this.zoomScale()) < 0.0001) return;
     this.setZoomScaleSignal(clamped);
     if (!this.isHorizontal()) {
@@ -634,7 +636,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
 
   zoomIn(): void {
     if (this.fitMode() !== "original") return;
-    this.setZoomScaleSignal((prev) => Math.min(3.0, Math.round((prev + 0.1) * 10) / 10));
+    this.setZoomScaleSignal((prev) => Math.min(ZOOM_MAX, Math.round((prev + 0.1) * 10) / 10));
     if (!this.isHorizontal()) {
       if (typeof requestAnimationFrame !== "undefined") {
         requestAnimationFrame(() => this.updateSlotClearances());
@@ -646,7 +648,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
 
   zoomOut(): void {
     if (this.fitMode() !== "original") return;
-    this.setZoomScaleSignal((prev) => Math.max(0.25, Math.round((prev - 0.1) * 10) / 10));
+    this.setZoomScaleSignal((prev) => Math.max(ZOOM_MIN, Math.round((prev - 0.1) * 10) / 10));
     if (!this.isHorizontal()) {
       if (typeof requestAnimationFrame !== "undefined") {
         requestAnimationFrame(() => this.updateSlotClearances());

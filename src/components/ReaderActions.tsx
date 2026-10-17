@@ -35,6 +35,7 @@ export interface ReaderActionsController {
   getCachedPath?: (index: number) => string | undefined;
   isPageFailed: (index: number) => boolean;
   enqueue: (index: number) => void;
+  setBookmarked?: (v: boolean) => void;
 }
 
 export interface ReaderActionsProps {
@@ -77,6 +78,7 @@ export function ReaderActions(props: ReaderActionsProps) {
       if (bookmarked()) {
         await removeBookmark(props.ctrl.permalink);
         setBookmarked(false);
+        props.ctrl.setBookmarked?.(false);
       } else {
         await addBookmark({
           chapterPermalink: props.ctrl.permalink,
@@ -86,6 +88,7 @@ export function ReaderActions(props: ReaderActionsProps) {
           pageIndex: getCurrentIndex(),
         });
         setBookmarked(true);
+        props.ctrl.setBookmarked?.(true);
       }
     } catch (err) {
       const msg = errorMessage(err);

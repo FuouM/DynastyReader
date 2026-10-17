@@ -5,6 +5,7 @@
 
 import { createSignal, Show, type Accessor } from "solid-js";
 import type { ReaderSession } from "./reader-session";
+import { ZOOM_MIN, ZOOM_MAX } from "./settings";
 import type { FitMode } from "../types/reader";
 import { theme } from "../stores/theme";
 import { isMobile } from "../stores/platform";
@@ -257,7 +258,7 @@ export function ReaderControlsRow(props: NavRowProps) {
             className="ds-btn-icon"
             icon={<DashIcon />}
             title={t("reader.toolbar.zoomOutTooltip")}
-            disabled={s.zoomScale() <= 0.25}
+            disabled={s.zoomScale() <= ZOOM_MIN}
             onClick={() => s.zoomOut()}
           />
           <Button
@@ -272,7 +273,7 @@ export function ReaderControlsRow(props: NavRowProps) {
             className="ds-btn-icon"
             icon={<PlusIcon />}
             title={t("reader.toolbar.zoomInTooltip")}
-            disabled={s.zoomScale() >= 3.0}
+            disabled={s.zoomScale() >= ZOOM_MAX}
             onClick={() => s.zoomIn()}
           />
         </div>

@@ -245,6 +245,21 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
         onPointerMove={handleTrackPointerMove}
         onPointerUp={handleTrackPointerUp}
         onPointerCancel={handleTrackPointerUp}
+        onKeyDown={(ev) => {
+          if (ev.key === "ArrowLeft" || ev.key === "ArrowDown") {
+            ev.preventDefault();
+            s.setPage(s.currentIndex() - 1, true);
+          } else if (ev.key === "ArrowRight" || ev.key === "ArrowUp") {
+            ev.preventDefault();
+            s.setPage(s.currentIndex() + 1, true);
+          } else if (ev.key === "Home") {
+            ev.preventDefault();
+            s.setPage(0, true);
+          } else if (ev.key === "End") {
+            ev.preventDefault();
+            s.setPage(s.pages().length - 1, true);
+          }
+        }}
       >
         <div
           class="ds-reader-progress-fill"
