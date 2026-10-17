@@ -264,8 +264,17 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                                     <Show when={keys().length > 1 || !isDefault(def)}>
                                       <span
                                         class="ds-key-badge-remove"
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label={t("common.delete")}
                                         title={t("common.delete")}
                                         onClick={() => removeKeyFromHotkey(def.id, keyCombo)}
+                                        onKeyDown={(ev) => {
+                                          if (ev.key === "Enter" || ev.key === " ") {
+                                            ev.preventDefault();
+                                            removeKeyFromHotkey(def.id, keyCombo);
+                                          }
+                                        }}
                                       >
                                         ×
                                       </span>

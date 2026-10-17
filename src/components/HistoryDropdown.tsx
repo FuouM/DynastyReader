@@ -95,7 +95,15 @@ function HistoryDropdown(props: HistoryDropdownProps) {
             return (
               <div
                 class="ds-history-item ds-item"
+                role="button"
+                tabIndex={0}
                 onClick={() => selectItem(entry.index)}
+                onKeyDown={(ev) => {
+                  if (ev.key === "Enter" || ev.key === " ") {
+                    ev.preventDefault();
+                    selectItem(entry.index);
+                  }
+                }}
               >
                 <Icon
                   name={iconName}

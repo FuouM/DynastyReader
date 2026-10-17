@@ -107,17 +107,20 @@
   }
 }
 .win-button:focus-visible,
-button:focus-visible {
+button:focus-visible,
+.ds-item:focus-visible,
+.ds-chapter-row:focus-visible,
+.tag-pill:focus-visible,
+[role="button"]:focus-visible,
+[role="radio"]:focus-visible {
   outline: 2px solid var(--sys-border-focus, #0078d4);
   outline-offset: 1px;
 }
 
-:is(:root[data-theme="high-contrast"], body.ds-high-contrast, [data-theme="high-contrast"]) .win-button:focus-visible,
-:is(:root[data-theme="high-contrast"], body.ds-high-contrast, [data-theme="high-contrast"]) button:focus-visible {
+:is(:root[data-theme="high-contrast"], body.ds-high-contrast, [data-theme="high-contrast"]) :is(.win-button, button, .ds-item, .ds-chapter-row, .tag-pill, [role="button"], [role="radio"]):focus-visible {
   outline: 2px solid #ffffff !important;
   outline-offset: 2px !important;
 }
-
 
 .input-field {
   background-color: var(--sys-window-bg);
@@ -126,11 +129,16 @@ button:focus-visible {
   padding: 0 8px;
   height: 24px;
   line-height: 24px;
-  outline: none;
   font-size: var(--font-md);
 }
-.input-field:focus {
+.input-field:focus-visible {
+  outline: 2px solid var(--sys-border-focus, #0078d4);
+  outline-offset: 1px;
   border-color: var(--sys-border-focus);
+}
+.input-field:focus:not(:focus-visible) {
+  border-color: var(--sys-border-focus);
+  outline: none;
 }
 
 .input-wrapper {

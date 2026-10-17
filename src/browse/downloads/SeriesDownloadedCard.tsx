@@ -75,7 +75,15 @@ export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
   return (
     <div
       class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     >
       <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
         <Show when={isRead()}>

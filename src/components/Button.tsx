@@ -21,6 +21,8 @@ export interface ButtonProps {
   style?: string | JSX.CSSProperties;
   title?: string;
   "aria-label"?: string;
+  role?: JSX.AriaAttributes["role"];
+  "aria-checked"?: boolean | "true" | "false";
   "aria-pressed"?: boolean | "true" | "false";
   /** Shows a spinner, sets aria-busy, and disables interaction during async work. */
   loading?: boolean;
@@ -78,6 +80,8 @@ export function Button(props: ButtonProps) {
       style={props.style ?? props.cssText}
       title={isMobile() ? undefined : props.title}
       aria-label={props["aria-label"] ?? (typeof props.text === "string" && props.text ? props.text : props.title)}
+      role={props.role}
+      aria-checked={props["aria-checked"]}
       aria-pressed={props["aria-pressed"]}
       aria-selected={props["aria-selected"]}
       aria-busy={props.loading ? true : undefined}
@@ -271,11 +275,13 @@ export interface SegmentedSwitchProps<T extends string = string> {
 
 export function SegmentedSwitch<T extends string = string>(props: SegmentedSwitchProps<T>) {
   return (
-    <div class="ds-segmented-switch" id={props.id} style={props.style}>
+    <div class="ds-segmented-switch" id={props.id} style={props.style} role="radiogroup">
       <For each={props.options}>
         {(opt) => (
           <Button
             id={opt.id}
+            role="radio"
+            aria-checked={props.value === opt.value}
             className={`ds-segmented-btn${props.value === opt.value ? " active" : ""}`}
             icon={opt.icon}
             text={opt.text}

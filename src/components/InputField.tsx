@@ -103,6 +103,7 @@ export function InputField(props: InputFieldProps) {
         class="input-clear-btn"
         tabIndex={-1}
         title={t("common.clear")}
+        aria-label={t("common.clear")}
         onClick={() => {
           if (inputEl) inputEl.value = "";
           setValue("");
