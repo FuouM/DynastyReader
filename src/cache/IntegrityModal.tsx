@@ -1,4 +1,5 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
+import { errorMessage } from "../utils/formatting";
 import { Modal } from "../components/Modal";
 import { StatCard, Button } from "../components/Button";
 import { Icon, CheckIcon, WarningIcon, RefreshIcon } from "../components/Icon";
@@ -20,6 +21,7 @@ export function IntegrityModal(props: IntegrityModalProps) {
   const [stage, setStage] = createSignal<"idle" | "scanning" | "scanned" | "recovering" | "recovered">("idle");
   const [report, setReport] = createSignal<IntegrityReport | null>(null);
   const [recoveryResult, setRecoveryResult] = createSignal<RecoveryResult | null>(null);
+  const [recoveryError, setRecoveryError] = createSignal<string | null>(null);
   const [scannedCount, setScannedCount] = createSignal(0);
   const [totalCount, setTotalCount] = createSignal(0);
   const [phaseText, setPhaseText] = createSignal("");
@@ -77,6 +79,7 @@ export function IntegrityModal(props: IntegrityModalProps) {
     if (!rep || rep.issues.length === 0) return;
 
     setStage("recovering");
+    setRecoveryError(null);
     try {
       const res = await runIntegrityRecovery(rep.issues, (phase, cur, tot) => {
         if (phase === "deleting_corrupt") {
@@ -92,9 +95,9 @@ export function IntegrityModal(props: IntegrityModalProps) {
       setRecoveryResult(res);
       setStage("recovered");
       props.onRepaired?.();
-    } catch {
-      setStage("recovered");
-      props.onRepaired?.();
+    } catch (err) {
+      setRecoveryError(errorMessage(err));
+      setStage("scanned");
     }
   };
 
@@ -123,6 +126,17 @@ export function IntegrityModal(props: IntegrityModalProps) {
       }
       body={
         <div class="ds-integrity-modal-body">
+          <Show when={recoveryError()}>
+            <div class="ds-integrity-result-card ds-integrity-result--warning" style="margin-bottom:12px;">
+              <div class="ds-integrity-header-row">
+                <WarningIcon class="ds-integrity-status-icon ds-text-danger" />
+                <div>
+                  <div class="ds-integrity-title">{t("cache.integrityRecoveryFailed")}</div>
+                  <div class="ds-integrity-subtitle">{recoveryError()}</div>
+                </div>
+              </div>
+            </div>
+          </Show>
           {/* Scanning Progress */}
           <Show when={stage() === "scanning"}>
             <div class="ds-integrity-center-box">

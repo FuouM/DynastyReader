@@ -14,7 +14,7 @@
  * remounts per route.
  */
 
-import { createEffect, lazy, onCleanup, onMount, Show, Suspense, type Component } from "solid-js";
+import { createEffect, lazy, onCleanup, onMount, Show, Suspense, ErrorBoundary, type Component } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { route, routeTitle, navigate, isPersistentView, canGoBack, goBack } from "./stores/router";
@@ -27,7 +27,8 @@ import { GlobalShortcuts } from "./hotkeys/GlobalShortcuts";
 import { HotkeyCheatsheetModal } from "./components/HotkeyCheatsheetModal";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
-import { Loading } from "./components/Feedback";
+import { Loading, ErrorRetryRow } from "./components/Feedback";
+import { errorMessage } from "./utils/formatting";
 import { t } from "./i18n";
 import type { ViewName, Route } from "./types/routes";
 import { isHideStatusBarEnabled } from "./reader/settings";
@@ -130,19 +131,27 @@ export function App() {
       <Topbar />
       <main id="ds-main-content" tabIndex={-1}>
       <div id="ds-view">
-        <div id="ds-pane-browse" classList={{ "ds-pane-hidden": route().view !== "browse" }}>
-          <BrowseView />
-        </div>
-        <div id="ds-pane-library" classList={{ "ds-pane-hidden": route().view !== "library" }}>
-          <LibraryView />
-        </div>
-        <Show when={!isPersistentView()}>
-          <div id="ds-pane-dynamic" classList={{ "ds-pane-dynamic--reader": route().view === "reader" }}>
-            <Suspense fallback={<Loading />}>
-              <Dynamic component={viewComponents[route().view]} route={route()} />
-            </Suspense>
+        <ErrorBoundary
+          fallback={(err, reset) => (
+            <div class="ds-flex-center ds-fill ds-p-8">
+              <ErrorRetryRow message={errorMessage(err)} onRetry={reset} />
+            </div>
+          )}
+        >
+          <div id="ds-pane-browse" classList={{ "ds-pane-hidden": route().view !== "browse" }}>
+            <BrowseView />
           </div>
-        </Show>
+          <div id="ds-pane-library" classList={{ "ds-pane-hidden": route().view !== "library" }}>
+            <LibraryView />
+          </div>
+          <Show when={!isPersistentView()}>
+            <div id="ds-pane-dynamic" classList={{ "ds-pane-dynamic--reader": route().view === "reader" }}>
+              <Suspense fallback={<Loading />}>
+                <Dynamic component={viewComponents[route().view]} route={route()} />
+              </Suspense>
+            </div>
+          </Show>
+        </ErrorBoundary>
       </div>
       </main>
       <BottomNav />

@@ -724,6 +724,7 @@ export const en = {
     integrityPhaseChapters: "Resolving chapter repairs ({{current}} / {{total}})...",
     integrityRecoveredTitle: "Recovery and Repair Complete",
     integrityReportRecovered: "Restored {{covers}} covers, queued {{chapters}} chapters to restore missing pages, and cleaned {{cleaned}} stale records.",
+    integrityRecoveryFailed: "Recovery Failed",
     integrityNoIssuesAction: "Close",
     integrityRecheck: "Re-Scan",
     integrityStatScanned: "Scanned",

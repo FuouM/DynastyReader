@@ -371,9 +371,9 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   value={s.fitMode()}
                   onChange={(v) => s.setFitMode(v)}
                   options={[
-                    { id: "ds-ctrl-fit-width", value: "width", text: t("reader.toolbar.fitModes.widthShort") || "Width", title: t("reader.toolbar.fitModes.width") },
-                    { id: "ds-ctrl-fit-height", value: "height", text: t("reader.toolbar.fitModes.heightShort") || "Height", title: t("reader.toolbar.fitModes.height") },
-                    { id: "ds-ctrl-fit-orig", value: "original", text: t("reader.toolbar.fitModes.originalShort") || "Original", title: t("reader.toolbar.fitModes.original") },
+                    { id: "ds-ctrl-fit-width", value: "width", text: t("reader.toolbar.fitModes.widthShort"), title: t("reader.toolbar.fitModes.width") },
+                    { id: "ds-ctrl-fit-height", value: "height", text: t("reader.toolbar.fitModes.heightShort"), title: t("reader.toolbar.fitModes.height") },
+                    { id: "ds-ctrl-fit-orig", value: "original", text: t("reader.toolbar.fitModes.originalShort"), title: t("reader.toolbar.fitModes.original") },
                   ]}
                 />
               </SettingsRow>

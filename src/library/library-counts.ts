@@ -2,6 +2,7 @@ import { createResource, type Accessor } from "solid-js";
 import { query as dynastyQuery } from "../db/client";
 import { query as mangadexQuery } from "../providers/mangadex/db/client";
 import { initMangaDexDb } from "../providers/mangadex/db/schema";
+import { log } from "../utils/log";
 import { activeProvider } from "../stores/provider";
 import { dbReady } from "../stores/router";
 import {
@@ -22,7 +23,8 @@ async function countDynastyTable(table: string): Promise<number> {
       `SELECT COUNT(*) as count FROM ${table}`,
     );
     return Number(rows[0]?.count ?? rows[0]?.c ?? 0);
-  } catch {
+  } catch (err) {
+    log.error("library-counts", `failed counting ${table}:`, err);
     return 0;
   }
 }
@@ -33,7 +35,8 @@ async function countMdxTable(table: string): Promise<number> {
       `SELECT COUNT(*) as count FROM ${table}`,
     );
     return Number(rows[0]?.count ?? rows[0]?.c ?? 0);
-  } catch {
+  } catch (err) {
+    log.error("library-counts", `failed counting ${table}:`, err);
     return 0;
   }
 }
