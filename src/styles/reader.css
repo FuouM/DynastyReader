@@ -80,7 +80,7 @@
   box-sizing: border-box;
   background: var(--ds-reader-bg);
   flex-shrink: 0;
-  z-index: 100;
+  z-index: var(--z-reader-nav);
   position: absolute;
   left: 0;
   right: 0;
@@ -1160,7 +1160,7 @@
   bottom: 48px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1500;
+  z-index: var(--z-reader-hint);
   pointer-events: none;
   animation: ds-hint-fade 0.25s ease-out;
 }
@@ -1216,7 +1216,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 2000;
+  z-index: var(--z-reader-overscroll);
   user-select: none;
   background: rgba(0, 0, 0, 0.35);
   animation: ds-overscroll-in 120ms ease-out both;
@@ -1238,7 +1238,7 @@
   justify-content: center;
   font-size: 20px;
   pointer-events: none;
-  z-index: 2020;
+  z-index: calc(var(--z-reader-overscroll) + 20);
   will-change: transform;
   box-sizing: border-box;
 }
@@ -1266,7 +1266,7 @@
   font-size: 24px;
   box-sizing: border-box;
   pointer-events: none;
-  z-index: 2010;
+  z-index: calc(var(--z-reader-overscroll) + 10);
   will-change: transform;
 }
 
@@ -1298,7 +1298,7 @@
   text-align: center;
   box-sizing: border-box;
   pointer-events: none;
-  z-index: 2010;
+  z-index: calc(var(--z-reader-overscroll) + 10);
 }
 
 .ds-overscroll-target-badge {
@@ -1330,7 +1330,7 @@
   inset: 0;
   display: flex;
   flex-direction: row;
-  z-index: 1500;
+  z-index: var(--z-reader-hint);
   pointer-events: none;
   user-select: none;
   background: rgba(0, 0, 0, 0.35);

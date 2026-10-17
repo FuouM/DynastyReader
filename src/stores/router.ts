@@ -123,7 +123,10 @@ export function navigate(r: Route): void {
     // Clear actions before switching routes
     setActions(null);
     if (!isNavigatingHistory) {
-      setHistoryBackStack((s) => [...s, { ...route() }]);
+      setHistoryBackStack((s) => {
+        const next = [...s, { ...route() }];
+        return next.length > 50 ? next.slice(-50) : next;
+      });
       // Clear forward history on new branch
       setHistoryForwardStack([]);
 

@@ -100,6 +100,8 @@
     --z-bottom-nav: 1000;
     --z-reader-nav: 1100;
     --z-sheet: 1200;
+    --z-reader-hint: 1500;
+    --z-reader-overscroll: 2000;
     --z-reader-fullscreen: 9000;
     --z-modal: 10000;
     --z-banner: 10010;

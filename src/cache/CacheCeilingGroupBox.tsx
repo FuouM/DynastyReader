@@ -81,9 +81,8 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
     }
   };
 
-  const handleCustomInput = (val: string) => {
-    setCeilingInput(val);
-    const trimmed = val.trim();
+  const commitCustomInput = () => {
+    const trimmed = ceilingInput().trim();
     if (!trimmed) {
       setCacheCeilingBytes(0);
       return;
@@ -164,7 +163,15 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
                 step="any"
                 placeholder="0"
                 value={ceilingInput()}
-                onInput={(e) => handleCustomInput(e.currentTarget.value)}
+                onInput={(e) => setCeilingInput(e.currentTarget.value)}
+                onChange={commitCustomInput}
+                onBlur={commitCustomInput}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    commitCustomInput();
+                    (e.currentTarget as HTMLElement)?.blur();
+                  }
+                }}
               />
               <DsSelect
                 id="ds-cache-ceiling-unit"
