@@ -19,6 +19,8 @@ import {
   isHotkeyEventConsumed,
   isTextInputTarget,
   matchesHotkey,
+  isBlockingOverlayOpen,
+  isInsideBlockingOverlay,
 } from "../hotkeys/hotkeys-store";
 
 /** Navigation actions must not auto-repeat at the OS key-repeat rate (RD-M6). */
@@ -43,8 +45,7 @@ export function useReaderShortcuts(session: ReaderSession): void {
     // Another listener (e.g. GlobalShortcuts) already handled this event.
     if (isHotkeyEventConsumed(ev)) return;
     // Do not turn pages or activate reader hotkeys while a modal dialog or drawer is open.
-    if (document.querySelector(".ds-modal-backdrop, dialog[open], .ds-drawer")) return;
-    if ((ev.target as HTMLElement | null)?.closest(".ds-modal-backdrop, .ds-modal-window, dialog, .ds-drawer")) return;
+    if (isBlockingOverlayOpen() || isInsideBlockingOverlay(ev.target)) return;
     // Holding a navigation key would flip pages at the OS repeat rate (RD-M6).
     if (ev.repeat && isNavigationHotkey(ev)) {
       ev.preventDefault();
@@ -217,7 +218,7 @@ export function useReaderWheel(session: ReaderSession): void {
     if (targetTag === "INPUT" || targetTag === "TEXTAREA" || targetTag === "SELECT") return;
     // Never hijack wheel events inside the controls sheet or a modal — those
     // have their own scroll regions (RD-H7).
-    if ((ev.target as HTMLElement | null)?.closest(".ds-reader-sheet-window, .ds-modal-backdrop")) return;
+    if (isInsideBlockingOverlay(ev.target)) return;
 
     // When Scroll Lock is active, in horizontal mode, or during Ctrl+Zoom:
     // We completely own the wheel. Prevent browser native scroll IMMEDIATELY

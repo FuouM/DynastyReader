@@ -143,9 +143,21 @@ pub fn resolve_in_root(raw: &str) -> Result<PathBuf, String> {
     if raw.is_empty() {
         return Ok(root);
     }
-    // Collapse duplicate separators that may be stored in the DB from the old
-    // `dev.ps1` double-slash bug (`K:\path\\.data` / `K:/path//.data`).
-    let normalized_raw = raw.replace("\\\\", "\\").replace("//", "/");
+    // Collapse duplicate separators while preserving \\?\ verbatim prefix and UNC \\ prefix.
+    let (prefix, remainder) = if let Some(stripped) = raw.strip_prefix("\\\\?\\") {
+        ("\\\\?\\", stripped)
+    } else if let Some(stripped) = raw.strip_prefix("//?/") {
+        ("\\\\?\\", stripped)
+    } else if let Some(stripped) = raw.strip_prefix("\\\\") {
+        ("\\\\", stripped)
+    } else {
+        ("", raw)
+    };
+    let mut collapsed = remainder.replace("//", "/");
+    while collapsed.contains("\\\\") {
+        collapsed = collapsed.replace("\\\\", "\\");
+    }
+    let normalized_raw = format!("{prefix}{collapsed}");
     let p = Path::new(&normalized_raw);
     if p.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
         return Err("path escapes data directory".to_string());
@@ -311,5 +323,20 @@ mod tests {
                 assert!(!s.contains('/'), "Extended path must not contain forward slashes: {s}");
             }
         }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_verbatim_prefix_round_trip() {
+        let root = temp_root("verbatim");
+        set_root(root.clone());
+        let normal = resolve_in_root("pages/test").unwrap();
+        let normal_str = normal.to_string_lossy();
+        let verbatim = format!("\\\\?\\{normal_str}");
+        let round_tripped = resolve_in_root(&verbatim).unwrap();
+        assert_eq!(
+            round_tripped.to_string_lossy().trim_start_matches("\\\\?\\"),
+            normal_str.trim_start_matches("\\\\?\\")
+        );
     }
 }

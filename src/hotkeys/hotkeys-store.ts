@@ -100,3 +100,21 @@ export function consumeHotkeyEvent(ev: KeyboardEvent): void {
 export function isHotkeyEventConsumed(ev: KeyboardEvent): boolean {
   return consumedHotkeyEvents.has(ev);
 }
+
+const BLOCKING_OVERLAY_SELECTOR =
+  ".ds-modal-backdrop, .ds-modal-window, dialog[open], .ds-drawer, .ds-reader-sheet-backdrop, .ds-reader-sheet-window, .ds-overlay";
+
+/** Checks whether any modal dialog, drawer, mobile controls sheet, or overlay is currently open. */
+export function isBlockingOverlayOpen(): boolean {
+  if (typeof document === "undefined") return false;
+  return (
+    document.querySelector(".ds-modal-backdrop, dialog[open], .ds-drawer, .ds-reader-sheet-backdrop, .ds-overlay") !==
+    null
+  );
+}
+
+/** Checks whether an event target is contained within an overlay, sheet, modal, or drawer. */
+export function isInsideBlockingOverlay(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+  return el.closest(BLOCKING_OVERLAY_SELECTOR) !== null;
+}

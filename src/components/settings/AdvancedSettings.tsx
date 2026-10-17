@@ -211,10 +211,10 @@ export function AdvancedSettings() {
                 <button
                   type="button"
                   class="win-button ds-haptic-preset-btn"
-                  title={t("settings.advanced.resetDefaultStrength", { pct: 85 })}
+                  title={t("settings.advanced.resetDefaultStrength", { pct: DEFAULT_HAPTIC_STRENGTH })}
                   onClick={resetHapticStrength}
                 >
-                  <Icon name="arrow-counterclockwise" size={11} /> 85%
+                  <Icon name="arrow-counterclockwise" size={11} /> {DEFAULT_HAPTIC_STRENGTH}%
                 </button>
               </Show>
             </div>

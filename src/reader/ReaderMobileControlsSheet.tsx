@@ -293,7 +293,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               <SettingsRow label={t("settings.reader.defaultMode")}>
                 <SegmentedSwitch
                   value={s.mode()}
-                  onChange={s.setMode}
+                  onChange={(v) => s.setMode(v)}
                   options={[
                     { id: "ds-ctrl-mode-scroll", value: "scroll", icon: <DistributeVerticalIcon />, text: t("reader.toolbar.scroll") },
                     { id: "ds-ctrl-mode-paged", value: "paged", icon: <ArrowLeftRightIcon />, text: t("reader.toolbar.paged") },
@@ -344,7 +344,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <SettingsRow label={t("settings.reader.readingDirection")} divider>
                   <SegmentedSwitch
                     value={s.direction()}
-                    onChange={s.setDirection}
+                    onChange={(v) => s.setDirection(v)}
                     options={[
                       { id: "ds-ctrl-dir-rtl", value: "rtl", icon: <ArrowLeftIcon />, text: "RTL" },
                       { id: "ds-ctrl-dir-ltr", value: "ltr", icon: <ArrowRightIcon />, text: "LTR" },
@@ -356,7 +356,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <SettingsRow label={t("settings.reader.pagedLayout")} divider>
                   <SegmentedSwitch
                     value={s.pagedLayout()}
-                    onChange={s.setPagedLayout}
+                    onChange={(v) => s.setPagedLayout(v)}
                     options={[
                       { id: "ds-ctrl-layout-single", value: "single", icon: <DoublePageIcon />, text: t("settings.reader.layoutSingleLabel") },
                       { id: "ds-ctrl-layout-spread", value: "spread", icon: <ColumnsGapIcon />, text: t("settings.reader.layoutSpreadLabel") },
@@ -369,7 +369,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
               <SettingsRow label={t("settings.reader.fitMode")} divider stacked>
                 <SegmentedSwitch
                   value={s.fitMode()}
-                  onChange={s.setFitMode}
+                  onChange={(v) => s.setFitMode(v)}
                   options={[
                     { id: "ds-ctrl-fit-width", value: "width", text: t("reader.toolbar.fitModes.widthShort") || "Width", title: t("reader.toolbar.fitModes.width") },
                     { id: "ds-ctrl-fit-height", value: "height", text: t("reader.toolbar.fitModes.heightShort") || "Height", title: t("reader.toolbar.fitModes.height") },

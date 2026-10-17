@@ -10,6 +10,7 @@ import { setupScrollTracker } from "./scroll-tracker";
 import { setupViewportResize } from "./viewport-resize";
 import { getAdjacentChapters } from "./reader-spread";
 import { triggerHaptic } from "../utils/haptics";
+import { isBlockingOverlayOpen } from "../hotkeys/hotkeys-store";
 import { stripTranslateX } from "./reader-transform";
 import type { OverscrollGestureState, TapZoneGuideState } from "./ReaderOverlays";
 import {
@@ -170,7 +171,7 @@ export function useReaderGestures(s: ReaderSession) {
         return;
       }
       isTouchOnEndCard = false;
-      if (document.querySelector(".ds-modal-backdrop, .ds-reader-sheet-backdrop, .ds-overlay")) return;
+      if (isBlockingOverlayOpen()) return;
       isTouchDown = true;
       const wasAnimating = s.scrollAnimRaf !== null || s.isProgrammaticScroll;
       const wasRecentScroll = Date.now() - lastScrollTime < 150;

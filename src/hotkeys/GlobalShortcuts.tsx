@@ -6,7 +6,7 @@
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { canGoBack, canGoForward, goBack, goForward, navigate, sessionTab, closeSessionMangaTab } from "../stores/router";
 import { toggleTheme } from "../stores/theme";
-import { consumeHotkeyEvent, isHotkeyEventConsumed, isTextInputTarget, matchesHotkey } from "./hotkeys-store";
+import { consumeHotkeyEvent, isHotkeyEventConsumed, isTextInputTarget, matchesHotkey, isBlockingOverlayOpen } from "./hotkeys-store";
 import type { SettingsSectionId } from "../components/settings/settings-shared";
 
 export interface OpenSettingsDetail {
@@ -23,6 +23,8 @@ export function GlobalShortcuts() {
     if (isTextInputTarget(ev.target)) return;
     // Another listener (e.g. ReaderShortcuts) already handled this event.
     if (isHotkeyEventConsumed(ev)) return;
+    // Do not trigger global navigation shortcuts while a modal, drawer, or sheet is open
+    if (isBlockingOverlayOpen()) return;
 
     if (matchesHotkey(ev, "global.goBack")) {
       if (canGoBack()) {

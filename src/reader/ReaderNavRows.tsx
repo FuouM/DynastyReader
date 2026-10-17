@@ -72,6 +72,7 @@ export function ReaderMainRow(props: NavRowProps) {
         className="ds-nav-btn-jump ds-btn-icon"
         icon={rtl() ? <ChevronBarRightIcon /> : <ChevronBarLeftIcon />}
         title={t("reader.toolbar.firstPage")}
+        disabled={s.progress().prevDisabled}
         onClick={() => s.setPage(0, true)}
       />
       <Button
@@ -92,6 +93,7 @@ export function ReaderMainRow(props: NavRowProps) {
         className="ds-nav-btn-jump ds-btn-icon"
         icon={rtl() ? <ChevronBarLeftIcon /> : <ChevronBarRightIcon />}
         title={t("reader.toolbar.lastPage", { total: s.pages().length })}
+        disabled={s.progress().nextDisabled}
         onClick={() => s.setPage(s.pages().length - 1, true)}
       />
       <Button
@@ -286,7 +288,7 @@ export function ReaderControlsRow(props: NavRowProps) {
 
 export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
   const s = props.session;
-  const isRtl = () => s.direction() === "rtl";
+  const isRtl = () => s.isHorizontal() && s.direction() === "rtl";
   const total = () => Math.max(1, s.pages().length);
   const current = () => s.currentIndex() + 1;
   const pct = () => {
@@ -334,7 +336,7 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
     <div class="ds-reader-mobile-bottom-row">
       <Button
         className="ds-btn-icon ds-mobile-nav-btn"
-        icon={isRtl() ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        icon={isRtl() ? <ChevronDoubleRightIcon /> : <ChevronDoubleLeftIcon />}
         title={t("reader.toolbar.prevChapter")}
         disabled={s.chapterNav().prevDisabled}
         onClick={() => s.gotoPrevChapter()}
@@ -362,7 +364,7 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
       </div>
       <Button
         className="ds-btn-icon ds-mobile-nav-btn"
-        icon={isRtl() ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+        icon={isRtl() ? <ChevronDoubleLeftIcon /> : <ChevronDoubleRightIcon />}
         title={t("reader.toolbar.nextChapter")}
         disabled={s.chapterNav().nextDisabled}
         onClick={() => s.gotoNextChapter()}

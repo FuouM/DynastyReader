@@ -192,7 +192,7 @@ export function SeriesView() {
     const { series, coverPath } = d;
     const seriesPermalink = series.permalink;
     const seriesName = series.name;
-    const openUrl = canonicalUrl(seriesTypeToPath(series.type), encodeURIComponent(seriesPermalink));
+    const openUrl = canonicalUrl(seriesTypeToPath(series.type), seriesPermalink);
 
     setTitle(decodeEntities(seriesName));
     setSessionTab((current) => {
@@ -437,7 +437,7 @@ export function SeriesView() {
             onToggleBlacklist={() => void handleToggleBlacklist()}
             onRefresh={() => setForceTick((t) => t + 1)}
             onOpenAddToCol={handleOpenAddToCol}
-            openUrl={data()!.series.link || canonicalUrl(seriesTypeToPath(data()!.series.type), data()!.series.permalink)}
+            openUrl={canonicalUrl(seriesTypeToPath(data()!.series.type), data()!.series.permalink)}
             seriesType={data()!.series.type}
             onDownloadAll={data()!.series.type === "local" ? undefined : () => void handleDownloadAll()}
           />
