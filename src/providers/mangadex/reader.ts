@@ -7,9 +7,7 @@ import { getChapter, getAtHomeServer, buildPageUrl } from "./api/chapter";
 import { MANGADEX_NETWORK_REPORT, MANGADEX_UPLOADS_BASE, MANGADEX_USER_AGENT } from "./api/constants";
 import * as ipc from "../../ipc";
 import { mangaDexToStandardChapter } from "./mapping";
-import { setCachedPage as setMdxCachedPage, getCachedPages as getMdxCachedPages } from "./db/cache.repo";
-import { recordHistory as recordMdxHistory } from "./db/history.repo";
-import { saveReadingProgress as saveMdxProgress, getReadingProgress as getMdxProgress } from "./db/progress.repo";
+import { setCachedPage as setMdxCachedPage } from "./db/cache.repo";
 import { persistedSignal } from "../../lib/persisted-signal";
 import type { Chapter, ChapterPage } from "../../types/api";
 import { t } from "../../i18n";
@@ -143,8 +141,4 @@ export function reportAtHome(report: MangaDexAtHomeReport): void {
 
 export {
   setMdxCachedPage,
-  getMdxCachedPages,
-  recordMdxHistory,
-  saveMdxProgress,
-  getMdxProgress,
 };

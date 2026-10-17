@@ -65,7 +65,6 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_mdx_history_chapter ON reading_history(chapter_id)`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_history_manga ON reading_history(manga_id)`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_progress_manga ON reading_progress(manga_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_mdx_cached_pages_chapter ON cached_pages(chapter_id)`,
   `CREATE INDEX IF NOT EXISTS idx_mdx_followed_created_at ON followed_manga(created_at DESC)`,
 ];
 

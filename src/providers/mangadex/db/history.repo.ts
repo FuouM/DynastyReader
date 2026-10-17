@@ -4,6 +4,7 @@
  */
 
 import { execute, query } from "./client";
+import { paginate } from "../../../db/paging";
 import { initMangaDexDb } from "./schema";
 import { notifyHistoryChanged } from "../../../db/library-notifiers";
 import type { GetHistoryPageOptions } from "../../../types/db";
@@ -56,9 +57,7 @@ export async function getHistory(
     countParams,
   );
   const totalCount = countRows[0]?.c ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
-  const currentPage = Math.min(Math.max(1, page), totalPages);
-  const offset = Math.max(0, (currentPage - 1) * limit);
+  const { totalPages, currentPage, offset } = paginate(totalCount, page, limit);
 
   let orderSql = `ORDER BY h.read_at DESC`;
   if (options?.sort === "oldest") orderSql = `ORDER BY h.read_at ASC`;

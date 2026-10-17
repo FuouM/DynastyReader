@@ -1,7 +1,6 @@
 import { query } from "./client";
 import { inClause } from "./paging";
 import type {
-  FollowedSeriesRow,
   FollowedSeriesPageResult,
   GetFollowedPageOptions,
   ReadingProgressRow,
@@ -55,27 +54,6 @@ export async function getFollowedSeriesPage(
   return getProvider(provider).getFollowedPage(page, pageSize, options);
 }
 
-export async function getFollowedSeriesRow(permalink: string): Promise<FollowedSeriesRow | null> {
-  const isF = await getProviderForPermalink(permalink).isFollowed(permalink);
-  if (!isF) return null;
-  const rows = await query<FollowedSeriesRow>(
-    `SELECT permalink, name, cover, last_checked_at, latest_chapter_permalink,
-            latest_chapter_title, created_at
-     FROM followed_series WHERE permalink = ?`,
-    [permalink],
-  );
-  return (
-    rows[0] ?? {
-      permalink,
-      name: "",
-      cover: null,
-      last_checked_at: Date.now(),
-      latest_chapter_permalink: null,
-      latest_chapter_title: null,
-      created_at: Date.now(),
-    }
-  );
-}
 
 export async function isSeriesFollowed(permalink: string): Promise<boolean> {
   return getProviderForPermalink(permalink).isFollowed(permalink);
