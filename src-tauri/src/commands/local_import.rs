@@ -24,6 +24,18 @@ const MAX_COVER_BYTES: u64 = 32 * 1024 * 1024;
 /// Mirrors media.rs MAX_SOURCE_DIMENSION — reject decompression-bomb covers.
 const MAX_COVER_DIMENSION: u32 = 8192;
 
+fn read_capped_cover_file<P: AsRef<std::path::Path>>(path: P) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    let file = std::fs::File::open(path.as_ref()).map_err(|e| format!("failed reading cover image: {e}"))?;
+    let mut buf = Vec::new();
+    let mut limited = file.take(MAX_COVER_BYTES + 1);
+    limited.read_to_end(&mut buf).map_err(|e| format!("failed reading cover image: {e}"))?;
+    if buf.len() as u64 > MAX_COVER_BYTES {
+        return Err(format!("cover image exceeds {} MB limit", MAX_COVER_BYTES / (1024 * 1024)));
+    }
+    Ok(buf)
+}
+
 /// Throttle for extraction progress events: emit at most every N pages.
 const IMPORT_PROGRESS_EVERY: usize = 8;
 
@@ -734,9 +746,9 @@ pub async fn import_folder(
             if !is_image(p) {
                 return Err(format!("cover path does not have an allowed image extension: {p}"));
             }
-            Some(std::fs::read(p).map_err(|e| format!("failed reading cover image: {e}"))?)
+            Some(read_capped_cover_file(p)?)
         } else {
-            std::fs::read(&files[0].1).ok()
+            read_capped_cover_file(&files[0].1).ok()
         };
         if let Some(bytes) = cover_bytes {
             let _ = create_cover_webp(&bytes, &cover_out);
@@ -1113,8 +1125,7 @@ pub async fn update_local_series(
             if !is_image(src) {
                 return Err(format!("new cover path does not have an allowed image extension: {src}"));
             }
-            let src_bytes = std::fs::read(src)
-                .map_err(|e| format!("failed reading new cover image: {e}"))?;
+            let src_bytes = read_capped_cover_file(src)?;
             let cover_out = series_dir.join("cover.webp");
             create_cover_webp(&src_bytes, &cover_out)?;
         }

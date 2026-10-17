@@ -136,14 +136,16 @@ fn open(db_name: &str) -> Result<Connection, String> {
 /// rollback-journal defaults (SQLITE_BUSY against the pool) or silently drop
 /// `ON DELETE CASCADE` behavior (foreign_keys off by default).
 fn configure_connection(conn: &Connection) -> Result<(), String> {
-    // WAL tuned for the app's read-heavy, single-writer workload: NORMAL
-    // synchronous keeps commit latency low without sacrificing durability on
-    // checkpoint, journal_size_limit bounds the WAL growth, and
-    // wal_autocheckpoint keeps it from ballooning.
+    // Set busy timeout first so WAL initialization and PRAGMAs wait for concurrent
+    // connections instead of failing immediately with SQLITE_BUSY.
+    conn.busy_timeout(std::time::Duration::from_millis(SQLITE_BUSY_TIMEOUT_MS))
+        .map_err(|e| format!("failed setting busy timeout: {e}"))?;
     conn.pragma_update(None, "journal_mode", "WAL")
         .map_err(|e| format!("failed enabling WAL: {e}"))?;
     conn.pragma_update(None, "synchronous", "NORMAL")
         .map_err(|e| format!("failed tuning synchronous mode: {e}"))?;
+    conn.pragma_update(None, "temp_store", "MEMORY")
+        .map_err(|e| format!("failed tuning temp store: {e}"))?;
     conn.pragma_update(None, "journal_size_limit", SQLITE_JOURNAL_SIZE_LIMIT)
         .map_err(|e| format!("failed tuning journal size limit: {e}"))?;
     conn.pragma_update(None, "cache_size", SQLITE_CACHE_SIZE_PAGES)
@@ -152,8 +154,6 @@ fn configure_connection(conn: &Connection) -> Result<(), String> {
         .map_err(|e| format!("failed tuning wal autocheckpoint: {e}"))?;
     conn.pragma_update(None, "foreign_keys", "ON")
         .map_err(|e| format!("failed enabling foreign keys: {e}"))?;
-    conn.busy_timeout(std::time::Duration::from_millis(SQLITE_BUSY_TIMEOUT_MS))
-        .map_err(|e| format!("failed setting busy timeout: {e}"))?;
     Ok(())
 }
 

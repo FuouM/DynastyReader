@@ -801,6 +801,7 @@ async fn record_page_progress(
     let fp = file_path.to_string();
     let is_mdx = cp.starts_with("mdx:");
     tokio::task::spawn_blocking(move || {
+        let main_conn = crate::commands::db::open_synced(&crate::paths::db_path());
         if is_mdx {
             let mdx_path = crate::paths::data_root().join("mangadex.db");
             if let Ok(conn) = crate::commands::db::open_synced(&mdx_path) {
@@ -811,14 +812,14 @@ async fn record_page_progress(
                     rusqlite::params![ch_id, page_index as i64, fp, size_bytes, now],
                 );
             }
-        } else if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
+        } else if let Ok(conn) = &main_conn {
             let now = crate::util::now_ms();
             let _ = conn.execute(
                 "INSERT OR REPLACE INTO cached_pages (chapter_permalink, page_index, file_path, size_bytes, cached_at) VALUES (?1, ?2, ?3, ?4, ?5)",
                 rusqlite::params![cp, page_index as i64, fp, size_bytes, now],
             );
         }
-        if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
+        if let Ok(conn) = &main_conn {
             let _ = conn.execute(
                 "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
                 rusqlite::params![progress as i64, cp],
