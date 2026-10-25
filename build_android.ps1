@@ -63,6 +63,14 @@ if (-not $env:NDK_HOME -or -not (Test-Path $env:NDK_HOME)) {
     Write-Host "`n[ERROR] NDK_HOME is not set or valid. Please install the NDK under `$env:ANDROID_HOME\ndk\`." -ForegroundColor Red
     exit 1
 }
+if (-not (Test-Path "$PSScriptRoot_Local\node_modules")) {
+    Write-Host "`nnode_modules not found. Running npm ci..." -ForegroundColor Cyan
+    npm ci
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "`n[ERROR] npm ci failed. Please install dependencies manually." -ForegroundColor Red
+        exit 1
+    }
+}
 
 # Sync custom app launcher icons from src-tauri/icons/android into Android project res
 $iconsAndroidDir = "$PSScriptRoot_Local\src-tauri\icons\android"
