@@ -19,7 +19,7 @@ import { navigate, route, setRoute, type BrowseTabId } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
 import { triggerHaptic } from "../utils/haptics";
-import { parseDynastyUrl, parseMangaDexUrl } from "../api/navigation";
+import { parseDynastyUrl, parseDynastyEntityUrl, parseMangaDexUrl } from "../api/navigation";
 import { suggest } from "../api/directory";
 import { activeProvider } from "../stores/provider";
 import { getWhitelistRevision } from "../providers/mangadex/db/whitelist.repo";
@@ -221,6 +221,7 @@ export function BrowseView() {
       }
       return;
     }
+    const entity = parseDynastyEntityUrl(raw);
     const parsed = parseDynastyUrl(raw);
     if (!parsed) {
       showBanner(t("browse.searchAndGo.unrecognizedUrlWarning"));
@@ -243,7 +244,7 @@ export function BrowseView() {
         view: "series",
         seriesPermalink: parsed.permalink,
         seriesName: parsed.permalink,
-        seriesType: parsed.entityKind,
+        seriesType: entity?.kind,
       });
     }
   };

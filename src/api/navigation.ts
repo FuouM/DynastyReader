@@ -99,11 +99,7 @@ export function parseDynastyEntityUrl(input: string): {
 export function parseDynastyUrl(input: string): ParsedDynastyUrl | null {
   const entity = parseDynastyEntityUrl(input);
   if (!entity) return null;
-  return {
-    kind: normalizeToSeriesKind(entity.kind),
-    permalink: entity.permalink,
-    entityKind: entity.kind,
-  };
+  return { kind: normalizeToSeriesKind(entity.kind), permalink: entity.permalink };
 }
 /**
  * Extracts the bare UUID from an mdx: permalink.
