@@ -1,9 +1,10 @@
 name: CI & Fast Check
 
 on:
+  workflow_call:
   push:
     tags:
-      - 'v*' # Run full checks on release version tags (e.g. v0.1.0)
+      - 'v*'
   pull_request:
     branches: [ main ]
     paths-ignore:

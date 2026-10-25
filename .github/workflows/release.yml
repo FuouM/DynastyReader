@@ -1,10 +1,9 @@
 name: Release Build & Publish
 
 on:
-  workflow_run:
-    workflows: ["CI & Fast Check"]
-    types:
-      - completed
+  push:
+    tags:
+      - 'v*' # Trigger only on version tags (e.g. v0.1.0)
   workflow_dispatch:
     inputs:
       platform:
@@ -17,19 +16,19 @@ on:
           - 'desktop'
           - 'android'
 concurrency:
-  group: release-${{ github.event.workflow_run.head_branch || github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: true
 
 permissions: {}
-
 jobs:
+  check:
+    name: CI & Fast Check
+    uses: ./.github/workflows/check.yml
+
   build-desktop:
     name: Build (${{ matrix.platform }})
-    if: >-
-      (github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'desktop')) ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       (github.event.workflow_run.event == 'push' || startsWith(github.event.workflow_run.head_branch, 'v')))
+    needs: check
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'desktop'
     permissions:
       contents: write
       id-token: write
@@ -47,8 +46,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -126,8 +123,8 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          name: 'DynastyReader ${{ github.event.workflow_run.head_branch || github.ref_name }}'
-          tag_name: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+          name: 'DynastyReader ${{ github.ref_name }}'
+          tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
           files: staging/*
@@ -136,11 +133,8 @@ jobs:
 
   build-android:
     name: Build (android)
-    if: >-
-      (github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'android')) ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       (github.event.workflow_run.event == 'push' || startsWith(github.event.workflow_run.head_branch, 'v')))
+    needs: check
+    if: github.event_name != 'workflow_dispatch' || inputs.platform == 'all' || inputs.platform == 'android'
     permissions:
       contents: write
       id-token: write
@@ -151,8 +145,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Setup Java JDK 17
         uses: actions/setup-java@v5
@@ -273,8 +265,8 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          name: 'DynastyReader ${{ github.event.workflow_run.head_branch || github.ref_name }}'
-          tag_name: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+          name: 'DynastyReader ${{ github.ref_name }}'
+          tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
           files: staging/*
