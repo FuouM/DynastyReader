@@ -346,6 +346,11 @@ body {
 #ds-actions::-webkit-scrollbar {
   display: none;
 }
+.ds-series-icon-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 #ds-topbar-tools {
   display: inline-flex;
   align-items: center;

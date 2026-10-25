@@ -91,21 +91,23 @@ export function SeriesActions(props: SeriesActionsProps) {
         />
       </Show>
       <Show when={props.openUrl}>
-        <Button
-          className="ds-btn-icon"
-          style={{ "aspect-ratio": "1 / 1" }}
-          icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
-          title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
-          onClick={handleCopyLink}
-        />
-        <ExternalLinkButton
-          className="ds-btn-icon"
-          style={{ "aspect-ratio": "1 / 1" }}
-          title={t("series.openInBrowserTooltip", {
-            type: props.seriesType ? props.seriesType.toLowerCase() : "series",
-          })}
-          url={props.openUrl}
-        />
+        <div class="ds-series-icon-actions">
+          <Button
+            className="ds-btn-icon"
+            style={{ "aspect-ratio": "1 / 1" }}
+            icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
+            title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
+            onClick={handleCopyLink}
+          />
+          <ExternalLinkButton
+            className="ds-btn-icon"
+            style={{ "aspect-ratio": "1 / 1" }}
+            title={t("series.openInBrowserTooltip", {
+              type: props.seriesType ? props.seriesType.toLowerCase() : "series",
+            })}
+            url={props.openUrl}
+          />
+        </div>
       </Show>
     </>
   );

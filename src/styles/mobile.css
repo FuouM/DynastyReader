@@ -615,13 +615,20 @@
   border-radius: 0;
 }
 
+.ds-series-mobile-actions .ds-series-icon-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+}
+
 .ds-series-mobile-actions .ds-btn-icon {
   width: 32px !important;
   height: 32px !important;
   min-width: 32px !important;
   max-width: 32px !important;
   aspect-ratio: 1 / 1;
-  justify-self: center;
   padding: 0;
 }
 #ds-root[data-mobile] #ds-library-container {
