@@ -511,6 +511,9 @@
   padding: 8px 10px;
   gap: 8px;
 }
+#ds-root[data-mobile] .ds-chapter-row--has-tags {
+  align-items: flex-start;
+}
 
 #ds-root[data-mobile] .ds-feed-status-bar {
   flex-direction: column;

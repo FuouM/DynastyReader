@@ -220,7 +220,7 @@ function isArtistTag(type?: string | null): boolean {
   return t === "author" || t === "artist";
 }
 
-function isScanlatorTag(type?: string | null): boolean {
+export function isScanlatorTag(type?: string | null): boolean {
   const t = (type ?? "").toLowerCase();
   return t === "scanlator" || t === "group";
 }
@@ -287,7 +287,7 @@ export function tagClass(type: string, name?: string): string {
 }
 
 /** Sorts tags by browse category order (author first), stable within a category. */
-function sortTagsByCategory<T extends { type: string }>(tags: T[]): T[] {
+export function sortTagsByCategory<T extends { type: string }>(tags: T[]): T[] {
   return [...tags].sort((a, b) => {
     const rankA = TAG_CATEGORY_RANK[(a.type ?? "").toLowerCase()] ?? 8;
     const rankB = TAG_CATEGORY_RANK[(b.type ?? "").toLowerCase()] ?? 8;

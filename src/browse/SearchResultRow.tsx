@@ -5,6 +5,7 @@
 
 import { Show } from "solid-js";
 import { navigate } from "../stores/router";
+import { showChapterTags } from "../stores/chapter-tags";
 import { decodeEntities, canonicalUrl } from "../utils/formatting";
 import { isContentKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
@@ -52,6 +53,9 @@ export function SearchResultRow(props: SearchResultRowProps) {
 function ContentRow(props: SearchResultRowProps) {
   const item = () => props.row.item;
   const itemTags = () => {
+    if (!showChapterTags() && item().kind === "chapter") {
+      return [];
+    }
     const tags = (item().tags ?? []).map((t) => ({
       type: t.type || "General",
       name: t.name || "",

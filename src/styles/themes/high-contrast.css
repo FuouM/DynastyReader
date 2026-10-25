@@ -148,6 +148,11 @@
   :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .ds-stat-val {
     color: var(--sys-primary, #66b8ff) !important;
   }
+  :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .ds-series-completed-banner {
+    background: #000000 !important;
+    border: 1px solid var(--sys-success-accent, #22dd88) !important;
+    color: var(--sys-success-accent, #22dd88) !important;
+  }
   :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .win-button:disabled,
   :is(:root[data-theme="high-contrast"], body.ds-high-contrast) .win-button[aria-disabled="true"],
   :is(:root[data-theme="high-contrast"], body.ds-high-contrast) button:disabled {

@@ -4,6 +4,7 @@
 
 import {
   MOCK_SERIES,
+  MOCK_AUTHOR,
   MOCK_FOLLOWED_SERIES,
   MOCK_READING_PROGRESS,
   MOCK_READING_HISTORY,
@@ -23,6 +24,7 @@ export function getMockBridgeCode(): string {
   window.__TAURI_IS_MOCK__ = true;
 
   const MOCK_SERIES = ${JSON.stringify(MOCK_SERIES)};
+  const MOCK_AUTHOR = ${JSON.stringify(MOCK_AUTHOR)};
   const MOCK_FOLLOWED_SERIES = ${JSON.stringify(MOCK_FOLLOWED_SERIES)};
   const MOCK_READING_PROGRESS = ${JSON.stringify(MOCK_READING_PROGRESS)};
   const MOCK_READING_HISTORY = ${JSON.stringify(MOCK_READING_HISTORY)};
@@ -139,6 +141,9 @@ export function getMockBridgeCode(): string {
             };
           }
           return { status: 200, body: JSON.stringify(MOCK_SERIES), etag: "mock-etag" };
+        }
+        if (url.includes("drasdr7513")) {
+          return { status: 200, body: JSON.stringify(MOCK_AUTHOR), etag: "mock-etag-author" };
         }
 
         try {

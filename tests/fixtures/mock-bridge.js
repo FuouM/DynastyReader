@@ -457,6 +457,71 @@
             };
           }
         }
+        if (url.includes("drasdr7513") || url.includes("/authors/drasdr7513")) {
+          return {
+            status: 200,
+            body: JSON.stringify({
+              name: "Drasdr7513",
+              type: "Author",
+              permalink: "drasdr7513",
+              description: "Doujin artist.",
+              cover: "/mock-cover.jpg",
+              aliases: [],
+              tags: [],
+              taggings: [
+                {
+                  permalink: "girlfriend-for-a-day",
+                  title: "Girlfriend for a Day",
+                  released_on: "2026-09-12",
+                  tags: [
+                    { type: "Doujin", name: "BanG Dream!", permalink: "bang-dream" },
+                    { type: "Pairing", name: "Anon x Soyo", permalink: "anon-x-soyo" },
+                    { type: "General", name: "NSFW", permalink: "nsfw" },
+                    { type: "General", name: "Prequel", permalink: "prequel" },
+                    { type: "General", name: "Moderate amounts of sex", permalink: "moderate-amounts-of-sex" },
+                    { type: "General", name: "Finger licking", permalink: "finger-licking" },
+                    { type: "General", name: "Yuri", permalink: "yuri" },
+                    { type: "General", name: "Romance", permalink: "romance" },
+                    { type: "Scanlator", name: "Gouma-Den", permalink: "gouma-den" },
+                  ],
+                },
+                {
+                  permalink: "my-niece-aunt-seems-to-love-me-too",
+                  title: "My Niece/Aunt Seems to Love Me Too!?",
+                  released_on: "2026-09-12",
+                  tags: [
+                    { type: "Doujin", name: "BanG Dream!", permalink: "bang-dream" },
+                    { type: "Pairing", name: "Anon x Soyo", permalink: "anon-x-soyo" },
+                    { type: "Pairing", name: "Sakiko x Uika", permalink: "sakiko-x-uika" },
+                    { type: "General", name: "NSFW", permalink: "nsfw" },
+                    { type: "General", name: "Incest", permalink: "incest" },
+                    { type: "General", name: "Spoilers", permalink: "spoilers" },
+                    { type: "General", name: "Yuri", permalink: "yuri" },
+                    { type: "General", name: "Moderate amounts of sex", permalink: "moderate-amounts-of-sex" },
+                    { type: "Scanlator", name: "Gouma-Den", permalink: "gouma-den" },
+                  ],
+                },
+                {
+                  permalink: "mommy-for-a-day",
+                  title: "Mommy for a Day",
+                  released_on: "2026-10-24",
+                  tags: [
+                    { type: "Doujin", name: "BanG Dream!", permalink: "bang-dream" },
+                    { type: "General", name: "Sequel", permalink: "sequel" },
+                    { type: "General", name: "Yuri", permalink: "yuri" },
+                    { type: "General", name: "Masturbation", permalink: "masturbation" },
+                    { type: "Scanlator", name: "Gouma-Den", permalink: "gouma-den" },
+                    { type: "General", name: "NSFW", permalink: "nsfw" },
+                    { type: "General", name: "Roleplay", permalink: "roleplay" },
+                    { type: "Pairing", name: "Anon x Soyo", permalink: "anon-x-soyo" },
+                    { type: "General", name: "Lots of sex", permalink: "lots-of-sex" },
+                  ],
+                },
+              ],
+            }),
+            etag: "mock-etag-drasdr",
+          };
+        }
         if (url.includes("/series/")) {
           return {
             status: 200,
@@ -473,7 +538,15 @@
               ],
               taggings: [
                 { title: "Chapter 1: The Secret", permalink: "hana-ni-arashi-ch01", released_on: "2024-01-01" },
-                { title: "Chapter 2: Rooftop Lunch", permalink: "hana-ni-arashi-ch02", released_on: "2024-01-08" },
+                {
+                  title: "Chapter 2: Rooftop Lunch",
+                  permalink: "hana-ni-arashi-ch02",
+                  released_on: "2024-01-08",
+                  tags: [
+                    { type: "General", name: "Beach", permalink: "beach" },
+                    { type: "General", name: "Swimsuits", permalink: "swimsuits" },
+                  ],
+                },
               ],
             }),
             etag: "mock-etag",

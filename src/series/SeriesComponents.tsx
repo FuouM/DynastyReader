@@ -276,7 +276,7 @@ export function SeriesResumeBanner(props: SeriesResumeBannerProps) {
             )}
           </Show>
           <Show when={info().isCompleted}>
-            <div class="ds-series-completed-banner ds-muted">
+            <div class="ds-series-completed-banner">
               <CheckIcon size={14} />
               <span>{t("series.allRead")}</span>
             </div>

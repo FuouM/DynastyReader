@@ -20,6 +20,7 @@ import {
   type JSX,
 } from "solid-js";
 import { showBanner } from "../stores/topbar";
+import { showChapterTags, toggleChapterTags } from "../stores/chapter-tags";
 import { decodeEntities, errorMessage } from "../utils/formatting";
 import { t } from "../i18n";
 import { searchDynasty } from "../api/search";
@@ -327,6 +328,15 @@ export function BrowseSearch(props: BrowseSearchProps) {
       <GroupBox
         class="ds-search-panel"
         title={<IconText icon={<SearchIcon />}>{t("browse.search.panelTitle")}</IconText>}
+        actions={
+          <Button
+            className="ds-btn-compact"
+            title={showChapterTags() ? t("series.hideTagsTooltip") : t("series.showTagsTooltip")}
+            icon={<Icon name="tags" />}
+            text={showChapterTags() ? t("series.hideTags") : t("series.showTags")}
+            onClick={toggleChapterTags}
+          />
+        }
       >
         <div class="ds-col">
           <form
@@ -497,7 +507,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
 
         <Show when={!pane.loading() && model() !== undefined && pane.error() === undefined}>
           <div
-            class="ds-row ds-results-header"
+            class="ds-row ds-results-header ds-row-between"
           >
             <div class="ds-results-title">
               <IconText icon={<Icon name="list-stars" />}>{t("browse.search.resultsTitle")}</IconText>
@@ -512,6 +522,13 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 })()}
               </span>
             </div>
+            <Button
+              className="ds-btn-compact"
+              title={showChapterTags() ? t("series.hideTagsTooltip") : t("series.showTagsTooltip")}
+              icon={<Icon name="tags" />}
+              text={showChapterTags() ? t("series.hideTags") : t("series.showTags")}
+              onClick={toggleChapterTags}
+            />
           </div>
 
           <Show when={model()!.pageData.items.length === 0}>

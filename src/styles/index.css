@@ -874,12 +874,16 @@ body {
 .ds-chapter-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 4px 6px;
   border: 1px solid var(--sys-border-light, #e0e0e0);
   margin-bottom: 3px;
   cursor: pointer;
   font-size: var(--font-md);
+}
+.ds-chapter-row--has-tags {
+  align-items: flex-start;
+  padding: 5px 6px 6px;
 }
 .ds-chapter-row:hover {
   background: var(--sys-hover-bg, #f0f0f0);
@@ -889,6 +893,20 @@ body {
   background: var(--sys-hover-bg, #f9f9f9);
   border-left: 3px solid #10b981;
 }
+.ds-chapter-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ds-chapter-header-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
 .ds-chapter-title {
   flex: 1;
   min-width: 0;
@@ -896,10 +914,44 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.ds-chapter-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ds-chapter-tags .tag-pill {
+  font-size: 10px;
+  line-height: 14px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
 .ds-chapter-badge {
   font-size: var(--font-xs);
   color: var(--sys-text-muted, #666);
+}
+.ds-chapter-badge--inline {
   flex-shrink: 0;
+  white-space: nowrap;
+}
+.ds-chapter-badge--meta {
+  font-size: 11px;
+  line-height: 14px;
+  opacity: 0.85;
+  margin-top: 1px;
+}
+.ds-chapter-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ds-chapter-row--has-tags .ds-chapter-actions {
+  align-self: flex-start;
+  margin-top: 2px;
 }
 .ds-chapter-actions {
   display: inline-flex;
@@ -941,12 +993,15 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: 12px;
+  line-height: 16px;
   padding: 4px 10px;
-  background: color-mix(in srgb, #10b981 12%, transparent);
-  color: #10b981;
-  border-radius: 12px;
+  background: color-mix(in srgb, var(--sys-success-accent, #10b981) 12%, var(--sys-window-bg, #ffffff));
+  border: 1px solid color-mix(in srgb, var(--sys-success-accent, #10b981) 35%, transparent);
+  color: var(--sys-success-accent, #107c41);
+  border-radius: 3px;
   font-weight: 600;
+  font-style: normal;
 }
 
 /* Hotkey Cheatsheet Modal */

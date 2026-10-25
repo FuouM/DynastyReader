@@ -6,13 +6,16 @@ import { navigate } from "../stores/router";
 import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import type { ChapterRef } from "../types/routes";
-import type { Series } from "../types/api";
+import type { Series, SeriesTag } from "../types/api";
 import type { SeriesProgressRow } from "../types/db";
 import { OfflineBadge } from "../components/Badges";
 import { Icon, CheckIcon, CloudDownloadIcon } from "../components/Icon";
 import { Button } from "../components/Button";
+import { TagPill } from "../components/TagRow";
+import { showChapterTags, toggleChapterTags } from "../stores/chapter-tags";
 export interface ChapterMeta extends ChapterRef {
   volumeHeader?: string;
+  tags?: SeriesTag[];
 }
 
 function ChapterRow(props: {
@@ -71,9 +74,15 @@ function ChapterRow(props: {
     });
   };
 
+  const tags = () => props.ch.tags ?? [];
+  const hasTags = () => showChapterTags() && tags().length > 0;
+  const visibleTags = () => tags().slice(0, 8);
+  const hiddenCount = () => tags().length - 8;
+  const hiddenNames = () => hiddenCount() > 0 ? tags().slice(8).map((t) => t.name).join(", ") : "";
+
   return (
     <div
-      class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}`}
+      class={`ds-chapter-row${isRead() ? " ds-chapter-read" : ""}${hasTags() ? " ds-chapter-row--has-tags" : ""}`}
       role="button"
       tabIndex={0}
       onClick={openChapter}
@@ -84,13 +93,35 @@ function ChapterRow(props: {
         }
       }}
     >
-      <div class="ds-chapter-title ds-inline-flex-center-4">
-        <span>{decodeEntities(props.ch.title)}</span>
-        <OfflineBadge when={isFullyCached()} />
+      <div class="ds-chapter-body">
+        <div class="ds-chapter-header-line">
+          <div class="ds-chapter-title ds-inline-flex-center-4">
+            <span>{decodeEntities(props.ch.title)}</span>
+            <OfflineBadge when={isFullyCached()} />
+          </div>
+          <Show when={!hasTags() && badges().length > 0}>
+            <div class="ds-chapter-badge ds-chapter-badge--inline">{badges().join(" · ")}</div>
+          </Show>
+        </div>
+
+        <Show when={hasTags()}>
+          <div class="ds-chapter-tags">
+            <For each={visibleTags()}>
+              {(t) => <TagPill type={t.type} name={t.name} permalink={t.permalink} compact />}
+            </For>
+            <Show when={hiddenCount() > 0}>
+              <span class="tag-pill tag-meta ds-tag-more" title={hiddenNames()}>
+                +{hiddenCount()}
+              </span>
+            </Show>
+          </div>
+        </Show>
+
+        <Show when={hasTags() && badges().length > 0}>
+          <div class="ds-chapter-badge ds-chapter-badge--meta">{badges().join(" · ")}</div>
+        </Show>
       </div>
-      <Show when={badges().length > 0}>
-        <div class="ds-chapter-badge">{badges().join(" · ")}</div>
-      </Show>
+
       <div class="ds-chapter-actions" onClick={(e) => e.stopPropagation()}>
         <Show when={props.onToggleRead}>
           <Button
@@ -136,19 +167,28 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
         <div class="ds-stack-6 ds-mt-10">
           <div class="ds-row-between ds-chapter-list-header">
             <div class="ds-label">{t("series.chaptersCount", { count: props.chapters.length })}</div>
-            <Button
-              className="ds-btn-compact"
-              title={
-                props.sortOrder() === "asc"
-                  ? t("series.sortOldestTooltip")
-                  : t("series.sortNewestTooltip")
-              }
-              icon={<Icon name={props.sortOrder() === "asc" ? "sort-numeric-down" : "sort-numeric-down-alt"} />}
-              text={props.sortOrder() === "asc" ? t("series.sortAscending") : t("series.sortDescending")}
-              onClick={() =>
-                props.setSortOrder(props.sortOrder() === "asc" ? "desc" : "asc")
-              }
-            />
+            <div class="ds-flex-row ds-gap-4">
+              <Button
+                className="ds-btn-compact"
+                title={showChapterTags() ? t("series.hideTagsTooltip") : t("series.showTagsTooltip")}
+                icon={<Icon name="tags" />}
+                text={showChapterTags() ? t("series.hideTags") : t("series.showTags")}
+                onClick={toggleChapterTags}
+              />
+              <Button
+                className="ds-btn-compact"
+                title={
+                  props.sortOrder() === "asc"
+                    ? t("series.sortOldestTooltip")
+                    : t("series.sortNewestTooltip")
+                }
+                icon={<Icon name={props.sortOrder() === "asc" ? "sort-numeric-down" : "sort-numeric-down-alt"} />}
+                text={props.sortOrder() === "asc" ? t("series.sortAscending") : t("series.sortDescending")}
+                onClick={() =>
+                  props.setSortOrder(props.sortOrder() === "asc" ? "desc" : "asc")
+                }
+              />
+            </div>
           </div>
           <div class="ds-chapter-list">
             <For each={props.ordered()}>

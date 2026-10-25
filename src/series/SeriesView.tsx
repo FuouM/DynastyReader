@@ -21,7 +21,7 @@ import { extractVolumeHeader, decodeEntities, canonicalUrl, errorMessage } from 
 import { isMobile } from "../stores/platform";
 import { navigate, route, setSessionTab } from "../stores/router";
 import { setActions, setTitle, showBanner } from "../stores/topbar";
-import { seriesTypeToPath } from "../taxonomy";
+import { seriesTypeToPath, isScanlatorTag, sortTagsByCategory } from "../taxonomy";
 import { t } from "../i18n";
 import { fetchChapter, fetchSeries, getSeriesCover } from "../api/series";
 import { enqueueChapters } from "../ipc";
@@ -55,13 +55,32 @@ class SeriesRedirected extends Error {}
 function collectChapters(series: Series): ChapterMeta[] {
   const out: ChapterMeta[] = [];
   let volumeHeader: string | undefined;
+
+  const isRegularSeries = (series.type ?? "").toLowerCase() === "series";
+  const seriesTagPerms = new Set((series.tags ?? []).map((t) => (t.permalink || "").toLowerCase()));
+  const seriesTagNames = new Set((series.tags ?? []).map((t) => (t.name || "").toLowerCase()));
+  const containerPerm = (series.permalink || "").toLowerCase();
+  const containerName = (series.name || "").toLowerCase();
+
   for (const t of series.taggings ?? []) {
     if (t.header) {
       volumeHeader = t.header;
       continue;
     }
     if (t.permalink) {
-      const scanlatorTag = t.tags?.find((tag) => tag.type === "Scanlator");
+      const scanlatorTag = t.tags?.find((tag) => isScanlatorTag(tag.type));
+
+      const rawChapterTags = (t.tags ?? []).filter((tag) => {
+        if (isScanlatorTag(tag.type)) return false;
+        const p = (tag.permalink || "").toLowerCase();
+        const n = (tag.name || "").toLowerCase();
+        if (p === containerPerm || n === containerName) return false;
+        if (isRegularSeries && (seriesTagPerms.has(p) || seriesTagNames.has(n))) return false;
+        return true;
+      });
+
+      const uniqueTags = rawChapterTags.length > 0 ? sortTagsByCategory(rawChapterTags) : undefined;
+
       out.push({
         title: t.title || t.permalink,
         permalink: t.permalink,
@@ -69,6 +88,7 @@ function collectChapters(series: Series): ChapterMeta[] {
         volumeHeader: volumeHeader || extractVolumeHeader(t.title || t.permalink),
         scanlatorGroup: scanlatorTag?.permalink ? scanlatorTag.permalink.replace(/^mdx-group:/, "") : undefined,
         scanlatorGroupName: scanlatorTag?.name,
+        tags: uniqueTags,
       });
     }
   }
