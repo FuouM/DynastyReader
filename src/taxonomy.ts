@@ -215,7 +215,7 @@ const STATUS_NAMES: Record<string, true> = {
   hiatus: true,
   discontinued: true,
 };
-function isArtistTag(type?: string | null): boolean {
+export function isArtistTag(type?: string | null): boolean {
   const t = (type ?? "").toLowerCase();
   return t === "author" || t === "artist";
 }

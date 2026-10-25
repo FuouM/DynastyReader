@@ -124,14 +124,15 @@ export function SeriesView() {
   const [data, { refetch }] = createResource(
     () => ({
       permalink: route().seriesPermalink,
+      type: route().seriesType,
       forceTick: forceTick(),
     }),
-    async ({ permalink, forceTick: tick }) => {
+    async ({ permalink, type, forceTick: tick }) => {
       if (!permalink) throw new Error(t("series.missingPermalinkError"));
 
       let series: Series;
       try {
-        series = await fetchSeries(permalink, tick > 0);
+        series = await fetchSeries(permalink, tick > 0, type);
       } catch (err) {
         if (!permalink.startsWith("mdx:") && !permalink.startsWith("local:")) {
           try {

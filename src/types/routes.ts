@@ -36,6 +36,7 @@ export interface Route {
   collectionId?: number;
   seriesPermalink?: string;
   seriesName?: string;
+  seriesType?: string;
   chapterPermalink?: string;
   chapterTitle?: string;
   /** Ordered chapter list of the containing series (drives prev/next). */

@@ -1,7 +1,8 @@
 import { For, Show } from "solid-js";
 import type { SeriesTag } from "../types/api";
 import { navigate } from "../stores/router";
-import { tagClass } from "../taxonomy";
+import { tagClass, isArtistTag } from "../taxonomy";
+import { slugify } from "../utils/formatting";
 import { t } from "../i18n";
 
 export interface TagPillProps {
@@ -14,15 +15,16 @@ export interface TagPillProps {
 export function TagPill(props: TagPillProps) {
   const activate = (ev: Event) => {
     ev.stopPropagation();
-    if (props.permalink && !props.permalink.startsWith("mdx-")) {
+    const permalink = props.permalink || (isArtistTag(props.type) && props.name ? slugify(props.name) : undefined);
+    if (permalink && !permalink.startsWith("mdx-")) {
       navigate({
         view: "series",
-        seriesPermalink: props.permalink,
+        seriesPermalink: permalink,
         seriesName: props.name,
+        seriesType: props.type,
       });
       return;
     }
-
     navigate({
       view: "browse",
       browseTab: "search",

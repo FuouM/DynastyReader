@@ -16,7 +16,7 @@ import { SeriesSchema, ChapterSchema, type ValidatedChapter } from "./schemas";
 import { coverPathsForChapter, coverPathsForSeries, fetchAndCacheCover } from "./cover-pipeline";
 const SERIES_PRIMARY_TIMEOUT_MS = 15_000;
 const SERIES_FALLBACK_TIMEOUT_MS = 5_000;
-
+export const SERIES_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
 /** Ordered candidate JSON endpoints for a series-style permalink. */
 function seriesEndpoints(permalink: string, preferredType?: string): string[] {
   const enc = encodeURIComponent(permalink);
@@ -132,13 +132,36 @@ export async function fetchSeries(
   }
   const key = seriesKey(permalink);
   const cached = await getCached(key);
+
+  // Fast cache return: if fresh within TTL and not forced, return cached SQLite data immediately
+  if (!force && cached?.json_payload && Date.now() - cached.cached_at < SERIES_TTL_MS) {
+    try {
+      const parsed = SeriesSchema.parse(JSON.parse(cached.json_payload));
+      recordCacheHit(cached.json_payload.length);
+      return parsed;
+    } catch (parseErr) {
+      log.warn("api/series", `cached JSON parse failed for series "${permalink}":`, parseErr);
+    }
+  }
+
+  // Deduce preferred entity kind from cached metadata if not explicitly provided
+  let effectivePreferredType = preferredType;
+  if (!effectivePreferredType && cached?.json_payload) {
+    try {
+      const parsed = JSON.parse(cached.json_payload) as { type?: string };
+      if (parsed.type) {
+        effectivePreferredType = parsed.type;
+      }
+    } catch {}
+  }
+
   const headers: Record<string, string> = {};
   if (cached?.etag && !force) {
     headers["If-None-Match"] = cached.etag;
   }
 
   let lastErr: Error | null = null;
-  const endpoints = seriesEndpoints(permalink, preferredType);
+  const endpoints = seriesEndpoints(permalink, effectivePreferredType);
   for (let i = 0; i < endpoints.length; i++) {
     const url = endpoints[i];
     if (!url) continue;

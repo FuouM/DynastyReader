@@ -4,7 +4,11 @@ import { FEED_TTL_MS } from "./feed";
 import { log } from "../utils/log";
 import { saveDirectoryEntries, saveSuggestEntries } from "../db/directory.repo";
 import type { Directory, DirectoryGroup, SuggestResult } from "../types/api";
-
+function sleep(ms: number): Promise<void> {
+  const { promise, resolve } = Promise.withResolvers<void>();
+  setTimeout(resolve, ms);
+  return promise;
+}
 /** Normalized, ordered letter → entries groups from a directory payload. */
 export function directoryGroups(d: unknown): DirectoryGroup[] {
   if (!d || typeof d !== "object") return [];
@@ -67,14 +71,21 @@ const syncActive = { series: false, tags: false };
 export async function syncAllDirectoryPages(kind: "series" | "tags", totalPages: number): Promise<void> {
   if (syncActive[kind] || totalPages <= 1) return;
   syncActive[kind] = true;
+  const CHUNK_SIZE = 2;
   try {
-    const promises: Promise<unknown>[] = [];
-    for (let p = 1; p <= totalPages; p++) {
-      const url = kind === "series" ? `/series.json?page=${p}` : `/tags.json?page=${p}`;
-      const key = `${kind === "series" ? "dir:series" : "dir:tags"}:${p}`;
-      promises.push(fetchDirectory(url, key, kind));
+    for (let p = 1; p <= totalPages; p += CHUNK_SIZE) {
+      const batch: Promise<unknown>[] = [];
+      for (let offset = 0; offset < CHUNK_SIZE && p + offset <= totalPages; offset++) {
+        const pageNum = p + offset;
+        const url = kind === "series" ? `/series.json?page=${pageNum}` : `/tags.json?page=${pageNum}`;
+        const key = `${kind === "series" ? "dir:series" : "dir:tags"}:${pageNum}`;
+        batch.push(fetchDirectory(url, key, kind));
+      }
+      await Promise.allSettled(batch);
+      if (p + CHUNK_SIZE <= totalPages) {
+        await sleep(150);
+      }
     }
-    await Promise.allSettled(promises);
   } finally {
     syncActive[kind] = false;
   }

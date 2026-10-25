@@ -85,7 +85,7 @@ function isSameRoute(a: Route, b: Route): boolean {
     );
   }
   if (a.view === "series") {
-    return a.seriesPermalink === b.seriesPermalink;
+    return a.seriesPermalink === b.seriesPermalink && (a.seriesType ?? "") === (b.seriesType ?? "");
   }
   if (a.view === "browse") {
     return (

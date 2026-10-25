@@ -522,6 +522,28 @@
             etag: "mock-etag-drasdr",
           };
         }
+        if (url.includes("kobachi") || url.includes("/authors/kobachi")) {
+          return {
+            status: 200,
+            body: JSON.stringify({
+              name: "Kobachi Ruka",
+              type: "Author",
+              permalink: "kobachi-ruka",
+              description: "Manga artist.",
+              cover: "/mock-cover.jpg",
+              aliases: [],
+              tags: [],
+              taggings: [
+                {
+                  permalink: "hana-ni-arashi-ch01",
+                  title: "Chapter 1: The Secret",
+                  released_on: "2024-01-01",
+                },
+              ],
+            }),
+            etag: "mock-etag-kobachi",
+          };
+        }
         if (url.includes("/series/")) {
           return {
             status: 200,

@@ -239,7 +239,12 @@ export function BrowseView() {
         withTag: parsed.permalink,
       });
     } else {
-      navigate({ view: "series", seriesPermalink: parsed.permalink, seriesName: parsed.permalink });
+      navigate({
+        view: "series",
+        seriesPermalink: parsed.permalink,
+        seriesName: parsed.permalink,
+        seriesType: parsed.entityKind,
+      });
     }
   };
 

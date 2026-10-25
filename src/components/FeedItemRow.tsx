@@ -133,11 +133,12 @@ export function FeedItemRow(props: FeedItemRowProps) {
     });
   };
 
-  const openSeries = (permalink: string, name: string): void => {
+  const openSeries = (permalink: string, name: string, type?: string): void => {
     navigate({
       view: "series",
       seriesPermalink: permalink,
       seriesName: name,
+      seriesType: type,
     });
   };
 
@@ -240,12 +241,12 @@ export function FeedItemRow(props: FeedItemRowProps) {
           onClick={(ev) => {
             ev.stopPropagation();
             if (isDirectSeries()) {
-              guardedOpen(ch().title, () => openSeries(ch().permalink, ch().title));
+              guardedOpen(ch().title, () => openSeries(ch().permalink, ch().title, ch().kind));
             } else if (coverInfo().isStandalone) {
               guardedOpen(ch().title, openChapter);
             } else {
               guardedOpen(coverInfo().seriesName || ch().title, () =>
-                openSeries(coverInfo().seriesPermalink, coverInfo().seriesName || coverInfo().seriesPermalink),
+                openSeries(coverInfo().seriesPermalink, coverInfo().seriesName || coverInfo().seriesPermalink, coverInfo().seriesType),
               );
             }
           }}
@@ -273,7 +274,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
                 onClick={(ev) => {
                   ev.stopPropagation();
                   guardedOpen(ch().series!, () =>
-                    openSeries(coverInfo().seriesPermalink || containerTag()?.permalink || (ch().series ? slugify(ch().series!) : ch().permalink), ch().series!),
+                    openSeries(coverInfo().seriesPermalink || containerTag()?.permalink || (ch().series ? slugify(ch().series!) : ch().permalink), ch().series!, coverInfo().seriesType || containerTag()?.type),
                   );
                 }}
               >

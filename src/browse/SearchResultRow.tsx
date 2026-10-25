@@ -118,7 +118,12 @@ function TaxonomicRow(props: { row: SearchRow; blMode: BlacklistMode }) {
     if (item().kind === "tag") {
       navigate({ view: "browse", browseTab: "search", withTag: item().title });
     } else {
-      navigate({ view: "series", seriesPermalink: item().permalink, seriesName: item().title });
+      navigate({
+        view: "series",
+        seriesPermalink: item().permalink,
+        seriesName: item().title,
+        seriesType: item().kind,
+      });
     }
   };
 
