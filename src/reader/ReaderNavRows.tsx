@@ -35,6 +35,7 @@ import {
   DashIcon,
   PlusIcon,
   SlidersIcon,
+  BookmarkIcon,
 } from "../components/Icon";
 import { ReaderProgressWrap } from "./ReaderProgressWrap";
 import { ReaderFilterPopover, isReaderFilterDefault } from "./ReaderFilterControls";
@@ -114,6 +115,15 @@ export function ReaderMainRow(props: NavRowProps) {
           text={s.pagedLayout() === "spread" ? "Dual" : "Single"}
           title={t("reader.toolbar.spreadTooltip", { state: s.pagedLayout() === "spread" ? "ON" : "OFF" })}
           onClick={() => s.setPagedLayout(s.pagedLayout() === "spread" ? "single" : "spread")}
+        />
+      </Show>
+      <Show when={s.isFullscreen()}>
+        <Button
+          className="ds-nav-btn-page ds-btn-icon"
+          classList={{ primary: s.bookmarked() }}
+          icon={<BookmarkIcon filled={s.bookmarked()} />}
+          title={s.bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
+          onClick={() => void s.toggleBookmark()}
         />
       </Show>
       <Show when={showControls()}>
@@ -241,6 +251,13 @@ export function ReaderControlsRow(props: NavRowProps) {
         icon={<SlidersIcon />}
         title={t("settings.reader.filterGroup")}
         onClick={() => setFilterOpen(!filterOpen())}
+      />
+      <Button
+        className="ds-ctrl-btn ds-btn-icon"
+        classList={{ primary: s.bookmarked() }}
+        icon={<BookmarkIcon filled={s.bookmarked()} />}
+        title={s.bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
+        onClick={() => void s.toggleBookmark()}
       />
       <Show when={!isMobile()}>
         <Button

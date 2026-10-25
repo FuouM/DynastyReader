@@ -39,6 +39,7 @@ import {
   SunIcon,
   MoonIcon,
   CloseIcon,
+  BookmarkIcon,
   DoublePageIcon,
   StorageIcon,
   CloudDownloadIcon,
@@ -507,6 +508,14 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                     }}
                   />
                 </Show>
+                <Button
+                  icon={<BookmarkIcon filled={s.bookmarked()} />}
+                  text={s.bookmarked() ? t("browse.feed.saved") : t("browse.feed.readLater")}
+                  classList={{ primary: s.bookmarked() }}
+                  title={s.bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
+                  cssText="height:32px;font-size:11.5px;justify-content:center;"
+                  onClick={() => void s.toggleBookmark()}
+                />
                 <Button
                   icon={s.isFullyCached() ? <CheckIcon /> : <CloudDownloadIcon />}
                   text={s.isFullyCached() ? t("reader.toolbar.cachedShort") : t("reader.toolbar.cacheShort")}

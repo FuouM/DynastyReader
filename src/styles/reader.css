@@ -1556,7 +1556,8 @@
   width: 100%;
 }
 .ds-chapter-end-prev-btn,
-.ds-chapter-end-series-btn {
+.ds-chapter-end-series-btn,
+.ds-chapter-end-bookmark-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;

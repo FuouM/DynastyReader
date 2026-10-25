@@ -13,6 +13,8 @@ import { convertFileSrc, fileDelete } from "../ipc";
 import { pageOutputPath } from "../api/navigation";
 import { t } from "../i18n";
 import { toggleTheme as toggleThemeStore } from "../stores/theme";
+import { addBookmark, removeBookmark } from "../db/library.repo";
+import { errorMessage } from "../utils/formatting";
 import type { ChapterRef, Route } from "../types/routes";
 import type {
   FitMode,
@@ -96,6 +98,9 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.permalink = route.chapterPermalink ?? "";
     this.state = createReaderState();
     Object.assign(this, this.state);
+    if (route.chapterTitle) this.setChapterTitle(route.chapterTitle);
+    if (route.seriesPermalink) this.setSeriesPermalink(route.seriesPermalink);
+    if (route.seriesName) this.setSeriesName(route.seriesName);
     const [scanlatorGroup, setScanlatorGroup] = createSignal<string | null>(null);
     this.activeScanlatorGroup = scanlatorGroup;
     this.setActiveScanlatorGroup = setScanlatorGroup;
@@ -821,6 +826,32 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   retry(): void {
     boot.retryReaderSession(this);
   }
+  async toggleBookmark(): Promise<void> {
+    try {
+      if (this.bookmarked()) {
+        await removeBookmark(this.permalink);
+        this.setBookmarked(false);
+        showBanner(t("browse.feed.bookmarkRemovedBanner", { title: this.chapterTitle() || this.permalink }));
+      } else {
+        const seriesPerm = this.seriesPermalink() ?? "";
+        const sName = this.seriesName();
+        const chTitle = this.chapterTitle() || this.permalink;
+        await addBookmark({
+          chapterPermalink: this.permalink,
+          seriesPermalink: seriesPerm,
+          seriesName: seriesPerm ? (sName || chTitle) : (sName && sName !== chTitle ? sName : ""),
+          chapterTitle: chTitle,
+          pageIndex: this.currentIndex(),
+        });
+        this.setBookmarked(true);
+        showBanner(t("browse.feed.bookmarkSavedBanner", { title: chTitle }));
+      }
+    } catch (err) {
+      const msg = errorMessage(err);
+      showBanner(t("reader.toolbar.bookmarkErrorBanner", { msg }));
+    }
+  }
+
 
   private wideResetScheduled = false;
   scheduleWidePageLayoutReset(): void {

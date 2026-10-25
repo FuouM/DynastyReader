@@ -10,7 +10,6 @@ import { navigate, closeSessionMangaTab } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
 import { errorMessage, canonicalUrl } from "../utils/formatting";
-import { addBookmark, removeBookmark } from "../db/library.repo";
 import { openExternal } from "../api/navigation";
 import type { ChapterPage } from "../types/api";
 import { Button } from "./Button";
@@ -36,6 +35,7 @@ export interface ReaderActionsController {
   isPageFailed: (index: number) => boolean;
   enqueue: (index: number) => void;
   setBookmarked?: (v: boolean) => void;
+  toggleBookmark: () => Promise<void>;
 }
 
 export interface ReaderActionsProps {
@@ -58,7 +58,6 @@ export function ReaderActions(props: ReaderActionsProps) {
   const getSeriesPermalink = () => unwrap(props.ctrl.seriesPermalink);
   const getSeriesName = () => unwrap(props.ctrl.seriesName);
   const getChapterTitle = () => unwrap(props.ctrl.chapterTitle);
-  const getCurrentIndex = () => unwrap(props.ctrl.currentIndex);
   const getPagesLength = () => unwrap(props.ctrl.pages).length;
 
   const isCached = (i: number) => {
@@ -74,26 +73,7 @@ export function ReaderActions(props: ReaderActionsProps) {
   const toggleBookmark = async () => {
     if (pending()) return;
     setPending(true);
-    try {
-      if (bookmarked()) {
-        await removeBookmark(props.ctrl.permalink);
-        setBookmarked(false);
-        props.ctrl.setBookmarked?.(false);
-      } else {
-        await addBookmark({
-          chapterPermalink: props.ctrl.permalink,
-          seriesPermalink: getSeriesPermalink() ?? "",
-          seriesName: getSeriesName() ?? "",
-          chapterTitle: getChapterTitle(),
-          pageIndex: getCurrentIndex(),
-        });
-        setBookmarked(true);
-        props.ctrl.setBookmarked?.(true);
-      }
-    } catch (err) {
-      const msg = errorMessage(err);
-      showBanner(t("reader.toolbar.bookmarkErrorBanner", { msg }));
-    }
+    await props.ctrl.toggleBookmark();
     setPending(false);
   };
 

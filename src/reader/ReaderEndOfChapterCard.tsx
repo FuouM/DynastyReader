@@ -9,7 +9,7 @@ import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import { navigate } from "../stores/router";
 import { triggerHaptic } from "../utils/haptics";
-import { CheckIcon, ArrowRightIcon, ArrowLeftIcon, Icon } from "../components/Icon";
+import { CheckIcon, ArrowRightIcon, ArrowLeftIcon, Icon, BookmarkIcon } from "../components/Icon";
 export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
   const s = props.session;
   const nextChapter = createMemo(() => {
@@ -405,6 +405,15 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
             <span>{t("reader.endOfChapterCard.backToSeries")}</span>
           </button>
         </Show>
+        <button
+          type="button"
+          class={`win-button ds-chapter-end-bookmark-btn${s.bookmarked() ? " primary" : ""}`}
+          onClick={() => void s.toggleBookmark()}
+          title={s.bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
+        >
+          <BookmarkIcon filled={s.bookmarked()} />
+          <span>{s.bookmarked() ? t("browse.feed.saved") : t("browse.feed.readLater")}</span>
+        </button>
         <button
           type="button"
           class="win-button ds-chapter-end-browse-btn"

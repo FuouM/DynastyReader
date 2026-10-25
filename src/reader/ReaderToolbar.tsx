@@ -11,9 +11,7 @@ import type { ReaderSession } from "./reader-session";
 import { useReader } from "./reader-context";
 import { isMobile } from "../stores/platform";
 import { exitReader } from "../stores/router";
-import { showBanner } from "../stores/topbar";
-import { decodeEntities, errorMessage } from "../utils/formatting";
-import { addBookmark, removeBookmark } from "../db/library.repo";
+import { decodeEntities } from "../utils/formatting";
 
 import { t } from "../i18n";
 import { getReaderNavPosition, getReaderFilterCss } from "./settings";
@@ -63,28 +61,6 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
       s.gotoSeries();
     }
   };
-  const handleToggleBookmark = async () => {
-    try {
-      if (s.bookmarked()) {
-        await removeBookmark(s.permalink);
-        s.setBookmarked(false);
-        showBanner(t("browse.feed.bookmarkRemovedBanner", { title: s.chapterTitle() }));
-      } else {
-        await addBookmark({
-          chapterPermalink: s.permalink,
-          seriesPermalink: s.seriesPermalink() ?? "",
-          seriesName: s.seriesName() ?? "",
-          chapterTitle: s.chapterTitle(),
-          pageIndex: s.currentIndex(),
-        });
-        s.setBookmarked(true);
-        showBanner(t("browse.feed.bookmarkSavedBanner", { title: s.chapterTitle() }));
-      }
-    } catch (err) {
-      const msg = errorMessage(err);
-      showBanner(t("browse.feed.bookmarkErrorBanner", { msg }));
-    }
-  };
 
   return (
     <>
@@ -117,7 +93,7 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
                 classList={{ primary: s.bookmarked() }}
                 icon={<BookmarkIcon filled={s.bookmarked()} />}
                 title={s.bookmarked() ? t("browse.feed.removeFromReadLater") : t("browse.feed.saveForReadLater")}
-                onClick={() => void handleToggleBookmark()}
+                onClick={() => void s.toggleBookmark()}
               />
               <Button
                 className="ds-btn-icon"
