@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDynastySearchUrl } from "../../src/api/search";
+import { buildDynastySearchUrl, resolveDynastyTagId } from "../../src/api/search";
 
 describe("api/search - buildDynastySearchUrl", () => {
   it("builds query URL without setting q for pure tag searches", () => {
@@ -44,5 +44,17 @@ describe("api/search - buildDynastySearchUrl", () => {
     });
     const parsed = new URL(url);
     expect(parsed.searchParams.get("page")).toBeNull();
+  });
+});
+
+describe("api/search - resolveDynastyTagId", () => {
+  it("returns numeric tag string directly if already numeric", async () => {
+    const res = await resolveDynastyTagId("5120");
+    expect(res).toBe("5120");
+  });
+
+  it("returns empty string for empty input", async () => {
+    const res = await resolveDynastyTagId("");
+    expect(res).toBe("");
   });
 });

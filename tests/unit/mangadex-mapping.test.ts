@@ -4,6 +4,7 @@ import {
   formatMangaDexChapterTitle,
   getMangaCoverUrl,
   getMangaAuthors,
+  getMangaAuthorEntities,
   mangaDexToStandardSeries,
   mangaDexToStandardChapter,
   sortMangaDexChapters,
@@ -295,5 +296,28 @@ describe("mangadex/mapping - sortMangaDexChapters", () => {
 
     const sorted = sortMangaDexChapters(chapters);
     expect(sorted.map((c) => c.id)).toEqual(["novol-c1", "novol-c2", "v15-c114"]);
+  });
+});
+
+describe("mangadex/mapping - getMangaAuthorEntities", () => {
+  it("extracts author and artist entities with IDs and names without duplicates", () => {
+    const manga = {
+      relationships: [
+        { id: "author-1", type: "author", attributes: { name: "Author One" } },
+        { id: "artist-1", type: "artist", attributes: { name: "Artist One" } },
+        { id: "author-1", type: "author", attributes: { name: "Author One" } },
+        { id: "cover-1", type: "cover_art", attributes: {} },
+      ],
+    } as unknown as MangaDexManga;
+
+    const entities = getMangaAuthorEntities(manga);
+    expect(entities).toEqual([
+      { id: "author-1", name: "Author One", type: "author" },
+      { id: "artist-1", name: "Artist One", type: "artist" },
+    ]);
+  });
+
+  it("returns empty array when relationships are missing or empty", () => {
+    expect(getMangaAuthorEntities({} as MangaDexManga)).toEqual([]);
   });
 });

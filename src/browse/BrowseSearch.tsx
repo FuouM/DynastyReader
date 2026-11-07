@@ -29,10 +29,14 @@ import { suggestMangaDex } from "./BrowseView";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
 import { activeProvider } from "../stores/provider";
 import { MANGADEX_UUID_REGEX } from "../providers/mangadex/api/constants";
-import { getTags, searchManga } from "../providers/mangadex/api/manga";
-import { formatMangaTitle, getMangaAuthors } from "../providers/mangadex/mapping";
+import { getTags, searchManga, searchAuthors } from "../providers/mangadex/api/manga";
+import { formatMangaTitle, getMangaAuthors, getMangaAuthorEntities } from "../providers/mangadex/mapping";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
 import type { BlacklistMode } from "../types/blacklist";
+
+const MANGADEX_DOUJIN_TAG = "b13b2a48-c720-44a9-9c77-39c9979373fb";
+const MANGADEX_ANTHOLOGY_TAG = "51d83883-4103-437c-b4b1-731cb73d786c";
+const MANGADEX_ONESHOT_TAG = "0234a31e-a729-4e28-9d6a-3f87c4966b9e";
 import {
   setTopPagerFor,
   useDelayedSpinner,
@@ -100,8 +104,32 @@ export function BrowseSearch(props: BrowseSearchProps) {
     revision: props.revision,
     load: async (page) => {
       if (activeProvider() === "mangadex") {
-        let includedTags: string[] | undefined;
-        let excludedTags: string[] | undefined;
+        const selClasses = classes();
+        if (selClasses.has("Author")) {
+          const authorMatches = await searchAuthors(q() || "", 20);
+          const items: SearchResultItem[] = authorMatches.map((a) => ({
+            kind: "author",
+            title: a.attributes.name,
+            permalink: `mdx-author:${a.id}`,
+            tags: [],
+          }));
+          const pageData: SearchResultPage = {
+            items,
+            currentPage: 1,
+            totalPages: 1,
+            query: q() || "Authors",
+          };
+          return { pageData, fullyCachedSet: new Set<string>(), blMode: getBlacklistMode() };
+        }
+
+        const includedTags: string[] = [];
+        const excludedTags: string[] = [];
+        const authorIds: string[] = [];
+
+        if (selClasses.has("Doujin")) includedTags.push(MANGADEX_DOUJIN_TAG);
+        if (selClasses.has("Anthology")) includedTags.push(MANGADEX_ANTHOLOGY_TAG);
+        if (selClasses.has("Chapter")) includedTags.push(MANGADEX_ONESHOT_TAG);
+
         const currentWith = withTags();
         const currentWithout = withoutTags();
 
@@ -116,15 +144,34 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 if (val) tagMap.set(val.toLowerCase(), t.id);
               }
             }
-            if (currentWith.length > 0) {
-              includedTags = currentWith
-                .map((t) => tagMap.get(t.toLowerCase()) || (t.startsWith("mdx-tag:") ? t.slice(8) : (MANGADEX_UUID_REGEX.test(t) ? t : undefined)))
-                .filter(Boolean) as string[];
+            for (const t of currentWith) {
+              const lower = t.toLowerCase();
+              if (t.startsWith("mdx-author:")) {
+                authorIds.push(t.slice("mdx-author:".length));
+              } else if (tagMap.has(lower)) {
+                includedTags.push(tagMap.get(lower)!);
+              } else if (t.startsWith("mdx-tag:")) {
+                includedTags.push(t.slice("mdx-tag:".length));
+              } else if (MANGADEX_UUID_REGEX.test(t)) {
+                includedTags.push(t);
+              } else {
+                try {
+                  const authorMatches = await searchAuthors(t, 1);
+                  if (authorMatches[0]) {
+                    authorIds.push(authorMatches[0].id);
+                  }
+                } catch {}
+              }
             }
-            if (currentWithout.length > 0) {
-              excludedTags = currentWithout
-                .map((t) => tagMap.get(t.toLowerCase()) || (t.startsWith("mdx-tag:") ? t.slice(8) : (MANGADEX_UUID_REGEX.test(t) ? t : undefined)))
-                .filter(Boolean) as string[];
+            for (const t of currentWithout) {
+              const lower = t.toLowerCase();
+              if (tagMap.has(lower)) {
+                excludedTags.push(tagMap.get(lower)!);
+              } else if (t.startsWith("mdx-tag:")) {
+                excludedTags.push(t.slice("mdx-tag:".length));
+              } else if (MANGADEX_UUID_REGEX.test(t)) {
+                excludedTags.push(t);
+              }
             }
           } catch (e) {
             log.warn("browse-search", "failed to resolve MangaDex tags:", e);
@@ -139,26 +186,34 @@ export function BrowseSearch(props: BrowseSearchProps) {
           order.createdAt = "desc";
         } else if (currentSort === "released_on") {
           order.latestUploadedChapter = "desc";
+        } else if (q()) {
+          order.relevance = "desc";
         } else {
           order.latestUploadedChapter = "desc";
         }
 
         const mdxRes = await searchManga({
           title: q() || undefined,
-          includedTags: includedTags && includedTags.length > 0 ? includedTags : undefined,
-          excludedTags: excludedTags && excludedTags.length > 0 ? excludedTags : undefined,
+          includedTags: includedTags.length > 0 ? includedTags : undefined,
+          excludedTags: excludedTags.length > 0 ? excludedTags : undefined,
+          authorOrArtist: authorIds.length === 1 ? authorIds[0] : undefined,
+          authors: authorIds.length > 1 ? authorIds : undefined,
           order,
           limit: 20,
           offset: (page - 1) * 20,
         });
         const totalPages = Math.max(1, Math.ceil((mdxRes.total ?? 0) / 20));
         const items: SearchResultItem[] = (mdxRes.data || []).map((m) => {
-          const authors = getMangaAuthors(m);
+          const authorEntities = getMangaAuthorEntities(m);
+          const firstAuthor = authorEntities[0];
+          const legacyAuthors = getMangaAuthors(m);
           return {
             kind: "series",
             title: formatMangaTitle(m),
             permalink: `mdx:${m.id}`,
-            author: authors[0] ? { name: authors[0], permalink: `mdx-author:${authors[0]}` } : undefined,
+            author: firstAuthor
+              ? { name: firstAuthor.name, permalink: `mdx-author:${firstAuthor.id}` }
+              : (legacyAuthors[0] ? { name: legacyAuthors[0], permalink: `mdx-author:${legacyAuthors[0]}` } : undefined),
             tags: (m.attributes.tags || []).map((t) => ({
               type: "Tag",
               name: t.attributes?.name?.en || t.id,
@@ -259,6 +314,16 @@ export function BrowseSearch(props: BrowseSearchProps) {
           if (name && (!qLower || name.toLowerCase().includes(qLower))) {
             matches.push({ name, type: "Tag" });
           }
+        }
+        if (matches.length < 5 && qLower.length >= 2) {
+          try {
+            const authors = await searchAuthors(qLower, 5);
+            for (const a of authors) {
+              if (a.attributes?.name && !matches.some((m) => m.name === a.attributes.name)) {
+                matches.push({ name: a.attributes.name, type: "Author" });
+              }
+            }
+          } catch {}
         }
         return matches.slice(0, 10);
       } catch {

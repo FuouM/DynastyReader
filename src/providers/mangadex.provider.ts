@@ -48,11 +48,12 @@ import {
   clearMangaDexCachedChapters,
   purgeMangaDexCache,
 } from "./mangadex/db/cache.repo";
-import { getManga, getAllMangaFeed } from "./mangadex/api/manga";
+import { getManga, getAllMangaFeed, getAuthor, searchAuthors, searchManga } from "./mangadex/api/manga";
 import {
   formatMangaTitle,
   getMangaCoverUrl,
   getMangaAuthors,
+  getMangaAuthorEntities,
   sortMangaDexChapters,
   formatMangaDexChapterTitle,
 } from "./mangadex/mapping";
@@ -75,7 +76,9 @@ import type {
   BookmarkRow,
   BookmarkPageResult,
 } from "../types/db";
-import type { Series, Chapter, SeriesTag, SeriesTaggings } from "../types/api";
+import type { Series, Chapter, SeriesTag, SeriesTaggings, SeriesTaggable } from "../types/api";
+import type { MangaDexAuthor, MangaDexManga } from "./mangadex/types";
+import { log } from "../utils/log";
 
 export class MangaDexProvider implements ContentProviderAdapter {
   readonly id = "mangadex" as const;
@@ -97,6 +100,9 @@ export class MangaDexProvider implements ContentProviderAdapter {
 
   extractEntityId(permalink: string): string {
     if (!permalink) return "";
+    if (permalink.startsWith("mdx-author:")) return permalink.slice("mdx-author:".length);
+    if (permalink.startsWith("mdx-group:")) return permalink.slice("mdx-group:".length);
+    if (permalink.startsWith("mdx-tag:")) return permalink.slice("mdx-tag:".length);
     return permalink.startsWith("mdx:") ? permalink.slice(4) : permalink;
   }
 
@@ -357,7 +363,10 @@ export class MangaDexProvider implements ContentProviderAdapter {
   }
 
   // Fetching
-  async fetchSeries(permalink: string, _force = false): Promise<Series> {
+  async fetchSeries(permalink: string, force = false): Promise<Series> {
+    if (permalink.startsWith("mdx-author:")) {
+      return this.fetchAuthor(permalink, force);
+    }
     const mangaId = this.extractEntityId(permalink);
     const [manga, feed] = await Promise.all([
       getManga(mangaId),
@@ -382,8 +391,22 @@ export class MangaDexProvider implements ContentProviderAdapter {
       if (groupName) scanlatorSet.add(groupName);
     }
 
+    const authorEntities = getMangaAuthorEntities(manga);
+    const authorTags: SeriesTag[] =
+      authorEntities.length > 0
+        ? authorEntities.map((a) => ({
+            type: "Author",
+            name: a.name,
+            permalink: `mdx-author:${a.id}`,
+          }))
+        : authors.map((a) => ({
+            type: "Author",
+            name: a,
+            permalink: `mdx-author:${a}`,
+          }));
+
     const tags: SeriesTag[] = [
-      ...authors.map((a) => ({ type: "Author", name: a, permalink: `mdx-author:${a}` })),
+      ...authorTags,
       ...Array.from(scanlatorSet).map((s) => ({ type: "Scanlator", name: s, permalink: `mdx-group:${s}` })),
       { type: "Format", name: manga.attributes.status, permalink: `mdx-status:${manga.attributes.status}` },
       { type: "Format", name: manga.attributes.contentRating, permalink: `mdx-rating:${manga.attributes.contentRating}` },
@@ -448,6 +471,88 @@ export class MangaDexProvider implements ContentProviderAdapter {
       description,
       aliases: (manga.attributes.altTitles || []).map((t) => Object.values(t)[0]).filter((x): x is string => Boolean(x)),
       taggings,
+    };
+  }
+
+  async fetchAuthor(permalink: string, _force = false): Promise<Series> {
+    const raw = permalink.startsWith("mdx-author:")
+      ? permalink.slice("mdx-author:".length)
+      : permalink;
+    let authorId = raw;
+    let author: MangaDexAuthor | null = null;
+
+    if (MANGADEX_UUID_REGEX.test(raw)) {
+      try {
+        author = await getAuthor(raw);
+      } catch (err) {
+        log.warn("mangadex.provider", "failed to fetch author by UUID", raw, err);
+      }
+    } else {
+      try {
+        const matches = await searchAuthors(raw, 5);
+        const exact = matches.find(
+          (m) => m.attributes.name.toLowerCase() === raw.toLowerCase(),
+        );
+        author = exact || matches[0] || null;
+        if (author) authorId = author.id;
+      } catch (err) {
+        log.warn("mangadex.provider", "failed to search author by name", raw, err);
+      }
+    }
+
+    const authorName = author?.attributes?.name || raw;
+    const authorBio = author?.attributes?.biography
+      ? author.attributes.biography.en ||
+        Object.values(author.attributes.biography)[0] ||
+        null
+      : null;
+    const authorCover = author?.attributes?.imageUrl || null;
+
+    let mangaList: MangaDexManga[] = [];
+    if (MANGADEX_UUID_REGEX.test(authorId)) {
+      try {
+        const [authorRes, artistRes] = await Promise.allSettled([
+          searchManga({ authors: [authorId], limit: 100 }),
+          searchManga({ artists: [authorId], limit: 100 }),
+        ]);
+        const seen = new Set<string>();
+        if (authorRes.status === "fulfilled" && authorRes.value?.data) {
+          for (const m of authorRes.value.data) {
+            seen.add(m.id);
+            mangaList.push(m);
+          }
+        }
+        if (artistRes.status === "fulfilled" && artistRes.value?.data) {
+          for (const m of artistRes.value.data) {
+            if (!seen.has(m.id)) {
+              seen.add(m.id);
+              mangaList.push(m);
+            }
+          }
+        }
+      } catch (err) {
+        log.warn("mangadex.provider", "failed to fetch manga for author", authorId, err);
+      }
+    }
+
+    const taggables: SeriesTaggable[] = mangaList.map((m) => ({
+      type: "Series",
+      name: formatMangaTitle(m),
+      permalink: `mdx:${m.id}`,
+      cover: getMangaCoverUrl(m, "256"),
+    }));
+
+    return {
+      name: authorName,
+      type: "Author",
+      permalink: `mdx-author:${authorId}`,
+      tags: [],
+      cover: authorCover,
+      link: MANGADEX_UUID_REGEX.test(authorId) ? `https://mangadex.org/author/${authorId}` : null,
+      description: authorBio,
+      aliases: [],
+      taggings: [],
+      taggables,
     };
   }
 

@@ -100,6 +100,10 @@ export function dynastyUrl(path: string, permalink: string): string {
  */
 export function canonicalUrl(path: string, permalink: string): string {
   if (!permalink || permalink.startsWith("local:")) return "";
+  if (permalink.startsWith("mdx-author:")) {
+    const id = permalink.slice("mdx-author:".length);
+    return `https://mangadex.org/author/${id}`;
+  }
   if (permalink.startsWith("mdx:")) {
     const id = permalink.slice(4);
     const isChapter = path === "chapters" || path === "chapter";

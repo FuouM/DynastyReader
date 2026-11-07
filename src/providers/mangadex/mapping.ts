@@ -123,6 +123,34 @@ export function getMangaAuthors(manga: MangaDexManga): string[] {
   return authors;
 }
 
+export interface MangaDexAuthorEntity {
+  id: string;
+  name: string;
+  type: "author" | "artist";
+}
+
+/**
+ * Extracts structured author/artist entities (id + name) from relationships.
+ */
+export function getMangaAuthorEntities(manga: MangaDexManga): MangaDexAuthorEntity[] {
+  const result: MangaDexAuthorEntity[] = [];
+  if (!manga.relationships) return result;
+
+  for (const rel of manga.relationships) {
+    if ((rel.type === "author" || rel.type === "artist") && rel.id) {
+      const attrs = rel.attributes;
+      const name =
+        attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string"
+          ? attrs.name
+          : "";
+      if (name && !result.some((r) => r.id === rel.id)) {
+        result.push({ id: rel.id, name, type: rel.type });
+      }
+    }
+  }
+  return result;
+}
+
 
 /**
  * Maps a MangaDexManga entity to DynastyReader's standard Series interface.

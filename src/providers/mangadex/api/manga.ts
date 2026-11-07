@@ -7,6 +7,7 @@ import { fetchMangaDex } from "./client";
 import { cleanMangaDexId } from "./constants";
 import { getChapter } from "./chapter";
 import type {
+  MangaDexAuthor,
   MangaDexChapter,
   MangaDexManga,
   MangaDexResponse,
@@ -24,6 +25,9 @@ export async function searchManga(
   const params: Record<string, unknown> = {
     ids: filters.ids,
     title: filters.title,
+    authors: filters.authors,
+    artists: filters.artists,
+    authorOrArtist: filters.authorOrArtist,
     includedTags: filters.includedTags,
     excludedTags: filters.excludedTags,
     contentRating: filters.contentRatings ?? ["safe", "suggestive", "erotica", "pornographic"],
@@ -33,7 +37,7 @@ export async function searchManga(
     order: filters.order ?? { latestUploadedChapter: "desc" },
     limit: filters.limit ?? 24,
     offset: filters.offset ?? 0,
-    includes: ["cover_art", "author"],
+    includes: ["cover_art", "author", "artist"],
   };
 
   return fetchMangaDex<MangaDexResponse<MangaDexManga[]>>("/manga", params);
@@ -45,9 +49,29 @@ export async function searchManga(
 export async function getManga(id: string): Promise<MangaDexManga> {
   const cleanId = cleanMangaDexId(id);
   const resp = await fetchMangaDex<MangaDexResponse<MangaDexManga>>(`/manga/${cleanId}`, {
-    includes: ["cover_art", "author"],
+    includes: ["cover_art", "author", "artist"],
   });
   return resp.data;
+}
+
+/**
+ * Fetches a single author by UUID.
+ */
+export async function getAuthor(id: string): Promise<MangaDexAuthor> {
+  const cleanId = cleanMangaDexId(id);
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexAuthor>>(`/author/${cleanId}`);
+  return resp.data;
+}
+
+/**
+ * Searches authors by name.
+ */
+export async function searchAuthors(name: string, limit = 10): Promise<MangaDexAuthor[]> {
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexAuthor[]>>("/author", {
+    name: name.trim() || undefined,
+    limit,
+  });
+  return resp.data || [];
 }
 
 /**

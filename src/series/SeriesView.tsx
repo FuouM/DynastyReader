@@ -134,7 +134,7 @@ export function SeriesView() {
       try {
         series = await fetchSeries(permalink, tick > 0, type);
       } catch (err) {
-        if (!permalink.startsWith("mdx:") && !permalink.startsWith("local:")) {
+        if (!permalink.startsWith("mdx:") && !permalink.startsWith("mdx-author:") && !permalink.startsWith("local:")) {
           try {
             const ch = await fetchChapter(permalink);
             if (ch && ((ch.pages && ch.pages.length > 0) || ch.title)) {
@@ -251,7 +251,7 @@ export function SeriesView() {
         }
         openUrl={series.type === "local" ? "" : openUrl}
         seriesType={series.type}
-        onDownloadAll={series.type === "local" ? undefined : () => void handleDownloadAll()}
+        onDownloadAll={series.type === "local" || series.type === "Author" || series.type === "author" ? undefined : () => void handleDownloadAll()}
       />,
     );
   });
@@ -460,7 +460,7 @@ export function SeriesView() {
             onOpenAddToCol={handleOpenAddToCol}
             openUrl={canonicalUrl(seriesTypeToPath(data()!.series.type), data()!.series.permalink)}
             seriesType={data()!.series.type}
-            onDownloadAll={data()!.series.type === "local" ? undefined : () => void handleDownloadAll()}
+            onDownloadAll={data()!.series.type === "local" || data()!.series.type === "Author" || data()!.series.type === "author" ? undefined : () => void handleDownloadAll()}
           />
         }
         onDownloadChapter={handleDownloadSingleChapter}

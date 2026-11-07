@@ -9,6 +9,7 @@ import {
   formatMangaTitle,
   formatMangaDexChapterTitle,
   getMangaAuthors,
+  getMangaAuthorEntities,
   getMangaCoverUrl,
 } from "./mapping";
 import { t } from "../../i18n";
@@ -63,13 +64,24 @@ function mapMdxChapterToFeedChapter(
   }
 
   if (mangaEntity) {
-    const authors = getMangaAuthors(mangaEntity);
-    for (const a of authors) {
-      tags.push({
-        type: "Author",
-        name: a,
-        permalink: `mdx-author:${a}`,
-      });
+    const authorEntities = getMangaAuthorEntities(mangaEntity);
+    if (authorEntities.length > 0) {
+      for (const a of authorEntities) {
+        tags.push({
+          type: "Author",
+          name: a.name,
+          permalink: `mdx-author:${a.id}`,
+        });
+      }
+    } else {
+      const authors = getMangaAuthors(mangaEntity);
+      for (const a of authors) {
+        tags.push({
+          type: "Author",
+          name: a,
+          permalink: `mdx-author:${a}`,
+        });
+      }
     }
 
     for (const t of mangaEntity.attributes.tags || []) {

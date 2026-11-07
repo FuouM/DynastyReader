@@ -224,6 +224,9 @@ export interface MangaDexCachedPageRow {
 export interface MangaDexSearchFilters {
   ids?: string[];
   title?: string;
+  authors?: string[];
+  artists?: string[];
+  authorOrArtist?: string;
   includedTags?: string[];
   excludedTags?: string[];
   contentRatings?: MangaDexContentRating[];

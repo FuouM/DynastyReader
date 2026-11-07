@@ -1,6 +1,7 @@
 import { For, Show } from "solid-js";
 import type { SeriesTag } from "../types/api";
 import { navigate } from "../stores/router";
+import { activeProvider } from "../stores/provider";
 import { tagClass, isArtistTag } from "../taxonomy";
 import { slugify } from "../utils/formatting";
 import { t } from "../i18n";
@@ -15,13 +16,20 @@ export interface TagPillProps {
 export function TagPill(props: TagPillProps) {
   const activate = (ev: Event) => {
     ev.stopPropagation();
-    const permalink = props.permalink || (isArtistTag(props.type) && props.name ? slugify(props.name) : undefined);
-    if (permalink && !permalink.startsWith("mdx-")) {
+    const isArtist = isArtistTag(props.type);
+    const permalink =
+      props.permalink ||
+      (isArtist && props.name
+        ? activeProvider() === "mangadex"
+          ? `mdx-author:${props.name}`
+          : slugify(props.name)
+        : undefined);
+    if (permalink && (!permalink.startsWith("mdx-") || permalink.startsWith("mdx-author:"))) {
       navigate({
         view: "series",
         seriesPermalink: permalink,
         seriesName: props.name,
-        seriesType: props.type,
+        seriesType: isArtist ? "Author" : props.type,
       });
       return;
     }

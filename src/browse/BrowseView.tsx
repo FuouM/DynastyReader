@@ -125,13 +125,16 @@ export function BrowseView() {
   const activeTab = (): BrowseTabId => route().browseTab ?? "releases";
   const tabScrollPositions = new Map<string, number>();
   let lastActiveKey = `${activeProvider()}:${activeTab()}`;
+  let wasBrowseActive = route().view === "browse";
   let restoringScroll = false;
 
   createEffect(() => {
-    if (route().view === "browse") {
+    const isBrowse = route().view === "browse";
+    if (isBrowse) {
       const currentKey = `${activeProvider()}:${activeTab()}`;
-      if (currentKey !== lastActiveKey) {
+      if (!wasBrowseActive || currentKey !== lastActiveKey) {
         lastActiveKey = currentKey;
+        wasBrowseActive = true;
         const saved = tabScrollPositions.get(currentKey) ?? 0;
         restoringScroll = true;
         requestAnimationFrame(() => {
@@ -146,6 +149,8 @@ export function BrowseView() {
           });
         });
       }
+    } else {
+      wasBrowseActive = false;
     }
   });
   const [pendingSearch, setPendingSearch] = createSignal<{
@@ -365,7 +370,7 @@ export function BrowseView() {
     makeEventListener(paneEl, "touchcancel", onTouchCancel, { passive: true });
     const onScroll = (): void => {
       if (restoringScroll) return;
-      if (route().view === "browse") {
+      if (route().view === "browse" && paneEl.offsetParent !== null) {
         tabScrollPositions.set(`${activeProvider()}:${activeTab()}`, paneEl.scrollTop);
       }
     };

@@ -127,7 +127,7 @@ export async function fetchSeries(
   if (permalink.startsWith("local:")) {
     return fetchLocalSeries(permalink);
   }
-  if (permalink.startsWith("mdx:")) {
+  if (permalink.startsWith("mdx:") || permalink.startsWith("mdx-author:")) {
     return mangadexProvider.fetchSeries(permalink, force);
   }
   const key = seriesKey(permalink);

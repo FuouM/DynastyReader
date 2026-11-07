@@ -4,9 +4,45 @@ import { parseSearchHtml } from "./search-parser";
 import { getCached, setCached } from "../db/metadata.repo";
 import { recordCacheHit } from "./traffic";
 import { persistSuggestEntries } from "./directory";
+import { tryParseJson } from "../utils/formatting";
+import { log } from "../utils/log";
 import type { SearchParams, SearchResultPage } from "../types/api";
-
 const SEARCH_CACHE_PREFIX = "search_v2:";
+
+const dynastyTagIdCache = new Map<string, string>();
+
+/** Resolves a human-readable tag name to Dynasty's internal numeric tag ID for search filtering. */
+export async function resolveDynastyTagId(tag: string): Promise<string> {
+  const trimmed = tag.trim();
+  if (!trimmed) return "";
+  if (/^\d+$/.test(trimmed)) return trimmed;
+  const lower = trimmed.toLowerCase();
+  if (dynastyTagIdCache.has(lower)) {
+    return dynastyTagIdCache.get(lower)!;
+  }
+  try {
+    const { status, body } = await httpGetText(`${SITE_ROOT}/tags/suggest`, {
+      method: "POST",
+      body: `query=${encodeURIComponent(trimmed)}`,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+    if (status === 200 && body) {
+      const parsed = tryParseJson<Array<{ id: number; name: string; type: string }>>(body);
+      if (parsed && parsed.length > 0) {
+        const exact = parsed.find((r) => r.name.toLowerCase() === lower);
+        const match = exact || parsed[0];
+        if (match && match.id > 0) {
+          const idStr = String(match.id);
+          dynastyTagIdCache.set(lower, idStr);
+          return idStr;
+        }
+      }
+    }
+  } catch (err) {
+    log.debug("api/search", `failed to resolve tag ID for "${tag}":`, err);
+  }
+  return trimmed;
+}
 /**
  * Executes a search against Dynasty Scans with SQLite response caching and
  * multi-tag intersection support.
@@ -27,8 +63,23 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
   ) {
     return { items: [], totalPages: 1, currentPage: page, query: "" };
   }
-  // ── CASE 2: Keyword Query or Standard Search ────────────────────────────────
-  const url = buildDynastySearchUrl(params);
+  // Resolve human-readable tag names to numeric IDs required by Dynasty Scans /search endpoint
+  const resolvedWith = await Promise.all(withTags.map(resolveDynastyTagId));
+  const resolvedWithout = await Promise.all(withoutTags.map(resolveDynastyTagId));
+
+  const effectiveQuery =
+    !query && resolvedWith.length > 0 && resolvedWith.every((t) => !/^\d+$/.test(t))
+      ? withTags.join(" ")
+      : query;
+
+  const searchParamsPayload: SearchParams = {
+    ...params,
+    q: effectiveQuery,
+    withTags: resolvedWith.filter(Boolean),
+    withoutTags: resolvedWithout.filter(Boolean),
+  };
+
+  const url = buildDynastySearchUrl(searchParamsPayload);
   const cacheKey = `${SEARCH_CACHE_PREFIX}${url}`;
 
   // Check SQLite cache (TTL: 1 hour)

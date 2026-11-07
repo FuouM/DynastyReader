@@ -144,6 +144,9 @@ describe("providers/registry - polymorphic resolution", () => {
     expect(canonicalUrl("chapters", `mdx:${MDX_ID}`)).toBe(
       `https://mangadex.org/chapter/${MDX_ID}`,
     );
+    expect(canonicalUrl("authors", `mdx-author:${MDX_ID}`)).toBe(
+      `https://mangadex.org/author/${MDX_ID}`,
+    );
     expect(canonicalUrl("series", "local:imported")).toBe("");
   });
 
