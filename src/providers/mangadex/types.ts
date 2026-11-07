@@ -227,6 +227,7 @@ export interface MangaDexSearchFilters {
   authors?: string[];
   artists?: string[];
   authorOrArtist?: string;
+  group?: string;
   includedTags?: string[];
   excludedTags?: string[];
   contentRatings?: MangaDexContentRating[];

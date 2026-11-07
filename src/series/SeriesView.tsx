@@ -48,9 +48,14 @@ import { useAddToCollection } from "../components/AddToCollectionModal";
 import { BlacklistIcon } from "../components/Icon";
 import { SeriesHeader, SeriesTaggables, SeriesActions, SeriesResumeBanner, chronologicalChapters } from "./SeriesComponents";
 import { SeriesChapterList, type ChapterMeta } from "./SeriesChapterList";
+import { Pager } from "../components/Pager";
 
 /** Thrown when the permalink turned out to be a standalone chapter (redirected). */
 class SeriesRedirected extends Error {}
+function isContainerType(t?: string | null): boolean {
+  const lower = (t ?? "").toLowerCase();
+  return lower === "local" || lower === "author" || lower === "scanlator" || lower === "tag";
+}
 
 function collectChapters(series: Series): ChapterMeta[] {
   const out: ChapterMeta[] = [];
@@ -97,6 +102,15 @@ function collectChapters(series: Series): ChapterMeta[] {
 
 
 export function SeriesView() {
+  const [currentPage, setCurrentPage] = createSignal(1);
+
+  createEffect(() => {
+    const p = route().seriesPermalink;
+    if (p !== undefined) {
+      setCurrentPage(1);
+    }
+  });
+
   const [forceTick, setForceTick] = createSignal(0);
   const [busyFollow, setBusyFollow] = createSignal(false);
   const [busyBlacklist, setBusyBlacklist] = createSignal(false);
@@ -125,16 +139,23 @@ export function SeriesView() {
     () => ({
       permalink: route().seriesPermalink,
       type: route().seriesType,
+      page: currentPage(),
       forceTick: forceTick(),
     }),
-    async ({ permalink, type, forceTick: tick }) => {
+    async ({ permalink, type, page, forceTick: tick }) => {
       if (!permalink) throw new Error(t("series.missingPermalinkError"));
 
       let series: Series;
       try {
-        series = await fetchSeries(permalink, tick > 0, type);
+        series = await fetchSeries(permalink, tick > 0, type, page);
       } catch (err) {
-        if (!permalink.startsWith("mdx:") && !permalink.startsWith("mdx-author:") && !permalink.startsWith("local:")) {
+        if (
+          !permalink.startsWith("mdx:") &&
+          !permalink.startsWith("mdx-author:") &&
+          !permalink.startsWith("mdx-group:") &&
+          !permalink.startsWith("mdx-tag:") &&
+          !permalink.startsWith("local:")
+        ) {
           try {
             const ch = await fetchChapter(permalink);
             if (ch && ((ch.pages && ch.pages.length > 0) || ch.title)) {
@@ -251,7 +272,7 @@ export function SeriesView() {
         }
         openUrl={series.type === "local" ? "" : openUrl}
         seriesType={series.type}
-        onDownloadAll={series.type === "local" || series.type === "Author" || series.type === "author" ? undefined : () => void handleDownloadAll()}
+        onDownloadAll={isContainerType(series.type) ? undefined : () => void handleDownloadAll()}
       />,
     );
   });
@@ -460,11 +481,16 @@ export function SeriesView() {
             onOpenAddToCol={handleOpenAddToCol}
             openUrl={canonicalUrl(seriesTypeToPath(data()!.series.type), data()!.series.permalink)}
             seriesType={data()!.series.type}
-            onDownloadAll={data()!.series.type === "local" || data()!.series.type === "Author" || data()!.series.type === "author" ? undefined : () => void handleDownloadAll()}
+            onDownloadAll={isContainerType(data()!.series.type) ? undefined : () => void handleDownloadAll()}
           />
         }
         onDownloadChapter={handleDownloadSingleChapter}
         onToggleRead={handleToggleRead}
+        onPage={(p) => {
+          setCurrentPage(p);
+          const el = document.getElementById("ds-pane-dynamic");
+          if (el) el.scrollTop = 0;
+        }}
       />
       </Show>
 
@@ -491,6 +517,7 @@ function SeriesBody(props: {
   mobileActions?: JSX.Element;
   onDownloadChapter?: (ch: ChapterMeta) => Promise<void> | void;
   onToggleRead?: (ch: ChapterMeta, isCurrentlyRead: boolean) => Promise<void> | void;
+  onPage: (p: number) => void;
 }) {
   return (
     <>
@@ -536,6 +563,16 @@ function SeriesBody(props: {
         onDownloadChapter={props.onDownloadChapter}
         onToggleRead={props.onToggleRead}
       />
+
+      <Show when={props.data.series.total_pages && props.data.series.total_pages > 1}>
+        <div class="ds-pager-wrap ds-mt-10" style="justify-content: center; margin-bottom: 16px;">
+          <Pager
+            totalPages={props.data.series.total_pages!}
+            currentPage={props.data.series.current_page || 1}
+            onPage={props.onPage}
+          />
+        </div>
+      </Show>
     </>
   );
 }

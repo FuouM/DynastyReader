@@ -55,6 +55,8 @@ export interface Series {
   aliases: string[];
   taggings: SeriesTaggings[];
   taggables?: SeriesTaggable[];
+  current_page?: number;
+  total_pages?: number;
 }
 
 export interface FeedChapter {

@@ -11,6 +11,7 @@ import type {
   MangaDexChapter,
   MangaDexManga,
   MangaDexResponse,
+  MangaDexScanlationGroup,
   MangaDexSearchFilters,
   MangaDexTag,
 } from "../types";
@@ -28,6 +29,7 @@ export async function searchManga(
     authors: filters.authors,
     artists: filters.artists,
     authorOrArtist: filters.authorOrArtist,
+    group: filters.group,
     includedTags: filters.includedTags,
     excludedTags: filters.excludedTags,
     contentRating: filters.contentRatings ?? ["safe", "suggestive", "erotica", "pornographic"],
@@ -68,6 +70,26 @@ export async function getAuthor(id: string): Promise<MangaDexAuthor> {
  */
 export async function searchAuthors(name: string, limit = 10): Promise<MangaDexAuthor[]> {
   const resp = await fetchMangaDex<MangaDexResponse<MangaDexAuthor[]>>("/author", {
+    name: name.trim() || undefined,
+    limit,
+  });
+  return resp.data || [];
+}
+
+/**
+ * Fetches a single scanlation group by UUID.
+ */
+export async function getScanlationGroup(id: string): Promise<MangaDexScanlationGroup> {
+  const cleanId = cleanMangaDexId(id);
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexScanlationGroup>>(`/group/${cleanId}`);
+  return resp.data;
+}
+
+/**
+ * Searches scanlation groups by name.
+ */
+export async function searchScanlationGroups(name: string, limit = 10): Promise<MangaDexScanlationGroup[]> {
+  const resp = await fetchMangaDex<MangaDexResponse<MangaDexScanlationGroup[]>>("/group", {
     name: name.trim() || undefined,
     limit,
   });

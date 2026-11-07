@@ -85,5 +85,7 @@ export const SeriesSchema = z.looseObject({
   tags: arrDef(SeriesTagSchema),
   taggings: arrDef(SeriesTaggingSchema),
   taggables: arrDef(SeriesTaggableSchema),
+  current_page: z.number().optional(),
+  total_pages: z.number().optional(),
 });
 export type ValidatedChapter = z.infer<typeof ChapterSchema>;

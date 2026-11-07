@@ -2,7 +2,7 @@ import { For, Show } from "solid-js";
 import type { SeriesTag } from "../types/api";
 import { navigate } from "../stores/router";
 import { activeProvider } from "../stores/provider";
-import { tagClass, isArtistTag } from "../taxonomy";
+import { tagClass, isArtistTag, isScanlatorTag } from "../taxonomy";
 import { slugify } from "../utils/formatting";
 import { t } from "../i18n";
 
@@ -17,19 +17,30 @@ export function TagPill(props: TagPillProps) {
   const activate = (ev: Event) => {
     ev.stopPropagation();
     const isArtist = isArtistTag(props.type);
+    const isScanlator = isScanlatorTag(props.type);
     const permalink =
       props.permalink ||
       (isArtist && props.name
         ? activeProvider() === "mangadex"
           ? `mdx-author:${props.name}`
           : slugify(props.name)
-        : undefined);
-    if (permalink && (!permalink.startsWith("mdx-") || permalink.startsWith("mdx-author:"))) {
+        : isScanlator && props.name
+          ? activeProvider() === "mangadex"
+            ? `mdx-group:${props.name}`
+            : slugify(props.name)
+          : undefined);
+    if (
+      permalink &&
+      (!permalink.startsWith("mdx-") ||
+        permalink.startsWith("mdx-author:") ||
+        permalink.startsWith("mdx-group:") ||
+        permalink.startsWith("mdx-tag:"))
+    ) {
       navigate({
         view: "series",
         seriesPermalink: permalink,
         seriesName: props.name,
-        seriesType: isArtist ? "Author" : props.type,
+        seriesType: isArtist ? "Author" : isScanlator ? "Scanlator" : props.type,
       });
       return;
     }

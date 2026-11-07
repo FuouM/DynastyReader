@@ -29,7 +29,7 @@ import { suggestMangaDex } from "./BrowseView";
 import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
 import { activeProvider } from "../stores/provider";
 import { MANGADEX_UUID_REGEX } from "../providers/mangadex/api/constants";
-import { getTags, searchManga, searchAuthors } from "../providers/mangadex/api/manga";
+import { getTags, searchManga, searchAuthors, searchScanlationGroups } from "../providers/mangadex/api/manga";
 import { formatMangaTitle, getMangaAuthors, getMangaAuthorEntities } from "../providers/mangadex/mapping";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
 import type { BlacklistMode } from "../types/blacklist";
@@ -121,10 +121,27 @@ export function BrowseSearch(props: BrowseSearchProps) {
           };
           return { pageData, fullyCachedSet: new Set<string>(), blMode: getBlacklistMode() };
         }
+        if (selClasses.has("Scanlator")) {
+          const groupMatches = await searchScanlationGroups(q() || "", 20);
+          const items: SearchResultItem[] = groupMatches.map((g) => ({
+            kind: "scanlator",
+            title: g.attributes.name,
+            permalink: `mdx-group:${g.id}`,
+            tags: [],
+          }));
+          const pageData: SearchResultPage = {
+            items,
+            currentPage: 1,
+            totalPages: 1,
+            query: q() || "Scanlators",
+          };
+          return { pageData, fullyCachedSet: new Set<string>(), blMode: getBlacklistMode() };
+        }
 
         const includedTags: string[] = [];
         const excludedTags: string[] = [];
         const authorIds: string[] = [];
+        let scanlatorGroupId: string | undefined;
 
         if (selClasses.has("Doujin")) includedTags.push(MANGADEX_DOUJIN_TAG);
         if (selClasses.has("Anthology")) includedTags.push(MANGADEX_ANTHOLOGY_TAG);
@@ -148,6 +165,8 @@ export function BrowseSearch(props: BrowseSearchProps) {
               const lower = t.toLowerCase();
               if (t.startsWith("mdx-author:")) {
                 authorIds.push(t.slice("mdx-author:".length));
+              } else if (t.startsWith("mdx-group:")) {
+                scanlatorGroupId = t.slice("mdx-group:".length);
               } else if (tagMap.has(lower)) {
                 includedTags.push(tagMap.get(lower)!);
               } else if (t.startsWith("mdx-tag:")) {
@@ -156,9 +175,14 @@ export function BrowseSearch(props: BrowseSearchProps) {
                 includedTags.push(t);
               } else {
                 try {
-                  const authorMatches = await searchAuthors(t, 1);
+                  const [authorMatches, groupMatches] = await Promise.all([
+                    searchAuthors(t, 1),
+                    searchScanlationGroups(t, 1),
+                  ]);
                   if (authorMatches[0]) {
                     authorIds.push(authorMatches[0].id);
+                  } else if (groupMatches[0]) {
+                    scanlatorGroupId = groupMatches[0].id;
                   }
                 } catch {}
               }
@@ -198,6 +222,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
           excludedTags: excludedTags.length > 0 ? excludedTags : undefined,
           authorOrArtist: authorIds.length === 1 ? authorIds[0] : undefined,
           authors: authorIds.length > 1 ? authorIds : undefined,
+          group: scanlatorGroupId,
           order,
           limit: 20,
           offset: (page - 1) * 20,
@@ -317,10 +342,18 @@ export function BrowseSearch(props: BrowseSearchProps) {
         }
         if (matches.length < 5 && qLower.length >= 2) {
           try {
-            const authors = await searchAuthors(qLower, 5);
+            const [authors, groups] = await Promise.all([
+              searchAuthors(qLower, 5),
+              searchScanlationGroups(qLower, 3),
+            ]);
             for (const a of authors) {
               if (a.attributes?.name && !matches.some((m) => m.name === a.attributes.name)) {
                 matches.push({ name: a.attributes.name, type: "Author" });
+              }
+            }
+            for (const g of groups) {
+              if (g.attributes?.name && !matches.some((m) => m.name === g.attributes.name)) {
+                matches.push({ name: g.attributes.name, type: "Scanlator" });
               }
             }
           } catch {}

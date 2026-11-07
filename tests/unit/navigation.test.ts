@@ -147,6 +147,12 @@ describe("providers/registry - polymorphic resolution", () => {
     expect(canonicalUrl("authors", `mdx-author:${MDX_ID}`)).toBe(
       `https://mangadex.org/author/${MDX_ID}`,
     );
+    expect(canonicalUrl("scanlators", `mdx-group:${MDX_ID}`)).toBe(
+      `https://mangadex.org/group/${MDX_ID}`,
+    );
+    expect(canonicalUrl("tags", `mdx-tag:${MDX_ID}`)).toBe(
+      `https://mangadex.org/titles?include=${MDX_ID}`,
+    );
     expect(canonicalUrl("series", "local:imported")).toBe("");
   });
 

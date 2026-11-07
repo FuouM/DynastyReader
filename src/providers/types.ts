@@ -123,6 +123,6 @@ export interface ContentProviderAdapter {
   purgeCache(): Promise<void>;
 
   // Data fetching
-  fetchSeries(permalink: string, force?: boolean, preferredType?: string): Promise<Series>;
+  fetchSeries(permalink: string, force?: boolean, preferredType?: string, page?: number): Promise<Series>;
   fetchChapterForReader(permalink: string): Promise<{ chapter: Chapter; startPage?: number }>;
 }

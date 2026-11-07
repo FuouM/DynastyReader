@@ -104,6 +104,14 @@ export function canonicalUrl(path: string, permalink: string): string {
     const id = permalink.slice("mdx-author:".length);
     return `https://mangadex.org/author/${id}`;
   }
+  if (permalink.startsWith("mdx-group:")) {
+    const id = permalink.slice("mdx-group:".length);
+    return `https://mangadex.org/group/${id}`;
+  }
+  if (permalink.startsWith("mdx-tag:")) {
+    const id = permalink.slice("mdx-tag:".length);
+    return `https://mangadex.org/titles?include=${id}`;
+  }
   if (permalink.startsWith("mdx:")) {
     const id = permalink.slice(4);
     const isChapter = path === "chapters" || path === "chapter";

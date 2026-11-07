@@ -18,22 +18,23 @@ const SERIES_PRIMARY_TIMEOUT_MS = 15_000;
 const SERIES_FALLBACK_TIMEOUT_MS = 5_000;
 export const SERIES_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
 /** Ordered candidate JSON endpoints for a series-style permalink. */
-function seriesEndpoints(permalink: string, preferredType?: string): string[] {
+function seriesEndpoints(permalink: string, preferredType?: string, page = 1): string[] {
   const enc = encodeURIComponent(permalink);
+  const pageQs = page > 1 ? `?page=${page}` : "";
   const defaultEndpoints = [
-    `${SITE_ROOT}/series/${enc}.json`,
-    `${SITE_ROOT}/anthologies/${enc}.json`,
-    `${SITE_ROOT}/doujins/${enc}.json`,
-    `${SITE_ROOT}/issues/${enc}.json`,
-    `${SITE_ROOT}/authors/${enc}.json`,
-    `${SITE_ROOT}/tags/${enc}.json`,
-    `${SITE_ROOT}/pairings/${enc}.json`,
-    `${SITE_ROOT}/scanlators/${enc}.json`,
+    `${SITE_ROOT}/series/${enc}.json${pageQs}`,
+    `${SITE_ROOT}/anthologies/${enc}.json${pageQs}`,
+    `${SITE_ROOT}/doujins/${enc}.json${pageQs}`,
+    `${SITE_ROOT}/issues/${enc}.json${pageQs}`,
+    `${SITE_ROOT}/authors/${enc}.json${pageQs}`,
+    `${SITE_ROOT}/tags/${enc}.json${pageQs}`,
+    `${SITE_ROOT}/pairings/${enc}.json${pageQs}`,
+    `${SITE_ROOT}/scanlators/${enc}.json${pageQs}`,
   ];
 
   if (!preferredType) return defaultEndpoints;
   const path = seriesTypeToPath(preferredType);
-  const preferredUrl = `${SITE_ROOT}/${path}/${enc}.json`;
+  const preferredUrl = `${SITE_ROOT}/${path}/${enc}.json${pageQs}`;
   return [preferredUrl, ...defaultEndpoints.filter((u) => u !== preferredUrl)];
 }
 
@@ -123,14 +124,20 @@ export async function fetchSeries(
   permalink: string,
   force = false,
   preferredType?: string,
+  page = 1,
 ): Promise<Series> {
   if (permalink.startsWith("local:")) {
     return fetchLocalSeries(permalink);
   }
-  if (permalink.startsWith("mdx:") || permalink.startsWith("mdx-author:")) {
-    return mangadexProvider.fetchSeries(permalink, force);
+  if (
+    permalink.startsWith("mdx:") ||
+    permalink.startsWith("mdx-author:") ||
+    permalink.startsWith("mdx-group:") ||
+    permalink.startsWith("mdx-tag:")
+  ) {
+    return mangadexProvider.fetchSeries(permalink, force, preferredType, page);
   }
-  const key = seriesKey(permalink);
+  const key = page > 1 ? `${seriesKey(permalink)}:p${page}` : seriesKey(permalink);
   const cached = await getCached(key);
 
   // Fast cache return: if fresh within TTL and not forced, return cached SQLite data immediately
@@ -161,7 +168,7 @@ export async function fetchSeries(
   }
 
   let lastErr: Error | null = null;
-  const endpoints = seriesEndpoints(permalink, effectivePreferredType);
+  const endpoints = seriesEndpoints(permalink, effectivePreferredType, page);
   for (let i = 0; i < endpoints.length; i++) {
     const url = endpoints[i];
     if (!url) continue;
