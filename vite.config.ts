@@ -3,6 +3,8 @@ import path from "node:path";
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
 import type { Plugin as PostCssPlugin } from "postcss";
+import { soulwindow } from "soulwindow/vite";
+import { SOULWINDOW_OPTIONS } from "./src/soulwindow-options";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -35,6 +37,8 @@ export default defineConfig({
   },
   plugins: [
     solid(),
+    // Pre-paint theme/accent script + theme-color meta; same options as src/stores/theme.ts.
+    soulwindow(SOULWINDOW_OPTIONS),
     {
       name: "tauri-mock-bridge-injector",
       apply: "serve",
@@ -53,10 +57,8 @@ export default defineConfig({
       },
       transformIndexHtml(html, ctx) {
         if (ctx.originalUrl?.includes("mock=1") || process.env.VITE_TEST_MOCK === "1") {
-          return html.replace(
-            '<script type="module" src="/src/main.tsx"></script>',
-            '<script src="/mock-bridge.js"></script>\n    <script type="module" src="/src/main.tsx"></script>',
-          );
+          // Vite appends ?t=<timestamp> to the entry after an HMR update; match it too.
+          return html.replace(/<script type="module" src="\/src\/main\.tsx[^"]*"><\/script>/, (entry) => `<script src="/mock-bridge.js"></script>\n    ${entry}`);
         }
         return html;
       },

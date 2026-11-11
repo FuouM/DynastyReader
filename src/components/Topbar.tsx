@@ -17,9 +17,8 @@ import {
   RefreshIcon,
   SettingsIcon,
   DownloadIcon,
-  Icon,
-} from "./Icon";
-import { DsSelect, Button, SegmentedSwitch } from "./Button";
+} from "./icons";
+import { Select, Button, SegmentedSwitch, Icon } from "soulwindow/solid";
 import type { SettingsSectionId } from "./settings/settings-shared";
 import type { OpenSettingsDetail } from "../hotkeys/GlobalShortcuts";
 const SettingsModal = lazy(() => import("./SettingsModal").then((m) => ({ default: m.SettingsModal })));
@@ -121,9 +120,9 @@ export function Topbar() {
                   </Show>
                 </button>
               </Show>
-              <DsSelect<ContentProvider>
+              <Select<ContentProvider>
                 id="ds-source-select"
-                className="ds-source-select"
+                class="ds-source-select"
                 aria-label={t("topbar.sourceSwitcherTooltip")}
                 title={t("topbar.sourceSwitcherTooltip")}
                 value={activeProvider()}
@@ -135,7 +134,7 @@ export function Topbar() {
               />
               <Show when={route().view !== "reader" && route().view !== "cache" && route().view !== "blacklist"}>
                 <Button
-                  className="ds-btn-icon"
+                  class="ds-btn-icon"
                   id="ds-page-refresh-btn"
                   icon={<RefreshIcon />}
                   title={t("topbar.refreshPageTooltip")}
@@ -143,7 +142,7 @@ export function Topbar() {
                 />
               </Show>
               <Button
-                className="ds-btn-icon"
+                class="ds-btn-icon"
                 id="ds-settings-btn"
                 icon={<SettingsIcon />}
                 title={t("topbar.settingsTooltip")}

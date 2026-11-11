@@ -8,9 +8,8 @@ import {
 import { t } from "../i18n";
 import { showBanner } from "../stores/topbar";
 import { errorMessage, formatBytes } from "../utils/formatting";
-import { Modal } from "../components/Modal";
-import { Button, DsSelect, type SelectOption } from "../components/Button";
-import { Icon, CheckIcon, ClipboardIcon } from "../components/Icon";
+import { Modal, Button, Select, Icon, type SelectOption } from "soulwindow/solid";
+import { CheckIcon, ClipboardIcon } from "../components/icons";
 import { fetchAndFormatExport, type ExportScope, type ExportFormat, type ExportCounts } from "../db/export.repo";
 import { getCollections } from "../db/collections.repo";
 import type { CollectionRow } from "../types/db";
@@ -210,7 +209,7 @@ export function ExportModal(props: ExportModalProps) {
   return (
     <Modal
       open={props.open}
-      backdropId="ds-export-modal-overlay"
+      id="ds-export-modal-overlay"
       width={560}
       onClose={props.onClose}
       title={
@@ -219,12 +218,30 @@ export function ExportModal(props: ExportModalProps) {
           <span>{t("library.exportModalTitle")}</span>
         </span>
       }
-      body={
+      footer={
+        <div class="ds-modal-footer-actions ds-export-footer">
+          <button
+            type="button"
+            class="win-button ds-btn-sm ds-modal-cancel"
+            onClick={props.onClose}
+          >
+            {t("common.cancel")}
+          </button>
+          <Button
+            icon={copied() ? <CheckIcon /> : <ClipboardIcon />}
+            text={copied() ? t("library.exportCopiedButton") : t("library.exportCopyButton")}
+            class={`ds-modal-submit ${copied() ? "ds-btn-success" : "primary"}`}
+            disabled={loading() || !exportedText()}
+            onClick={() => void handleCopy()}
+          />
+        </div>
+      }
+    >
         <div class="ds-form-stack ds-export-form">
           <div class="ds-export-row">
             <div class="ds-export-field">
               <label class="ds-form-label-sm">{t("library.exportScopeLabel")}</label>
-              <DsSelect
+              <Select
                 value={scope() === "collection" ? "selected_collections" : scope()}
                 options={scopeOptions()}
                 disabled={loading()}
@@ -233,7 +250,7 @@ export function ExportModal(props: ExportModalProps) {
             </div>
             <div class="ds-export-field">
               <label class="ds-form-label-sm">{t("library.exportFormatLabel")}</label>
-              <DsSelect
+              <Select
                 value={format()}
                 options={formatOptions()}
                 disabled={loading()}
@@ -336,25 +353,6 @@ export function ExportModal(props: ExportModalProps) {
             />
           </div>
         </div>
-      }
-      footer={
-        <div class="ds-modal-footer-actions ds-export-footer">
-          <button
-            type="button"
-            class="win-button ds-btn-sm ds-modal-cancel"
-            onClick={props.onClose}
-          >
-            {t("common.cancel")}
-          </button>
-          <Button
-            icon={copied() ? <CheckIcon /> : <ClipboardIcon />}
-            text={copied() ? t("library.exportCopiedButton") : t("library.exportCopyButton")}
-            className={`ds-modal-submit ${copied() ? "ds-btn-success" : "primary"}`}
-            disabled={loading() || !exportedText()}
-            onClick={() => void handleCopy()}
-          />
-        </div>
-      }
-    />
+    </Modal>
   );
 }

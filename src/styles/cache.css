@@ -1,6 +1,4 @@
-@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
-
-@layer components {
+@layer app.components {
 /* Cache Management view, stat cards, and cached-works list. */
 
 .ds-stats-grid {
@@ -9,23 +7,10 @@
   gap: 8px;
   margin-top: 4px;
 }
-.ds-stat-card {
-  padding: 8px 10px;
-  background: var(--sys-control-bg);
-  border: 1px solid var(--sys-border-light);
-  border-radius: var(--radius-2);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
 .ds-stat-val {
   font-size: 16px;
   font-weight: 700;
   color: var(--ds-accent-aero-dark, var(--sys-link, var(--sys-text-primary, #005a9e)));
-}
-.ds-stat-lbl {
-  font-size: var(--font-sm);
-  color: var(--sys-text-secondary, var(--sys-text-muted));
 }
 .ds-stat-card--success .ds-stat-val {
   color: var(--sys-success, #198754) !important;

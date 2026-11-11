@@ -1,6 +1,4 @@
-@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
-
-@layer components {
+@layer app.components {
 #ds-library-container {
   display: flex;
   flex-direction: column;

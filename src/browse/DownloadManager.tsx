@@ -10,14 +10,14 @@ import {
 import { errorMessage } from "../utils/formatting";
 import { showBanner } from "../stores/topbar";
 import { t } from "../i18n";
-import { GroupBox } from "../components/GroupBox";
+import { GroupBox } from "soulwindow/solid";
 import {
   DownloadIcon,
   RefreshIcon,
   TrashIcon,
   PlayIcon,
   PauseIcon,
-} from "../components/Icon";
+} from "../components/icons";
 import { buildSeriesDownloadGroups } from "./downloads/buildGroups";
 import { SeriesDownloadCard } from "./downloads/SeriesDownloadCard";
 import type { SeriesDownloadGroup } from "./downloads/types";

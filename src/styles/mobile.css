@@ -1,5 +1,3 @@
-@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
-
 @layer mobile {
 /**
  * Mobile and narrow-viewport responsive stylesheet for DynastyReader.
@@ -334,7 +332,6 @@
 }
 
 #ds-root[data-mobile] .ds-subtab i {
-  margin-right: 4px;
   font-size: 11px;
 }
 /* Browse sub-tabs & pager layout on mobile */
@@ -383,7 +380,7 @@
   min-width: 15px;
   height: 14px;
   padding: 0 4px;
-  margin-left: 4px;
+  margin-left: 0; /* the 4px .ds-btn-text gap spaces it */
 }
 
 #ds-root[data-mobile] #ds-pane-browse .ds-subtabs-left {
@@ -846,9 +843,9 @@ body:has(#ds-root[data-mobile]) #ds-banner {
   margin-bottom: 8px !important;
   display: flex !important;
   align-items: center !important;
-  border: 1px solid var(--sys-border-medium, #c8d4e2) !important;
+  border: 1px solid var(--sw-groupbox-border) !important;
   border-radius: 4px !important;
-  background: var(--sys-window-bg, #ffffff) !important;
+  background: var(--sw-groupbox-bg) !important;
   box-sizing: border-box !important;
   position: relative !important;
 }

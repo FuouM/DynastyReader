@@ -21,9 +21,9 @@ import { addBookmark, getBookmark, removeBookmark } from "../db/library.repo";
 import { getBlacklistMode } from "../db/blacklist.repo";
 import type { CollectionItemKind } from "../types/db";
 import { browseCovers } from "../browse/browse-covers";
-import { BookmarkIcon, CheckIcon, Icon } from "./Icon";
-import { Button, ExternalLinkButton, AddToCollectionButton } from "./Button";
-import { ListItem } from "./ListItem";
+import { BookmarkIcon, CheckIcon } from "./icons";
+import { Button, ListItem, Icon } from "soulwindow/solid";
+import { ExternalLinkButton, AddToCollectionButton } from "./ActionButtons";
 import { HydratedCover } from "./Cover";
 import { OfflineBadge, WarningChip } from "./Badges";
 import { TagRow } from "./TagRow";
@@ -225,10 +225,11 @@ export function FeedItemRow(props: FeedItemRowProps) {
   return (
     <ListItem
       class="ds-feed-item"
-      cssText="cursor:pointer;"
+      style="cursor:pointer;"
       read={isRead()}
       blacklisted={isBlacklisted()}
       followed={isFollowed()}
+      followedTitle={t("browse.feed.followedBadgeTooltip")}
       onClick={() => guardedOpen(ch().title, openMainTarget)}
       leading={
         <HydratedCover
@@ -296,7 +297,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
               icon={<BookmarkIcon filled={bookmarked()} />}
               text={bookmarked() ? t("browse.feed.saved") : t("browse.feed.readLater")}
               textClass="ds-action-btn-text"
-              className={`ds-btn-compact${bookmarked() ? " primary" : ""}`}
+              class={`ds-btn-compact${bookmarked() ? " primary" : ""}`}
               title={bookmarked() ? t("browse.feed.removeFromReadLater") : t("browse.feed.saveForReadLater")}
               onClick={(ev) => {
                 ev.stopPropagation();
@@ -304,13 +305,13 @@ export function FeedItemRow(props: FeedItemRowProps) {
               }}
             />
             <Button
-              className="ds-btn-icon"
+              class="ds-btn-icon"
               icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
               title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
               onClick={handleCopyLink}
             />
             <AddToCollectionButton
-              cssText="flex-shrink:0;"
+              style="flex-shrink:0;"
               title={
                 !coverInfo().isStandalone
                   ? t("browse.feed.addSeriesToCollection", { series: decodeEntities(coverInfo().seriesName || ch().series || "") })
@@ -319,7 +320,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
               onOpen={openAddToCol}
             />
             <ExternalLinkButton
-              cssText="flex-shrink:0;"
+              style="flex-shrink:0;"
               title={t("browse.feed.openOnDynastyTooltip", { title: decodeEntities(ch().title) })}
               url={externalUrl()}
             />

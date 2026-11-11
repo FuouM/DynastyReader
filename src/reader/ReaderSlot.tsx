@@ -9,8 +9,7 @@ import type { ReaderSession } from "./reader-session";
 import { useReader } from "./reader-context";
 import type { SlotStateKind } from "./reader-queue";
 import { convertFileSrc } from "../ipc";
-import { Button } from "../components/Button";
-import { Icon } from "../components/Icon";
+import { Button, Icon } from "soulwindow/solid";
 import { t } from "../i18n";
 import { WIDE_RATIO } from "./reader-spread";
 import { log } from "../utils/log";
@@ -179,7 +178,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
           <Icon name="exclamation-triangle" size="22px" />
           <span>{state()?.message}</span>
           <Button
-            className="ds-btn-xs"
+            class="ds-btn-xs"
             aria-label={`${t("common.retry")} (Page ${props.index + 1})`}
             onClick={() => s.retrySlot(props.index)}
           >

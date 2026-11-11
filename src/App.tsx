@@ -21,15 +21,16 @@ import { route, routeTitle, navigate, isPersistentView, canGoBack, goBack } from
 import { setTitle } from "./stores/topbar";
 import { uiScale } from "./stores/ui-scale";
 import { isMobile } from "./stores/platform";
+import { sw } from "./stores/theme";
 import { Topbar } from "./components/Topbar";
 import { BottomNav } from "./components/BottomNav";
 import { GlobalShortcuts } from "./hotkeys/GlobalShortcuts";
 import { HotkeyCheatsheetModal } from "./components/HotkeyCheatsheetModal";
 import { BrowseView } from "./browse/BrowseView";
 import { LibraryView } from "./library/LibraryView";
-import { Loading, ErrorRetryRow } from "./components/Feedback";
+import { Loading, ErrorRetryRow, setLabels } from "soulwindow/solid";
 import { errorMessage } from "./utils/formatting";
-import { t } from "./i18n";
+import { t, getRandomLoadingMessage } from "./i18n";
 import type { ViewName, Route } from "./types/routes";
 import { isHideStatusBarEnabled } from "./reader/settings";
 import { syncReaderStatusBar } from "./utils/status-bar";
@@ -49,6 +50,19 @@ export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
 };
 
 export function App() {
+  // SoulWindow components say a few words of their own; follow the active locale.
+  createEffect(() => {
+    setLabels({
+      close: t("common.close"),
+      clear: t("common.clear"),
+      retry: t("common.retry"),
+      delete: t("common.delete"),
+      confirm: t("common.confirm"),
+      expandSection: t("common.expandSection"),
+      collapseSection: t("common.collapseSection"),
+      loading: t("common.loadingLabel"),
+    });
+  });
   createEffect(() => {
     const r = route();
     setTitle(routeTitle(r));
@@ -64,6 +78,7 @@ export function App() {
         document.body.removeAttribute("data-mobile");
       }
     }
+    sw.setDensity(mobile ? "touch" : "comfortable");
   });
   createEffect(() => {
     const inReader = route().view === "reader";
@@ -146,7 +161,7 @@ export function App() {
           </div>
           <Show when={!isPersistentView()}>
             <div id="ds-pane-dynamic" classList={{ "ds-pane-dynamic--reader": route().view === "reader" }}>
-              <Suspense fallback={<Loading />}>
+              <Suspense fallback={<Loading message={getRandomLoadingMessage()} />}>
                 <Dynamic component={viewComponents[route().view]} route={route()} />
               </Suspense>
             </div>

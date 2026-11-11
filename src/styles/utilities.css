@@ -1,5 +1,3 @@
-@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
-
 @layer utilities {
 /* utilities.css — semantic helpers + inline-sweep extraction (was in curator-ui-base.css) */
 

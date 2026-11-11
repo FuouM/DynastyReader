@@ -1,8 +1,7 @@
 import { render } from "solid-js/web";
 import { restoreStateCurrent, saveWindowState, StateFlags } from "@tauri-apps/plugin-window-state";
 import { attachConsole } from "@tauri-apps/plugin-log";
-import { initAppTheme } from "./stores/theme";
-import { initAccentColor } from "./stores/accent-color";
+import { initAeroAccent } from "./stores/aero-accent";
 import { showBanner } from "./stores/topbar";
 import { setDbReady, navigate } from "./stores/router";
 import { initGlobalDownloadListener } from "./stores/download";
@@ -12,10 +11,9 @@ import { errorMessage } from "./utils/formatting";
 import { log } from "./utils/log";
 import { App } from "./App";
 
-// Apply the persisted theme before the plugin renders so the first paint is
-// already light or dark (no flash from the default light stylesheet).
-initAppTheme();
-initAccentColor();
+// SoulWindow's boot script (vite.config.ts) already painted the saved theme and accent;
+// importing ./stores/theme hands control to the live controller. Aero tints follow it.
+initAeroAccent();
 if (typeof window !== "undefined") {
   window.__NAVIGATE__ = navigate;
 }
@@ -37,13 +35,13 @@ if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAUR
   });
 }
 
+import "soulwindow/css";
+// DynastyReader-only tokens and theme add-ons, on top of SoulWindow's.
 import "./styles/tokens.css";
 import "./styles/themes/dark.css";
 import "./styles/themes/high-contrast.css";
 import "./styles/themes/windows7.css";
 import "./styles/themes/windows7-aero.css";
-import "./styles/reset.css";
-import "./styles/curator-ui-base.css";
 import "./styles/index.css";
 import "./styles/settings.css";
 import "./styles/library.css";

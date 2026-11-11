@@ -1,6 +1,4 @@
-@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
-
-@layer components {
+@layer app.components {
 /* Feed item cover thumbnail */
 .ds-feed-cover-wrap {
   width: 42px;
@@ -407,13 +405,6 @@
   font-weight: 600;
   color: var(--sys-window-text);
 }
-.ds-spin {
-  animation: ds-spin-anim 0.8s linear infinite;
-}
-@keyframes ds-spin-anim {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 
 /* Typeahead */
 .ds-search-wrap {
@@ -767,9 +758,6 @@
   height: 2px;
   background: var(--ds-partial-border, #d97706);
 }
-:is(:root[data-theme="dark"], body.ds-dark) .ds-legend-swatch.partial::after {
-  background: var(--ds-partial-border, #f59e0b);
-}
 
 
 .ds-legend-swatch.read {
@@ -856,10 +844,6 @@
   border: 1px dashed var(--ds-partial-border, #d97706) !important;
   color: var(--ds-partial-text, #92400e) !important;
 }
-:is(:root[data-theme="dark"], body.ds-dark) .ds-chapter-seat--partial {
-  border-color: var(--ds-partial-border, #f59e0b) !important;
-  color: var(--ds-partial-text, #fbbf24) !important;
-}
 .ds-seat-partial-bar {
   position: absolute;
   bottom: 0;
@@ -870,15 +854,9 @@
   pointer-events: none;
   max-width: 100%;
 }
-:is(:root[data-theme="dark"], body.ds-dark) .ds-seat-partial-bar {
-  background: var(--ds-partial-border, #f59e0b);
-}
 .ds-partial-text {
   color: var(--ds-partial-text, #92400e);
   font-weight: 600;
-}
-:is(:root[data-theme="dark"], body.ds-dark) .ds-partial-text {
-  color: var(--ds-partial-text, #fbbf24);
 }
 
 

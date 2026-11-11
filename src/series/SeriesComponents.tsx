@@ -29,10 +29,9 @@ import {
   CloudDownloadIcon,
   RefreshIcon,
   StorageIcon,
-  Icon,
-} from "../components/Icon";
-import { Button, AddToCollectionButton, ExternalLinkButton, IconText } from "../components/Button";
-import { GroupBox } from "../components/GroupBox";
+} from "../components/icons";
+import { Button, IconText, GroupBox, Icon } from "soulwindow/solid";
+import { AddToCollectionButton, ExternalLinkButton } from "../components/ActionButtons";
 import { useCopyLink } from "../hooks/useCopyLink";
 // ── 1. Series Actions ────────────────────────────────────────────────────────
 
@@ -93,14 +92,14 @@ export function SeriesActions(props: SeriesActionsProps) {
       <Show when={props.openUrl}>
         <div class="ds-series-icon-actions">
           <Button
-            className="ds-btn-icon"
+            class="ds-btn-icon"
             style={{ "aspect-ratio": "1 / 1" }}
             icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
             title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
             onClick={handleCopyLink}
           />
           <ExternalLinkButton
-            className="ds-btn-icon"
+            class="ds-btn-icon"
             style={{ "aspect-ratio": "1 / 1" }}
             title={t("series.openInBrowserTooltip", {
               type: props.seriesType ? props.seriesType.toLowerCase() : "series",

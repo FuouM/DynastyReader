@@ -11,7 +11,7 @@
 import { createEffect, createSignal, createUniqueId, onCleanup, For, Show } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { decodeEntities } from "../utils/formatting";
-import { InputField } from "./InputField";
+import { InputField } from "soulwindow/solid";
 
 export interface TypeaheadItem {
   name: string;

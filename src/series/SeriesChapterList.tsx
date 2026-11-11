@@ -9,8 +9,8 @@ import type { ChapterRef } from "../types/routes";
 import type { Series, SeriesTag } from "../types/api";
 import type { SeriesProgressRow } from "../types/db";
 import { OfflineBadge } from "../components/Badges";
-import { Icon, CheckIcon, CloudDownloadIcon } from "../components/Icon";
-import { Button } from "../components/Button";
+import { CheckIcon, CloudDownloadIcon } from "../components/icons";
+import { Button, Icon } from "soulwindow/solid";
 import { TagPill } from "../components/TagRow";
 import { showChapterTags, toggleChapterTags } from "../stores/chapter-tags";
 export interface ChapterMeta extends ChapterRef {
@@ -125,7 +125,7 @@ function ChapterRow(props: {
       <div class="ds-chapter-actions" onClick={(e) => e.stopPropagation()}>
         <Show when={props.onToggleRead}>
           <Button
-            className="ds-btn-icon ds-chapter-action-btn"
+            class="ds-btn-icon ds-chapter-action-btn"
             classList={{ "is-read": isRead() }}
             icon={<CheckIcon size={12} />}
             title={isRead() ? t("series.markUnreadTooltip") : t("series.markReadTooltip")}
@@ -134,7 +134,7 @@ function ChapterRow(props: {
         </Show>
         <Show when={props.seriesType !== "local" && !isFullyCached() && props.onDownloadChapter}>
           <Button
-            className="ds-btn-icon ds-chapter-action-btn"
+            class="ds-btn-icon ds-chapter-action-btn"
             icon={<CloudDownloadIcon size={12} />}
             title={t("series.downloadChapterTooltip")}
             onClick={() => void props.onDownloadChapter?.(props.ch)}
@@ -169,14 +169,14 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
             <div class="ds-label">{t("series.chaptersCount", { count: props.chapters.length })}</div>
             <div class="ds-flex-row ds-gap-4">
               <Button
-                className="ds-btn-compact"
+                class="ds-btn-compact"
                 title={showChapterTags() ? t("series.hideTagsTooltip") : t("series.showTagsTooltip")}
                 icon={<Icon name="tags" />}
                 text={showChapterTags() ? t("series.hideTags") : t("series.showTags")}
                 onClick={toggleChapterTags}
               />
               <Button
-                className="ds-btn-compact"
+                class="ds-btn-compact"
                 title={
                   props.sortOrder() === "asc"
                     ? t("series.sortOldestTooltip")

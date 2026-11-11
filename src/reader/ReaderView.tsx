@@ -11,11 +11,10 @@ import { ReaderViewport } from "./ReaderViewport";
 import { ReaderStrip } from "./ReaderStrip";
 import { useReaderShortcuts, useReaderWheel } from "./reader-inputs";
 import { isHidePageBadgeWithToolbarEnabled } from "./settings";
-import { Loading } from "../components/Feedback";
-import { Button } from "../components/Button";
-import { RefreshIcon } from "../components/Icon";
+import { Loading, Button } from "soulwindow/solid";
+import { RefreshIcon } from "../components/icons";
 import { theme } from "../stores/theme";
-import { t } from "../i18n";
+import { t, getRandomLoadingMessage } from "../i18n";
 
 export function ReaderView(props: { route: Route }) {
   // Keyed on permalink so a new chapter always gets a fresh session
@@ -40,7 +39,7 @@ function ReaderViewInner(props: { permalink: string; route: Route }) {
     <ReaderProvider session={session}>
       <div class="ds-reader-view">
       <Show when={session.loading()}>
-        <Loading />
+        <Loading message={getRandomLoadingMessage()} />
       </Show>
       <Show when={session.error()}>
         {(msg) => (

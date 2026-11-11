@@ -39,18 +39,15 @@ const MANGADEX_ANTHOLOGY_TAG = "51d83883-4103-437c-b4b1-731cb73d786c";
 const MANGADEX_ONESHOT_TAG = "0234a31e-a729-4e28-9d6a-3f87c4966b9e";
 import {
   setTopPagerFor,
-  useDelayedSpinner,
   useTabPane,
   type BrowsePaneApi,
 } from "./browse-state";
 import { createSearchFilters } from "./useSearchFilters";
 import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import { Pager } from "../components/Pager";
-import { Loading, EmptyState, ErrorRetryRow } from "../components/Feedback";
+import { Loading, EmptyState, ErrorRetryRow, GroupBox, Select, IconText, Button, Icon, useDelayedSpinner } from "soulwindow/solid";
 import { Typeahead } from "../components/Typeahead";
 import { BlacklistNotice } from "../components/Badges";
-import { GroupBox } from "../components/GroupBox";
-import { DsSelect, IconText, Button } from "../components/Button";
 import { SearchResultRow, type SearchRow } from "./SearchResultRow";
 import { useTriggerWarning } from "../components/TriggerWarning";
 import { useAddToCollection } from "../components/AddToCollectionModal";
@@ -63,8 +60,7 @@ import {
   SearchIcon,
   ClearIcon,
   CheckIcon,
-  Icon,
-} from "../components/Icon";
+} from "../components/icons";
 import { log } from "../utils/log";
 
 const getAllClasses = (): { id: SearchClass; label: string }[] => [
@@ -428,7 +424,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
         title={<IconText icon={<SearchIcon />}>{t("browse.search.panelTitle")}</IconText>}
         actions={
           <Button
-            className="ds-btn-compact"
+            class="ds-btn-compact"
             title={showChapterTags() ? t("series.hideTagsTooltip") : t("series.showTagsTooltip")}
             icon={<Icon name="tags" />}
             text={showChapterTags() ? t("series.hideTags") : t("series.showTags")}
@@ -466,7 +462,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
             <Button
               id="ds-tab-search-submit"
               type="submit"
-              cssText="font-weight:600;"
+              style="font-weight:600;"
               icon={<SearchIcon />}
               text={t("browse.search.searchButton")}
             />
@@ -486,7 +482,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
             </div>
             <div id="ds-search-classes-row" class="ds-row-wrap">
               <Button
-                className={`ds-btn-xs${classes().size === 0 ? " active" : ""}`}
+                class={`ds-btn-xs${classes().size === 0 ? " active" : ""}`}
                 onClick={() => {
                   setClasses(new Set<SearchClass>());
                   pane.goToPage(1);
@@ -499,7 +495,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
                   const isActive = () => classes().has(c.id);
                   return (
                     <Button
-                      className={`ds-btn-xs${isActive() ? " active" : ""}`}
+                      class={`ds-btn-xs${isActive() ? " active" : ""}`}
                       onClick={() => toggleClass(c.id)}
                       icon={isActive() ? <CheckIcon size={11} /> : undefined}
                       text={c.label}
@@ -577,10 +573,10 @@ export function BrowseSearch(props: BrowseSearchProps) {
               <div class="ds-label-sm">
                 <IconText icon={<Icon name="sort-down" />}>{t("browse.search.sortOrder")}</IconText>
               </div>
-              <DsSelect
+              <Select
                 id="ds-search-sort"
                 aria-label={t("browse.search.sortOrder")}
-                className="ds-search-sort"
+                class="ds-search-sort"
                 value={sort()}
                 onChange={(val) => {
                   setSort(val);
@@ -621,7 +617,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
               </span>
             </div>
             <Button
-              className="ds-btn-compact"
+              class="ds-btn-compact"
               title={showChapterTags() ? t("series.hideTagsTooltip") : t("series.showTagsTooltip")}
               icon={<Icon name="tags" />}
               text={showChapterTags() ? t("series.hideTags") : t("series.showTags")}
@@ -630,7 +626,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
           </div>
 
           <Show when={model()!.pageData.items.length === 0}>
-            <EmptyState cssText="padding:24px;text-align:center;">
+            <EmptyState style="padding:24px;text-align:center;">
               <div class="ds-empty-title">
                 <IconText icon={<SearchIcon />}>{t("browse.search.noResults")}</IconText>
               </div>

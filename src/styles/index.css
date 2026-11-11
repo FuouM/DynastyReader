@@ -1,12 +1,18 @@
-@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
+/* Layer order comes from SoulWindow (soulwindow/css/layers.css). */
+@layer base {
+  .ds-chapter-row:focus-visible {
+    outline: 2px solid var(--sw-focus-ring);
+    outline-offset: 1px;
+  }
+}
 
-@layer layout {
+@layer app.layout {
 /* Root layout, top bar, banner, and generic content helpers. */
 
 body {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
 }
 #ds-root {
@@ -280,6 +286,7 @@ body {
   background: var(--sys-button-hover, #e5f1fb);
   border-color: var(--sys-border-focus, #0078d7);
 }
+/* Kept despite matching SoulWindow: the unchecked rules above are in the app layer and would beat SW's checked state. */
 .ds-switch.checked .ds-switch-track {
   background: var(--sys-highlight-bg);
   border-color: var(--sys-highlight-bg);
@@ -559,16 +566,6 @@ body {
   flex-direction: column;
   gap: 4px;
 }
-.ds-label {
-  font-size: var(--font-md);
-  font-weight: 600;
-  color: var(--sys-window-text, #333);
-}
-.ds-label-sm {
-  font-size: var(--font-sm);
-  font-weight: 600;
-  color: var(--sys-text-secondary, #555);
-}
 .ds-chip {
   display: inline-flex;
   align-items: center;
@@ -617,12 +614,6 @@ body {
   font-weight: 600;
   font-size: var(--font-sm);
 }
-.ds-error-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-}
 .ds-status-banner {
   padding: 6px 10px;
   border-radius: var(--radius-2);
@@ -665,13 +656,6 @@ body {
   padding-bottom: 4px;
   border-bottom: 1px solid var(--sys-border-medium, #ccc);
 }
-.ds-subtabs {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
 .ds-subtabs-left {
   display: flex;
   gap: 4px;
@@ -686,14 +670,6 @@ body {
 .ds-subtabs-left.is-dragging * {
   cursor: grabbing !important;
   pointer-events: none !important;
-}
-.ds-subtabs-right {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  justify-content: flex-end;
-  margin-left: auto;
-  flex-wrap: wrap;
 }
 .ds-subtab {
   font-size: var(--font-sm);
@@ -734,7 +710,7 @@ body {
   background: var(--sys-hover-bg, rgba(0, 0, 0, 0.08));
   color: var(--sys-text-muted, inherit);
   font-variant-numeric: tabular-nums;
-  margin-left: 5px;
+  margin-left: 1px; /* + the 4px .ds-btn-text gap */
   box-sizing: border-box;
   flex-shrink: 0;
   user-select: none;
@@ -808,19 +784,11 @@ body {
 .ds-item:active {
   background: var(--sys-active-bg, var(--sys-hover-bg, #ebebeb));
 }
+/* Kept despite matching SoulWindow: `.ds-item` above is in the app layer and would beat SW's read state. */
 .ds-item-read {
   opacity: 0.72;
   background: var(--sys-window-bg, #fafafa);
   border-left: 3px solid var(--sys-highlight-bg, #64748b);
-}
-.ds-item-title {
-  font-size: var(--font-md);
-  font-weight: 500;
-}
-.ds-item-meta {
-  font-size: var(--font-sm);
-  color: var(--sys-text-muted, #666);
-  margin-top: 2px;
 }
 
 /* Series page */
@@ -1107,14 +1075,6 @@ body {
   box-sizing: border-box;
   flex-shrink: 0;
 }
-.ds-modal-title {
-  font-weight: 600;
-  font-size: var(--font-lg);
-  color: var(--sys-window-text, #000);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 .ds-modal-close {
   font-size: var(--font-md);
   padding: 0;
@@ -1133,11 +1093,6 @@ body {
   min-height: 0;
   overflow-y: auto;
   box-sizing: border-box;
-}
-.ds-modal-footer {
-  border-top: 1px solid var(--sys-border-dark, #b0b0b0);
-  padding: 8px 12px;
-  flex-shrink: 0;
 }
 .ds-modal-done {
   min-width: 70px;
@@ -1335,12 +1290,6 @@ code,
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-}
-
-@media (max-width: 680px) {
-  .ds-modal-backdrop {
-    padding: 12px;
-  }
 }
 
 /* Narrow desktop window (≤600px): collapse stats/cache layouts.

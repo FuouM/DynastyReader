@@ -27,10 +27,7 @@ import {
   getHapticTotalDurationMs,
   type HapticStyle,
 } from "../../utils/haptics";
-import { GroupBox } from "../GroupBox";
-import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
-import { Button, IconText } from "../Button";
-import { Icon } from "../Icon";
+import { GroupBox, SettingsRow, SettingsToggleRow, Button, IconText, Icon } from "soulwindow/solid";
 
 interface HapticCardDef {
   id: HapticStyle;
@@ -111,7 +108,7 @@ export function AdvancedSettings() {
       title={<IconText icon={<Icon name="sliders" />}>{t("settings.advanced.title")}</IconText>}
       actions={
         <Button
-          className="ds-btn-sm"
+          class="ds-btn-sm"
           icon={<Icon name="arrow-counterclockwise" />}
           text={t("settings.advanced.resetDefaults")}
           onClick={() => {
@@ -313,7 +310,7 @@ export function AdvancedSettings() {
                       </span>
 
                       <Button
-                        className="ds-haptic-test-btn"
+                        class="ds-haptic-test-btn"
                         icon={<Icon name={isTesting() ? "soundwave" : "play-fill"} class={isTesting() ? "ds-haptic-pulse-icon" : undefined} />}
                         text={t("settings.advanced.testButton")}
                         onClick={() => handleTestHaptic(card.id)}

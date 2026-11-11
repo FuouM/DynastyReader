@@ -7,8 +7,8 @@ import { Show } from "solid-js";
 import { t } from "../i18n";
 import { decodeEntities } from "../utils/formatting";
 import type { BlacklistMode } from "../types/blacklist";
-import { Icon, WarningIcon, BlacklistIcon } from "./Icon";
-import { Button } from "./Button";
+import { WarningIcon, BlacklistIcon } from "./icons";
+import { Button, Icon } from "soulwindow/solid";
 
 // ── 1. Offline Badge ─────────────────────────────────────────────────────────
 
@@ -79,7 +79,7 @@ export function BlacklistNotice(props: BlacklistNoticeProps) {
         <span>{message()}</span>
       </div>
       <Button
-        className="ds-btn-sm"
+        class="ds-btn-sm"
         icon={<Icon name={props.showHidden ? "eye-slash" : "eye"} />}
         text={props.showHidden
           ? t("dialogs.blacklistNotice.hideButton")

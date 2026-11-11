@@ -22,7 +22,7 @@ import { isMobile } from "../stores/platform";
 import { navigate, route, setSessionTab } from "../stores/router";
 import { setActions, setTitle, showBanner } from "../stores/topbar";
 import { seriesTypeToPath, isScanlatorTag, sortTagsByCategory } from "../taxonomy";
-import { t } from "../i18n";
+import { t, getRandomLoadingMessage } from "../i18n";
 import { fetchChapter, fetchSeries, getSeriesCover } from "../api/series";
 import { enqueueChapters } from "../ipc";
 import { persistedSignal } from "../lib/persisted-signal";
@@ -43,9 +43,9 @@ import {
 import { getCachedPageCounts, getCacheRevision } from "../db/cache.repo";
 import type { SeriesProgressRow } from "../types/db";
 import type { Series } from "../types/api";
-import { Loading, ErrorRetryRow, useDelayedSpinner } from "../components/Feedback";
+import { Loading, ErrorRetryRow, useDelayedSpinner } from "soulwindow/solid";
 import { useAddToCollection } from "../components/AddToCollectionModal";
-import { BlacklistIcon } from "../components/Icon";
+import { BlacklistIcon } from "../components/icons";
 import { SeriesHeader, SeriesTaggables, SeriesActions, SeriesResumeBanner, chronologicalChapters } from "./SeriesComponents";
 import { SeriesChapterList, type ChapterMeta } from "./SeriesChapterList";
 import { Pager } from "../components/Pager";
@@ -445,7 +445,7 @@ export function SeriesView() {
   return (
     <>
       <Show when={!isRedirected() && (!data() && (showSpinner() || data.loading))}>
-        <Loading />
+        <Loading message={getRandomLoadingMessage()} />
       </Show>
       <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
         <ErrorRetryRow

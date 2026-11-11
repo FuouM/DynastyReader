@@ -28,11 +28,8 @@ import { getFollowedRevision } from "../db/library-notifiers";
 import { searchManga, resolveMangaDexEntity } from "../providers/mangadex/api/manga";
 import { formatMangaTitle } from "../providers/mangadex/mapping";
 import { Pager } from "../components/Pager";
-import { SubTabs } from "../components/SubTabs";
-import { GroupBox } from "../components/GroupBox";
+import { SubTabs, GroupBox, InputField, IconText, Button } from "soulwindow/solid";
 import { Typeahead } from "../components/Typeahead";
-import { InputField } from "../components/InputField";
-import { IconText, Button } from "../components/Button";
 import {
   SearchIcon,
   RefreshIcon,
@@ -41,7 +38,7 @@ import {
   ClipboardIcon,
   ArrowDownIcon,
   ExternalLinkIcon,
-} from "../components/Icon";
+} from "../components/icons";
 import { log } from "../utils/log";
 import {
   getTopPagerFor,
@@ -498,7 +495,7 @@ export function BrowseView() {
           <>
             <Button
               id="ds-browse-check-updates-btn"
-              className="ds-btn-sm"
+              class="ds-btn-sm"
               title={t("browse.feed.checkBtnTooltip")}
               disabled={checkBtn() === "checking"}
               onClick={() => void checkUpdates()}
@@ -516,7 +513,7 @@ export function BrowseView() {
                 <Button
                   icon={<ArrowDownIcon />}
                   text={t("common.bottom")}
-                  className="ds-scroll-top-btn"
+                  class="ds-scroll-top-btn"
                   title={t("browse.searchAndGo.scrollToBottomTooltip")}
                   onClick={scrollBrowseToBottom}
                 />

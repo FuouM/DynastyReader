@@ -12,6 +12,8 @@ export const en = {
     delete: "Delete",
     remove: "Remove",
     loading: "Loading...",
+    /** SoulWindow's default loading text; the component adds the ellipsis. */
+    loadingLabel: "Loading",
     prayingMessages: [
       "Girls are now praying",
       "The maidens are praying",

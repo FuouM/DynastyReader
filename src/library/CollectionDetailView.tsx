@@ -15,28 +15,24 @@ import { navigate } from "../stores/router";
 import { setActions, setTitle, showBanner } from "../stores/topbar";
 import { decodeEntities, formatDate, canonicalUrl, errorMessage } from "../utils/formatting";
 import { seriesTypeToPath } from "../taxonomy";
-import { t } from "../i18n";
+import { t, getRandomLoadingMessage } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api/series";
 import { getBlacklistMode, getBlacklistRevision, isSeriesBlacklisted } from "../db/blacklist.repo";
 import { getCollectionById, getCollectionItems, getCollectionsRevision, removeItemFromCollection, updateCollectionItemCover, renameCollection } from "../db/collections.repo";
 import { deleteCached } from "../db/metadata.repo";
 import { seriesCoverKey } from "../lib/cache-keys";
 import type { CollectionItemRow, CollectionRow } from "../types/db";
-import { Loading, ErrorRetryRow, useDelayedSpinner } from "../components/Feedback";
+import { Loading, ErrorRetryRow, useDelayedSpinner, Icon, Button, ConfirmDeleteButton, InputField, Modal } from "soulwindow/solid";
 import {
   FolderIcon,
   StarIcon,
   ArrowLeftIcon,
   RefreshIcon,
   TrashIcon,
-  Icon,
-} from "../components/Icon";
+} from "../components/icons";
 import { ExportModal } from "./ExportModal";
 import { ImportModal } from "./ImportModal";
-import { Button, ConfirmDeleteButton } from "../components/Button";
 import { useBulkSelection } from "../hooks/useBulkSelection";
-import { InputField } from "../components/InputField";
-import { Modal } from "../components/Modal";
 import { LibraryItemRow } from "./LibraryItemRow";
 
 export interface CollectionDetailViewProps {
@@ -190,7 +186,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
             when={data.error !== undefined}
             fallback={
               <Show when={showSpinner()}>
-                <Loading />
+                <Loading message={getRandomLoadingMessage()} />
               </Show>
             }
           >
@@ -306,7 +302,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
               onClick={() => setRenameOpen(false)}
             />
             <Button
-              className="primary"
+              class="primary"
               text={t("library.renameCollectionConfirm")}
               disabled={renaming() || !renameName().trim()}
               onClick={handleRenameSubmit}

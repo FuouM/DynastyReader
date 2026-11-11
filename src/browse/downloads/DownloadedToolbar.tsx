@@ -6,9 +6,8 @@
 import { Show } from "solid-js";
 import { formatBytes } from "../../utils/formatting";
 import { t } from "../../i18n";
-import { InputField } from "../../components/InputField";
-import { DsSelect } from "../../components/Button";
-import { StorageIcon, CheckIcon } from "../../components/Icon";
+import { InputField, Select } from "soulwindow/solid";
+import { StorageIcon, CheckIcon } from "../../components/icons";
 import type { DownloadedSortMode } from "./types";
 
 export interface DownloadedToolbarProps {
@@ -42,7 +41,7 @@ export function DownloadedToolbar(props: DownloadedToolbarProps) {
           <span class="ds-item-meta ds-nowrap" style="font-size:11.5px;color:var(--sys-text-muted,#666);">
             {props.countLabel}
           </span>
-          <DsSelect
+          <Select
             id={props.sortId}
             aria-label={t("downloaded.sortAriaLabel")}
             value={props.sortValue}

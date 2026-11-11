@@ -9,7 +9,6 @@
  * 5. Tag partitioning and grouping utilities for feeds and series detail views.
  */
 
-import type { BootstrapIconName } from "./components/Icon";
 import type { ChapterTag, SeriesTag, SeriesTaggings } from "./types/api";
 export interface GroupedSeriesTags {
   authorTags: SeriesTag[];
@@ -43,7 +42,7 @@ export interface EntityMeta {
   kind: EntityKind;
   path: string;
   label: string;
-  icon: BootstrapIconName;
+  icon: string;
   color: string;
   isSeriesLike: boolean;
   isContent: boolean;

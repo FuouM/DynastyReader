@@ -2,7 +2,8 @@ import { Show } from "solid-js";
 import { isMobile } from "../stores/platform";
 import { navigate, route, sessionTab, isInMangaView } from "../stores/router";
 import { t } from "../i18n";
-import { Icon, StorageIcon, DoublePageIcon } from "./Icon";
+import { StorageIcon, DoublePageIcon } from "./icons";
+import { Icon } from "soulwindow/solid";
 
 export function BottomNav() {
   return (

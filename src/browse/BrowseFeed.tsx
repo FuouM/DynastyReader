@@ -28,14 +28,12 @@ import { browseCovers, coversEnabledSignal } from "./browse-covers";
 import {
   scrollBrowseToTop,
   setTopPagerFor,
-  useDelayedSpinner,
   useTabPane,
   type BrowsePaneApi,
 } from "./browse-state";
 import { Pager } from "../components/Pager";
-import { Loading, ErrorRetryRow } from "../components/Feedback";
-import { Button } from "../components/Button";
-import { RefreshIcon } from "../components/Icon";
+import { Loading, ErrorRetryRow, Button, useDelayedSpinner } from "soulwindow/solid";
+import { RefreshIcon } from "../components/icons";
 import { BlacklistNotice } from "../components/Badges";
 import { useTriggerWarning } from "../components/TriggerWarning";
 import { useAddToCollection } from "../components/AddToCollectionModal";
@@ -370,7 +368,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
             <Button
               icon={<RefreshIcon />}
               text={t("browse.feed.newChaptersNotice")}
-              className="ds-feed-update-btn"
+              class="ds-feed-update-btn"
               onClick={handleUpdateBannerClick}
             />
           </div>

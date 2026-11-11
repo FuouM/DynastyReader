@@ -13,10 +13,8 @@ import {
   setDownloadScheduleEnd,
   pushDownloadConstraints,
 } from "../../utils/download-constraints";
-import { StorageIcon, BlacklistIcon, ExternalLinkIcon, Icon, DownloadIcon } from "../Icon";
-import { GroupBox } from "../GroupBox";
-import { IconText, Button } from "../Button";
-import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
+import { Icon, GroupBox, IconText, Button, SettingsRow, SettingsToggleRow } from "soulwindow/solid";
+import { StorageIcon, BlacklistIcon, ExternalLinkIcon, DownloadIcon } from "../icons";
 export interface StorageSettingsProps {
   onClose: () => void;
 }

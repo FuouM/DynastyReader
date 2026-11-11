@@ -8,7 +8,8 @@ import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import type { ChapterRef } from "../types/routes";
 import type { ReadingDirection } from "../types/reader";
 import { decodeEntities } from "../utils/formatting";
-import { ChevronLeftIcon, ChevronRightIcon, Icon } from "../components/Icon";
+import { ChevronLeftIcon, ChevronRightIcon } from "../components/icons";
+import { Icon } from "soulwindow/solid";
 import { t } from "../i18n";
 
 function TargetCard(props: { badge: string; title?: string; hint: string; hintClass?: string }) {

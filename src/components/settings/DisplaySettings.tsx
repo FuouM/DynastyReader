@@ -1,17 +1,14 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import { theme, setTheme, THEME_REGISTRY, type AppTheme } from "../../stores/theme";
-import { accentColor, setAccentColor, ACCENT_COLOR_PRESETS, getContrastText } from "../../stores/accent-color";
+import { theme, setTheme, THEME_REGISTRY, type AppTheme, accentColor, setAccentColor, ACCENT_COLOR_PRESETS, sw } from "../../stores/theme";
 import { uiScale, setUiScale } from "../../stores/ui-scale";
 import { uiMode, setUiMode } from "../../stores/platform";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../i18n";
 import { activeProvider, type ContentProvider } from "../../stores/provider";
 import { switchProvider } from "../../stores/router";
 import { browseCovers } from "../../browse/browse-covers";
-import { Icon, SunIcon, MoonIcon, OledIcon, AddIcon } from "../Icon";
-import { DsSelect, IconText, SegmentedSwitch, Button } from "../Button";
-import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
-import { GroupBox } from "../GroupBox";
+import { Icon, Select, IconText, SegmentedSwitch, Button, SettingsRow, SettingsToggleRow, GroupBox } from "soulwindow/solid";
+import { SunIcon, MoonIcon, OledIcon, AddIcon } from "../icons";
 import { SCALE_PRESETS } from "./settings-shared";
 export function DisplaySettings() {
   const [scale, setScale] = createSignal(uiScale());
@@ -54,14 +51,15 @@ export function DisplaySettings() {
         <SettingsRow
           label={t("settings.display.contentSource")}
         >
-          <DsSelect
+          <Select
             id="ds-settings-provider-select"
             value={activeProvider()}
             onChange={(val) => switchProvider(val as ContentProvider)}
-          >
-            <option value="dynasty">{t("providers.dynasty.name")} ({t("providers.dynasty.badge")})</option>
-            <option value="mangadex">{t("providers.mangadex.name")} ({t("providers.mangadex.badge")})</option>
-          </DsSelect>
+            options={[
+              { value: "dynasty", label: `${t("providers.dynasty.name")} (${t("providers.dynasty.badge")})` },
+              { value: "mangadex", label: `${t("providers.mangadex.name")} (${t("providers.mangadex.badge")})` },
+            ]}
+          />
         </SettingsRow>
         {/* Scale Factor */}
         <SettingsRow
@@ -69,39 +67,35 @@ export function DisplaySettings() {
         >
           <div class="ds-settings-scale-controls">
             <Button
-              className="ds-btn-icon"
+              class="ds-btn-icon"
               id="ds-settings-scale-dec"
               icon={<Icon name="dash-lg" />}
               title={t("settings.display.scaleDecTooltip")}
               onClick={() => syncScale(Math.max(0.5, Math.round((scale() - 0.1) * 10) / 10))}
             />
-            <DsSelect
+            <Select
               id="ds-settings-scale-select"
               aria-label={t("settings.display.uiScale")}
-              className="ds-select--w115"
+              class="ds-select--w115"
               value={String(scale())}
               onChange={(val) => {
                 const num = parseFloat(val);
                 if (!isNaN(num)) syncScale(num);
               }}
-            >
-              <For each={SCALE_PRESETS}>
-                {(s) => (
-                  <option value={s}>
-                    {s === 1.0
-                      ? t("settings.display.scaleDefaultPreset", { pct: Math.round(s * 100) })
-                      : `${Math.round(s * 100)}%`}
-                  </option>
-                )}
-              </For>
-              <Show when={!hasScalePreset()}>
-                <option value={scale()} selected>
-                  {t("settings.display.scaleCustomPreset", { pct: Math.round(scale() * 100) })}
-                </option>
-              </Show>
-            </DsSelect>
+              options={[
+                ...SCALE_PRESETS.map((s) => ({
+                  value: String(s),
+                  label: s === 1.0
+                    ? t("settings.display.scaleDefaultPreset", { pct: Math.round(s * 100) })
+                    : `${Math.round(s * 100)}%`,
+                })),
+                ...(hasScalePreset()
+                  ? []
+                  : [{ value: String(scale()), label: t("settings.display.scaleCustomPreset", { pct: Math.round(scale() * 100) }) }]),
+              ]}
+            />
             <Button
-              className="ds-btn-icon"
+              class="ds-btn-icon"
               id="ds-settings-scale-inc"
               icon={<AddIcon />}
               title={t("settings.display.scaleIncTooltip")}
@@ -146,7 +140,7 @@ export function DisplaySettings() {
               <div ref={moreContainerRef} class="ds-flex-row" style="gap: 6px; align-items: center; position: relative;">
                 <Button
                   id="ds-settings-theme-more-select"
-                  className="ds-select--w115"
+                  class="ds-select--w115"
                   icon={theme() === "windows7" ? <Icon name="windows" /> : <Icon name="palette" />}
                   text={(["light", "dark", "high-contrast"] as AppTheme[]).includes(theme() as AppTheme) ? t("settings.display.moreThemes") : THEME_REGISTRY[theme() as AppTheme]?.label ?? t("settings.display.moreThemes")}
                   title={t("settings.display.moreThemesTooltip")}
@@ -211,7 +205,7 @@ export function DisplaySettings() {
                       onClick={() => setAccentColor(preset.id === "default" ? "default" : preset.hex)}
                     >
                       <Show when={isSelected()}>
-                        <i class="bi bi-check" style={{ color: getContrastText(preset.hex) }} />
+                        <i class="bi bi-check" style={{ color: sw.kit.contrastText(preset.hex) }} />
                       </Show>
                     </button>
                   );
@@ -223,7 +217,7 @@ export function DisplaySettings() {
                 class={`ds-winforms-color-cell ds-winforms-color-cell--custom${isCustomColor() ? " is-active" : ""}`}
                 style={{
                   "background-color": isCustomColor() ? accentColor() : "transparent",
-                  color: isCustomColor() ? getContrastText(accentColor()) : "var(--sys-window-text, #333)",
+                  color: isCustomColor() ? sw.kit.contrastText(accentColor()) : "var(--sys-window-text, #333)",
                 }}
                 title={t("settings.display.accentCustomTooltip")}
               >
@@ -273,21 +267,14 @@ export function DisplaySettings() {
           label={t("settings.display.language")}
           divider
         >
-          <DsSelect
+          <Select
             id="ds-settings-language-select"
             aria-label={t("settings.display.language")}
-            className="ds-select--w115"
+            class="ds-select--w115"
             value={locale()}
             onChange={(val) => setLocale(val as Locale)}
-          >
-            <For each={SUPPORTED_LOCALES}>
-              {(loc) => (
-                <option value={loc.code}>
-                  {loc.label}
-                </option>
-              )}
-            </For>
-          </DsSelect>
+            options={SUPPORTED_LOCALES.map((loc) => ({ value: loc.code, label: loc.label }))}
+          />
         </SettingsRow>
 
         {/* Interface Layout (Auto / Desktop / Mobile) */}

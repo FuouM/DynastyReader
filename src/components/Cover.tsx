@@ -1,6 +1,7 @@
 import { createEffect, createSignal, on, onCleanup, onMount, Show, type JSX } from "solid-js";
 import { convertFileSrc } from "../ipc";
-import { ImageIcon, Icon, BookIcon, type BootstrapIconName } from "./Icon";
+import { ImageIcon, BookIcon } from "./icons";
+import { Icon } from "soulwindow/solid";
 import { t } from "../i18n";
 
 function useImageRetry(opts?: { maxAttempts?: number; delayMs?: number }) {
@@ -72,7 +73,7 @@ export interface CoverProps {
   imgClass?: string;
   placeholderClass?: string;
   glyphClass?: string;
-  iconName?: BootstrapIconName;
+  iconName?: string;
   onClick?: (ev: MouseEvent) => void;
   onError?: () => void;
   onRetry?: () => void;
@@ -163,7 +164,7 @@ export function Cover(props: CoverProps) {
 function CoverPlaceholder(props: {
   placeholderClass?: string;
   glyphClass?: string;
-  iconName?: BootstrapIconName;
+  iconName?: string;
   isLoading?: boolean;
   onClick?: (ev: MouseEvent) => void;
   children?: JSX.Element;
@@ -177,7 +178,7 @@ function CoverPlaceholder(props: {
       {props.iconName ? (
         <Icon name={props.iconName} />
       ) : props.glyphClass ? (
-        <Icon name={props.glyphClass.replace(/^bi\s+bi-|^bi-/, "") as BootstrapIconName} />
+        <Icon name={props.glyphClass.replace(/^bi\s+bi-|^bi-/, "")} />
       ) : (
         <ImageIcon />
       )}

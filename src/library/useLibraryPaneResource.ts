@@ -4,7 +4,7 @@
  */
 
 import { createEffect, createResource, createSignal, on, onMount, type Accessor, type Resource } from "solid-js";
-import { useDelayedSpinner } from "../components/Feedback";
+import { useDelayedSpinner } from "soulwindow/solid";
 import { activeProvider } from "../stores/provider";
 /**
  * In-session memory of each pane's current page so navigating away from the

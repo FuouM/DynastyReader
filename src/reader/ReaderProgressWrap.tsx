@@ -2,7 +2,7 @@ import { createSignal, createEffect, onMount, onCleanup, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import type { ReaderSession } from "./reader-session";
 import { t } from "../i18n";
-import { CheckIcon } from "../components/Icon";
+import { CheckIcon } from "../components/icons";
 import { triggerHaptic } from "../utils/haptics";
 
 export interface ReaderProgressWrapProps {

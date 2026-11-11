@@ -5,9 +5,8 @@
 
 import { For, createSignal, type JSX } from "solid-js";
 import { t } from "../i18n";
-import { Modal } from "./Modal";
-import { Button, IconText } from "./Button";
-import { WarningIcon, ExternalLinkIcon, BlacklistIcon } from "./Icon";
+import { Modal, Button, IconText } from "soulwindow/solid";
+import { WarningIcon, ExternalLinkIcon, BlacklistIcon } from "./icons";
 
 interface TriggerWarningModalProps {
   open: boolean;
@@ -21,7 +20,7 @@ function TriggerWarningModal(props: TriggerWarningModalProps) {
   return (
     <Modal
       open={props.open}
-      backdropId="ds-trigger-warning-backdrop"
+      id="ds-trigger-warning-backdrop"
       width={380}
       title={
         <span class="ds-trigger-title--warn">
@@ -32,15 +31,15 @@ function TriggerWarningModal(props: TriggerWarningModalProps) {
       footer={
         <div class="ds-modal-footer-actions">
           <Button
-            className="ds-modal-cancel"
-            cssText="min-width:70px;"
+            class="ds-modal-cancel"
+            style="min-width:70px;"
             onClick={props.onClose}
           >
             {t("dialogs.triggerWarning.cancelButton")}
           </Button>
           <Button
-            className="ds-modal-proceed ds-danger"
-            cssText="min-width:85px;"
+            class="ds-modal-proceed ds-danger"
+            style="min-width:85px;"
             icon={<ExternalLinkIcon />}
             text={t("dialogs.triggerWarning.proceedButton")}
             onClick={() => {

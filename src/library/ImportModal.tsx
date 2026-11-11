@@ -8,10 +8,8 @@ import {
 import { t } from "../i18n";
 import { showBanner } from "../stores/topbar";
 import { errorMessage } from "../utils/formatting";
-import { Modal } from "../components/Modal";
-import { Button, DsSelect, type SelectOption } from "../components/Button";
-import { InputField } from "../components/InputField";
-import { Icon, CheckIcon, ClipboardIcon, WarningIcon } from "../components/Icon";
+import { Modal, Button, Select, InputField, Icon, type SelectOption } from "soulwindow/solid";
+import { CheckIcon, ClipboardIcon, WarningIcon } from "../components/icons";
 import { validateAndParseImport, executeImport } from "../db/import.repo";
 import { getCollections } from "../db/collections.repo";
 import type { CollectionRow } from "../types/db";
@@ -171,12 +169,31 @@ export function ImportModal(props: ImportModalProps) {
           <span>{t("library.importModalTitle")}</span>
         </span>
       }
-      body={
+      footer={
+        <div class="ds-modal-footer-actions ds-export-footer">
+          <button
+            type="button"
+            class="win-button ds-btn-sm ds-modal-cancel"
+            disabled={importing()}
+            onClick={props.onClose}
+          >
+            {t("common.cancel")}
+          </button>
+          <Button
+            icon={<Icon name="box-arrow-in-down" />}
+            text={importing() ? t("library.importingButton") : t("library.importConfirmButton")}
+            class="primary ds-modal-submit"
+            disabled={importing() || !parsed().valid || (targetMode() === "collection" && isCreatingNewCol() && !newCollectionName().trim())}
+            onClick={() => void handleExecuteImport()}
+          />
+        </div>
+      }
+    >
         <div class="ds-form-stack ds-import-form">
           <div class="ds-import-actions-bar">
             <div class="ds-export-field" style="flex: 1;">
               <label class="ds-form-label-sm">{t("library.importTargetLabel")}</label>
-              <DsSelect
+              <Select
                 value={targetMode()}
                 options={targetModeOptions()}
                 disabled={importing()}
@@ -189,7 +206,7 @@ export function ImportModal(props: ImportModalProps) {
             <Show when={targetMode() === "collection"}>
               <div class="ds-export-field" style="flex: 1;">
                 <label class="ds-form-label-sm">{t("library.importTargetCollectionSelect")}</label>
-                <DsSelect
+                <Select
                   value={isCreatingNewCol() ? "new" : String(selectedCollectionId())}
                   options={collectionOptions()}
                   disabled={importing()}
@@ -208,7 +225,7 @@ export function ImportModal(props: ImportModalProps) {
               <Button
                 icon={<ClipboardIcon />}
                 text={t("library.importPasteButton")}
-                className="ds-btn-sm"
+                class="ds-btn-sm"
                 disabled={importing()}
                 onClick={() => void handlePaste()}
               />
@@ -282,26 +299,6 @@ export function ImportModal(props: ImportModalProps) {
             </Show>
           </div>
         </div>
-      }
-      footer={
-        <div class="ds-modal-footer-actions ds-export-footer">
-          <button
-            type="button"
-            class="win-button ds-btn-sm ds-modal-cancel"
-            disabled={importing()}
-            onClick={props.onClose}
-          >
-            {t("common.cancel")}
-          </button>
-          <Button
-            icon={<Icon name="box-arrow-in-down" />}
-            text={importing() ? t("library.importingButton") : t("library.importConfirmButton")}
-            className="primary ds-modal-submit"
-            disabled={importing() || !parsed().valid || (targetMode() === "collection" && isCreatingNewCol() && !newCollectionName().trim())}
-            onClick={() => void handleExecuteImport()}
-          />
-        </div>
-      }
-    />
+    </Modal>
   );
 }
