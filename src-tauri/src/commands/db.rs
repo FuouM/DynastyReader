@@ -246,8 +246,9 @@ pub async fn db_execute(
         .map(bind_value_owned)
         .collect::<Result<Vec<_>, _>>()?;
     let affected = tokio::task::spawn_blocking(move || -> Result<usize, String> {
-        let conn = lock_unpoisoned(&conn);
-        conn.authorizer(Some(authorize_execute));
+        let mut conn = lock_unpoisoned(&conn);
+        conn.authorizer(Some(authorize_execute))
+            .map_err(|e| format!("db authorizer setup failed: {e}"))?;
         conn.execute(&sql, params_from_iter(values))
             .map_err(|e| format!("db execute failed: {e}"))
     })
@@ -270,8 +271,9 @@ pub async fn db_query(
         .map(bind_value_owned)
         .collect::<Result<Vec<_>, _>>()?;
     let rows = tokio::task::spawn_blocking(move || -> Result<Vec<Value>, String> {
-        let conn = lock_unpoisoned(&conn);
-        conn.authorizer(Some(authorize_query));
+        let mut conn = lock_unpoisoned(&conn);
+        conn.authorizer(Some(authorize_query))
+            .map_err(|e| format!("db authorizer setup failed: {e}"))?;
         let mut stmt = conn
             .prepare_cached(&sql)
             .map_err(|e| format!("db query prepare failed: {e}"))?;
@@ -298,8 +300,9 @@ pub async fn db_execute_batch(
 ) -> Result<serde_json::Value, String> {
     let pool_arc = get_conn(&state.0, &db_name)?;
     let affected = tokio::task::spawn_blocking(move || {
-        let conn = lock_unpoisoned(&pool_arc);
-        conn.authorizer(Some(authorize_execute));
+        let mut conn = lock_unpoisoned(&pool_arc);
+        conn.authorizer(Some(authorize_execute))
+            .map_err(|e| format!("db authorizer setup failed: {e}"))?;
         let tx = conn.unchecked_transaction().map_err(|e| format!("failed starting transaction: {e}"))?;
         let mut results: Vec<i64> = Vec::with_capacity(statements.len());
         for (idx, sql) in statements.iter().enumerate() {
@@ -508,11 +511,11 @@ mod tests {
 
     #[test]
     fn test_authorizer_rules() {
-        let conn = Connection::open_in_memory().unwrap();
+        let mut conn = Connection::open_in_memory().unwrap();
         conn.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, val TEXT)", []).unwrap();
 
         // 1. Query authorizer allows SELECT and functions
-        conn.authorizer(Some(authorize_query));
+        conn.authorizer(Some(authorize_query)).unwrap();
         assert!(conn.query_row("SELECT 1", [], |r| r.get::<_, i64>(0)).is_ok());
         assert!(conn.query_row("SELECT 'foo;bar'", [], |r| r.get::<_, String>(0)).is_ok());
         assert!(conn.query_row("WITH x AS (SELECT 1 AS a) SELECT * FROM x", [], |r| r.get::<_, i64>(0)).is_ok());
@@ -527,7 +530,7 @@ mod tests {
         assert!(conn.execute("PRAGMA writable_schema = 1", []).is_err());
 
         // 2. Execute authorizer allows INSERT, UPDATE, DELETE, CREATE, ALTER, VACUUM
-        conn.authorizer(Some(authorize_execute));
+        conn.authorizer(Some(authorize_execute)).unwrap();
         assert!(conn.execute("INSERT INTO test (val) VALUES ('x')", []).is_ok());
         assert!(conn.execute("UPDATE test SET val = 'y' WHERE id = 1", []).is_ok());
         assert!(conn.execute("DELETE FROM test WHERE id = 1", []).is_ok());
