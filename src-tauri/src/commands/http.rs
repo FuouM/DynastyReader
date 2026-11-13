@@ -60,10 +60,7 @@ pub fn is_ipv6_forbidden(ipv6: &std::net::Ipv6Addr) -> bool {
     }
     let seg = ipv6.segments();
     // fe80::/10 link-local or fc00::/7 unique local
-    if (seg[0] & 0xffc0) == 0xfe80 || (seg[0] & 0xfe00) == 0xfc00 {
-        return true;
-    }
-    false
+    (seg[0] & 0xffc0) == 0xfe80 || (seg[0] & 0xfe00) == 0xfc00
 }
 
 pub fn is_ip_forbidden(ip: &std::net::IpAddr) -> bool {

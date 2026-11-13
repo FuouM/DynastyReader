@@ -5,6 +5,7 @@
 
 .rust/
 .cargo/
+!src-tauri/.cargo/
 
 portable/
 
