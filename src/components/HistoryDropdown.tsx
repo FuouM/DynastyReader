@@ -7,7 +7,8 @@ import { createSignal, onCleanup, For, Show } from "solid-js";
 import { canGoBack, canGoForward, goBack, goForward, goBackTo, goForwardTo, historyBackStack, historyForwardStack, routeLabel } from "../stores/router";
 import { isMobile } from "../stores/platform";
 import { t } from "../i18n";
-import { ArrowLeftIcon, ArrowRightIcon, Icon, type BootstrapIconName } from "./Icon";
+import { ArrowLeftIcon, ArrowRightIcon } from "./icons";
+import { Icon } from "soulwindow/solid";
 import { AnchoredPopover } from "./AnchoredPopover";
 
 export interface HistoryDropdownProps {
@@ -91,7 +92,7 @@ function HistoryDropdown(props: HistoryDropdownProps) {
         <For each={items()}>
           {(entry) => {
             const meta = routeLabel(entry.route);
-            const iconName = meta.icon.replace(/^bi-/, "") as BootstrapIconName;
+            const iconName = meta.icon.replace(/^bi-/, "");
             return (
               <div
                 class="ds-history-item ds-item"

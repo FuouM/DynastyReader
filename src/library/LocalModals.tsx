@@ -3,10 +3,8 @@
  */
 
 import { For, Show } from "solid-js";
-import { Button } from "../components/Button";
-import { AddIcon } from "../components/Icon";
-import { InputField } from "../components/InputField";
-import { Modal } from "../components/Modal";
+import { Button, InputField, Modal } from "soulwindow/solid";
+import { AddIcon } from "../components/icons";
 import type { ArchiveScanResult, FolderScanResult } from "../ipc";
 import type { LocalSeriesRow } from "../db/local.repo";
 import { t } from "../i18n";
@@ -37,7 +35,19 @@ export function ArchiveImportModal(props: ArchiveImportModalProps) {
       open={true}
       onClose={props.onCancel}
       title={t("local.importTitle", { name: sr().file_name })}
-      body={
+      footer={
+        <div class="ds-modal-footer-actions">
+          <Button text={t("common.cancel")} onClick={props.onCancel} />
+          <Button
+            icon={<AddIcon />}
+            text={props.importing ? t("local.importing") : t("local.importButton")}
+            onClick={props.onImport}
+            disabled={props.importing}
+            class="primary"
+          />
+        </div>
+      }
+    >
         <div class="ds-form-stack">
           <label class="ds-form-label-sm">{t("local.seriesTitleLabel")}</label>
           <InputField
@@ -122,20 +132,7 @@ export function ArchiveImportModal(props: ArchiveImportModalProps) {
             </div>
           </Show>
         </div>
-      }
-      footer={
-        <div class="ds-modal-footer-actions">
-          <Button text={t("common.cancel")} onClick={props.onCancel} />
-          <Button
-            icon={<AddIcon />}
-            text={props.importing ? t("local.importing") : t("local.importButton")}
-            onClick={props.onImport}
-            disabled={props.importing}
-            className="primary"
-          />
-        </div>
-      }
-    />
+    </Modal>
   );
 }
 
@@ -163,7 +160,19 @@ export function FolderImportModal(props: FolderImportModalProps) {
       open={true}
       onClose={props.onCancel}
       title={t("local.importFolderTitle", { name: sr().folder_name })}
-      body={
+      footer={
+        <div class="ds-modal-footer-actions">
+          <Button text={t("common.cancel")} onClick={props.onCancel} />
+          <Button
+            icon={<AddIcon />}
+            text={props.importing ? t("local.importing") : t("local.importButton")}
+            onClick={props.onImport}
+            disabled={props.importing}
+            class="primary"
+          />
+        </div>
+      }
+    >
         <div class="ds-form-stack">
           <label class="ds-form-label-sm">{t("local.seriesTitleLabel")}</label>
           <InputField
@@ -230,20 +239,7 @@ export function FolderImportModal(props: FolderImportModalProps) {
             </For>
           </div>
         </div>
-      }
-      footer={
-        <div class="ds-modal-footer-actions">
-          <Button text={t("common.cancel")} onClick={props.onCancel} />
-          <Button
-            icon={<AddIcon />}
-            text={props.importing ? t("local.importing") : t("local.importButton")}
-            onClick={props.onImport}
-            disabled={props.importing}
-            className="primary"
-          />
-        </div>
-      }
-    />
+    </Modal>
   );
 }
 
@@ -271,7 +267,19 @@ export function EditLocalSeriesModal(props: EditLocalSeriesModalProps) {
       open={true}
       onClose={props.onClose}
       title={t("local.editTitle", { name: props.row.title })}
-      body={
+      footer={
+        <div class="ds-modal-footer-actions">
+          <Button text={t("common.cancel")} onClick={props.onClose} disabled={props.saving} />
+          <Button
+            icon={<i class="bi bi-check-lg" />}
+            text={props.saving ? t("local.saving") : t("local.saveButton")}
+            onClick={props.onSave}
+            disabled={props.saving}
+            class="primary"
+          />
+        </div>
+      }
+    >
         <div class="ds-form-stack">
           <label class="ds-form-label-sm">{t("local.seriesTitleLabel")}</label>
           <InputField
@@ -320,19 +328,6 @@ export function EditLocalSeriesModal(props: EditLocalSeriesModalProps) {
             </Show>
           </div>
         </div>
-      }
-      footer={
-        <div class="ds-modal-footer-actions">
-          <Button text={t("common.cancel")} onClick={props.onClose} disabled={props.saving} />
-          <Button
-            icon={<i class="bi bi-check-lg" />}
-            text={props.saving ? t("local.saving") : t("local.saveButton")}
-            onClick={props.onSave}
-            disabled={props.saving}
-            className="primary"
-          />
-        </div>
-      }
-    />
+    </Modal>
   );
 }

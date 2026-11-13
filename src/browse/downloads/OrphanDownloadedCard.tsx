@@ -4,9 +4,8 @@
 
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { navigate } from "../../stores/router";
-import { BookIcon, TrashIcon } from "../../components/Icon";
-import { GroupBox } from "../../components/GroupBox";
-import { ConfirmDeleteButton } from "../../components/Button";
+import { BookIcon, TrashIcon } from "../../components/icons";
+import { GroupBox, ConfirmDeleteButton } from "soulwindow/solid";
 import type { ProcessedCachedChapter } from "./types";
 import { DownloadedChapterRow, ShowMoreToggle } from "./SeriesDownloadedCard";
 import { t } from "../../i18n";
@@ -52,7 +51,7 @@ export function OrphanDownloadedCard(props: OrphanDownloadedCardProps) {
         <Show when={props.onDeleteAll && !(props.hideDeleteAll?.() ?? false)}>
           <ConfirmDeleteButton
             icon={<TrashIcon />}
-            className="ds-btn-sm ds-btn-icon"
+            class="ds-btn-sm ds-btn-icon"
             title={t("downloaded.clearOrphansTooltip")}
             onConfirm={props.onDeleteAll!}
           />

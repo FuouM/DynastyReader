@@ -1,8 +1,7 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
 import { errorMessage } from "../utils/formatting";
-import { Modal } from "../components/Modal";
-import { StatCard, Button } from "../components/Button";
-import { Icon, CheckIcon, WarningIcon, RefreshIcon } from "../components/Icon";
+import { Modal, StatCard, Button, Icon } from "soulwindow/solid";
+import { CheckIcon, WarningIcon, RefreshIcon } from "../components/icons";
 import { t } from "../i18n";
 import {
   runIntegrityCheck,
@@ -124,7 +123,45 @@ export function IntegrityModal(props: IntegrityModalProps) {
           <span>{t("cache.integrityModalTitle")}</span>
         </div>
       }
-      body={
+      footer={
+        <div class="ds-modal-footer-actions">
+          <Show when={stage() === "scanned" && hasIssues()}>
+            <Button
+              icon={<RefreshIcon />}
+              text={t("cache.integrityRecheck")}
+              class="ds-btn-sm"
+              onClick={() => void startScan()}
+            />
+            <Button
+              icon={<Icon name="wrench-adjustable-circle" />}
+              text={t("cache.integrityRecoverNow")}
+              title={t("cache.integrityRecoverTooltip")}
+              class="ds-btn-sm primary"
+              onClick={() => void handleRecover()}
+            />
+            <Button
+              text={t("common.cancel")}
+              class="ds-btn-sm ds-modal-cancel"
+              onClick={props.onClose}
+            />
+          </Show>
+
+          <Show when={(stage() === "scanned" && !hasIssues()) || stage() === "recovered"}>
+            <Button
+              icon={<RefreshIcon />}
+              text={t("cache.integrityRecheck")}
+              class="ds-btn-sm"
+              onClick={() => void startScan()}
+            />
+            <Button
+              text={t("cache.integrityNoIssuesAction")}
+              class="ds-btn-sm"
+              onClick={props.onClose}
+            />
+          </Show>
+        </div>
+      }
+    >
         <div class="ds-integrity-modal-body">
           <Show when={recoveryError()}>
             <div class="ds-integrity-result-card ds-integrity-result--warning" style="margin-bottom:12px;">
@@ -140,7 +177,7 @@ export function IntegrityModal(props: IntegrityModalProps) {
           {/* Scanning Progress */}
           <Show when={stage() === "scanning"}>
             <div class="ds-integrity-center-box">
-              <Icon name="arrow-clockwise" class="ds-cover-icon-spin" style="font-size:28px;color:var(--sys-primary);" />
+              <Icon name="arrow-clockwise" class="ds-cover-icon-spin" />
               <div class="ds-integrity-status-text">
                 {t("cache.integrityScanning", { scanned: scannedCount(), total: totalCount() })}
               </div>
@@ -153,7 +190,7 @@ export function IntegrityModal(props: IntegrityModalProps) {
           {/* Recovering Progress */}
           <Show when={stage() === "recovering"}>
             <div class="ds-integrity-center-box">
-              <Icon name="gear-wide-connected" class="ds-cover-icon-spin" style="font-size:28px;color:var(--sys-primary);" />
+              <Icon name="gear-wide-connected" class="ds-cover-icon-spin" />
               <div class="ds-integrity-status-text">
                 {phaseText() || t("cache.integrityCleaning")}
               </div>
@@ -272,45 +309,6 @@ export function IntegrityModal(props: IntegrityModalProps) {
             </div>
           </Show>
         </div>
-      }
-      footer={
-        <div class="ds-modal-footer-actions">
-          <Show when={stage() === "scanned" && hasIssues()}>
-            <Button
-              icon={<RefreshIcon />}
-              text={t("cache.integrityRecheck")}
-              className="ds-btn-sm"
-              onClick={() => void startScan()}
-            />
-            <Button
-              icon={<Icon name="wrench-adjustable-circle" />}
-              text={t("cache.integrityRecoverNow")}
-              title={t("cache.integrityRecoverTooltip")}
-              className="ds-btn-sm primary"
-              onClick={() => void handleRecover()}
-            />
-            <Button
-              text={t("common.cancel")}
-              className="ds-btn-sm ds-modal-cancel"
-              onClick={props.onClose}
-            />
-          </Show>
-
-          <Show when={(stage() === "scanned" && !hasIssues()) || stage() === "recovered"}>
-            <Button
-              icon={<RefreshIcon />}
-              text={t("cache.integrityRecheck")}
-              className="ds-btn-sm"
-              onClick={() => void startScan()}
-            />
-            <Button
-              text={t("cache.integrityNoIssuesAction")}
-              className="ds-btn-sm"
-              onClick={props.onClose}
-            />
-          </Show>
-        </div>
-      }
-    />
+    </Modal>
   );
 }

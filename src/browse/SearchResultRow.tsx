@@ -9,11 +9,11 @@ import { showChapterTags } from "../stores/chapter-tags";
 import { decodeEntities, canonicalUrl } from "../utils/formatting";
 import { isContentKind, seriesTypeToPath } from "../taxonomy";
 import { t } from "../i18n";
-import { ListItem } from "../components/ListItem";
+import { ListItem, Button, Icon } from "soulwindow/solid";
 import { WarningChip } from "../components/Badges";
-import { ExternalLinkButton, Button } from "../components/Button";
+import { ExternalLinkButton } from "../components/ActionButtons";
 import { FeedItemRow } from "../components/FeedItemRow";
-import { EntityIcon, CheckIcon, Icon } from "../components/Icon";
+import { EntityIcon, CheckIcon } from "../components/icons";
 import { useCopyLink } from "../hooks/useCopyLink";
 import type { AddToCollectionItem } from "../components/AddToCollectionModal";
 import type { SearchResultItem } from "../types/api";
@@ -130,7 +130,7 @@ function TaxonomicRow(props: { row: SearchRow; blMode: BlacklistMode }) {
   return (
     <ListItem
       class="ds-row"
-      cssText="gap:8px;padding:4px 8px;cursor:pointer;min-height:30px;align-items:center;"
+      style="gap:8px;padding:4px 8px;cursor:pointer;min-height:30px;align-items:center;"
       blacklisted={isBlacklisted()}
       onClick={openTaxonomicItem}
       leading={
@@ -154,14 +154,14 @@ function TaxonomicRow(props: { row: SearchRow; blMode: BlacklistMode }) {
       actions={
         <>
           <Button
-            className="ds-btn-icon"
+            class="ds-btn-icon"
             style={{ "aspect-ratio": "1 / 1" }}
             icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
             title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
             onClick={handleCopyLink}
           />
           <ExternalLinkButton
-            className="ds-btn-icon"
+            class="ds-btn-icon"
             title={t("browse.search.openExternalTooltip", { kind: item().kind, title: decodeEntities(item().title) })}
             url={externalUrl()}
           />

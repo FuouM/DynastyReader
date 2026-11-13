@@ -4,10 +4,8 @@ import type { BlacklistedTag } from "../../types/blacklist";
 import { suggest } from "../../api/directory";
 import { t } from "../../i18n";
 import { Typeahead } from "../Typeahead";
-import { GroupBox } from "../GroupBox";
-import { BlacklistIcon, AddIcon, CloseIcon, ListCheckIcon, Icon } from "../Icon";
-import { IconText, Button, SegmentedSwitch } from "../Button";
-import { SettingsRow } from "../SettingsRow";
+import { GroupBox, Icon, IconText, Button, SegmentedSwitch, SettingsRow } from "soulwindow/solid";
+import { BlacklistIcon, AddIcon, CloseIcon, ListCheckIcon } from "../icons";
 import { activeProvider } from "../../stores/provider";
 import { navigate } from "../../stores/router";
 export function BlacklistSettings(props: { onClose?: () => void }) {
@@ -82,7 +80,7 @@ export function BlacklistSettings(props: { onClose?: () => void }) {
           </div>
           <Button
             id="ds-settings-blacklist-add"
-            cssText="font-size:11px;padding:2px 10px;"
+            style="font-size:11px;padding:2px 10px;"
             icon={<AddIcon />}
             text={t("blacklist.addTagButton")}
             onClick={() => void addTag(blInput())}

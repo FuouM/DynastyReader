@@ -10,10 +10,7 @@
  */
 
 import { createEffect, createSignal, onCleanup, Show } from "solid-js";
-import { Modal } from "./Modal";
-import { Icon } from "./Icon";
-import { IconText, Button } from "./Button";
-import { GroupBox } from "./GroupBox";
+import { Modal, Icon, IconText, Button, GroupBox } from "soulwindow/solid";
 import { t } from "../i18n";
 import { SETTINGS_SECTIONS, SettingsSidebar, type SettingsSectionId } from "./settings/settings-shared";
 import { DisplaySettings } from "./settings/DisplaySettings";
@@ -89,7 +86,7 @@ export function SettingsModal(props: SettingsModalProps) {
   return (
     <Modal
       open={props.open}
-      backdropId="ds-settings-modal-backdrop"
+      id="ds-settings-modal-backdrop"
       title={
         <>
           <IconText icon={<Icon name="gear-fill" />}>{t("settings.title")}</IconText>
@@ -124,9 +121,9 @@ export function SettingsModal(props: SettingsModalProps) {
                   {t("settings.hotkeys.bannerTitle")}
                 </div>
                 <Button
-                  className=""
+                  class=""
                   id="ds-settings-open-hotkeys"
-                  cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
+                  style="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
                   icon={<Icon name="keyboard" />}
                   text={t("settings.openHotkeysModal")}
                   onClick={() => setCurrentPage("hotkeys")}
@@ -143,9 +140,9 @@ export function SettingsModal(props: SettingsModalProps) {
                   {t("settings.advanced.bannerTitle")}
                 </div>
                 <Button
-                  className=""
+                  class=""
                   id="ds-settings-open-advanced"
-                  cssText="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
+                  style="font-size:11px;padding:3px 10px;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;"
                   icon={<Icon name="sliders" />}
                   text={t("settings.advanced.openAdvancedButton")}
                   onClick={() => setCurrentPage("advanced")}
@@ -162,8 +159,8 @@ export function SettingsModal(props: SettingsModalProps) {
         <div class="ds-settings-subpage">
           <div class="ds-settings-subpage-header">
             <Button
-              className="ds-btn-sm"
-              cssText="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
+              class="ds-btn-sm"
+              style="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
               icon={<Icon name="arrow-left" />}
               text={t("settings.backToSettings")}
               onClick={() => setCurrentPage("main")}
@@ -182,8 +179,8 @@ export function SettingsModal(props: SettingsModalProps) {
         <div class="ds-settings-subpage">
           <div class="ds-settings-subpage-header">
             <Button
-              className="ds-btn-sm"
-              cssText="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
+              class="ds-btn-sm"
+              style="display:inline-flex;align-items:center;gap:4px;font-weight:600;"
               icon={<Icon name="arrow-left" />}
               text={t("settings.backToSettings")}
               onClick={() => setCurrentPage("main")}

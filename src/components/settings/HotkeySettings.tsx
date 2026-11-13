@@ -1,9 +1,8 @@
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
 import { t } from "../../i18n";
-import { Icon, AddIcon, RefreshIcon } from "../Icon";
-import { InputField } from "../InputField";
-import { IconText, Button } from "../Button";
+import { Icon, InputField, IconText, Button } from "soulwindow/solid";
+import { AddIcon, RefreshIcon } from "../icons";
 import { HOTKEY_DEFINITIONS, HOTKEY_DEFINITIONS_MAP } from "../../hotkeys/registry";
 import type { HotkeyActionId, HotkeyDefinition } from "../../hotkeys/types";
 import {
@@ -157,7 +156,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
             when={resetConfirm()}
             fallback={
               <Button
-                cssText="font-size:11px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;"
+                style="font-size:11px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;"
                 title={t("settings.hotkeys.resetAllTooltip")}
                 icon={<RefreshIcon />}
                 text={t("settings.hotkeys.resetAllButton")}
@@ -167,8 +166,8 @@ export function HotkeysSection(props: HotkeysSectionProps) {
           >
             <span class="ds-muted">{t("settings.hotkeys.resetConfirmPrompt")}</span>
             <Button
-              className="primary"
-              cssText="font-size:10px;padding:1px 6px;"
+              class="primary"
+              style="font-size:10px;padding:1px 6px;"
               text={t("common.yes")}
               onClick={() => {
                 resetAllHotkeys();
@@ -176,7 +175,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               }}
             />
             <Button
-              cssText="font-size:10px;padding:1px 6px;"
+              style="font-size:10px;padding:1px 6px;"
               text={t("common.no")}
               onClick={() => setResetConfirm(false)}
             />
@@ -204,13 +203,13 @@ export function HotkeysSection(props: HotkeysSectionProps) {
               </div>
               <div class="ds-conflict-actions">
                 <Button
-                  cssText="font-size:10px;padding:2px 8px;"
+                  style="font-size:10px;padding:2px 8px;"
                   text={t("common.cancel")}
                   onClick={() => resolveConflict(false)}
                 />
                 <Button
-                  className="primary"
-                  cssText="font-size:10px;padding:2px 8px;"
+                  class="primary"
+                  style="font-size:10px;padding:2px 8px;"
                   text={t("settings.hotkeys.reassignButton", { action: targetDef()?.label ?? "New Action" })}
                   onClick={() => resolveConflict(true)}
                 />
@@ -284,7 +283,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
                               </For>
 
                               <Button
-                                className="ds-btn-icon"
+                                class="ds-btn-icon"
                                 icon={<AddIcon />}
                                 title={t("settings.hotkeys.addKeyTooltip")}
                                 onClick={() => {
@@ -295,7 +294,7 @@ export function HotkeysSection(props: HotkeysSectionProps) {
 
                               <Show when={!isDefault(def)}>
                                 <Button
-                                  className="ds-btn-icon"
+                                  class="ds-btn-icon"
                                   icon={<RefreshIcon />}
                                   title={t("settings.hotkeys.resetActionTooltip")}
                                   onClick={() => resetHotkey(def.id)}

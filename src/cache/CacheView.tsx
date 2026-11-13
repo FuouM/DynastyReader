@@ -21,7 +21,7 @@ import { navigate, canGoBack, goBack, setSessionTab } from "../stores/router";
 import { setActions, showBanner } from "../stores/topbar";
 import { downloadingChapterPermalinks } from "../stores/download";
 import { formatBytes, errorMessage } from "../utils/formatting";
-import { t } from "../i18n";
+import { t, getRandomLoadingMessage } from "../i18n";
 import { getSessionTraffic, subscribeSessionTraffic, resetLifetimeTraffic, type SessionTraffic } from "../api/traffic";
 import { getCacheOverviewStats, type FullyCachedChapterRow } from "../db/cache.repo";
 import { enrichCachedChapters } from "../db/cache-aggregate";
@@ -41,9 +41,8 @@ import type {
   ProcessedCachedChapter,
 } from "../browse/downloads/types";
 import { Pager } from "../components/Pager";
-import { EmptyState, Loading, ErrorRetryRow } from "../components/Feedback";
-import { GroupBox } from "../components/GroupBox";
-import { ConfirmDeleteButton, IconText, Button, StatCard, BackRefreshActions } from "../components/Button";
+import { EmptyState, Loading, ErrorRetryRow, GroupBox, ConfirmDeleteButton, IconText, Button, StatCard, Icon } from "soulwindow/solid";
+import { BackRefreshActions } from "../components/ActionButtons";
 import { useCacheActions } from "./useCacheActions";
 import { persistedSignal } from "../lib/persisted-signal";
 import { CacheCeilingGroupBox } from "./CacheCeilingGroupBox";
@@ -56,8 +55,7 @@ import {
   RefreshIcon,
   DatabaseIcon,
   TrafficIcon,
-  Icon,
-} from "../components/Icon";
+} from "../components/icons";
 import { IntegrityModal } from "./IntegrityModal";
 type CacheData = {
   stats: CacheOverviewStats;
@@ -283,7 +281,7 @@ export function CacheView() {
       class="ds-cache-view"
     >
       <Show when={data.loading && data() === undefined}>
-        <Loading />
+        <Loading message={getRandomLoadingMessage()} />
       </Show>
 
       <Show when={data.error !== undefined}>
@@ -517,7 +515,7 @@ function CacheBody(props: {
               <DownloadedLegend />
 
               <Show when={props.filteredRowsCount === 0}>
-                <EmptyState cssText="padding:16px;text-align:center;">
+                <EmptyState style="padding:16px;text-align:center;">
                   <span class="ds-muted">{t("cache.noMatchingWorks")}</span>
                 </EmptyState>
               </Show>
@@ -564,7 +562,7 @@ function CacheBody(props: {
             </>
           }
         >
-          <EmptyState cssText="padding:24px;text-align:center;">
+          <EmptyState style="padding:24px;text-align:center;">
             <span class="ds-muted">{t("cache.noCachedWorks")}</span>
           </EmptyState>
         </Show>

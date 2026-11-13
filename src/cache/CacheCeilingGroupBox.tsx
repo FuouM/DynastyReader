@@ -1,7 +1,6 @@
 import { createEffect, createSignal, Show } from "solid-js";
-import { DsSelect, DsSwitch, Button, IconText } from "../components/Button";
-import { GroupBox } from "../components/GroupBox";
-import { RefreshIcon, StorageIcon } from "../components/Icon";
+import { Select, Switch, Button, IconText, GroupBox } from "soulwindow/solid";
+import { RefreshIcon, StorageIcon } from "../components/icons";
 import { pruneOldestReadCachedPages } from "../db/cache.repo";
 import { t } from "../i18n";
 import { downloadingChapterPermalinks } from "../stores/download";
@@ -137,7 +136,7 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
       <div class="ds-col" style="gap:8px;">
         <div class="ds-flex-row" style="align-items:center;flex-wrap:wrap;gap:8px;">
           <label for="ds-cache-ceiling-select" class="ds-muted">{t("cache.ceilingLabel")}</label>
-          <DsSelect
+          <Select
             id="ds-cache-ceiling-select"
             aria-label={t("cache.ceilingLabel")}
             value={dropdownValue()}
@@ -173,7 +172,7 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
                   }
                 }}
               />
-              <DsSelect
+              <Select
                 id="ds-cache-ceiling-unit"
                 value={ceilingUnit()}
                 style="height:24px;width:68px;"
@@ -189,9 +188,9 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
         <div class="ds-muted">{ceilingUsage()}</div>
         <div class="ds-cache-actions" style="align-items:center;">
           <label class="ds-flex-row ds-items-center" style="gap:6px;cursor:pointer;">
-            <DsSwitch
+            <Switch
               id="ds-cache-auto-prune"
-              ariaLabel={t("cache.autoPruneLabel")}
+              aria-label={t("cache.autoPruneLabel")}
               checked={cacheAutoPruneEnabled()}
               disabled={cacheCeilingBytes() <= 0}
               title={t("cache.autoPruneTooltip")}

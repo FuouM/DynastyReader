@@ -8,12 +8,10 @@ import type { LocalSeriesRow } from "../db/local.repo";
 import * as ipc from "../ipc";
 import { showBanner } from "../stores/topbar";
 import { formatBytes, errorMessage } from "../utils/formatting";
-import { t } from "../i18n";
-import { Button, DsSelect } from "../components/Button";
-import { InputField } from "../components/InputField";
+import { t, getRandomLoadingMessage } from "../i18n";
+import { Button, Select, InputField, Loading } from "soulwindow/solid";
 import type { ArchiveScanResult, FolderScanResult } from "../ipc";
-import { Loading } from "../components/Feedback";
-import { AddIcon, FolderIcon, StorageIcon } from "../components/Icon";
+import { AddIcon, FolderIcon, StorageIcon } from "../components/icons";
 import { LibraryItemRow } from "./LibraryItemRow";
 import { persistedSignal } from "../lib/persisted-signal";
 import {
@@ -354,7 +352,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
               placeholder={t("local.searchPlaceholder")}
               style="width:180px;"
             />
-            <DsSelect
+            <Select
               value={sortMode()}
               onChange={(v) => setSortMode(v as LocalSortMode)}
               options={[
@@ -440,7 +438,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
       </Show>
 
       <Show when={data.loading}>
-        <Loading />
+        <Loading message={getRandomLoadingMessage()} />
       </Show>
       <Show when={data() !== undefined && (data()!.length === 0)}>
         <div class="ds-empty-state" style="padding:24px;text-align:center;">

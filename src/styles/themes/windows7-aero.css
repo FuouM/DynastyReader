@@ -1,9 +1,9 @@
 /*
- * windows7-aero.css — Windows 7 Aero component overrides (components layer).
+ * windows7-aero.css — Windows 7 Aero component overrides (app.components layer).
  * Imported after windows7.css in main.tsx. Contains gradient buttons,
  * glass headers, ruby-red close buttons, and all Aero chrome styling.
  */
-@layer components {
+@layer app.components {
   /* Wallpaper + Segoe UI font */
   :root[data-theme="windows7"] {
     background:
@@ -11,10 +11,11 @@
       linear-gradient(180deg, var(--ds-accent-wall-1, #c7ddf4) 0%, var(--ds-accent-wall-2, #a9c8eb) 40%, var(--ds-accent-wall-3, #8fb8e2) 100%);
   }
 
-  :root[data-theme="windows7"] body,
-  body.ds-windows7 {
+  :root[data-theme="windows7"] body {
     font-family: "Segoe UI", "SegoeUI", Tahoma, Verdana, sans-serif;
     text-rendering: optimizeLegibility;
+    /* Page text is the window text; --sys-control-text is the accent-tinted control label colour. */
+    color: var(--sys-window-text);
     background:
       radial-gradient(1200px 600px at 70% -10%, rgba(255, 255, 255, 0.72) 0%, transparent 55%),
       linear-gradient(180deg, var(--ds-accent-wall-1, #d2e6f9) 0%, var(--ds-accent-wall-2, #b9d4ef) 55%, var(--ds-accent-wall-3, #a0c1e6) 100%);

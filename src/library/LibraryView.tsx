@@ -23,11 +23,7 @@ import { errorMessage } from "../utils/formatting";
 import { createMediaQuery } from "@solid-primitives/media";
 import { clearHistory } from "../db/library.repo";
 import { createCollection } from "../db/collections.repo";
-import { Button, IconText } from "../components/Button";
-import { InputField } from "../components/InputField";
-import { Modal } from "../components/Modal";
-import { SubTabs } from "../components/SubTabs";
-import { GroupBox } from "../components/GroupBox";
+import { Button, IconText, InputField, Modal, SubTabs, GroupBox, Icon } from "soulwindow/solid";
 import {
   ArrowRepeatIcon,
   CheckIcon,
@@ -36,8 +32,7 @@ import {
   BookmarkIcon,
   FolderIcon,
   AddIcon,
-  Icon,
-} from "../components/Icon";
+} from "../components/icons";
 import { FollowedPane, CollectionsPane, BookmarksPane, HistoryPane } from "./LibraryPanes";
 import type { LibraryPaneApi } from "./useLibraryPaneResource";
 import { LocalPane } from "./LocalPane";
@@ -449,7 +444,7 @@ function CreateCollectionModal(props: {
   return (
     <Modal
       open={props.open()}
-      backdropId="ds-create-collection-overlay"
+      id="ds-create-collection-overlay"
       width={320}
       onClose={props.onClose}
       title={
@@ -457,20 +452,6 @@ function CreateCollectionModal(props: {
           <FolderIcon color="var(--sys-link,#0078d4)" />{" "}
           {t("library.createCollectionModalTitle")}
         </>
-      }
-      body={
-        <div class="ds-form-stack">
-          <label class="ds-form-label-sm">
-            {t("library.createCollectionNameLabel")}
-          </label>
-          <InputField
-            autofocus={true}
-            placeholder={t("library.createCollectionNamePlaceholder")}
-            value={name()}
-            onInput={(val) => setName(val)}
-            onEnter={() => void submit()}
-          />
-        </div>
       }
       footer={
         <div class="ds-modal-footer-actions">
@@ -483,13 +464,26 @@ function CreateCollectionModal(props: {
           <Button
             icon={<AddIcon />}
             text={t("library.createCollectionConfirm")}
-            className="primary ds-modal-submit"
+            class="primary ds-modal-submit"
             disabled={creating()}
             onClick={() => void submit()}
           />
         </div>
       }
-    />
+    >
+        <div class="ds-form-stack">
+          <label class="ds-form-label-sm">
+            {t("library.createCollectionNameLabel")}
+          </label>
+          <InputField
+            autofocus={true}
+            placeholder={t("library.createCollectionNamePlaceholder")}
+            value={name()}
+            onInput={(val) => setName(val)}
+            onEnter={() => void submit()}
+          />
+        </div>
+    </Modal>
   );
 }
 
@@ -556,7 +550,7 @@ function LibraryTabActions(props: {
           <Button
             icon={<Icon name="box-arrow-in-down" />}
             text={t("library.importButton")}
-            className={btnClass}
+            class={btnClass}
             title={t("library.importFollowedTooltip")}
             onClick={() => props.onOpenImport("followed")}
           />
@@ -564,7 +558,7 @@ function LibraryTabActions(props: {
         <Button
           icon={<Icon name="box-arrow-up" />}
           text={t("library.exportButton")}
-          className={btnClass}
+          class={btnClass}
           title={t("library.exportFollowedTooltip")}
           onClick={() => props.onOpenExport("followed")}
         />
@@ -573,21 +567,21 @@ function LibraryTabActions(props: {
         <Button
           icon={<Icon name="box-arrow-in-down" />}
           text={t("library.importButton")}
-          className={btnClass}
+          class={btnClass}
           title={t("library.importCollectionsTooltip")}
           onClick={() => props.onOpenImport("collections")}
         />
         <Button
           icon={<Icon name="box-arrow-up" />}
           text={t("library.exportButton")}
-          className={btnClass}
+          class={btnClass}
           title={t("library.exportCollectionsTooltip")}
           onClick={() => props.onOpenExport("collections")}
         />
         <Button
           icon={<AddIcon />}
           text={t("library.newCollectionButton")}
-          className={btnClass}
+          class={btnClass}
           title={t("library.createCollectionTooltip")}
           onClick={props.onCreateCollection}
         />

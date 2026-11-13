@@ -41,10 +41,8 @@ import {
   setScrollLock,
 } from "../../reader/settings";
 import { t } from "../../i18n";
-import { DoublePageIcon, Icon } from "../Icon";
-import { DsSelect, IconText, Button, SegmentedSwitch } from "../Button";
-import { SettingsRow, SettingsToggleRow } from "../SettingsRow";
-import { GroupBox } from "../GroupBox";
+import { Icon, Select, IconText, Button, SegmentedSwitch, SettingsRow, SettingsToggleRow, GroupBox } from "soulwindow/solid";
+import { DoublePageIcon } from "../icons";
 
 export function ReaderSettings() {
   const [readPrefetchEnabled, setReadPrefetchEnabled] = usePersistedSetting(isReaderPrefetchEnabled, setReaderPrefetchEnabled);
@@ -258,10 +256,10 @@ export function ReaderSettings() {
 
         {/* Default Fit Mode */}
         <SettingsRow divider label={<>{t("settings.reader.fitMode")}:</>} desc={t("settings.reader.fitModeDesc")}>
-          <DsSelect
+          <Select
             id="ds-settings-fit-select"
             aria-label={t("settings.reader.fitMode")}
-            className="ds-select--w130"
+            class="ds-select--w130"
             value={fitModePref()}
             onChange={setFitModePref}
             options={[
@@ -288,7 +286,7 @@ export function ReaderSettings() {
           <SettingsRow divider label={<>{t("settings.reader.prefetchBuffer")}:</>} desc={t("settings.reader.prefetchBufferDesc")}>
             <div class="ds-prefetch-row">
               <Button
-                className="ds-btn-icon"
+                class="ds-btn-icon"
                 id="ds-settings-prefetch-dec"
                 icon={<Icon name="dash-lg" />}
                 title="−"
@@ -298,7 +296,7 @@ export function ReaderSettings() {
                 {prefetchBuffer() === 1 ? t("settings.reader.prefetchBufferPage", { count: prefetchBuffer() }) : t("settings.reader.prefetchBufferPages", { count: prefetchBuffer() })}
               </span>
               <Button
-                className="ds-btn-icon"
+                class="ds-btn-icon"
                 id="ds-settings-prefetch-inc"
                 icon={<Icon name="plus-lg" />}
                 title="+"

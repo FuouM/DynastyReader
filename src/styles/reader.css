@@ -1,6 +1,4 @@
-@layer tokens, themes, reset, base, layout, components, reader, utilities, mobile;
-
-@layer reader {
+@layer app.reader {
 /* Reader viewport, slots, shimmer, fullscreen, dark theme, fit modes. */
 
 /* Compact controls inside the reader nav bars (sizing stays theme-independent) */

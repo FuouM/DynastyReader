@@ -23,8 +23,7 @@ import {
   setHidePageBadgeWithToolbarEnabled,
 } from "./settings";
 import { isHapticsEnabled, setHapticsEnabled } from "../utils/haptics";
-import { Button, IconText, SegmentedSwitch, DsSwitch } from "../components/Button";
-import { SettingsRow } from "../components/SettingsRow";
+import { Button, IconText, SegmentedSwitch, Switch, SettingsRow, Icon } from "soulwindow/solid";
 import { useCopyLink } from "../hooks/useCopyLink";
 import { ReaderFilterControls } from "./ReaderFilterControls";
 import {
@@ -47,8 +46,7 @@ import {
   ExternalLinkIcon,
   DashIcon,
   PlusIcon,
-  Icon,
-} from "../components/Icon";
+} from "../components/icons";
 
 export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   const s = props.session;
@@ -291,7 +289,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <IconText icon={<ToolIcon />}>{t("reader.toolbar.controlsSheetTitle")}</IconText>
               </div>
               <Button
-                className="ds-modal-close"
+                class="ds-modal-close"
                 icon={<CloseIcon />}
                 title={t("common.close")}
                 onClick={requestClose}
@@ -393,7 +391,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <SettingsRow label={t("reader.toolbar.zoom")} divider>
                   <div class="ds-prefetch-row ds-ctrl-zoom-row">
                     <Button
-                      className="ds-btn-icon"
+                      class="ds-btn-icon"
                       icon={<DashIcon />}
                       title={t("reader.toolbar.zoomOutTooltip")}
                       disabled={s.zoomScale() <= ZOOM_MIN}
@@ -409,7 +407,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                       {Math.round(s.zoomScale() * 100)}%
                     </button>
                     <Button
-                      className="ds-btn-icon"
+                      class="ds-btn-icon"
                       icon={<PlusIcon />}
                       title={t("reader.toolbar.zoomInTooltip")}
                       disabled={s.zoomScale() >= ZOOM_MAX}
@@ -450,7 +448,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
 
               {/* Hide Status Bar (Android) */}
               <SettingsRow label={t("settings.reader.hideStatusBar")} divider>
-                <DsSwitch
+                <Switch
                   id="ds-ctrl-hide-statusbar-toggle"
                   checked={isHideStatusBarEnabled()}
                   title={isHideStatusBarEnabled() ? t("settings.reader.hideStatusBarOn") : t("settings.reader.hideStatusBarOff")}
@@ -460,7 +458,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
 
               {/* Hide Page Number Badge with Toolbar */}
               <SettingsRow label={t("settings.reader.hidePageBadgeWithToolbar")} divider>
-                <DsSwitch
+                <Switch
                   id="ds-ctrl-hide-page-badge-toggle"
                   checked={isHidePageBadgeWithToolbarEnabled()}
                   title={isHidePageBadgeWithToolbarEnabled() ? t("settings.reader.hidePageBadgeWithToolbarOn") : t("settings.reader.hidePageBadgeWithToolbarOff")}
@@ -470,7 +468,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
 
               {/* Haptic Feedback (H-01) */}
               <SettingsRow label={t("settings.reader.haptics")} divider>
-                <DsSwitch
+                <Switch
                   id="ds-ctrl-haptics-toggle"
                   checked={isHapticsEnabled()}
                   title={isHapticsEnabled() ? t("settings.reader.hapticsOn") : t("settings.reader.hapticsOff")}
@@ -482,7 +480,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <Button
                   icon={<Icon name="compass" />}
                   text={t("bottomNav.browse")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
+                  style="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => {
                     requestClose();
                     navigate({ view: "browse" });
@@ -491,7 +489,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <Button
                   icon={<StorageIcon />}
                   text={t("bottomNav.library")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
+                  style="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => {
                     requestClose();
                     navigate({ view: "library" });
@@ -501,7 +499,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   <Button
                     icon={<StorageIcon />}
                     text={t("reader.toolbar.seriesButton")}
-                    cssText="height:32px;font-size:11.5px;justify-content:center;"
+                    style="height:32px;font-size:11.5px;justify-content:center;"
                     onClick={() => {
                       requestClose();
                       s.gotoSeries();
@@ -513,25 +511,25 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   text={s.bookmarked() ? t("browse.feed.saved") : t("browse.feed.readLater")}
                   classList={{ primary: s.bookmarked() }}
                   title={s.bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
+                  style="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => void s.toggleBookmark()}
                 />
                 <Button
                   icon={s.isFullyCached() ? <CheckIcon /> : <CloudDownloadIcon />}
                   text={s.isFullyCached() ? t("reader.toolbar.cachedShort") : t("reader.toolbar.cacheShort")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
+                  style="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => s.cacheFullChapter()}
                 />
                 <Button
                   icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
                   text={copied() ? t("common.copied") : t("reader.toolbar.copyLinkShort")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
+                  style="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={handleCopyLink}
                 />
                 <Button
                   icon={<ExternalLinkIcon />}
                   text={t("reader.toolbar.openInBrowserShort")}
-                  cssText="height:32px;font-size:11.5px;justify-content:center;"
+                  style="height:32px;font-size:11.5px;justify-content:center;"
                   onClick={() => void openExternal(canonicalUrl("chapters", s.permalink))}
                 />
               </div>
@@ -539,8 +537,8 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
 
             <div class="ds-reader-sheet-footer">
               <Button
-                className="primary"
-                cssText="min-width:70px;"
+                class="primary"
+                style="min-width:70px;"
                 text={t("settings.done")}
                 onClick={requestClose}
               />

@@ -10,7 +10,7 @@ import { formatBytes, formatDateTime } from "../utils/formatting";
 import { t } from "../i18n";
 import { getSessionTraffic, subscribeSessionTraffic } from "../api/traffic";
 import { browseCovers } from "./browse-covers";
-import { IconText, Button } from "../components/Button";
+import { IconText, Button } from "soulwindow/solid";
 import {
   RefreshIcon,
   CheckIcon,
@@ -19,7 +19,7 @@ import {
   HashIcon,
   TrafficIcon,
   ArrowUpIcon,
-} from "../components/Icon";
+} from "../components/icons";
 
 const CHECK_STATE_RESET_MS = 2000;
 const SCROLL_TOP_POLL_MS = 200;
@@ -186,7 +186,7 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
           <IconText icon={<TrafficIcon />}>{formatBytes(traffic().bytesDownloaded, "", 1)}</IconText>
         </span>
         <Button
-          className="ds-status-refresh-btn"
+          class="ds-status-refresh-btn"
           title={t("browse.feed.statusForceCheckTooltip")}
           disabled={checkState() === "checking"}
           onClick={() => void handleCheck()}
@@ -203,7 +203,7 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
         <Button
           icon={<ArrowUpIcon />}
           text={t("common.top")}
-          className="ds-scroll-top-btn ds-ml-auto"
+          class="ds-scroll-top-btn ds-ml-auto"
           title={t("browse.feed.statusScrollTopTooltip")}
           onClick={onScrollTop}
         />

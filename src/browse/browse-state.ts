@@ -141,5 +141,3 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
     error: () => data.error,
   };
 }
-
-export { useDelayedSpinner } from "../components/Feedback";

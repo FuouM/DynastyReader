@@ -8,7 +8,7 @@ import {
   RefreshIcon,
   SpeedIcon,
   TrashIcon,
-} from "../../components/Icon";
+} from "../../components/icons";
 import { formatBytes, formatEta, formatSpeed } from "../../utils/formatting";
 import { t } from "../../i18n";
 

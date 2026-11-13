@@ -6,9 +6,8 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { navigate } from "../../stores/router";
 import { formatBytes, formatDate } from "../../utils/formatting";
-import { GroupBox } from "../../components/GroupBox";
+import { GroupBox, ConfirmDeleteButton } from "soulwindow/solid";
 import { Cover } from "../../components/Cover";
-import { ConfirmDeleteButton } from "../../components/Button";
 import {
   BookIcon,
   BookmarkIcon,
@@ -18,7 +17,7 @@ import {
   ColumnsGapIcon,
   ListCheckIcon,
   TrashIcon,
-} from "../../components/Icon";
+} from "../../components/icons";
 import { t } from "../../i18n";
 import type { DownloadedSeriesGroup, ProcessedCachedChapter } from "./types";
 
@@ -87,10 +86,10 @@ export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
     >
       <div class="ds-chapter-title ds-inline-flex-center-4" style="flex:1;min-width:0;">
         <Show when={isRead()}>
-          <CheckIcon size={11} class="ds-seat-check" style="flex-shrink:0;" />
+          <CheckIcon size={11} class="ds-seat-check" />
         </Show>
         <Show when={isBookmarked()}>
-          <BookmarkIcon filled size={11} style="color:var(--ds-warn-text,#d97706);flex-shrink:0;" />
+          <BookmarkIcon filled size={11} />
         </Show>
         <span class="ds-truncate" style="font-size:12px;font-weight:500;">{ch().chapterTitle}</span>
       </div>
@@ -324,7 +323,7 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
           <Show when={props.onDelete && !(props.hideDelete?.() ?? false)}>
             <ConfirmDeleteButton
               icon={<TrashIcon />}
-              className="ds-btn-sm ds-btn-icon"
+              class="ds-btn-sm ds-btn-icon"
               title={`Clear cached chapters for ${props.group.seriesName || props.group.seriesPermalink}`}
               onConfirm={props.onDelete!}
             />

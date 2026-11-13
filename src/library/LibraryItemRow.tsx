@@ -11,11 +11,11 @@ import { onCleanup, Show } from "solid-js";
 import { triggerHaptic } from "../utils/haptics";
 import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
-import { ListItem } from "../components/ListItem";
+import { ListItem, ConfirmDeleteButton, Button, IconText, Icon } from "soulwindow/solid";
 import { Cover } from "../components/Cover";
 import { OfflineBadge } from "../components/Badges";
-import { ConfirmDeleteButton, Button, IconText, ExternalLinkButton } from "../components/Button";
-import { BlacklistIcon, TrashIcon, CheckIcon, Icon } from "../components/Icon";
+import { ExternalLinkButton } from "../components/ActionButtons";
+import { BlacklistIcon, TrashIcon, CheckIcon } from "../components/icons";
 import { useCopyLink } from "../hooks/useCopyLink";
 export interface LibraryItemRowProps {
   title: string;
@@ -139,7 +139,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
     >
       <ListItem
         class="ds-flex-row ds-clickable ds-library-item"
-        cssText={props.selectionMode && props.selected ? "background:var(--sys-hover-bg);" : undefined}
+        style={props.selectionMode && props.selected ? "background:var(--sys-hover-bg);" : undefined}
         onClick={handleClick}
         leading={
           <>
@@ -206,7 +206,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
                   }
                   text={props.actionLabel}
                   textClass="ds-action-btn-text"
-                  className="ds-btn-compact"
+                  class="ds-btn-compact"
                   onClick={(ev) => {
                     ev.stopPropagation();
                     props.onOpen();
@@ -216,7 +216,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
 
               <Show when={props.externalUrl}>
                 <Button
-                  className="ds-btn-icon"
+                  class="ds-btn-icon"
                   style={{ "aspect-ratio": "1 / 1" }}
                   icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
                   title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
@@ -233,7 +233,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
               <Show when={props.onEdit}>
                 <Button
                   icon={<i class="bi bi-pencil" />}
-                  className="ds-btn-icon"
+                  class="ds-btn-icon"
                   title={props.editTitle || t("local.editTooltip")}
                   onClick={(ev) => {
                     ev.stopPropagation();
@@ -244,7 +244,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
               <Show when={props.onPlay}>
                 <Button
                   icon={<i class="bi bi-play-fill" />}
-                  className="ds-btn-icon"
+                  class="ds-btn-icon"
                   title={props.playTitle || t("library.continueReading")}
                   onClick={(ev) => {
                     ev.stopPropagation();
@@ -255,7 +255,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
               <Show when={props.onExport}>
                 <Button
                   icon={<i class="bi bi-box-arrow-up" />}
-                  className="ds-btn-icon"
+                  class="ds-btn-icon"
                   title={props.exportTitle || t("library.exportTooltip")}
                   onClick={(ev) => {
                     ev.stopPropagation();
@@ -266,7 +266,7 @@ export function LibraryItemRow(props: LibraryItemRowProps) {
               <Show when={props.onDelete}>
                 <ConfirmDeleteButton
                   icon={<TrashIcon />}
-                  className="ds-btn-icon"
+                  class="ds-btn-icon"
                   title={props.deleteTitle || t("library.deleteItemTooltip")}
                   onConfirm={async () => {
                     await props.onDelete!();

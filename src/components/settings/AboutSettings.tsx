@@ -14,9 +14,9 @@ import {
   isUpdating,
   updateStatusText,
 } from "../../stores/updater";
-import { GroupBox } from "../GroupBox";
-import { IconText, Button, ExternalLinkButton } from "../Button";
-import { RefreshIcon, CloudDownloadIcon, Icon } from "../Icon";
+import { GroupBox, IconText, Button, Icon } from "soulwindow/solid";
+import { ExternalLinkButton } from "../ActionButtons";
+import { RefreshIcon, CloudDownloadIcon } from "../icons";
 
 export function AboutSettings() {
   return (
@@ -46,7 +46,7 @@ export function AboutSettings() {
         </div>
         <div class="ds-settings-about-actions">
           <Button
-            className="ds-btn-compact"
+            class="ds-btn-compact"
             id="ds-about-check-update"
             title={t("settings.about.checkUpdates")}
             disabled={updateChecking() || isUpdating()}
@@ -55,7 +55,7 @@ export function AboutSettings() {
             onClick={() => void checkUpdates(true)}
           />
           <Button
-            className="ds-btn-compact"
+            class="ds-btn-compact"
             id="ds-about-open-github"
             title={t("settings.about.githubTooltip")}
             icon={<Icon name="github" />}
@@ -145,8 +145,8 @@ export function AboutSettings() {
 
             <div class="ds-update-actions">
               <Button
-                className="primary ds-btn-sm"
-                cssText="min-width:120px;"
+                class="primary ds-btn-sm"
+                style="min-width:120px;"
                 disabled={isUpdating()}
                 icon={<Show when={!isUpdating()} fallback={<Icon name="hourglass-split" spin />}><CloudDownloadIcon /></Show>}
                 text={<Show when={!isUpdating()} fallback={t("settings.about.updating")}>{updateError() ? t("settings.about.retryUpdate") : t("settings.about.downloadAndRestart")}</Show>}

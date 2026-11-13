@@ -20,12 +20,11 @@ import { enrichCachedChapters } from "../db/cache-aggregate";
 import {
   scrollBrowseToTop,
   setTopPagerFor,
-  useDelayedSpinner,
   useTabPane,
   type BrowsePaneApi,
 } from "./browse-state";
 import { Pager } from "../components/Pager";
-import { Loading, EmptyState } from "../components/Feedback";
+import { Loading, EmptyState, useDelayedSpinner } from "soulwindow/solid";
 import { SeriesDownloadedCard } from "./downloads/SeriesDownloadedCard";
 import { OrphanDownloadedCard } from "./downloads/OrphanDownloadedCard";
 import { DownloadedToolbar, DownloadedLegend } from "./downloads/DownloadedToolbar";
@@ -214,9 +213,8 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
       <div id="ds-downloaded-body">
         <Show when={filteredRows().length === 0 && pane.data() !== undefined}>
           <EmptyState
-            cssText="padding:24px;text-align:center;"
-            iconName="cloud-arrow-down"
-            iconCssText="font-size:28px;opacity:0.6;display:block;margin-bottom:8px;"
+            style="padding:24px;text-align:center;"
+            icon="cloud-arrow-down"
           >
             <span class="ds-muted">
               {query().trim()

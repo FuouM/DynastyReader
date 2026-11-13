@@ -9,7 +9,8 @@ import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import { navigate } from "../stores/router";
 import { triggerHaptic } from "../utils/haptics";
-import { CheckIcon, ArrowRightIcon, ArrowLeftIcon, Icon, BookmarkIcon } from "../components/Icon";
+import { CheckIcon, ArrowRightIcon, ArrowLeftIcon, BookmarkIcon } from "../components/icons";
+import { Icon } from "soulwindow/solid";
 export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
   const s = props.session;
   const nextChapter = createMemo(() => {

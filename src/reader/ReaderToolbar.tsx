@@ -15,14 +15,14 @@ import { decodeEntities } from "../utils/formatting";
 
 import { t } from "../i18n";
 import { getReaderNavPosition, getReaderFilterCss } from "./settings";
-import { Button } from "../components/Button";
+import { Button } from "soulwindow/solid";
 import { ReaderMainRow, ReaderControlsRow, ReaderMobileBottomBar } from "./ReaderNavRows";
 import { ReaderMobileControlsSheet } from "./ReaderMobileControlsSheet";
 import {
   ToolIcon,
   BookmarkIcon,
   ArrowLeftIcon,
-} from "../components/Icon";
+} from "../components/icons";
 
 
 export function ReaderToolbar(props: { session?: ReaderSession }) {
@@ -71,7 +71,7 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
         <Show when={isMobile()}>
           <div class="ds-reader-nav-row nav-main ds-reader-mobile-row--full">
             <Button
-              className="ds-btn-icon ds-reader-mobile-back-btn"
+              class="ds-btn-icon ds-reader-mobile-back-btn"
               icon={<ArrowLeftIcon />}
               title={t("common.back")}
               aria-label={t("common.back")}
@@ -89,14 +89,14 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
             </div>
             <div class="ds-reader-mobile-actions">
               <Button
-                className="ds-btn-icon"
+                class="ds-btn-icon"
                 classList={{ primary: s.bookmarked() }}
                 icon={<BookmarkIcon filled={s.bookmarked()} />}
                 title={s.bookmarked() ? t("browse.feed.removeFromReadLater") : t("browse.feed.saveForReadLater")}
                 onClick={() => void s.toggleBookmark()}
               />
               <Button
-                className="ds-btn-icon"
+                class="ds-btn-icon"
                 classList={{ primary: s.controlsOpen() }}
                 icon={<ToolIcon />}
                 title={t("reader.toolbar.toggleControlsTooltip")}

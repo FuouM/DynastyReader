@@ -4,9 +4,7 @@
  */
 
 import { For } from "solid-js";
-import type { BootstrapIconName } from "../Icon";
-import { Icon } from "../Icon";
-import { Button } from "../Button";
+import { Icon, Button } from "soulwindow/solid";
 import { t } from "../../i18n";
 
 export type SettingsSectionId =
@@ -21,7 +19,7 @@ export type SettingsSectionId =
 export interface SettingsSection {
   id: SettingsSectionId;
   label: string;
-  icon: BootstrapIconName;
+  icon: string;
 }
 
 export const getSettingsSections = (): SettingsSection[] => [
@@ -49,7 +47,7 @@ export function SettingsSidebar(props: SettingsSidebarProps) {
       <For each={getSettingsSections()}>
         {(sec) => (
           <Button
-            className="ds-settings-nav-item"
+            class="ds-settings-nav-item"
             classList={{ active: props.activeSection === sec.id }}
             title={t("settings.jumpToSectionTooltip", { section: sec.label })}
             onClick={() => props.onSelect(sec.id)}

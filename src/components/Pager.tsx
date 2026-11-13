@@ -11,8 +11,8 @@ import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
   CheckIcon,
-} from "./Icon";
-import { Button } from "./Button";
+} from "./icons";
+import { Button } from "soulwindow/solid";
 
 export interface PagerProps {
   totalPages: number;
@@ -44,14 +44,14 @@ export function Pager(props: PagerProps) {
       style={props.cssText}
     >
       <Button
-        className="ds-btn-icon"
+        class="ds-btn-icon"
         title={t("dialogs.pager.firstPage")}
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(1)}
         icon={<ChevronDoubleLeftIcon />}
       />
       <Button
-        className="ds-btn-icon"
+        class="ds-btn-icon"
         title={t("dialogs.pager.prevPage")}
         disabled={props.currentPage <= 1}
         onClick={() => props.onPage(props.currentPage - 1)}
@@ -89,7 +89,7 @@ export function Pager(props: PagerProps) {
         </span>
         <Button
           type="submit"
-          className="ds-btn-icon ds-pager-go-btn"
+          class="ds-btn-icon ds-pager-go-btn"
           icon={<CheckIcon size={12} />}
           title={t("dialogs.pager.jumpButton")}
           aria-label={t("dialogs.pager.jumpButton")}
@@ -97,14 +97,14 @@ export function Pager(props: PagerProps) {
       </form>
 
       <Button
-        className="ds-btn-icon"
+        class="ds-btn-icon"
         title={t("dialogs.pager.nextPage")}
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.currentPage + 1)}
         icon={<ChevronRightIcon />}
       />
       <Button
-        className="ds-btn-icon"
+        class="ds-btn-icon"
         title={t("dialogs.pager.lastPage", { total: props.totalPages })}
         disabled={props.currentPage >= props.totalPages}
         onClick={() => props.onPage(props.totalPages)}

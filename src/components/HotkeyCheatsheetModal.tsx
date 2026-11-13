@@ -5,9 +5,7 @@
 
 import { createSignal, For, Show } from "solid-js";
 import { makeEventListener } from "@solid-primitives/event-listener";
-import { Modal } from "./Modal";
-import { Icon } from "./Icon";
-import { Button, IconText } from "./Button";
+import { Modal, Icon, Button, IconText } from "soulwindow/solid";
 import { t } from "../i18n";
 import { HOTKEY_DEFINITIONS } from "../hotkeys/registry";
 import { getHotkeys } from "../hotkeys/hotkeys-store";
@@ -30,7 +28,7 @@ export function HotkeyCheatsheetModal() {
   return (
     <Modal
       open={open()}
-      backdropId="ds-cheatsheet-backdrop"
+      id="ds-cheatsheet-backdrop"
       title={
         <IconText icon={<Icon name="keyboard" />}>
           {t("settings.hotkeys.cheatsheetTitle")}
@@ -41,13 +39,13 @@ export function HotkeyCheatsheetModal() {
       footer={
         <div class="ds-row-between ds-w-full">
           <Button
-            className="ds-btn-compact"
+            class="ds-btn-compact"
             icon={<Icon name="sliders" />}
             text={t("settings.sections.hotkeys")}
             onClick={handleOpenCustomizer}
           />
           <Button
-            className="primary ds-modal-done"
+            class="primary ds-modal-done"
             text={t("common.close")}
             onClick={() => setOpen(false)}
           />

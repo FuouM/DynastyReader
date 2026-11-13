@@ -1,49 +1,10 @@
-import type { JSX } from "solid-js";
-import type { SearchResultItem } from "../types/api";
-
 /**
- * Bootstrap Icon name identifier (e.g. "search", "arrow-clockwise", "bookmark-fill").
+ * DynastyReader's named icon shortcuts, built on SoulWindow's `Icon`.
+ * Import `Icon` itself from `soulwindow/solid`.
  */
-export type BootstrapIconName = string;
-
-export interface IconProps {
-  /** The Bootstrap icon name without the `bi-` prefix (e.g. "search", "arrow-clockwise"). */
-  name: BootstrapIconName;
-  /** Whether to apply continuous spinning animation (`ds-spin`). */
-  spin?: boolean;
-  /** Explicit font-size (number in px or CSS string). */
-  size?: number | string;
-  /** Custom text/icon color. */
-  color?: string;
-  /** Additional CSS class names. */
-  class?: string;
-  /** Custom inline styles. */
-  style?: string | JSX.CSSProperties;
-  /** Accessible label / tooltip. */
-  title?: string;
-  onClick?: (ev: MouseEvent) => void;
-}
-
-/**
- * Standard typed icon component for Bootstrap Icons.
- */
-export function Icon(props: IconProps) {
-  return (
-    <i
-      class={`bi bi-${props.name}${props.spin ? " ds-spin" : ""}${props.class ? ` ${props.class}` : ""}`}
-      style={{
-        ...(props.size !== undefined ? { "font-size": typeof props.size === "number" ? `${props.size}px` : props.size } : {}),
-        ...(props.color ? { color: props.color } : {}),
-        ...(typeof props.style === "object" && props.style !== null ? props.style : {}),
-      }}
-      title={props.title}
-      onClick={props.onClick}
-    />
-  );
-}
-
-
+import { Icon, type IconProps } from "soulwindow/solid";
 import { ENTITY_TAXONOMY } from "../taxonomy";
+import type { SearchResultItem } from "../types/api";
 
 export type BaseIconProps = Omit<IconProps, "name">;
 

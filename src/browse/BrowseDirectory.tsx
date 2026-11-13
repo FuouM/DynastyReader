@@ -17,16 +17,13 @@ import { searchManga, getTags } from "../providers/mangadex/api/manga";
 import { formatMangaTitle } from "../providers/mangadex/mapping";
 import {
   setTopPagerFor,
-  useDelayedSpinner,
   useTabPane,
   type BrowsePaneApi,
 } from "./browse-state";
 import { Pager } from "../components/Pager";
-import { Loading, EmptyState, ErrorRetryRow } from "../components/Feedback";
-import { InputField } from "../components/InputField";
-import { ListItem } from "../components/ListItem";
-import { BlacklistIcon, RefreshIcon } from "../components/Icon";
-import { Button, IconText, ExternalLinkButton } from "../components/Button";
+import { Loading, EmptyState, ErrorRetryRow, InputField, ListItem, Button, IconText, useDelayedSpinner } from "soulwindow/solid";
+import { BlacklistIcon, RefreshIcon } from "../components/icons";
+import { ExternalLinkButton } from "../components/ActionButtons";
 import { useTriggerWarning } from "../components/TriggerWarning";
 import type { Directory, DirectoryEntry, DirectoryGroup } from "../types/api";
 
@@ -68,7 +65,7 @@ function DirectoryRow(props: {
 
   return (
     <ListItem
-      cssText="justify-content:space-between;padding:3px 6px;cursor:pointer;"
+      style="justify-content:space-between;padding:3px 6px;cursor:pointer;"
       onClick={openEntry}
       title={
         <span class="ds-item-title ds-inline-flex-center-4">
@@ -84,7 +81,7 @@ function DirectoryRow(props: {
       }
       actions={
         <ExternalLinkButton
-          className="ds-btn-icon"
+          class="ds-btn-icon"
           title={props.kind === "series" ? t("browse.directory.openSeriesTooltip") : t("browse.directory.searchTagTooltip")}
           url={
             props.entry.permalink.startsWith("mdx:")
@@ -302,9 +299,8 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
 
       <Show when={model() !== undefined && displayGroups().length === 0 && model()!.groups.length > 0}>
         <EmptyState
-          cssText="padding:24px;text-align:center;"
-          iconName="search"
-          iconCssText="font-size:24px;opacity:0.6;display:block;margin-bottom:8px;"
+          style="padding:24px;text-align:center;"
+          icon="search"
         >
           <span class="ds-muted">
             {props.kind === "series" ? t("browse.directory.noMatchingSeries") : t("browse.directory.noMatchingTags")}
@@ -317,9 +313,8 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
           const isSeries = props.kind === "series";
           return (
             <EmptyState
-              cssText="padding:32px 16px;text-align:center;"
-              iconName={isSeries ? "book" : "tags"}
-              iconCssText="font-size:32px;opacity:0.6;display:block;margin:0 auto 12px;"
+              style="padding:32px 16px;text-align:center;"
+              icon={isSeries ? "book" : "tags"}
             >
               <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
                 <div style="font-weight:600;font-size:13px;">
@@ -329,7 +324,7 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
                   {isSeries ? t("browse.directory.noSeriesDesc") : t("browse.directory.noTagsDesc")}
                 </div>
                 <Button
-                  className="primary"
+                  class="primary"
                   icon={<RefreshIcon />}
                   text={t("browse.directory.syncDirectory")}
                   onClick={() => pane.reload()}

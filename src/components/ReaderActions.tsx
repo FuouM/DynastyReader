@@ -12,7 +12,7 @@ import { t } from "../i18n";
 import { errorMessage, canonicalUrl } from "../utils/formatting";
 import { openExternal } from "../api/navigation";
 import type { ChapterPage } from "../types/api";
-import { Button } from "./Button";
+import { Button, Icon } from "soulwindow/solid";
 import {
   StorageIcon,
   BookmarkIcon,
@@ -20,8 +20,7 @@ import {
   CheckIcon,
   ExternalLinkIcon,
   CloseIcon,
-  Icon,
-} from "./Icon";
+} from "./icons";
 
 export interface ReaderActionsController {
   permalink: string;
@@ -102,7 +101,7 @@ export function ReaderActions(props: ReaderActionsProps) {
     <>
       <Show when={getSeriesPermalink()}>
         <Button
-          className="ds-btn-icon"
+          class="ds-btn-icon"
           icon={<StorageIcon />}
           title={t("reader.toolbar.viewSeries")}
           onClick={() =>
@@ -115,33 +114,33 @@ export function ReaderActions(props: ReaderActionsProps) {
         />
       </Show>
       <Button
-        className="ds-btn-icon"
+        class="ds-btn-icon"
         icon={<BookmarkIcon filled={bookmarked()} />}
         title={bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
         disabled={pending()}
         onClick={() => void toggleBookmark()}
       />
       <Button
-        className="ds-btn-icon"
+        class="ds-btn-icon"
         icon={<CloudDownloadIcon />}
         title={t("reader.toolbar.cacheChapterTooltip")}
         onClick={cacheChapter}
       />
       <Button
-        className="ds-btn-icon"
+        class="ds-btn-icon"
         icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
         title={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
         aria-label={copied() ? t("common.copied") : t("reader.toolbar.copyLink")}
         onClick={() => void copyLink()}
       />
       <Button
-        className="ds-btn-icon"
+        class="ds-btn-icon"
         icon={<ExternalLinkIcon />}
         title={t("reader.toolbar.openInBrowser")}
         onClick={() => void openExternal(chapterUrl())}
       />
       <Button
-        className="ds-btn-icon"
+        class="ds-btn-icon"
         icon={<CloseIcon />}
         title={t("topbar.closeTabTooltip")}
         onClick={() => closeSessionMangaTab()}

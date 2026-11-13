@@ -11,7 +11,7 @@ import { navigate } from "../stores/router";
 import { showBanner } from "../stores/topbar";
 import { activeProvider } from "../stores/provider";
 import { decodeEntities, formatDate, canonicalUrl, errorMessage } from "../utils/formatting";
-import { t } from "../i18n";
+import { t, getRandomLoadingMessage } from "../i18n";
 import { getOrHydrateSeriesCover } from "../api/series";
 import {
   getCollections,
@@ -47,16 +47,13 @@ import type {
   HistoryPageResult,
   HistorySortMode,
 } from "../types/db";
-import { Loading } from "../components/Feedback";
+import { Loading, ErrorRetryRow, Button, ConfirmDeleteButton, Select, InputField, Icon } from "soulwindow/solid";
 import { Pager } from "../components/Pager";
 import { LibraryItemRow } from "./LibraryItemRow";
 import { useLibraryPaneResource, type LibraryPaneProps } from "./useLibraryPaneResource";
 import { useBulkSelection } from "../hooks/useBulkSelection";
-import { Button, ConfirmDeleteButton, DsSelect } from "../components/Button";
-import { InputField } from "../components/InputField";
 import { persistedSignal } from "../lib/persisted-signal";
-import { FolderIcon, TrashIcon, BookmarkIcon, Icon } from "../components/Icon";
-import { ErrorRetryRow } from "../components/Feedback";
+import { FolderIcon, TrashIcon, BookmarkIcon } from "../components/icons";
 // ── 1. Collections Pane ──────────────────────────────────────────────────────
 
 export interface CollectionsPaneProps extends LibraryPaneProps {
@@ -81,7 +78,7 @@ export function CollectionsPane(props: CollectionsPaneProps) {
       fallback={
         <Show
           when={error() !== undefined}
-          fallback={<Show when={showSpinner()}><Loading /></Show>}
+          fallback={<Show when={showSpinner()}><Loading message={getRandomLoadingMessage()} /></Show>}
         >
           <ErrorRetryRow
             message={errorMessage(error())}
@@ -200,7 +197,7 @@ export function BookmarksPane(props: BookmarksPaneProps) {
                 placeholder={t("library.searchBookmarksPlaceholder")}
                 style="width:180px;"
               />
-              <DsSelect
+              <Select
                 value={sortMode()}
                 onChange={(v) => setSortMode(v as BookmarkSortMode)}
                 options={[
@@ -246,7 +243,7 @@ export function BookmarksPane(props: BookmarksPaneProps) {
         fallback={
           <Show
             when={error() !== undefined}
-            fallback={<Show when={showSpinner()}><Loading /></Show>}
+            fallback={<Show when={showSpinner()}><Loading message={getRandomLoadingMessage()} /></Show>}
           >
             <ErrorRetryRow
               message={errorMessage(error())}
@@ -373,7 +370,7 @@ export function FollowedPane(props: LibraryPaneProps) {
                 placeholder={t("library.searchFollowedPlaceholder")}
                 style="width:180px;"
               />
-              <DsSelect
+              <Select
                 value={sortMode()}
                 onChange={(v) => setSortMode(v as FollowedSortMode)}
                 options={[
@@ -411,7 +408,7 @@ export function FollowedPane(props: LibraryPaneProps) {
         fallback={
           <Show
             when={error() !== undefined}
-            fallback={<Show when={showSpinner()}><Loading /></Show>}
+            fallback={<Show when={showSpinner()}><Loading message={getRandomLoadingMessage()} /></Show>}
           >
             <ErrorRetryRow
               message={errorMessage(error())}
@@ -427,7 +424,7 @@ export function FollowedPane(props: LibraryPaneProps) {
               when={isFiltered()}
               fallback={
                 <div class="ds-library-empty">
-                  <Icon name="bookmark-heart" style="font-size:28px;margin-bottom:4px;" />
+                  <Icon name="bookmark-heart" />
                   <span>{t("library.emptyFollowed")}</span>
                 </div>
               }
@@ -625,7 +622,7 @@ export function HistoryPane(props: HistoryPaneProps) {
                 placeholder={t("library.searchHistoryPlaceholder")}
                 style="width:180px;"
               />
-              <DsSelect
+              <Select
                 value={sortMode()}
                 onChange={(v) => setSortMode(v as HistorySortMode)}
                 options={[
@@ -671,7 +668,7 @@ export function HistoryPane(props: HistoryPaneProps) {
         fallback={
           <Show
             when={error() !== undefined}
-            fallback={<Show when={showSpinner()}><Loading /></Show>}
+            fallback={<Show when={showSpinner()}><Loading message={getRandomLoadingMessage()} /></Show>}
           >
             <ErrorRetryRow
               message={errorMessage(error())}
@@ -687,7 +684,7 @@ export function HistoryPane(props: HistoryPaneProps) {
               when={isFiltered()}
               fallback={
                 <div class="ds-library-empty">
-                  <Icon name="clock-history" style="font-size:28px;margin-bottom:4px;" />
+                  <Icon name="clock-history" />
                   <span>{t("library.emptyHistory")}</span>
                 </div>
               }

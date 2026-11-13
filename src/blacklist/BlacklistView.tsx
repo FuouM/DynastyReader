@@ -9,18 +9,18 @@ import { navigate, canGoBack, goBack } from "../stores/router";
 import { setActions, showBanner } from "../stores/topbar";
 import { activeProvider } from "../stores/provider";
 import { decodeEntities, formatDate, canonicalUrl, errorMessage } from "../utils/formatting";
-import { t } from "../i18n";
+import { t, getRandomLoadingMessage } from "../i18n";
 import { getBlacklistMode, getBlacklistedSeries, removeBlacklistedSeries, setBlacklistMode } from "../db/blacklist.repo";
 import type { BlacklistedSeries, BlacklistMode } from "../types/blacklist";
-import { useDelayedSpinner } from "../components/Feedback";
+import { useDelayedSpinner, SubTabs, Loading, ErrorRetryRow, ListItem, Button, IconText, GroupBox } from "soulwindow/solid";
 import {
   BlacklistIcon,
   ListCheckIcon,
   TrashIcon,
-} from "../components/Icon";
-import { SubTabs } from "../components/SubTabs";
+  CheckIcon,
+  SearchIcon,
+} from "../components/icons";
 import { TagPill } from "../components/TagRow";
-import { CheckIcon, SearchIcon } from "../components/Icon";
 import {
   whitelistEnabled,
   setWhitelistEnabled,
@@ -44,10 +44,7 @@ const POPULAR_GENRES: WhitelistTag[] = [
   { id: "ee963ce2-acaa-43e9-a0fe-0f0460e60401", name: "Mystery" },
   { id: "256c8bd9-4904-4360-bf4f-508a76d67183", name: "Sci-Fi" },
 ];
-import { Loading, ErrorRetryRow } from "../components/Feedback";
-import { ListItem } from "../components/ListItem";
-import { Button, IconText, BackRefreshActions, ExternalLinkButton, BlacklistModeSwitch } from "../components/Button";
-import { GroupBox } from "../components/GroupBox";
+import { BackRefreshActions, ExternalLinkButton, BlacklistModeSwitch } from "../components/ActionButtons";
 export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" }) {
   const [activeTab, setActiveTab] = createSignal<"blacklist" | "whitelist">(
     props.initialTab ?? "blacklist",
@@ -147,13 +144,13 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
         fallback={
           <>
             <Show when={showSpinner()}>
-              <Loading />
+              <Loading message={getRandomLoadingMessage()} />
             </Show>
             <Show when={data.error !== undefined && data() === undefined}>
               <ErrorRetryRow
+                class="ds-bl-error-row"
                 message={t("blacklist.loadError", { msg: errorText() })}
                 onRetry={() => void refetch()}
-                className="ds-bl-error-row"
               />
             </Show>
           </>
@@ -228,13 +225,13 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                     actions={
                       <>
                         <ExternalLinkButton
-                          className="ds-btn-icon"
+                          class="ds-btn-icon"
                           title={t("blacklist.openOnDynastyTooltip")}
                           url={canonicalUrl("series", item.series_permalink)}
                         />
                         <Button
                           icon={<TrashIcon />}
-                          className="ds-btn-sm"
+                          class="ds-btn-sm"
                           title={t("blacklist.removeSeriesTooltip")}
                           onClick={() => void removeSeries(item)}
                         />
@@ -263,7 +260,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <Button
-                className={whitelistEnabled() ? "win-button--active" : ""}
+                class={whitelistEnabled() ? "win-button--active" : ""}
                 icon={whitelistEnabled() ? <CheckIcon /> : undefined}
                 text={whitelistEnabled() ? t("whitelist.statusEnabled") : t("whitelist.statusDisabled")}
                 onClick={() => {
@@ -307,7 +304,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                     actions={
                       <Button
                         icon={<TrashIcon />}
-                        className="ds-btn-sm"
+                        class="ds-btn-sm"
                         title={t("whitelist.removeTooltip", { name: tag.name })}
                         onClick={() => {
                           removeWhitelistedTag(tag.id);
@@ -334,7 +331,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                   const active = () => isTagWhitelisted(genre.id);
                   return (
                     <Button
-                      className={active() ? "win-button--active" : ""}
+                      class={active() ? "win-button--active" : ""}
                       icon={active() ? <CheckIcon /> : undefined}
                       text={genre.name}
                       onClick={() => togglePopularGenre(genre)}
@@ -362,7 +359,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
             </div>
 
             <Show when={allTagsResource.loading}>
-              <Loading />
+              <Loading message={getRandomLoadingMessage()} />
             </Show>
 
             <Show when={filteredMangaDexTags().length > 0}>
@@ -382,7 +379,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                           </span>
                         </div>
                         <Button
-                          className={active() ? "win-button--active" : ""}
+                          class={active() ? "win-button--active" : ""}
                           icon={active() ? <CheckIcon /> : undefined}
                           text={active() ? t("whitelist.allowedButton") : t("whitelist.addAllowlistButton")}
                           onClick={() => {

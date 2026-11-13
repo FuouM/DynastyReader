@@ -13,10 +13,8 @@ import { FolderIcon,
   CloseIcon,
   StarIcon,
   AddIcon,
-  Icon,
-} from "./Icon";
-import { Button, IconText } from "./Button";
-import { InputField } from "./InputField";
+} from "./icons";
+import { Button, IconText, InputField, Icon } from "soulwindow/solid";
 import { getCollections, createCollection, getItemCollectionIds, toggleItemInCollection } from "../db/collections.repo";
 import type { CollectionItemKind } from "../types/db";
 import { showBanner } from "../stores/topbar";
@@ -140,7 +138,7 @@ function AddToCollectionModal(props: AddToCollectionModalProps) {
         <IconText icon={<FolderIcon color="var(--sys-link,#0078d4)" />}>
           {t("dialogs.addToCollection.title")}
         </IconText>
-        <Button className="ds-btn-icon" icon={<CloseIcon />} title={t("common.close")} onClick={props.onClose} />
+        <Button class="ds-btn-icon" icon={<CloseIcon />} title={t("common.close")} onClick={props.onClose} />
       </div>
       <div class="ds-add-col-header">
         <div class="ds-truncate ds-add-col-title" title={props.item.title}>
@@ -196,7 +194,7 @@ function AddToCollectionModal(props: AddToCollectionModalProps) {
           onEnter={() => void handleCreate()}
         />
         <Button
-          className="ds-btn-sm"
+          class="ds-btn-sm"
           id="ds-add-to-col-create-btn"
           disabled={creating()}
           icon={<AddIcon class="ds-add-col-create-icon" />}
