@@ -1,6 +1,6 @@
 # DynastyReader: Unofficial Dynasty Scans Client (Desktop & Android)
 
-DynastyReader is a fast, lightweight, unofficial reader for [Dynasty Scans](https://dynasty-scans.com/), built with Rust, Tauri v2, and SolidJS. It runs natively across **Windows**, **Linux**, and **Android**. It stores metadata, reading progress, custom collections, and downloaded chapters locally in SQLite, using conditional ETag caching to keep upstream server requests minimal.
+DynastyReader is a fast, lightweight, unofficial reader for [Dynasty Scans](https://dynasty-scans.com/) and, as a second content source, [MangaDex](https://mangadex.org/), built with Rust, Tauri v2, and SolidJS. It runs natively across **Windows**, **Linux**, and **Android**. It stores metadata, reading progress, custom collections, and downloaded chapters locally in SQLite, using conditional ETag caching to keep upstream server requests minimal.
 
 <div align="center">
   <img src="public/icon.svg" alt="DynastyReader Icon" width="256" />
@@ -61,8 +61,8 @@ DynastyReader targets desktop and mobile platforms, but has been verified specif
 - **HTTP Client**: Reqwest (`rustls-tls` with `webpki-roots` for pure-Rust TLS across platforms, HTTP/2 connection pooling, ETag revalidation)
 - **Database**: SQLite 3 via `rusqlite` (bundled, WAL mode, pooled connections, online backup, native SQLite authorizer)
 - **Image Engine**: `image` crate (WebP transcoding, accelerated decoders) and `webp`
-- **Frontend**: TypeScript, Vite 6, SolidJS (fine-grained reactive signals and stores)
-- **Styling**: Modular CSS design with classic desktop WinForms / retro Aero and modern Flat Dark, Light, and High-Contrast themes, alongside customizable accent color presets
+- **Frontend**: TypeScript, Vite 6, SolidJS (fine-grained reactive signals and stores), Vitest for unit tests
+- **Styling**: [SoulWindow](https://github.com/FuouM/soulwindow) design system (shared tokens, themes, and Solid components) with app-level CSS layered on top; Flat Dark, Light, High-Contrast, and retro Windows 7 Aero themes, alongside customizable accent color presets
 - **Haptics & Touch**: Native platform haptic vibration engine and touch overscroll physics
 - **Icons**: Bootstrap Icons font
 
@@ -85,6 +85,7 @@ DynastyReader targets desktop and mobile platforms, but has been verified specif
 ### 4.2. Library, Custom Collections & Local Imports
 
 - **Five-Panel Hub**: Followed Series (with unread release indicators), Custom Collections / Favorites, Bookmarks, timestamped Reading History, and Local Imports.
+- **MangaDex Library**: With MangaDex active, the hub shows Followed, Bookmarks, and Reading History only (no Collections or Local Imports), backed by a separate database.
 - **Local CBZ & Folder Import**: Import and read local manga chapters or volumes directly from `.cbz` / `.zip` archives or image directories; edit local series metadata with cover extraction and file preview.
 - **Collection Management**: Create, rename, and organize user-defined collections with series or individual chapter entries.
 - **Backup & Transfer**: Export and import followed series and collections to and from copiable JSON or clipboard text, with selectable single or multi-collection scoping.
@@ -116,6 +117,16 @@ DynastyReader targets desktop and mobile platforms, but has been verified specif
 - **Haptic Engine Settings**: Dedicated haptic feedback configuration with adjustable vibration durations and live pattern previews for taps, page turns, chapter snaps, and confirmations.
 - **In-App Updates & Logs**: Automated GitHub release SemVer update checker with direct binary replacement on Windows, plus one-click access to application logs.
 
+### 4.6. MangaDex Provider
+
+- **Content Source Switcher**: Switch between Dynasty Scans (Yuri/GL) and MangaDex (all genres) from a dropdown in the topbar. Browse, Search, Library, Series, and Reader views are shared by both sources.
+- **Isolated Data**: MangaDex follows, bookmarks, history, reading progress, and cached metadata live in their own `mangadex.db`, and downloaded pages in `mangadex/pages/`, so they never mix with Dynasty data.
+- **Feed Allowlist**: Optional allowlist that limits MangaDex feeds to chosen tags and genres. When disabled, feeds show releases from all genres.
+- **Sticky Scanlator Group**: When several groups upload the same chapter number, next/previous chapter navigation prefers the group you are currently reading, and shows a notice if that group did not translate the target chapter.
+- **Author, Group & Tag Pages**: Open MangaDex author, scanlation group, and tag pages as paginated series lists; pasting a `mangadex.org/title/...` or `mangadex.org/chapter/...` URL opens it directly.
+- **At-Home Failover**: If a page download fails, the reader asks MangaDex for a new At-Home node, rewrites the URLs of pages not yet cached, and retries the failed page once. Delivery outcomes are reported back to MangaDex.
+- **Offline Downloads**: MangaDex chapters can be downloaded and stored under `mangadex/pages/` through the same download manager.
+
 ---
 
 ## 5. Roadmap
@@ -136,6 +147,7 @@ On desktop platforms, all application data is stored in a self-contained `.data/
 ```text
 .data/
 ├── dynasty_reader.db               # SQLite database (history, bookmarks, subscriptions, progress, blacklists, collections)
+├── mangadex.db                     # MangaDex SQLite database (follows, bookmarks, history, progress, metadata cache, allowlist)
 ├── dynasty_reader.backup.<ts>.db   # Optional online database backups
 ├── covers/                         # Cached series and chapter covers (.webp)
 ├── pages/                          # Downloaded offline chapter pages
@@ -144,6 +156,10 @@ On desktop platforms, all application data is stored in a self-contained `.data/
 │           ├── page_0001.jpg
 │           ├── page_0002.jpg
 │           └── ...
+├── mangadex/
+│   └── pages/                      # Downloaded MangaDex chapter pages
+│       └── <series_id>/
+│           └── <chapter_id>/
 ├── local/                          # Local manga unpacked from CBZ archives or image folders
 │   └── <series_slug>/
 │       └── chapters/
