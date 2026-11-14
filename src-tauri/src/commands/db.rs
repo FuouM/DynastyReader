@@ -126,9 +126,7 @@ fn open(db_name: &str) -> Result<Connection, String> {
         std::fs::create_dir_all(parent)
             .map_err(|e| format!("failed creating database directory: {e}"))?;
     }
-    let conn = Connection::open(&path).map_err(|e| format!("failed opening database: {e}"))?;
-    configure_connection(&conn)?;
-    Ok(conn)
+    open_synced(&path)
 }
 
 /// Applies the app-wide connection tuning. Every connection touching the app
@@ -206,6 +204,10 @@ fn bind_value_owned(v: Value) -> Result<rusqlite::types::Value, String> {
     }
 }
 
+fn bind_params(params: Vec<Value>) -> Result<Vec<rusqlite::types::Value>, String> {
+    params.into_iter().map(bind_value_owned).collect()
+}
+
 fn row_to_json(row: &rusqlite::Row<'_>) -> Result<Value, rusqlite::Error> {
     let row_ref = row.as_ref();
     let count = row_ref.column_count();
@@ -240,11 +242,7 @@ pub async fn db_execute(
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
     let conn = get_conn(&state.0, &db_name)?;
-    let values: Vec<rusqlite::types::Value> = params
-        .unwrap_or_default()
-        .into_iter()
-        .map(bind_value_owned)
-        .collect::<Result<Vec<_>, _>>()?;
+    let values = bind_params(params.unwrap_or_default())?;
     let affected = tokio::task::spawn_blocking(move || -> Result<usize, String> {
         let mut conn = lock_unpoisoned(&conn);
         conn.authorizer(Some(authorize_execute))
@@ -265,11 +263,7 @@ pub async fn db_query(
     params: Option<Vec<Value>>,
 ) -> Result<serde_json::Value, String> {
     let conn = get_conn(&state.0, &db_name)?;
-    let values: Vec<rusqlite::types::Value> = params
-        .unwrap_or_default()
-        .into_iter()
-        .map(bind_value_owned)
-        .collect::<Result<Vec<_>, _>>()?;
+    let values = bind_params(params.unwrap_or_default())?;
     let rows = tokio::task::spawn_blocking(move || -> Result<Vec<Value>, String> {
         let mut conn = lock_unpoisoned(&conn);
         conn.authorizer(Some(authorize_query))
@@ -299,22 +293,17 @@ pub async fn db_execute_batch(
     params: Option<Vec<Option<Vec<Value>>>>,
 ) -> Result<serde_json::Value, String> {
     let pool_arc = get_conn(&state.0, &db_name)?;
+    let mut params = params.unwrap_or_default().into_iter();
     let affected = tokio::task::spawn_blocking(move || {
         let mut conn = lock_unpoisoned(&pool_arc);
         conn.authorizer(Some(authorize_execute))
             .map_err(|e| format!("db authorizer setup failed: {e}"))?;
         let tx = conn.unchecked_transaction().map_err(|e| format!("failed starting transaction: {e}"))?;
         let mut results: Vec<i64> = Vec::with_capacity(statements.len());
-        for (idx, sql) in statements.iter().enumerate() {
-            let p = params
-                .as_ref()
-                .and_then(|v| v.get(idx).cloned().flatten())
-                .unwrap_or_default();
+        for sql in &statements {
+            let p = params.next().flatten().unwrap_or_default();
             let mut stmt = conn.prepare_cached(sql).map_err(|e| format!("failed preparing statement: {e}"))?;
-            let bound = p
-                .into_iter()
-                .map(bind_value_owned)
-                .collect::<Result<Vec<_>, _>>()?;
+            let bound = bind_params(p)?;
             let n = stmt
                 .execute(params_from_iter(bound))
                 .map_err(|e| format!("failed executing statement: {e}"))?;
@@ -336,10 +325,11 @@ pub async fn db_backup(
     db_name: String,
 ) -> Result<serde_json::Value, String> {
     let normalized = validate_db_name(&db_name)?;
-    let src_db_path = crate::paths::data_root().join(&normalized);
+    let root = crate::paths::data_root();
+    let src_db_path = root.join(&normalized);
     let ts = crate::util::now_ms();
     let backup_filename = format!("{}.backup.{}.db", normalized, ts);
-    let backup_path = crate::paths::data_root().join(&backup_filename);
+    let backup_path = root.join(&backup_filename);
     let backup_str = backup_path.to_string_lossy().into_owned();
     let size = tokio::task::spawn_blocking(move || {
         // Back up from a dedicated source connection (WAL permits a concurrent
@@ -418,7 +408,7 @@ pub async fn db_restore_from_path(
     .await
     .map_err(|e| format!("restore validation failed: {e}"))??;
 
-    evict_pool_connection(&state.0, &normalized)?;
+    evict_pool_connection(&state.0, &normalized);
     copy_db_file_with_retry(src_path, target_path, wal_path, shm_path).await?;
 
     Ok(json!({
@@ -428,13 +418,32 @@ pub async fn db_restore_from_path(
     }))
 }
 
-fn evict_pool_connection(
-    pool: &Mutex<HashMap<String, Arc<Mutex<Connection>>>>,
-    normalized: &str,
-) -> Result<(), String> {
-    let mut guard = lock_unpoisoned(pool);
-    guard.retain(|k, _| k != normalized);
-    Ok(())
+fn evict_pool_connection(pool: &Mutex<HashMap<String, Arc<Mutex<Connection>>>>, normalized: &str) {
+    lock_unpoisoned(pool).retain(|k, _| k != normalized);
+}
+
+/// Windows sharing violation / lock (ERROR_SHARING_VIOLATION = 32).
+fn is_file_lock(e: &std::io::Error) -> bool {
+    e.kind() == std::io::ErrorKind::PermissionDenied
+        || e.raw_os_error() == Some(32)
+        || e.to_string().contains("being used by another process")
+}
+
+/// Runs `op` up to `RESTORE_MAX_ATTEMPTS` times, backing off linearly while
+/// the failure is a file lock; returns the first non-lock or final error.
+fn retry_on_file_lock<T>(mut op: impl FnMut() -> std::io::Result<T>) -> std::io::Result<T> {
+    let mut attempt = 0usize;
+    loop {
+        match op() {
+            Err(e) if is_file_lock(&e) && attempt < RESTORE_MAX_ATTEMPTS - 1 => {
+                attempt += 1;
+                std::thread::sleep(std::time::Duration::from_millis(
+                    RESTORE_RETRY_BACKOFF_MS * attempt as u64,
+                ));
+            }
+            result => return result,
+        }
+    }
 }
 
 async fn copy_db_file_with_retry(
@@ -446,58 +455,21 @@ async fn copy_db_file_with_retry(
     tokio::task::spawn_blocking(move || -> Result<(), String> {
         std::thread::sleep(std::time::Duration::from_millis(RESTORE_RETRY_INITIAL_DELAY_MS));
         let tmp_target = target.with_extension("restore-tmp");
-        for attempt in 0..RESTORE_MAX_ATTEMPTS {
-            match std::fs::copy(&source, &tmp_target) {
-                Ok(_) => {
-                    // Copy succeeded — now it's safe to drop WAL/SHM and swap.
-                    if let Err(e) = std::fs::remove_file(&wal) {
-                        log::warn!("failed removing WAL sidecar: {e}");
-                    }
-                    if let Err(e) = std::fs::remove_file(&shm) {
-                        log::warn!("failed removing SHM sidecar: {e}");
-                    }
-                    let mut last_rename_err = None;
-                    for r_attempt in 0..RESTORE_MAX_ATTEMPTS {
-                        match std::fs::rename(&tmp_target, &target) {
-                            Ok(_) => return Ok(()),
-                            Err(e) => {
-                                let is_lock = e.kind() == std::io::ErrorKind::PermissionDenied
-                                    || e.raw_os_error() == Some(32)
-                                    || e.to_string().contains("being used by another process");
-                                if is_lock && r_attempt < RESTORE_MAX_ATTEMPTS - 1 {
-                                    std::thread::sleep(std::time::Duration::from_millis(
-                                        RESTORE_RETRY_BACKOFF_MS * (r_attempt + 1) as u64,
-                                    ));
-                                    continue;
-                                }
-                                last_rename_err = Some(e);
-                                break;
-                            }
-                        }
-                    }
-                    let _ = std::fs::remove_file(&tmp_target);
-                    return Err(format!(
-                        "failed to rename restore tmp after retries: {}",
-                        last_rename_err
-                            .map(|e| e.to_string())
-                            .unwrap_or_else(|| "unknown error".to_string())
-                    ));
-                }
-                Err(e) => {
-                    let is_lock = e.kind() == std::io::ErrorKind::PermissionDenied
-                        || e.raw_os_error() == Some(32)
-                        || e.to_string().contains("being used by another process");
-                    if is_lock && attempt < RESTORE_MAX_ATTEMPTS - 1 {
-                        std::thread::sleep(std::time::Duration::from_millis(RESTORE_RETRY_BACKOFF_MS * (attempt + 1) as u64));
-                        continue;
-                    }
-                    let _ = std::fs::remove_file(&tmp_target);
-                    return Err(format!("failed to restore after {RESTORE_MAX_ATTEMPTS} attempts: {e}"));
-                }
-            }
+        if let Err(e) = retry_on_file_lock(|| std::fs::copy(&source, &tmp_target)) {
+            let _ = std::fs::remove_file(&tmp_target);
+            return Err(format!("failed to restore after {RESTORE_MAX_ATTEMPTS} attempts: {e}"));
         }
-        let _ = std::fs::remove_file(&tmp_target);
-        Err(format!("failed to restore after {RESTORE_MAX_ATTEMPTS} attempts"))
+        // Copy succeeded — now it's safe to drop WAL/SHM and swap.
+        if let Err(e) = std::fs::remove_file(&wal) {
+            log::warn!("failed removing WAL sidecar: {e}");
+        }
+        if let Err(e) = std::fs::remove_file(&shm) {
+            log::warn!("failed removing SHM sidecar: {e}");
+        }
+        retry_on_file_lock(|| std::fs::rename(&tmp_target, &target)).map_err(|e| {
+            let _ = std::fs::remove_file(&tmp_target);
+            format!("failed to rename restore tmp after retries: {e}")
+        })
     })
     .await
     .map_err(|e| format!("restore task failed: {e}"))?

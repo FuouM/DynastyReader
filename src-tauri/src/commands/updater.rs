@@ -116,7 +116,7 @@ pub async fn check_for_updates(app: AppHandle, http_state: State<'_, HttpState>)
     let current_version = app.package_info().version.to_string();
 
     let headers_val = serde_json::json!({ "Accept": "application/vnd.github.v3+json" });
-    let resp = crate::commands::http::send_with_redirects(
+    let resp = crate::commands::http::send_request(
         &http_state.0,
         "GET",
         "https://api.github.com/repos/FuouM/DynastyReader/releases/latest",
@@ -199,7 +199,7 @@ pub async fn install_update(app: AppHandle, http_state: State<'_, HttpState>, do
     let old_exe: PathBuf = exe_dir.join(format!("{}.old", file_name.to_string_lossy()));
 
     log::info!("Downloading update from: {download_url}");
-    let response = crate::commands::http::send_with_redirects(
+    let response = crate::commands::http::send_request(
         &http_state.0,
         "GET",
         &download_url,

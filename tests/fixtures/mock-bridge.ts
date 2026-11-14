@@ -278,7 +278,7 @@ export function getMockBridgeCode(): string {
       if (cmd === "dirStatBatch") return { results: [{ file_count: 42, total_bytes: 52428800 }] };
       if (cmd === "fileExists") return { exists: false, absolute_path: "", size_bytes: 0 };
       if (cmd === "fileExistsBatch") return { results: [{ path: args.paths?.[0] || "", exists: true }] };
-      if (cmd === "fileMove" || cmd === "fileDeleteBatch") return 0;
+      if (cmd === "fileDeleteBatch") return 0;
       if (cmd === "verifyFileIntegrityBatch") return [];
 
       // Local import

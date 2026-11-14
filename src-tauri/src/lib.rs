@@ -75,7 +75,6 @@ pub fn run() {
             commands::db::db_restore_from_path,
             commands::fs::file_exists,
             commands::fs::file_exists_batch,
-            commands::fs::file_move,
             commands::fs::file_delete,
             commands::fs::file_delete_batch,
             commands::fs::verify_file_integrity_batch,

@@ -70,7 +70,6 @@ pub fn db_path() -> PathBuf {
     data_root().join("dynasty_reader.db")
 }
 
-
 /// Reject NTFS tricks and trailing dot/space in every component of an absolute
 /// path. Containment is enforced separately by the canonical-root check.
 fn reject_unsafe_components(path: &str) -> Result<(), String> {
@@ -190,18 +189,13 @@ pub fn resolve_in_root(raw: &str) -> Result<PathBuf, String> {
     Ok(target)
 }
 
-/// Returns true if `target` resolves to the data root directory itself.
-pub fn is_root_dir(target: &Path) -> Result<bool, String> {
-    let root = data_root();
-    let canonical_root = canonicalize_ancestor(&root)?;
-    let canonical_target = canonicalize_ancestor(target)?;
-    Ok(canonical_target == canonical_root)
-}
-
-/// Returns true if `target` is a vital database file or core directory that
-/// must never be deleted, overwritten, or moved via filesystem IPC commands.
+/// Returns true if `target` is the data root itself, a vital database file, or
+/// a core directory that must never be deleted, overwritten, or moved via
+/// filesystem IPC commands.
 pub fn is_protected_path(target: &Path) -> Result<bool, String> {
-    if is_root_dir(target)? {
+    let canonical_root = canonicalize_ancestor(&data_root())?;
+    let canonical_target = canonicalize_ancestor(target)?;
+    if canonical_target == canonical_root {
         return Ok(true);
     }
     if let Some(file_name) = target.file_name() {
@@ -217,20 +211,47 @@ pub fn is_protected_path(target: &Path) -> Result<bool, String> {
         }
     }
     // Core top-level directories directly inside data_root must not be wiped wholesale
-    let root = data_root();
-    let canonical_root = canonicalize_ancestor(&root)?;
-    let canonical_target = canonicalize_ancestor(target)?;
-    if let Some(parent) = canonical_target.parent() {
-        if parent == canonical_root {
-            if let Some(name) = canonical_target.file_name() {
-                let name = name.to_string_lossy().to_ascii_lowercase();
-                if matches!(name.as_str(), "pages" | "local" | "logs") {
-                    return Ok(true);
-                }
+    if canonical_target.parent() == Some(canonical_root.as_path()) {
+        if let Some(name) = canonical_target.file_name() {
+            let name = name.to_string_lossy().to_ascii_lowercase();
+            if matches!(name.as_str(), "pages" | "local" | "logs") {
+                return Ok(true);
             }
         }
     }
     Ok(false)
+}
+
+/// `create_dir_all(dir)` that recovers from ENOTDIR by removing regular files
+/// blocking a path component (e.g. a legacy `mangadex` file where `mangadex/`
+/// must live). Protected files are never removed. I/O errors are reported as
+/// `"{err_prefix}: {e}"`.
+pub async fn create_dir_all_clearing_files(dir: &Path, err_prefix: &str) -> Result<(), String> {
+    let Err(e) = tokio::fs::create_dir_all(dir).await else {
+        return Ok(());
+    };
+    let is_not_dir = e.raw_os_error() == Some(20) || e.to_string().contains("not a directory");
+    if !is_not_dir {
+        return Err(format!("{err_prefix}: {e}"));
+    }
+    let root = data_root();
+    let mut cur = dir;
+    while cur != root && cur != Path::new("") {
+        if cur.is_file() {
+            if is_protected_path(cur).unwrap_or(true) {
+                return Err(format!("cannot remove protected blocking path component: {cur:?}"));
+            }
+            log::warn!("removing blocking file in directory path: {:?}", cur);
+            let _ = std::fs::remove_file(cur);
+        }
+        match cur.parent() {
+            Some(p) => cur = p,
+            None => break,
+        }
+    }
+    tokio::fs::create_dir_all(dir)
+        .await
+        .map_err(|e| format!("{err_prefix}: {e}"))
 }
 
 #[cfg(test)]
@@ -284,13 +305,13 @@ mod tests {
     }
 
     #[test]
-    fn test_is_root_dir() {
+    fn test_root_dir_is_protected() {
         let root = temp_root("shared");
         set_root(root.clone());
 
-        assert!(is_root_dir(&root).unwrap());
-        assert!(is_root_dir(&resolve_in_root("").unwrap()).unwrap());
-        assert!(!is_root_dir(&resolve_in_root("pages/ch1").unwrap()).unwrap());
+        assert!(is_protected_path(&root).unwrap());
+        assert!(is_protected_path(&resolve_in_root("").unwrap()).unwrap());
+        assert!(!is_protected_path(&resolve_in_root("pages/ch1").unwrap()).unwrap());
     }
 
     #[test]

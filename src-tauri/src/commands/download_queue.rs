@@ -7,7 +7,6 @@
 //! Phase 2 desktop-only — Android foreground service deferred to Phase 3.
 
 use crate::util::{lock_unpoisoned, now_ms};
-use log;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{
@@ -101,10 +100,6 @@ impl Default for DownloadState {
     }
 }
 
-
-/// Directory (relative to the data root) that holds a chapter's downloaded
-/// pages. Shared by `download_chapter` (writes) and the cancellation path
-/// (prunes partial downloads).
 fn sanitize_path_segment(s: &str) -> String {
     let clean = s.replace(|c: char| !c.is_ascii_alphanumeric() && c != '-' && c != '_', "_");
     let lower = clean.to_ascii_lowercase();
@@ -121,30 +116,53 @@ fn sanitize_path_segment(s: &str) -> String {
     }
 }
 
+/// Directory (relative to the data root) that holds a chapter's downloaded
+/// pages. Shared by `download_chapter` (writes) and the cancellation path
+/// (prunes partial downloads).
 fn chapter_pages_rel_dir(req: &DownloadRequest) -> String {
-    if req.chapter_permalink.starts_with("mdx:") {
-        let clean_series = if req.series_permalink.is_empty() {
-            "_singles".to_string()
-        } else {
-            sanitize_path_segment(req.series_permalink.trim_start_matches("mdx:"))
-        };
-        let clean_chapter = sanitize_path_segment(req.chapter_permalink.trim_start_matches("mdx:"));
-        format!("mangadex/pages/{}/{}", clean_series, clean_chapter)
+    let (base, series, chapter) = if req.chapter_permalink.starts_with("mdx:") {
+        (
+            "mangadex/pages",
+            req.series_permalink.trim_start_matches("mdx:"),
+            req.chapter_permalink.trim_start_matches("mdx:"),
+        )
     } else {
-        let clean_series = if req.series_permalink.is_empty() {
-            "_singles".to_string()
-        } else {
-            sanitize_path_segment(&req.series_permalink)
-        };
-        let clean_chapter = sanitize_path_segment(&req.chapter_permalink);
-        format!("pages/{}/{}", clean_series, clean_chapter)
-    }
+        ("pages", req.series_permalink.as_str(), req.chapter_permalink.as_str())
+    };
+    let clean_series = if req.series_permalink.is_empty() {
+        "_singles".to_string()
+    } else {
+        sanitize_path_segment(series)
+    };
+    format!("{base}/{clean_series}/{}", sanitize_path_segment(chapter))
 }
 
 #[inline]
 fn is_singles_series(sp: &str) -> bool {
     sp.is_empty() || sp == "_singles"
 }
+
+fn open_db() -> Result<rusqlite::Connection, String> {
+    crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))
+}
+
+fn open_mdx_db() -> Result<rusqlite::Connection, String> {
+    crate::commands::db::open_synced(&crate::paths::data_root().join("mangadex.db"))
+}
+
+/// Runs `f` against the app DB on the blocking pool. Open and join errors are
+/// ignored: queue bookkeeping writes never fail the surrounding operation.
+async fn with_app_db(f: impl FnOnce(&rusqlite::Connection) + Send + 'static) {
+    let _ = tokio::task::spawn_blocking(move || {
+        if let Ok(conn) = open_db() {
+            f(&conn);
+        }
+    })
+    .await;
+}
+
+const RESET_DOWNLOADING_SQL: &str =
+    "UPDATE download_queue SET status = 'pending' WHERE status = 'downloading'";
 
 /// Resolves once downloads are paused. The notify waiter is registered before
 /// the flag is re-checked so a pause landing between check and registration
@@ -168,16 +186,12 @@ static RESET_STUCK_ONCE: std::sync::Once = std::sync::Once::new();
 
 fn reset_stuck_downloads_once(conn: &rusqlite::Connection) {
     RESET_STUCK_ONCE.call_once(|| {
-        let _ = conn.execute(
-            "UPDATE download_queue SET status = 'pending' WHERE status = 'downloading'",
-            [],
-        );
+        let _ = conn.execute(RESET_DOWNLOADING_SQL, []);
     });
 }
 
 fn ensure_download_queue_table() -> Result<(), String> {
-    let conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
-    // busy_timeout/WAL/foreign_keys already applied by open_synced.
+    let conn = open_db()?;
     conn.execute(
         "CREATE TABLE IF NOT EXISTS download_queue (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -232,12 +246,9 @@ fn ensure_processor_running(
         state.running.store(false, Ordering::SeqCst);
         // Restart if pending work survived (e.g. panic mid-queue).
         let pending = tokio::task::spawn_blocking(|| {
-            crate::commands::db::open_synced(&crate::paths::db_path())
+            open_db()
                 .and_then(|conn| {
-                    let _ = conn.execute(
-                        "UPDATE download_queue SET status = 'pending' WHERE status = 'downloading'",
-                        [],
-                    );
+                    let _ = conn.execute(RESET_DOWNLOADING_SQL, []);
                     conn.query_row(
                         "SELECT COUNT(*) FROM download_queue WHERE status = 'pending'",
                         [],
@@ -266,8 +277,7 @@ pub async fn enqueue_chapters(
     let now = now_ms();
     let result = tokio::task::spawn_blocking(move || -> Result<EnqueueResult, String> {
         ensure_download_queue_table()?;
-        let mut conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
-        // busy_timeout/WAL/foreign_keys already applied by open_synced.
+        let mut conn = open_db()?;
         // Single transaction: one fsync for the whole batch instead of one
         // per chapter.
         let tx = conn.transaction().map_err(|e| format!("begin tx: {e}"))?;
@@ -360,17 +370,13 @@ pub async fn cancel_download(
         token.cancel();
     }
     // Also mark queued pending rows as failed/cancelled
-    let cp = chapter_permalink.clone();
-    tokio::task::spawn_blocking(move || {
-        if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-            let _ = conn.execute(
-                "UPDATE download_queue SET status = 'failed', error_msg = 'cancelled' WHERE chapter_permalink = ?1 AND status = 'pending'",
-                rusqlite::params![cp],
-            );
-        }
+    with_app_db(move |conn| {
+        let _ = conn.execute(
+            "UPDATE download_queue SET status = 'failed', error_msg = 'cancelled' WHERE chapter_permalink = ?1 AND status = 'pending'",
+            rusqlite::params![chapter_permalink],
+        );
     })
-    .await
-    .ok();
+    .await;
     Ok(())
 }
 
@@ -381,14 +387,13 @@ pub async fn retry_chapter_download(
     http_state: State<'_, crate::commands::http::HttpState>,
     chapter_permalink: String,
 ) -> Result<(), String> {
-    let cp = chapter_permalink.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
-        let conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
+        let conn = open_db()?;
         let now = now_ms();
         let updated = conn
             .execute(
                 "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE chapter_permalink = ?2 AND status = 'failed'",
-                rusqlite::params![now, cp],
+                rusqlite::params![now, chapter_permalink],
             )
             .map_err(|e| format!("retry chapter failed: {e}"))?;
         if updated == 0 {
@@ -442,11 +447,10 @@ pub async fn retry_failed_downloads(
     http_state: State<'_, crate::commands::http::HttpState>,
     series_permalink: String,
 ) -> Result<(), String> {
-    let sp = series_permalink.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
-        let conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
+        let conn = open_db()?;
         let now = now_ms();
-        if is_singles_series(&sp) {
+        if is_singles_series(&series_permalink) {
             conn.execute(
                 "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE (series_permalink = '' OR series_permalink IS NULL OR series_permalink = '_singles') AND status = 'failed'",
                 rusqlite::params![now],
@@ -455,7 +459,7 @@ pub async fn retry_failed_downloads(
         } else {
             conn.execute(
                 "UPDATE download_queue SET status = 'pending', error_msg = NULL, queued_at = ?1 WHERE series_permalink = ?2 AND status = 'failed'",
-                rusqlite::params![now, sp],
+                rusqlite::params![now, series_permalink],
             )
             .map_err(|e| format!("retry failed: {e}"))?;
         }
@@ -471,10 +475,9 @@ pub async fn retry_failed_downloads(
 
 #[tauri::command(rename = "clearCompletedDownloads")]
 pub async fn clear_completed_downloads(series_permalink: String) -> Result<(), String> {
-    let sp = series_permalink.clone();
     tokio::task::spawn_blocking(move || -> Result<(), String> {
-        let conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
-        if is_singles_series(&sp) {
+        let conn = open_db()?;
+        if is_singles_series(&series_permalink) {
             conn.execute(
                 "DELETE FROM download_queue WHERE (series_permalink = '' OR series_permalink IS NULL OR series_permalink = '_singles') AND status IN ('done', 'failed')",
                 [],
@@ -483,7 +486,7 @@ pub async fn clear_completed_downloads(series_permalink: String) -> Result<(), S
         } else {
             conn.execute(
                 "DELETE FROM download_queue WHERE series_permalink = ?1 AND status IN ('done', 'failed')",
-                rusqlite::params![sp],
+                rusqlite::params![series_permalink],
             )
             .map_err(|e| format!("clear failed: {e}"))?;
         }
@@ -502,7 +505,7 @@ pub async fn get_download_queue(
 ) -> Result<serde_json::Value, String> {
     let (items, has_pending) = tokio::task::spawn_blocking(|| -> Result<(Vec<serde_json::Value>, bool), String> {
         ensure_download_queue_table()?;
-        let conn = crate::commands::db::open_synced(&crate::paths::db_path()).map_err(|e| format!("open db: {e}"))?;
+        let conn = open_db()?;
         let mut stmt = conn
             .prepare("SELECT series_permalink, series_title, chapter_permalink, chapter_title, chapter_index, status, progress, total_pages, error_msg, queued_at, completed_at FROM download_queue ORDER BY queued_at ASC")
             .map_err(|e| format!("prepare failed: {e}"))?;
@@ -625,11 +628,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         // Pick next pending row — run blocking DB work without holding
         // non-Send rusqlite types across an await.
         let next: Option<DownloadRequest> = tokio::task::spawn_blocking(|| {
-            let conn = match crate::commands::db::open_synced(&crate::paths::db_path()) {
-                Ok(c) => c,
-                Err(_) => return None,
-            };
-            // busy_timeout/WAL/foreign_keys already applied by open_synced.
+            let conn = open_db().ok()?;
             conn.query_row(
                 "SELECT series_permalink, series_title, chapter_permalink, chapter_title, chapter_index FROM download_queue WHERE status = 'pending' ORDER BY queued_at ASC LIMIT 1",
                 [],
@@ -645,15 +644,8 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
         .await
         .unwrap_or(None);
 
-        // Handle DB open failures that would have been `continue` + sleep
-        // inside the blocking closure: treat None as either "no work" or
-        // transient error. For transient errors we still need a short backoff.
-        // We distinguish by checking if there is actually a pending row via a
-        // quick count — if None and we just failed to open, sleep 2s.
-        // Simpler: if next is None, just go to the "no work" branch which
-        // parks with a timeout. A spurious 30s wait on transient open failure
-        // is acceptable (next enqueue will wake it via notify).
-
+        // `None` covers both "no work" and a transient DB open failure; either
+        // way park until notified (the next enqueue wakes us) or a 30s poll.
         let req = match next {
             Some(r) => r,
             None => {
@@ -667,13 +659,11 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
 
         // Mark downloading (blocking)
         let chapter_permalink = req.chapter_permalink.clone();
-        let _ = tokio::task::spawn_blocking(move || {
-            if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                let _ = conn.execute(
-                    "UPDATE download_queue SET status = 'downloading', progress = 0, total_pages = 0 WHERE chapter_permalink = ?1",
-                    rusqlite::params![chapter_permalink],
-                );
-            }
+        with_app_db(move |conn| {
+            let _ = conn.execute(
+                "UPDATE download_queue SET status = 'downloading', progress = 0, total_pages = 0 WHERE chapter_permalink = ?1",
+                rusqlite::params![chapter_permalink],
+            );
         })
         .await;
 
@@ -695,8 +685,6 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
 
         // Update status (blocking)
         let now = now_ms();
-        let req_clone = req.clone();
-        let app_clone = app.clone();
         let (emit_status, pages_done, total_pages) = match result {
             Ok((done, total)) => {
                 let status = if done == total && total > 0 { "done" } else { "failed" };
@@ -705,13 +693,12 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                 } else {
                     None
                 };
-                let _ = tokio::task::spawn_blocking(move || {
-                    if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                        let _ = conn.execute(
-                            "UPDATE download_queue SET status = ?1, progress = ?2, total_pages = ?3, completed_at = ?4, error_msg = ?5 WHERE chapter_permalink = ?6",
-                            rusqlite::params![status, done as i64, total as i64, now, err_msg, req_clone.chapter_permalink],
-                        );
-                    }
+                let cp = req.chapter_permalink.clone();
+                with_app_db(move |conn| {
+                    let _ = conn.execute(
+                        "UPDATE download_queue SET status = ?1, progress = ?2, total_pages = ?3, completed_at = ?4, error_msg = ?5 WHERE chapter_permalink = ?6",
+                        rusqlite::params![status, done as i64, total as i64, now, err_msg, cp],
+                    );
                 })
                 .await;
                 (status, done, total)
@@ -720,7 +707,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                 let cp = req.chapter_permalink.clone();
                 let rel_dir = chapter_pages_rel_dir(&req);
                 let _ = tokio::task::spawn_blocking(move || {
-                    if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
+                    if let Ok(conn) = open_db() {
                         let _ = conn.execute(
                             "UPDATE download_queue SET status = 'failed', error_msg = 'cancelled' WHERE chapter_permalink = ?1",
                             rusqlite::params![cp],
@@ -734,8 +721,7 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
                         }
                     }
                     if cp.starts_with("mdx:") {
-                        let mdx_path = crate::paths::data_root().join("mangadex.db");
-                        if let Ok(conn) = crate::commands::db::open_synced(&mdx_path) {
+                        if let Ok(conn) = open_mdx_db() {
                             let ch_id = cp.trim_start_matches("mdx:");
                             let _ = conn.execute(
                                 "DELETE FROM cached_pages WHERE chapter_id = ?1",
@@ -755,24 +741,21 @@ async fn run_processor(app: AppHandle, http_client: reqwest::Client) {
             }
             Err(e) => {
                 let cp = req.chapter_permalink.clone();
-                let err_msg = e.clone();
-                let _ = tokio::task::spawn_blocking(move || {
-                    if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                        let _ = conn.execute(
-                            "UPDATE download_queue SET status = 'failed', error_msg = ?1 WHERE chapter_permalink = ?2",
-                            rusqlite::params![err_msg, cp],
-                        );
-                    }
+                with_app_db(move |conn| {
+                    let _ = conn.execute(
+                        "UPDATE download_queue SET status = 'failed', error_msg = ?1 WHERE chapter_permalink = ?2",
+                        rusqlite::params![e, cp],
+                    );
                 })
                 .await;
                 ("failed", 0, 0)
             }
         };
-        let _ = app_clone.emit(
+        let _ = app.emit(
             "download://progress",
             DownloadProgressPayload {
-                chapter_permalink: req.chapter_permalink.clone(),
-                series_permalink: req.series_permalink.clone(),
+                chapter_permalink: req.chapter_permalink,
+                series_permalink: req.series_permalink,
                 pages_done,
                 total_pages,
                 bytes_done: 0,
@@ -806,10 +789,9 @@ async fn record_page_progress(
     let fp = file_path.to_string();
     let is_mdx = cp.starts_with("mdx:");
     tokio::task::spawn_blocking(move || {
-        let main_conn = crate::commands::db::open_synced(&crate::paths::db_path());
+        let main_conn = open_db();
         if is_mdx {
-            let mdx_path = crate::paths::data_root().join("mangadex.db");
-            if let Ok(conn) = crate::commands::db::open_synced(&mdx_path) {
+            if let Ok(conn) = open_mdx_db() {
                 let now = crate::util::now_ms();
                 let ch_id = cp.trim_start_matches("mdx:");
                 let _ = conn.execute(
@@ -835,6 +817,32 @@ async fn record_page_progress(
     .ok();
 }
 
+/// Fire-and-forget MangaDex@Home delivery report for a `mangadex.network` fetch.
+fn report_mdx_network(
+    client: &reqwest::Client,
+    url: &str,
+    success: bool,
+    bytes: u64,
+    started: std::time::Instant,
+) {
+    let payload = serde_json::json!({
+        "url": url,
+        "success": success,
+        "bytes": bytes,
+        "duration": started.elapsed().as_millis() as u64,
+        "cached": false,
+    });
+    let client = client.clone();
+    tokio::spawn(async move {
+        let _ = client
+            .post("https://api.mangadex.network/report")
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(payload.to_string())
+            .send()
+            .await;
+    });
+}
+
 async fn fetch_page_to_file(
     client: &reqwest::Client,
     abs_url: &str,
@@ -843,32 +851,9 @@ async fn fetch_page_to_file(
     let is_mdx_network = abs_url.contains("mangadex.network");
     let start_time = std::time::Instant::now();
     if let Some(parent) = target.parent() {
-        if let Err(e) = tokio::fs::create_dir_all(parent).await {
-            let is_not_dir = e.raw_os_error() == Some(20) || e.to_string().contains("not a directory");
-            if is_not_dir {
-                let root = crate::paths::data_root();
-                let mut cur = parent;
-                while cur != root && cur != std::path::Path::new("") {
-                    if cur.is_file() {
-                        if crate::paths::is_protected_path(cur).unwrap_or(true) {
-                            return Err(format!("cannot remove protected blocking path component: {cur:?}"));
-                        }
-                        log::warn!("removing blocking file in directory path: {:?}", cur);
-                        let _ = std::fs::remove_file(cur);
-                    }
-                    if let Some(p) = cur.parent() {
-                        cur = p;
-                    } else {
-                        break;
-                    }
-                }
-                tokio::fs::create_dir_all(parent).await.map_err(|e2| format!("mkdir: {e2}"))?;
-            } else {
-                return Err(format!("mkdir: {e}"));
-            }
-        }
+        crate::paths::create_dir_all_clearing_files(parent, "mkdir").await?;
     }
-    let resp = crate::commands::http::send_with_redirects(
+    let resp = crate::commands::http::send_request(
         client,
         "GET",
         abs_url,
@@ -880,37 +865,13 @@ async fn fetch_page_to_file(
     .await
     .map_err(|e| {
         if is_mdx_network {
-            let duration = start_time.elapsed().as_millis() as u64;
-            let url_str = abs_url.to_string();
-            let client_clone = client.clone();
-            tokio::spawn(async move {
-                let payload = serde_json::json!({
-                    "url": url_str,
-                    "success": false,
-                    "bytes": 0,
-                    "duration": duration,
-                    "cached": false,
-                });
-                let _ = client_clone.post("https://api.mangadex.network/report").header(reqwest::header::CONTENT_TYPE, "application/json").body(payload.to_string()).send().await;
-            });
+            report_mdx_network(client, abs_url, false, 0, start_time);
         }
         format!("http get: {e}")
     })?;
     if !resp.status().is_success() {
         if is_mdx_network {
-            let duration = start_time.elapsed().as_millis() as u64;
-            let url_str = abs_url.to_string();
-            let client_clone = client.clone();
-            tokio::spawn(async move {
-                let payload = serde_json::json!({
-                    "url": url_str,
-                    "success": false,
-                    "bytes": 0,
-                    "duration": duration,
-                    "cached": false,
-                });
-                let _ = client_clone.post("https://api.mangadex.network/report").header(reqwest::header::CONTENT_TYPE, "application/json").body(payload.to_string()).send().await;
-            });
+            report_mdx_network(client, abs_url, false, 0, start_time);
         }
         return Err(format!("http status {}", resp.status()));
     }
@@ -927,41 +888,91 @@ async fn fetch_page_to_file(
     let mut stream = resp.bytes_stream();
     let write_res = crate::commands::http::stream_to_file_capped(&mut stream, &mut out, MAX_PAGE_BYTES, |_| {}).await;
     drop(out);
-    let size = match write_res {
-        Ok(s) => s,
-        Err(e) => {
-            let e = if e.contains("exceeds size cap") {
-                format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes")
-            } else {
-                e
-            };
-            return Err(e);
+    let size = write_res.map_err(|e| {
+        if e.contains("exceeds size cap") {
+            format!("page exceeds size cap of {MAX_PAGE_BYTES} bytes")
+        } else {
+            e
         }
-    };
-    match tokio::fs::rename(&tmp_path, target).await {
-        Ok(_) => {
-            guard.0 = None;
-            if is_mdx_network {
-                let duration = start_time.elapsed().as_millis() as u64;
-                let url_str = abs_url.to_string();
-                let client_clone = client.clone();
-                tokio::spawn(async move {
-                    let payload = serde_json::json!({
-                        "url": url_str,
-                        "success": true,
-                        "bytes": size,
-                        "duration": duration,
-                        "cached": false,
-                    });
-                    let _ = client_clone.post("https://api.mangadex.network/report").header(reqwest::header::CONTENT_TYPE, "application/json").body(payload.to_string()).send().await;
-                });
-            }
-        }
-        Err(e) => {
-            return Err(format!("persist: {e}"));
-        }
+    })?;
+    tokio::fs::rename(&tmp_path, target)
+        .await
+        .map_err(|e| format!("persist: {e}"))?;
+    guard.0 = None;
+    if is_mdx_network {
+        report_mdx_network(client, abs_url, true, size, start_time);
     }
     Ok(size as i64)
+}
+
+/// GETs a chapter JSON endpoint and returns its body (capped). `what` names
+/// the endpoint in error messages.
+async fn fetch_chapter_json(client: &reqwest::Client, url: &str, what: &str) -> Result<Vec<u8>, String> {
+    let resp = crate::commands::http::send_request(
+        client,
+        "GET",
+        url,
+        None,
+        None,
+        None,
+        Some(FETCH_TIMEOUT_MS),
+    )
+    .await
+    .map_err(|e| format!("fetch {what} failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("fetch {what} status {}", resp.status()));
+    }
+    crate::commands::http::read_body_capped(resp, MAX_CHAPTER_JSON_BYTES).await
+}
+
+async fn fetch_mdx_pages(client: &reqwest::Client, chapter_id: &str) -> Result<Vec<serde_json::Value>, String> {
+    let at_home_url = format!("https://api.mangadex.org/at-home/server/{chapter_id}");
+    let body_bytes = fetch_chapter_json(client, &at_home_url, "mangadex at-home").await?;
+    let v: serde_json::Value = serde_json::from_slice(&body_bytes).map_err(|e| format!("parse at-home: {e}"))?;
+    let base_url = v.get("baseUrl").and_then(|b| b.as_str()).unwrap_or("");
+    let chapter_obj = v.get("chapter");
+    let hash = chapter_obj.and_then(|c| c.get("hash")).and_then(|h| h.as_str()).unwrap_or("");
+    if base_url.is_empty() || hash.is_empty() {
+        return Err("missing MangaDex at-home base URL or chapter hash".to_string());
+    }
+    let (filenames, mode): (&[serde_json::Value], &str) =
+        if let Some(arr) = chapter_obj.and_then(|c| c.get("dataSaver")).and_then(|d| d.as_array()) {
+            (arr.as_slice(), "data-saver")
+        } else if let Some(arr) = chapter_obj.and_then(|c| c.get("data")).and_then(|d| d.as_array()) {
+            (arr.as_slice(), "data")
+        } else {
+            (&[][..], "data-saver")
+        };
+    Ok(filenames
+        .iter()
+        .filter_map(|f| f.as_str())
+        .map(|f| serde_json::json!({ "url": format!("{base_url}/{mode}/{hash}/{f}") }))
+        .collect())
+}
+
+async fn fetch_dynasty_pages(
+    client: &reqwest::Client,
+    chapter_permalink: &str,
+) -> Result<Vec<serde_json::Value>, String> {
+    let chapter_url = format!("https://dynasty-scans.com/chapters/{chapter_permalink}.json");
+    let body_bytes = fetch_chapter_json(client, &chapter_url, "chapter").await?;
+    let body = String::from_utf8_lossy(&body_bytes).into_owned();
+    let mut v: serde_json::Value = serde_json::from_str(&body).map_err(|e| format!("parse chapter: {e}"))?;
+    let pages = match v.get_mut("pages").map(serde_json::Value::take) {
+        Some(serde_json::Value::Array(pages)) => pages,
+        _ => Vec::new(),
+    };
+    // Cache chapter metadata in DB (for BrowseDownloaded etc.)
+    let key = format!("chapter:{chapter_permalink}");
+    with_app_db(move |conn| {
+        let now = crate::util::now_ms();
+        let _ = conn.execute(
+            "INSERT OR REPLACE INTO cached_metadata (cache_key, data_type, json_payload, cached_at) VALUES (?1, 'chapter', ?2, ?3)",
+            rusqlite::params![key, body, now],
+        );
+    })
+    .await;
+    Ok(pages)
 }
 
 async fn fetch_and_cache_chapter_pages(
@@ -969,91 +980,9 @@ async fn fetch_and_cache_chapter_pages(
     req: &DownloadRequest,
 ) -> Result<Vec<serde_json::Value>, String> {
     let pages = if req.chapter_permalink.starts_with("mdx:") {
-        let chapter_id = req.chapter_permalink.trim_start_matches("mdx:");
-        let at_home_url = format!("https://api.mangadex.org/at-home/server/{}", chapter_id);
-        let resp = crate::commands::http::send_with_redirects(
-            client,
-            "GET",
-            &at_home_url,
-            None,
-            None,
-            None,
-            Some(FETCH_TIMEOUT_MS),
-        )
-        .await
-        .map_err(|e| format!("fetch mangadex at-home failed: {e}"))?;
-        if !resp.status().is_success() {
-            return Err(format!("fetch mangadex at-home status {}", resp.status()));
-        }
-        let body_bytes = crate::commands::http::read_body_capped(resp, MAX_CHAPTER_JSON_BYTES).await?;
-        let v: serde_json::Value = serde_json::from_slice(&body_bytes).map_err(|e| format!("parse at-home: {e}"))?;
-        let base_url = v.get("baseUrl").and_then(|b| b.as_str()).unwrap_or("");
-        let chapter_obj = v.get("chapter");
-        let hash = chapter_obj.and_then(|c| c.get("hash")).and_then(|h| h.as_str()).unwrap_or("");
-        if base_url.is_empty() || hash.is_empty() {
-            return Err("missing MangaDex at-home base URL or chapter hash".to_string());
-        }
-        let (filenames, mode) = if let Some(arr) = chapter_obj.and_then(|c| c.get("dataSaver")).and_then(|d| d.as_array()) {
-            (arr.clone(), "data-saver")
-        } else if let Some(arr) = chapter_obj.and_then(|c| c.get("data")).and_then(|d| d.as_array()) {
-            (arr.clone(), "data")
-        } else {
-            (Vec::new(), "data-saver")
-        };
-
-        let mut pages = Vec::new();
-        for fn_val in filenames {
-            if let Some(fn_str) = fn_val.as_str() {
-                let page_url = format!("{}/{}/{}/{}", base_url, mode, hash, fn_str);
-                pages.push(serde_json::json!({
-                    "url": page_url,
-                }));
-            }
-        }
-        pages
+        fetch_mdx_pages(client, req.chapter_permalink.trim_start_matches("mdx:")).await?
     } else {
-
-    let chapter_url = format!("https://dynasty-scans.com/chapters/{}.json", req.chapter_permalink);
-    let resp = crate::commands::http::send_with_redirects(
-        client,
-        "GET",
-        &chapter_url,
-        None,
-        None,
-        None,
-        Some(FETCH_TIMEOUT_MS),
-    )
-    .await
-    .map_err(|e| format!("fetch chapter failed: {e}"))?;
-    if !resp.status().is_success() {
-        return Err(format!("fetch chapter status {}", resp.status()));
-    }
-    let body_bytes = crate::commands::http::read_body_capped(resp, MAX_CHAPTER_JSON_BYTES).await?;
-    let body = String::from_utf8_lossy(&body_bytes).into_owned();
-    let v: serde_json::Value = serde_json::from_str(&body).map_err(|e| format!("parse chapter: {e}"))?;
-    let pages = v
-        .get("pages")
-        .and_then(|p| p.as_array())
-        .cloned()
-        .unwrap_or_default();
-    // Cache chapter metadata in DB (for BrowseDownloaded etc.)
-    {
-        let cp = req.chapter_permalink.clone();
-        let body_clone = body.clone();
-        tokio::task::spawn_blocking(move || {
-            if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                let now = crate::util::now_ms();
-                let key = format!("chapter:{}", cp);
-                let _ = conn.execute(
-                    "INSERT OR REPLACE INTO cached_metadata (cache_key, data_type, json_payload, cached_at) VALUES (?1, 'chapter', ?2, ?3)",
-                    rusqlite::params![key, body_clone, now],
-                );
-            }
-        })
-        .await
-        .ok();
-    }
-    pages
+        fetch_dynasty_pages(client, &req.chapter_permalink).await?
     };
     let total = pages.len();
     if total == 0 {
@@ -1061,19 +990,14 @@ async fn fetch_and_cache_chapter_pages(
     }
 
     // Update total_pages in queue
-    {
-        let cp = req.chapter_permalink.clone();
-        tokio::task::spawn_blocking(move || {
-            if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                let _ = conn.execute(
-                    "UPDATE download_queue SET total_pages = ?1 WHERE chapter_permalink = ?2",
-                    rusqlite::params![total as i64, cp],
-                );
-            }
-        })
-        .await
-        .ok();
-    }
+    let cp = req.chapter_permalink.clone();
+    with_app_db(move |conn| {
+        let _ = conn.execute(
+            "UPDATE download_queue SET total_pages = ?1 WHERE chapter_permalink = ?2",
+            rusqlite::params![total as i64, cp],
+        );
+    })
+    .await;
 
     Ok(pages)
 }
@@ -1185,16 +1109,13 @@ async fn download_chapter(
             // do not cause the chapter to fail and loop retries indefinitely.
             done += 1;
             let cp = req.chapter_permalink.clone();
-            tokio::task::spawn_blocking(move || {
-                if let Ok(conn) = crate::commands::db::open_synced(&crate::paths::db_path()) {
-                    let _ = conn.execute(
-                        "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
-                        rusqlite::params![done as i64, cp],
-                    );
-                }
+            with_app_db(move |conn| {
+                let _ = conn.execute(
+                    "UPDATE download_queue SET progress = ?1 WHERE chapter_permalink = ?2",
+                    rusqlite::params![done as i64, cp],
+                );
             })
-            .await
-            .ok();
+            .await;
             continue;
         }
         let abs_url = if url.starts_with("http://") || url.starts_with("https://") {

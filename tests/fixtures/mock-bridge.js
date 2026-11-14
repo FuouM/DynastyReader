@@ -626,7 +626,7 @@
           })),
         };
       }
-      if (cmd === "fileMove" || cmd === "fileDeleteBatch") return 0;
+      if (cmd === "fileDeleteBatch") return 0;
       if (cmd === "verifyFileIntegrityBatch") return [];
 
       // Download queue

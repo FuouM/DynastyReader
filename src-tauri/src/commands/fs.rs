@@ -1,4 +1,4 @@
-//! `fileExists` / `fileMove` / `fileDelete` / `dirStat` backends.
+//! `fileExists` / `fileDelete` / `dirStat` backends.
 //!
 //! Sandboxed filesystem operations confined to the portable data root. `fileExists`
 //! reports a file as existing only when it is at least `min_size` bytes (default 1),
@@ -151,79 +151,6 @@ pub async fn file_delete_batch(paths: Vec<String>) -> Result<usize, String> {
     })
     .await
     .map_err(|e| format!("file delete batch task failed: {e}"))?
-}
-
-#[tauri::command(rename = "fileMove")]
-pub async fn file_move(src: String, dst: String) -> Result<serde_json::Value, String> {
-    // Cross-device fallback copies whole trees — never run that on the caller
-    // thread (non-async Tauri commands execute on the main event loop).
-    tokio::task::spawn_blocking(move || file_move_blocking(src, dst))
-        .await
-        .map_err(|e| format!("file move task failed: {e}"))?
-}
-
-fn file_move_blocking(src: String, dst: String) -> Result<serde_json::Value, String> {
-    if src.trim().is_empty() || dst.trim().is_empty() {
-        return Err("src and dst cannot be empty".to_string());
-    }
-    let src_target = crate::paths::resolve_in_root(&src)?;
-    let dst_target = crate::paths::resolve_in_root(&dst)?;
-    if crate::paths::is_protected_path(&src_target)? {
-        return Err("cannot move protected database or system directory".to_string());
-    }
-    if crate::paths::is_protected_path(&dst_target)? {
-        return Err("cannot overwrite protected database or system directory".to_string());
-    }
-    if let Some(parent) = dst_target.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| format!("failed creating parent directory: {e}"))?;
-    }
-    match std::fs::rename(&src_target, &dst_target) {
-        Ok(()) => {}
-        Err(e) if is_cross_device(&e) => {
-            // Cross-device move (e.g. DSREADER_DATA_DIR on a different volume):
-            // copy recursively, then remove the source.
-            copy_tree(&src_target, &dst_target)?;
-            if src_target.is_dir() {
-                std::fs::remove_dir_all(&src_target)
-                    .map_err(|e| format!("file move cleanup failed: {e}"))?;
-            } else {
-                std::fs::remove_file(&src_target)
-                    .map_err(|e| format!("file move cleanup failed: {e}"))?;
-            }
-        }
-        Err(e) => return Err(format!("file move failed: {e}")),
-    }
-    Ok(json!({
-        "absolute_path": dst_target.to_string_lossy().into_owned(),
-    }))
-}
-
-fn is_cross_device(e: &std::io::Error) -> bool {
-    // EXDEV on POSIX (18); ERROR_NOT_SAME_DEVICE on Windows (17).
-    matches!(e.raw_os_error(), Some(18) | Some(17))
-}
-
-fn copy_tree(src: &std::path::Path, dst: &std::path::Path) -> Result<(), String> {
-    if !src.is_dir() {
-        return std::fs::copy(src, dst)
-            .map(|_| ())
-            .map_err(|e| format!("file move copy failed: {e}"));
-    }
-    std::fs::create_dir_all(dst)
-        .map_err(|e| format!("file move copy failed: {e}"))?;
-    for entry in WalkDir::new(src).follow_links(false).min_depth(1) {
-        let entry = entry.map_err(|e| format!("file move copy failed: {e}"))?;
-        let rel = entry.path().strip_prefix(src).map_err(|e| format!("file move copy failed: {e}"))?;
-        let out = dst.join(rel);
-        if entry.file_type().is_dir() {
-            std::fs::create_dir_all(&out).map_err(|e| format!("file move copy failed: {e}"))?;
-        } else {
-            std::fs::copy(entry.path(), &out)
-                .map_err(|e| format!("file move copy failed: {e}"))?;
-        }
-    }
-    Ok(())
 }
 
 #[tauri::command(rename = "fileDelete")]

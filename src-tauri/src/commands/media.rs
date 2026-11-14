@@ -18,6 +18,7 @@ use image::{
     imageops::FilterType,
 };
 use serde_json::json;
+use std::borrow::Cow;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
@@ -207,32 +208,17 @@ fn encode_image(
     })
 }
 
-enum BufferRef<'a> {
-    Borrowed(&'a [u8]),
-    Owned(Vec<u8>),
-}
-
-impl<'a> std::ops::Deref for BufferRef<'a> {
-    type Target = [u8];
-    fn deref(&self) -> &[u8] {
-        match self {
-            BufferRef::Borrowed(b) => b,
-            BufferRef::Owned(v) => v.as_slice(),
-        }
-    }
-}
-
-fn as_rgba8_bytes(img: &DynamicImage) -> BufferRef<'_> {
+fn as_rgba8_bytes(img: &DynamicImage) -> Cow<'_, [u8]> {
     match img.as_rgba8() {
-        Some(b) => BufferRef::Borrowed(b.as_raw()),
-        None => BufferRef::Owned(img.to_rgba8().into_raw()),
+        Some(b) => Cow::Borrowed(b.as_raw().as_slice()),
+        None => Cow::Owned(img.to_rgba8().into_raw()),
     }
 }
 
-fn as_rgb8_bytes(img: &DynamicImage) -> BufferRef<'_> {
+fn as_rgb8_bytes(img: &DynamicImage) -> Cow<'_, [u8]> {
     match img.as_rgb8() {
-        Some(b) => BufferRef::Borrowed(b.as_raw()),
-        None => BufferRef::Owned(img.to_rgb8().into_raw()),
+        Some(b) => Cow::Borrowed(b.as_raw().as_slice()),
+        None => Cow::Owned(img.to_rgb8().into_raw()),
     }
 }
 

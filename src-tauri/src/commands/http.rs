@@ -19,6 +19,7 @@ const USER_AGENT: &str = concat!("DynastyReader/", env!("CARGO_PKG_VERSION"), " 
 const MAX_GET_BODY: usize = 2 * 1024 * 1024;
 const MAX_DOWNLOAD_BYTES: u64 = 128 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS: u64 = 30_000;
+const MAX_REDIRECTS: usize = 5;
 
 pub struct HttpState(pub reqwest::Client);
 
@@ -171,14 +172,18 @@ pub fn build_client() -> Result<reqwest::Client, String> {
         .map_err(|e| format!("failed to build http client: {e}"))
 }
 
-fn build_request(
+/// Sends a GET/POST request after SSRF-validating `url`; every redirect hop is
+/// re-validated by the client's redirect policy (see `build_client`).
+pub async fn send_request(
     client: &reqwest::Client,
-    url: &str,
     method: &str,
-    body: Option<&str>,
+    url: &str,
+    body: Option<String>,
     content_type: Option<&str>,
     headers: Option<&serde_json::Map<String, serde_json::Value>>,
-) -> Result<reqwest::RequestBuilder, String> {
+    timeout_ms: Option<u64>,
+) -> Result<reqwest::Response, String> {
+    let url = validate_http_url(url)?;
     let method = method.trim().to_ascii_uppercase();
     let mut req = match method.as_str() {
         "GET" => client.get(url),
@@ -198,37 +203,9 @@ fn build_request(
         }
     }
     if let Some(b) = body {
-        req = req.body(b.to_string());
+        req = req.body(b);
     }
-    Ok(req)
-}
-
-fn apply_timeout(req: reqwest::RequestBuilder, timeout_ms: Option<u64>) -> reqwest::RequestBuilder {
     req.timeout(std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS)))
-}
-
-const MAX_REDIRECTS: usize = 5;
-
-/// Sends a request with automatic redirect following and SSRF validation on every hop.
-pub async fn send_with_redirects(
-    client: &reqwest::Client,
-    method: &str,
-    url: &str,
-    body: Option<String>,
-    content_type: Option<&str>,
-    headers: Option<&serde_json::Map<String, serde_json::Value>>,
-    timeout_ms: Option<u64>,
-) -> Result<reqwest::Response, String> {
-    let current = validate_http_url(url)?;
-    let req = build_request(
-        client,
-        current.as_str(),
-        method,
-        body.as_deref(),
-        content_type,
-        headers,
-    )?;
-    apply_timeout(req, timeout_ms)
         .send()
         .await
         .map_err(|e| format!("http request failed: {e}"))
@@ -281,7 +258,6 @@ where
     Ok(total)
 }
 
-
 #[tauri::command(rename = "httpGet")]
 pub async fn http_get(
     state: State<'_, HttpState>,
@@ -294,7 +270,7 @@ pub async fn http_get(
 ) -> Result<serde_json::Value, String> {
     let method_str = method.as_deref().unwrap_or("GET");
     let hdrs = headers.as_ref().and_then(serde_json::Value::as_object);
-    let resp = send_with_redirects(
+    let resp = send_request(
         &state.0,
         method_str,
         &url,
@@ -334,33 +310,8 @@ pub async fn http_download(
     if crate::paths::is_protected_path(&target)? {
         return Err("cannot write to protected database or system path".to_string());
     }
-    if let Err(e) = tokio::fs::create_dir_all(parent).await {
-        let is_not_dir = e.raw_os_error() == Some(20) || e.to_string().contains("not a directory");
-        if is_not_dir {
-            let root = crate::paths::data_root();
-            let mut cur = parent;
-            while cur != root && cur != std::path::Path::new("") {
-                if cur.is_file() {
-                    if crate::paths::is_protected_path(cur).unwrap_or(true) {
-                        return Err(format!("cannot remove protected blocking path component: {cur:?}"));
-                    }
-                    log::warn!("removing blocking file in directory path: {:?}", cur);
-                    let _ = std::fs::remove_file(cur);
-                }
-                if let Some(p) = cur.parent() {
-                    cur = p;
-                } else {
-                    break;
-                }
-            }
-            tokio::fs::create_dir_all(parent)
-                .await
-                .map_err(|e2| format!("failed creating output dir: {e2}"))?;
-        } else {
-            return Err(format!("failed creating output dir: {e}"));
-        }
-    }
-    let resp = send_with_redirects(&state.0, "GET", &url, None, None, None, timeout_ms).await?;
+    crate::paths::create_dir_all_clearing_files(parent, "failed creating output dir").await?;
+    let resp = send_request(&state.0, "GET", &url, None, None, None, timeout_ms).await?;
     if !resp.status().is_success() {
         return Err(format!("http download failed: status {}", resp.status()));
     }
@@ -482,23 +433,5 @@ mod tests {
         // Simulated failure clean up
         let _ = tokio::fs::remove_file(&tmp_err_path).await;
         assert!(!tmp_err_path.exists(), "temp file must be deleted on error path");
-    }
-
-    #[test]
-    fn test_status_code_redirect_classification() {
-        // True HTTP redirects with a Location header to follow
-        for code in [301, 302, 303, 307, 308] {
-            assert!(
-                matches!(code, 301 | 302 | 303 | 307 | 308),
-                "code {code} must be classified as redirect"
-            );
-        }
-        // Status codes that must NOT be treated as redirects (304 Not Modified, etc.)
-        for code in [200, 204, 300, 304, 305, 306, 400, 404, 500] {
-            assert!(
-                !matches!(code, 301 | 302 | 303 | 307 | 308),
-                "code {code} must not be classified as redirect"
-            );
-        }
     }
 }

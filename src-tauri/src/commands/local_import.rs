@@ -25,7 +25,6 @@ const MAX_COVER_BYTES: u64 = 32 * 1024 * 1024;
 const MAX_COVER_DIMENSION: u32 = 8192;
 
 fn read_capped_cover_file<P: AsRef<std::path::Path>>(path: P) -> Result<Vec<u8>, String> {
-    use std::io::Read;
     let file = std::fs::File::open(path.as_ref()).map_err(|e| format!("failed reading cover image: {e}"))?;
     let mut buf = Vec::new();
     let mut limited = file.take(MAX_COVER_BYTES + 1);
@@ -229,7 +228,10 @@ fn collect_image_entries(zip_path: &Path) -> Result<Vec<String>, String> {
     Ok(entries)
 }
 
-fn group_entries(entries: Vec<String>) -> Vec<(String, Vec<String>)> {
+/// One chapter's worth of archive entries: (group key, ordered entry names).
+type EntryGroup = (String, Vec<String>);
+
+fn group_entries(entries: Vec<String>) -> Vec<EntryGroup> {
     if entries.is_empty() {
         return vec![];
     }
@@ -287,7 +289,7 @@ fn group_entries(entries: Vec<String>) -> Vec<(String, Vec<String>)> {
         };
         map.entry(group_key).or_default().push(e);
     }
-    let mut groups: Vec<(String, Vec<String>)> = map.into_iter().collect();
+    let mut groups: Vec<EntryGroup> = map.into_iter().collect();
     // Sort groups by first entry path (natural sort already applied globally)
     groups.sort_by(|a, b| natural_cmp(&a.0, &b.0));
 
@@ -306,7 +308,7 @@ fn group_entries(entries: Vec<String>) -> Vec<(String, Vec<String>)> {
     out
 }
 
-fn derive_chapter_title(fallback_index: usize, entries: &[String]) -> String {
+fn derive_chapter_title(entries: &[String]) -> String {
     // Look for a word-boundaried `c###` token in any filename, so names like
     // `cover001.png` are not misread as "Chapter 1".
     for e in entries {
@@ -326,22 +328,73 @@ fn derive_chapter_title(fallback_index: usize, entries: &[String]) -> String {
             }
         }
     }
-    format!("Part {}", fallback_index + 1)
+    "Part 1".to_string()
+}
+
+/// Lowercased extension of an entry/file name: the text after its last `.`,
+/// or the whole name when it has none (same as `rsplit('.').next()`).
+fn page_ext(name: &str) -> String {
+    name.rsplit_once('.').map_or(name, |(_, ext)| ext).to_ascii_lowercase()
+}
+
+/// Validates the archive at `path`, collects its image entries in natural
+/// order and groups them into chapters. A lone generic "Chapter 1" group is
+/// retitled from its filenames (`c###` detection).
+fn scan_archive_groups(path: &str) -> Result<(PathBuf, Vec<EntryGroup>), String> {
+    let zip_path = PathBuf::from(path);
+    if !zip_path.is_file() {
+        return Err(format!("archive not found: {path}"));
+    }
+    let mut entries = collect_image_entries(&zip_path)?;
+    if entries.is_empty() {
+        return Err("no images found in archive".to_string());
+    }
+    natural_sort(&mut entries);
+    let mut groups = group_entries(entries);
+    if let [(title, pages)] = groups.as_mut_slice() {
+        if *title == "Chapter 1" {
+            *title = derive_chapter_title(pages);
+        }
+    }
+    Ok((zip_path, groups))
+}
+
+/// On-disk layout of a freshly allocated `local/<slug>` series.
+struct SeriesLayout {
+    slug: String,
+    permalink: String,
+    dir: PathBuf,
+    chapters_dir: PathBuf,
+}
+
+/// Allocates a new series dir for `title` and runs `import` against it. An
+/// existing dir is never reused (a colliding title would mix old page files
+/// with new metadata); the slug is auto-disambiguated instead. On any `import`
+/// failure the partially written series dir is removed so no orphan files or
+/// stale pages remain on disk.
+fn import_into_new_series_dir(
+    title: &str,
+    import: impl FnOnce(&SeriesLayout) -> Result<String, String>,
+) -> Result<String, String> {
+    let (slug, dir) = disambiguate_series_dir(&slugify(title), &crate::paths::data_root());
+    let layout = SeriesLayout {
+        permalink: format!("local:{slug}"),
+        chapters_dir: dir.join("chapters"),
+        slug,
+        dir,
+    };
+    std::fs::create_dir_all(&layout.chapters_dir).map_err(|e| format!("failed creating series dir: {e}"))?;
+    let result = import(&layout);
+    if result.is_err() {
+        let _ = std::fs::remove_dir_all(&layout.dir);
+    }
+    result
 }
 
 #[tauri::command(rename = "scanArchive")]
 pub async fn scan_archive(path: String) -> Result<ArchiveScanResult, String> {
-    let res = tokio::task::spawn_blocking(move || -> Result<ArchiveScanResult, String> {
-        let zip_path = PathBuf::from(&path);
-        if !zip_path.is_file() {
-            return Err(format!("archive not found: {path}"));
-        }
-        let mut entries = collect_image_entries(&zip_path)?;
-        if entries.is_empty() {
-            return Err("no images found in archive".to_string());
-        }
-        natural_sort(&mut entries);
-        let groups = group_entries(entries);
+    tokio::task::spawn_blocking(move || -> Result<ArchiveScanResult, String> {
+        let (zip_path, groups) = scan_archive_groups(&path)?;
         let total_pages: usize = groups.iter().map(|(_, v)| v.len()).sum();
         let file_name = zip_path
             .file_name()
@@ -353,22 +406,14 @@ pub async fn scan_archive(path: String) -> Result<ArchiveScanResult, String> {
             .and_then(|s| s.to_str())
             .unwrap_or("Import")
             .to_string();
-
-        let mut chapters = Vec::new();
-        for (idx, (title, pages)) in groups.into_iter().enumerate() {
-            let display_title = if title == "Chapter 1" && chapters.is_empty() && pages.len() == total_pages {
-                // Single-chapter fallback: try c### detection
-                derive_chapter_title(idx, &pages)
-            } else {
-                title
-            };
-            chapters.push(ArchiveScanChapter {
-                title: display_title,
+        let chapters = groups
+            .into_iter()
+            .map(|(title, pages)| ArchiveScanChapter {
+                title,
                 page_count: pages.len(),
                 files: pages,
-            });
-        }
-        // If single group is bare "Chapter 1" with fallback we already handled; if still generic keep it.
+            })
+            .collect();
         Ok(ArchiveScanResult {
             file_name,
             series_title,
@@ -377,8 +422,7 @@ pub async fn scan_archive(path: String) -> Result<ArchiveScanResult, String> {
         })
     })
     .await
-    .map_err(|e| format!("scan task failed: {e}"))??;
-    Ok(res)
+    .map_err(|e| format!("scan task failed: {e}"))?
 }
 
 #[tauri::command(rename = "importArchive")]
@@ -390,193 +434,160 @@ pub async fn import_archive(
 ) -> Result<String, String> {
     state.0.store(false, Ordering::SeqCst);
     let cancel = state.0.clone();
-    let res = tokio::task::spawn_blocking(move || -> Result<String, String> {
-        let zip_path = PathBuf::from(&path);
-        if !zip_path.is_file() {
-            return Err(format!("archive not found: {path}"));
-        }
-        let mut entries = collect_image_entries(&zip_path)?;
-        if entries.is_empty() {
-            return Err("no images found in archive".to_string());
-        }
-        natural_sort(&mut entries);
-        let mut groups = group_entries(entries);
-
-        // If single chapter group is generic "Chapter 1", derive a nicer title
-        if groups.len() == 1 && groups[0].0 == "Chapter 1" {
-            let derived = derive_chapter_title(0, &groups[0].1);
-            groups[0].0 = derived;
-        }
-
-        // Never reuse an existing series dir: a colliding title would mix old
-        // page files with new metadata. Auto-disambiguate the slug instead.
-        let base_slug = slugify(&meta.title);
-        let data_root = crate::paths::data_root();
-        let (series_slug, series_dir) = disambiguate_series_dir(&base_slug, &data_root);
-        let series_permalink = format!("local:{}", series_slug);
-        let chapters_dir = series_dir.join("chapters");
-
-        std::fs::create_dir_all(&chapters_dir).map_err(|e| format!("failed creating series dir: {e}"))?;
-
-        // Roll back the partially extracted series dir on any failure so no
-        // orphan files or stale pages remain on disk.
-        let import_result = import_archive_inner(
-            &app,
-            &cancel,
-            &zip_path,
-            &groups,
-            &series_slug,
-            &series_permalink,
-            &series_dir,
-            &chapters_dir,
-            &meta,
-        );
-        if import_result.is_err() {
-            let _ = std::fs::remove_dir_all(&series_dir);
-        }
-        import_result
+    tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let (zip_path, groups) = scan_archive_groups(&path)?;
+        import_into_new_series_dir(&meta.title, |layout| {
+            import_archive_inner(&app, &cancel, &zip_path, &groups, layout, &meta)
+        })
     })
     .await
-    .map_err(|e| format!("import task failed: {e}"))??;
-    Ok(res)
+    .map_err(|e| format!("import task failed: {e}"))?
 }
 
-#[allow(clippy::too_many_arguments)]
 fn import_archive_inner(
     app: &AppHandle,
-    cancel: &Arc<AtomicBool>,
+    cancel: &AtomicBool,
     zip_path: &Path,
-    groups: &[(String, Vec<String>)],
-    series_slug: &str,
-    series_permalink: &str,
-    series_dir: &Path,
-    chapters_dir: &Path,
+    groups: &[EntryGroup],
+    layout: &SeriesLayout,
     meta: &LocalSeriesMeta,
 ) -> Result<String, String> {
-        // Open archive once for extraction
-        let file = std::fs::File::open(zip_path).map_err(|e| format!("failed opening archive: {e}"))?;
-        let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("invalid zip: {e}"))?;
-        if archive.len() > MAX_ARCHIVE_ENTRIES {
-            return Err(format!(
-                "archive has {} entries (max {MAX_ARCHIVE_ENTRIES})",
-                archive.len()
-            ));
+    // Open archive once for extraction
+    let file = std::fs::File::open(zip_path).map_err(|e| format!("failed opening archive: {e}"))?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("invalid zip: {e}"))?;
+    if archive.len() > MAX_ARCHIVE_ENTRIES {
+        return Err(format!(
+            "archive has {} entries (max {MAX_ARCHIVE_ENTRIES})",
+            archive.len()
+        ));
+    }
+    // Build name -> index map for fast extraction
+    let mut name_to_idx: HashMap<String, usize> = HashMap::new();
+    for i in 0..archive.len() {
+        if let Ok(entry) = archive.by_index(i) {
+            // Same lossy decode as collect_image_entries so lookups match.
+            let name = String::from_utf8_lossy(entry.name_raw()).into_owned();
+            name_to_idx.insert(name, i);
         }
-        // Build name -> index map for fast extraction
-        let mut name_to_idx: HashMap<String, usize> = HashMap::new();
-        for i in 0..archive.len() {
-            if let Ok(entry) = archive.by_index(i) {
-                // Same lossy decode as collect_image_entries so lookups match.
-                let name = String::from_utf8_lossy(entry.name_raw()).into_owned();
-                name_to_idx.insert(name, i);
-            }
-        }
+    }
 
-        let mut chapter_permalinks: Vec<String> = Vec::new();
-        let mut total_pages = 0usize;
-        let mut total_decompressed: u64 = 0;
-        let planned_total_pages: usize = groups.iter().map(|(_, pages)| pages.len()).sum();
-        let mut extracted_pages = 0usize;
-        emit_import_progress(app, 0, planned_total_pages, "extract");
-        for (ch_idx, (ch_title, pages)) in groups.iter().enumerate() {
+    let mut chapter_permalinks: Vec<String> = Vec::new();
+    let mut total_pages = 0usize;
+    let mut total_decompressed: u64 = 0;
+    let planned_total_pages: usize = groups.iter().map(|(_, pages)| pages.len()).sum();
+    let mut extracted_pages = 0usize;
+    emit_import_progress(app, 0, planned_total_pages, "extract");
+    for (ch_idx, (ch_title, pages)) in groups.iter().enumerate() {
+        if cancel.load(Ordering::SeqCst) {
+            return Err("import cancelled".to_string());
+        }
+        let ch_slug = slugify(ch_title);
+        // Ensure uniqueness against chapters already extracted.
+        let suffix = format!("-{ch_slug}");
+        let ch_slug = if chapter_permalinks.iter().any(|p| p.ends_with(&suffix)) {
+            format!("{}-{}", ch_slug, ch_idx + 1)
+        } else {
+            ch_slug
+        };
+        let ch_permalink = format!("local:{}-{}", layout.slug, ch_slug);
+        let ch_dir = layout.chapters_dir.join(&ch_slug);
+        std::fs::create_dir_all(&ch_dir).map_err(|e| format!("failed creating chapter dir: {e}"))?;
+
+        for (page_idx, entry_name) in pages.iter().enumerate() {
             if cancel.load(Ordering::SeqCst) {
                 return Err("import cancelled".to_string());
             }
-            let ch_slug = slugify(ch_title);
-            // Ensure uniqueness
-            let ch_slug = if chapter_permalinks.iter().any(|p| p.ends_with(&format!("-{}", ch_slug)) || p == &format!("local:{}-{}", series_slug, ch_slug)) {
-                format!("{}-{}", ch_slug, ch_idx + 1)
-            } else {
-                ch_slug
-            };
-            let ch_permalink = format!("local:{}-{}", series_slug, ch_slug);
-            let ch_dir = chapters_dir.join(&ch_slug);
-            std::fs::create_dir_all(&ch_dir).map_err(|e| format!("failed creating chapter dir: {e}"))?;
-
-            for (page_idx, entry_name) in pages.iter().enumerate() {
-                if cancel.load(Ordering::SeqCst) {
-                    return Err("import cancelled".to_string());
-                }
-                let idx = *name_to_idx.get(entry_name).ok_or_else(|| format!("entry not found: {entry_name}"))?;
-                let mut entry = archive.by_index(idx).map_err(|e| format!("zip read error: {e}"))?;
-                let ext = entry_name.rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
-                let out_name = format!("p{:03}.{}", page_idx, ext);
-                let out_path = ch_dir.join(&out_name);
-                let mut out_file = std::fs::File::create(&out_path).map_err(|e| format!("failed creating page file: {e}"))?;
-                let remaining = MAX_DECOMPRESSED_TOTAL.saturating_sub(total_decompressed);
-                let mut limited = (&mut entry).take(remaining + 1);
-                let copied = std::io::copy(&mut limited, &mut out_file).map_err(|e| format!("failed extracting page: {e}"))?;
-                total_decompressed += copied;
-                if total_decompressed > MAX_DECOMPRESSED_TOTAL {
-                    return Err(format!(
-                        "archive exceeds decompressed size cap ({MAX_DECOMPRESSED_TOTAL} bytes)"
-                    ));
-                }
-                extracted_pages += 1;
-                if extracted_pages.is_multiple_of(IMPORT_PROGRESS_EVERY) {
-                    emit_import_progress(app, extracted_pages, planned_total_pages, "extract");
-                }
+            let idx = *name_to_idx.get(entry_name).ok_or_else(|| format!("entry not found: {entry_name}"))?;
+            let mut entry = archive.by_index(idx).map_err(|e| format!("zip read error: {e}"))?;
+            let out_path = ch_dir.join(format!("p{:03}.{}", page_idx, page_ext(entry_name)));
+            let mut out_file = std::fs::File::create(&out_path).map_err(|e| format!("failed creating page file: {e}"))?;
+            let remaining = MAX_DECOMPRESSED_TOTAL.saturating_sub(total_decompressed);
+            let mut limited = (&mut entry).take(remaining + 1);
+            let copied = std::io::copy(&mut limited, &mut out_file).map_err(|e| format!("failed extracting page: {e}"))?;
+            total_decompressed += copied;
+            if total_decompressed > MAX_DECOMPRESSED_TOTAL {
+                return Err(format!(
+                    "archive exceeds decompressed size cap ({MAX_DECOMPRESSED_TOTAL} bytes)"
+                ));
             }
-
-            // Write chapter.json
-            let chapter_json = serde_json::json!({
-                "title": ch_title,
-                "permalink": ch_permalink,
-                "series_permalink": series_permalink,
-                "page_count": pages.len(),
-            });
-            let ch_json_path = ch_dir.join("chapter.json");
-            let chapter_json_str = serde_json::to_string_pretty(&chapter_json)
-                .map_err(|e| format!("failed serializing chapter.json: {e}"))?;
-            std::fs::write(&ch_json_path, chapter_json_str)
-                .map_err(|e| format!("failed writing chapter.json: {e}"))?;
-
-            chapter_permalinks.push(ch_permalink);
-            total_pages += pages.len();
-        }
-
-        // Write series.json
-        let series_json = serde_json::json!({
-            "title": meta.title,
-            "permalink": series_permalink,
-            "author": meta.author,
-            "description": meta.description,
-            "chapter_count": chapter_permalinks.len(),
-            "total_pages": total_pages,
-        });
-        let series_json_str = serde_json::to_string_pretty(&series_json)
-            .map_err(|e| format!("failed serializing series.json: {e}"))?;
-        std::fs::write(series_dir.join("series.json"), series_json_str)
-            .map_err(|e| format!("failed writing series.json: {e}"))?;
-
-        // Generate cover.webp from first page of first chapter (if available)
-        if let Some(first_group) = groups.first() {
-            if let Some(first_entry) = first_group.1.first() {
-                if let Some(idx) = name_to_idx.get(first_entry) {
-                    if let Ok(mut entry) = archive.by_index(*idx) {
-                        let mut buf = Vec::new();
-                        let mut limited = (&mut entry).take(MAX_COVER_BYTES + 1);
-                        if limited.read_to_end(&mut buf).is_err() || buf.len() as u64 > MAX_COVER_BYTES {
-                            buf.clear();
-                        }
-                        if !buf.is_empty() {
-                            // Try to create a webp cover; best-effort, ignore errors
-                            let cover_path = series_dir.join("cover.webp");
-                            let _ = create_cover_webp(&buf, &cover_path);
-                        }
-                    }
-                }
+            extracted_pages += 1;
+            if extracted_pages.is_multiple_of(IMPORT_PROGRESS_EVERY) {
+                emit_import_progress(app, extracted_pages, planned_total_pages, "extract");
             }
         }
+
+        write_chapter_json(&ch_dir, ch_title, &ch_permalink, &layout.permalink, pages.len())?;
+        chapter_permalinks.push(ch_permalink);
+        total_pages += pages.len();
+    }
+
+    write_series_json(&layout.dir, &layout.permalink, meta, chapter_permalinks.len(), total_pages)?;
+
+    // Generate cover.webp from first page of first chapter (if available).
+    // Best-effort: cover errors never fail the import.
+    if let Some(&idx) = groups
+        .first()
+        .and_then(|(_, pages)| pages.first())
+        .and_then(|first_entry| name_to_idx.get(first_entry))
+    {
+        if let Ok(mut entry) = archive.by_index(idx) {
+            let mut buf = Vec::new();
+            let read_ok = (&mut entry).take(MAX_COVER_BYTES + 1).read_to_end(&mut buf).is_ok();
+            if read_ok && !buf.is_empty() && buf.len() as u64 <= MAX_COVER_BYTES {
+                let _ = create_cover_webp(&buf, &layout.dir.join("cover.webp"));
+            }
+        }
+    }
 
     // Register in SQLite via direct rusqlite (bypass IPC for blocking context)
     // Use the same DB file as the frontend: dynasty_reader.db
     emit_import_progress(app, planned_total_pages, planned_total_pages, "register");
-    register_local_series_in_db(series_permalink, meta, &chapter_permalinks, groups, series_slug, total_pages)?;
+    register_local_series_in_db(&layout.permalink, meta, &chapter_permalinks, groups, &layout.slug, total_pages)?;
 
     emit_import_progress(app, planned_total_pages, planned_total_pages, "done");
-    Ok(series_permalink.to_string())
+    Ok(layout.permalink.clone())
 }
+
+fn write_chapter_json(
+    ch_dir: &Path,
+    title: &str,
+    permalink: &str,
+    series_permalink: &str,
+    page_count: usize,
+) -> Result<(), String> {
+    let chapter_json = serde_json::json!({
+        "title": title,
+        "permalink": permalink,
+        "series_permalink": series_permalink,
+        "page_count": page_count,
+    });
+    let chapter_json_str = serde_json::to_string_pretty(&chapter_json)
+        .map_err(|e| format!("failed serializing chapter.json: {e}"))?;
+    std::fs::write(ch_dir.join("chapter.json"), chapter_json_str)
+        .map_err(|e| format!("failed writing chapter.json: {e}"))
+}
+
+fn write_series_json(
+    series_dir: &Path,
+    permalink: &str,
+    meta: &LocalSeriesMeta,
+    chapter_count: usize,
+    total_pages: usize,
+) -> Result<(), String> {
+    let series_json = serde_json::json!({
+        "title": meta.title,
+        "permalink": permalink,
+        "author": meta.author,
+        "description": meta.description,
+        "chapter_count": chapter_count,
+        "total_pages": total_pages,
+    });
+    let series_json_str = serde_json::to_string_pretty(&series_json)
+        .map_err(|e| format!("failed serializing series.json: {e}"))?;
+    std::fs::write(series_dir.join("series.json"), series_json_str)
+        .map_err(|e| format!("failed writing series.json: {e}"))
+}
+
 /* ---------------------------------------------------------------------------
  * Folder import — an already-unzipped CBZ
  * One folder = one chapter. No recursion, no metadata inference.
@@ -624,36 +635,40 @@ fn collect_image_files_from_dir(dir: &Path) -> Result<Vec<(String, PathBuf)>, St
     Ok(out)
 }
 
+/// Validates the folder at `path` and returns its image files in natural order.
+fn sorted_folder_images(path: &str) -> Result<(PathBuf, Vec<(String, PathBuf)>), String> {
+    let dir = PathBuf::from(path);
+    if !dir.is_dir() {
+        return Err(format!("folder not found: {path}"));
+    }
+    let mut files = collect_image_files_from_dir(&dir)?;
+    if files.is_empty() {
+        return Err("no images found in folder".to_string());
+    }
+    // Natural-sort by filename string, keep PathBuf coupled.
+    files.sort_by(|a, b| natural_cmp(&a.0, &b.0));
+    Ok((dir, files))
+}
+
 #[tauri::command(rename = "scanFolder")]
 pub async fn scan_folder(path: String) -> Result<FolderScanResult, String> {
-    let res = tokio::task::spawn_blocking(move || -> Result<FolderScanResult, String> {
-        let dir = PathBuf::from(&path);
-        if !dir.is_dir() {
-            return Err(format!("folder not found: {path}"));
-        }
-        let mut files = collect_image_files_from_dir(&dir)?;
-        if files.is_empty() {
-            return Err("no images found in folder".to_string());
-        }
-        // Natural-sort by filename string, keep PathBuf coupled.
-        files.sort_by(|a, b| natural_cmp(&a.0, &b.0));
+    tokio::task::spawn_blocking(move || -> Result<FolderScanResult, String> {
+        let (dir, files) = sorted_folder_images(&path)?;
         let folder_name = dir
             .file_name()
             .and_then(|s| s.to_str())
             .unwrap_or(&path)
             .to_string();
         let file_names: Vec<String> = files.into_iter().map(|(name, _)| name).collect();
-        let page_count = file_names.len();
         Ok(FolderScanResult {
             series_title: folder_name.clone(),
             folder_name,
-            page_count,
+            page_count: file_names.len(),
             files: file_names,
         })
     })
     .await
-    .map_err(|e| format!("scan task failed: {e}"))??;
-    Ok(res)
+    .map_err(|e| format!("scan task failed: {e}"))?
 }
 
 #[tauri::command(rename = "importFolder")]
@@ -664,16 +679,8 @@ pub async fn import_folder(
 ) -> Result<String, String> {
     state.0.store(false, Ordering::SeqCst);
     let cancel = state.0.clone();
-    let res = tokio::task::spawn_blocking(move || -> Result<String, String> {
-        let dir = PathBuf::from(&path);
-        if !dir.is_dir() {
-            return Err(format!("folder not found: {path}"));
-        }
-        let mut files = collect_image_files_from_dir(&dir)?;
-        if files.is_empty() {
-            return Err("no images found in folder".to_string());
-        }
-        files.sort_by(|a, b| natural_cmp(&a.0, &b.0));
+    tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let (_, files) = sorted_folder_images(&path)?;
 
         let title = meta.title.trim().to_string();
         if title.is_empty() {
@@ -684,103 +691,72 @@ pub async fn import_folder(
             if t.is_empty() { "Chapter 1".to_string() } else { t.to_string() }
         };
 
-        let base_slug = slugify(&title);
-        let data_root = crate::paths::data_root();
-        let (series_slug, series_dir) = disambiguate_series_dir(&base_slug, &data_root);
-        let series_permalink = format!("local:{}", series_slug);
-        let chapters_dir = series_dir.join("chapters");
-        std::fs::create_dir_all(&chapters_dir).map_err(|e| format!("failed creating series dir: {e}"))?;
-
-        // Roll back the partially imported series dir on any failure so no
-        // orphan files remain on disk.
-        let import_result = (|| -> Result<String, String> {
-        // One chapter only.
-        let ch_slug = slugify(&chapter_title);
-        let ch_slug = if ch_slug.is_empty() { "chapter-1".to_string() } else { ch_slug };
-        let ch_permalink = format!("local:{}-{}", series_slug, ch_slug);
-        let ch_dir = chapters_dir.join(&ch_slug);
-        std::fs::create_dir_all(&ch_dir).map_err(|e| format!("failed creating chapter dir: {e}"))?;
-
-        // Copy + rename pages to p000.ext … preserving lowercased extension.
-        let mut page_file_names: Vec<String> = Vec::with_capacity(files.len());
-        for (idx, (orig_name, src_path)) in files.iter().enumerate() {
-            if cancel.load(Ordering::SeqCst) {
-                return Err("import cancelled".to_string());
-            }
-            let ext = orig_name.rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
-            let out_name = format!("p{:03}.{}", idx, ext);
-            let out_path = ch_dir.join(&out_name);
-            std::fs::copy(src_path, &out_path)
-                .map_err(|e| format!("failed copying page {orig_name}: {e}"))?;
-            page_file_names.push(orig_name.clone());
-        }
-
-        // chapter.json / series.json — same schema as CBZ.
-        let chapter_json = serde_json::json!({
-            "title": chapter_title,
-            "permalink": ch_permalink,
-            "series_permalink": series_permalink,
-            "page_count": files.len(),
-        });
-        let ch_json_str = serde_json::to_string_pretty(&chapter_json)
-            .map_err(|e| format!("failed serializing chapter.json: {e}"))?;
-        std::fs::write(ch_dir.join("chapter.json"), ch_json_str)
-            .map_err(|e| format!("failed writing chapter.json: {e}"))?;
-
-        let series_json = serde_json::json!({
-            "title": title,
-            "permalink": series_permalink,
-            "author": meta.author,
-            "description": meta.description,
-            "chapter_count": 1,
-            "total_pages": files.len(),
-        });
-        let series_json_str = serde_json::to_string_pretty(&series_json)
-            .map_err(|e| format!("failed serializing series.json: {e}"))?;
-        std::fs::write(series_dir.join("series.json"), series_json_str)
-            .map_err(|e| format!("failed writing series.json: {e}"))?;
-
-        // Cover: explicit path wins; otherwise first page.
-        let cover_out = series_dir.join("cover.webp");
-        let cover_bytes: Option<Vec<u8>> = if let Some(p) = &meta.cover_path {
-            if !is_image(p) {
-                return Err(format!("cover path does not have an allowed image extension: {p}"));
-            }
-            Some(read_capped_cover_file(p)?)
-        } else {
-            read_capped_cover_file(&files[0].1).ok()
-        };
-        if let Some(bytes) = cover_bytes {
-            let _ = create_cover_webp(&bytes, &cover_out);
-        }
-
-        // Register in SQLite — reuses existing helper.
-        let local_meta = LocalSeriesMeta {
-            title: title.clone(),
-            author: meta.author.clone(),
-            description: meta.description.clone(),
-        };
-        let chapter_permalinks = vec![ch_permalink.clone()];
-        let groups = vec![(chapter_title.clone(), page_file_names)];
-        register_local_series_in_db(
-            &series_permalink,
-            &local_meta,
-            &chapter_permalinks,
-            &groups,
-            &series_slug,
-            files.len(),
-        )?;
-
-        Ok(series_permalink.clone())
-        })();
-        if import_result.is_err() {
-            let _ = std::fs::remove_dir_all(&series_dir);
-        }
-        import_result
+        import_into_new_series_dir(&title, |layout| {
+            import_folder_inner(&cancel, &files, title.clone(), chapter_title, layout, meta)
+        })
     })
     .await
-    .map_err(|e| format!("import task failed: {e}"))??;
-    Ok(res)
+    .map_err(|e| format!("import task failed: {e}"))?
+}
+
+/// One folder = one chapter: copies pages, writes chapter/series JSON and the
+/// cover, then registers the series in SQLite.
+fn import_folder_inner(
+    cancel: &AtomicBool,
+    files: &[(String, PathBuf)],
+    title: String,
+    chapter_title: String,
+    layout: &SeriesLayout,
+    meta: FolderImportMeta,
+) -> Result<String, String> {
+    let ch_slug = slugify(&chapter_title);
+    let ch_permalink = format!("local:{}-{}", layout.slug, ch_slug);
+    let ch_dir = layout.chapters_dir.join(&ch_slug);
+    std::fs::create_dir_all(&ch_dir).map_err(|e| format!("failed creating chapter dir: {e}"))?;
+
+    // Copy + rename pages to p000.ext … preserving lowercased extension.
+    for (idx, (orig_name, src_path)) in files.iter().enumerate() {
+        if cancel.load(Ordering::SeqCst) {
+            return Err("import cancelled".to_string());
+        }
+        let out_path = ch_dir.join(format!("p{:03}.{}", idx, page_ext(orig_name)));
+        std::fs::copy(src_path, &out_path)
+            .map_err(|e| format!("failed copying page {orig_name}: {e}"))?;
+    }
+
+    // chapter.json / series.json — same schema as CBZ.
+    let local_meta = LocalSeriesMeta {
+        title,
+        author: meta.author,
+        description: meta.description,
+    };
+    write_chapter_json(&ch_dir, &chapter_title, &ch_permalink, &layout.permalink, files.len())?;
+    write_series_json(&layout.dir, &layout.permalink, &local_meta, 1, files.len())?;
+
+    // Cover: explicit path wins; otherwise first page.
+    let cover_bytes: Option<Vec<u8>> = if let Some(p) = &meta.cover_path {
+        if !is_image(p) {
+            return Err(format!("cover path does not have an allowed image extension: {p}"));
+        }
+        Some(read_capped_cover_file(p)?)
+    } else {
+        read_capped_cover_file(&files[0].1).ok()
+    };
+    if let Some(bytes) = cover_bytes {
+        let _ = create_cover_webp(&bytes, &layout.dir.join("cover.webp"));
+    }
+
+    let page_file_names: Vec<String> = files.iter().map(|(name, _)| name.clone()).collect();
+    register_local_series_in_db(
+        &layout.permalink,
+        &local_meta,
+        &[ch_permalink],
+        &[(chapter_title, page_file_names)],
+        &layout.slug,
+        files.len(),
+    )?;
+
+    Ok(layout.permalink.clone())
 }
 
 fn create_cover_webp(src_bytes: &[u8], out_path: &Path) -> Result<(), String> {
@@ -830,7 +806,7 @@ fn register_local_series_in_db(
     series_permalink: &str,
     meta: &LocalSeriesMeta,
     chapter_permalinks: &[String],
-    groups: &[(String, Vec<String>)],
+    groups: &[EntryGroup],
     series_slug: &str,
     total_pages: usize,
 ) -> Result<(), String> {
@@ -856,8 +832,11 @@ fn register_local_series_in_db(
     .map_err(|e| format!("create local_series failed: {e}"))?;
 
     let now = crate::util::now_ms();
-    let cover_rel_path = format!("local/{}/cover.webp", series_slug);
-    let series_cover_abs = crate::paths::data_root().join(&cover_rel_path).to_string_lossy().into_owned();
+    let root = crate::paths::data_root();
+    let series_cover_abs = root
+        .join(format!("local/{}/cover.webp", series_slug))
+        .to_string_lossy()
+        .into_owned();
 
     // Insert local_series AND all metadata/pages inside a single transaction so
     // that a rollback on any failure leaves no ghost series row.
@@ -881,8 +860,7 @@ fn register_local_series_in_db(
     )
     .map_err(|e| format!("insert local_series failed: {e}"))?;
 
-    // Ensure cached_metadata and cached_pages tables exist (they do via schema, but be safe)
-    // Insert series + chapter metadata + cached_pages rows
+    // Insert series + chapter metadata + cached_pages rows.
 
     // Series metadata with chapter taggings for SeriesView
     {
@@ -915,21 +893,19 @@ fn register_local_series_in_db(
         .map_err(|e| format!("insert series metadata failed: {e}"))?;
     }
 
+    let ch_prefix = format!("local:{}-", series_slug);
     for (idx, (ch_title, pages)) in groups.iter().enumerate() {
         let ch_permalink = &chapter_permalinks[idx];
-        let ch_slug = ch_permalink
-            .strip_prefix(&format!("local:{}-", series_slug))
-            .unwrap_or(ch_permalink);
+        let ch_slug = ch_permalink.strip_prefix(&ch_prefix).unwrap_or(ch_permalink);
         // chapter metadata
         let chapter_payload = serde_json::json!({
             "title": ch_title,
             "permalink": ch_permalink,
             "tags": [{"type": "Series", "name": meta.title, "permalink": series_permalink}],
-            "pages": (0..pages.len()).map(|pi| {
-                let ext = pages[pi].rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
+            "pages": pages.iter().enumerate().map(|(pi, name)| {
                 serde_json::json!({
                     "name": format!("p{:03}", pi),
-                    "url": format!("/local/{}/chapters/{}/p{:03}.{}", series_slug, ch_slug, pi, ext)
+                    "url": format!("/local/{}/chapters/{}/p{:03}.{}", series_slug, ch_slug, pi, page_ext(name))
                 })
             }).collect::<Vec<_>>(),
         })
@@ -943,7 +919,7 @@ fn register_local_series_in_db(
         // cover for chapter: use first page's actual extension
         let first_ext = pages.first().and_then(|n| n.rsplit('.').next()).unwrap_or("jpg");
         let actual_cover = format!("local/{}/chapters/{}/p000.{}", series_slug, ch_slug, first_ext.to_ascii_lowercase());
-        let actual_cover_abs = crate::paths::data_root().join(&actual_cover).to_string_lossy().into_owned();
+        let actual_cover_abs = root.join(&actual_cover).to_string_lossy().into_owned();
         tx.execute(
             "INSERT OR REPLACE INTO cached_metadata (cache_key, data_type, json_payload, cached_at) VALUES (?1, 'cover', ?2, ?3)",
             rusqlite::params![format!("cover:chapter:{}", ch_permalink), actual_cover_abs, now],
@@ -951,10 +927,9 @@ fn register_local_series_in_db(
         .map_err(|e| format!("insert cover failed: {e}"))?;
 
         // cached_pages rows
-        for (pi, _) in pages.iter().enumerate() {
-            let ext = pages[pi].rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
-            let file_path = format!("local/{}/chapters/{}/p{:03}.{}", series_slug, ch_slug, pi, ext);
-            let page_abs_path = crate::paths::data_root().join(&file_path);
+        for (pi, name) in pages.iter().enumerate() {
+            let file_path = format!("local/{}/chapters/{}/p{:03}.{}", series_slug, ch_slug, pi, page_ext(name));
+            let page_abs_path = root.join(&file_path);
             let file_size = std::fs::metadata(&page_abs_path).map(|m| m.len() as i64).unwrap_or(0);
             let abs = page_abs_path.to_string_lossy().into_owned();
             tx.execute(
@@ -1113,25 +1088,24 @@ pub async fn update_local_series(
         if !permalink.starts_with("local:") {
             return Err("not a local series permalink".to_string());
         }
-        let slug = permalink.trim_start_matches("local:").to_string();
-        let series_dir = resolve_local_series_dir(&slug)?;
-        let db_path = crate::paths::db_path();
+        let slug = permalink.trim_start_matches("local:");
+        let series_dir = resolve_local_series_dir(slug)?;
         let now = crate::util::now_ms();
 
         // --- Optional cover replacement ---
         // Do this before touching the DB so the cover path stored is correct.
-        let cover_abs = series_dir.join("cover.webp").to_string_lossy().into_owned();
+        let cover_out = series_dir.join("cover.webp");
+        let cover_abs = cover_out.to_string_lossy().into_owned();
         if let Some(src) = &meta.new_cover_path {
             if !is_image(src) {
                 return Err(format!("new cover path does not have an allowed image extension: {src}"));
             }
             let src_bytes = read_capped_cover_file(src)?;
-            let cover_out = series_dir.join("cover.webp");
             create_cover_webp(&src_bytes, &cover_out)?;
         }
 
         // --- DB update ---
-        let conn = crate::commands::db::open_synced(&db_path)?;
+        let conn = crate::commands::db::open_synced(&crate::paths::db_path())?;
 
         let tx = conn.unchecked_transaction()
             .map_err(|e| format!("tx failed: {e}"))?;
