@@ -119,6 +119,12 @@ export function ExportModal(props: ExportModalProps) {
     return c.followed + c.collectionItems;
   };
 
+  const flashCopied = (): void => {
+    setCopied(true);
+    if (copyTimer !== null) window.clearTimeout(copyTimer);
+    copyTimer = window.setTimeout(() => setCopied(false), 2000);
+  };
+
   const handleCopy = async (): Promise<void> => {
     const text = exportedText();
     if (!text) return;
@@ -130,9 +136,7 @@ export function ExportModal(props: ExportModalProps) {
         textareaRef.select();
         document.execCommand("copy");
       }
-      setCopied(true);
-      if (copyTimer !== null) window.clearTimeout(copyTimer);
-      copyTimer = window.setTimeout(() => setCopied(false), 2000);
+      flashCopied();
 
       const count = totalItemCount();
       showBanner(
@@ -146,9 +150,7 @@ export function ExportModal(props: ExportModalProps) {
         textareaRef.select();
         try {
           document.execCommand("copy");
-          setCopied(true);
-          if (copyTimer !== null) window.clearTimeout(copyTimer);
-          copyTimer = window.setTimeout(() => setCopied(false), 2000);
+          flashCopied();
           return;
         } catch {
           // ignore
@@ -184,16 +186,13 @@ export function ExportModal(props: ExportModalProps) {
     setSelectedColIds(new Set<number>());
   };
 
-  const scopeOptions = (): SelectOption[] => {
-    const opts: SelectOption[] = [
-      { value: "followed", label: t("library.exportScopeFollowed") },
-      { value: "bookmarks", label: t("library.exportScopeBookmarks") },
-      { value: "selected_collections", label: t("library.exportScopeSelectedCollections") },
-      { value: "collections", label: t("library.exportScopeCollections") },
-      { value: "all", label: t("library.exportScopeAll") },
-    ];
-    return opts;
-  };
+  const scopeOptions = (): SelectOption[] => [
+    { value: "followed", label: t("library.exportScopeFollowed") },
+    { value: "bookmarks", label: t("library.exportScopeBookmarks") },
+    { value: "selected_collections", label: t("library.exportScopeSelectedCollections") },
+    { value: "collections", label: t("library.exportScopeCollections") },
+    { value: "all", label: t("library.exportScopeAll") },
+  ];
 
   const formatOptions = (): SelectOption[] => [
     { value: "json-pretty", label: t("library.exportFormatJsonPretty") },
@@ -276,7 +275,7 @@ export function ExportModal(props: ExportModalProps) {
                     style="font-size: 10px; padding: 1px 6px;"
                     onClick={selectAllCollections}
                   >
-                    {t("common.selectAll") ?? "Select All"}
+                    {t("common.selectAll")}
                   </button>
                   <button
                     type="button"
@@ -336,7 +335,7 @@ export function ExportModal(props: ExportModalProps) {
               disabled={loading() || !exportedText()}
               onClick={handleSelectAllText}
             >
-              {t("common.selectAll") ?? "Select All"}
+              {t("common.selectAll")}
             </button>
           </div>
 

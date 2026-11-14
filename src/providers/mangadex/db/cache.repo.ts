@@ -171,28 +171,20 @@ export async function getMangaDexPruneCandidates(): Promise<Array<{
   }));
 }
 
-export interface MangaDexDownloadedChapter {
-  chapterId: string;
-  chapterTitle: string;
-  mangaId: string;
-  mangaTitle: string;
-  pageCount: number;
-  totalBytes: number;
-  lastCachedAt: number;
-}
-
 export async function getFullyCachedMdxChapterIds(chapterIds: string[]): Promise<Set<string>> {
   if (chapterIds.length === 0) return new Set();
   await initMangaDexDb();
-  const placeholders = chapterIds.map((_, i) => `?${i + 1}`).join(", ");
   const rows = await query<{ chapter_id: string }>(
-    `SELECT DISTINCT chapter_id FROM cached_pages WHERE chapter_id IN (${placeholders})`,
+    `SELECT DISTINCT chapter_id FROM cached_pages WHERE chapter_id IN (${inClause(chapterIds.length)})`,
     chapterIds,
   );
   return new Set(rows.map((r) => r.chapter_id));
 }
 
-export async function getMangaDexDownloadedChapters(): Promise<MangaDexDownloadedChapter[]> {
+/**
+ * Retrieves all MangaDex downloaded chapters mapped to standard FullyCachedChapterRow items.
+ */
+export async function getMangaDexDownloadedChapterRows(): Promise<FullyCachedChapterRow[]> {
   await initMangaDexDb();
   const rows = await query<{
     chapter_id: string;
@@ -218,35 +210,17 @@ export async function getMangaDexDownloadedChapters(): Promise<MangaDexDownloade
   );
 
   return rows.map((r) => {
-    const chId = r.chapter_id;
-    const mId = r.manga_id ?? "";
-    const mTitle = r.manga_title ?? "Manga";
+    const pageCount = Number(r.page_count || 0);
     return {
-      chapterId: chId,
-      chapterTitle: r.chapter_title || chId,
-      mangaId: mId,
-      mangaTitle: mTitle,
-      pageCount: Number(r.page_count || 0),
-      totalBytes: Number(r.total_bytes || 0),
+      chapterPermalink: `mdx:${r.chapter_id}`,
+      seriesPermalink: r.manga_id ? `mdx:${r.manga_id}` : null,
+      seriesName: r.manga_title ?? "Manga",
+      chapterTitle: r.chapter_title || r.chapter_id,
+      pageCount,
+      pageTotal: pageCount,
+      totalSizeBytes: Number(r.total_bytes || 0),
       lastCachedAt: Number(r.last_cached_at || 0),
+      coverPath: null,
     };
   });
-}
-
-/**
- * Retrieves all MangaDex downloaded chapters mapped to standard FullyCachedChapterRow items.
- */
-export async function getMangaDexDownloadedChapterRows(): Promise<FullyCachedChapterRow[]> {
-  const mdxChapters = await getMangaDexDownloadedChapters();
-  return mdxChapters.map((c) => ({
-    chapterPermalink: `mdx:${c.chapterId}`,
-    seriesPermalink: c.mangaId ? `mdx:${c.mangaId}` : null,
-    seriesName: c.mangaTitle,
-    chapterTitle: c.chapterTitle,
-    pageCount: c.pageCount,
-    pageTotal: c.pageCount,
-    totalSizeBytes: c.totalBytes,
-    lastCachedAt: c.lastCachedAt,
-    coverPath: null,
-  }));
 }

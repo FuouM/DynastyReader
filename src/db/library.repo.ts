@@ -13,37 +13,15 @@ import type {
 } from "../types/db";
 import { activeProvider } from "../stores/provider";
 import type { ContentProvider } from "../stores/provider";
-import { getProvider, getProviderForPermalink, type ContentProviderAdapter } from "../providers";
+import { getProvider, getProviderForPermalink, groupByProvider } from "../providers";
 import { getChapterContainerTag } from "../taxonomy";
 import { decodeEntities, slugify } from "../utils/formatting";
-import {
-  getFollowedRevision,
-  onFollowedChanged,
-  notifyFollowedChanged,
-  getBookmarksRevision,
-  onBookmarksChanged,
-  notifyBookmarksChanged,
-  getHistoryRevision,
-  onHistoryChanged,
-  notifyHistoryChanged,
-  getProgressRevision,
-  onProgressChanged,
-  notifyProgressChanged,
-} from "./library-notifiers";
 export {
   getFollowedRevision,
-  onFollowedChanged,
-  notifyFollowedChanged,
   getBookmarksRevision,
-  onBookmarksChanged,
-  notifyBookmarksChanged,
   getHistoryRevision,
-  onHistoryChanged,
-  notifyHistoryChanged,
   getProgressRevision,
-  onProgressChanged,
-  notifyProgressChanged,
-};
+} from "./library-notifiers";
 
 export async function getFollowedSeriesPage(
   page = 1,
@@ -316,16 +294,7 @@ export async function removeBookmark(chapterPermalink: string): Promise<void> {
 /** Bulk-delete bookmarks across providers. */
 export async function removeBookmarksBatch(chapterPermalinks: string[]): Promise<void> {
   if (chapterPermalinks.length === 0) return;
-  const byProvider = new Map<ContentProviderAdapter, string[]>();
-  for (const p of chapterPermalinks) {
-    const adapter = getProviderForPermalink(p);
-    const list = byProvider.get(adapter) ?? [];
-    list.push(p);
-    byProvider.set(adapter, list);
-  }
   await Promise.all(
-    Array.from(byProvider.entries()).map(([adapter, perms]) =>
-      adapter.removeBookmarksBatch(perms),
-    ),
+    Array.from(groupByProvider(chapterPermalinks), ([adapter, perms]) => adapter.removeBookmarksBatch(perms)),
   );
 }

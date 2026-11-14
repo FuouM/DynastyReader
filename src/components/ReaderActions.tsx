@@ -89,7 +89,6 @@ export function ReaderActions(props: ReaderActionsProps) {
       await navigator.clipboard.writeText(chapterUrl());
       setCopied(true);
       showBanner(t("reader.toolbar.copiedLinkBanner"));
-      resetCopied.clear();
       resetCopied();
     } catch (err) {
       const msg = errorMessage(err);

@@ -47,9 +47,6 @@ import { ReaderActions, type ReaderActionsController } from "../components/Reade
 const FULLSCREEN_RELAYOUT_FIRST_MS = 60;
 const FULLSCREEN_RELAYOUT_SECOND_MS = 180;
 
-export function createReaderSession(route: Route): ReaderSession {
-  return new ReaderSession(route);
-}
 export interface ReaderSession extends ReaderState {}
 export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   readonly permalink: string;
@@ -64,7 +61,6 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   spreadSlotEls: (HTMLElement | null)[] = [];
 
   queue: ReaderQueue;
-  readonly retrying = new Set<number>();
   readonly imgErrorCount = new Map<number, number>();
   private persistence!: ReaderPersistence;
   private slotObserver: IntersectionObserver | null = null;
@@ -120,36 +116,34 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     if (this.cachedPages[0][index] === path) {
       return;
     }
-    this.retrying.delete(index);
     this.cachedPages[1](index, path);
     this.slotStates[1](index, undefined);
     this.recountCached();
     if (typeof window !== "undefined") {
-      const img = new Image();
-      img.src = convertFileSrc(path);
-      if (typeof img.decode === "function") {
-        img.decode().then(() => {
-          if (!this.disposedFlag && img.naturalWidth > 0) {
-            this.imgErrorCount.delete(index);
-            this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
-          }
-        }).catch(() => {
-          if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-            this.imgErrorCount.delete(index);
-            this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
-          }
-        });
-      } else if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-        this.imgErrorCount.delete(index);
-        this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
-      } else {
-        img.onload = () => {
-          if (!this.disposedFlag) {
-            this.imgErrorCount.delete(index);
-            this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
-          }
-        };
-      }
+      this.probePageDimensions(index, path, () => this.imgErrorCount.delete(index));
+    }
+  }
+
+  /**
+   * Decodes a cached page off-DOM and records its natural dimensions.
+   * `onMeasured` runs right before the dimension is stored.
+   */
+  probePageDimensions(index: number, path: string, onMeasured?: () => void): void {
+    const img = new Image();
+    img.src = convertFileSrc(path);
+    const record = (): void => {
+      if (this.disposedFlag || img.naturalWidth <= 0 || img.naturalHeight <= 0) return;
+      onMeasured?.();
+      this.setPageDimension(index, img.naturalWidth, img.naturalHeight);
+    };
+    if (typeof img.decode === "function") {
+      img.decode().then(record).catch(() => {
+        if (img.complete) record();
+      });
+    } else if (img.complete) {
+      record();
+    } else {
+      img.onload = record;
     }
   }
 
@@ -197,10 +191,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     this.clearFullscreenRelayoutTimers();
     for (const fn of this.cleanupFns) fn();
     this.cleanupFns.length = 0;
-    if (this.slotObserver) {
-      this.slotObserver.disconnect();
-      this.slotObserver = null;
-    }
+    this.disconnectSlotObserver();
     // Drop all slot DOM refs so detached elements are not pinned (RD-H1).
     this.slotEls.length = 0;
     this.spreadSlotEls.length = 0;
@@ -283,13 +274,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   onPageImgError(index: number): void {
     const count = (this.imgErrorCount.get(index) ?? 0) + 1;
     this.imgErrorCount.set(index, count);
-    this.cachedPages[1](index, undefined);
-    this.recountCached();
-    const page = this.pages()[index];
-    if (page) {
-      const outPath = pageOutputPath(this.seriesPermalink() ?? "", this.permalink, index, page.url);
-      void fileDelete(outPath).catch(() => {});
-    }
+    this.discardCachedPage(index);
     if (count <= 2) {
       this.setSlotState(index, "spinner", t("reader.session.slotState.redownloading"));
       this.queue.enqueue(index, true);
@@ -305,8 +290,14 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   /** Slot Retry button: clears the failure and re-queues the page. */
   retrySlot(index: number): void {
     this.imgErrorCount.delete(index);
-    this.retrying.delete(index);
     this.queue.clearFailed(index);
+    this.discardCachedPage(index);
+    this.setSlotState(index, "spinner", t("reader.session.slotState.downloading"));
+    this.queue.enqueue(index, true);
+  }
+
+  /** Drops a page from the in-memory cache and deletes its file on disk. */
+  private discardCachedPage(index: number): void {
     this.cachedPages[1](index, undefined);
     this.recountCached();
     const page = this.pages()[index];
@@ -314,8 +305,6 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       const outPath = pageOutputPath(this.seriesPermalink() ?? "", this.permalink, index, page.url);
       void fileDelete(outPath).catch(() => {});
     }
-    this.setSlotState(index, "spinner", t("reader.session.slotState.downloading"));
-    this.queue.enqueue(index, true);
   }
 
   /** Pre-caches all pages in the current chapter. */
@@ -373,11 +362,16 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     });
   }
 
-  setPage(index: number, instant = false, scrollToBottom = false): void {
-    if (index < 0 || index >= this.pages().length) return;
+  /** Commits a new current page and persists progress (immediately at chapter end). */
+  private commitIndex(index: number): void {
     this.updateIndexAndNotifyEnd(index);
     this.schedulePersist();
     if (this.atEnd()) void this.persistNow();
+  }
+
+  setPage(index: number, instant = false, scrollToBottom = false): void {
+    if (index < 0 || index >= this.pages().length) return;
+    this.commitIndex(index);
     if (this.isSpread()) {
       this.enqueueSpreadNeighborhood();
     } else {
@@ -389,9 +383,7 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   setPageFromScroll(index: number): void {
     const clamped = Math.max(0, Math.min(index, this.pages().length - 1));
     if (this.pages().length === 0) return;
-    this.updateIndexAndNotifyEnd(clamped);
-    this.schedulePersist();
-    if (this.atEnd()) void this.persistNow();
+    this.commitIndex(clamped);
     if (!this.isSpread()) {
       this.prioritizeReadingWindow(clamped);
     }
@@ -438,61 +430,25 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     const prefetchCount = prefetchEnabled ? Math.max(1, getPrefetchBuffer()) : 0;
     const spreadsAhead = Math.ceil(prefetchCount / 2);
     const end = Math.min(this.spreads().length - 1, cur + spreadsAhead);
-    // 1. Enqueue active spread pages with top priority
-    const active = this.spreads()[cur];
-    if (active) {
-      for (const pageIndex of active.pageIndices) {
-        if (this.getCachedPath(pageIndex) === undefined) {
-          this.enqueue(pageIndex, true);
-        }
-      }
-    }
-
+    this.enqueueSpread(cur);
     if (!prefetchEnabled) return;
-    // 2. Enqueue immediate next spread with priority so next page turn is instant
-    if (cur + 1 < this.spreads().length) {
-      const next = this.spreads()[cur + 1];
-      if (next) {
-        for (const pageIndex of next.pageIndices) {
-          if (this.getCachedPath(pageIndex) === undefined) {
-            this.enqueue(pageIndex, true);
-          }
-        }
-      }
-    }
+    // Upcoming spreads (the next one first, so the next turn is instant), then the previous spread.
+    for (let s = cur + 1; s <= end; s++) this.enqueueSpread(s);
+    if (cur > 0) this.enqueueSpread(cur - 1);
+  }
 
-    // 3. Prefetch further upcoming spreads with priority
-    for (let s = cur + 2; s <= end; s++) {
-      const spread = this.spreads()[s];
-      if (spread) {
-        for (const pageIndex of spread.pageIndices) {
-          if (this.getCachedPath(pageIndex) === undefined) {
-            this.enqueue(pageIndex, true);
-          }
-        }
-      }
-    }
-    // 4. Preload previous spread if uncached
-    if (cur > 0) {
-      const prev = this.spreads()[cur - 1];
-      if (prev) {
-        for (const pageIndex of prev.pageIndices) {
-          if (this.getCachedPath(pageIndex) === undefined) {
-            this.enqueue(pageIndex, true);
-          }
-        }
-      }
+  /** Enqueues every page of one spread with priority. */
+  enqueueSpread(spreadIndex: number): void {
+    for (const pageIndex of this.spreads()[spreadIndex]?.pageIndices ?? []) {
+      this.enqueue(pageIndex, true);
     }
   }
 
   /** Steps by one spread in the given reading direction. */
   stepSpread(delta: 1 | -1): void {
-    if (!this.isSpread() || this.spreads().length === 0) return;
-    const cur = spreadIndexOf(this.spreads(), this.currentIndex());
-    const next = cur + delta;
-    if (next < 0 || next >= this.spreads().length) return;
+    if (!this.canStepSpread(delta)) return;
+    const next = spreadIndexOf(this.spreads(), this.currentIndex()) + delta;
     this.setPage(anchorPageOf(this.spreads(), next), false, delta === -1);
-    this.enqueueSpreadNeighborhood();
   }
   /** Returns true if stepSpread(delta) would actually navigate to a new spread. */
   canStepSpread(delta: 1 | -1): boolean {
@@ -502,6 +458,18 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     return next >= 0 && next < this.spreads().length;
   }
 
+  /** Turns one page (or one spread in spread layout) in reading order. */
+  turnPage(delta: 1 | -1): void {
+    if (this.isSpread()) {
+      this.stepSpread(delta);
+    } else {
+      this.setPage(this.currentIndex() + delta);
+    }
+  }
+
+  togglePagedLayout(): void {
+    this.setPagedLayout(this.pagedLayout() === "spread" ? "single" : "spread");
+  }
 
   // Layout controls ---------------------------------------------------------
   setMode(mode: ReaderMode): void {
@@ -600,12 +568,16 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
     const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, scale));
     if (Math.abs(clamped - this.zoomScale()) < 0.0001) return;
     this.setZoomScaleSignal(clamped);
-    if (!this.isHorizontal()) {
-      if (typeof requestAnimationFrame !== "undefined") {
-        requestAnimationFrame(() => this.updateSlotClearances());
-      } else {
-        this.updateSlotClearances();
-      }
+    this.scheduleSlotClearances();
+  }
+
+  /** Re-measures scroll-mode slot clearances after a zoom change has rendered. */
+  private scheduleSlotClearances(): void {
+    if (this.isHorizontal()) return;
+    if (typeof requestAnimationFrame !== "undefined") {
+      requestAnimationFrame(() => this.updateSlotClearances());
+    } else {
+      this.updateSlotClearances();
     }
   }
 
@@ -615,10 +587,6 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
       setScrollLockPersisted(next);
       return next;
     });
-  }
-
-  setWidePages(next: ReadonlySet<number>): void {
-    this.setWidePagesSignal(next);
   }
 
   setPageDimension(index: number, width: number, height: number): void {
@@ -642,37 +610,19 @@ export class ReaderSession implements ReaderQueueHost, ReaderActionsController {
   zoomIn(): void {
     if (this.fitMode() !== "original") return;
     this.setZoomScaleSignal((prev) => Math.min(ZOOM_MAX, Math.round((prev + 0.1) * 10) / 10));
-    if (!this.isHorizontal()) {
-      if (typeof requestAnimationFrame !== "undefined") {
-        requestAnimationFrame(() => this.updateSlotClearances());
-      } else {
-        this.updateSlotClearances();
-      }
-    }
+    this.scheduleSlotClearances();
   }
 
   zoomOut(): void {
     if (this.fitMode() !== "original") return;
     this.setZoomScaleSignal((prev) => Math.max(ZOOM_MIN, Math.round((prev - 0.1) * 10) / 10));
-    if (!this.isHorizontal()) {
-      if (typeof requestAnimationFrame !== "undefined") {
-        requestAnimationFrame(() => this.updateSlotClearances());
-      } else {
-        this.updateSlotClearances();
-      }
-    }
+    this.scheduleSlotClearances();
   }
 
   resetZoom(): void {
     if (this.fitMode() !== "original") return;
     this.setZoomScaleSignal(1.0);
-    if (!this.isHorizontal()) {
-      if (typeof requestAnimationFrame !== "undefined") {
-        requestAnimationFrame(() => this.updateSlotClearances());
-      } else {
-        this.updateSlotClearances();
-      }
-    }
+    this.scheduleSlotClearances();
   }
   toggleTheme(): void {
     toggleThemeStore();

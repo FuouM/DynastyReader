@@ -8,13 +8,15 @@ import type { ChapterRef } from "../types/routes";
 import type { ReaderSession } from "./reader-session";
 import { isMobile } from "../stores/platform";
 import { triggerHaptic } from "../utils/haptics";
-export const OVERSCROLL_ENGAGE_THRESHOLD_PX = 35;
-export const OVERSCROLL_MAX_PULL_PX = 70;
+import { stripTranslateXWithPull } from "./reader-transform";
+import type { OverscrollGestureState } from "./ReaderOverlays";
+const OVERSCROLL_ENGAGE_THRESHOLD_PX = 35;
+const OVERSCROLL_MAX_PULL_PX = 70;
 export const SWIPE_MIN_DIST_TOUCH_PX = 35;
 export const SWIPE_MIN_DIST_MOUSE_PX = 45;
 
 export const OVERSCROLL_COLLISION_RADIUS_PX = 48;
-export const OVERSCROLL_CARD_AVOID_H_PX = 96;
+const OVERSCROLL_CARD_AVOID_H_PX = 96;
 
 function getOverscrollCardAvoidW(winW: number): number {
   const cardW = Math.min(260, Math.max(160, winW - 48));
@@ -117,16 +119,14 @@ export const getOverscrollTarget = (
 export const isOverscrollReady = (fingerX: number, fingerY: number, targetX: number, targetY: number): boolean => {
   return Math.hypot(fingerX - targetX, fingerY - targetY) <= OVERSCROLL_COLLISION_RADIUS_PX;
 };
-import { stripTranslateXWithPull } from "./reader-transform";
-import type { OverscrollGestureState } from "./ReaderOverlays";
 
-export const DAMPING_EXPONENT = 0.72;
-export const DIRECTION_ANGLE_RATIO = 1.1;
+const DAMPING_EXPONENT = 0.72;
+const DIRECTION_ANGLE_RATIO = 1.1;
 export const LONG_PRESS_DELAY_MS = 350;
 export const MOVEMENT_THRESHOLD_PX = 8;
 export const TAP_TIME_THRESHOLD_MS = 450;
 export const TRANSITION_DURATION_MS = 200;
-export const VERTICAL_ENGAGE_BOUNDARY_PX = 5;
+const VERTICAL_ENGAGE_BOUNDARY_PX = 5;
 
 export type OverscrollActive = {
   direction: "prev" | "next";
@@ -139,7 +139,7 @@ export type OverscrollActive = {
   startY: number;
 } | null;
 
-export interface TryEngageOverscrollResult {
+interface TryEngageOverscrollResult {
   engaged: NonNullable<OverscrollActive>;
   overscrollState: OverscrollGestureState;
   dampedPullPx: number;
@@ -188,10 +188,10 @@ export function tryEngageOverscroll(opts: {
       absX > absY * DIRECTION_ANGLE_RATIO;
 
     if (isPullingPrev) {
-      return buildHorizontalOverscroll(s, "prev", prevCh, startX, startY, fingerX, fingerY, absX, isRtl);
+      return buildOverscroll("prev", prevCh, startX, startY, fingerX, fingerY, absX, true, isRtl);
     }
     if (isPullingNext) {
-      return buildHorizontalOverscroll(s, "next", nextCh, startX, startY, fingerX, fingerY, absX, isRtl);
+      return buildOverscroll("next", nextCh, startX, startY, fingerX, fingerY, absX, true, isRtl);
     }
   } else {
     const vp = s.viewportEl;
@@ -200,41 +200,28 @@ export function tryEngageOverscroll(opts: {
       const isAtBottom = Math.ceil(vp.scrollTop + vp.clientHeight) >= vp.scrollHeight - VERTICAL_ENGAGE_BOUNDARY_PX;
 
       if (isAtTop && dy > OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * DIRECTION_ANGLE_RATIO) {
-        return buildVerticalOverscroll(s, "prev", prevCh, startX, startY, fingerX, fingerY, dy);
+        return buildOverscroll("prev", prevCh, startX, startY, fingerX, fingerY, dy, false, false);
       }
       if (isAtBottom && dy < -OVERSCROLL_ENGAGE_THRESHOLD_PX && absY > absX * DIRECTION_ANGLE_RATIO) {
-        return buildVerticalOverscroll(s, "next", nextCh, startX, startY, fingerX, fingerY, -dy);
+        return buildOverscroll("next", nextCh, startX, startY, fingerX, fingerY, -dy, false, false);
       }
     }
   }
   return null;
 }
 
-function buildHorizontalOverscroll(
-  _s: ReaderSession,
-  direction: "prev" | "next",
-  chapter: ChapterRef | null,
-  startX: number,
-  startY: number,
-  fingerX: number,
-  fingerY: number,
+/** Damped strip displacement for a pull of `dist` px, signed toward the pull direction. */
+function dampedPullPx(
   dist: number,
+  direction: "prev" | "next",
+  isHorizontal: boolean,
   isRtl: boolean,
-): TryEngageOverscrollResult {
-  const { targetX, targetY } = getOverscrollTarget(startX, startY, direction, true, isRtl);
-  const ready = isOverscrollReady(fingerX, fingerY, targetX, targetY);
-  const pullSign = direction === "prev" ? (isRtl ? -1 : 1) : (isRtl ? 1 : -1);
-  const damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, DAMPING_EXPONENT));
-
-  return {
-    engaged: { direction, chapter, targetX, targetY, ready, dist, startX, startY },
-    overscrollState: { fingerX, fingerY, targetX, targetY, direction, chapter, ready },
-    dampedPullPx: damped,
-  };
+): number {
+  const sign = (direction === "prev" ? 1 : -1) * (isHorizontal && isRtl ? -1 : 1);
+  return sign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, DAMPING_EXPONENT));
 }
 
-function buildVerticalOverscroll(
-  _s: ReaderSession,
+function buildOverscroll(
   direction: "prev" | "next",
   chapter: ChapterRef | null,
   startX: number,
@@ -242,17 +229,15 @@ function buildVerticalOverscroll(
   fingerX: number,
   fingerY: number,
   dist: number,
+  isHorizontal: boolean,
+  isRtl: boolean,
 ): TryEngageOverscrollResult {
-  const { targetX, targetY } = getOverscrollTarget(startX, startY, direction, false);
+  const { targetX, targetY } = getOverscrollTarget(startX, startY, direction, isHorizontal, isRtl);
   const ready = isOverscrollReady(fingerX, fingerY, targetX, targetY);
-  const damped = direction === "prev"
-    ? Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, DAMPING_EXPONENT))
-    : -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(dist, DAMPING_EXPONENT));
-
   return {
     engaged: { direction, chapter, targetX, targetY, ready, dist, startX, startY },
     overscrollState: { fingerX, fingerY, targetX, targetY, direction, chapter, ready },
-    dampedPullPx: damped,
+    dampedPullPx: dampedPullPx(dist, direction, isHorizontal, isRtl),
   };
 }
 
@@ -287,20 +272,9 @@ export function updateActiveOverscroll(
 ): { state: NonNullable<OverscrollActive>; triggerHaptic: boolean; dampedPullPx: number } {
   const ready = isOverscrollReady(fingerX, fingerY, active.targetX, active.targetY);
   const shouldHaptic = ready && !hasVibrated;
-  let rawDist: number;
-  let damped: number;
-
-  if (s.isHorizontal()) {
-    const isRtl = s.direction() === "rtl";
-    rawDist = Math.abs(fingerX - active.startX);
-    const pullSign = active.direction === "prev" ? (isRtl ? -1 : 1) : (isRtl ? 1 : -1);
-    damped = pullSign * Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(rawDist, DAMPING_EXPONENT));
-  } else {
-    rawDist = Math.abs(fingerY - active.startY);
-    damped = active.direction === "prev"
-      ? Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(rawDist, DAMPING_EXPONENT))
-      : -Math.min(OVERSCROLL_MAX_PULL_PX, Math.pow(rawDist, DAMPING_EXPONENT));
-  }
+  const isHorizontal = s.isHorizontal();
+  const rawDist = isHorizontal ? Math.abs(fingerX - active.startX) : Math.abs(fingerY - active.startY);
+  const damped = dampedPullPx(rawDist, active.direction, isHorizontal, isHorizontal && s.direction() === "rtl");
 
   return {
     state: { ...active, dist: rawDist, ready },
@@ -337,14 +311,18 @@ export function resolveTapZone(
     return;
   }
   const isRtl = s.direction() === "rtl";
-  const step = ((zone === "left" ? 1 : -1) * (isRtl ? 1 : -1)) as 1 | -1;
+  const step: 1 | -1 = (zone === "left") === isRtl ? 1 : -1;
+  turnPageWithHaptic(s, step);
+}
+
+/** Turns one page/spread if the target page exists; returns whether it did. */
+function turnPageWithHaptic(s: ReaderSession, step: 1 | -1): boolean {
   const targetPage = s.currentIndex() + step;
-  if (targetPage >= 0 && targetPage < s.pages().length) {
-    const willActuallyTurn = !s.isSpread() || s.canStepSpread(step);
-    if (isMobile() && willActuallyTurn) triggerHaptic("page-turn");
-    if (s.isSpread()) s.stepSpread(step);
-    else s.setPage(targetPage);
-  }
+  if (targetPage < 0 || targetPage >= s.pages().length) return false;
+  const willActuallyTurn = !s.isSpread() || s.canStepSpread(step);
+  if (isMobile() && willActuallyTurn) triggerHaptic("page-turn");
+  s.turnPage(step);
+  return true;
 }
 
 /**
@@ -354,7 +332,6 @@ export function resolveTapZone(
 export function resolveSwipe(
   s: ReaderSession,
   totalDx: number,
-  _totalDy: number,
   absX: number,
   absY: number,
   dt: number,
@@ -367,22 +344,11 @@ export function resolveSwipe(
   if (
     absX > minDistPx &&
     absX > absY * 1.25 &&
-    (absX > fastThresholdPx || (absX > minDistPx && dt < fastTimeMs))
+    (absX > fastThresholdPx || dt < fastTimeMs)
   ) {
     const isRtl = s.direction() === "rtl";
-    const step = isRtl ? (totalDx > 0 ? 1 : -1) : (totalDx < 0 ? 1 : -1);
-    const cur = s.currentIndex();
-    const total = s.pages().length;
-    const targetPage = cur + step;
-    if (targetPage >= 0 && targetPage < total) {
-      const willActuallyTurn = !(s.isHorizontal() && s.isSpread()) || s.canStepSpread(step as 1 | -1);
-      if (isMobile() && willActuallyTurn) triggerHaptic("page-turn");
-      if (s.isHorizontal() && s.isSpread()) {
-        s.stepSpread(step as 1 | -1);
-      } else {
-        s.setPage(targetPage, false);
-      }
-    } else if (cur === 0 && step === -1) {
+    const step: 1 | -1 = isRtl ? (totalDx > 0 ? 1 : -1) : (totalDx < 0 ? 1 : -1);
+    if (!turnPageWithHaptic(s, step) && s.currentIndex() === 0 && step === -1) {
       triggerDirectionHint();
     }
     return true;

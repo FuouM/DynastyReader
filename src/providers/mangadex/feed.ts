@@ -8,8 +8,8 @@ import { searchChapters } from "./api/chapter";
 import {
   formatMangaTitle,
   formatMangaDexChapterTitle,
-  getMangaAuthors,
-  getMangaAuthorEntities,
+  getMangaAuthorTags,
+  getChapterScanlationGroup,
   getMangaCoverUrl,
 } from "./mapping";
 import { t } from "../../i18n";
@@ -30,6 +30,50 @@ function parseTabAndPageFromKey(key: string): { tabId: string; page: number } {
   const tabId = parts[1] || "releases";
   const page = parseInt(parts[2] || "1", 10);
   return { tabId, page: Number.isNaN(page) ? 1 : page };
+}
+
+function feedCacheKey(tabId: string, page: number): string {
+  const whitelistKey = whitelistEnabled()
+    ? whitelistedTags().map((t) => t.id).sort().join(",")
+    : "all";
+  return `mdx:feed:${tabId}:${page}:${whitelistKey}`;
+}
+
+async function readCachedFeed(cacheKey: string) {
+  const cached = await getCachedMdxMetadata(cacheKey).catch(() => null);
+  let parsedFeed: Feed | null = null;
+  if (cached?.json_payload) {
+    try {
+      const raw = JSON.parse(cached.json_payload);
+      if (raw && Array.isArray(raw.chapters)) {
+        parsedFeed = raw;
+      }
+    } catch {
+      parsedFeed = null;
+    }
+  }
+  return { cached, parsedFeed };
+}
+
+/** Id of the newest chapter for the tab (one-item head request). Throws on network failure. */
+async function fetchNewestChapterId(tabId: string): Promise<string | null> {
+  if (whitelistEnabled() && whitelistedTags().length > 0) {
+    const tagIds = whitelistedTags().map((t) => t.id);
+    const headManga = await searchManga({
+      includedTags: tagIds,
+      order: { latestUploadedChapter: "desc" },
+      limit: 1,
+    });
+    return headManga.data?.[0]?.attributes?.latestUploadedChapter || null;
+  }
+  const order: Record<string, "asc" | "desc"> =
+    tabId === "releases" ? { readableAt: "desc" } : { createdAt: "desc" };
+  const headCh = await searchChapters({
+    limit: 1,
+    order,
+    translatedLanguage: ["en"],
+  });
+  return headCh.data?.[0]?.id || null;
 }
 
 function mapMdxChapterToFeedChapter(
@@ -64,25 +108,7 @@ function mapMdxChapterToFeedChapter(
   }
 
   if (mangaEntity) {
-    const authorEntities = getMangaAuthorEntities(mangaEntity);
-    if (authorEntities.length > 0) {
-      for (const a of authorEntities) {
-        tags.push({
-          type: "Author",
-          name: a.name,
-          permalink: `mdx-author:${a.id}`,
-        });
-      }
-    } else {
-      const authors = getMangaAuthors(mangaEntity);
-      for (const a of authors) {
-        tags.push({
-          type: "Author",
-          name: a,
-          permalink: `mdx-author:${a}`,
-        });
-      }
-    }
+    tags.push(...getMangaAuthorTags(mangaEntity));
 
     for (const t of mangaEntity.attributes.tags || []) {
       const name = t.attributes?.name?.en;
@@ -96,19 +122,12 @@ function mapMdxChapterToFeedChapter(
     }
   }
 
-  const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
-  let groupName: string | undefined;
-  if (groupRel) {
-    const attrs = groupRel.attributes;
-    if (attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string") {
-      groupName = attrs.name;
-    }
-  }
-  if (groupName) {
+  const group = getChapterScanlationGroup(ch);
+  if (group) {
     tags.push({
       type: "Scanlator",
-      name: groupName,
-      permalink: `mdx-group:${groupName}`,
+      name: group.name,
+      permalink: `mdx-group:${group.name}`,
     });
   }
 
@@ -131,24 +150,10 @@ export async function fetchMangaDexFeedWithRevalidation(
   force = false,
 ): Promise<FeedRevalidationResult> {
   const { tabId, page } = parseTabAndPageFromKey(key);
-  const whitelistKey = whitelistEnabled()
-    ? whitelistedTags().map((t) => t.id).sort().join(",")
-    : "all";
-  const cacheKey = `mdx:feed:${tabId}:${page}:${whitelistKey}`;
+  const cacheKey = feedCacheKey(tabId, page);
 
   // 1. Check SQLite metadata cache
-  const cached = await getCachedMdxMetadata(cacheKey).catch(() => null);
-  let parsedFeed: Feed | null = null;
-  if (cached?.json_payload) {
-    try {
-      const raw = JSON.parse(cached.json_payload);
-      if (raw && Array.isArray(raw.chapters)) {
-        parsedFeed = raw;
-      }
-    } catch {
-      parsedFeed = null;
-    }
-  }
+  const { cached, parsedFeed } = await readCachedFeed(cacheKey);
 
   const isCacheFresh = cached && Date.now() - cached.cached_at < 5 * 60 * 1000;
   if (page === 1 && parsedFeed && !force && isCacheFresh) {
@@ -164,24 +169,7 @@ export async function fetchMangaDexFeedWithRevalidation(
   if (page === 1 && parsedFeed && Array.isArray(parsedFeed.chapters) && parsedFeed.chapters.length > 0) {
     let newestChapterId: string | null = null;
     try {
-      if (whitelistEnabled() && whitelistedTags().length > 0) {
-        const tagIds = whitelistedTags().map((t) => t.id);
-        const headManga = await searchManga({
-          includedTags: tagIds,
-          order: { latestUploadedChapter: "desc" },
-          limit: 1,
-        });
-        newestChapterId = headManga.data?.[0]?.attributes?.latestUploadedChapter || null;
-      } else {
-        const order: Record<string, "asc" | "desc"> =
-          tabId === "releases" ? { readableAt: "desc" } : { createdAt: "desc" };
-        const headCh = await searchChapters({
-          limit: 1,
-          order,
-          translatedLanguage: ["en"],
-        });
-        newestChapterId = headCh.data?.[0]?.id || null;
-      }
+      newestChapterId = await fetchNewestChapterId(tabId);
     } catch (err) {
       console.warn("[MangaDexFeed] Head check error:", err);
     }
@@ -288,43 +276,12 @@ export async function fetchMangaDexFeedWithRevalidation(
 }
 
 export async function revalidateMangaDexFeedHead(tabId: string): Promise<FeedHeadRevalidationResult> {
-  const whitelistKey = whitelistEnabled()
-    ? whitelistedTags().map((t) => t.id).sort().join(",")
-    : "all";
-  const cacheKey = `mdx:feed:${tabId}:1:${whitelistKey}`;
-  const cached = await getCachedMdxMetadata(cacheKey).catch(() => null);
-  let parsedFeed: Feed | null = null;
-  if (cached?.json_payload) {
-    try {
-      const raw = JSON.parse(cached.json_payload);
-      if (raw && Array.isArray(raw.chapters)) {
-        parsedFeed = raw;
-      }
-    } catch {
-      parsedFeed = null;
-    }
-  }
+  const cacheKey = feedCacheKey(tabId, 1);
+  const { parsedFeed } = await readCachedFeed(cacheKey);
 
   let newestChapterId: string | null = null;
   try {
-    if (whitelistEnabled() && whitelistedTags().length > 0) {
-      const tagIds = whitelistedTags().map((t) => t.id);
-      const headManga = await searchManga({
-        includedTags: tagIds,
-        order: { latestUploadedChapter: "desc" },
-        limit: 1,
-      });
-      newestChapterId = headManga.data?.[0]?.attributes?.latestUploadedChapter || null;
-    } else {
-      const order: Record<string, "asc" | "desc"> =
-        tabId === "releases" ? { readableAt: "desc" } : { createdAt: "desc" };
-      const headCh = await searchChapters({
-        limit: 1,
-        order,
-        translatedLanguage: ["en"],
-      });
-      newestChapterId = headCh.data?.[0]?.id || null;
-    }
+    newestChapterId = await fetchNewestChapterId(tabId);
   } catch {
     return { hasNew: false, status: "error" };
   }

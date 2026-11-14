@@ -4,7 +4,7 @@
  */
 
 import { execute, query } from "./client";
-import { paginate } from "../../../db/paging";
+import { inClause, queryPaged } from "../../../db/paging";
 import { initMangaDexDb } from "./schema";
 import { notifyHistoryChanged } from "../../../db/library-notifiers";
 import type { GetHistoryPageOptions } from "../../../types/db";
@@ -49,41 +49,25 @@ export async function getHistory(
 ): Promise<HistoryPageResult> {
   await initMangaDexDb();
   const q = options?.query?.trim();
-  const whereSql = q ? `WHERE (h.chapter_title LIKE ?1 OR h.manga_title LIKE ?2)` : "";
-  const countParams: unknown[] = q ? [`%${q}%`, `%${q}%`] : [];
-
-  const countRows = await query<{ c: number }>(
-    `SELECT COUNT(*) as c FROM reading_history h ${whereSql}`,
-    countParams,
-  );
-  const totalCount = countRows[0]?.c ?? 0;
-  const { totalPages, currentPage, offset } = paginate(totalCount, page, limit);
-
+  const whereSql = q ? `WHERE (h.chapter_title LIKE ? OR h.manga_title LIKE ?)` : "";
   let orderSql = `ORDER BY h.read_at DESC`;
   if (options?.sort === "oldest") orderSql = `ORDER BY h.read_at ASC`;
   else if (options?.sort === "alphabetical") orderSql = `ORDER BY h.manga_title COLLATE NOCASE ASC, h.chapter_title COLLATE NOCASE ASC`;
 
-  const queryParams: unknown[] = q ? [`%${q}%`, `%${q}%`, limit, offset] : [limit, offset];
-  const limitIdx = q ? "?3" : "?1";
-  const offsetIdx = q ? "?4" : "?2";
-
-  const rows = await query<MangaDexHistoryRow>(
+  return queryPaged<MangaDexHistoryRow>(
+    `SELECT COUNT(*) as count FROM reading_history h ${whereSql}`,
     `SELECT h.id, h.chapter_id, h.manga_id, h.manga_title, h.chapter_title, h.scanlator_name, h.read_at,
             p.page_index, p.page_total, p.completed
      FROM reading_history h
      LEFT JOIN reading_progress p ON h.chapter_id = p.chapter_id
      ${whereSql}
      ${orderSql}
-     LIMIT ${limitIdx} OFFSET ${offsetIdx}`,
-    queryParams,
+     LIMIT ? OFFSET ?`,
+    page,
+    limit,
+    q ? [`%${q}%`, `%${q}%`] : [],
+    query,
   );
-
-  return {
-    rows,
-    totalPages,
-    currentPage,
-    totalCount,
-  };
 }
 
 /**
@@ -107,9 +91,8 @@ export async function clearHistory(): Promise<void> {
 export async function getMdxHistoryChapterIds(chapterIds: string[]): Promise<Set<string>> {
   if (chapterIds.length === 0) return new Set();
   await initMangaDexDb();
-  const placeholders = chapterIds.map((_, i) => `?${i + 1}`).join(", ");
   const rows = await query<{ chapter_id: string }>(
-    `SELECT chapter_id FROM reading_history WHERE chapter_id IN (${placeholders})`,
+    `SELECT chapter_id FROM reading_history WHERE chapter_id IN (${inClause(chapterIds.length)})`,
     chapterIds,
   );
   return new Set(rows.map((r) => r.chapter_id));

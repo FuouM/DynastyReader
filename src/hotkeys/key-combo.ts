@@ -1,6 +1,37 @@
 import type { HotkeyActionId, HotkeyScope, CustomHotkeysMap } from "./types";
 import { HOTKEY_DEFINITIONS_MAP } from "./registry";
 
+/** Named-key aliases mapped to their canonical `KeyboardEvent.key` names. */
+const KEY_NAME_ALIASES: Record<string, string> = {
+  esc: "Escape",
+  spacebar: "Space",
+  left: "ArrowLeft",
+  right: "ArrowRight",
+  up: "ArrowUp",
+  down: "ArrowDown",
+  del: "Delete",
+  ins: "Insert",
+};
+
+/** UI labels for named main keys. */
+const KEY_DISPLAY_LABELS: Record<string, string> = {
+  ArrowRight: "→ Right Arrow",
+  ArrowLeft: "← Left Arrow",
+  ArrowUp: "↑ Up Arrow",
+  ArrowDown: "↓ Down Arrow",
+  Space: "Space",
+  Escape: "Esc",
+  Backspace: "Backspace",
+  Enter: "Enter",
+  Tab: "Tab",
+  Delete: "Del",
+  Insert: "Ins",
+  Home: "Home",
+  End: "End",
+  PageUp: "PgUp",
+  PageDown: "PgDn",
+};
+
 /**
  * Standardize key names across browsers/platforms.
  */
@@ -8,21 +39,7 @@ function normalizeKeyName(key: string): string {
   if (!key) return "";
   if (key === " ") return "Space";
   if (key.length === 1) return key.toLowerCase();
-  
-  // Named keys
-  const map: Record<string, string> = {
-    esc: "Escape",
-    spacebar: "Space",
-    left: "ArrowLeft",
-    right: "ArrowRight",
-    up: "ArrowUp",
-    down: "ArrowDown",
-    del: "Delete",
-    ins: "Insert",
-  };
-
-  const lower = key.toLowerCase();
-  return map[lower] || key;
+  return KEY_NAME_ALIASES[key.toLowerCase()] || key;
 }
 
 /**
@@ -128,30 +145,10 @@ export function formatKeyCombo(combo: string): string {
 
   const parts = normalized.split("+");
   const formattedParts = parts.map((part, index) => {
-    // If it is the last part (the main key)
-    if (index === parts.length - 1) {
-      const keyMap: Record<string, string> = {
-        ArrowRight: "→ Right Arrow",
-        ArrowLeft: "← Left Arrow",
-        ArrowUp: "↑ Up Arrow",
-        ArrowDown: "↓ Down Arrow",
-        Space: "Space",
-        Escape: "Esc",
-        Backspace: "Backspace",
-        Enter: "Enter",
-        Tab: "Tab",
-        Delete: "Del",
-        Insert: "Ins",
-        Home: "Home",
-        End: "End",
-        PageUp: "PgUp",
-        PageDown: "PgDn",
-      };
-
-      if (keyMap[part]) return keyMap[part];
-      if (part.length === 1) return part.toUpperCase();
-      return part;
-    }
+    // Only the last part is the main key; modifiers render as-is.
+    if (index !== parts.length - 1) return part;
+    if (KEY_DISPLAY_LABELS[part]) return KEY_DISPLAY_LABELS[part];
+    if (part.length === 1) return part.toUpperCase();
     return part;
   });
 

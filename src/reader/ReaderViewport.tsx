@@ -10,7 +10,6 @@
 import { createEffect, Show, type JSX } from "solid-js";
 import type { ReaderSession } from "./reader-session";
 import { useReader } from "./reader-context";
-import { convertFileSrc } from "../ipc";
 import { spreadIndexOf } from "./reader-spread";
 import { getPrefetchBuffer, isReaderPrefetchEnabled } from "./settings";
 import { useReaderGestures } from "./useReaderGestures";
@@ -32,7 +31,6 @@ export function ReaderViewport(props: { session?: ReaderSession; children?: JSX.
     const spreads = s.spreads();
     const cached = s.cachedPages[0];
     const isHoriz = s.isHorizontal();
-    void cur; void isSpread; void spreads.length; void isHoriz;
     const toWarm = new Set<number>();
     if (isHoriz && isSpread && spreads.length > 0) {
       const curSpread = spreadIndexOf(spreads, cur);
@@ -52,27 +50,7 @@ export function ReaderViewport(props: { session?: ReaderSession; children?: JSX.
       const p = cached[idx];
       if (!p) continue;
       if (s.pageDimensions[0][idx]) continue;
-      const img = new Image();
-      img.src = convertFileSrc(p);
-      if (typeof img.decode === "function") {
-        img.decode().then(() => {
-          if (!s.disposedFlag && img.naturalWidth > 0) {
-            s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
-          }
-        }).catch(() => {
-          if (img.complete && img.naturalWidth > 0 && !s.disposedFlag) {
-            s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
-          }
-        });
-      } else if (img.complete && img.naturalWidth > 0) {
-        s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
-      } else {
-        img.onload = () => {
-          if (!s.disposedFlag) {
-            s.setPageDimension(idx, img.naturalWidth, img.naturalHeight);
-          }
-        };
-      }
+      s.probePageDimensions(idx, p);
     }
   });
   return (

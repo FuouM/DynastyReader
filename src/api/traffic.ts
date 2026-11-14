@@ -42,12 +42,7 @@ const [lifetimeMetrics, setLifetimeMetrics] = persistedSignal<TrafficMetrics>({ 
 });
 const inMemoryLifetime: TrafficMetrics = { ...lifetimeMetrics() };
 
-const sessionMetrics: TrafficMetrics = {
-  bytesDownloaded: 0,
-  networkRequests: 0,
-  cacheHits: 0,
-  bytesSaved: 0,
-};
+const sessionMetrics: TrafficMetrics = { ...DEFAULT_METRICS };
 
 function snapshot(): SessionTraffic {
   return {
@@ -112,14 +107,8 @@ export function getSessionTraffic(): SessionTraffic {
 
 /** Resets lifetime traffic statistics. */
 export function resetLifetimeTraffic(): void {
-  sessionMetrics.bytesDownloaded = 0;
-  sessionMetrics.networkRequests = 0;
-  sessionMetrics.cacheHits = 0;
-  sessionMetrics.bytesSaved = 0;
-  inMemoryLifetime.bytesDownloaded = 0;
-  inMemoryLifetime.networkRequests = 0;
-  inMemoryLifetime.cacheHits = 0;
-  inMemoryLifetime.bytesSaved = 0;
+  Object.assign(sessionMetrics, DEFAULT_METRICS);
+  Object.assign(inMemoryLifetime, DEFAULT_METRICS);
   schedulePersist.clear();
   scheduleNotify.clear();
   setLifetimeMetrics({ ...DEFAULT_METRICS });

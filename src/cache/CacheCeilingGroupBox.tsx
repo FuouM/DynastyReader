@@ -46,18 +46,25 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
     return match ? String(match.bytes) : "custom";
   };
 
+  const showBytesInInput = (bytes: number): void => {
+    const res = bytesToInputAndUnit(bytes);
+    setCeilingInput(res.input);
+    setCeilingUnit(res.unit);
+  };
+
+  /** Bytes typed in the custom input, or 0 when empty/invalid. */
+  const customInputBytes = (): number => {
+    const num = parseFloat(ceilingInput().trim());
+    return isNaN(num) || num <= 0 ? 0 : Math.round(num * (ceilingUnit() === "MB" ? MB : GB));
+  };
+
   createEffect(() => {
     const b = cacheCeilingBytes();
     if (!isMatchingPreset()) {
       setIsCustomMode(true);
     }
-    const curNum = parseFloat(ceilingInput().trim());
-    const curMult = ceilingUnit() === "MB" ? MB : GB;
-    const curBytes = isNaN(curNum) || curNum <= 0 ? 0 : Math.round(curNum * curMult);
-    if (curBytes !== b && b > 0) {
-      const res = bytesToInputAndUnit(b);
-      setCeilingInput(res.input);
-      setCeilingUnit(res.unit);
+    if (customInputBytes() !== b && b > 0) {
+      showBytesInInput(b);
     }
   });
 
@@ -67,32 +74,17 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
       if (cacheCeilingBytes() === 0) {
         setCacheCeilingBytes(10 * GB);
       }
-      const res = bytesToInputAndUnit(cacheCeilingBytes());
-      setCeilingInput(res.input);
-      setCeilingUnit(res.unit);
+      showBytesInInput(cacheCeilingBytes());
     } else {
       setIsCustomMode(false);
       const bytes = Number(val) || 0;
       setCacheCeilingBytes(bytes);
-      const res = bytesToInputAndUnit(bytes);
-      setCeilingInput(res.input);
-      setCeilingUnit(res.unit);
+      showBytesInInput(bytes);
     }
   };
 
   const commitCustomInput = () => {
-    const trimmed = ceilingInput().trim();
-    if (!trimmed) {
-      setCacheCeilingBytes(0);
-      return;
-    }
-    const num = parseFloat(trimmed);
-    if (isNaN(num) || num <= 0) {
-      setCacheCeilingBytes(0);
-      return;
-    }
-    const mult = ceilingUnit() === "MB" ? MB : GB;
-    setCacheCeilingBytes(Math.round(num * mult));
+    setCacheCeilingBytes(customInputBytes());
   };
 
   const handleUnitChange = (u: "GB" | "MB") => {
@@ -168,7 +160,7 @@ export function CacheCeilingGroupBox(props: CacheCeilingGroupBoxProps) {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     commitCustomInput();
-                    (e.currentTarget as HTMLElement)?.blur();
+                    e.currentTarget.blur();
                   }
                 }}
               />

@@ -27,7 +27,6 @@ import {
 
 export function ReaderToolbar(props: { session?: ReaderSession }) {
   const s = useReader(props.session);
-  const navPos = getReaderNavPosition;
   createEffect(() => {
     const f = getReaderFilterCss();
     if (s.containerEl) {
@@ -105,15 +104,8 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
             </div>
           </div>
         </Show>
-        <Show when={!isMobile() && navPos() === "top"}>
-          <ReaderMainRow
-            session={s}
-            controlsOpen={() => s.controlsOpen()}
-            onToggleControls={() => s.setControlsOpen(!s.controlsOpen())}
-          />
-          <Show when={s.controlsOpen()}>
-            <ReaderControlsRow session={s} />
-          </Show>
+        <Show when={!isMobile() && getReaderNavPosition() === "top"}>
+          <DesktopNavRows session={s} />
         </Show>
       </nav>
 
@@ -126,9 +118,8 @@ export function ReaderToolbar(props: { session?: ReaderSession }) {
 
 export function ReaderBottomNav(props: { session?: ReaderSession }) {
   const s = useReader(props.session);
-  const navPos = getReaderNavPosition;
   return (
-    <Show when={isMobile() || navPos() === "bottom"}>
+    <Show when={isMobile() || getReaderNavPosition() === "bottom"}>
       <nav
         class="ds-reader-nav ds-reader-nav-bottom"
         classList={{ "ds-toolbar-hidden": !s.toolbarVisible() }}
@@ -136,17 +127,27 @@ export function ReaderBottomNav(props: { session?: ReaderSession }) {
         <Show when={isMobile()}>
           <ReaderMobileBottomBar session={s} />
         </Show>
-        <Show when={!isMobile() && navPos() === "bottom"}>
-          <ReaderMainRow
-            session={s}
-            controlsOpen={() => s.controlsOpen()}
-            onToggleControls={() => s.setControlsOpen(!s.controlsOpen())}
-          />
-          <Show when={s.controlsOpen()}>
-            <ReaderControlsRow session={s} />
-          </Show>
+        <Show when={!isMobile() && getReaderNavPosition() === "bottom"}>
+          <DesktopNavRows session={s} />
         </Show>
       </nav>
     </Show>
+  );
+}
+
+/** Desktop main row plus the expandable controls row (top or bottom bar). */
+function DesktopNavRows(props: { session: ReaderSession }) {
+  const s = props.session;
+  return (
+    <>
+      <ReaderMainRow
+        session={s}
+        controlsOpen={() => s.controlsOpen()}
+        onToggleControls={() => s.setControlsOpen(!s.controlsOpen())}
+      />
+      <Show when={s.controlsOpen()}>
+        <ReaderControlsRow session={s} />
+      </Show>
+    </>
   );
 }

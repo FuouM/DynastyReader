@@ -1,14 +1,14 @@
 import { absUrl, tryParseJson } from "../utils/formatting";
-import { cachedJson, httpGetText } from "./http";
+import { cachedJson, httpGetText, sleep } from "./http";
 import { FEED_TTL_MS } from "./feed";
 import { log } from "../utils/log";
-import { saveDirectoryEntries, saveSuggestEntries } from "../db/directory.repo";
+import {
+  saveDirectoryEntries,
+  saveSuggestEntries,
+  searchDirectoryEntries,
+  suggestDirectoryEntries,
+} from "../db/directory.repo";
 import type { Directory, DirectoryGroup, SuggestResult } from "../types/api";
-function sleep(ms: number): Promise<void> {
-  const { promise, resolve } = Promise.withResolvers<void>();
-  setTimeout(resolve, ms);
-  return promise;
-}
 /** Normalized, ordered letter → entries groups from a directory payload. */
 export function directoryGroups(d: unknown): DirectoryGroup[] {
   if (!d || typeof d !== "object") return [];
@@ -41,16 +41,12 @@ export async function persistSuggestEntries(
   }
 }
 
-async function persistDirectoryEntries(
-  kind: "series" | "tags",
-  groups: DirectoryGroup[],
-  label = "directory",
-): Promise<void> {
+async function persistDirectoryEntries(kind: "series" | "tags", groups: DirectoryGroup[]): Promise<void> {
   if (groups.length === 0) return;
   try {
     await saveDirectoryEntries(kind, groups);
   } catch (err) {
-    log.warn(`api/${label}`, `saveDirectoryEntries failed for ${kind}:`, err);
+    log.warn("api/directory", `saveDirectoryEntries failed for ${kind}:`, err);
   }
 }
 
@@ -58,7 +54,7 @@ export async function fetchDirectory(urlPath: string, key: string, kind?: "serie
   const dir = await cachedJson<Directory>(key, absUrl(urlPath), FEED_TTL_MS);
   if (kind) {
     const groups = directoryGroups(dir);
-    void persistDirectoryEntries(kind, groups, "directory");
+    void persistDirectoryEntries(kind, groups);
   }
   return dir;
 }
@@ -98,7 +94,6 @@ export async function searchAllDirectoryEntries(
   kind: "series" | "tags",
   query: string,
 ): Promise<DirectoryGroup[]> {
-  const { searchDirectoryEntries } = await import("../db/directory.repo");
   return searchDirectoryEntries(kind, query);
 }
 
@@ -122,13 +117,11 @@ export async function suggest(query: string): Promise<SuggestResult[]> {
   if (!q) return [];
 
   const cacheKey = q.toLowerCase();
-  if (suggestCache.has(cacheKey)) {
-    return suggestCache.get(cacheKey)!;
-  }
+  const cachedResult = suggestCache.get(cacheKey);
+  if (cachedResult) return cachedResult;
 
   // 1. Try local SQLite directory entries first (zero network latency)
   try {
-    const { suggestDirectoryEntries } = await import("../db/directory.repo");
     const local = await suggestDirectoryEntries(q, 8);
     if (local.length > 0) {
       setSuggestCache(cacheKey, local);

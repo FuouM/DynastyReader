@@ -198,7 +198,7 @@ export function SeriesDownloadCard(props: SeriesDownloadCardProps) {
                   })}
                   <Show
                     when={
-                      group().status === "downloading" &&
+                      isAct() &&
                       group().completedChapters < group().totalChapters
                     }
                   >

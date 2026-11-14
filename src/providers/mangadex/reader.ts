@@ -20,27 +20,11 @@ export const [mdxImageQuality, setMdxImageQuality] = persistedSignal<"data" | "d
   { name: "mdx:imageQuality" },
 );
 
-export interface MangaDexReaderPayload {
-  chapter: Chapter;
-  chapterId: string;
-  mangaId: string | null;
-  mangaTitle: string;
-  baseUrl: string;
-  hash: string;
-  filenames: string[];
-  quality: "data" | "data-saver";
-}
-
-/** Active @Home session metadata cached by chapterId for rapid node failover */
-const atHomeSessions = new Map<string, { baseUrl: string; hash: string; filenames: string[] }>();
-
 /**
  * Loads a MangaDex chapter for the reader session.
  * Resolves metadata and MangaDex@Home baseUrl lazily.
  */
-export async function loadMangaDexChapterForReader(
-  permalink: string,
-): Promise<MangaDexReaderPayload> {
+export async function loadMangaDexChapterForReader(permalink: string): Promise<Chapter> {
   const chapterId = permalink.replace(/^(mdx:)?(chapter:|series:)?/, "");
   const mdxChapter = await getChapter(chapterId);
 
@@ -58,38 +42,16 @@ export async function loadMangaDexChapterForReader(
   const atHome = await getAtHomeServer(chapterId, true);
   const quality = mdxImageQuality();
   const filenames = quality === "data-saver" ? atHome.chapter.dataSaver : atHome.chapter.data;
-
-  atHomeSessions.set(chapterId, {
-    baseUrl: atHome.baseUrl,
-    hash: atHome.chapter.hash,
-    filenames,
-  });
-  if (atHomeSessions.size > 2) {
-    const oldestKey = atHomeSessions.keys().next().value;
-    if (oldestKey) atHomeSessions.delete(oldestKey);
-  }
-
   const pages: ChapterPage[] = filenames.map((fn, idx) => ({
     name: t("mangadex.pageTitle", { num: idx + 1 }),
     url: buildPageUrl(atHome.baseUrl, atHome.chapter.hash, fn, quality),
   }));
 
-  const standardChapter = mangaDexToStandardChapter(
+  return mangaDexToStandardChapter(
     mdxChapter,
     pages,
     mangaId ? { mangaId, mangaTitle } : undefined,
   );
-
-  return {
-    chapter: standardChapter,
-    chapterId,
-    mangaId,
-    mangaTitle,
-    baseUrl: atHome.baseUrl,
-    hash: atHome.chapter.hash,
-    filenames,
-    quality,
-  };
 }
 
 /**
@@ -102,11 +64,6 @@ export async function refreshMangaDexNode(
   try {
     log.info("mangadex-failover", `Refreshing dead @Home node for chapter ${chapterId}...`);
     const atHome = await getAtHomeServer(chapterId, true);
-    const existing = atHomeSessions.get(chapterId);
-    if (existing) {
-      existing.baseUrl = atHome.baseUrl;
-      existing.hash = atHome.chapter.hash;
-    }
     log.info("mangadex-failover", `Assigned new @Home node: ${atHome.baseUrl}`);
     return { baseUrl: atHome.baseUrl, hash: atHome.chapter.hash };
   } catch (err) {

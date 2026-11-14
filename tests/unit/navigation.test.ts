@@ -8,10 +8,10 @@ import {
 } from "../../src/api/navigation";
 import {
   getProviderForPermalink,
-  canonicalUrl,
   extractEntityId,
   isValidPermalink,
 } from "../../src/providers/registry";
+import { canonicalUrl } from "../../src/utils/formatting";
 
 describe("api/navigation - Dynasty URL parser", () => {
   it("parses valid Dynasty series URLs", () => {

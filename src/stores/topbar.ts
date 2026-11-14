@@ -28,7 +28,6 @@ export interface ShowBannerOptions {
 
 /** Shows a transient error/info banner in the top navigation bar. */
 export function showBanner(message: string, options?: ShowBannerOptions): void {
-  dismissBanner.clear();
   setBanner(message);
   setBannerAction(() => (options?.onClick ?? null));
   dismissBanner();

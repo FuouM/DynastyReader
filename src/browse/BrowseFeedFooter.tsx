@@ -10,6 +10,7 @@ import { formatBytes, formatDateTime } from "../utils/formatting";
 import { t } from "../i18n";
 import { getSessionTraffic, subscribeSessionTraffic } from "../api/traffic";
 import { browseCovers } from "./browse-covers";
+import { browseScroller } from "./browse-state";
 import { IconText, Button } from "soulwindow/solid";
 import {
   RefreshIcon,
@@ -71,7 +72,7 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
   };
 
   const onScrollTop = (): void => {
-    const dsView = document.getElementById("ds-pane-browse") || document.getElementById("ds-view");
+    const dsView = browseScroller();
     if (!dsView || dsView.scrollTop <= 0) return;
 
     // Pause hydration pumps during the smooth scroll so flying elements never
@@ -84,20 +85,23 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
     let maxSafetyTimer: number | null = null;
     cleanupScrollTop?.();
 
-    const settle = (): void => {
-      if (settled) return;
-      settled = true;
+    const detach = (): void => {
       if (maxSafetyTimer !== null) {
         window.clearTimeout(maxSafetyTimer);
         maxSafetyTimer = null;
       }
-      cleanupScrollTop = null;
       dsView.removeEventListener("scroll", checkArrival);
       dsView.removeEventListener("scrollend", settle);
       if (topTimer !== null) {
         window.clearInterval(topTimer);
         topTimer = null;
       }
+    };
+    const settle = (): void => {
+      if (settled) return;
+      settled = true;
+      detach();
+      cleanupScrollTop = null;
       const host = props.getHost();
       if (host && host === browseCovers.currentHydrationHost) {
         browseCovers.resumeAfterScrollToTop(host);
@@ -106,24 +110,11 @@ export function BrowseFeedFooter(props: BrowseFeedFooterProps) {
     const checkArrival = (): void => {
       if (dsView.scrollTop <= 0) settle();
     };
-    cleanupScrollTop = () => {
-      if (maxSafetyTimer !== null) {
-        window.clearTimeout(maxSafetyTimer);
-        maxSafetyTimer = null;
-      }
-      dsView.removeEventListener("scroll", checkArrival);
-      dsView.removeEventListener("scrollend", settle);
-      if (topTimer !== null) {
-        window.clearInterval(topTimer);
-        topTimer = null;
-      }
-    };
+    cleanupScrollTop = detach;
     maxSafetyTimer = window.setTimeout(settle, 2500);
     dsView.addEventListener("scrollend", settle, { passive: true });
     dsView.addEventListener("scroll", checkArrival, { passive: true });
-    topTimer = window.setInterval(() => {
-      if (dsView.scrollTop <= 0) settle();
-    }, SCROLL_TOP_POLL_MS);
+    topTimer = window.setInterval(checkArrival, SCROLL_TOP_POLL_MS);
   };
 
   const CHECK_STATE_CONFIG = {

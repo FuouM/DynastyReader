@@ -131,7 +131,6 @@ export interface DbRestoreResult {
   target: string;
 }
 
-
 export async function dbRestoreFromPath(dbName: string, sourcePath: string): Promise<DbRestoreResult> {
   return invoke<DbRestoreResult>("dbRestoreFromPath", { dbName, sourcePath });
 }
@@ -157,13 +156,7 @@ export async function fileExists(path: string, minSize?: number): Promise<FileEx
 
 /** Resolves a plugin-relative path to its absolute path if the file exists and is non-empty. */
 export async function fileResolve(path: string): Promise<string | null> {
-  try {
-    const resp = await fileExists(path);
-    if (!resp.exists) return null;
-    return String(resp.absolute_path);
-  } catch {
-    return null;
-  }
+  return (await fileResolveWithStat(path))?.absolutePath ?? null;
 }
 
 /** Resolves a path to its absolute path and size if present and non-empty. */
@@ -196,15 +189,6 @@ export interface FileExistsBatchResult {
 
 export async function fileExistsBatch(paths: string[], minSize?: number): Promise<FileExistsBatchResult> {
   return invoke<FileExistsBatchResult>("fileExistsBatch", { paths, minSize });
-}
-
-export interface FileMoveResult {
-  absolute_path: string;
-}
-
-/** Renames/moves a path inside the portable data root (cross-device safe). */
-export async function fileMove(src: string, dst: string): Promise<FileMoveResult> {
-  return invoke<FileMoveResult>("fileMove", { src, dst });
 }
 
 /** Deletes a file or directory inside the portable data root. */

@@ -14,7 +14,7 @@ export function setupViewportResize(
   s: ReaderSession,
   vpEl: HTMLElement,
   onResetOverscroll: () => void,
-): () => void {
+): void {
   const isLandscapeNow = (): boolean => {
     if (typeof screen !== "undefined" && screen.orientation?.type) {
       return screen.orientation.type.startsWith("landscape");
@@ -110,10 +110,8 @@ export function setupViewportResize(
     s.applyLayoutMode();
   }, 0);
 
-  const cleanup = () => {
+  s.onDispose(() => {
     if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
     window.clearTimeout(initTimer);
-  };
-  s.onDispose(cleanup);
-  return cleanup;
+  });
 }

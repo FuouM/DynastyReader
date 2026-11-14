@@ -3,29 +3,57 @@
  * Allows quick jumping to any previous or forward history entry.
  */
 
-import { createSignal, onCleanup, For, Show } from "solid-js";
+import { createSignal, onCleanup, For, Show, type JSX } from "solid-js";
 import { canGoBack, canGoForward, goBack, goForward, goBackTo, goForwardTo, historyBackStack, historyForwardStack, routeLabel } from "../stores/router";
 import { isMobile } from "../stores/platform";
-import { t } from "../i18n";
+import { t, type TranslationKey } from "../i18n";
 import { ArrowLeftIcon, ArrowRightIcon } from "./icons";
 import { Icon } from "soulwindow/solid";
 import { AnchoredPopover } from "./AnchoredPopover";
 
-export interface HistoryDropdownProps {
-  direction: "back" | "forward";
+type HistoryDirection = "back" | "forward";
+
+interface HistoryDropdownProps {
+  direction: HistoryDirection;
   anchorEl: HTMLElement | null;
-  open?: boolean;
   onClose: () => void;
 }
+
+const NAV_BUTTONS: Record<HistoryDirection, {
+  id: string;
+  labelKey: TranslationKey;
+  tooltipKey: TranslationKey;
+  canGo: () => boolean;
+  go: () => void;
+  icon: () => JSX.Element;
+}> = {
+  back: {
+    id: "ds-nav-back",
+    labelKey: "common.back",
+    tooltipKey: "topbar.navBackTooltip",
+    canGo: canGoBack,
+    go: goBack,
+    icon: () => <ArrowLeftIcon />,
+  },
+  forward: {
+    id: "ds-nav-forward",
+    labelKey: "common.forward",
+    tooltipKey: "topbar.navForwardTooltip",
+    canGo: canGoForward,
+    go: goForward,
+    icon: () => <ArrowRightIcon />,
+  },
+};
+
 function useHistoryHoldMenu() {
   const [historyMenu, setHistoryMenu] = createSignal<{
-    direction: "back" | "forward";
+    direction: HistoryDirection;
     anchorEl: HTMLElement;
   } | null>(null);
   let holdTimer: number | null = null;
   let didHold = false;
 
-  const startHold = (direction: "back" | "forward", anchorEl: HTMLElement): void => {
+  const startHold = (direction: HistoryDirection, anchorEl: HTMLElement): void => {
     didHold = false;
     if (holdTimer !== null) window.clearTimeout(holdTimer);
     holdTimer = window.setTimeout(() => {
@@ -72,7 +100,7 @@ function HistoryDropdown(props: HistoryDropdownProps) {
 
   return (
     <AnchoredPopover
-      open={!!((props.open ?? true) && items().length > 0)}
+      open={items().length > 0}
       anchorEl={props.anchorEl}
       onClose={props.onClose}
       width={240}
@@ -137,83 +165,55 @@ function HistoryDropdown(props: HistoryDropdownProps) {
 export function HistoryNavButtons() {
   const { historyMenu, setHistoryMenu, startHold, cancelHold, didHold, markHeld } = useHistoryHoldMenu();
 
+  const navButton = (direction: HistoryDirection) => {
+    const nav = NAV_BUTTONS[direction];
+    return (
+      <button
+        type="button"
+        class="win-button ds-segmented-btn ds-nav-history-btn"
+        id={nav.id}
+        aria-label={t(nav.labelKey)}
+        title={isMobile() ? undefined : t(nav.tooltipKey)}
+        disabled={!nav.canGo()}
+        onPointerDown={(ev) => {
+          if (ev.button === 0 && nav.canGo()) {
+            try { (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId); } catch {}
+            startHold(direction, ev.currentTarget);
+          }
+        }}
+        onPointerUp={(ev) => {
+          try { (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
+          if (didHold()) ev.preventDefault();
+          cancelHold();
+        }}
+        onPointerCancel={() => cancelHold()}
+        onPointerLeave={() => cancelHold()}
+        onContextMenu={(ev) => {
+          ev.preventDefault();
+          if (nav.canGo()) {
+            markHeld();
+            setHistoryMenu({ direction, anchorEl: ev.currentTarget });
+          }
+        }}
+        onClick={() => {
+          if (!didHold() && nav.canGo()) {
+            nav.go();
+          }
+        }}
+      >
+        <span class="ds-btn-icon-wrap">{nav.icon()}</span>
+      </button>
+    );
+  };
+
   return (
     <>
       <div class="ds-segmented-switch ds-nav-history-switch" id="ds-nav-history">
-        <button
-          type="button"
-          class="win-button ds-segmented-btn ds-nav-history-btn"
-          id="ds-nav-back"
-          aria-label={t("common.back")}
-          title={isMobile() ? undefined : t("topbar.navBackTooltip")}
-          disabled={!canGoBack()}
-          onPointerDown={(ev) => {
-            if (ev.button === 0 && canGoBack()) {
-              try { (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId); } catch {}
-              startHold("back", ev.currentTarget);
-            }
-          }}
-          onPointerUp={(ev) => {
-            try { (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
-            if (didHold()) ev.preventDefault();
-            cancelHold();
-          }}
-          onPointerCancel={() => cancelHold()}
-          onPointerLeave={() => cancelHold()}
-          onContextMenu={(ev) => {
-            ev.preventDefault();
-            if (canGoBack()) {
-              markHeld();
-              setHistoryMenu({ direction: "back", anchorEl: ev.currentTarget });
-            }
-          }}
-          onClick={() => {
-            if (!didHold() && canGoBack()) {
-              goBack();
-            }
-          }}
-        >
-          <span class="ds-btn-icon-wrap"><ArrowLeftIcon /></span>
-        </button>
-        <button
-          type="button"
-          class="win-button ds-segmented-btn ds-nav-history-btn"
-          id="ds-nav-forward"
-          aria-label={t("common.forward")}
-          title={isMobile() ? undefined : t("topbar.navForwardTooltip")}
-          disabled={!canGoForward()}
-          onPointerDown={(ev) => {
-            if (ev.button === 0 && canGoForward()) {
-              try { (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId); } catch {}
-              startHold("forward", ev.currentTarget);
-            }
-          }}
-          onPointerUp={(ev) => {
-            try { (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
-            if (didHold()) ev.preventDefault();
-            cancelHold();
-          }}
-          onPointerCancel={() => cancelHold()}
-          onPointerLeave={() => cancelHold()}
-          onContextMenu={(ev) => {
-            ev.preventDefault();
-            if (canGoForward()) {
-              markHeld();
-              setHistoryMenu({ direction: "forward", anchorEl: ev.currentTarget });
-            }
-          }}
-          onClick={() => {
-            if (!didHold() && canGoForward()) {
-              goForward();
-            }
-          }}
-        >
-          <span class="ds-btn-icon-wrap"><ArrowRightIcon /></span>
-        </button>
+        {navButton("back")}
+        {navButton("forward")}
       </div>
       <Show when={historyMenu() !== null}>
         <HistoryDropdown
-          open={true}
           direction={historyMenu()!.direction}
           anchorEl={historyMenu()!.anchorEl}
           onClose={() => setHistoryMenu(null)}

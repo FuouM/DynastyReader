@@ -1,12 +1,15 @@
-import { createEffect, createSignal, on, onCleanup, onMount, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, on, onCleanup, Show } from "solid-js";
 import { convertFileSrc } from "../ipc";
 import { ImageIcon, BookIcon } from "./icons";
 import { Icon } from "soulwindow/solid";
 import { t } from "../i18n";
+import { browseCovers, coversEnabledSignal, type CoverState } from "../browse/browse-covers";
+import { log } from "../utils/log";
 
-function useImageRetry(opts?: { maxAttempts?: number; delayMs?: number }) {
-  const maxAttempts = opts?.maxAttempts ?? 2;
-  const delayMs = opts?.delayMs ?? 1200;
+const MAX_RETRY_ATTEMPTS = 2;
+const RETRY_DELAY_MS = 1200;
+
+function useImageRetry() {
   const [error, setError] = createSignal(false);
   const [isRetrying, setIsRetrying] = createSignal(false);
   const [retryNonce, setRetryNonce] = createSignal(0);
@@ -32,7 +35,7 @@ function useImageRetry(opts?: { maxAttempts?: number; delayMs?: number }) {
   const handleError = (onRetry?: () => void) => {
     clearTimer();
     setError(true);
-    if (retryAttempts < maxAttempts) {
+    if (retryAttempts < MAX_RETRY_ATTEMPTS) {
       retryAttempts++;
       setIsRetrying(true);
       retryTimer = setTimeout(() => {
@@ -40,7 +43,7 @@ function useImageRetry(opts?: { maxAttempts?: number; delayMs?: number }) {
         onRetry?.();
         setRetryNonce((n) => n + 1);
         setError(false);
-      }, retryAttempts * delayMs) as unknown as number;
+      }, retryAttempts * RETRY_DELAY_MS) as unknown as number;
     } else {
       setIsRetrying(false);
     }
@@ -55,18 +58,18 @@ function useImageRetry(opts?: { maxAttempts?: number; delayMs?: number }) {
     setError(false);
   };
 
-  return {
-    error,
-    isRetrying,
-    retryNonce,
-    handleError,
-    retry,
-    reset,
-    showImage: (isValidSource: boolean) => isValidSource && !error(),
+  /** Appends the retry cache-buster (`v=<nonce>`) once a retry has happened. */
+  const withNonce = (src: string): string => {
+    if (!src) return "";
+    const nonce = retryNonce();
+    if (nonce <= 0) return src;
+    const sep = src.includes("?") ? "&" : "?";
+    return `${src}${sep}v=${nonce}`;
   };
+
+  return { error, isRetrying, withNonce, handleError, retry, reset };
 }
-import { browseCovers, coversEnabledSignal, type CoverState } from "../browse/browse-covers";
-import { log } from "../utils/log";
+
 export interface CoverProps {
   path?: string | null;
   alt: string;
@@ -95,7 +98,7 @@ function resolveCoverSrc(path: string | null | undefined): string {
 
 /** A cover <img> that falls back to a placeholder on load error, with automatic and manual retry. */
 export function Cover(props: CoverProps) {
-  const { retryNonce, isRetrying, handleError, retry, reset, showImage, error } = useImageRetry();
+  const { withNonce, isRetrying, handleError, retry, reset, error } = useImageRetry();
 
   createEffect(
     on(
@@ -113,17 +116,9 @@ export function Cover(props: CoverProps) {
 
   const baseSrc = () => resolveCoverSrc(props.path);
 
-  const imgSrc = () => {
-    const src = baseSrc();
-    if (!src) return "";
-    const nonce = retryNonce();
-    if (nonce <= 0) return src;
-    const sep = src.includes("?") ? "&" : "?";
-    return `${src}${sep}v=${nonce}`;
-  };
+  const imgSrc = () => withNonce(baseSrc());
 
-  const showCover = () =>
-    showImage(isValidLocalPath() && Boolean(props.path) && Boolean(baseSrc()));
+  const showCover = () => isValidLocalPath() && Boolean(baseSrc()) && !error();
 
   const handlePlaceholderClick = (ev: MouseEvent) => {
     if (error() || props.path) {
@@ -167,7 +162,6 @@ function CoverPlaceholder(props: {
   iconName?: string;
   isLoading?: boolean;
   onClick?: (ev: MouseEvent) => void;
-  children?: JSX.Element;
 }) {
   return (
     <div
@@ -182,7 +176,6 @@ function CoverPlaceholder(props: {
       ) : (
         <ImageIcon />
       )}
-      {props.children}
     </div>
   );
 }
@@ -218,7 +211,7 @@ const SIZES = {
 } as const;
 
 export function HydratedCover(props: HydratedCoverProps) {
-  const { error, isRetrying, handleError, retry, reset, retryNonce } = useImageRetry();
+  const { error, isRetrying, handleError, retry, reset, withNonce } = useImageRetry();
   let wrapEl: HTMLDivElement | undefined;
   const [failedPath, setFailedPath] = createSignal<string | null>(null);
 
@@ -230,14 +223,7 @@ export function HydratedCover(props: HydratedCoverProps) {
 
   const baseSrc = () => resolveCoverSrc(resolvedPath());
 
-  const imgSrc = () => {
-    const src = baseSrc();
-    if (!src) return "";
-    const nonce = retryNonce();
-    if (nonce <= 0) return src;
-    const sep = src.includes("?") ? "&" : "?";
-    return `${src}${sep}v=${nonce}`;
-  };
+  const imgSrc = () => withNonce(baseSrc());
 
   const isLoaded = () =>
     Boolean(resolvedPath()) &&
@@ -260,12 +246,6 @@ export function HydratedCover(props: HydratedCoverProps) {
     const p = resolvedPath();
     const enabled = coversEnabledSignal();
     if (wrapEl && !p && enabled) {
-      browseCovers.observe(wrapEl, props.coverKey);
-    }
-  });
-
-  onMount(() => {
-    if (wrapEl && !resolvedPath() && coversEnabledSignal()) {
       browseCovers.observe(wrapEl, props.coverKey);
     }
   });

@@ -65,20 +65,12 @@ function buildQueryString(params?: Record<string, unknown>): string {
   return parts.length > 0 ? `?${parts.join("&")}` : "";
 }
 
-export interface FetchOptions {
-  method?: "GET" | "POST";
-  body?: unknown;
-  timeoutMs?: number;
-  headers?: Record<string, string>;
-}
-
 /**
- * Executes a rate-limited request against MangaDex API.
+ * Executes a rate-limited GET request against MangaDex API.
  */
 export async function fetchMangaDex<T>(
   endpoint: string,
   params?: Record<string, unknown>,
-  options: FetchOptions = {},
 ): Promise<T> {
   await scheduleRateLimited();
 
@@ -86,29 +78,15 @@ export async function fetchMangaDex<T>(
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const url = `${MANGADEX_API_BASE}${cleanEndpoint}${queryString}`;
 
-  const headers: Record<string, string> = {
-    "User-Agent": MANGADEX_USER_AGENT,
-    Accept: "application/json",
-    ...options.headers,
-  };
-
-  const isPost = options.method === "POST";
-  let bodyStr: string | undefined;
-  let contentType: string | undefined;
-
-  if (isPost && options.body !== undefined) {
-    bodyStr = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
-    contentType = "application/json";
-  }
-
   try {
     const resp = await ipc.httpGet({
       url,
-      method: options.method ?? "GET",
-      body: bodyStr,
-      contentType,
-      headers,
-      timeoutMs: options.timeoutMs ?? 20000,
+      method: "GET",
+      headers: {
+        "User-Agent": MANGADEX_USER_AGENT,
+        Accept: "application/json",
+      },
+      timeoutMs: 20000,
     });
 
     const status = Number(resp.status ?? 0);

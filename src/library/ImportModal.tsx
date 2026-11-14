@@ -79,19 +79,12 @@ export function ImportModal(props: ImportModalProps) {
   };
 
   // Live validation memo
-  const parsed = createMemo(() => {
-    const text = rawText().trim();
-    if (!text) {
-      return validateAndParseImport("", {
-        defaultTarget: targetMode() === "collection" ? "collection" : "followed",
-        targetCollectionName: currentCollectionName(),
-      });
-    }
-    return validateAndParseImport(text, {
+  const parsed = createMemo(() =>
+    validateAndParseImport(rawText().trim(), {
       defaultTarget: targetMode() === "collection" ? "collection" : "followed",
       targetCollectionName: currentCollectionName(),
-    });
-  });
+    }),
+  );
 
   const totalDetectedCount = (): number => {
     const p = parsed();

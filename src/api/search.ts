@@ -17,9 +17,8 @@ export async function resolveDynastyTagId(tag: string): Promise<string> {
   if (!trimmed) return "";
   if (/^\d+$/.test(trimmed)) return trimmed;
   const lower = trimmed.toLowerCase();
-  if (dynastyTagIdCache.has(lower)) {
-    return dynastyTagIdCache.get(lower)!;
-  }
+  const cachedId = dynastyTagIdCache.get(lower);
+  if (cachedId !== undefined) return cachedId;
   try {
     const { status, body } = await httpGetText(`${SITE_ROOT}/tags/suggest`, {
       method: "POST",
@@ -108,7 +107,7 @@ export async function searchDynasty(params: SearchParams): Promise<SearchResultP
       if (cached) return returnCached();
       throw new Error(`Search request failed with HTTP ${status}`);
     }
-    if (status === 200 && body) {
+    if (body) {
       await setCached(cacheKey, "search", body, etag);
       const parsedPage = parseSearchHtml(body, displayQuery, page);
       // Persist series and tags found in search results into local directory entries

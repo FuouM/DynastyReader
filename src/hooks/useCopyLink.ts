@@ -1,6 +1,6 @@
 /**
  * Shared clipboard copy hook: copies a URL to clipboard with
- * optional banner feedback and consistent error logging.
+ * banner feedback and consistent error logging.
  * Extracted from `ReaderToolbar.tsx` / `FeedItemRow.tsx` for modularity.
  */
 
@@ -16,13 +16,10 @@ interface UseCopyLinkOpts {
   getUrl: () => string;
   /** Namespace for error logging (e.g. "reader-toolbar"). */
   namespace?: string;
-  /** Whether to show banner notifications (default: true). */
-  showBanners?: boolean;
 }
 
 export function useCopyLink(opts: UseCopyLinkOpts) {
   const namespace = opts.namespace ?? "use-copy-link";
-  const showBanners = opts.showBanners ?? true;
 
   const [copied, setCopied] = createSignal(false);
   const resetCopied = debounce(() => setCopied(false), 2000);
@@ -39,17 +36,12 @@ export function useCopyLink(opts: UseCopyLinkOpts) {
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
         setCopied(true);
-        if (showBanners) {
-          showBanner(t("reader.toolbar.copiedLinkBanner"));
-        }
+        showBanner(t("reader.toolbar.copiedLinkBanner"));
         resetCopied();
       }
     } catch (err) {
       log.warn(namespace, "copy link failed:", err);
-      if (showBanners) {
-        const msg = errorMessage(err);
-        showBanner(t("reader.toolbar.copyLinkErrorBanner", { msg }));
-      }
+      showBanner(t("reader.toolbar.copyLinkErrorBanner", { msg: errorMessage(err) }));
     }
   };
 

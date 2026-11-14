@@ -305,7 +305,7 @@ export function BrowseView() {
   const PULL_RELEASE_PX = 36;
 
   onMount(() => {
-    const paneEl = document.getElementById("ds-pane-browse") as HTMLElement | null;
+    const paneEl = document.getElementById("ds-pane-browse");
     if (!paneEl) return;
     const onTouchStart = (ev: TouchEvent): void => {
       if (!isMobile()) return;
@@ -345,26 +345,23 @@ export function BrowseView() {
         }
       }
     };
+    const resetPull = (): void => {
+      pulling = false;
+      setIsPulling(false);
+      setPullOffset(0);
+      setPullReady(false);
+    };
     const onTouchEnd = (): void => {
       if (pulling && pullReady() && pullOffset() >= PULL_RELEASE_PX) {
         triggerHaptic("confirm");
         void checkUpdates();
       }
-      pulling = false;
-      setIsPulling(false);
-      setPullOffset(0);
-      setPullReady(false);
-    };
-    const onTouchCancel = (): void => {
-      pulling = false;
-      setIsPulling(false);
-      setPullOffset(0);
-      setPullReady(false);
+      resetPull();
     };
     makeEventListener(paneEl, "touchstart", onTouchStart, { passive: true });
     makeEventListener(paneEl, "touchmove", onTouchMove, { passive: false });
     makeEventListener(paneEl, "touchend", onTouchEnd, { passive: true });
-    makeEventListener(paneEl, "touchcancel", onTouchCancel, { passive: true });
+    makeEventListener(paneEl, "touchcancel", resetPull, { passive: true });
     const onScroll = (): void => {
       if (restoringScroll) return;
       if (route().view === "browse" && paneEl.offsetParent !== null) {

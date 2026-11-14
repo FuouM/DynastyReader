@@ -13,7 +13,7 @@ export const getCollectionsRevision = collectionsNotifier.getRevision;
  * Includes total item count per collection.
  */
 export async function getCollections(): Promise<CollectionRow[]> {
-  const rows = await query<CollectionRow>(
+  return query<CollectionRow>(
     `SELECT c.id, c.name, c.is_default, c.created_at, COUNT(ci.id) as itemCount
      FROM collections c
      LEFT JOIN collection_items ci ON c.id = ci.collection_id
@@ -21,7 +21,6 @@ export async function getCollections(): Promise<CollectionRow[]> {
      ORDER BY c.is_default DESC, c.name COLLATE NOCASE ASC`,
     [],
   );
-  return rows;
 }
 
 /**
@@ -133,20 +132,19 @@ export async function updateCollectionItemCoverByPermalink(
   );
 }
 
+interface CollectionItemInput {
+  item_permalink: string;
+  item_title: string;
+  item_kind?: CollectionItemKind;
+  cover?: string | null;
+  parent_series_permalink?: string | null;
+  parent_series_name?: string | null;
+}
+
 /**
  * Adds an item to a collection.
  */
-async function addItemToCollection(
-  collectionId: number,
-  item: {
-    item_permalink: string;
-    item_title: string;
-    item_kind?: CollectionItemKind;
-    cover?: string | null;
-    parent_series_permalink?: string | null;
-    parent_series_name?: string | null;
-  },
-): Promise<void> {
+async function addItemToCollection(collectionId: number, item: CollectionItemInput): Promise<void> {
   const now = Date.now();
   let resolvedCover = item.cover || null;
 
@@ -230,17 +228,7 @@ export async function getItemCollectionIds(itemPermalink: string): Promise<numbe
  */
 const toggleChains = new Map<string, Promise<boolean>>();
 
-export function toggleItemInCollection(
-  collectionId: number,
-  item: {
-    item_permalink: string;
-    item_title: string;
-    item_kind?: CollectionItemKind;
-    cover?: string | null;
-    parent_series_permalink?: string | null;
-    parent_series_name?: string | null;
-  },
-): Promise<boolean> {
+export function toggleItemInCollection(collectionId: number, item: CollectionItemInput): Promise<boolean> {
   const key = `${collectionId}:${item.item_permalink.trim()}`;
   const prev = toggleChains.get(key) ?? Promise.resolve(false);
   const next = prev

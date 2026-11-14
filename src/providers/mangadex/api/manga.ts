@@ -128,7 +128,7 @@ export interface GetMangaFeedOptions {
 /**
  * Fetches paginated chapter feed for a manga with scanlation_group relationships.
  */
-export async function getMangaFeed(
+async function getMangaFeed(
   id: string,
   options: GetMangaFeedOptions = {},
 ): Promise<MangaDexResponse<MangaDexChapter[]>> {

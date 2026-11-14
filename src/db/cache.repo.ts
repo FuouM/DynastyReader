@@ -14,7 +14,7 @@ import {
 } from "../providers/mangadex/db/cache.repo";
 import type { CachedPageRow, ChapterCacheCount, CacheOverviewStats } from "../types/db";
 
-const cacheNotifier = createChangeNotifier("cache.repo");
+const cacheNotifier = createChangeNotifier();
 export const getCacheRevision = cacheNotifier.getRevision;
 export const notifyCacheChanged = cacheNotifier.notifyChanged;
 export async function getCachedPages(chapterPermalink: string): Promise<CachedPageRow[]> {
@@ -123,15 +123,17 @@ async function deleteFiles(paths: string[]): Promise<Set<string>> {
 }
 
 /**
- * Deletes cached_pages rows scoped by chapter. `file_path` is not unique in
- * the schema, so a bare `file_path IN (...)` delete could drop rows owned by
+ * Appends cached_pages row deletes scoped by chapter. `file_path` is not unique
+ * in the schema, so a bare `file_path IN (...)` delete could drop rows owned by
  * other chapters; every statement pins both the chapter and the paths whose
  * files were actually removed.
  */
-async function deleteCachedPageRows(
+function pushCachedPageRowDeletes(
   rows: { chapter_permalink: string; file_path: string }[],
   deleted: Set<string>,
-): Promise<void> {
+  statements: string[],
+  batchParams: unknown[][],
+): void {
   const byChapter = new Map<string, string[]>();
   for (const r of rows) {
     if (!deleted.has(r.file_path)) continue;
@@ -139,15 +141,22 @@ async function deleteCachedPageRows(
     if (paths) paths.push(r.file_path);
     else byChapter.set(r.chapter_permalink, [r.file_path]);
   }
-  if (byChapter.size === 0) return;
-  const statements: string[] = [];
-  const batchParams: unknown[][] = [];
   for (const [chapterPermalink, paths] of byChapter) {
     statements.push(
       `DELETE FROM cached_pages WHERE chapter_permalink = ? AND file_path IN (${inClause(paths.length)})`,
     );
     batchParams.push([chapterPermalink, ...paths]);
   }
+}
+
+async function deleteCachedPageRows(
+  rows: { chapter_permalink: string; file_path: string }[],
+  deleted: Set<string>,
+): Promise<void> {
+  const statements: string[] = [];
+  const batchParams: unknown[][] = [];
+  pushCachedPageRowDeletes(rows, deleted, statements, batchParams);
+  if (statements.length === 0) return;
   await ipc.dbExecuteBatch(DB_NAME, statements, batchParams);
   notifyCacheChanged();
 }
@@ -282,19 +291,7 @@ export async function clearAllCacheStorage(): Promise<void> {
   // chapter-scoped because file_path is not unique across chapters.
   const statements: string[] = [];
   const batchParams: unknown[][] = [];
-  const pagesByChapter = new Map<string, string[]>();
-  for (const r of pageRows) {
-    if (!deletedPaths.has(r.file_path)) continue;
-    const paths = pagesByChapter.get(r.chapter_permalink);
-    if (paths) paths.push(r.file_path);
-    else pagesByChapter.set(r.chapter_permalink, [r.file_path]);
-  }
-  for (const [chapterPermalink, paths] of pagesByChapter) {
-    statements.push(
-      `DELETE FROM cached_pages WHERE chapter_permalink = ? AND file_path IN (${inClause(paths.length)})`,
-    );
-    batchParams.push([chapterPermalink, ...paths]);
-  }
+  pushCachedPageRowDeletes(pageRows, deletedPaths, statements, batchParams);
   const deletedCoverPaths = coverPaths.filter((p) => deletedPaths.has(p));
   if (deletedCoverPaths.length > 0) {
     statements.push(

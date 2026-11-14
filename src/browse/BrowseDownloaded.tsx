@@ -1,7 +1,7 @@
 /**
  * Solid Browse downloaded-chapters pane. Port of `browse-downloaded.ts`:
  * lists fully-cached chapters for offline reading with a quick filter and
- * local pagination (25/page). The filter resets when leaving the Browse view.
+ * local pagination (15/page). The filter resets when leaving the Browse view.
  *
  * Grouping: chapters that belong to a series are grouped by seriesPermalink;
  * orphan chapters (no series) stay as individual rows below the groups.
@@ -65,14 +65,15 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
     setInputVal(val);
     debouncedSetQuery(val);
   };
+  const resetFilter = (): void => {
+    debouncedSetQuery.clear();
+    setInputVal("");
+    setQuery("");
+    setCurrentPage(1);
+  };
 
   createEffect(() => {
-    if (route().view !== "browse") {
-      debouncedSetQuery.clear();
-      setInputVal("");
-      setQuery("");
-      setCurrentPage(1);
-    }
+    if (route().view !== "browse") resetFilter();
   });
 
   const pane = useTabPane<DownloadedModel>({
@@ -181,12 +182,7 @@ export function BrowseDownloaded(props: BrowseDownloadedProps) {
         inputVal={inputVal()}
         onInput={handleInput}
         inputPlaceholder={t("browse.downloaded.filterPlaceholder")}
-        onClear={() => {
-          debouncedSetQuery.clear();
-          setInputVal("");
-          setQuery("");
-          setCurrentPage(1);
-        }}
+        onClear={resetFilter}
         sortId="ds-downloaded-sort"
         sortValue={sortMode()}
         onSortChange={(val) => {

@@ -84,28 +84,10 @@ let wasAutoPausedByVisibility = false;
 
 let boundRefreshState: (() => Promise<void>) | null = null;
 
-const onVisibilityChange = () => {
-  if (!isAndroid()) return;
-  if (document.hidden) {
-    // Only auto-pause if downloads are actually active AND the user hasn't
-    // explicitly paused them already (we don't want to clobber their intent).
-    const queueRes = queueSnapshot;
-    const isUserPaused = !queueRes.some((i) => i.status === "downloading");
-    if (activeDownloadCount() > 0 && !isUserPaused) {
-      wasAutoPausedByVisibility = true;
-      void pauseDownloads();
-    }
-  } else {
-    if (wasAutoPausedByVisibility) {
-      wasAutoPausedByVisibility = false;
-      void resumeDownloads();
-      if (boundRefreshState) void boundRefreshState();
-    }
-  }
-};
-
 const onPageHide = () => {
   if (!isAndroid()) return;
+  // Only auto-pause if downloads are actually active AND the user hasn't
+  // explicitly paused them already (we don't want to clobber their intent).
   const isUserPaused = !queueSnapshot.some((i) => i.status === "downloading");
   if (activeDownloadCount() > 0 && !isUserPaused) {
     wasAutoPausedByVisibility = true;
@@ -120,6 +102,11 @@ const onPageShow = () => {
     void resumeDownloads();
     if (boundRefreshState) void boundRefreshState();
   }
+};
+
+const onVisibilityChange = () => {
+  if (document.hidden) onPageHide();
+  else onPageShow();
 };
 
 

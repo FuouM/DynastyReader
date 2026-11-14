@@ -12,26 +12,13 @@ import {
 } from "../db/library-notifiers";
 import { getCollectionsRevision } from "../db/collections.repo";
 import { getLocalRevision } from "../db/local.repo";
-
-export type LibraryTabId = "followed" | "collections" | "bookmarks" | "history" | "local";
+import type { LibraryTabId } from "../types/routes";
 
 export type LibraryCounts = Partial<Record<LibraryTabId, number>>;
 
-async function countDynastyTable(table: string): Promise<number> {
+async function countTable(runQuery: typeof dynastyQuery, table: string): Promise<number> {
   try {
-    const rows = await dynastyQuery<{ count?: number; c?: number }>(
-      `SELECT COUNT(*) as count FROM ${table}`,
-    );
-    return Number(rows[0]?.count ?? rows[0]?.c ?? 0);
-  } catch (err) {
-    log.error("library-counts", `failed counting ${table}:`, err);
-    return 0;
-  }
-}
-
-async function countMdxTable(table: string): Promise<number> {
-  try {
-    const rows = await mangadexQuery<{ count?: number; c?: number }>(
+    const rows = await runQuery<{ count?: number; c?: number }>(
       `SELECT COUNT(*) as count FROM ${table}`,
     );
     return Number(rows[0]?.count ?? rows[0]?.c ?? 0);
@@ -46,9 +33,9 @@ async function fetchLibraryCounts(provider = activeProvider()): Promise<LibraryC
     try {
       await initMangaDexDb();
       const [followed, bookmarks, history] = await Promise.all([
-        countMdxTable("followed_manga"),
-        countMdxTable("bookmarks"),
-        countMdxTable("reading_history"),
+        countTable(mangadexQuery, "followed_manga"),
+        countTable(mangadexQuery, "bookmarks"),
+        countTable(mangadexQuery, "reading_history"),
       ]);
       return { followed, bookmarks, history };
     } catch {
@@ -57,11 +44,11 @@ async function fetchLibraryCounts(provider = activeProvider()): Promise<LibraryC
   }
 
   const [followed, collections, bookmarks, history, local] = await Promise.all([
-    countDynastyTable("followed_series"),
-    countDynastyTable("collections"),
-    countDynastyTable("bookmarks"),
-    countDynastyTable("reading_history"),
-    countDynastyTable("local_series"),
+    countTable(dynastyQuery, "followed_series"),
+    countTable(dynastyQuery, "collections"),
+    countTable(dynastyQuery, "bookmarks"),
+    countTable(dynastyQuery, "reading_history"),
+    countTable(dynastyQuery, "local_series"),
   ]);
   return { followed, collections, bookmarks, history, local };
 }

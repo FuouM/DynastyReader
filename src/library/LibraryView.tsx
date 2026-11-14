@@ -40,8 +40,8 @@ import { CollectionDetailView } from "./CollectionDetailView";
 import { ExportModal } from "./ExportModal";
 import { ImportModal } from "./ImportModal";
 import type { ExportScope } from "../db/export.repo";
-import { useLibraryCounts, type LibraryCounts, type LibraryTabId } from "./library-counts";
-export type { LibraryTabId };
+import { useLibraryCounts, type LibraryCounts } from "./library-counts";
+import type { LibraryTabId } from "../types/routes";
 export function LibraryView() {
   return (
     <Show
@@ -65,33 +65,11 @@ export interface LibraryTabDef {
   count?: number;
 }
 
+/** MangaDex has no collections or local imports. */
+const MANGADEX_TABS: readonly LibraryTabId[] = ["followed", "bookmarks", "history"];
+
 const getLibraryTabs = (counts?: LibraryCounts): readonly LibraryTabDef[] => {
-  if (activeProvider() === "mangadex") {
-    return [
-      {
-        id: "followed",
-        get label() { return t("library.tabs.followed"); },
-        get shortLabel() { return t("library.tabsShort.followed"); },
-        icon: "bi-bookmark-heart",
-        count: counts?.followed,
-      },
-      {
-        id: "bookmarks",
-        get label() { return t("library.tabs.bookmarks"); },
-        get shortLabel() { return t("library.tabsShort.bookmarks"); },
-        icon: "bi-bookmark",
-        count: counts?.bookmarks,
-      },
-      {
-        id: "history",
-        get label() { return t("library.tabs.history"); },
-        get shortLabel() { return t("library.tabsShort.history"); },
-        icon: "bi-clock-history",
-        count: counts?.history,
-      },
-    ];
-  }
-  return [
+  const tabs: LibraryTabDef[] = [
     {
       id: "followed",
       get label() { return t("library.tabs.followed"); },
@@ -128,6 +106,7 @@ const getLibraryTabs = (counts?: LibraryCounts): readonly LibraryTabDef[] => {
       count: counts?.local,
     },
   ];
+  return activeProvider() === "mangadex" ? tabs.filter((tab) => MANGADEX_TABS.includes(tab.id)) : tabs;
 };
 
 function LibraryGrid() {
@@ -182,6 +161,11 @@ function LibraryGrid() {
   const register = (key: string) => (api: LibraryPaneApi) => {
     paneApis[key] = api;
   };
+  /** Back to page 1, then refetch one pane (no-op when it never registered). */
+  const reloadPane = async (key: string): Promise<void> => {
+    paneApis[key]?.reset();
+    await paneApis[key]?.refetch();
+  };
 
   const refreshAll = async (): Promise<void> => {
     setRefreshing(true);
@@ -223,8 +207,7 @@ function LibraryGrid() {
   const clearHistoryAll = async (): Promise<void> => {
     await clearHistory();
     showBanner(t("library.historyClearedBanner"));
-    paneApis.history?.reset();
-    await paneApis.history?.refetch();
+    await reloadPane("history");
   };
 
   const renderPanes = () => (
@@ -244,7 +227,6 @@ function LibraryGrid() {
         <CollectionsPane
           register={register("collections")}
           onOpenDetail={openDetail}
-          onCreateNew={() => setCreating(true)}
           onExportCollection={(id, name) => openExport("selected_collections", id, name)}
         />
       </div>
@@ -380,10 +362,7 @@ function LibraryGrid() {
       <CreateCollectionModal
         open={creating}
         onClose={() => setCreating(false)}
-        onCreated={() => {
-          paneApis.collections?.reset();
-          void paneApis.collections?.refetch();
-        }}
+        onCreated={() => void reloadPane("collections")}
       />
       <ExportModal
         open={exportOpen()}
@@ -397,10 +376,8 @@ function LibraryGrid() {
         initialTarget={importTarget()}
         onClose={() => setImportOpen(false)}
         onImported={() => {
-          paneApis.followed?.reset();
-          void paneApis.followed?.refetch();
-          paneApis.collections?.reset();
-          void paneApis.collections?.refetch();
+          void reloadPane("followed");
+          void reloadPane("collections");
         }}
       />
     </div>

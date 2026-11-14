@@ -23,41 +23,30 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
   });
   const SWIPE_THRESHOLD_PX = 55;
   const SWIPE_RESET_THRESHOLD_PX = 45;
-  const [swipeReady, setSwipeReady] = createSignal<"none" | "left" | "right">("none");
-  let boundaryVibrated: "none" | "left" | "right" = "none";
+  type SwipeReady = "none" | "left" | "right";
+  const [swipeReady, setSwipeReady] = createSignal<SwipeReady>("none");
+  let boundaryVibrated: SwipeReady = "none";
   let cardRef: HTMLDivElement | undefined;
   let activeTouchId: number | null = null;
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let touchStartTime = 0;
+  let isMouseActive = false;
+  let startX = 0;
+  let startY = 0;
+  let startTime = 0;
   let isSwiping = false;
   let currentOffset = 0;
-  let lastReady: "none" | "left" | "right" = "none";
+  let lastReady: SwipeReady = "none";
 
   const resetCardPosition = (animated = true) => {
     if (!cardRef) return;
-    if (animated) {
-      cardRef.style.transition = "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)";
-      cardRef.style.transform = "translate3d(0, 0, 0)";
-    } else {
-      cardRef.style.transition = "none";
-      cardRef.style.transform = "translate3d(0, 0, 0)";
-    }
+    cardRef.style.transition = animated ? "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)" : "none";
+    cardRef.style.transform = "translate3d(0, 0, 0)";
   };
 
-  let isMouseActive = false;
-
-  const handleTouchStart = (ev: TouchEvent) => {
-    if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
-    ev.stopPropagation();
-    const t0 = ev.changedTouches[0];
-    if (!t0) return;
-
+  const beginDrag = (x: number, y: number): void => {
     resetCardPosition(false);
-    activeTouchId = t0.identifier;
-    touchStartX = t0.clientX;
-    touchStartY = t0.clientY;
-    touchStartTime = Date.now();
+    startX = x;
+    startY = y;
+    startTime = Date.now();
     isSwiping = false;
     currentOffset = 0;
     lastReady = "none";
@@ -65,36 +54,9 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
     setSwipeReady("none");
   };
 
-  const handleMouseDown = (ev: MouseEvent) => {
-    if (ev.button !== 0) return;
-    if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
-    ev.stopPropagation();
-    resetCardPosition(false);
-    isMouseActive = true;
-    touchStartX = ev.clientX;
-    touchStartY = ev.clientY;
-    touchStartTime = Date.now();
-    isSwiping = false;
-    currentOffset = 0;
-    lastReady = "none";
-    boundaryVibrated = "none";
-    setSwipeReady("none");
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-  };
-
-  onCleanup(() => {
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
-  });
-
-  const handleTouchMove = (ev: TouchEvent) => {
-    if (activeTouchId === null) return;
-    const t = Array.from(ev.touches).find((touch) => touch.identifier === activeTouchId);
-    if (!t) return;
-
-    const dx = t.clientX - touchStartX;
-    const dy = t.clientY - touchStartY;
+  const dragMove = (x: number, y: number, ev: Event): void => {
+    const dx = x - startX;
+    const dy = y - startY;
     const absX = Math.abs(dx);
     const absY = Math.abs(dy);
 
@@ -107,69 +69,54 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
         return;
       }
     }
+    if (!isSwiping) return;
 
-    if (isSwiping) {
-      if (ev.cancelable) ev.preventDefault();
-      ev.stopPropagation();
+    if (ev.cancelable) ev.preventDefault();
+    ev.stopPropagation();
 
-      let clamped = 0;
-      let newReady: "none" | "left" | "right" = "none";
-
-      if (dx > 0) {
-        // Swipe right -> Previous chapter (if available) or Series / Browse
-        clamped = Math.min(dx, 120);
-        if (clamped >= SWIPE_THRESHOLD_PX) {
-          newReady = "right";
-        } else if (lastReady === "right" && clamped >= SWIPE_RESET_THRESHOLD_PX) {
-          newReady = "right";
-        } else {
-          newReady = "none";
-        }
-      } else if (dx < 0) {
-        // Swipe left -> Next chapter
-        const canNext = Boolean(nextChapter() && !s.chapterNav().nextDisabled);
-        clamped = canNext ? Math.max(dx, -120) : Math.max(dx * 0.25, -40);
-        if (canNext && clamped <= -SWIPE_THRESHOLD_PX) {
-          newReady = "left";
-        } else if (canNext && lastReady === "left" && clamped <= -SWIPE_RESET_THRESHOLD_PX) {
-          newReady = "left";
-        } else if (!canNext && clamped <= -35) {
-          newReady = "none";
-          if (boundaryVibrated !== "left") {
-            triggerHaptic("snap");
-            boundaryVibrated = "left";
-          }
-        } else {
-          newReady = "none";
-          if (clamped > -20) boundaryVibrated = "none";
-        }
+    let clamped = 0;
+    let newReady: SwipeReady = "none";
+    if (dx > 0) {
+      // Swipe right -> Previous chapter (if available) or Series / Browse
+      clamped = Math.min(dx, 120);
+      if (clamped >= SWIPE_THRESHOLD_PX || (lastReady === "right" && clamped >= SWIPE_RESET_THRESHOLD_PX)) {
+        newReady = "right";
       }
-
-      currentOffset = clamped;
-      if (cardRef) {
-        cardRef.style.transform = `translate3d(${clamped}px, 0, 0)`;
-      }
-
-      if (newReady !== lastReady) {
-        lastReady = newReady;
-        setSwipeReady(newReady);
-        if (newReady !== "none") {
+    } else if (dx < 0) {
+      // Swipe left -> Next chapter
+      const canNext = nextChapter() !== null;
+      clamped = canNext ? Math.max(dx, -120) : Math.max(dx * 0.25, -40);
+      if (canNext && (clamped <= -SWIPE_THRESHOLD_PX || (lastReady === "left" && clamped <= -SWIPE_RESET_THRESHOLD_PX))) {
+        newReady = "left";
+      } else if (!canNext && clamped <= -35) {
+        if (boundaryVibrated !== "left") {
           triggerHaptic("snap");
+          boundaryVibrated = "left";
         }
+      } else if (clamped > -20) {
+        boundaryVibrated = "none";
+      }
+    }
+
+    currentOffset = clamped;
+    if (cardRef) {
+      cardRef.style.transform = `translate3d(${clamped}px, 0, 0)`;
+    }
+
+    if (newReady !== lastReady) {
+      lastReady = newReady;
+      setSwipeReady(newReady);
+      if (newReady !== "none") {
+        triggerHaptic("snap");
       }
     }
   };
 
-  const handleTouchEnd = (ev: TouchEvent) => {
-    if (activeTouchId === null) return;
-    const t = Array.from(ev.changedTouches).find((touch) => touch.identifier === activeTouchId);
-    if (!t && ev.touches.length > 0) return;
-
-    activeTouchId = null;
+  const finishDrag = (ev: Event): void => {
     const wasSwiping = isSwiping;
     isSwiping = false;
     const offset = currentOffset;
-    const dt = Date.now() - touchStartTime;
+    const dt = Date.now() - startTime;
     const ready = lastReady;
     currentOffset = 0;
     lastReady = "none";
@@ -177,34 +124,50 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
 
     resetCardPosition(true);
 
-    if (wasSwiping) {
-      ev.stopPropagation();
+    if (!wasSwiping) return;
+    ev.stopPropagation();
 
-      // Swipe left -> Next chapter
-      if (ready === "left" || (offset <= -35 && dt < 300)) {
-        if (nextChapter() && !s.chapterNav().nextDisabled) {
-          triggerHaptic("confirm");
-          s.gotoNextChapter();
-          return;
-        }
-      }
+    // Swipe left -> Next chapter
+    if ((ready === "left" || (offset <= -35 && dt < 300)) && nextChapter()) {
+      triggerHaptic("confirm");
+      s.gotoNextChapter();
+      return;
+    }
 
-      // Swipe right -> Previous chapter (if available) or Series / Browse
-      if (ready === "right" || (offset >= 35 && dt < 300)) {
-        if (prevChapter() && !s.chapterNav().prevDisabled) {
-          triggerHaptic("confirm");
-          s.gotoPrevChapter();
-          return;
-        }
-        triggerHaptic("confirm");
-        if (s.seriesPermalink()) {
-          s.gotoSeries();
-        } else {
-          navigate({ view: "browse" });
-        }
-        return;
+    // Swipe right -> Previous chapter (if available) or Series / Browse
+    if (ready === "right" || (offset >= 35 && dt < 300)) {
+      triggerHaptic("confirm");
+      if (prevChapter()) {
+        s.gotoPrevChapter();
+      } else if (s.seriesPermalink()) {
+        s.gotoSeries();
+      } else {
+        navigate({ view: "browse" });
       }
     }
+  };
+
+  const handleTouchStart = (ev: TouchEvent) => {
+    if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
+    ev.stopPropagation();
+    const t0 = ev.changedTouches[0];
+    if (!t0) return;
+    beginDrag(t0.clientX, t0.clientY);
+    activeTouchId = t0.identifier;
+  };
+
+  const handleTouchMove = (ev: TouchEvent) => {
+    if (activeTouchId === null) return;
+    const t = Array.from(ev.touches).find((touch) => touch.identifier === activeTouchId);
+    if (t) dragMove(t.clientX, t.clientY, ev);
+  };
+
+  const handleTouchEnd = (ev: TouchEvent) => {
+    if (activeTouchId === null) return;
+    const t = Array.from(ev.changedTouches).find((touch) => touch.identifier === activeTouchId);
+    if (!t && ev.touches.length > 0) return;
+    activeTouchId = null;
+    finishDrag(ev);
   };
 
   const handleTouchCancel = () => {
@@ -216,70 +179,19 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
     setSwipeReady("none");
     resetCardPosition(true);
   };
+
+  const handleMouseDown = (ev: MouseEvent) => {
+    if (ev.button !== 0) return;
+    if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea")) return;
+    ev.stopPropagation();
+    beginDrag(ev.clientX, ev.clientY);
+    isMouseActive = true;
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
   const handleMouseMove = (ev: MouseEvent) => {
-    if (!isMouseActive) return;
-    const dx = ev.clientX - touchStartX;
-    const dy = ev.clientY - touchStartY;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-
-    if (!isSwiping) {
-      if (absX > 8 && absX > absY * 1.1) {
-        isSwiping = true;
-        if (cardRef) cardRef.style.transition = "none";
-      } else if (absY > 8 && absY >= absX) {
-        return;
-      }
-    }
-
-    if (isSwiping) {
-      ev.preventDefault();
-      ev.stopPropagation();
-
-      let clamped = 0;
-      let newReady: "none" | "left" | "right" = "none";
-
-      if (dx > 0) {
-        clamped = Math.min(dx, 120);
-        if (clamped >= SWIPE_THRESHOLD_PX) {
-          newReady = "right";
-        } else if (lastReady === "right" && clamped >= SWIPE_RESET_THRESHOLD_PX) {
-          newReady = "right";
-        } else {
-          newReady = "none";
-        }
-      } else if (dx < 0) {
-        const canNext = Boolean(nextChapter() && !s.chapterNav().nextDisabled);
-        clamped = canNext ? Math.max(dx, -120) : Math.max(dx * 0.25, -40);
-        if (canNext && clamped <= -SWIPE_THRESHOLD_PX) {
-          newReady = "left";
-        } else if (canNext && lastReady === "left" && clamped <= -SWIPE_RESET_THRESHOLD_PX) {
-          newReady = "left";
-        } else if (!canNext && clamped <= -35) {
-          newReady = "none";
-          if (boundaryVibrated !== "left") {
-            triggerHaptic("snap");
-            boundaryVibrated = "left";
-          }
-        } else {
-          newReady = "none";
-          if (clamped > -20) boundaryVibrated = "none";
-        }
-      }
-
-      currentOffset = clamped;
-      if (cardRef) {
-        cardRef.style.transform = `translate3d(${clamped}px, 0, 0)`;
-      }
-
-      if (newReady !== lastReady) {
-        lastReady = newReady;
-        setSwipeReady(newReady);
-        if (newReady !== "none") {
-          triggerHaptic("snap");
-        }
-      }
-    }
+    if (isMouseActive) dragMove(ev.clientX, ev.clientY, ev);
   };
 
   const handleMouseUp = (ev: MouseEvent) => {
@@ -287,44 +199,13 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
     isMouseActive = false;
     window.removeEventListener("mousemove", handleMouseMove);
     window.removeEventListener("mouseup", handleMouseUp);
-    const wasSwiping = isSwiping;
-    isSwiping = false;
-    const offset = currentOffset;
-    const dt = Date.now() - touchStartTime;
-    const ready = lastReady;
-    currentOffset = 0;
-    lastReady = "none";
-    setSwipeReady("none");
-
-    resetCardPosition(true);
-
-    if (wasSwiping) {
-      ev.stopPropagation();
-
-      if (ready === "left" || (offset <= -35 && dt < 300)) {
-        if (nextChapter() && !s.chapterNav().nextDisabled) {
-          triggerHaptic("confirm");
-          s.gotoNextChapter();
-          return;
-        }
-      }
-
-      if (ready === "right" || (offset >= 35 && dt < 300)) {
-        if (prevChapter() && !s.chapterNav().prevDisabled) {
-          triggerHaptic("confirm");
-          s.gotoPrevChapter();
-          return;
-        }
-        triggerHaptic("confirm");
-        if (s.seriesPermalink()) {
-          s.gotoSeries();
-        } else {
-          navigate({ view: "browse" });
-        }
-        return;
-      }
-    }
+    finishDrag(ev);
   };
+
+  onCleanup(() => {
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+  });
 
   return (
     <div
@@ -427,7 +308,7 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
       </div>
       <div class="ds-chapter-end-swipe-hint ds-muted">
         <Show
-          when={prevChapter() && !s.chapterNav().prevDisabled}
+          when={prevChapter()}
           fallback={
             <span>
               {t("reader.endOfChapterCard.swipeRightBrowse")} <Icon name="arrow-right" />
@@ -438,7 +319,7 @@ export function ReaderEndOfChapterCard(props: { session: ReaderSession }) {
             <Icon name="arrow-right" /> {t("reader.endOfChapterCard.swipeRightPrev")}
           </span>
         </Show>
-        <Show when={nextChapter() && !s.chapterNav().nextDisabled}>
+        <Show when={nextChapter()}>
           <span>·</span>
           <span>
             <Icon name="arrow-left" /> {t("reader.endOfChapterCard.swipeLeftNext")}

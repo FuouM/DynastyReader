@@ -37,9 +37,8 @@ import {
   SlidersIcon,
   BookmarkIcon,
 } from "../components/icons";
-import { ReaderProgressWrap } from "./ReaderProgressWrap";
+import { ReaderProgressWrap, createScrubHaptics } from "./ReaderProgressWrap";
 import { ReaderFilterPopover, isReaderFilterDefault } from "./ReaderFilterControls";
-import { triggerHaptic } from "../utils/haptics";
 export interface NavRowProps {
   session: ReaderSession;
   controlsOpen?: Accessor<boolean>;
@@ -81,7 +80,7 @@ export function ReaderMainRow(props: NavRowProps) {
         icon={rtl() ? <ChevronRightIcon /> : <ChevronLeftIcon />}
         title={t("reader.toolbar.prevPage")}
         disabled={s.progress().prevDisabled}
-        onClick={() => (s.isSpread() ? s.stepSpread(-1) : s.setPage(s.currentIndex() - 1))}
+        onClick={() => s.turnPage(-1)}
       />
       <ReaderProgressWrap session={s} {...props.progressProps} />
       <Button
@@ -89,7 +88,7 @@ export function ReaderMainRow(props: NavRowProps) {
         icon={rtl() ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         title={t("reader.toolbar.nextPage")}
         disabled={s.progress().nextDisabled}
-        onClick={() => (s.isSpread() ? s.stepSpread(1) : s.setPage(s.currentIndex() + 1))}
+        onClick={() => s.turnPage(1)}
       />
       <Button
         class="ds-nav-btn-jump ds-btn-icon"
@@ -114,7 +113,7 @@ export function ReaderMainRow(props: NavRowProps) {
           icon={<ColumnsGapIcon />}
           text={s.pagedLayout() === "spread" ? "Dual" : "Single"}
           title={t("reader.toolbar.spreadTooltip", { state: s.pagedLayout() === "spread" ? "ON" : "OFF" })}
-          onClick={() => s.setPagedLayout(s.pagedLayout() === "spread" ? "single" : "spread")}
+          onClick={() => s.togglePagedLayout()}
         />
       </Show>
       <Show when={s.isFullscreen()}>
@@ -204,7 +203,7 @@ export function ReaderControlsRow(props: NavRowProps) {
               ? t("reader.toolbar.spreadAutoDisabledTooltip")
               : t("reader.toolbar.spreadTooltip", { state: s.pagedLayout() === "spread" ? "ON" : "OFF" })
           }
-          onClick={() => s.setPagedLayout(s.pagedLayout() === "spread" ? "single" : "spread")}
+          onClick={() => s.togglePagedLayout()}
         />
         <Button
           class="ds-ctrl-btn"
@@ -318,35 +317,14 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
   };
   // In RTL, slider value is inverted: slider left = last page, slider right = page 1.
   const sliderValue = () => (isRtl() ? total() - current() + 1 : current());
-  let lastHapticPage: number | null = null;
-  let lastHapticTime = 0;
-  const HAPTIC_THROTTLE_MS = 40;
-
-  const onSliderPointerDown = () => {
-    lastHapticPage = s.currentIndex();
-    lastHapticTime = 0;
-  };
+  const haptics = createScrubHaptics(s);
 
   const onSliderChange = (rawVal: number, instant: boolean) => {
     const pageIdx = isRtl() ? total() - rawVal : rawVal - 1;
     if (!isNaN(pageIdx) && pageIdx >= 0 && pageIdx < total()) {
-      if (total() > 1) {
-        if (lastHapticPage === null) {
-          lastHapticPage = s.currentIndex();
-        }
-        const now = performance.now();
-        if (pageIdx !== lastHapticPage) {
-          if (instant || now - lastHapticTime >= HAPTIC_THROTTLE_MS) {
-            lastHapticPage = pageIdx;
-            lastHapticTime = now;
-            triggerHaptic("page-turn");
-          }
-        }
-      }
+      haptics.trigger(pageIdx, instant);
       s.setPage(pageIdx, instant);
-      if (instant) {
-        lastHapticPage = pageIdx;
-      }
+      if (instant) haptics.settle(pageIdx);
     }
   };
 
@@ -368,12 +346,10 @@ export function ReaderMobileBottomBar(props: { session: ReaderSession }) {
           max={total()}
           value={sliderValue()}
           style={{ "--scrubber-pct": `${pct()}%` }}
-          onPointerDown={onSliderPointerDown}
-          onTouchStart={onSliderPointerDown}
-          onFocus={onSliderPointerDown}
-          onBlur={() => {
-            lastHapticPage = null;
-          }}
+          onPointerDown={() => haptics.start()}
+          onTouchStart={() => haptics.start()}
+          onFocus={() => haptics.start()}
+          onBlur={() => haptics.settle(null)}
           onInput={(e) => onSliderChange(parseInt(e.currentTarget.value, 10), false)}
           onChange={(e) => onSliderChange(parseInt(e.currentTarget.value, 10), true)}
           aria-label={t("reader.toolbar.jumpToPage")}

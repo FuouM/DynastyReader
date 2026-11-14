@@ -10,7 +10,38 @@ import { t } from "../i18n";
 import { HOTKEY_DEFINITIONS } from "../hotkeys/registry";
 import { getHotkeys } from "../hotkeys/hotkeys-store";
 import { formatKeyCombo } from "../hotkeys/key-combo";
+import type { HotkeyDefinition } from "../hotkeys/types";
 import { openSettingsDialog } from "../hotkeys/GlobalShortcuts";
+
+function ShortcutColumn(props: { icon: string; title: string; defs: readonly HotkeyDefinition[] }) {
+  return (
+    <div class="ds-cheatsheet-col">
+      <div class="ds-cheatsheet-header">
+        <Icon name={props.icon} />
+        <span>{props.title}</span>
+      </div>
+      <div class="ds-cheatsheet-list">
+        <For each={props.defs}>
+          {(def) => {
+            const keys = () => getHotkeys(def.id);
+            return (
+              <Show when={keys().length > 0}>
+                <div class="ds-cheatsheet-row">
+                  <span class="ds-cheatsheet-label">{def.label}</span>
+                  <div class="ds-cheatsheet-keys">
+                    <For each={keys()}>
+                      {(k) => <kbd class="ds-kbd">{formatKeyCombo(k)}</kbd>}
+                    </For>
+                  </div>
+                </div>
+              </Show>
+            );
+          }}
+        </For>
+      </div>
+    </div>
+  );
+}
 
 export function HotkeyCheatsheetModal() {
   const [open, setOpen] = createSignal(false);
@@ -53,57 +84,8 @@ export function HotkeyCheatsheetModal() {
       }
     >
       <div class="ds-cheatsheet-grid">
-        <div class="ds-cheatsheet-col">
-          <div class="ds-cheatsheet-header">
-            <Icon name="book" />
-            <span>{t("settings.hotkeys.categories.reader")}</span>
-          </div>
-          <div class="ds-cheatsheet-list">
-            <For each={readerShortcuts}>
-              {(def) => {
-                const keys = () => getHotkeys(def.id);
-                return (
-                  <Show when={keys().length > 0}>
-                    <div class="ds-cheatsheet-row">
-                      <span class="ds-cheatsheet-label">{def.label}</span>
-                      <div class="ds-cheatsheet-keys">
-                        <For each={keys()}>
-                          {(k) => <kbd class="ds-kbd">{formatKeyCombo(k)}</kbd>}
-                        </For>
-                      </div>
-                    </div>
-                  </Show>
-                );
-              }}
-            </For>
-          </div>
-        </div>
-
-        <div class="ds-cheatsheet-col">
-          <div class="ds-cheatsheet-header">
-            <Icon name="compass" />
-            <span>{t("settings.hotkeys.categories.navigation")}</span>
-          </div>
-          <div class="ds-cheatsheet-list">
-            <For each={globalShortcuts}>
-              {(def) => {
-                const keys = () => getHotkeys(def.id);
-                return (
-                  <Show when={keys().length > 0}>
-                    <div class="ds-cheatsheet-row">
-                      <span class="ds-cheatsheet-label">{def.label}</span>
-                      <div class="ds-cheatsheet-keys">
-                        <For each={keys()}>
-                          {(k) => <kbd class="ds-kbd">{formatKeyCombo(k)}</kbd>}
-                        </For>
-                      </div>
-                    </div>
-                  </Show>
-                );
-              }}
-            </For>
-          </div>
-        </div>
+        <ShortcutColumn icon="book" title={t("settings.hotkeys.categories.reader")} defs={readerShortcuts} />
+        <ShortcutColumn icon="compass" title={t("settings.hotkeys.categories.navigation")} defs={globalShortcuts} />
       </div>
     </Modal>
   );

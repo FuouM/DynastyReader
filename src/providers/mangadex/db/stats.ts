@@ -3,36 +3,24 @@
  * Reports real file sizes and table row counts for mangadex.db.
  */
 
-import { query } from "./client";
+import { query, MANGADEX_DB_NAME } from "./client";
 import { initMangaDexDb } from "./schema";
 import { getDbFileStats, type DbStats } from "../../../db/db.manage";
 
-const ALLOWED_STATS_TABLES = new Set([
-  "followed_manga",
-  "reading_progress",
-  "reading_history",
-  "bookmarks",
-  "cached_pages",
-  "cached_metadata",
-]);
+async function count(table: string): Promise<number> {
+  try {
+    const rows = await query<{ c: number }>(`SELECT COUNT(*) as c FROM ${table}`);
+    return rows[0]?.c ?? 0;
+  } catch {
+    return 0;
+  }
+}
 
 export async function getMangaDexDbStats(): Promise<DbStats> {
   await initMangaDexDb();
-  const file = await getDbFileStats("mangadex.db");
+  const file = await getDbFileStats(MANGADEX_DB_NAME);
 
-  // 2. Table row counts
-  async function count(table: string): Promise<number> {
-    if (!ALLOWED_STATS_TABLES.has(table)) {
-      throw new Error(`Disallowed table name in stats query: ${table}`);
-    }
-    try {
-      const rows = await query<{ c: number }>(`SELECT COUNT(*) as c FROM ${table}`);
-      return rows[0]?.c ?? 0;
-    } catch {
-      return 0;
-    }
-  }
-
+  // Table row counts
   const [followed, progress, history, bookmarks, pages, metadata] = await Promise.all([
     count("followed_manga"),
     count("reading_progress"),

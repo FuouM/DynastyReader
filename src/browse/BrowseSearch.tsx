@@ -43,7 +43,7 @@ import {
   type BrowsePaneApi,
 } from "./browse-state";
 import { createSearchFilters } from "./useSearchFilters";
-import { browseCovers, coversEnabledSignal } from "./browse-covers";
+import { useCoverHydration } from "./browse-covers";
 import { Pager } from "../components/Pager";
 import { Loading, EmptyState, ErrorRetryRow, GroupBox, Select, IconText, Button, Icon, useDelayedSpinner } from "soulwindow/solid";
 import { Typeahead } from "../components/Typeahead";
@@ -79,6 +79,27 @@ interface SearchModel {
   fullyCachedSet: Set<string>;
   blMode: BlacklistMode;
 }
+/** Single-page MangaDex author or scanlation-group listing. */
+function mdxEntityPage(
+  kind: SearchResultItem["kind"],
+  permalinkPrefix: string,
+  matches: { id: string; attributes: { name: string } }[],
+  query: string,
+): SearchModel {
+  const items: SearchResultItem[] = matches.map((m) => ({
+    kind,
+    title: m.attributes.name,
+    permalink: `${permalinkPrefix}:${m.id}`,
+    tags: [],
+  }));
+  const pageData: SearchResultPage = {
+    items,
+    currentPage: 1,
+    totalPages: 1,
+    query,
+  };
+  return { pageData, fullyCachedSet: new Set<string>(), blMode: getBlacklistMode() };
+}
 
 export interface BrowseSearchProps {
   active: Accessor<boolean>;
@@ -103,35 +124,11 @@ export function BrowseSearch(props: BrowseSearchProps) {
         const selClasses = classes();
         if (selClasses.has("Author")) {
           const authorMatches = await searchAuthors(q() || "", 20);
-          const items: SearchResultItem[] = authorMatches.map((a) => ({
-            kind: "author",
-            title: a.attributes.name,
-            permalink: `mdx-author:${a.id}`,
-            tags: [],
-          }));
-          const pageData: SearchResultPage = {
-            items,
-            currentPage: 1,
-            totalPages: 1,
-            query: q() || "Authors",
-          };
-          return { pageData, fullyCachedSet: new Set<string>(), blMode: getBlacklistMode() };
+          return mdxEntityPage("author", "mdx-author", authorMatches, q() || "Authors");
         }
         if (selClasses.has("Scanlator")) {
           const groupMatches = await searchScanlationGroups(q() || "", 20);
-          const items: SearchResultItem[] = groupMatches.map((g) => ({
-            kind: "scanlator",
-            title: g.attributes.name,
-            permalink: `mdx-group:${g.id}`,
-            tags: [],
-          }));
-          const pageData: SearchResultPage = {
-            items,
-            currentPage: 1,
-            totalPages: 1,
-            query: q() || "Scanlators",
-          };
-          return { pageData, fullyCachedSet: new Set<string>(), blMode: getBlacklistMode() };
+          return mdxEntityPage("scanlator", "mdx-group", groupMatches, q() || "Scanlators");
         }
 
         const includedTags: string[] = [];
@@ -290,40 +287,20 @@ export function BrowseSearch(props: BrowseSearchProps) {
     props.onTransientConsumed();
   });
 
-  const runSearch = (value: string): void => {
-    filters.runSearch(value);
-    pane.goToPage(1);
-  };
-
-  const toggleClass = (c: SearchClass): void => {
-    filters.toggleClass(c);
-    pane.goToPage(1);
-  };
-
-  const clearAll = (): void => {
-    filters.clearAll();
-    pane.goToPage(1);
-  };
-
-  const addWithTag = (tag: string): void => {
-    filters.addWithTag(tag);
-    pane.goToPage(1);
-  };
-
-  const addWithoutTag = (tag: string): void => {
-    filters.addWithoutTag(tag);
-    pane.goToPage(1);
-  };
-
-  const removeWithTag = (t: string): void => {
-    filters.removeWithTag(t);
-    pane.goToPage(1);
-  };
-
-  const removeWithoutTag = (t: string): void => {
-    filters.removeWithoutTag(t);
-    pane.goToPage(1);
-  };
+  /** Wraps a filter mutation so it also jumps back to page 1. */
+  const thenFirstPage =
+    <A extends unknown[]>(mutate: (...args: A) => void) =>
+    (...args: A): void => {
+      mutate(...args);
+      pane.goToPage(1);
+    };
+  const runSearch = thenFirstPage(filters.runSearch);
+  const toggleClass = thenFirstPage(filters.toggleClass);
+  const clearAll = thenFirstPage(filters.clearAll);
+  const addWithTag = thenFirstPage(filters.addWithTag);
+  const addWithoutTag = thenFirstPage(filters.addWithoutTag);
+  const removeWithTag = thenFirstPage(filters.removeWithTag);
+  const removeWithoutTag = thenFirstPage(filters.removeWithoutTag);
   const tagSuggest = async (query: string): Promise<Array<{ name: string; type: string }>> => {
     if (activeProvider() === "mangadex") {
       try {
@@ -374,15 +351,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
     });
   });
 
-  createEffect(() => {
-    const el = hostEl();
-    const active = props.active();
-    const enabled = coversEnabledSignal();
-    const model = pane.data();
-    if (!el || !active || !enabled || !model) return;
-    browseCovers.beginPage(el);
-    browseCovers.reobserveUnloadedCovers(el);
-  });
+  useCoverHydration(hostEl, props.active, pane.data);
 
   const model = (): SearchModel | undefined => pane.data();
 
@@ -413,7 +382,7 @@ export function BrowseSearch(props: BrowseSearchProps) {
       isFullyCached={model()?.fullyCachedSet.has(row.item.permalink) ?? false}
       blMode={model()?.blMode ?? "hide"}
       onWarn={(title, matchedTags, proceed) => triggerWarning.warn(title, matchedTags, proceed)}
-      onAddToCol={addToCol.onAddToCol}
+      onAddToCol={addToCol.open}
     />
   );
 

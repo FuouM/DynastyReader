@@ -18,17 +18,14 @@ export function TagPill(props: TagPillProps) {
     ev.stopPropagation();
     const isArtist = isArtistTag(props.type);
     const isScanlator = isScanlatorTag(props.type);
+    const mdxPrefix = isArtist ? "mdx-author:" : isScanlator ? "mdx-group:" : null;
     const permalink =
       props.permalink ||
-      (isArtist && props.name
+      (mdxPrefix && props.name
         ? activeProvider() === "mangadex"
-          ? `mdx-author:${props.name}`
+          ? `${mdxPrefix}${props.name}`
           : slugify(props.name)
-        : isScanlator && props.name
-          ? activeProvider() === "mangadex"
-            ? `mdx-group:${props.name}`
-            : slugify(props.name)
-          : undefined);
+        : undefined);
     if (
       permalink &&
       (!permalink.startsWith("mdx-") ||

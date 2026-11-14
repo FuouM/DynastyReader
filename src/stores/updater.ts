@@ -34,7 +34,6 @@ export async function checkUpdates(manual = false): Promise<UpdateInfo | null> {
     if (info.has_update) {
       setUpdateInfo(info);
       setUpToDateVersion(null);
-      return info;
     } else {
       setUpdateInfo(null);
       if (manual) {

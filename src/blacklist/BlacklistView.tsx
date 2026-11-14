@@ -59,13 +59,13 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
     return whitelistedTags().some((t) => t.id === tagId);
   };
 
-  const togglePopularGenre = (genre: WhitelistTag): void => {
-    if (isTagWhitelisted(genre.id)) {
-      removeWhitelistedTag(genre.id);
-      showBanner(t("whitelist.removedBanner", { name: genre.name }));
+  const toggleWhitelistTag = (tag: WhitelistTag): void => {
+    if (isTagWhitelisted(tag.id)) {
+      removeWhitelistedTag(tag.id);
+      showBanner(t("whitelist.removedBanner", { name: tag.name }));
     } else {
-      addWhitelistedTag(genre);
-      showBanner(t("whitelist.addedBanner", { name: genre.name }));
+      addWhitelistedTag(tag);
+      showBanner(t("whitelist.addedBanner", { name: tag.name }));
     }
   };
 
@@ -119,7 +119,6 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
       />,
     );
   });
-  const errorText = (): string => errorMessage(data.error);
 
   return (
     <div
@@ -149,7 +148,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
             <Show when={data.error !== undefined && data() === undefined}>
               <ErrorRetryRow
                 class="ds-bl-error-row"
-                message={t("blacklist.loadError", { msg: errorText() })}
+                message={t("blacklist.loadError", { msg: errorMessage(data.error) })}
                 onRetry={() => void refetch()}
               />
             </Show>
@@ -334,7 +333,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                       class={active() ? "win-button--active" : ""}
                       icon={active() ? <CheckIcon /> : undefined}
                       text={genre.name}
-                      onClick={() => togglePopularGenre(genre)}
+                      onClick={() => toggleWhitelistTag(genre)}
                     />
                   );
                 }}
@@ -382,15 +381,7 @@ export function BlacklistView(props: { initialTab?: "blacklist" | "whitelist" })
                           class={active() ? "win-button--active" : ""}
                           icon={active() ? <CheckIcon /> : undefined}
                           text={active() ? t("whitelist.allowedButton") : t("whitelist.addAllowlistButton")}
-                          onClick={() => {
-                            if (active()) {
-                              removeWhitelistedTag(tag.id);
-                              showBanner(t("whitelist.removedBanner", { name }));
-                            } else {
-                              addWhitelistedTag({ id: tag.id, name });
-                              showBanner(t("whitelist.addedBanner", { name }));
-                            }
-                          }}
+                          onClick={() => toggleWhitelistTag({ id: tag.id, name })}
                         />
                       </div>
                     );

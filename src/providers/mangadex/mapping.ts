@@ -151,6 +151,24 @@ export function getMangaAuthorEntities(manga: MangaDexManga): MangaDexAuthorEnti
   return result;
 }
 
+/** Author tags (`mdx-author:<id>`), falling back to name-keyed tags when relationships carry no ids. */
+export function getMangaAuthorTags(manga: MangaDexManga): SeriesTag[] {
+  const entities = getMangaAuthorEntities(manga);
+  if (entities.length > 0) {
+    return entities.map((a) => ({ type: "Author", name: a.name, permalink: `mdx-author:${a.id}` }));
+  }
+  return getMangaAuthors(manga).map((a) => ({ type: "Author", name: a, permalink: `mdx-author:${a}` }));
+}
+
+/** The chapter's scanlation group, when its relationship carries a non-empty name. */
+export function getChapterScanlationGroup(chapter: MangaDexChapter): { id: string; name: string } | undefined {
+  const groupRel = chapter.relationships?.find((r) => r.type === "scanlation_group");
+  const attrs = groupRel?.attributes;
+  if (groupRel && attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string" && attrs.name) {
+    return { id: groupRel.id, name: attrs.name };
+  }
+  return undefined;
+}
 
 /**
  * Maps a MangaDexManga entity to DynastyReader's standard Series interface.
@@ -207,17 +225,12 @@ export function mangaDexToStandardChapter(
     });
   }
 
-  const groupRel = chapter.relationships?.find((r) => r.type === "scanlation_group");
-  let groupName: string | undefined;
-  const attrs = groupRel?.attributes;
-  if (attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string" && attrs.name) {
-    groupName = attrs.name;
-  }
-  if (groupName && groupRel) {
+  const group = getChapterScanlationGroup(chapter);
+  if (group) {
     tags.push({
       type: "Scanlator",
-      name: groupName,
-      permalink: `mdx-group:${groupRel.id}`,
+      name: group.name,
+      permalink: `mdx-group:${group.id}`,
     });
   }
 

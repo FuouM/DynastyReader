@@ -180,35 +180,33 @@ export function createReaderState(): ReaderState {
     const idx = currentIndex();
     const count = cachedCount();
     const cachedNote = count > 0 ? t("reader.session.cachedBadge", { count, total }) : "";
-    const isSpreadActive = isSpread() && spreads().length > 0;
-    let pct = total > 0 ? Math.round(((idx + 1) / total) * 100) : 0;
-    if (isSpreadActive) {
-      const spreadsVal = spreads();
-      const curSpread = spreadIndexOf(spreadsVal, idx);
-      pct = spreadsVal.length > 0 ? Math.round(((curSpread + 1) / spreadsVal.length) * 100) : 0;
-    }
+    const spreadList = isSpread() ? spreads() : [];
+    const isSpreadActive = spreadList.length > 0;
+    const curSpread = isSpreadActive ? spreadIndexOf(spreadList, idx) : 0;
+    const pct = isSpreadActive
+      ? Math.round(((curSpread + 1) / spreadList.length) * 100)
+      : total > 0 ? Math.round(((idx + 1) / total) * 100) : 0;
     let currentNumStr = `${idx + 1}`;
     let fullPageStr = `Page ${idx + 1} of ${total}`;
     let shortPageStr = `${idx + 1} / ${total}`;
-    if (isSpreadActive) {
-      const group = spreads()[spreadIndexOf(spreads(), idx)];
-      if (group && group.pageIndices.length > 1) {
-        const first = (group.pageIndices[0] ?? idx) + 1;
+    const group = isSpreadActive ? spreadList[curSpread] : undefined;
+    if (group) {
+      const first = (group.pageIndices[0] ?? idx) + 1;
+      if (group.pageIndices.length > 1) {
         const last = (group.pageIndices[group.pageIndices.length - 1] ?? idx) + 1;
         currentNumStr = `${first}–${last}`;
         fullPageStr = `Pages ${first}–${last} of ${total}`;
         shortPageStr = `${first}–${last} / ${total}`;
-      } else if (group) {
-        const first = (group.pageIndices[0] ?? idx) + 1;
+      } else {
         currentNumStr = `${first}`;
         fullPageStr = `Page ${first} of ${total}`;
         shortPageStr = `${first} / ${total}`;
       }
     }
-    const maxCurrentChars = isSpreadActive ? `${spreads().length}`.length + 2 : `${total}`.length;
-    const title = isSpreadActive ? `Spread ${spreadIndexOf(spreads(), idx) + 1} of ${spreads().length}` : fullPageStr;
-    const prevDisabled = isSpreadActive ? spreadIndexOf(spreads(), idx) === 0 : idx === 0;
-    const nextDisabled = isSpreadActive ? spreadIndexOf(spreads(), idx) >= spreads().length - 1 : idx >= total - 1;
+    const maxCurrentChars = isSpreadActive ? `${spreadList.length}`.length + 2 : `${total}`.length;
+    const title = isSpreadActive ? `Spread ${curSpread + 1} of ${spreadList.length}` : fullPageStr;
+    const prevDisabled = isSpreadActive ? curSpread === 0 : idx === 0;
+    const nextDisabled = isSpreadActive ? curSpread >= spreadList.length - 1 : idx >= total - 1;
     return {
       full: fullPageStr,
       short: shortPageStr,

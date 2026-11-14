@@ -78,6 +78,12 @@ const HAPTIC_CARDS: readonly HapticCardDef[] = [
   },
 ];
 
+const STRENGTH_PRESETS = [
+  { pct: 35, labelKey: "settings.advanced.strengthLight" },
+  { pct: 65, labelKey: "settings.advanced.strengthMedium" },
+  { pct: 100, labelKey: "settings.advanced.strengthStrong" },
+] as const;
+
 export function AdvancedSettings() {
   const [activePreview, setActivePreview] = createSignal<HapticStyle | null>(null);
   let previewTimeout: number | null = null;
@@ -177,33 +183,19 @@ export function AdvancedSettings() {
               </span>
             </div>
             <div class="ds-haptic-strength-presets">
-              <button
-                type="button"
-                class="win-button ds-haptic-preset-btn"
-                classList={{ active: hapticStrength() === 35 }}
-                disabled={!isHapticsEnabled()}
-                onClick={() => setHapticStrength(35)}
-              >
-                {t("settings.advanced.strengthLight")}
-              </button>
-              <button
-                type="button"
-                class="win-button ds-haptic-preset-btn"
-                classList={{ active: hapticStrength() === 65 }}
-                disabled={!isHapticsEnabled()}
-                onClick={() => setHapticStrength(65)}
-              >
-                {t("settings.advanced.strengthMedium")}
-              </button>
-              <button
-                type="button"
-                class="win-button ds-haptic-preset-btn"
-                classList={{ active: hapticStrength() === 100 }}
-                disabled={!isHapticsEnabled()}
-                onClick={() => setHapticStrength(100)}
-              >
-                {t("settings.advanced.strengthStrong")}
-              </button>
+              <For each={STRENGTH_PRESETS}>
+                {(preset) => (
+                  <button
+                    type="button"
+                    class="win-button ds-haptic-preset-btn"
+                    classList={{ active: hapticStrength() === preset.pct }}
+                    disabled={!isHapticsEnabled()}
+                    onClick={() => setHapticStrength(preset.pct)}
+                  >
+                    {t(preset.labelKey)}
+                  </button>
+                )}
+              </For>
               <Show when={hapticStrength() !== DEFAULT_HAPTIC_STRENGTH}>
                 <button
                   type="button"

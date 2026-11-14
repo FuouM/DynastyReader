@@ -5,7 +5,6 @@ import type {
 import { dynastyProvider } from "./dynasty.provider";
 import { mangadexProvider } from "./mangadex.provider";
 import { localProvider } from "./local.provider";
-import { activeProvider } from "../stores/provider";
 
 const PROVIDER_MAP: Record<ContentProviderId, ContentProviderAdapter> = {
   dynasty: dynastyProvider,
@@ -38,15 +37,6 @@ export function getProviderForPermalink(permalink: string): ContentProviderAdapt
 }
 
 /**
- * Returns the adapter for the currently active UI browsing provider.
- */
-export function getActiveProviderAdapter(): ContentProviderAdapter {
-  return getProvider(activeProvider());
-}
-
-export { canonicalUrl } from "../utils/formatting";
-
-/**
  * Extracts the clean entity ID (e.g. bare UUID for MangaDex, path slug for local, slug for Dynasty).
  */
 export function extractEntityId(permalink: string): string {
@@ -62,24 +52,22 @@ export function isValidPermalink(candidate: unknown): candidate is string {
   return getProviderForPermalink(candidate).isValidPermalink(candidate);
 }
 
-/**
- * Clears cached chapter files and database entries across all matching providers.
- * Polymorphic: partitions permalinks by provider so each provider only touches its own DB.
- */
-export async function clearCachedChapters(chapterPermalinks: string[]): Promise<void> {
-  if (chapterPermalinks.length === 0) return;
+/** Partitions permalinks by owning provider so each provider only touches its own DB. */
+export function groupByProvider(permalinks: string[]): Map<ContentProviderAdapter, string[]> {
   const byProvider = new Map<ContentProviderAdapter, string[]>();
-
-  for (const p of chapterPermalinks) {
+  for (const p of permalinks) {
     const adapter = getProviderForPermalink(p);
     const list = byProvider.get(adapter) ?? [];
     list.push(p);
     byProvider.set(adapter, list);
   }
+  return byProvider;
+}
 
+/** Clears cached chapter files and database entries across all matching providers. */
+export async function clearCachedChapters(chapterPermalinks: string[]): Promise<void> {
+  if (chapterPermalinks.length === 0) return;
   await Promise.all(
-    Array.from(byProvider.entries()).map(([adapter, perms]) =>
-      adapter.clearCachedChapters(perms),
-    ),
+    Array.from(groupByProvider(chapterPermalinks), ([adapter, perms]) => adapter.clearCachedChapters(perms)),
   );
 }

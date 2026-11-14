@@ -73,19 +73,9 @@ export class CoverMemoryCache {
   clearFailedAttempts(): void {
     this.failedAttempts.clear();
   }
-
-  clearInflight(): void {
-    this.inflight.clear();
-  }
-
-  clear(): void {
-    this.clearData();
-    this.clearFailedAttempts();
-    this.clearInflight();
-  }
 }
 
-export const SCROLL_IDLE_MS = 300;
+const SCROLL_IDLE_MS = 300;
 const MAX_CONCURRENCY = 4;
 
 export interface CoverTarget {
@@ -243,6 +233,15 @@ export class CoverHydrationPipeline {
     }
   }
 
+  /** Marks a cover as missing, drops its cached path, and bumps its retry cooldown. */
+  private markHydrationFailed(coverKey: string): void {
+    this.ctx.setCoverState(coverKey, "no-cover");
+    this.ctx.cache.delete(coverKey);
+    const prevFail = this.ctx.cache.getFailedAttempt(coverKey);
+    const count = (prevFail?.count ?? 0) + 1;
+    this.ctx.cache.setFailedAttempt(coverKey, { count, lastTried: Date.now() });
+  }
+
   /** Resets queue and scroll tracking without disconnecting the observer. */
   reset(): void {
     this.queuedKeys.clear();
@@ -392,19 +391,11 @@ export class CoverHydrationPipeline {
             this.ctx.updateCoverPath(target.coverKey, coverPath);
           } else {
             log.debug("browse-covers", "Worker returned null for", target.coverKey);
-            this.ctx.setCoverState(target.coverKey, "no-cover");
-            this.ctx.cache.delete(target.coverKey);
-            const prevFail = this.ctx.cache.getFailedAttempt(target.coverKey);
-            const count = (prevFail?.count ?? 0) + 1;
-            this.ctx.cache.setFailedAttempt(target.coverKey, { count, lastTried: Date.now() });
+            this.markHydrationFailed(target.coverKey);
           }
         } catch (err) {
           log.debug("browse-covers", "Worker exception for", target.coverKey, err);
-          this.ctx.setCoverState(target.coverKey, "no-cover");
-          this.ctx.cache.delete(target.coverKey);
-          const prevFail = this.ctx.cache.getFailedAttempt(target.coverKey);
-          const count = (prevFail?.count ?? 0) + 1;
-          this.ctx.cache.setFailedAttempt(target.coverKey, { count, lastTried: Date.now() });
+          this.markHydrationFailed(target.coverKey);
         } finally {
           this.queuedKeys.delete(target.coverKey);
           this.ctx.cache.deleteInflight(target.coverKey);

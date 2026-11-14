@@ -59,10 +59,10 @@ export function createMetadataRepo(db: MetadataDbClient) {
 const dynastyRepo = createMetadataRepo({ query, execute });
 const mdxRepo = createMetadataRepo({ query: mdxQuery, execute: mdxExecute });
 
-export const isMdxMetadataKey = (key: string): boolean => key.includes("mdx:");
+const repoFor = (key: string) => (key.includes("mdx:") ? mdxRepo : dynastyRepo);
 
 export const getCached = async (key: string): Promise<CachedMetadata | null> => {
-  return isMdxMetadataKey(key) ? mdxRepo.getCached(key) : dynastyRepo.getCached(key);
+  return repoFor(key).getCached(key);
 };
 
 export const getBatchCached = async (keys: string[]): Promise<Map<string, string>> => {
@@ -70,7 +70,7 @@ export const getBatchCached = async (keys: string[]): Promise<Map<string, string
   const mdxKeys: string[] = [];
   const dynastyKeys: string[] = [];
   for (const k of keys) {
-    (isMdxMetadataKey(k) ? mdxKeys : dynastyKeys).push(k);
+    (repoFor(k) === mdxRepo ? mdxKeys : dynastyKeys).push(k);
   }
 
   const [mdxMap, dynastyMap] = await Promise.all([
@@ -87,25 +87,13 @@ export const setCached = async (
   jsonPayload: string,
   etag?: string,
 ): Promise<void> => {
-  if (isMdxMetadataKey(key)) {
-    await mdxRepo.setCached(key, dataType, jsonPayload, etag);
-  } else {
-    await dynastyRepo.setCached(key, dataType, jsonPayload, etag);
-  }
+  await repoFor(key).setCached(key, dataType, jsonPayload, etag);
 };
 
 export const touchCached = async (key: string): Promise<void> => {
-  if (isMdxMetadataKey(key)) {
-    await mdxRepo.touchCached(key);
-  } else {
-    await dynastyRepo.touchCached(key);
-  }
+  await repoFor(key).touchCached(key);
 };
 
 export const deleteCached = async (key: string): Promise<void> => {
-  if (isMdxMetadataKey(key)) {
-    await mdxRepo.deleteCached(key);
-  } else {
-    await dynastyRepo.deleteCached(key);
-  }
+  await repoFor(key).deleteCached(key);
 };

@@ -73,7 +73,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
       } else {
         next.delete(props.index);
       }
-      s.setWidePages(next);
+      s.setWidePagesSignal(next);
       // Debounce rebuild so concurrent wide scans don't trigger multiple rapid jumps.
       s.scheduleWidePageLayoutReset();
     }
@@ -84,11 +84,7 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
     if (d && d.width > 0 && d.height > 0) {
       return { "aspect-ratio": `${d.width} / ${d.height}` };
     }
-    const est = s.estimatedAspectRatio();
-    if (est > 0) {
-      return { "aspect-ratio": `${est}` };
-    }
-    return { "aspect-ratio": "1 / 1.414" };
+    return estimatedAspectStyle(s);
   });
 
   return (
@@ -120,6 +116,12 @@ function SlotImgContent(props: { session: ReaderSession; index: number; path: st
   );
 }
 
+/** Placeholder aspect ratio until a page's own dimensions are known. */
+function estimatedAspectStyle(s: ReaderSession): JSX.CSSProperties {
+  const est = s.estimatedAspectRatio();
+  return { "aspect-ratio": est > 0 ? `${est}` : "1 / 1.414" };
+}
+
 /** Non-image slot state (download spinner, offline, error, idle). */
 function SlotStateContent(props: { session: ReaderSession; index: number }) {
   const s = props.session;
@@ -127,12 +129,7 @@ function SlotStateContent(props: { session: ReaderSession; index: number }) {
   const kind = (): SlotStateKind => state()?.kind ?? "idle";
   const pct = (): number =>
     s.pages().length > 0 ? Math.round((s.cachedCount() / s.pages().length) * 100) : 0;
-  const aspectStyle = () => {
-    if (s.isHorizontal()) return undefined;
-    const est = s.estimatedAspectRatio();
-    if (est > 0) return { "aspect-ratio": `${est}` };
-    return { "aspect-ratio": "1 / 1.414" };
-  };
+  const aspectStyle = () => (s.isHorizontal() ? undefined : estimatedAspectStyle(s));
 
   return (
     <div

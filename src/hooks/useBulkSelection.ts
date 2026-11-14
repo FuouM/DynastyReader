@@ -42,24 +42,12 @@ export function useBulkSelection<T>(
       return next;
     });
   };
-  const selectAll = (items: T[]): void => {
-    setSelected(new Set(items));
-  };
-
-  const clearSelection = (): void => {
-    setSelected(new Set<T>());
-  };
-
   const isAllSelected = (items: T[]): boolean => {
     return items.length > 0 && selected().size === items.length;
   };
 
   const toggleSelectAll = (items: T[]): void => {
-    if (isAllSelected(items)) {
-      clearSelection();
-    } else {
-      selectAll(items);
-    }
+    setSelected(isAllSelected(items) ? new Set<T>() : new Set(items));
   };
 
   const deleteSelected = async (): Promise<void> => {
@@ -77,13 +65,10 @@ export function useBulkSelection<T>(
   return {
     selectMode,
     selected,
-    setSelectMode,
     startSelectionWith,
     toggleSelectMode,
     toggleRow,
     deleteSelected,
-    selectAll,
-    clearSelection,
     isAllSelected,
     toggleSelectAll,
   };

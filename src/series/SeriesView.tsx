@@ -73,6 +73,7 @@ function collectChapters(series: Series): ChapterMeta[] {
       continue;
     }
     if (t.permalink) {
+      const title = t.title || t.permalink;
       const scanlatorTag = t.tags?.find((tag) => isScanlatorTag(tag.type));
 
       const rawChapterTags = (t.tags ?? []).filter((tag) => {
@@ -87,10 +88,10 @@ function collectChapters(series: Series): ChapterMeta[] {
       const uniqueTags = rawChapterTags.length > 0 ? sortTagsByCategory(rawChapterTags) : undefined;
 
       out.push({
-        title: t.title || t.permalink,
+        title,
         permalink: t.permalink,
         released_on: t.released_on ?? undefined,
-        volumeHeader: volumeHeader || extractVolumeHeader(t.title || t.permalink),
+        volumeHeader: volumeHeader || extractVolumeHeader(title),
         scanlatorGroup: scanlatorTag?.permalink ? scanlatorTag.permalink.replace(/^mdx-group:/, "") : undefined,
         scanlatorGroupName: scanlatorTag?.name,
         tags: uniqueTags,
@@ -99,7 +100,6 @@ function collectChapters(series: Series): ChapterMeta[] {
   }
   return out;
 }
-
 
 export function SeriesView() {
   const [currentPage, setCurrentPage] = createSignal(1);
@@ -419,7 +419,6 @@ export function SeriesView() {
     }
   };
 
-
   const handleOpenAddToCol = (anchorEl: HTMLElement): void => {
     const d = data();
     if (!d) return;
@@ -434,9 +433,6 @@ export function SeriesView() {
     );
   };
 
-  const isRedirected = (): boolean =>
-    data.error !== undefined && data.error instanceof SeriesRedirected;
-
   const ordered = createMemo<ChapterMeta[]>(() => {
     const chs = data()?.chapters ?? [];
     return sortOrder() === "asc" ? chs : [...chs].reverse();
@@ -444,10 +440,10 @@ export function SeriesView() {
 
   return (
     <>
-      <Show when={!isRedirected() && (!data() && (showSpinner() || data.loading))}>
+      <Show when={!(data.error instanceof SeriesRedirected) && !data() && showSpinner()}>
         <Loading message={getRandomLoadingMessage()} />
       </Show>
-      <Show when={!isRedirected() && !data.loading && data.error !== undefined && !data()}>
+      <Show when={!(data.error instanceof SeriesRedirected) && !data.loading && data.error !== undefined && !data()}>
         <ErrorRetryRow
           message={t("series.loadError", { msg: errorMessage(data.error) })}
           onRetry={() => void refetch()}
@@ -467,7 +463,6 @@ export function SeriesView() {
         ordered={ordered}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
-        followed={followed}
         blacklisted={blacklisted}
         mobileActions={
           <SeriesActions
@@ -509,12 +504,11 @@ function SeriesBody(props: {
     readHistorySet: Set<string>;
     queueTotals: Map<string, number>;
   };
-  followed: () => boolean;
   blacklisted: () => boolean;
   ordered: Accessor<ChapterMeta[]>;
   sortOrder: Accessor<"asc" | "desc">;
   setSortOrder: (v: "asc" | "desc") => void;
-  mobileActions?: JSX.Element;
+  mobileActions: JSX.Element;
   onDownloadChapter?: (ch: ChapterMeta) => Promise<void> | void;
   onToggleRead?: (ch: ChapterMeta, isCurrentlyRead: boolean) => Promise<void> | void;
   onPage: (p: number) => void;
@@ -535,7 +529,7 @@ function SeriesBody(props: {
 
       <SeriesHeader series={props.data.series} coverPath={props.data.coverPath} />
 
-      <Show when={isMobile() && props.mobileActions}>
+      <Show when={isMobile()}>
         <div class="ds-series-mobile-actions">
           {props.mobileActions}
         </div>

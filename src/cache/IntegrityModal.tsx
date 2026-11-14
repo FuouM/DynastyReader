@@ -7,8 +7,16 @@ import {
   runIntegrityCheck,
   runIntegrityRecovery,
   type IntegrityReport,
+  type RecoveryPhase,
   type RecoveryResult,
 } from "./cache-integrity";
+
+const PHASE_KEYS: Record<RecoveryPhase, Parameters<typeof t>[0]> = {
+  deleting_corrupt: "cache.integrityPhaseDeleting",
+  cleaning_db: "cache.integrityPhaseCleaning",
+  recovering_covers: "cache.integrityPhaseCovers",
+  queuing_chapters: "cache.integrityPhaseChapters",
+};
 
 export interface IntegrityModalProps {
   open: boolean;
@@ -56,7 +64,7 @@ export function IntegrityModal(props: IntegrityModalProps) {
         pageCount: 0,
         coverCount: 0,
         issues: [],
-        error: err instanceof Error ? err.message : String(err),
+        error: errorMessage(err),
       });
       setStage("scanned");
     }
@@ -81,15 +89,7 @@ export function IntegrityModal(props: IntegrityModalProps) {
     setRecoveryError(null);
     try {
       const res = await runIntegrityRecovery(rep.issues, (phase, cur, tot) => {
-        if (phase === "deleting_corrupt") {
-          setPhaseText(t("cache.integrityPhaseDeleting", { current: cur, total: tot }));
-        } else if (phase === "cleaning_db") {
-          setPhaseText(t("cache.integrityPhaseCleaning", { current: cur, total: tot }));
-        } else if (phase === "recovering_covers") {
-          setPhaseText(t("cache.integrityPhaseCovers", { current: cur, total: tot }));
-        } else if (phase === "queuing_chapters") {
-          setPhaseText(t("cache.integrityPhaseChapters", { current: cur, total: tot }));
-        }
+        setPhaseText(t(PHASE_KEYS[phase], { current: cur, total: tot }));
       });
       setRecoveryResult(res);
       setStage("recovered");
@@ -125,13 +125,16 @@ export function IntegrityModal(props: IntegrityModalProps) {
       }
       footer={
         <div class="ds-modal-footer-actions">
-          <Show when={stage() === "scanned" && hasIssues()}>
+          <Show when={stage() === "scanned" || stage() === "recovered"}>
             <Button
               icon={<RefreshIcon />}
               text={t("cache.integrityRecheck")}
               class="ds-btn-sm"
               onClick={() => void startScan()}
             />
+          </Show>
+
+          <Show when={stage() === "scanned" && hasIssues()}>
             <Button
               icon={<Icon name="wrench-adjustable-circle" />}
               text={t("cache.integrityRecoverNow")}
@@ -147,12 +150,6 @@ export function IntegrityModal(props: IntegrityModalProps) {
           </Show>
 
           <Show when={(stage() === "scanned" && !hasIssues()) || stage() === "recovered"}>
-            <Button
-              icon={<RefreshIcon />}
-              text={t("cache.integrityRecheck")}
-              class="ds-btn-sm"
-              onClick={() => void startScan()}
-            />
             <Button
               text={t("cache.integrityNoIssuesAction")}
               class="ds-btn-sm"

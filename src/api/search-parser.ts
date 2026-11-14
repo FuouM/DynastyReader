@@ -18,6 +18,17 @@ function parseDynastyHref(href: string): {
   return { kind: kind as SearchResultItem["kind"], permalink };
 }
 
+/** Name + permalink of a secondary entity link (author, doujin parent), unless it is the row's main link. */
+function linkedEntity(
+  link: HTMLAnchorElement | null,
+  mainLink: HTMLAnchorElement,
+  pattern: RegExp,
+): { name: string; permalink: string } | undefined {
+  if (!link || link === mainLink) return undefined;
+  const m = pattern.exec(link.getAttribute("href") || "");
+  if (!m?.[1]) return undefined;
+  return { name: decodeEntities(link.textContent?.trim() || m[1]), permalink: m[1] };
+}
 
 /**
  * Parses raw Dynasty Scans search HTML into a typed SearchResultPage.
@@ -41,35 +52,13 @@ export function parseSearchHtml(
     const { kind, permalink } = parseDynastyHref(href);
     const title = decodeEntities(mainLink.textContent?.trim() || permalink);
 
-    // Extract Author
-    let author: { name: string; permalink: string } | undefined;
     const authorLink = dd.querySelector<HTMLAnchorElement>('a[href^="/authors/"]');
-    if (authorLink && authorLink !== mainLink) {
-      const aHref = authorLink.getAttribute("href") || "";
-      const aMatch = /\/authors\/([^/?#]+)/.exec(aHref);
-      if (aMatch?.[1]) {
-        author = {
-          name: decodeEntities(authorLink.textContent?.trim() || aMatch[1]),
-          permalink: aMatch[1],
-        };
-      }
-    }
+    const author = linkedEntity(authorLink, mainLink, /\/authors\/([^/?#]+)/);
 
-    // Extract Doujin parent
-    let doujin: { name: string; permalink: string } | undefined;
     const doujinLink = dd.querySelector<HTMLAnchorElement>(
       'small.doujin_tags a[href^="/doujins/"], small a[href^="/doujins/"]',
     );
-    if (doujinLink && doujinLink !== mainLink) {
-      const dHref = doujinLink.getAttribute("href") || "";
-      const dMatch = /\/doujins\/([^/?#]+)/.exec(dHref);
-      if (dMatch?.[1]) {
-        doujin = {
-          name: decodeEntities(doujinLink.textContent?.trim() || dMatch[1]),
-          permalink: dMatch[1],
-        };
-      }
-    }
+    const doujin = linkedEntity(doujinLink, mainLink, /\/doujins\/([^/?#]+)/);
 
     // Extract Released On date
     let releasedOn: string | undefined;

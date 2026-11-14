@@ -35,27 +35,24 @@ export interface DbStats {
   totalRows: number;
 }
 
-const ALLOWED_COUNT_TABLES: Record<string, true> = {
-  followed_series: true,
-  reading_progress: true,
-  reading_history: true,
-  bookmarks: true,
-  cached_metadata: true,
-  cached_pages: true,
-  tag_blacklist: true,
-  series_blacklist: true,
-  collections: true,
-  collection_items: true,
-  directory_entries: true,
-  local_series: true,
-  download_queue: true,
+/** DbTableCounts field → table it counts. */
+const COUNT_TABLES: Record<keyof DbTableCounts, string> = {
+  followedSeries: "followed_series",
+  readingProgress: "reading_progress",
+  readingHistory: "reading_history",
+  bookmarks: "bookmarks",
+  cachedMetadata: "cached_metadata",
+  cachedPages: "cached_pages",
+  tagBlacklist: "tag_blacklist",
+  seriesBlacklist: "series_blacklist",
+  collections: "collections",
+  collectionItems: "collection_items",
+  directoryEntries: "directory_entries",
+  localSeries: "local_series",
+  downloadQueue: "download_queue",
 };
 
 async function countTable(table: string): Promise<number> {
-  if (!ALLOWED_COUNT_TABLES[table]) {
-    log.warn("db/manage", `countTable rejected unapproved table name: "${table}"`);
-    return 0;
-  }
   try {
     const rows = await query<{ c: number }>(`SELECT COUNT(*) as c FROM ${table}`);
     return rows[0]?.c ?? 0;
@@ -93,51 +90,11 @@ export async function getDbFileStats(dbName: string = DB_NAME): Promise<DbFileSt
 }
 
 /** Row counts for every table. */
-export async function getDbTableCounts(): Promise<DbTableCounts> {
-  const [
-    followedSeries,
-    readingProgress,
-    readingHistory,
-    bookmarks,
-    cachedMetadata,
-    cachedPages,
-    tagBlacklist,
-    seriesBlacklist,
-    collections,
-    collectionItems,
-    directoryEntries,
-    localSeries,
-    downloadQueue,
-  ] = await Promise.all([
-    countTable("followed_series"),
-    countTable("reading_progress"),
-    countTable("reading_history"),
-    countTable("bookmarks"),
-    countTable("cached_metadata"),
-    countTable("cached_pages"),
-    countTable("tag_blacklist"),
-    countTable("series_blacklist"),
-    countTable("collections"),
-    countTable("collection_items"),
-    countTable("directory_entries"),
-    countTable("local_series"),
-    countTable("download_queue"),
-  ]);
-  return {
-    followedSeries,
-    readingProgress,
-    readingHistory,
-    bookmarks,
-    cachedMetadata,
-    cachedPages,
-    tagBlacklist,
-    seriesBlacklist,
-    collections,
-    collectionItems,
-    directoryEntries,
-    localSeries,
-    downloadQueue,
-  };
+async function getDbTableCounts(): Promise<DbTableCounts> {
+  const entries = await Promise.all(
+    Object.entries(COUNT_TABLES).map(async ([key, table]) => [key, await countTable(table)] as const),
+  );
+  return Object.fromEntries(entries) as Record<keyof DbTableCounts, number>;
 }
 
 export async function getDbStats(): Promise<DbStats> {

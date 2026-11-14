@@ -113,11 +113,10 @@ export async function loadChapterList(s: ReaderSession, force = false): Promise<
             const p = normalizePermalink(c.permalink);
             return p === curP || p.endsWith(`/${curP}`) || curP.endsWith(`/${p}`);
           });
-          if (!found && cl.length > 0) {
+          if (!found) {
             continue;
           }
         }
-        return cl;
       }
       return cl;
     } catch (err) {
@@ -140,7 +139,7 @@ export async function gotoAdjacent(s: ReaderSession, direction: "prev" | "next")
       await s.chapterListPromise;
     }
     let cl = s.chapterList();
-    let adj = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
+    const adj = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
     let chapter = direction === "prev" ? adj.prevCh : adj.nextCh;
     if (!chapter && s.seriesPermalink()) {
       const needsForce = cl.length > 0;
@@ -149,11 +148,8 @@ export async function gotoAdjacent(s: ReaderSession, direction: "prev" | "next")
         const reloaded = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
         chapter = direction === "prev" ? reloaded.prevCh : reloaded.nextCh;
         // Fallback for new chapter still missing after forced fetch: treat as newest
-        if (!chapter && direction === "prev" && cl.length > 0) {
-          const stillMissing = getAdjacentChapters(cl, s.permalink, s.chapterTitle());
-          if (stillMissing.prevCh === null && stillMissing.nextCh === null) {
-            chapter = cl[cl.length - 1] ?? null;
-          }
+        if (!chapter && direction === "prev" && reloaded.prevCh === null && reloaded.nextCh === null) {
+          chapter = cl[cl.length - 1] ?? null;
         }
       }
     }

@@ -16,7 +16,7 @@ import { SeriesSchema, ChapterSchema, type ValidatedChapter } from "./schemas";
 import { coverPathsForChapter, coverPathsForSeries, fetchAndCacheCover } from "./cover-pipeline";
 const SERIES_PRIMARY_TIMEOUT_MS = 15_000;
 const SERIES_FALLBACK_TIMEOUT_MS = 5_000;
-export const SERIES_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
+const SERIES_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
 /** Ordered candidate JSON endpoints for a series-style permalink. */
 function seriesEndpoints(permalink: string, preferredType?: string, page = 1): string[] {
   const enc = encodeURIComponent(permalink);
@@ -253,13 +253,6 @@ async function getLocalCover(coverKey: string): Promise<string | null> {
 }
 
 /**
- * Checks local SQLite cache for an already-downloaded series cover. Zero network traffic.
- */
-function getLocalSeriesCover(permalink: string): Promise<string | null> {
-  return getLocalCover(`series:${permalink}`);
-}
-
-/**
  * Downloads page 1 of a standalone chapter as its cover, automatically
  * optimizing and compressing it into a lightweight WebP thumbnail via the backend media engine.
  */
@@ -288,7 +281,7 @@ export async function getOrHydrateSeriesCover(
   onPhase?: (phase: "downloading" | "processing") => void,
 ): Promise<string | null> {
   if (!permalink) return null;
-  const local = await getLocalSeriesCover(permalink);
+  const local = await getLocalCover(`series:${permalink}`);
   if (local) return local;
 
   // Check if series metadata is already cached
@@ -323,12 +316,6 @@ export async function getOrHydrateSeriesCover(
   return getSeriesCover(permalink, coverUrl, onPhase);
 }
 
-/**
- * Opportunistic local-first + lazy background cover hydration for any feed item.
- * 1. Checks SQLite for existing cover.
- * 2. If series/doujin permalink provided, downloads series cover.
- * 3. Fallback for standalone chapters / oneshots: loads chapter page 1 as cover art.
- */
 export interface HydrateItemCoverOpts {
   coverKey: string;
   chapterPermalink: string;
@@ -337,6 +324,12 @@ export interface HydrateItemCoverOpts {
   onPhase?: (phase: "downloading" | "processing") => void;
 }
 
+/**
+ * Opportunistic local-first + lazy background cover hydration for any feed item.
+ * 1. Checks SQLite for existing cover.
+ * 2. If series/doujin permalink provided, downloads series cover.
+ * 3. Fallback for standalone chapters / oneshots: loads chapter page 1 as cover art.
+ */
 export async function getOrHydrateItemCover(opts: HydrateItemCoverOpts): Promise<string | null> {
   const { coverKey, chapterPermalink, seriesOrGroupPermalink, seriesType, onPhase } = opts;
   if (!coverKey) return null;

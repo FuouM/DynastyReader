@@ -15,25 +15,25 @@ import { navigate } from "../stores/router";
 import { setActions, setTitle, showBanner } from "../stores/topbar";
 import { decodeEntities, formatDate, canonicalUrl, errorMessage } from "../utils/formatting";
 import { seriesTypeToPath } from "../taxonomy";
-import { t, getRandomLoadingMessage } from "../i18n";
+import { t } from "../i18n";
 import { getOrHydrateItemCover, getOrHydrateSeriesCover } from "../api/series";
 import { getBlacklistMode, getBlacklistRevision, isSeriesBlacklisted } from "../db/blacklist.repo";
 import { getCollectionById, getCollectionItems, getCollectionsRevision, removeItemFromCollection, updateCollectionItemCover, renameCollection } from "../db/collections.repo";
 import { deleteCached } from "../db/metadata.repo";
 import { seriesCoverKey } from "../lib/cache-keys";
 import type { CollectionItemRow, CollectionRow } from "../types/db";
-import { Loading, ErrorRetryRow, useDelayedSpinner, Icon, Button, ConfirmDeleteButton, InputField, Modal } from "soulwindow/solid";
+import { useDelayedSpinner, Icon, Button, InputField, Modal } from "soulwindow/solid";
 import {
   FolderIcon,
   StarIcon,
   ArrowLeftIcon,
   RefreshIcon,
-  TrashIcon,
 } from "../components/icons";
 import { ExportModal } from "./ExportModal";
 import { ImportModal } from "./ImportModal";
 import { useBulkSelection } from "../hooks/useBulkSelection";
 import { LibraryItemRow } from "./LibraryItemRow";
+import { BulkSelectionBar, PaneLoadGate, longPressSelect } from "./LibraryPaneParts";
 
 export interface CollectionDetailViewProps {
   collectionId: number;
@@ -52,6 +52,9 @@ function isItemBl(it: CollectionItemRow): boolean {
 
 export function CollectionDetailView(props: CollectionDetailViewProps) {
   const [tick, setTick] = createSignal(0);
+  const reload = (): void => {
+    setTick((n) => n + 1);
+  };
 
   const [filter, setFilter] = createSignal("");
   const [exportOpen, setExportOpen] = createSignal(false);
@@ -77,7 +80,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
       await renameCollection(id, name);
       showBanner(t("library.renamedCollectionBanner", { name }));
       setRenameOpen(false);
-      setTick((t) => t + 1);
+      reload();
     } catch (err) {
       showBanner(t("library.renameCollectionError", { msg: errorMessage(err) }));
     } finally {
@@ -128,7 +131,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
           icon={<RefreshIcon />}
           text={t("common.refresh")}
           title={t("common.refresh")}
-          onClick={() => setTick((t) => t + 1)}
+          onClick={reload}
         />
       </>,
     );
@@ -169,33 +172,19 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
     );
   });
 
-  const { selectMode, selected, startSelectionWith, toggleSelectMode, toggleRow, deleteSelected, isAllSelected, toggleSelectAll } =
-    useBulkSelection<string>(async (perms) => {
-      for (const p of perms) {
-        await removeItemFromCollection(props.collectionId, p);
-      }
-    }, () => setTick((t) => t + 1));
+  const selection = useBulkSelection<string>(async (perms) => {
+    for (const p of perms) {
+      await removeItemFromCollection(props.collectionId, p);
+    }
+  }, reload);
 
-  const permalinks = () => filteredItems().map((it) => it.item_permalink);
   return (
     <div id="ds-collection-detail-container">
-      <Show
-        when={data() !== undefined}
-        fallback={
-          <Show
-            when={data.error !== undefined}
-            fallback={
-              <Show when={showSpinner()}>
-                <Loading message={getRandomLoadingMessage()} />
-              </Show>
-            }
-          >
-            <ErrorRetryRow
-              message={errorMessage(data.error)}
-              onRetry={() => void refetch()}
-            />
-          </Show>
-        }
+      <PaneLoadGate
+        loaded={data() !== undefined}
+        error={data.error}
+        showSpinner={showSpinner()}
+        onRetry={() => void refetch()}
       >
         <div class="ds-collection-header-bar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
           <div class="ds-collection-stats">
@@ -209,7 +198,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
               <b>{decodeEntities(collection()?.name ?? "")}</b> — <b>{totalItems()}</b> {totalItems() === 1 ? t("library.nounItem") : t("library.nounItems")}
             </span>
           </div>
-          <Show when={!selectMode()}>
+          <Show when={!selection.selectMode()}>
             <InputField
               placeholder={t("library.filterCollectionPlaceholder")}
               wrapperClass="ds-collection-filter"
@@ -217,25 +206,11 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
               onInput={(val) => setFilter(val)}
             />
           </Show>
-          <div class="ds-bulk-actions-bar" style="margin-left:auto;display:flex;align-items:center;gap:4px;">
-            <Show when={!selectMode()}>
-              <Button text={t("library.selectModeButton")} onClick={toggleSelectMode} />
-            </Show>
-            <Show when={selectMode()}>
-              <Button
-                text={isAllSelected(permalinks()) ? t("common.deselectAll") : t("common.selectAll")}
-                onClick={() => toggleSelectAll(permalinks())}
-              />
-              <span class="ds-muted" style="font-size:12px;">{t("library.selectedCount", { count: selected().size })}</span>
-              <ConfirmDeleteButton
-                icon={<TrashIcon />}
-                text={t("library.deleteSelected", { count: selected().size })}
-                disabled={selected().size === 0}
-                onConfirm={deleteSelected}
-              />
-              <Button text={t("common.cancel")} onClick={toggleSelectMode} />
-            </Show>
-          </div>
+          <BulkSelectionBar
+            selection={selection}
+            keys={filteredItems().map((it) => it.item_permalink)}
+            style="margin-left:auto;display:flex;align-items:center;gap:4px;"
+          />
         </div>
 
         <div class="ds-collection-list">
@@ -257,24 +232,18 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
                   <CollectionItemCard
                     it={it}
                     collectionId={props.collectionId}
-                    selectionMode={selectMode()}
-                    selected={selected().has(it.item_permalink)}
-                    onToggleSelect={() => toggleRow(it.item_permalink)}
-                    onLongPress={() => {
-                      if (!selectMode()) {
-                        startSelectionWith(it.item_permalink);
-                      } else {
-                        toggleRow(it.item_permalink);
-                      }
-                    }}
-                    onChanged={() => setTick((t) => t + 1)}
+                    selectionMode={selection.selectMode()}
+                    selected={selection.selected().has(it.item_permalink)}
+                    onToggleSelect={() => selection.toggleRow(it.item_permalink)}
+                    onLongPress={() => longPressSelect(selection, it.item_permalink)}
+                    onChanged={reload}
                   />
                 )}
               </For>
             </div>
           </Show>
         </div>
-      </Show>
+      </PaneLoadGate>
       <ExportModal
         open={exportOpen()}
         initialScope="collection"
@@ -288,7 +257,7 @@ export function CollectionDetailView(props: CollectionDetailViewProps) {
         initialCollectionId={props.collectionId}
         collectionName={collection()?.name}
         onClose={() => setImportOpen(false)}
-        onImported={() => setTick((t) => t + 1)}
+        onImported={reload}
       />
       <Modal
         open={renameOpen()}

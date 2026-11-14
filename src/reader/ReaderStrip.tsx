@@ -65,7 +65,7 @@ function SpreadSlot(props: { session: ReaderSession; group: SpreadGroup }) {
   });
 
   const spreadStyle = createMemo(() => {
-    if (single || props.group.pageIndices.length !== 2) return undefined;
+    if (props.group.pageIndices.length !== 2) return undefined;
     const [p0, p1] = props.group.pageIndices;
     if (p0 === undefined || p1 === undefined) return undefined;
     const d0 = s.pageDimensions[0][p0];

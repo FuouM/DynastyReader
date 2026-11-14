@@ -1,4 +1,5 @@
 import { query } from "./client";
+import { inClause } from "./paging";
 import { canonicalUrl, decodeEntities } from "../utils/formatting";
 import { itemKindToPath } from "../taxonomy";
 import { activeProvider } from "../stores/provider";
@@ -53,12 +54,7 @@ export interface ExportPayload {
   generator: "DynastyReader";
   exportedAt: string;
   scope: ExportScope;
-  counts: {
-    followed: number;
-    collections: number;
-    collectionItems: number;
-    bookmarks?: number;
-  };
+  counts: ExportCounts;
   followed?: ExportFollowedItem[];
   collections?: ExportCollection[];
   bookmarks?: ExportBookmarkItem[];
@@ -120,7 +116,7 @@ async function getAllFollowedSeries(): Promise<ExportFollowedItem[]> {
  * along with all their items.
  * Uses two fast queries without N+1 loops.
  */
-async function getAllCollections(collectionIds?: number | number[]): Promise<ExportCollection[]> {
+async function getAllCollections(ids?: number[]): Promise<ExportCollection[]> {
   interface CollectionDbRow {
     id: number;
     name: string;
@@ -140,36 +136,23 @@ async function getAllCollections(collectionIds?: number | number[]): Promise<Exp
     created_at: number;
   }
 
-  const ids = collectionIds !== undefined
-    ? (Array.isArray(collectionIds) ? collectionIds : [collectionIds])
-    : undefined;
   if (ids !== undefined && ids.length === 0) {
     return [];
   }
 
-  const hasFilter = ids !== undefined && ids.length > 0;
-  const inPlaceholders = hasFilter ? ids.map(() => "?").join(",") : "";
+  const colWhere = ids ? ` WHERE id IN (${inClause(ids.length)})` : "";
+  const itemWhere = ids ? ` WHERE collection_id IN (${inClause(ids.length)})` : "";
+  const params = ids ?? [];
 
-  const colQuery = hasFilter
-    ? `SELECT id, name, is_default, created_at FROM collections WHERE id IN (${inPlaceholders}) ORDER BY is_default DESC, name COLLATE NOCASE ASC`
-    : `SELECT id, name, is_default, created_at FROM collections ORDER BY is_default DESC, name COLLATE NOCASE ASC`;
-  const colParams = hasFilter ? ids : [];
-
-  const itemQuery = hasFilter
-    ? `SELECT id, collection_id, item_permalink, item_title, item_kind, cover,
-              parent_series_permalink, parent_series_name, created_at
-       FROM collection_items
-       WHERE collection_id IN (${inPlaceholders})
-       ORDER BY created_at DESC`
-    : `SELECT id, collection_id, item_permalink, item_title, item_kind, cover,
-              parent_series_permalink, parent_series_name, created_at
-       FROM collection_items
-       ORDER BY created_at DESC`;
-  const itemParams = hasFilter ? ids : [];
+  const colQuery = `SELECT id, name, is_default, created_at FROM collections${colWhere} ORDER BY is_default DESC, name COLLATE NOCASE ASC`;
+  const itemQuery = `SELECT id, collection_id, item_permalink, item_title, item_kind, cover,
+            parent_series_permalink, parent_series_name, created_at
+     FROM collection_items${itemWhere}
+     ORDER BY created_at DESC`;
 
   const [cols, items] = await Promise.all([
-    query<CollectionDbRow>(colQuery, colParams),
-    query<CollectionItemDbRow>(itemQuery, itemParams),
+    query<CollectionDbRow>(colQuery, params),
+    query<CollectionItemDbRow>(itemQuery, params),
   ]);
 
   // Group items by collection_id in O(N)
@@ -251,7 +234,7 @@ async function getAllBookmarks(): Promise<ExportBookmarkItem[]> {
  */
 async function fetchExportData(
   scope: ExportScope,
-  collectionIds?: number | number[],
+  collectionIds?: number[],
 ): Promise<{
   followed?: ExportFollowedItem[];
   collections?: ExportCollection[];
@@ -275,22 +258,15 @@ async function fetchExportData(
     bookmarks = await getAllBookmarks();
   }
 
-  const followedCount = followed ? followed.length : 0;
-  const collectionsCount = collections ? collections.length : 0;
-  const collectionItemsCount = collections
-    ? collections.reduce((acc, c) => acc + c.items.length, 0)
-    : 0;
-  const bookmarksCount = bookmarks ? bookmarks.length : 0;
-
   return {
     followed,
     collections,
     bookmarks,
     counts: {
-      followed: followedCount,
-      collections: collectionsCount,
-      collectionItems: collectionItemsCount,
-      bookmarks: bookmarksCount,
+      followed: followed?.length ?? 0,
+      collections: collections?.length ?? 0,
+      collectionItems: collections?.reduce((acc, c) => acc + c.items.length, 0) ?? 0,
+      bookmarks: bookmarks?.length ?? 0,
     },
   };
 }
@@ -474,15 +450,6 @@ export async function fetchAndFormatExport(opts: {
 }> {
   const ids = opts.collectionIds ?? (opts.collectionId !== undefined ? [opts.collectionId] : undefined);
   const data = await fetchExportData(opts.scope, ids);
-  const text = formatExportData(
-    {
-      scope: opts.scope,
-      followed: data.followed,
-      collections: data.collections,
-      bookmarks: data.bookmarks,
-      counts: data.counts,
-    },
-    opts.format,
-  );
+  const text = formatExportData({ ...data, scope: opts.scope }, opts.format);
   return { text, counts: data.counts };
 }

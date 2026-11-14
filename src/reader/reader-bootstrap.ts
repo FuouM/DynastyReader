@@ -5,7 +5,6 @@
 
 import type { ReaderSession } from "./reader-session";
 import type { Chapter } from "../types/api";
-import { convertFileSrc } from "../ipc";
 import { fetchSeries } from "../api/series";
 import { addHistory, getBookmark, getReadingProgress } from "../db/library.repo";
 import { getCachedPages } from "../db/cache.repo";
@@ -63,20 +62,14 @@ function resolveSeriesContext(s: ReaderSession, chapter: Chapter): void {
   const permalink = s.permalink;
   const containerTag = getChapterContainerTag(chapter.tags);
   const isLocalChapter = permalink.startsWith("local:");
-  const containerPerm = containerTag?.permalink
-    ? isLocalChapter && !containerTag.permalink.startsWith("local:")
-      ? `local:${containerTag.permalink}`
-      : containerTag.permalink
-    : null;
+  const toLocal = (p: string): string =>
+    isLocalChapter && !p.startsWith("local:") ? `local:${p}` : p;
+  const containerPerm = containerTag?.permalink ? toLocal(containerTag.permalink) : null;
   s.containerTagPermalink = containerPerm;
   s.containerTagType = isLocalChapter ? "local" : (containerTag?.type || null);
 
   const hasRouteChapterList = Boolean(route.chapterList && route.chapterList.length > 0);
-  const routeSeriesPerm = route.seriesPermalink
-    ? isLocalChapter && !route.seriesPermalink.startsWith("local:")
-      ? `local:${route.seriesPermalink}`
-      : route.seriesPermalink
-    : null;
+  const routeSeriesPerm = route.seriesPermalink ? toLocal(route.seriesPermalink) : null;
 
   // Tag/author/pairing listings mis-attribute chapters. If the chapter has a
   // true container (Series/Anthology/Issue/Doujin) that differs from the
@@ -86,10 +79,8 @@ function resolveSeriesContext(s: ReaderSession, chapter: Chapter): void {
   const routeMismatch =
     Boolean(containerPerm && routeSeriesPerm && containerPerm !== routeSeriesPerm);
   const useRouteList = hasRouteChapterList && !routeMismatch;
-  let seriesPermalink = containerPerm || (!routeMismatch ? routeSeriesPerm : null);
-  if (isLocalChapter && seriesPermalink && !seriesPermalink.startsWith("local:")) {
-    seriesPermalink = `local:${seriesPermalink}`;
-  }
+  // Both candidates are already `local:`-prefixed for local chapters.
+  const seriesPermalink = containerPerm || (!routeMismatch ? routeSeriesPerm : null);
   const seriesName = (containerTag && containerTag.name) || (!routeMismatch ? route.seriesName || chapter.title : chapter.title);
   const preferredType = isLocalChapter ? "local" : ((containerTag && containerTag.type) || (!routeMismatch && route.seriesPermalink ? "series" : undefined));
 
@@ -185,28 +176,7 @@ function preloadInitialDimensions(s: ReaderSession, pageCount: number): void {
 
   for (const i of priorityIndices) {
     const p = cachedMap[i];
-    if (!p) continue;
-    const img = new Image();
-    img.src = convertFileSrc(p);
-    if (typeof img.decode === "function") {
-      img.decode().then(() => {
-        if (!s.disposedFlag && img.naturalWidth > 0 && img.naturalHeight > 0) {
-          s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-        }
-      }).catch(() => {
-        if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0 && !s.disposedFlag) {
-          s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-        }
-      });
-    } else if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-      s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-    } else {
-      img.onload = () => {
-        if (!s.disposedFlag) {
-          s.setPageDimension(i, img.naturalWidth, img.naturalHeight);
-        }
-      };
-    }
+    if (p) s.probePageDimensions(i, p);
   }
 }
 
@@ -232,35 +202,16 @@ function initSlotStatesAndQueue(s: ReaderSession, pageCount: number): void {
   const cur = s.currentIndex();
   if (s.isSpread() && s.spreads().length > 0) {
     const curSpread = spreadIndexOf(s.spreads(), cur);
-    const active = s.spreads()[curSpread];
-    if (active) {
-      for (const p of active.pageIndices) {
-        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
-      }
-    }
-    const nextSpread = s.spreads()[curSpread + 1];
-    if (nextSpread) {
-      for (const p of nextSpread.pageIndices) {
-        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
-      }
-    }
-    const spreadPlus2 = s.spreads()[curSpread + 2];
-    if (spreadPlus2) {
-      for (const p of spreadPlus2.pageIndices) {
-        if (s.getCachedPath(p) === undefined) s.enqueue(p, true);
-      }
-    }
+    s.enqueueSpread(curSpread);
+    s.enqueueSpread(curSpread + 1);
+    s.enqueueSpread(curSpread + 2);
   } else {
     s.prioritizeReadingWindow(cur);
   }
 
   // 3. BACKGROUND AFTER: If auto-cache is enabled, enqueue remaining chapter pages with background priority
   if (autoCacheAll) {
-    for (let i = 0; i < pageCount; i++) {
-      if (s.getCachedPath(i) === undefined) {
-        s.enqueue(i, false);
-      }
-    }
+    for (let i = 0; i < pageCount; i++) s.enqueue(i, false);
   }
 }
 
@@ -378,7 +329,6 @@ export async function initReaderSession(s: ReaderSession): Promise<void> {
     bookmarked = (await getBookmark(permalink)) !== null;
   } catch (err) {
     log.debug("reader-bootstrap", "getBookmark failed:", err);
-    bookmarked = false;
   }
   s.setBookmarked(bookmarked);
 

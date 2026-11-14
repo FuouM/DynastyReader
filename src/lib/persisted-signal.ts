@@ -46,7 +46,7 @@ export function usePersistedSetting<T>(getter: () => T, setter: (v: T) => unknow
 }
 
 /** Parse a value persisted via JSON.stringify-or-raw string (legacy quote-wrapped). */
-export function parsePersistedString(raw: string, fallback: string): string {
+function parsePersistedString(raw: string): string {
   try {
     const parsed = JSON.parse(raw);
     if (typeof parsed === "string") return parsed;
@@ -54,12 +54,7 @@ export function parsePersistedString(raw: string, fallback: string): string {
   } catch (err) {
     log.debug("persisted", "deserialize fallback, raw:", raw, err);
   }
-  return raw.replace(/^["']|["']$/g, "").trim() || fallback;
-}
-
-/** Parse a persisted string then normalize to lowercase id form (a-z0-9-). */
-export function parsePersistedId(raw: string, fallback: string): string {
-  return parsePersistedString(raw, fallback).trim().toLowerCase();
+  return raw.replace(/^["']|["']$/g, "").trim();
 }
 
 export interface PersistedSignalOptions<T> {
@@ -85,11 +80,9 @@ export function persistedSignal<T>(
     opts.serialize = (v: T) => String(v);
   }
 
-  let initial = defaultValue;
-
   const customDeserialize = options.deserialize;
   opts.deserialize = (data: string): T => {
-    const normalized = isStringType ? parsePersistedString(data, "") : data;
+    const normalized = isStringType ? parsePersistedString(data) : data;
     let val: T;
     if (customDeserialize) {
       try {
@@ -129,7 +122,8 @@ export function persistedSignal<T>(
     // the canonical format immediately so localStorage stays clean.
     if (options.name && typeof localStorage !== "undefined") {
       try {
-        const canonical = opts.serialize ? opts.serialize(val) : (isStringType ? String(val ?? "") : JSON.stringify(val));
+        // String-typed signals always have opts.serialize set above.
+        const canonical = opts.serialize ? opts.serialize(val) : JSON.stringify(val);
         if (canonical != null && canonical !== data) {
           localStorage.setItem(options.name, canonical);
         }
@@ -138,5 +132,5 @@ export function persistedSignal<T>(
 
     return val;
   };
-  return makePersisted(createSignal<T>(initial), opts);
+  return makePersisted(createSignal<T>(defaultValue), opts);
 }

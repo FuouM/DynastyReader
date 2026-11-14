@@ -61,8 +61,8 @@ import {
 import {
   formatMangaTitle,
   getMangaCoverUrl,
-  getMangaAuthors,
-  getMangaAuthorEntities,
+  getMangaAuthorTags,
+  getChapterScanlationGroup,
   sortMangaDexChapters,
   formatMangaDexChapterTitle,
 } from "./mangadex/mapping";
@@ -88,6 +88,18 @@ import type {
 import type { Series, Chapter, SeriesTag, SeriesTaggings, SeriesTaggable } from "../types/api";
 import type { MangaDexAuthor, MangaDexManga, MangaDexScanlationGroup } from "./mangadex/types";
 import { log } from "../utils/log";
+
+/** Page size for author/group/tag title listings. */
+const ENTITY_PAGE_SIZE = 48;
+
+function mangaTaggables(mangaList: MangaDexManga[]): SeriesTaggable[] {
+  return mangaList.map((m) => ({
+    type: "Series",
+    name: formatMangaTitle(m),
+    permalink: `mdx:${m.id}`,
+    cover: getMangaCoverUrl(m, "256"),
+  }));
+}
 
 export class MangaDexProvider implements ContentProviderAdapter {
   readonly id = "mangadex" as const;
@@ -390,40 +402,20 @@ export class MangaDexProvider implements ContentProviderAdapter {
 
     const title = formatMangaTitle(manga);
     const coverUrl = getMangaCoverUrl(manga, "512");
-    const authors = getMangaAuthors(manga);
 
     const sortedChapters = sortMangaDexChapters(feed.data);
 
     // Collect scanlator groups across chapters
     const scanlatorMap = new Map<string, string>();
     for (const ch of sortedChapters) {
-      const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
-      const attrs = groupRel?.attributes;
-      const groupName =
-        attrs && typeof attrs === "object" && "name" in attrs && typeof attrs.name === "string"
-          ? attrs.name
-          : undefined;
-      if (groupName) {
-        scanlatorMap.set(groupName, groupRel?.id || groupName);
+      const group = getChapterScanlationGroup(ch);
+      if (group) {
+        scanlatorMap.set(group.name, group.id || group.name);
       }
     }
 
-    const authorEntities = getMangaAuthorEntities(manga);
-    const authorTags: SeriesTag[] =
-      authorEntities.length > 0
-        ? authorEntities.map((a) => ({
-            type: "Author",
-            name: a.name,
-            permalink: `mdx-author:${a.id}`,
-          }))
-        : authors.map((a) => ({
-            type: "Author",
-            name: a,
-            permalink: `mdx-author:${a}`,
-          }));
-
     const tags: SeriesTag[] = [
-      ...authorTags,
+      ...getMangaAuthorTags(manga),
       ...Array.from(scanlatorMap.entries()).map(([name, id]) => ({
         type: "Scanlator",
         name,
@@ -451,26 +443,10 @@ export class MangaDexProvider implements ContentProviderAdapter {
         }
       }
       const chTitle = formatMangaDexChapterTitle(ch.attributes.chapter, ch.attributes.title);
-      const groupRel = ch.relationships?.find((r) => r.type === "scanlation_group");
-      const groupAttrs = groupRel?.attributes;
-      let groupName: string | undefined;
-      if (
-        groupAttrs &&
-        typeof groupAttrs === "object" &&
-        "name" in groupAttrs &&
-        typeof groupAttrs.name === "string" &&
-        groupAttrs.name
-      ) {
-        groupName = groupAttrs.name;
-      }
-      const chTags: SeriesTag[] = [];
-      if (groupName && groupRel) {
-        chTags.push({
-          type: "Scanlator",
-          name: groupName,
-          permalink: `mdx-group:${groupRel.id}`,
-        });
-      }
+      const group = getChapterScanlationGroup(ch);
+      const chTags: SeriesTag[] = group
+        ? [{ type: "Scanlator", name: group.name, permalink: `mdx-group:${group.id}` }]
+        : [];
       taggings.push({
         title: chTitle,
         permalink: `mdx:${ch.id}`,
@@ -496,9 +472,7 @@ export class MangaDexProvider implements ContentProviderAdapter {
   }
 
   async fetchAuthor(permalink: string, _force = false, page = 1): Promise<Series> {
-    const raw = permalink.startsWith("mdx-author:")
-      ? permalink.slice("mdx-author:".length)
-      : permalink;
+    const raw = this.extractEntityId(permalink);
     let authorId = raw;
     let author: MangaDexAuthor | null = null;
 
@@ -529,15 +503,14 @@ export class MangaDexProvider implements ContentProviderAdapter {
       : null;
     const authorCover = author?.attributes?.imageUrl || null;
 
-    const PAGE_SIZE = 48;
-    const offset = (page - 1) * PAGE_SIZE;
+    const offset = (page - 1) * ENTITY_PAGE_SIZE;
     let mangaList: MangaDexManga[] = [];
     let totalManga = 0;
     if (MANGADEX_UUID_REGEX.test(authorId)) {
       try {
         const [authorRes, artistRes] = await Promise.allSettled([
-          searchManga({ authors: [authorId], limit: PAGE_SIZE, offset }),
-          searchManga({ artists: [authorId], limit: PAGE_SIZE, offset }),
+          searchManga({ authors: [authorId], limit: ENTITY_PAGE_SIZE, offset }),
+          searchManga({ artists: [authorId], limit: ENTITY_PAGE_SIZE, offset }),
         ]);
         const seen = new Set<string>();
         if (authorRes.status === "fulfilled" && authorRes.value?.data) {
@@ -560,14 +533,7 @@ export class MangaDexProvider implements ContentProviderAdapter {
         log.warn("mangadex.provider", "failed to fetch manga for author", authorId, err);
       }
     }
-    const totalPages = Math.max(1, Math.ceil(totalManga / PAGE_SIZE));
-
-    const taggables: SeriesTaggable[] = mangaList.map((m) => ({
-      type: "Series",
-      name: formatMangaTitle(m),
-      permalink: `mdx:${m.id}`,
-      cover: getMangaCoverUrl(m, "256"),
-    }));
+    const totalPages = Math.max(1, Math.ceil(totalManga / ENTITY_PAGE_SIZE));
 
     return {
       name: authorName,
@@ -579,16 +545,14 @@ export class MangaDexProvider implements ContentProviderAdapter {
       description: authorBio,
       aliases: [],
       taggings: [],
-      taggables,
+      taggables: mangaTaggables(mangaList),
       current_page: page,
       total_pages: totalPages,
     };
   }
 
   async fetchGroup(permalink: string, _force = false, page = 1): Promise<Series> {
-    const raw = permalink.startsWith("mdx-group:")
-      ? permalink.slice("mdx-group:".length)
-      : permalink;
+    const raw = this.extractEntityId(permalink);
     let groupId = raw;
     let group: MangaDexScanlationGroup | null = null;
 
@@ -614,13 +578,12 @@ export class MangaDexProvider implements ContentProviderAdapter {
     const groupName = group?.attributes?.name || raw;
     const groupDesc = group?.attributes?.description || null;
 
-    const PAGE_SIZE = 48;
-    const offset = (page - 1) * PAGE_SIZE;
+    const offset = (page - 1) * ENTITY_PAGE_SIZE;
     let mangaList: MangaDexManga[] = [];
     let totalManga = 0;
     if (MANGADEX_UUID_REGEX.test(groupId)) {
       try {
-        const mdxRes = await searchManga({ group: groupId, limit: PAGE_SIZE, offset });
+        const mdxRes = await searchManga({ group: groupId, limit: ENTITY_PAGE_SIZE, offset });
         totalManga = mdxRes.total ?? 0;
         if (mdxRes.data) {
           mangaList = mdxRes.data;
@@ -629,13 +592,7 @@ export class MangaDexProvider implements ContentProviderAdapter {
         log.warn("mangadex.provider", "failed to fetch manga for group", groupId, err);
       }
     }
-    const totalPages = Math.max(1, Math.ceil(totalManga / PAGE_SIZE));
-    const taggables: SeriesTaggable[] = mangaList.map((m) => ({
-      type: "Series",
-      name: formatMangaTitle(m),
-      permalink: `mdx:${m.id}`,
-      cover: getMangaCoverUrl(m, "256"),
-    }));
+    const totalPages = Math.max(1, Math.ceil(totalManga / ENTITY_PAGE_SIZE));
 
     return {
       name: groupName,
@@ -647,16 +604,14 @@ export class MangaDexProvider implements ContentProviderAdapter {
       description: groupDesc,
       aliases: (group?.attributes?.altNames || []).map((t) => Object.values(t)[0]).filter((x): x is string => Boolean(x)),
       taggings: [],
-      taggables,
+      taggables: mangaTaggables(mangaList),
       current_page: page,
       total_pages: totalPages,
     };
   }
 
   async fetchTag(permalink: string, _force = false, page = 1): Promise<Series> {
-    const raw = permalink.startsWith("mdx-tag:")
-      ? permalink.slice("mdx-tag:".length)
-      : permalink;
+    const raw = this.extractEntityId(permalink);
     let tagId = raw;
     let tagName = raw;
     let tagDesc: string | null = null;
@@ -687,13 +642,12 @@ export class MangaDexProvider implements ContentProviderAdapter {
       log.warn("mangadex.provider", "failed to resolve tag for fetchTag", raw, err);
     }
 
-    const PAGE_SIZE = 48;
-    const offset = (page - 1) * PAGE_SIZE;
+    const offset = (page - 1) * ENTITY_PAGE_SIZE;
     let mangaList: MangaDexManga[] = [];
     let totalManga = 0;
     if (MANGADEX_UUID_REGEX.test(tagId)) {
       try {
-        const mdxRes = await searchManga({ includedTags: [tagId], limit: PAGE_SIZE, offset });
+        const mdxRes = await searchManga({ includedTags: [tagId], limit: ENTITY_PAGE_SIZE, offset });
         totalManga = mdxRes.total ?? 0;
         if (mdxRes.data) {
           mangaList = mdxRes.data;
@@ -702,14 +656,7 @@ export class MangaDexProvider implements ContentProviderAdapter {
         log.warn("mangadex.provider", "failed to fetch manga for tag", tagId, err);
       }
     }
-    const totalPages = Math.max(1, Math.ceil(totalManga / PAGE_SIZE));
-
-    const taggables: SeriesTaggable[] = mangaList.map((m) => ({
-      type: "Series",
-      name: formatMangaTitle(m),
-      permalink: `mdx:${m.id}`,
-      cover: getMangaCoverUrl(m, "256"),
-    }));
+    const totalPages = Math.max(1, Math.ceil(totalManga / ENTITY_PAGE_SIZE));
 
     return {
       name: tagName,
@@ -721,15 +668,14 @@ export class MangaDexProvider implements ContentProviderAdapter {
       description: tagDesc,
       aliases: [],
       taggings: [],
-      taggables,
+      taggables: mangaTaggables(mangaList),
       current_page: page,
       total_pages: totalPages,
     };
   }
 
   async fetchChapterForReader(permalink: string): Promise<{ chapter: Chapter; startPage?: number }> {
-    const payload = await loadMangaDexChapterForReader(permalink);
-    return { chapter: payload.chapter };
+    return { chapter: await loadMangaDexChapterForReader(permalink) };
   }
 }
 

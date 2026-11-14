@@ -7,7 +7,7 @@
  * session manga tab) are ported verbatim from `router.ts`.
  */
 
-import { batch, createSignal, type Accessor, type Setter } from "solid-js";
+import { batch, createSignal, type Setter } from "solid-js";
 import { setActions } from "./topbar";
 import { isMobile } from "./platform";
 import { decodeEntities } from "../utils/formatting";
@@ -16,26 +16,20 @@ import { activeProvider, setActiveProviderRaw, type ContentProvider } from "./pr
 import type { Route, SessionMangaTab } from "../types/routes";
 export type { Route, ViewName, ChapterRef, SessionMangaTab, BrowseTabId, LibraryTabId } from "../types/routes";
 
+function createNavState() {
+  return {
+    route: createSignal<Route>({ view: "browse" }),
+    back: createSignal<Route[]>([]),
+    forward: createSignal<Route[]>([]),
+    sessionTab: createSignal<SessionMangaTab | null>(null),
+  };
+}
+
 // Per-provider route, history, and session tab storage (Decisions 2B & 3B)
-const navState: Record<ContentProvider, {
-  route: [Accessor<Route>, Setter<Route>];
-  back: [Accessor<Route[]>, Setter<Route[]>];
-  forward: [Accessor<Route[]>, Setter<Route[]>];
-  sessionTab: [Accessor<SessionMangaTab | null>, Setter<SessionMangaTab | null>];
-}> = {
-  dynasty: {
-    route: createSignal<Route>({ view: "browse" }),
-    back: createSignal<Route[]>([]),
-    forward: createSignal<Route[]>([]),
-    sessionTab: createSignal<SessionMangaTab | null>(null),
-  },
-  mangadex: {
-    route: createSignal<Route>({ view: "browse" }),
-    back: createSignal<Route[]>([]),
-    forward: createSignal<Route[]>([]),
-    sessionTab: createSignal<SessionMangaTab | null>(null),
-  },
-};
+const navState = {
+  dynasty: createNavState(),
+  mangadex: createNavState(),
+} satisfies Record<ContentProvider, unknown>;
 
 export const [dbReady, setDbReady] = createSignal(false);
 

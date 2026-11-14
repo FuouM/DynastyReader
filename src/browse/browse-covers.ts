@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createEffect, createSignal, type Accessor } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
 import { getBatchCached, deleteCached } from "../db/metadata.repo";
 import { log } from "../utils/log";
@@ -31,6 +31,25 @@ const [coverStateMap, setCoverStateMap] = createSignal<Map<string, CoverState>>(
 
 export { coversEnabledSignal, coverStateMap };
 
+/** Copy of `prev` with `key` set, evicting the oldest entry when at capacity. */
+function withCappedEntry<V>(prev: Map<string, V>, key: string, value: V): Map<string, V> {
+  const next = new Map(prev);
+  if (next.size >= MAX_MEMORY_CACHE) {
+    const oldest = next.keys().next().value;
+    if (oldest !== undefined) next.delete(oldest);
+  }
+  next.set(key, value);
+  return next;
+}
+
+/** `prev` unchanged when `key` is absent, else a copy without it. */
+function withoutEntry<V>(prev: Map<string, V>, key: string): Map<string, V> {
+  if (!prev.has(key)) return prev;
+  const next = new Map(prev);
+  next.delete(key);
+  return next;
+}
+
 /**
  * Feed cover-hydration engine. Reactive singleton that drives cover image paths
  * through Solid signals instead of mutating raw DOM nodes, preventing unmount
@@ -58,32 +77,14 @@ export class BrowseCovers {
   }
 
   private setCoverState(key: string, state: CoverState): void {
-    setCoverStateMap((prev) => {
-      if (prev.get(key) === state) return prev;
-      const next = new Map(prev);
-      if (next.size >= MAX_MEMORY_CACHE) {
-        const oldest = next.keys().next().value;
-        if (oldest !== undefined) next.delete(oldest);
-      }
-      next.set(key, state);
-      return next;
-    });
+    setCoverStateMap((prev) => (prev.get(key) === state ? prev : withCappedEntry(prev, key, state)));
   }
 
   private updateCoverPath(key: string, path: string): void {
     this.cache.set(key, path);
     this.setCoverState(key, "loading");
     this.cache.deleteFailedAttempt(key);
-    setCoverPathMap((prev) => {
-      if (prev.get(key) === path) return prev;
-      const next = new Map(prev);
-      if (next.size >= MAX_MEMORY_CACHE) {
-        const oldest = next.keys().next().value;
-        if (oldest !== undefined) next.delete(oldest);
-      }
-      next.set(key, path);
-      return next;
-    });
+    setCoverPathMap((prev) => (prev.get(key) === path ? prev : withCappedEntry(prev, key, path)));
   }
 
   /** Reactively looks up a cached cover path. */
@@ -115,18 +116,8 @@ export class BrowseCovers {
     this.cache.delete(coverKey);
     this.cache.deleteFailedAttempt(coverKey);
     this.pipeline.unqueueKey(coverKey);
-    setCoverPathMap((prev) => {
-      if (!prev.has(coverKey)) return prev;
-      const next = new Map(prev);
-      next.delete(coverKey);
-      return next;
-    });
-    setCoverStateMap((prev) => {
-      if (!prev.has(coverKey)) return prev;
-      const next = new Map(prev);
-      next.delete(coverKey);
-      return next;
-    });
+    setCoverPathMap((prev) => withoutEntry(prev, coverKey));
+    setCoverStateMap((prev) => withoutEntry(prev, coverKey));
     void deleteCached(`cover:${coverKey}`);
   }
 
@@ -296,3 +287,23 @@ export class BrowseCovers {
 }
 
 export const browseCovers = new BrowseCovers();
+
+/**
+ * Arms cover hydration for `host` whenever it is mounted, its tab is active,
+ * covers are enabled, and its pane data has loaded.
+ */
+export function useCoverHydration(
+  host: Accessor<HTMLElement | null>,
+  active: Accessor<boolean>,
+  data: Accessor<unknown>,
+): void {
+  createEffect(() => {
+    const el = host();
+    const isActive = active();
+    const enabled = coversEnabledSignal();
+    const loaded = data();
+    if (!el || !isActive || !enabled || !loaded) return;
+    browseCovers.beginPage(el);
+    browseCovers.reobserveUnloadedCovers(el);
+  });
+}

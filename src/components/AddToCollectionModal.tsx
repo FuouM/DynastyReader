@@ -81,16 +81,19 @@ function AddToCollectionModal(props: AddToCollectionModalProps) {
     }
   };
 
+  const toggleItemIn = (collectionId: number) =>
+    toggleItemInCollection(collectionId, {
+      item_permalink: props.item.permalink,
+      item_title: props.item.title,
+      item_kind: props.item.kind || "series",
+      cover: props.item.cover,
+      parent_series_permalink: props.item.parentSeriesPermalink,
+      parent_series_name: props.item.parentSeriesName,
+    });
+
   const toggle = async (col: CollectionRow): Promise<void> => {
     try {
-      const added = await toggleItemInCollection(col.id, {
-        item_permalink: props.item.permalink,
-        item_title: props.item.title,
-        item_kind: props.item.kind || "series",
-        cover: props.item.cover,
-        parent_series_permalink: props.item.parentSeriesPermalink,
-        parent_series_name: props.item.parentSeriesName,
-      });
+      const added = await toggleItemIn(col.id);
       showBanner(added ? t("dialogs.addToCollection.addedToBanner", { collection: col.name }) : t("dialogs.addToCollection.removedFromBanner", { collection: col.name }));
       await loadRows();
     } catch (err) {
@@ -105,14 +108,7 @@ function AddToCollectionModal(props: AddToCollectionModalProps) {
     setCreating(true);
     try {
       const created = await createCollection(val);
-      await toggleItemInCollection(created.id, {
-        item_permalink: props.item.permalink,
-        item_title: props.item.title,
-        item_kind: props.item.kind || "series",
-        cover: props.item.cover,
-        parent_series_permalink: props.item.parentSeriesPermalink,
-        parent_series_name: props.item.parentSeriesName,
-      });
+      await toggleItemIn(created.id);
       setNewName("");
       showBanner(t("dialogs.addToCollection.createdAndAddedBanner", { name: created.name }));
       await loadRows();
@@ -213,7 +209,6 @@ interface AddToCollectionRequest {
 
 export interface AddToCollectionApi {
   open: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
-  onAddToCol: (item: AddToCollectionItem, anchorEl: HTMLElement) => void;
   host: JSX.Element;
 }
 
@@ -237,5 +232,5 @@ export function useAddToCollection(): AddToCollectionApi {
     />
   );
 
-  return { open, onAddToCol: open, host };
+  return { open, host };
 }

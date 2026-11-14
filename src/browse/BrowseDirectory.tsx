@@ -106,6 +106,26 @@ export interface BrowseDirectoryProps {
   register?: (api: BrowsePaneApi) => void;
 }
 
+/** Groups MangaDex entries by uppercase first letter (in encounter order) into a directory model. */
+function mdxDirectoryModel(entries: DirectoryEntry[], currentPage: number, totalPages: number): DirectoryModel {
+  const letterMap = new Map<string, DirectoryEntry[]>();
+  for (const entry of entries) {
+    const letter = (entry.name[0] || "#").toUpperCase();
+    if (!letterMap.has(letter)) letterMap.set(letter, []);
+    letterMap.get(letter)!.push(entry);
+  }
+  const groups: DirectoryGroup[] = Array.from(letterMap.entries()).map(([letter, groupEntries]) => ({
+    letter,
+    entries: groupEntries,
+  }));
+  const dir: Directory = {
+    current_page: currentPage,
+    total_pages: totalPages,
+    tags: [],
+  };
+  return { dir, groups, blMode: getBlacklistMode() };
+}
+
 export function BrowseDirectory(props: BrowseDirectoryProps) {
   const pane = useTabPane<DirectoryModel>({
     active: props.active,
@@ -123,44 +143,14 @@ export function BrowseDirectory(props: BrowseDirectoryProps) {
             permalink: `mdx:${m.id}`,
           }));
           const totalPages = Math.max(1, Math.ceil((resp.total ?? 0) / 30));
-          const letterMap = new Map<string, DirectoryEntry[]>();
-          for (const entry of entries) {
-            const letter = (entry.name[0] || "#").toUpperCase();
-            if (!letterMap.has(letter)) letterMap.set(letter, []);
-            letterMap.get(letter)!.push(entry);
-          }
-          const groups: DirectoryGroup[] = Array.from(letterMap.entries()).map(([letter, groupEntries]) => ({
-            letter,
-            entries: groupEntries,
-          }));
-          const dir: Directory = {
-            current_page: page,
-            total_pages: totalPages,
-            tags: [],
-          };
-          return { dir, groups, blMode: getBlacklistMode() };
+          return mdxDirectoryModel(entries, page, totalPages);
         } else {
           const tags = await getTags();
           const entries: DirectoryEntry[] = tags.map((t) => ({
             name: t.attributes.name.en || Object.values(t.attributes.name)[0] || t.id,
             permalink: `mdx-tag:${t.id}`,
           }));
-          const letterMap = new Map<string, DirectoryEntry[]>();
-          for (const entry of entries) {
-            const letter = (entry.name[0] || "#").toUpperCase();
-            if (!letterMap.has(letter)) letterMap.set(letter, []);
-            letterMap.get(letter)!.push(entry);
-          }
-          const groups: DirectoryGroup[] = Array.from(letterMap.entries()).map(([letter, groupEntries]) => ({
-            letter,
-            entries: groupEntries,
-          }));
-          const dir: Directory = {
-            current_page: 1,
-            total_pages: 1,
-            tags: [],
-          };
-          return { dir, groups, blMode: getBlacklistMode() };
+          return mdxDirectoryModel(entries, 1, 1);
         }
       }
       const url = props.kind === "series" ? `/series.json?page=${page}` : `/tags.json?page=${page}`;

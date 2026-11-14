@@ -65,8 +65,6 @@ export function isReaderFilterDefault(): boolean {
   );
 }
 export function ReaderFilterControls(props?: { showReset?: boolean }) {
-  const isDefault = isReaderFilterDefault;
-
   return (
     <div class="ds-reader-filter-controls">
       <FilterSlider
@@ -107,7 +105,7 @@ export function ReaderFilterControls(props?: { showReset?: boolean }) {
             class="ds-btn-compact ds-filter-reset-btn"
             icon={<RefreshIcon />}
             text={t("settings.reader.filterResetTooltip")}
-            disabled={isDefault()}
+            disabled={isReaderFilterDefault()}
             onClick={() => resetReaderFilters()}
           />
         </div>

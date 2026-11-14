@@ -24,7 +24,7 @@ import { getBlacklistMode, isItemBlacklisted } from "../db/blacklist.repo";
 import { getHistoryPermalinks, getBookmarkPermalinks, getFollowedLookup, isChapterFollowed } from "../db/library.repo";
 import { getFullyCachedChapterPermalinks } from "../db/cache.repo";
 import type { BlacklistMode } from "../types/blacklist";
-import { browseCovers, coversEnabledSignal } from "./browse-covers";
+import { browseCovers, useCoverHydration } from "./browse-covers";
 import {
   scrollBrowseToTop,
   setTopPagerFor,
@@ -206,17 +206,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
     setShowHidden(false);
   });
 
-  // Reactive cover hydration arming: triggers whenever this tab is active,
-  // has mounted its DOM host, covers are enabled, and data is loaded.
-  createEffect(() => {
-    const el = hostEl();
-    const active = props.active();
-    const enabled = coversEnabledSignal();
-    const model = pane.data();
-    if (!el || !active || !enabled || !model) return;
-    browseCovers.beginPage(el);
-    browseCovers.reobserveUnloadedCovers(el);
-  });
+  useCoverHydration(hostEl, props.active, pane.data);
 
   // Background revalidation (stale-while-revalidate). Page 1's promise may
   // drive the "new chapters available" banner; deeper pages keep their own
@@ -230,11 +220,13 @@ export function BrowseFeed(props: BrowseFeedProps) {
     const currentTop = model.feed.chapters?.[0]?.permalink;
     const currentTopTs = feedHeadTimestamp(model.feed.chapters);
     const preserveEtag = (): string | undefined => footerState().etag;
+    const isCurrentHost = (): boolean =>
+      props.active() && hostEl() === browseCovers.currentHydrationHost;
 
-    if (page === 1) {
-      void revalidatePromise.then((reval) => {
-        if (!props.active() || hostEl() !== browseCovers.currentHydrationHost) return;
-        if (reval) {
+    void revalidatePromise.then((reval) => {
+      if (!isCurrentHost()) return;
+      if (reval) {
+        if (page === 1) {
           const freshTopTs = feedHeadTimestamp(reval.data.chapters);
           if (freshTopTs !== undefined && currentTopTs !== undefined) {
             if (freshTopTs > currentTopTs) notifyNewChapters();
@@ -242,46 +234,27 @@ export function BrowseFeed(props: BrowseFeedProps) {
             const freshTop = reval.data.chapters?.[0]?.permalink;
             if (freshTop && freshTop !== currentTop) notifyNewChapters();
           }
-          setFooterState({
-            cachedAt: Date.now(),
-            etag: reval.etag || preserveEtag(),
-            status: t("browse.feed.statusUpdated"),
-            etagStatus: t("browse.feed.statusUpdated"),
-            isStale: false,
-          });
-        } else {
-          setFooterState({
-            cachedAt: model.feedResult.cachedAt,
-            etag: preserveEtag(),
-            status: t("browse.feed.statusSynced"),
-            etagStatus: t("browse.feed.statusMatchesServer"),
-            isStale: false,
-          });
         }
-      });
-    } else {
-      void revalidatePromise.then((reval) => {
-        if (!props.active() || hostEl() !== browseCovers.currentHydrationHost) return;
-        if (reval) {
-          setFooterState({
-            cachedAt: Date.now(),
-            etag: reval.etag || preserveEtag(),
-            status: t("browse.feed.statusUpdated"),
-            etagStatus: t("browse.feed.statusUpdated"),
-            isStale: false,
-          });
-        } else {
-          setFooterState({
-            cachedAt: model.feedResult.cachedAt,
-            etag: preserveEtag(),
-            status: t("browse.feed.statusSynced"),
-            etagStatus: t("browse.feed.statusMatchesServer"),
-            isStale: false,
-          });
-        }
-      });
+        setFooterState({
+          cachedAt: Date.now(),
+          etag: reval.etag || preserveEtag(),
+          status: t("browse.feed.statusUpdated"),
+          etagStatus: t("browse.feed.statusUpdated"),
+          isStale: false,
+        });
+      } else {
+        setFooterState({
+          cachedAt: model.feedResult.cachedAt,
+          etag: preserveEtag(),
+          status: t("browse.feed.statusSynced"),
+          etagStatus: t("browse.feed.statusMatchesServer"),
+          isStale: false,
+        });
+      }
+    });
+    if (page !== 1) {
       void revalidateFeedHead(props.tabId).then((head) => {
-        if (!props.active() || hostEl() !== browseCovers.currentHydrationHost) return;
+        if (!isCurrentHost()) return;
         if (head.hasNew) notifyNewChapters();
       });
     }
@@ -356,7 +329,7 @@ export function BrowseFeed(props: BrowseFeedProps) {
       isFullyCached={row.isFullyCached}
       isFollowed={row.isFollowed}
       onWarn={(title, matchedTags, proceed) => triggerWarning.warn(title, matchedTags, proceed)}
-      onAddToCol={addToCol.onAddToCol}
+      onAddToCol={addToCol.open}
     />
   );
 

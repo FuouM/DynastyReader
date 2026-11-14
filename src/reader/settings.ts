@@ -102,11 +102,7 @@ export function getEffectiveDefaultPagedLayout(currentLayout?: PagedLayout): Pag
   return effectiveLandscape(getMobileLandscapePagedLayout(), (v) => v === "single" || v === "spread", currentLayout, getDefaultPagedLayout, "spread");
 }
 export function getEffectiveFitMode(currentFit?: FitMode): FitMode {
-  if (isMobileLandscape()) {
-    const pref = getMobileLandscapeFitMode();
-    if (pref === "height") return "height";
-    if (pref === "default") return currentFit ?? getDefaultFitMode();
-  }
+  if (isMobileLandscape() && getMobileLandscapeFitMode() === "height") return "height";
   return currentFit ?? getDefaultFitMode();
 }
 // Long strip spread override
@@ -167,7 +163,7 @@ export const [getPrevChapterStartPage, setPrevChapterStartPage] = persistedSigna
 export const [getScrollLock, setScrollLock] = persistedSignal(false, {
   name: "ds-reader-scroll-lock",
   serialize: String,
-  deserialize: (v) => v === "true" || v === "1",
+  deserialize: boolDeserialize,
 });
 
 // Mobile gestures on desktop (tap-to-turn, drag pull overscroll)

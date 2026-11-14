@@ -20,11 +20,11 @@ import {
   EditLocalSeriesModal,
   type ImportProgressPayload,
 } from "./LocalModals";
+import type { LibraryPaneProps } from "./useLibraryPaneResource";
 
 type LocalSortMode = "updated_desc" | "alphabetical" | "page_count" | "date_added";
 
-import type { LibraryPaneApi } from "./useLibraryPaneResource";
-export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
+export function LocalPane(props: LibraryPaneProps) {
   const [tick, setTick] = createSignal(0);
   // Defer the first fetch until migrations have run; otherwise the resource
   // fires during bootstrap's render-before-init window and throws
@@ -195,14 +195,14 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
     }
   };
 
-  const pickFolderCover = async (): Promise<void> => {
+  const pickImage = async (onPicked: (path: string) => void): Promise<void> => {
     try {
       const picked = await open({
         multiple: false,
         filters: [{ name: "Image", extensions: ["jpg", "jpeg", "png", "webp", "avif", "bmp", "gif"] }],
       });
       if (!picked || Array.isArray(picked)) return;
-      setFolderCoverPath(picked as string);
+      onPicked(picked as string);
     } catch (err) {
       showBanner(errorMessage(err));
     }
@@ -241,21 +241,20 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
   const handleDelete = async (permalink: string): Promise<void> => {
     try {
       await ipc.deleteLocalSeries(permalink);
+      const slug = permalink.replace(/^local:/, "");
       setSessionTab((cur) => {
         if (!cur) return null;
         const sPerm = cur.route.seriesPermalink;
         const chPerm = cur.route.chapterPermalink;
-        const slug = permalink.replace(/^local:/, "");
         if (sPerm === permalink || sPerm === slug || chPerm?.startsWith(permalink) || chPerm?.startsWith(`local:${slug}`)) {
           return null;
         }
         return cur;
       });
       const currentRoute = route();
-      const curSlug = permalink.replace(/^local:/, "");
       if (
-        (currentRoute.view === "series" && (currentRoute.seriesPermalink === permalink || currentRoute.seriesPermalink === curSlug)) ||
-        (currentRoute.view === "reader" && (currentRoute.chapterPermalink?.startsWith(permalink) || currentRoute.chapterPermalink?.startsWith(`local:${curSlug}`)))
+        (currentRoute.view === "series" && (currentRoute.seriesPermalink === permalink || currentRoute.seriesPermalink === slug)) ||
+        (currentRoute.view === "reader" && (currentRoute.chapterPermalink?.startsWith(permalink) || currentRoute.chapterPermalink?.startsWith(`local:${slug}`)))
       ) {
         navigate({ view: "library", libraryTab: "local" });
       }
@@ -279,19 +278,6 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
     if (saving()) return;
     setEditRow(null);
     setNewCoverPath(null);
-  };
-
-  const pickNewCover = async (): Promise<void> => {
-    try {
-      const picked = await open({
-        multiple: false,
-        filters: [{ name: "Image", extensions: ["jpg", "jpeg", "png", "webp", "avif", "bmp", "gif"] }],
-      });
-      if (!picked || Array.isArray(picked)) return;
-      setNewCoverPath(picked as string);
-    } catch (err) {
-      showBanner(errorMessage(err));
-    }
   };
 
   const doEdit = async (): Promise<void> => {
@@ -403,7 +389,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
           chapterTitle={folderChapterTitle()}
           onChapterTitle={setFolderChapterTitle}
           coverPath={folderCoverPath()}
-          onPickCover={() => void pickFolderCover()}
+          onPickCover={() => void pickImage((p) => setFolderCoverPath(p))}
           onRemoveCover={() => setFolderCoverPath(null)}
           importing={importing()}
           onCancel={() => {
@@ -429,7 +415,7 @@ export function LocalPane(props: { register: (api: LibraryPaneApi) => void }) {
           description={editDescription()}
           onDescription={setEditDescription}
           newCoverPath={newCoverPath()}
-          onPickCover={() => void pickNewCover()}
+          onPickCover={() => void pickImage((p) => setNewCoverPath(p))}
           onRemoveCover={() => setNewCoverPath(null)}
           saving={saving()}
           onClose={closeEdit}

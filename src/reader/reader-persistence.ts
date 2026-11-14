@@ -22,26 +22,25 @@ export function createReaderPersistence(state: ReaderState, permalink: string): 
   let lastPersistedCompleted = false;
 
   const persistNow = async (): Promise<void> => {
-    const pages = state.pages();
-    if (pages.length === 0) return;
+    const pageTotal = state.pages().length;
+    if (pageTotal === 0) return;
+    const pageIndex = state.currentIndex();
     const completed = state.atEnd();
     // Skip only when neither the page index nor the completion flag moved —
     // re-opening a finished chapter and scrolling back must un-complete it.
-    if (lastPersistedIndex === state.currentIndex() && lastPersistedCompleted === completed) return;
-    const targetIndex = state.currentIndex();
-    const targetCompleted = completed;
+    if (lastPersistedIndex === pageIndex && lastPersistedCompleted === completed) return;
     try {
       await setReadingProgress({
         chapterPermalink: permalink,
         seriesPermalink: state.seriesPermalink() ?? "",
         seriesName: state.seriesName() ?? "",
         chapterTitle: state.chapterTitle(),
-        pageIndex: targetIndex,
-        pageTotal: state.pages().length,
-        completed: targetCompleted,
+        pageIndex,
+        pageTotal,
+        completed,
       });
-      lastPersistedIndex = targetIndex;
-      lastPersistedCompleted = targetCompleted;
+      lastPersistedIndex = pageIndex;
+      lastPersistedCompleted = completed;
     } catch (err) {
       log.error("reader-persistence", "failed to persist reading progress:", err);
     }

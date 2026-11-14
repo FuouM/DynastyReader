@@ -1,6 +1,6 @@
 import type { ReaderSession } from "./reader-session";
 
-export function setupScrollTracker(s: ReaderSession, vpEl: HTMLElement): () => void {
+export function setupScrollTracker(s: ReaderSession, vpEl: HTMLElement): void {
   let lastPrefetchedLeadingIdx = -1;
   const computeCurrentPageFromScroll = (force = false): void => {
     if (s.isHorizontal() || s.isProgrammaticScroll || s.restoring() || (!force && s.isToolbarAnimating)) return;
@@ -76,7 +76,7 @@ export function setupScrollTracker(s: ReaderSession, vpEl: HTMLElement): () => v
   s.computeScrollProgress = () => computeCurrentPageFromScroll(true);
 
   vpEl.addEventListener("scroll", onViewportScroll, { passive: true });
-  const cleanup = () => {
+  s.onDispose(() => {
     vpEl.removeEventListener("scroll", onViewportScroll);
     if (s.scrollRaf !== null) {
       cancelAnimationFrame(s.scrollRaf);
@@ -84,7 +84,5 @@ export function setupScrollTracker(s: ReaderSession, vpEl: HTMLElement): () => v
     }
     s.computeScrollProgress = null;
     s.toolbarAnimEndHook = null;
-  };
-  s.onDispose(cleanup);
-  return cleanup;
+  });
 }

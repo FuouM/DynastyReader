@@ -39,7 +39,7 @@ const SeriesView = lazy(() => import("./series/SeriesView").then((m) => ({ defau
 const ReaderView = lazy(() => import("./reader/ReaderView").then((m) => ({ default: m.ReaderView })));
 const CacheView = lazy(() => import("./cache/CacheView").then((m) => ({ default: m.CacheView })));
 const BlacklistView = lazy(() => import("./blacklist/BlacklistView").then((m) => ({ default: m.BlacklistView })));
-export const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
+const viewComponents: Record<ViewName, Component<{ route: Route }>> = {
   browse: () => null,
   library: () => null,
   series: () => <SeriesView />,

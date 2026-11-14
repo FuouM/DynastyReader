@@ -13,8 +13,9 @@ import { navigate } from "../stores/router";
 import { openExternal } from "../api/navigation";
 import { canonicalUrl } from "../utils/formatting";
 import { t } from "../i18n";
-import { ZOOM_MIN, ZOOM_MAX } from "./settings";
 import {
+  ZOOM_MIN,
+  ZOOM_MAX,
   getPrevChapterStartPage,
   setPrevChapterStartPage,
   isHideStatusBarEnabled,
@@ -48,6 +49,8 @@ import {
   PlusIcon,
 } from "../components/icons";
 
+const ACTION_BUTTON_STYLE = "height:32px;font-size:11.5px;justify-content:center;";
+
 export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   const s = props.session;
   const [mounted, setMounted] = createSignal(false);
@@ -55,7 +58,6 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
   const { copied, handleCopyLink } = useCopyLink({
     getUrl: () => canonicalUrl("chapters", s.permalink),
     namespace: "mobile-controls",
-    showBanners: true,
   });
   let closeTimer: number | null = null;
   createEffect(() => {
@@ -113,7 +115,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
     isDragEligible = onHandleOrHeader || isAtScrollTop;
   };
 
-  const handleDragMove = (clientY: number, cancelable: boolean, ev?: Event) => {
+  const handleDragMove = (clientY: number, ev: Event) => {
     if (closing() || !isDragEligible) return;
     const dy = clientY - touchStartY;
     touchDiffY = dy;
@@ -135,7 +137,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
     }
 
     if (isDraggingSheet) {
-      if (cancelable && ev?.cancelable) ev.preventDefault();
+      if (ev.cancelable) ev.preventDefault();
       if (dy > 0) {
         const sheetH = windowEl?.offsetHeight || 400;
         if (windowEl) {
@@ -148,6 +150,20 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
         if (windowEl) windowEl.style.transform = "translate3d(0, 0, 0)";
         if (backdropEl) backdropEl.style.opacity = "";
       }
+    }
+  };
+
+  /** Clears the inline drag styles once the settle/dismiss transition has finished. */
+  const clearDragStyles = () => {
+    if (windowEl) {
+      windowEl.style.willChange = "auto";
+      windowEl.style.transform = "";
+      windowEl.style.transition = "";
+    }
+    if (backdropEl) {
+      backdropEl.style.willChange = "auto";
+      backdropEl.style.opacity = "";
+      backdropEl.style.transition = "";
     }
   };
 
@@ -168,16 +184,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
         }
         window.setTimeout(() => {
           requestClose();
-          if (windowEl) {
-            windowEl.style.willChange = "auto";
-            windowEl.style.transform = "";
-            windowEl.style.transition = "";
-          }
-          if (backdropEl) {
-            backdropEl.style.willChange = "auto";
-            backdropEl.style.opacity = "";
-            backdropEl.style.transition = "";
-          }
+          clearDragStyles();
         }, 180);
       } else {
         windowEl.style.transition = "transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)";
@@ -186,18 +193,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
           backdropEl.style.transition = "opacity 0.2s ease";
           backdropEl.style.opacity = "";
         }
-        window.setTimeout(() => {
-          if (windowEl) {
-            windowEl.style.willChange = "auto";
-            windowEl.style.transition = "";
-            windowEl.style.transform = "";
-          }
-          if (backdropEl) {
-            backdropEl.style.willChange = "auto";
-            backdropEl.style.transition = "";
-            backdropEl.style.opacity = "";
-          }
-        }, 200);
+        window.setTimeout(clearDragStyles, 200);
       }
     }
     isDraggingSheet = false;
@@ -212,7 +208,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
     try { (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId); } catch {}
   };
   const onPointerMoveHandle = (ev: PointerEvent) => {
-    handleDragMove(ev.clientY, true, ev);
+    handleDragMove(ev.clientY, ev);
   };
   const onPointerUpHandle = (ev: PointerEvent) => {
     try { (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
@@ -227,7 +223,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
     };
     const onTouchMove = (ev: TouchEvent) => {
       const t = ev.touches[0];
-      if (t) handleDragMove(t.clientY, true, ev);
+      if (t) handleDragMove(t.clientY, ev);
     };
     makeEventListener(windowEl, "touchstart", onTouchStart, { passive: true });
     makeEventListener(windowEl, "touchmove", onTouchMove, { passive: false });
@@ -480,7 +476,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <Button
                   icon={<Icon name="compass" />}
                   text={t("bottomNav.browse")}
-                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  style={ACTION_BUTTON_STYLE}
                   onClick={() => {
                     requestClose();
                     navigate({ view: "browse" });
@@ -489,7 +485,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                 <Button
                   icon={<StorageIcon />}
                   text={t("bottomNav.library")}
-                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  style={ACTION_BUTTON_STYLE}
                   onClick={() => {
                     requestClose();
                     navigate({ view: "library" });
@@ -499,7 +495,7 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   <Button
                     icon={<StorageIcon />}
                     text={t("reader.toolbar.seriesButton")}
-                    style="height:32px;font-size:11.5px;justify-content:center;"
+                    style={ACTION_BUTTON_STYLE}
                     onClick={() => {
                       requestClose();
                       s.gotoSeries();
@@ -511,25 +507,25 @@ export function ReaderMobileControlsSheet(props: { session: ReaderSession }) {
                   text={s.bookmarked() ? t("browse.feed.saved") : t("browse.feed.readLater")}
                   classList={{ primary: s.bookmarked() }}
                   title={s.bookmarked() ? t("reader.toolbar.removeBookmark") : t("reader.toolbar.bookmarkChapter")}
-                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  style={ACTION_BUTTON_STYLE}
                   onClick={() => void s.toggleBookmark()}
                 />
                 <Button
                   icon={s.isFullyCached() ? <CheckIcon /> : <CloudDownloadIcon />}
                   text={s.isFullyCached() ? t("reader.toolbar.cachedShort") : t("reader.toolbar.cacheShort")}
-                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  style={ACTION_BUTTON_STYLE}
                   onClick={() => s.cacheFullChapter()}
                 />
                 <Button
                   icon={copied() ? <CheckIcon /> : <Icon name="link-45deg" />}
                   text={copied() ? t("common.copied") : t("reader.toolbar.copyLinkShort")}
-                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  style={ACTION_BUTTON_STYLE}
                   onClick={handleCopyLink}
                 />
                 <Button
                   icon={<ExternalLinkIcon />}
                   text={t("reader.toolbar.openInBrowserShort")}
-                  style="height:32px;font-size:11.5px;justify-content:center;"
+                  style={ACTION_BUTTON_STYLE}
                   onClick={() => void openExternal(canonicalUrl("chapters", s.permalink))}
                 />
               </div>

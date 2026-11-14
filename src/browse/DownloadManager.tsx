@@ -21,7 +21,6 @@ import {
 import { buildSeriesDownloadGroups } from "./downloads/buildGroups";
 import { SeriesDownloadCard } from "./downloads/SeriesDownloadCard";
 import type { SeriesDownloadGroup } from "./downloads/types";
-export type { SeriesDownloadGroup };
 import {
   downloadSpeedBps as speedBps,
   downloadEtaSeconds as etaSeconds,
@@ -31,11 +30,7 @@ import {
   isDownloadPaused as isPaused,
   downloadActiveProgress as activeProgress,
   refreshDownloadQueue as refreshQueue,
-  type DownloadProgressPayload,
 } from "../stores/download";
-
-
-export type { DownloadProgressPayload };
 
 export function DownloadManager(props: { onComplete?: () => void }) {
   const QUEUE_COLLAPSED_KEY = "ds_download_queue_collapsed";
@@ -111,19 +106,25 @@ export function DownloadManager(props: { onComplete?: () => void }) {
     });
   };
 
-  const handlePauseResume = async () => {
+  /** Runs a queue mutation, then refreshes the queue; any failure is bannered. */
+  const mutateQueue = async (fn: () => Promise<unknown>): Promise<void> => {
     try {
+      await fn();
+      await refreshQueue();
+    } catch (err) {
+      showBanner(errorMessage(err));
+    }
+  };
+
+  const handlePauseResume = () =>
+    mutateQueue(async () => {
       resetDownloadSpeedAccumulators();
       if (isPaused()) {
         await resumeDownloads();
       } else {
         await pauseDownloads();
       }
-      await refreshQueue();
-    } catch (err) {
-      showBanner(errorMessage(err));
-    }
-  };
+    });
 
   const handleCancelChapter = async (chapterPermalink: string) => {
     await withRowGuard(`cancel:${chapterPermalink}`, async () => {
@@ -139,59 +140,37 @@ export function DownloadManager(props: { onComplete?: () => void }) {
     });
   };
 
-  const handleCancelSeries = async (group: SeriesDownloadGroup) => {
-    try {
+  const handleCancelSeries = (group: SeriesDownloadGroup) =>
+    mutateQueue(async () => {
       for (const item of group.items) {
         if (item.status === "pending" || item.status === "downloading") {
           await cancelDownload(item.chapter_permalink);
         }
       }
-      await refreshQueue();
-    } catch (err) {
-      showBanner(errorMessage(err));
-    }
-  };
+    });
 
-  const handleClearSeries = async (seriesPermalink: string) => {
-    try {
-      await clearCompletedDownloads(seriesPermalink);
-      await refreshQueue();
-    } catch (err) {
-      showBanner(errorMessage(err));
-    }
-  };
+  const handleClearSeries = (seriesPermalink: string) =>
+    mutateQueue(() => clearCompletedDownloads(seriesPermalink));
 
-  const handleRetrySeries = async (seriesPermalink: string) => {
-    try {
-      await retryFailedDownloads(seriesPermalink);
-      await refreshQueue();
-    } catch (err) {
-      showBanner(errorMessage(err));
-    }
-  };
+  const handleRetrySeries = (seriesPermalink: string) =>
+    mutateQueue(() => retryFailedDownloads(seriesPermalink));
 
-  const handleRetryAll = async () => {
+  const handleRetryAll = () => {
     const failed = seriesGroups().filter((g) => g.failedChapters > 0);
-    try {
+    return mutateQueue(async () => {
       for (const g of failed) {
         await retryFailedDownloads(g.series_permalink);
       }
-      await refreshQueue();
-    } catch (err) {
-      showBanner(errorMessage(err));
-    }
+    });
   };
 
-  const handleClearAllCompleted = async () => {
+  const handleClearAllCompleted = () => {
     const groups = seriesGroups().filter((g) => g.completedChapters > 0);
-    try {
+    return mutateQueue(async () => {
       for (const g of groups) {
         await clearCompletedDownloads(g.series_permalink);
       }
-      await refreshQueue();
-    } catch (err) {
-      showBanner(errorMessage(err));
-    }
+    });
   };
 
   return (

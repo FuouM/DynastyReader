@@ -42,7 +42,6 @@ export function SearchResultRow(props: SearchResultRowProps) {
       <ContentRow
         row={props.row}
         isFullyCached={props.isFullyCached}
-        blMode={props.blMode}
         onWarn={props.onWarn}
         onAddToCol={props.onAddToCol}
       />
@@ -50,7 +49,7 @@ export function SearchResultRow(props: SearchResultRowProps) {
   );
 }
 
-function ContentRow(props: SearchResultRowProps) {
+function ContentRow(props: Omit<SearchResultRowProps, "blMode">) {
   const item = () => props.row.item;
   const itemTags = () => {
     if (!showChapterTags() && item().kind === "chapter") {

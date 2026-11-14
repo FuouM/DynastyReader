@@ -57,14 +57,6 @@ import {
   TrafficIcon,
 } from "../components/icons";
 import { IntegrityModal } from "./IntegrityModal";
-type CacheData = {
-  stats: CacheOverviewStats;
-  dbStats: DbStats;
-  rows: FullyCachedChapterRow[];
-  bookmarkSet: Set<string>;
-  readHistoryMap: Map<string, number>;
-  volumeMap: Map<string, string>;
-};
 
 export function CacheView() {
   const [traffic, setTraffic] = createSignal<SessionTraffic>(getSessionTraffic());
@@ -156,13 +148,8 @@ export function CacheView() {
     if (perms.length === 0) return;
     await clearCachedChapters(perms);
     setSessionTab((cur) => {
-      if (!cur) return null;
-      const sPerm = cur.route.seriesPermalink;
-      const chPerm = cur.route.chapterPermalink;
-      if (sPerm === group.seriesPermalink || (chPerm && perms.includes(chPerm))) {
-        return null;
-      }
-      return cur;
+      const chPerm = cur?.route.chapterPermalink;
+      return cur?.route.seriesPermalink === group.seriesPermalink || (chPerm && perms.includes(chPerm)) ? null : cur;
     });
     showBanner(t("cache.deletedWorkSuccess", { name: group.seriesName || group.seriesPermalink }));
     void refetch();
@@ -171,13 +158,7 @@ export function CacheView() {
   const deleteChapter = async (chapterPermalink: string): Promise<void> => {
     if (isChapterDownloading(chapterPermalink)) return;
     await clearCachedChapters([chapterPermalink]);
-    setSessionTab((cur) => {
-      if (!cur) return null;
-      if (cur.route.chapterPermalink === chapterPermalink) {
-        return null;
-      }
-      return cur;
-    });
+    setSessionTab((cur) => (cur?.route.chapterPermalink === chapterPermalink ? null : cur));
     showBanner(t("cache.chapterClearedBanner"));
     void refetch();
   };
@@ -187,11 +168,8 @@ export function CacheView() {
     if (perms.length === 0) return;
     await clearCachedChapters(perms);
     setSessionTab((cur) => {
-      if (!cur) return null;
-      if (cur.route.chapterPermalink && perms.includes(cur.route.chapterPermalink)) {
-        return null;
-      }
-      return cur;
+      const chPerm = cur?.route.chapterPermalink;
+      return chPerm && perms.includes(chPerm) ? null : cur;
     });
     showBanner(t("cache.orphansClearedBanner"));
     void refetch();
@@ -205,7 +183,7 @@ export function CacheView() {
     return d.rows.filter(
       (r: FullyCachedChapterRow) =>
         r.chapterTitle.toLowerCase().includes(q) ||
-        (r.seriesName && r.seriesName.toLowerCase().includes(q)) ||
+        r.seriesName?.toLowerCase().includes(q) ||
         r.chapterPermalink.toLowerCase().includes(q),
     );
   });
@@ -255,7 +233,6 @@ export function CacheView() {
   const totalBytes = createMemo(() =>
     filteredRows().reduce((acc: number, r: FullyCachedChapterRow) => acc + r.totalSizeBytes, 0),
   );
-  const totalChapters = createMemo(() => filteredRows().length);
 
   // Publish the Back + Refresh top-bar actions once data is ready.
   createEffect(() => {
@@ -317,10 +294,9 @@ export function CacheView() {
           }}
           sortMode={sortMode}
           setSortMode={(v) => {
-            setSortMode(v as DownloadedSortMode);
+            setSortMode(v);
             setCurrentPage(1);
           }}
-          totalChapters={totalChapters}
           totalBytes={totalBytes}
           purgeAll={purgeAll}
           purgePages={purgePages}
@@ -341,7 +317,7 @@ export function CacheView() {
 }
 
 function CacheBody(props: {
-  stats: CacheData["stats"];
+  stats: CacheOverviewStats;
   dbStats: DbStats;
   totalWorks: number;
   traffic: () => SessionTraffic;
@@ -357,7 +333,6 @@ function CacheBody(props: {
   clearInput: () => void;
   sortMode: () => DownloadedSortMode;
   setSortMode: (v: DownloadedSortMode) => void;
-  totalChapters: () => number;
   totalBytes: () => number;
   purgeAll: () => Promise<void>;
   purgePages: () => Promise<void>;
@@ -505,7 +480,7 @@ function CacheBody(props: {
                   { value: "name-asc", label: t("browse.downloaded.sorts.alphabetical") },
                   { value: "read-desc", label: t("browse.downloaded.sorts.lastRead") },
                 ]}
-                totalChapters={props.totalChapters()}
+                totalChapters={props.filteredRowsCount}
                 totalBytes={props.totalBytes()}
                 countLabel={t("cache.sortBy")}
                 cssText="margin-bottom:8px;"

@@ -4,9 +4,13 @@ import { log } from "../utils/log";
 import { errorMessage } from "../utils/formatting";
 import { createChangeNotifier } from "../lib/change-notifier";
 
-const localNotifier = createChangeNotifier("library.repo:local");
+const localNotifier = createChangeNotifier();
 export const getLocalRevision = localNotifier.getRevision;
 export const notifyLocalChanged = localNotifier.notifyChanged;
+
+/** Data-root-relative folder holding a local series' files. */
+const localSeriesDir = (permalink: string): string => `local/${permalink.replace(/^local:/, "")}`;
+
 export interface LocalSeriesRow {
   permalink: string;
   title: string;
@@ -26,10 +30,7 @@ export async function getLocalSeries(): Promise<LocalSeriesRow[]> {
     const rows = await query<LocalSeriesRow>(`SELECT * FROM local_series ORDER BY updated_at DESC`);
     if (rows.length === 0) return [];
 
-    const dirPaths = rows.map((r) => {
-      const slug = r.permalink.replace(/^local:/, "");
-      return `local/${slug}`;
-    });
+    const dirPaths = rows.map((r) => localSeriesDir(r.permalink));
 
     const dirBytesByPath = new Map<string, number>();
     try {
@@ -58,8 +59,7 @@ export async function getLocalSeries(): Promise<LocalSeriesRow[]> {
     }
 
     for (const r of rows) {
-      const slug = r.permalink.replace(/^local:/, "");
-      r.total_size_bytes = dirBytesByPath.get(`local/${slug}`) ?? 0;
+      r.total_size_bytes = dirBytesByPath.get(localSeriesDir(r.permalink)) ?? 0;
 
       if (r.cover_path) {
         const abs = absCoverByPath.get(r.cover_path);
@@ -82,9 +82,8 @@ export async function getLocalSeriesByPermalink(permalink: string): Promise<Loca
     const rows = await query<LocalSeriesRow>(`SELECT * FROM local_series WHERE permalink = ?`, [permalink]);
     const r = rows[0] ?? null;
     if (r) {
-      const slug = r.permalink.replace(/^local:/, "");
       try {
-        const stat = await ipc.dirStat(`local/${slug}`);
+        const stat = await ipc.dirStat(localSeriesDir(r.permalink));
         r.total_size_bytes = Number(stat.total_bytes ?? 0);
       } catch {}
 

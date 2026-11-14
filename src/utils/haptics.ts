@@ -4,6 +4,7 @@
  * Calls native AndroidThemeBridge.triggerHaptic() when running on Android,
  * with graceful fallback to navigator.vibrate() in browser environments.
  */
+import type { Signal } from "solid-js";
 import { persistedSignal } from "../lib/persisted-signal";
 import { log } from "./log";
 
@@ -56,56 +57,23 @@ export const DEFAULT_HAPTIC_DURATIONS: Record<HapticStyle, number> = {
   confirm: 25,
 };
 
+const durationSignal = (style: HapticStyle, name: string): Signal<number> =>
+  persistedSignal<number>(DEFAULT_HAPTIC_DURATIONS[style], { name });
+
 /** Persisted custom durations for each style. */
-export const [hapticTapDuration, setHapticTapDuration] = persistedSignal<number>(
-  DEFAULT_HAPTIC_DURATIONS.tap,
-  { name: "ds_haptic_dur_tap" },
-);
-
-export const [hapticPageTurnDuration, setHapticPageTurnDuration] = persistedSignal<number>(
-  DEFAULT_HAPTIC_DURATIONS["page-turn"],
-  { name: "ds_haptic_dur_page_turn" },
-);
-
-export const [hapticSnapDuration, setHapticSnapDuration] = persistedSignal<number>(
-  DEFAULT_HAPTIC_DURATIONS.snap,
-  { name: "ds_haptic_dur_snap" },
-);
-
-export const [hapticConfirmDuration, setHapticConfirmDuration] = persistedSignal<number>(
-  DEFAULT_HAPTIC_DURATIONS.confirm,
-  { name: "ds_haptic_dur_confirm" },
-);
+const HAPTIC_DURATIONS: Record<HapticStyle, Signal<number>> = {
+  tap: durationSignal("tap", "ds_haptic_dur_tap"),
+  "page-turn": durationSignal("page-turn", "ds_haptic_dur_page_turn"),
+  snap: durationSignal("snap", "ds_haptic_dur_snap"),
+  confirm: durationSignal("confirm", "ds_haptic_dur_confirm"),
+};
 
 export function getHapticDuration(style: HapticStyle): number {
-  switch (style) {
-    case "tap":
-      return hapticTapDuration();
-    case "page-turn":
-      return hapticPageTurnDuration();
-    case "snap":
-      return hapticSnapDuration();
-    case "confirm":
-      return hapticConfirmDuration();
-  }
+  return HAPTIC_DURATIONS[style][0]();
 }
 
 export function setHapticDuration(style: HapticStyle, val: number): void {
-  const clamped = Math.max(5, Math.min(250, Math.round(val)));
-  switch (style) {
-    case "tap":
-      setHapticTapDuration(clamped);
-      break;
-    case "page-turn":
-      setHapticPageTurnDuration(clamped);
-      break;
-    case "snap":
-      setHapticSnapDuration(clamped);
-      break;
-    case "confirm":
-      setHapticConfirmDuration(clamped);
-      break;
-  }
+  HAPTIC_DURATIONS[style][1](Math.max(5, Math.min(250, Math.round(val))));
 }
 
 export function resetHapticDuration(style: HapticStyle): void {
@@ -117,18 +85,8 @@ export function resetAllHapticDurations(): void {
 }
 
 function getVibrationPattern(style: HapticStyle): number | number[] {
-  switch (style) {
-    case "tap":
-      return hapticTapDuration();
-    case "page-turn":
-      return hapticPageTurnDuration();
-    case "snap":
-      return hapticSnapDuration();
-    case "confirm": {
-      const pulse = hapticConfirmDuration();
-      return [pulse, 40, pulse];
-    }
-  }
+  const dur = getHapticDuration(style);
+  return style === "confirm" ? [dur, 40, dur] : dur;
 }
 
 export function getHapticTotalDurationMs(style: HapticStyle): number {

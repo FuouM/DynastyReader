@@ -4,7 +4,7 @@
  *
  *  - per-tab top pager configuration store (survives tab switches)
  *  - browse scroll helpers (`#ds-pane-browse` / `#ds-view`)
- *  - a blacklist revision signal driven by `onBlacklistChanged`
+ *  - a blacklist revision signal driven by `getBlacklistRevision`
  *  - `useTabPane`: a resource hook that keeps pane data alive across tab
  *    switches (instant re-activation), reloads on page change / blacklist
  *    revision / force-reload, and never refetches hidden panes.
@@ -33,15 +33,19 @@ export function getTopPagerFor(tabId: string): TopPagerConfig | undefined {
   return pagers[`${activeProvider()}:${tabId}`];
 }
 
+/** The browse scroll container (`#ds-pane-browse`, falling back to `#ds-view`). */
+export const browseScroller = (): HTMLElement | null =>
+  document.getElementById("ds-pane-browse") || document.getElementById("ds-view");
+
 /** Scrolls the browse scroll container to the top. */
 export function scrollBrowseToTop(): void {
-  const el = document.getElementById("ds-pane-browse") || document.getElementById("ds-view");
+  const el = browseScroller();
   if (el) el.scrollTop = 0;
 }
 
 /** Smooth-scrolls the browse scroll container to the bottom. */
 export function scrollBrowseToBottom(): void {
-  const el = document.getElementById("ds-pane-browse") || document.getElementById("ds-view");
+  const el = browseScroller();
   if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
 }
 
@@ -95,11 +99,9 @@ export function useTabPane<T>(opts: TabPaneOptions<T>): TabPane<T> {
   };
   const [data, { mutate, refetch }] = createResource(
     source,
-    async (params) => {
-      const p = typeof params === "object" && params !== null ? params.page : page();
-      if (typeof params === "object" && params !== null) {
-        lastLoadedKey = params.key;
-      }
+    // `source` returns false while idle, so the fetcher only ever sees the params object.
+    async ({ key, page: p }) => {
+      lastLoadedKey = key;
       return opts.load(p);
     },
   );

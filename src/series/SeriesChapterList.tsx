@@ -222,7 +222,7 @@ export function SeriesChapterList(props: SeriesChapterListProps) {
         </div>
       }
     >
-      <Show when={!(props.series.taggables && props.series.taggables!.length > 0)}>
+      <Show when={!props.series.taggables?.length}>
         <div class="ds-muted ds-chapter-empty">
           {t("series.emptyChapters")}
         </div>

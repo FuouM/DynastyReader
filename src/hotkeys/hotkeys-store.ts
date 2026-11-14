@@ -5,7 +5,7 @@ import type { HotkeyActionId, CustomHotkeysMap } from "./types";
 import { HOTKEY_DEFINITIONS, getDefaultHotkeys, HOTKEY_DEFINITIONS_MAP } from "./registry";
 import { matchesEvent, normalizeKeyCombo } from "./key-combo";
 
-const [hotkeysSignal, setHotkeysSignal] = persistedSignal<CustomHotkeysMap>(getDefaultHotkeys(), {
+const [hotkeysMap, setHotkeysMap] = persistedSignal<CustomHotkeysMap>(getDefaultHotkeys(), {
   name: "ds-custom-hotkeys",
   serialize: JSON.stringify,
   deserialize: (raw) => {
@@ -27,10 +27,7 @@ const [hotkeysSignal, setHotkeysSignal] = persistedSignal<CustomHotkeysMap>(getD
   },
 });
 
-export const hotkeysMap = hotkeysSignal;
-const setHotkeysMap = (val: CustomHotkeysMap | ((prev: CustomHotkeysMap) => CustomHotkeysMap)) => {
-  setHotkeysSignal(val);
-};
+export { hotkeysMap };
 export const [isRecordingHotkeys, setIsRecordingHotkeys] = createSignal<boolean>(false);
 
 export function getHotkeys(id: HotkeyActionId): string[] {
@@ -62,8 +59,7 @@ export function resetHotkey(id: HotkeyActionId): void {
 }
 
 export function resetAllHotkeys(): void {
-  const defaults = getDefaultHotkeys();
-  setHotkeysMap(defaults);
+  setHotkeysMap(getDefaultHotkeys());
 }
 
 /**

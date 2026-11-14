@@ -22,7 +22,7 @@ export interface SettingsSection {
   icon: string;
 }
 
-export const getSettingsSections = (): SettingsSection[] => [
+export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "display", get label() { return t("settings.sections.display"); }, icon: "aspect-ratio" },
   { id: "blacklist", get label() { return t("settings.sections.blacklist"); }, icon: "shield-slash" },
   { id: "reading", get label() { return t("settings.sections.reading"); }, icon: "book" },
@@ -31,8 +31,6 @@ export const getSettingsSections = (): SettingsSection[] => [
   { id: "advanced", get label() { return t("settings.sections.advanced"); }, icon: "sliders" },
   { id: "about", get label() { return t("settings.sections.about"); }, icon: "info-circle" },
 ];
-
-export const SETTINGS_SECTIONS: readonly SettingsSection[] = getSettingsSections();
 
 export const SCALE_PRESETS = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
 
@@ -44,7 +42,7 @@ export interface SettingsSidebarProps {
 export function SettingsSidebar(props: SettingsSidebarProps) {
   return (
     <div class="ds-settings-sidebar">
-      <For each={getSettingsSections()}>
+      <For each={SETTINGS_SECTIONS}>
         {(sec) => (
           <Button
             class="ds-settings-nav-item"

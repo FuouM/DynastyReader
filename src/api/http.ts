@@ -5,7 +5,7 @@ import { tryParseJson } from "../utils/formatting";
 import * as ipc from "../ipc";
 import { log } from "../utils/log";
 
-function sleep(ms: number): Promise<void> {
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 

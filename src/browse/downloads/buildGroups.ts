@@ -101,7 +101,7 @@ export function buildSeriesDownloadGroups(
 
 const titleCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-function extractChapterLabel(title: string, index?: number): string {
+function extractChapterLabel(title: string, index: number): string {
   const clean = title.trim();
   const match = clean.match(/\b(?:chapter|ch\.?|c)\s*(\d+(?:\.\d+)?)\b/i);
   if (match?.[1]) return match[1];
@@ -116,8 +116,7 @@ function extractChapterLabel(title: string, index?: number): string {
   if (/epilogue/i.test(clean)) return "Epi";
   if (/extra/i.test(clean)) return "Ex";
   if (clean.length <= 4) return clean;
-  if (index !== undefined) return `${index + 1}`;
-  return "1";
+  return `${index + 1}`;
 }
 
 export function compareCachedChapters(a: ProcessedCachedChapter, b: ProcessedCachedChapter): number {
@@ -178,19 +177,16 @@ export function buildGroups(
     if (!g.coverPath && r.coverPath) g.coverPath = r.coverPath;
     if (!g.seriesName && r.seriesName) g.seriesName = r.seriesName;
   }
+  const assignShortLabels = (chapters: ProcessedCachedChapter[]): void => {
+    chapters.forEach((ch, i) => {
+      ch.shortLabel = extractChapterLabel(ch.chapterTitle, i);
+    });
+  };
   for (const g of map.values()) {
     g.chapters.sort(compareCachedChapters);
-    const total = g.chapters.length;
-    for (let i = 0; i < total; i++) {
-      const ch = g.chapters[i];
-      if (ch) ch.shortLabel = extractChapterLabel(ch.chapterTitle, i);
-    }
+    assignShortLabels(g.chapters);
   }
-  const orphanTotal = orphans.length;
-  for (let i = 0; i < orphanTotal; i++) {
-    const ch = orphans[i];
-    if (ch) ch.shortLabel = extractChapterLabel(ch.chapterTitle, i);
-  }
+  assignShortLabels(orphans);
 
   const groups = Array.from(map.values());
   if (sortMode === "size-desc") {

@@ -2,12 +2,88 @@
  * Consolidated local series modals: Archive Import, Folder Import, and Series Metadata Edit.
  */
 
-import { For, Show } from "solid-js";
+import { For, Show, type JSX } from "solid-js";
 import { Button, InputField, Modal } from "soulwindow/solid";
 import { AddIcon } from "../components/icons";
 import type { ArchiveScanResult, FolderScanResult } from "../ipc";
 import type { LocalSeriesRow } from "../db/local.repo";
 import { t } from "../i18n";
+
+// ── Shared fragments ───────────────────────────────────────────────────────────
+
+/** Scrollable "page N → pNNN.ext" rename preview. */
+function PreviewBox(props: { count: number; children: JSX.Element }) {
+  return (
+    <div style="margin-top:8px; border:1px solid var(--ds-border, #ddd); border-radius:6px; max-height:220px; overflow:auto; padding:6px; background:var(--ds-bg-subtle, rgba(0,0,0,0.02))">
+      <div style="font-size:11px; font-weight:600; margin-bottom:6px;">
+        {t("local.previewTitle", { count: props.count })}
+      </div>
+      {props.children}
+    </div>
+  );
+}
+
+function PreviewFiles(props: { files: readonly string[] }) {
+  return (
+    <For each={props.files}>
+      {(f, idx) => {
+        const ext = f.split(".").pop()?.toLowerCase() ?? "jpg";
+        const out = `p${String(idx()).padStart(3, "0")}.${ext}`;
+        return (
+          <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; display:flex; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            <span style="opacity:0.5; min-width:28px; text-align:right;">
+              {String(idx() + 1).padStart(2, "0")}.
+            </span>
+            <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">{f}</span>
+            <span style="opacity:0.5;">→</span>
+            <span>{out}</span>
+          </div>
+        );
+      }}
+    </For>
+  );
+}
+
+/** Cover image picker row: pick button, selected file name + remove, or keep-current hint. */
+function CoverPicker(props: {
+  path: string | null;
+  disabled: boolean;
+  onPick: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <>
+      <label class="ds-form-label-sm">{t("local.coverLabel")}</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <Button
+          text={t("local.newCoverButton")}
+          onClick={props.onPick}
+          disabled={props.disabled}
+        />
+        <Show when={props.path}>
+          <span
+            class="ds-muted"
+            style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+          >
+            {t("local.newCoverSelected", {
+              name: props.path!.split(/[/\\]/).pop() ?? "",
+            })}
+          </span>
+          <Button
+            text={t("local.newCoverRemove")}
+            onClick={props.onRemove}
+            disabled={props.disabled}
+          />
+        </Show>
+        <Show when={!props.path}>
+          <span class="ds-muted" style="font-size:12px;">
+            {t("local.newCoverKeepHint")}
+          </span>
+        </Show>
+      </div>
+    </>
+  );
+}
 
 // ── 1. Archive Import Modal (CBZ) ──────────────────────────────────────────────
 
@@ -68,36 +144,18 @@ export function ArchiveImportModal(props: ArchiveImportModalProps) {
               </div>
             )}
           </For>
-          <div style="margin-top:8px; border:1px solid var(--ds-border, #ddd); border-radius:6px; max-height:220px; overflow:auto; padding:6px; background:var(--ds-bg-subtle, rgba(0,0,0,0.02))">
-            <div style="font-size:11px; font-weight:600; margin-bottom:6px;">
-              {t("local.previewTitle", { count: sr().total_pages })}
-            </div>
+          <PreviewBox count={sr().total_pages}>
             <For each={sr().chapters}>
               {(ch) => (
                 <div style="margin-bottom:8px;">
                   <div style="font-size:11px; font-weight:600; opacity:0.8; margin-bottom:2px;">
                     {ch.title}
                   </div>
-                  <For each={ch.files}>
-                    {(f, idx) => {
-                      const ext = f.split(".").pop()?.toLowerCase() ?? "jpg";
-                      const out = `p${String(idx()).padStart(3, "0")}.${ext}`;
-                      return (
-                        <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; display:flex; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                          <span style="opacity:0.5; min-width:28px; text-align:right;">
-                            {String(idx() + 1).padStart(2, "0")}.
-                          </span>
-                          <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">{f}</span>
-                          <span style="opacity:0.5;">→</span>
-                          <span>{out}</span>
-                        </div>
-                      );
-                    }}
-                  </For>
+                  <PreviewFiles files={ch.files} />
                 </div>
               )}
             </For>
-          </div>
+          </PreviewBox>
           <Show when={props.importing}>
             <div style="display:flex;flex-direction:column;gap:4px;">
               <div class="ds-muted" style="font-size:12px;">
@@ -189,55 +247,15 @@ export function FolderImportModal(props: FolderImportModalProps) {
           <div class="ds-muted" style="font-size:12px;">
             {t("local.folderSummary", { pages: sr().page_count })}
           </div>
-          <label class="ds-form-label-sm">{t("local.coverLabel")}</label>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <Button
-              text={t("local.newCoverButton")}
-              onClick={props.onPickCover}
-              disabled={props.importing}
-            />
-            <Show when={props.coverPath}>
-              <span
-                class="ds-muted"
-                style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-              >
-                {t("local.newCoverSelected", {
-                  name: props.coverPath!.split(/[/\\]/).pop() ?? "",
-                })}
-              </span>
-              <Button
-                text={t("local.newCoverRemove")}
-                onClick={props.onRemoveCover}
-                disabled={props.importing}
-              />
-            </Show>
-            <Show when={!props.coverPath}>
-              <span class="ds-muted" style="font-size:12px;">
-                {t("local.newCoverKeepHint")}
-              </span>
-            </Show>
-          </div>
-          <div style="margin-top:8px; border:1px solid var(--ds-border, #ddd); border-radius:6px; max-height:220px; overflow:auto; padding:6px; background:var(--ds-bg-subtle, rgba(0,0,0,0.02))">
-            <div style="font-size:11px; font-weight:600; margin-bottom:6px;">
-              {t("local.previewTitle", { count: sr().page_count })}
-            </div>
-            <For each={sr().files}>
-              {(f, idx) => {
-                const ext = f.split(".").pop()?.toLowerCase() ?? "jpg";
-                const out = `p${String(idx()).padStart(3, "0")}.${ext}`;
-                return (
-                  <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; display:flex; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    <span style="opacity:0.5; min-width:28px; text-align:right;">
-                      {String(idx() + 1).padStart(2, "0")}.
-                    </span>
-                    <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">{f}</span>
-                    <span style="opacity:0.5;">→</span>
-                    <span>{out}</span>
-                  </div>
-                );
-              }}
-            </For>
-          </div>
+          <CoverPicker
+            path={props.coverPath}
+            disabled={props.importing}
+            onPick={props.onPickCover}
+            onRemove={props.onRemoveCover}
+          />
+          <PreviewBox count={sr().page_count}>
+            <PreviewFiles files={sr().files} />
+          </PreviewBox>
         </div>
     </Modal>
   );
@@ -299,34 +317,12 @@ export function EditLocalSeriesModal(props: EditLocalSeriesModalProps) {
             onInput={props.onDescription}
             placeholder=""
           />
-          <label class="ds-form-label-sm">{t("local.coverLabel")}</label>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <Button
-              text={t("local.newCoverButton")}
-              onClick={props.onPickCover}
-              disabled={props.saving}
-            />
-            <Show when={props.newCoverPath}>
-              <span
-                class="ds-muted"
-                style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-              >
-                {t("local.newCoverSelected", {
-                  name: props.newCoverPath!.split(/[/\\]/).pop() ?? "",
-                })}
-              </span>
-              <Button
-                text={t("local.newCoverRemove")}
-                onClick={props.onRemoveCover}
-                disabled={props.saving}
-              />
-            </Show>
-            <Show when={!props.newCoverPath}>
-              <span class="ds-muted" style="font-size:12px;">
-                {t("local.newCoverKeepHint")}
-              </span>
-            </Show>
-          </div>
+          <CoverPicker
+            path={props.newCoverPath}
+            disabled={props.saving}
+            onPick={props.onPickCover}
+            onRemove={props.onRemoveCover}
+          />
         </div>
     </Modal>
   );

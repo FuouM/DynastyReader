@@ -11,6 +11,37 @@ export interface ReaderProgressWrapProps {
   showCachedNote?: boolean;
 }
 
+const SCRUB_HAPTIC_THROTTLE_MS = 40;
+
+/** Throttled page-turn haptics while scrubbing (progress track, mobile slider). */
+export function createScrubHaptics(s: ReaderSession) {
+  let lastPage: number | null = null;
+  let lastTime = 0;
+  return {
+    /** Anchors at the current page when a scrub gesture starts. */
+    start(): void {
+      lastPage = s.currentIndex();
+      lastTime = 0;
+    },
+    /** Records the settled page; `null` re-anchors on the next trigger. */
+    settle(page: number | null): void {
+      lastPage = page;
+    },
+    trigger(targetPage: number, instant: boolean): void {
+      if (s.pages().length <= 1) return;
+      if (lastPage === null) {
+        lastPage = s.currentIndex();
+      }
+      const now = performance.now();
+      if (targetPage !== lastPage && (instant || now - lastTime >= SCRUB_HAPTIC_THROTTLE_MS)) {
+        lastPage = targetPage;
+        lastTime = now;
+        triggerHaptic("page-turn");
+      }
+    },
+  };
+}
+
 export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
   const s = props.session;
   const [editing, setEditing] = createSignal(false);
@@ -19,24 +50,8 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
   let pillRef: HTMLDivElement | undefined;
   let trackRef: HTMLDivElement | undefined;
   const [isScrubbing, setIsScrubbing] = createSignal(false);
-  let lastHapticPage: number | null = null;
-  let lastHapticTime = 0;
-  const HAPTIC_THROTTLE_MS = 40;
+  const haptics = createScrubHaptics(s);
 
-  const triggerScrubHaptic = (targetPage: number, instant: boolean) => {
-    if (s.pages().length <= 1) return;
-    if (lastHapticPage === null) {
-      lastHapticPage = s.currentIndex();
-    }
-    const now = performance.now();
-    if (targetPage !== lastHapticPage) {
-      if (instant || now - lastHapticTime >= HAPTIC_THROTTLE_MS) {
-        lastHapticPage = targetPage;
-        lastHapticTime = now;
-        triggerHaptic("page-turn");
-      }
-    }
-  };
   const calculatePageFromPointer = (e: PointerEvent): number => {
     if (!trackRef) return s.currentIndex();
     const rect = trackRef.getBoundingClientRect();
@@ -54,10 +69,9 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
     e.preventDefault();
     setIsScrubbing(true);
     try { trackRef?.setPointerCapture(e.pointerId); } catch {}
-    lastHapticPage = s.currentIndex();
-    lastHapticTime = 0;
+    haptics.start();
     const targetPage = calculatePageFromPointer(e);
-    triggerScrubHaptic(targetPage, false);
+    haptics.trigger(targetPage, false);
     s.setPage(targetPage, false);
   };
 
@@ -66,7 +80,7 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
     e.preventDefault();
     const targetPage = calculatePageFromPointer(e);
     if (targetPage === s.currentIndex()) return;
-    triggerScrubHaptic(targetPage, false);
+    haptics.trigger(targetPage, false);
     s.setPage(targetPage, false);
   };
 
@@ -79,9 +93,9 @@ export function ReaderProgressWrap(props: ReaderProgressWrapProps) {
       }
     } catch {}
     const targetPage = calculatePageFromPointer(e);
-    triggerScrubHaptic(targetPage, true);
+    haptics.trigger(targetPage, true);
     s.setPage(targetPage, true);
-    lastHapticPage = targetPage;
+    haptics.settle(targetPage);
   };
 
   const totalPages = () => s.pages().length;

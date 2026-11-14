@@ -66,7 +66,6 @@ export function Typeahead(props: TypeaheadProps) {
     let items: TypeaheadItem[];
     try {
       const raw = await props.fetcher(val);
-      if (seq !== fetchSeq || val !== inputValue().trim()) return;
       items = Array.isArray(raw) ? raw : [];
     } catch {
       if (seq !== fetchSeq) return;
@@ -76,7 +75,6 @@ export function Typeahead(props: TypeaheadProps) {
       return;
     }
     if (seq !== fetchSeq || val !== inputValue().trim()) return;
-    if (!Array.isArray(items)) items = [];
     const sliced = items.slice(0, maxItems);
     setSuggestions(sliced);
     setSelectedIndex(-1);

@@ -17,6 +17,7 @@ export function paginate(
 
 /**
  * Runs a count query then a paginated rows query, returning rows and page metadata.
+ * `run` selects the database (defaults to the main app db).
  */
 export async function queryPaged<T extends object>(
   countSql: string,
@@ -24,11 +25,12 @@ export async function queryPaged<T extends object>(
   page: number,
   pageSize: number,
   params: unknown[] = [],
+  run: typeof query = query,
 ): Promise<{ rows: T[]; totalPages: number; currentPage: number; totalCount: number }> {
-  const countRows = await query<{ count: number }>(countSql, params);
+  const countRows = await run<{ count: number }>(countSql, params);
   const totalCount = countRows[0]?.count ?? 0;
   const { totalPages, currentPage, offset } = paginate(totalCount, page, pageSize);
-  const rows = await query<T>(rowsSqlWithOffsetLimit, [...params, pageSize, offset]);
+  const rows = await run<T>(rowsSqlWithOffsetLimit, [...params, pageSize, offset]);
   return { rows, totalPages, currentPage, totalCount };
 }
 

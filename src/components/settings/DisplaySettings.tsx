@@ -10,6 +10,10 @@ import { browseCovers } from "../../browse/browse-covers";
 import { Icon, Select, IconText, SegmentedSwitch, Button, SettingsRow, SettingsToggleRow, GroupBox } from "soulwindow/solid";
 import { SunIcon, MoonIcon, OledIcon, AddIcon } from "../icons";
 import { SCALE_PRESETS } from "./settings-shared";
+
+const CORE_THEMES: readonly AppTheme[] = ["light", "dark", "high-contrast"];
+const EXTRA_THEMES = (Object.keys(THEME_REGISTRY) as AppTheme[]).filter((v) => !CORE_THEMES.includes(v));
+
 export function DisplaySettings() {
   const [scale, setScale] = createSignal(uiScale());
   const [coversEnabled, setCoversEnabledLocal] = createSignal(browseCovers.coversEnabled);
@@ -123,7 +127,7 @@ export function DisplaySettings() {
                 setTheme(val as AppTheme);
                 setMoreOpen(false);
               }}
-              options={(["light", "dark", "high-contrast"] as AppTheme[]).map((value) => {
+              options={CORE_THEMES.map((value) => {
                 const cfg = THEME_REGISTRY[value];
                 const isLight = value === "light";
                 const isDark = value === "dark";
@@ -136,13 +140,13 @@ export function DisplaySettings() {
                 };
               })}
             />
-            <Show when={(Object.keys(THEME_REGISTRY) as AppTheme[]).filter((v) => !["light", "dark", "high-contrast"].includes(v)).length > 0}>
+            <Show when={EXTRA_THEMES.length > 0}>
               <div ref={moreContainerRef} class="ds-flex-row" style="gap: 6px; align-items: center; position: relative;">
                 <Button
                   id="ds-settings-theme-more-select"
                   class="ds-select--w115"
                   icon={theme() === "windows7" ? <Icon name="windows" /> : <Icon name="palette" />}
-                  text={(["light", "dark", "high-contrast"] as AppTheme[]).includes(theme() as AppTheme) ? t("settings.display.moreThemes") : THEME_REGISTRY[theme() as AppTheme]?.label ?? t("settings.display.moreThemes")}
+                  text={CORE_THEMES.includes(theme()) ? t("settings.display.moreThemes") : THEME_REGISTRY[theme()].label}
                   title={t("settings.display.moreThemesTooltip")}
                   onClick={() => setMoreOpen(!moreOpen())}
                 />
@@ -152,7 +156,7 @@ export function DisplaySettings() {
                     class="ds-popup-card"
                     style="position: absolute; top: 100%; left: 0; margin-top: 4px; min-width: 160px; z-index: 100; padding: 4px; gap: 2px;"
                   >
-                    <For each={(Object.keys(THEME_REGISTRY) as AppTheme[]).filter((v) => !["light", "dark", "high-contrast"].includes(v))}>
+                    <For each={EXTRA_THEMES}>
                       {(value) => {
                         const cfg = THEME_REGISTRY[value];
                         const isWin7 = value === "windows7";

@@ -17,10 +17,10 @@ import { setStripAnimated, setStripInstant, stripTranslateX } from "./reader-tra
 // ---------------------------------------------------------------------------
 
 /** Duration budget for the eased scroll animation in continuous-scroll mode. */
-export const SCROLL_ANIMATION_DURATION_MS = 220;
+const SCROLL_ANIMATION_DURATION_MS = 220;
 
 /** How long to hold `isProgrammaticScroll = true` after a non-animated jump. */
-export const PROGRAMMATIC_SCROLL_LOCK_MS = 350;
+const PROGRAMMATIC_SCROLL_LOCK_MS = 350;
 
 // ---------------------------------------------------------------------------
 // CSS custom property helpers

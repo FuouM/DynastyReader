@@ -96,8 +96,6 @@ export function FeedItemRow(props: FeedItemRowProps) {
   );
   const containerTag = createMemo(() => getChapterContainerTag(rawTags()));
 
-  const blMode = () => getBlacklistMode();
-
   const externalUrl = (): string => {
     const cur = ch();
     if (cur.url) return cur.url;
@@ -178,7 +176,6 @@ export function FeedItemRow(props: FeedItemRowProps) {
   const openAddToCol = (anchorEl: HTMLElement): void => {
     const cur = ch();
     const ci = coverInfo();
-    const tags = rawTags();
     if (!ci.isStandalone) {
       const sPermalink =
         ci.seriesPermalink ||
@@ -187,14 +184,14 @@ export function FeedItemRow(props: FeedItemRowProps) {
         {
           permalink: sPermalink,
           title: ci.seriesName || cur.series || cur.title,
-          kind: (ci.seriesType === "anthology" ? "anthology" : "series") as CollectionItemKind,
+          kind: ci.seriesType === "anthology" ? "anthology" : "series",
           cover: props.coverPath || ci.coverKey,
         },
         anchorEl,
       );
     } else {
-      const cTag = getChapterContainerTag(tags);
-      const doujinTag = tags.find((t) => isDoujinTag(t.type));
+      const cTag = containerTag();
+      const doujinTag = rawTags().find((t) => isDoujinTag(t.type));
       const kind: CollectionItemKind = cTag
         ? (cTag.type.toLowerCase() === "anthology" ? "anthology" : "series")
         : doujinTag
@@ -288,7 +285,7 @@ export function FeedItemRow(props: FeedItemRowProps) {
             </Show>
 
             <Show when={isBlacklisted() && matchedTags().length > 0}>
-              <WarningChip mode={blMode()} tags={matchedTags()} />
+              <WarningChip mode={getBlacklistMode()} tags={matchedTags()} />
             </Show>
           </div>
 

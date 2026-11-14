@@ -43,15 +43,10 @@ export class ReaderQueue {
   private readonly priorityIndices = new Set<number>();
   private readonly inFlight = new Set<number>();
   private readonly inFlightPriority = new Set<number>();
-  private readonly retrying = new Set<number>();
   private readonly failed = new Set<number>();
   private firstErrorShown = false;
 
   constructor(private readonly c: ReaderQueueHost) {}
-
-  get failedSet(): Set<number> {
-    return this.failed;
-  }
 
   isFailed(index: number): boolean {
     return this.failed.has(index);
@@ -59,14 +54,6 @@ export class ReaderQueue {
 
   clearFailed(index: number): void {
     this.failed.delete(index);
-  }
-
-  isRetrying(index: number): boolean {
-    return this.retrying.has(index);
-  }
-
-  markRetrying(index: number): void {
-    this.retrying.add(index);
   }
 
   /** Re-sorts the queue by priority and proximity to the current reading position, then pumps. */
@@ -204,9 +191,7 @@ export class ReaderQueue {
             }
             return p;
           });
-          if (c.setPages) {
-            c.setPages(updatedPages);
-          }
+          c.setPages?.(updatedPages);
 
           if (!isRetry && !c.disposed) {
             return this.downloadPage(index, true);

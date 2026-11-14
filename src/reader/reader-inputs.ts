@@ -36,9 +36,7 @@ function isNavigationHotkey(ev: KeyboardEvent): boolean {
   );
 }
 
-export function useReaderShortcuts(session: ReaderSession): void {
-  const c = session;
-
+export function useReaderShortcuts(c: ReaderSession): void {
   const onKeyDown = (ev: KeyboardEvent): void => {
     // Ignore if user is currently typing in an input or textarea
     if (isTextInputTarget(ev.target)) return;
@@ -67,21 +65,11 @@ export function useReaderShortcuts(session: ReaderSession): void {
     if (matchesHotkey(ev, "reader.nextPage")) {
       consumeHotkeyEvent(ev);
       if (isMobile()) triggerHaptic("page-turn");
-      const step = isRtl && isArrowRight ? -1 : 1;
-      if (c.isSpread()) {
-        c.stepSpread(step);
-      } else {
-        c.setPage(c.currentIndex() + step);
-      }
+      c.turnPage(isRtl && isArrowRight ? -1 : 1);
     } else if (matchesHotkey(ev, "reader.prevPage")) {
       consumeHotkeyEvent(ev);
       if (isMobile()) triggerHaptic("page-turn");
-      const step = isRtl && isArrowLeft ? 1 : -1;
-      if (c.isSpread()) {
-        c.stepSpread(step);
-      } else {
-        c.setPage(c.currentIndex() + step);
-      }
+      c.turnPage(isRtl && isArrowLeft ? 1 : -1);
     } else if (matchesHotkey(ev, "reader.firstPage")) {
       consumeHotkeyEvent(ev);
       c.setPage(0, true);
@@ -117,7 +105,7 @@ export function useReaderShortcuts(session: ReaderSession): void {
     } else if (matchesHotkey(ev, "reader.toggleSpread")) {
       consumeHotkeyEvent(ev);
       if (c.mode() === "paged") {
-        c.setPagedLayout(c.pagedLayout() === "spread" ? "single" : "spread");
+        c.togglePagedLayout();
       }
     } else if (matchesHotkey(ev, "reader.toggleDirection")) {
       consumeHotkeyEvent(ev);
@@ -156,9 +144,7 @@ export function useReaderShortcuts(session: ReaderSession): void {
   };
 
   makeEventListener(window, "keydown", onKeyDown);
-
-  }
-
+}
 
 const MOMENTUM_INDICATOR_TIMEOUT_MS = 1200;
 const MOMENTUM_PAGE_FLIP_COOLDOWN_MS = 220;
@@ -166,9 +152,7 @@ const WHEEL_DELTA_THRESHOLD = 10;
 const PAGE_FLIP_COOLDOWN_MS = 220;
 const WHEEL_IDLE_RESET_MS = 350;
 
-
-export function useReaderWheel(session: ReaderSession): void {
-  const c = session;
+export function useReaderWheel(c: ReaderSession): void {
   let wheelCooldown = 0;
   let lastWheelDirection: 1 | -1 | null = null;
   let lastWheelTime = 0;
@@ -198,11 +182,20 @@ export function useReaderWheel(session: ReaderSession): void {
     momentumDir = null;
   };
 
-  onCleanup(() => {
+  const clearMomentumTimer = (): void => {
     if (momentumTimer !== null) {
       clearTimeout(momentumTimer);
       momentumTimer = null;
     }
+  };
+
+  const cancelMomentum = (): void => {
+    hideIndicator();
+    clearMomentumTimer();
+  };
+
+  onCleanup(() => {
+    clearMomentumTimer();
     if (indicator) {
       indicator.remove();
       indicator = null;
@@ -235,11 +228,7 @@ export function useReaderWheel(session: ReaderSession): void {
 
     const now = Date.now();
     const primaryDelta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
-    if (
-      Math.abs(primaryDelta) < WHEEL_DELTA_THRESHOLD &&
-      Math.abs(ev.deltaY) < WHEEL_DELTA_THRESHOLD &&
-      Math.abs(ev.deltaX) < WHEEL_DELTA_THRESHOLD
-    ) {
+    if (Math.abs(ev.deltaY) < WHEEL_DELTA_THRESHOLD && Math.abs(ev.deltaX) < WHEEL_DELTA_THRESHOLD) {
       return;
     }
 
@@ -257,13 +246,7 @@ export function useReaderWheel(session: ReaderSession): void {
       return;
     }
 
-    if (isDirectionReversal) {
-      hideIndicator();
-      if (momentumTimer !== null) {
-        clearTimeout(momentumTimer);
-        momentumTimer = null;
-      }
-    }
+    if (isDirectionReversal) cancelMomentum();
 
     if (c.isHorizontal()) {
       const slideIndex = c.isSpread() ? spreadIndexOf(c.spreads(), c.currentIndex()) : c.currentIndex();
@@ -274,7 +257,6 @@ export function useReaderWheel(session: ReaderSession): void {
 
       // Shift + Wheel or horizontal trackpad / tilt wheel
       if (hasHScroll && (ev.shiftKey || Math.abs(ev.deltaX) > Math.abs(ev.deltaY))) {
-        ev.preventDefault();
         const delta = ev.shiftKey && ev.deltaX === 0 ? ev.deltaY : ev.deltaX;
         const maxScrollLeft = slide.scrollWidth - slide.clientWidth;
         slide.scrollLeft = Math.max(0, Math.min(maxScrollLeft, slide.scrollLeft + delta));
@@ -288,18 +270,12 @@ export function useReaderWheel(session: ReaderSession): void {
 
         if (!atTop && !atBottom) {
           // Scroll inside slide programmatically so browser never blocks wheel stream
-          ev.preventDefault();
           slide.scrollTop = Math.max(0, Math.min(maxScrollTop, slide.scrollTop + ev.deltaY));
-          hideIndicator();
-          if (momentumTimer !== null) {
-            clearTimeout(momentumTimer);
-            momentumTimer = null;
-          }
+          cancelMomentum();
           lastWheelDirection = currentDirection;
           return;
         }
 
-        ev.preventDefault();
         const targetDir: "next" | "prev" = atBottom ? "next" : "prev";
 
         // If at the first page (no previous) or last page (no next), do not show indicator
@@ -318,17 +294,14 @@ export function useReaderWheel(session: ReaderSession): void {
         if (momentumDir !== targetDir) {
           momentumDir = targetDir;
           showIndicator(targetDir);
-          clearTimeout(momentumTimer!);
+          clearMomentumTimer();
           momentumTimer = window.setTimeout(hideIndicator, MOMENTUM_INDICATOR_TIMEOUT_MS);
           lastWheelDirection = currentDirection;
           return;
         }
 
         // Second deliberate scroll in the same direction: flip page
-        hideIndicator();
-        clearTimeout(momentumTimer!);
-        momentumTimer = null;
-        momentumDir = null;
+        cancelMomentum();
         lastWheelDirection = currentDirection;
         wheelCooldown = Date.now() + MOMENTUM_PAGE_FLIP_COOLDOWN_MS;
         if (c.isSpread()) {
@@ -341,26 +314,11 @@ export function useReaderWheel(session: ReaderSession): void {
         return;
       }
 
-      // Horizontal overflow scrolling (e.g. wide zoomed spread)
-      if (slide && slide.scrollWidth > slide.clientWidth + 4 && Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) {
-        ev.preventDefault();
-        slide.scrollLeft = Math.max(0, Math.min(slide.scrollWidth - slide.clientWidth, slide.scrollLeft + ev.deltaX));
-        return;
-      }
-
       // Standard paged mode without vertical overflow: flip page directly
       hideIndicator();
-      ev.preventDefault();
       lastWheelDirection = currentDirection;
       wheelCooldown = Date.now() + PAGE_FLIP_COOLDOWN_MS;
-      const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
-      if (c.isSpread()) {
-        c.stepSpread(delta > 0 ? 1 : -1);
-      } else if (delta > 0) {
-        c.setPage(c.currentIndex() + 1);
-      } else {
-        c.setPage(c.currentIndex() - 1);
-      }
+      c.turnPage(currentDirection);
       return;
     }
 
@@ -371,9 +329,8 @@ export function useReaderWheel(session: ReaderSession): void {
 
     lastWheelDirection = currentDirection;
     wheelCooldown = Date.now() + PAGE_FLIP_COOLDOWN_MS;
-    const delta = Math.abs(ev.deltaY) >= Math.abs(ev.deltaX) ? ev.deltaY : ev.deltaX;
 
-    if (delta > 0) {
+    if (currentDirection === 1) {
       c.setPage(Math.min(c.pages().length - 1, c.currentIndex() + 1));
     } else {
       c.setPage(Math.max(0, c.currentIndex() - 1));
@@ -384,5 +341,5 @@ export function useReaderWheel(session: ReaderSession): void {
   // every wheel event to fire onWheel twice (viewport fires, then it bubbles to
   // window), doubling scroll speed and jitter.
   makeEventListener(window, "wheel", onWheel, { passive: false });
-  }
+}
 

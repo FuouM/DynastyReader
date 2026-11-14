@@ -53,10 +53,7 @@ export function ShowMoreToggle(props: ShowMoreToggleProps) {
 
 export interface DownloadedChapterRowProps {
   ch: ProcessedCachedChapter;
-  seriesPermalink?: string | null;
-  seriesName?: string | null;
   onClick?: () => void;
-  onOpen?: (permalink: string) => void;
   onDelete?: (chapterPermalink: string, chapterTitle?: string) => void;
   deleteDisabled?: () => boolean;
 }
@@ -67,8 +64,7 @@ export function DownloadedChapterRow(props: DownloadedChapterRowProps) {
   const isBookmarked = () => ch().isBookmarked;
 
   const handleClick = () => {
-    if (props.onClick) props.onClick();
-    else if (props.onOpen) props.onOpen(ch().chapterPermalink);
+    props.onClick?.();
   };
 
   return (
@@ -202,15 +198,12 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
   });
 
   const displayedChapters = createMemo(() => {
-    if (viewMode() === "seats") {
-      if (!isLarge() || activeRange() === -1) {
-        return props.group.chapters;
-      }
-      const ch = chunks()[activeRange()];
-      if (!ch) return props.group.chapters;
-      return props.group.chapters.slice(ch.start, ch.end);
+    if (viewMode() !== "seats" || !isLarge() || activeRange() === -1) {
+      return props.group.chapters;
     }
-    return props.group.chapters;
+    const ch = chunks()[activeRange()];
+    if (!ch) return props.group.chapters;
+    return props.group.chapters.slice(ch.start, ch.end);
   });
 
   const visibleListChapters = createMemo(() => {
@@ -286,15 +279,7 @@ export function SeriesDownloadedCard(props: SeriesDownloadedCardProps) {
               <button
                 type="button"
                 class="win-button primary ds-btn-sm"
-                onClick={() =>
-                  navigate({
-                    view: "reader",
-                    seriesPermalink: props.group.seriesPermalink,
-                    seriesName: props.group.seriesName || props.group.seriesPermalink,
-                    chapterPermalink: next().chapterPermalink,
-                    chapterTitle: next().chapterTitle,
-                  })
-                }
+                onClick={() => navigateToChapter(next())}
                 title={`Continue reading: ${next().chapterTitle}`}
               >
                 <PlayIcon /> Read Next

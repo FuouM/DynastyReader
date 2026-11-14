@@ -6,9 +6,8 @@ import { log } from "../utils/log";
 
 export type { BlacklistedTag, BlacklistedSeries, BlacklistCheckResult, BlacklistMode };
 
-const blacklistNotifier = createChangeNotifier("blacklist.repo");
+const blacklistNotifier = createChangeNotifier();
 export const getBlacklistRevision = blacklistNotifier.getRevision;
-export const onBlacklistChanged = blacklistNotifier.onChanged;
 export const notifyBlacklistChanged = blacklistNotifier.notifyChanged;
 
 const [blacklistModeSignal, setBlacklistModeRaw] = persistedSignal<BlacklistMode>("hide", {
@@ -60,6 +59,13 @@ export async function initBlacklistCache(force = false): Promise<void> {
     }
   })();
   return blacklistCacheInitPromise;
+}
+
+/** Kicks off a lazy cache load on first synchronous check; listeners re-check once it lands. */
+function ensureBlacklistCache(): void {
+  if (!blacklistCacheInitialized && !blacklistCacheInitPromise) {
+    void initBlacklistCache().then(() => notifyBlacklistChanged()).catch((err) => log.debug("blacklist.repo", "initBlacklistCache failed:", err));
+  }
 }
 
 /**
@@ -149,9 +155,7 @@ export async function removeBlacklistedSeries(permalink: string): Promise<void> 
  * Checks synchronously whether a series is blacklisted by permalink or title.
  */
 export function isSeriesBlacklisted(permalink?: string, name?: string): boolean {
-  if (!blacklistCacheInitialized && !blacklistCacheInitPromise) {
-    void initBlacklistCache().then(() => notifyBlacklistChanged()).catch((err) => log.debug("blacklist.repo", "initBlacklistCache failed:", err));
-  }
+  ensureBlacklistCache();
   if (permalink && cachedBlacklistSeriesPermalinks.has(permalink.toLowerCase().trim())) {
     return true;
   }
@@ -168,9 +172,7 @@ export function isItemBlacklisted(
   tags: { name: string; permalink?: string; type?: string }[] | undefined,
   seriesInfo?: { permalink?: string; name?: string },
 ): BlacklistCheckResult {
-  if (!blacklistCacheInitialized && !blacklistCacheInitPromise) {
-    void initBlacklistCache().then(() => notifyBlacklistChanged()).catch((err) => log.debug("blacklist.repo", "initBlacklistCache failed:", err));
-  }
+  ensureBlacklistCache();
   const matched: string[] = [];
 
   // 1. Check direct series blacklist
@@ -188,24 +190,15 @@ export function isItemBlacklisted(
       const nameLower = (t.name || "").toLowerCase().trim();
       const permLower = (t.permalink || "").toLowerCase().trim();
 
-      // Check tag blacklist
+      // Check tag blacklist, and series blacklist in case the tag is a series tag
       if (
         (nameLower && cachedBlacklistNames.has(nameLower)) ||
-        (permLower && cachedBlacklistNames.has(permLower))
-      ) {
-        if (!matched.includes(t.name || t.permalink || "Unknown")) {
-          matched.push(t.name || t.permalink || "Unknown");
-        }
-      }
-
-      // If tag is a series tag, check against series blacklist
-      if (
+        (permLower && cachedBlacklistNames.has(permLower)) ||
         (permLower && cachedBlacklistSeriesPermalinks.has(permLower)) ||
         (nameLower && cachedBlacklistSeriesNames.has(nameLower))
       ) {
-        if (!matched.includes(t.name || t.permalink || "Unknown")) {
-          matched.push(t.name || t.permalink || "Unknown");
-        }
+        const label = t.name || t.permalink || "Unknown";
+        if (!matched.includes(label)) matched.push(label);
       }
     }
   }

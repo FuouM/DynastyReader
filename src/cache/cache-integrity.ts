@@ -14,6 +14,7 @@ import { getOrHydrateSeriesCover, getOrHydrateItemCover, fetchChapter } from "..
 import { getChapterContainerTag } from "../taxonomy";
 import { browseCovers } from "../browse/browse-covers";
 import { log } from "../utils/log";
+import { errorMessage } from "../utils/formatting";
 import type { Chapter } from "../types/api";
 
 export interface IntegrityIssue {
@@ -48,6 +49,8 @@ export interface RecoveryResult {
   deletedFiles: number;
 }
 
+export type RecoveryPhase = "deleting_corrupt" | "cleaning_db" | "recovering_covers" | "queuing_chapters";
+
 const BATCH_CHUNK_SIZE = 250;
 
 /**
@@ -68,14 +71,7 @@ export async function runIntegrityCheck(
 
   const checkItems: Array<{
     req: ipc.IntegrityCheckRequestItem;
-    meta: {
-      type: "page" | "cover" | "followed" | "collection";
-      chapterPermalink?: string;
-      pageIndex?: number;
-      cacheKey?: string;
-      seriesPermalink?: string;
-      collectionId?: number;
-    };
+    meta: Pick<IntegrityIssue, "type" | "chapterPermalink" | "pageIndex" | "cacheKey" | "seriesPermalink" | "collectionId">;
   }> = [];
 
   for (const p of pages) {
@@ -124,58 +120,43 @@ export async function runIntegrityCheck(
         const res = results[j];
         const chunkItem = chunk[j];
         if (!res || !chunkItem) continue;
-        const itemMeta = chunkItem.meta;
+        const { meta } = chunkItem;
         if (res.exists && res.is_valid) {
           totalHealthy++;
         } else if (!res.exists) {
           totalMissing++;
           issues.push({
-            type: itemMeta.type,
+            ...meta,
             id: res.id,
             path: res.path,
             reason: res.error || "Missing from disk",
             isMissing: true,
             isCorrupted: false,
-            chapterPermalink: itemMeta.chapterPermalink,
-            pageIndex: itemMeta.pageIndex,
-            cacheKey: itemMeta.cacheKey,
-            seriesPermalink: itemMeta.seriesPermalink,
-            collectionId: itemMeta.collectionId,
           });
         } else {
           totalCorrupted++;
           issues.push({
-            type: itemMeta.type,
+            ...meta,
             id: res.id,
             path: res.path,
             reason: res.error || "Corrupted image file",
             isMissing: false,
             isCorrupted: true,
-            chapterPermalink: itemMeta.chapterPermalink,
-            pageIndex: itemMeta.pageIndex,
-            cacheKey: itemMeta.cacheKey,
-            seriesPermalink: itemMeta.seriesPermalink,
-            collectionId: itemMeta.collectionId,
           });
         }
       }
     } catch (batchErr) {
-      const errMsg = batchErr instanceof Error ? batchErr.message : String(batchErr);
+      const errMsg = errorMessage(batchErr);
       log.error("cache-integrity", "Batch verification error:", batchErr);
       scanError = errMsg;
       for (const item of chunk) {
         issues.push({
-          type: item.meta.type,
+          ...item.meta,
           id: item.req.id,
           path: item.req.path,
           reason: `Verification error: ${errMsg}`,
           isMissing: false,
           isCorrupted: true,
-          chapterPermalink: item.meta.chapterPermalink,
-          pageIndex: item.meta.pageIndex,
-          cacheKey: item.meta.cacheKey,
-          seriesPermalink: item.meta.seriesPermalink,
-          collectionId: item.meta.collectionId,
         });
         totalCorrupted++;
       }
@@ -207,7 +188,7 @@ export async function runIntegrityCheck(
  */
 export async function runIntegrityRecovery(
   issues: IntegrityIssue[],
-  onProgress?: (phase: string, current: number, total: number) => void,
+  onProgress?: (phase: RecoveryPhase, current: number, total: number) => void,
 ): Promise<RecoveryResult> {
   if (issues.length === 0) {
     return { recoveredCovers: 0, queuedChapters: 0, cleanedRecords: 0, deletedFiles: 0 };
@@ -334,10 +315,6 @@ export async function runIntegrityRecovery(
       onProgress?.("queuing_chapters", chIdx, affectedChapterPermalinks.length);
 
       try {
-        let seriesPermalink = "";
-        let seriesTitle = "";
-        let chapterTitle = cp;
-
         // Try reading cached chapter metadata first (offline safe)
         const cachedMeta = await getCached(`chapter:${cp}`);
         let ch: Chapter | null = null;
@@ -356,18 +333,16 @@ export async function runIntegrityRecovery(
 
         if (ch) {
           const containerTag = getChapterContainerTag(ch.tags);
-          seriesPermalink = containerTag ? containerTag.permalink : cp;
-          seriesTitle = containerTag ? containerTag.name : (ch.title || cp);
-          chapterTitle = ch.title || cp;
-        }
-        if (seriesPermalink) {
-          downloadRequests.push({
-            series_permalink: seriesPermalink,
-            series_title: seriesTitle,
-            chapter_permalink: cp,
-            chapter_title: chapterTitle,
-            chapter_index: 0,
-          });
+          const seriesPermalink = containerTag ? containerTag.permalink : cp;
+          if (seriesPermalink) {
+            downloadRequests.push({
+              series_permalink: seriesPermalink,
+              series_title: containerTag ? containerTag.name : (ch.title || cp),
+              chapter_permalink: cp,
+              chapter_title: ch.title || cp,
+              chapter_index: 0,
+            });
+          }
         }
       } catch (chErr) {
         log.debug("cache-integrity", `Failed to resolve chapter metadata for ${cp}:`, chErr);

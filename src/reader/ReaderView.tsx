@@ -4,7 +4,7 @@
 
 import { onCleanup, onMount, Show } from "solid-js";
 import type { Route } from "../types/routes";
-import { createReaderSession } from "./reader-session";
+import { ReaderSession } from "./reader-session";
 import { ReaderProvider } from "./reader-context";
 import { ReaderToolbar, ReaderBottomNav } from "./ReaderToolbar";
 import { ReaderViewport } from "./ReaderViewport";
@@ -26,7 +26,7 @@ export function ReaderView(props: { route: Route }) {
 }
 
 function ReaderViewInner(props: { permalink: string; route: Route }) {
-  const session = createReaderSession(props.route);
+  const session = new ReaderSession(props.route);
 
   useReaderShortcuts(session);
   useReaderWheel(session);

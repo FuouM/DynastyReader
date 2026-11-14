@@ -82,10 +82,7 @@ export const KIND_BY_PATH_SEGMENT: Record<string, EntityKind> = {
  */
 export function seriesTypeToPath(type?: string | null): string {
   const kind = resolveKind(type);
-  if (kind && ENTITY_TAXONOMY[kind]) {
-    return ENTITY_TAXONOMY[kind].path;
-  }
-  return "series";
+  return kind ? ENTITY_TAXONOMY[kind].path : "series";
 }
 
 /**
@@ -125,13 +122,13 @@ function resolveKind(type?: string | null): EntityKind | undefined {
 export function isSeriesKind(kind?: string | null): boolean {
   if (!kind) return false;
   const k = kind.toLowerCase();
-  return isEntityKind(k) && (ENTITY_TAXONOMY[k]?.isSeriesLike ?? false);
+  return isEntityKind(k) && ENTITY_TAXONOMY[k].isSeriesLike;
 }
 
 export function isContentKind(kind?: string | null): boolean {
   if (!kind) return false;
   const k = kind.toLowerCase();
-  return isEntityKind(k) && (ENTITY_TAXONOMY[k]?.isContent ?? false);
+  return isEntityKind(k) && ENTITY_TAXONOMY[k].isContent;
 }
 
 /**

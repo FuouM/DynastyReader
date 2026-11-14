@@ -18,15 +18,13 @@ if (typeof window !== "undefined") {
   window.__NAVIGATE__ = navigate;
 }
 
-// Mirror browser console output into the tauri-plugin-log backend so the
-// daemon-style `data/logs/dynasty-reader.log` file captures frontend errors
-// alongside backend tracing output.
 if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
+  // Mirror browser console output into the tauri-plugin-log backend so the
+  // daemon-style `data/logs/dynasty-reader.log` file captures frontend errors
+  // alongside backend tracing output.
   attachConsole().catch(() => {});
-}
 
-// Restore on open, save on close — handled by the official window-state plugin on desktop
-if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
+  // Restore on open, save on close — handled by the official window-state plugin on desktop
   restoreStateCurrent(StateFlags.ALL).catch((_err) => {
     // Expected to fail silently on mobile (window-state plugin is desktop-only)
   });

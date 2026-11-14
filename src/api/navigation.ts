@@ -50,8 +50,6 @@ export async function openExternal(url: string): Promise<void> {
   }
 }
 
-export { extractEntityId, isValidPermalink };
-
 /**
  * Strict validator and parser for Dynasty Scans URLs.
  * Extracts the canonical EntityKind and validated permalink slug.

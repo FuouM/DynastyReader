@@ -3,12 +3,14 @@ import * as ipc from "../ipc";
 import { query, execute } from "./client";
 import { inClause } from "./paging";
 import { seriesCoverKey, isCoverFilePath } from "../lib/cache-keys";
-import { notifyFollowedChanged, updateFollowedSeriesCover } from "./library.repo";
+import { updateFollowedSeriesCover } from "./library.repo";
+import { notifyFollowedChanged } from "./library-notifiers";
 import { notifyCollectionsChanged, updateCollectionItemCoverByPermalink } from "./collections.repo";
 import { decodeEntities } from "../utils/formatting";
 import { titleFromPermalink } from "../taxonomy";
 import { getOrHydrateSeriesCover } from "../api/series";
-import { isValidPermalink, parseDynastyEntityUrl as parseValidDynastyUrl } from "../api/navigation";
+import { isValidPermalink } from "../providers";
+import { parseDynastyEntityUrl as parseValidDynastyUrl } from "../api/navigation";
 import { t } from "../i18n";
 
 export interface ValidatedFollowedItem {
@@ -65,6 +67,75 @@ export interface ImportExecutionResult {
   totalImported: number;
 }
 
+function emptyImportPayload(detectedFormat: "json" | "none", errors: string[]): ValidatedImportPayload {
+  return {
+    valid: false,
+    detectedFormat,
+    followed: [],
+    collections: [],
+    stats: { followedCount: 0, collectionsCount: 0, collectionItemsCount: 0, ignoredCount: 0 },
+    warnings: [],
+    errors,
+  };
+}
+
+function getOrCreateCollection(
+  collectionsMap: Map<string, ValidatedCollection>,
+  name: string,
+  isDefault = false,
+): ValidatedCollection {
+  const cleanName = decodeEntities(name).trim();
+  const key = cleanName.toLowerCase();
+  let col = collectionsMap.get(key);
+  if (!col) {
+    col = { name: cleanName, isDefault, items: [] };
+    collectionsMap.set(key, col);
+  }
+  return col;
+}
+
+/** Shared tail of the JSON and URL-list parsers: flattens the maps and derives validity, stats, and messages. */
+function finalizeImportPayload(
+  source: "json" | "urls",
+  followedMap: Map<string, ValidatedFollowedItem>,
+  collectionsMap: Map<string, ValidatedCollection>,
+  ignoredCount: number,
+  errors: string[],
+): ValidatedImportPayload {
+  const warnings: string[] = [];
+  const followed = Array.from(followedMap.values());
+  const collections = Array.from(collectionsMap.values());
+  const collectionItemsCount = collections.reduce((acc, c) => acc + c.items.length, 0);
+  const valid = followed.length > 0 || collectionItemsCount > 0;
+
+  if (!valid && errors.length === 0) {
+    errors.push(t(source === "json" ? "library.importErrorNoValidJsonSeries" : "library.importErrorNoValidUrls"));
+  }
+
+  if (ignoredCount > 0) {
+    warnings.push(
+      t(source === "json" ? "library.importWarningIgnoredJsonItems" : "library.importWarningIgnoredUrls", {
+        count: ignoredCount,
+      }),
+    );
+  }
+
+  return {
+    valid,
+    detectedFormat: source === "json" ? "json" : valid ? "urls" : "none",
+    followed,
+    collections,
+    stats: {
+      followedCount: followed.length,
+      collectionsCount: collections.length,
+      collectionItemsCount,
+      ignoredCount,
+    },
+    warnings,
+    errors,
+  };
+}
+
 /**
  * Validates and parses raw import text into a structured, validated payload.
  * Accepts either JSON or Dynasty Scans URL lists.
@@ -78,18 +149,9 @@ export function validateAndParseImport(
   } = {},
 ): ValidatedImportPayload {
   const text = rawText.trim();
-  const errors: string[] = [];
 
   if (!text) {
-    return {
-      valid: false,
-      detectedFormat: "none",
-      followed: [],
-      collections: [],
-      stats: { followedCount: 0, collectionsCount: 0, collectionItemsCount: 0, ignoredCount: 0 },
-      warnings: [],
-      errors: [t("library.importErrorEmpty")],
-    };
+    return emptyImportPayload("none", [t("library.importErrorEmpty")]);
   }
 
   // ── Mode 1: JSON Input ───────────────────────────────────────────────────
@@ -98,16 +160,9 @@ export function validateAndParseImport(
       const parsed: unknown = JSON.parse(text);
       return parseJsonImport(parsed, opts);
     } catch (err) {
-      errors.push(t("library.importErrorInvalidJson", { message: err instanceof Error ? err.message : String(err) }));
-      return {
-        valid: false,
-        detectedFormat: "json",
-        followed: [],
-        collections: [],
-        stats: { followedCount: 0, collectionsCount: 0, collectionItemsCount: 0, ignoredCount: 0 },
-        warnings: [],
-        errors,
-      };
+      return emptyImportPayload("json", [
+        t("library.importErrorInvalidJson", { message: err instanceof Error ? err.message : String(err) }),
+      ]);
     }
   }
 
@@ -121,20 +176,8 @@ function parseJsonImport(
 ): ValidatedImportPayload {
   const followedMap = new Map<string, ValidatedFollowedItem>();
   const collectionsMap = new Map<string, ValidatedCollection>();
-  const warnings: string[] = [];
   const errors: string[] = [];
   let ignoredCount = 0;
-
-  const getOrCreateCollection = (name: string, isDefault = false): ValidatedCollection => {
-    const cleanName = decodeEntities(name).trim();
-    const key = cleanName.toLowerCase();
-    let col = collectionsMap.get(key);
-    if (!col) {
-      col = { name: cleanName, isDefault, items: [] };
-      collectionsMap.set(key, col);
-    }
-    return col;
-  };
 
   const addFollowed = (item: unknown): boolean => {
     if (typeof item === "string") {
@@ -264,7 +307,7 @@ function parseJsonImport(
   // Case A: Array input
   if (Array.isArray(data)) {
     if (opts.defaultTarget === "collection") {
-      const col = getOrCreateCollection(opts.targetCollectionName || "Imported Items");
+      const col = getOrCreateCollection(collectionsMap, opts.targetCollectionName || "Imported Items");
       for (const item of data) {
         addCollectionItem(col, item);
       }
@@ -301,39 +344,13 @@ function parseJsonImport(
 
   function importCollection(colObj: Record<string, unknown>, fallbackName: string): void {
     const colName = typeof colObj.name === "string" && colObj.name.trim() ? colObj.name.trim() : fallbackName;
-    const col = getOrCreateCollection(colName, colObj.isDefault === true);
+    const col = getOrCreateCollection(collectionsMap, colName, colObj.isDefault === true);
     if (Array.isArray(colObj.items)) {
       for (const item of colObj.items) addCollectionItem(col, item);
     }
   }
 
-  const followed = Array.from(followedMap.values());
-  const collections = Array.from(collectionsMap.values());
-  const collectionItemsCount = collections.reduce((acc, c) => acc + c.items.length, 0);
-  const valid = followed.length > 0 || collectionItemsCount > 0;
-
-  if (!valid && errors.length === 0) {
-    errors.push(t("library.importErrorNoValidJsonSeries"));
-  }
-
-  if (ignoredCount > 0) {
-    warnings.push(t("library.importWarningIgnoredJsonItems", { count: ignoredCount }));
-  }
-
-  return {
-    valid,
-    detectedFormat: "json",
-    followed,
-    collections,
-    stats: {
-      followedCount: followed.length,
-      collectionsCount: collections.length,
-      collectionItemsCount,
-      ignoredCount,
-    },
-    warnings,
-    errors,
-  };
+  return finalizeImportPayload("json", followedMap, collectionsMap, ignoredCount, errors);
 }
 
 function parseUrlListImport(
@@ -343,23 +360,10 @@ function parseUrlListImport(
   const lines = text.split(/\r?\n/);
   const followedMap = new Map<string, ValidatedFollowedItem>();
   const collectionsMap = new Map<string, ValidatedCollection>();
-  const warnings: string[] = [];
-  const errors: string[] = [];
   let ignoredCount = 0;
 
   let currentTarget: "followed" | "collection" = opts.defaultTarget ?? "followed";
   let activeCollectionName = opts.targetCollectionName || "Imported Items";
-
-  const getOrCreateCollection = (name: string): ValidatedCollection => {
-    const cleanName = decodeEntities(name).trim();
-    const key = cleanName.toLowerCase();
-    let col = collectionsMap.get(key);
-    if (!col) {
-      col = { name: cleanName, isDefault: false, items: [] };
-      collectionsMap.set(key, col);
-    }
-    return col;
-  };
 
   for (const line of lines) {
     const rawLine = line.trim();
@@ -417,7 +421,7 @@ function parseUrlListImport(
     const title = parsedTitle ? decodeEntities(parsedTitle) : titleFromPermalink(parsedUrl.permalink);
 
     if (currentTarget === "collection") {
-      const col = getOrCreateCollection(activeCollectionName);
+      const col = getOrCreateCollection(collectionsMap, activeCollectionName);
       if (!col.items.some((it) => it.permalink === parsedUrl.permalink)) {
         col.items.push({
           permalink: parsedUrl.permalink,
@@ -441,33 +445,7 @@ function parseUrlListImport(
     }
   }
 
-  const followed = Array.from(followedMap.values());
-  const collections = Array.from(collectionsMap.values());
-  const collectionItemsCount = collections.reduce((acc, c) => acc + c.items.length, 0);
-  const valid = followed.length > 0 || collectionItemsCount > 0;
-
-  if (!valid) {
-    errors.push(t("library.importErrorNoValidUrls"));
-  }
-
-  if (ignoredCount > 0) {
-    warnings.push(t("library.importWarningIgnoredUrls", { count: ignoredCount }));
-  }
-
-  return {
-    valid,
-    detectedFormat: valid ? "urls" : "none",
-    followed,
-    collections,
-    stats: {
-      followedCount: followed.length,
-      collectionsCount: collections.length,
-      collectionItemsCount,
-      ignoredCount,
-    },
-    warnings,
-    errors,
-  };
+  return finalizeImportPayload("urls", followedMap, collectionsMap, ignoredCount, []);
 }
 
 /**
@@ -575,11 +553,11 @@ export async function executeImport(
   };
 }
 
-/**
- * Batches insertion of followed series into followed_series within a single transaction.
- */
-async function resolveMissingCachedCovers(permalinks: string[]): Promise<Map<string, string>> {
+async function resolveMissingCachedCovers(
+  items: Array<{ permalink: string; cover?: string | null }>,
+): Promise<Map<string, string>> {
   const cachedCoverMap = new Map<string, string>();
+  const permalinks = items.filter((it) => !isCoverFilePath(it.cover)).map((it) => it.permalink);
   if (permalinks.length === 0) return cachedCoverMap;
   try {
     const keys = permalinks.map((p) => seriesCoverKey(p));
@@ -599,12 +577,12 @@ async function resolveMissingCachedCovers(permalinks: string[]): Promise<Map<str
   return cachedCoverMap;
 }
 
+/**
+ * Batches insertion of followed series into followed_series within a single transaction.
+ */
 async function importFollowedSeriesBatch(items: ValidatedFollowedItem[]): Promise<number> {
   if (items.length === 0) return 0;
-  const missingPermalinks = items
-    .filter((it) => !it.cover || !isCoverFilePath(it.cover))
-    .map((it) => it.permalink);
-  const cachedCoverMap = await resolveMissingCachedCovers(missingPermalinks);
+  const cachedCoverMap = await resolveMissingCachedCovers(items);
 
   const sql = `INSERT INTO followed_series
     (permalink, name, cover, last_checked_at, latest_chapter_permalink, latest_chapter_title, created_at)
@@ -647,10 +625,7 @@ async function importItemsIntoCollectionBatch(
   items: ValidatedCollectionItem[],
 ): Promise<number> {
   if (items.length === 0) return 0;
-  const missingPermalinks = items
-    .filter((it) => !it.cover || !isCoverFilePath(it.cover))
-    .map((it) => it.permalink);
-  const cachedCoverMap = await resolveMissingCachedCovers(missingPermalinks);
+  const cachedCoverMap = await resolveMissingCachedCovers(items);
 
   const sql = `INSERT INTO collection_items
     (collection_id, item_permalink, item_title, item_kind, cover, parent_series_permalink, parent_series_name, created_at)
@@ -691,7 +666,7 @@ async function importItemsIntoCollectionBatch(
  * Opportunistically hydrates covers in the background after an import finishes.
  * Processes with bounded concurrency (3 at a time) to prevent network congestion.
  */
-export function triggerBackgroundCoverHydration(items: {
+function triggerBackgroundCoverHydration(items: {
   followed?: Array<{ permalink: string; cover?: string | null }>;
   collections?: Array<{ items: Array<{ permalink: string; kind?: string; cover?: string | null }> }>;
 }): void {

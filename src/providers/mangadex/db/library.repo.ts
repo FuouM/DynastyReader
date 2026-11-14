@@ -4,7 +4,7 @@
  */
 
 import { execute, query } from "./client";
-import { paginate } from "../../../db/paging";
+import { queryPaged } from "../../../db/paging";
 import { initMangaDexDb } from "./schema";
 import { notifyFollowedChanged } from "../../../db/library-notifiers";
 import type { MangaDexFollowedRow } from "../types";
@@ -70,39 +70,23 @@ export async function getFollowedManga(
 ): Promise<FollowedMangaPageResult> {
   await initMangaDexDb();
   const q = options?.query?.trim();
-  const whereSql = q ? `WHERE title LIKE ?1` : "";
-  const countParams: unknown[] = q ? [`%${q}%`] : [];
-
-  const countRows = await query<{ c: number }>(
-    `SELECT COUNT(*) as c FROM followed_manga ${whereSql}`,
-    countParams,
-  );
-  const totalCount = countRows[0]?.c ?? 0;
-  const { totalPages, currentPage, offset } = paginate(totalCount, page, limit);
-
+  const whereSql = q ? `WHERE title LIKE ?` : "";
   let orderSql = `ORDER BY created_at DESC`;
   if (options?.sort === "alphabetical") orderSql = `ORDER BY title COLLATE NOCASE ASC`;
   else if (options?.sort === "recent_checked") orderSql = `ORDER BY last_checked_at DESC`;
 
-  const queryParams: unknown[] = q ? [`%${q}%`, limit, offset] : [limit, offset];
-  const limitIdx = q ? "?2" : "?1";
-  const offsetIdx = q ? "?3" : "?2";
-
-  const rows = await query<MangaDexFollowedRow>(
+  return queryPaged<MangaDexFollowedRow>(
+    `SELECT COUNT(*) as count FROM followed_manga ${whereSql}`,
     `SELECT manga_id, title, cover_filename, last_checked_at, latest_chapter_id, latest_chapter_title, created_at
      FROM followed_manga
      ${whereSql}
      ${orderSql}
-     LIMIT ${limitIdx} OFFSET ${offsetIdx}`,
-    queryParams,
+     LIMIT ? OFFSET ?`,
+    page,
+    limit,
+    q ? [`%${q}%`] : [],
+    query,
   );
-
-  return {
-    rows,
-    totalPages,
-    currentPage,
-    totalCount,
-  };
 }
 
 /**

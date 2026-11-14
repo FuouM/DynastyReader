@@ -4,7 +4,7 @@
  */
 
 import { execute, query } from "./client";
-import { paginate } from "../../../db/paging";
+import { inClause, queryPaged } from "../../../db/paging";
 import { initMangaDexDb } from "./schema";
 import { notifyBookmarksChanged } from "../../../db/library-notifiers";
 import type { GetBookmarksPageOptions } from "../../../types/db";
@@ -97,47 +97,30 @@ export async function getMdxBookmarks(
 ): Promise<BookmarksPageResult> {
   await initMangaDexDb();
   const q = options?.query?.trim();
-  const whereSql = q ? `WHERE (chapter_title LIKE ?1 OR manga_title LIKE ?2)` : "";
-  const countParams: unknown[] = q ? [`%${q}%`, `%${q}%`] : [];
-
-  const countRows = await query<{ c: number }>(
-    `SELECT COUNT(*) as c FROM bookmarks ${whereSql}`,
-    countParams,
-  );
-  const totalCount = countRows[0]?.c ?? 0;
-  const { totalPages, currentPage, offset } = paginate(totalCount, page, limit);
-
+  const whereSql = q ? `WHERE (chapter_title LIKE ? OR manga_title LIKE ?)` : "";
   let orderSql = `ORDER BY created_at DESC`;
   if (options?.sort === "oldest") orderSql = `ORDER BY created_at ASC`;
   else if (options?.sort === "alphabetical") orderSql = `ORDER BY manga_title COLLATE NOCASE ASC, chapter_title COLLATE NOCASE ASC`;
 
-  const queryParams: unknown[] = q ? [`%${q}%`, `%${q}%`, limit, offset] : [limit, offset];
-  const limitIdx = q ? "?3" : "?1";
-  const offsetIdx = q ? "?4" : "?2";
-
-  const rows = await query<MangaDexBookmarkRow>(
+  return queryPaged<MangaDexBookmarkRow>(
+    `SELECT COUNT(*) as count FROM bookmarks ${whereSql}`,
     `SELECT chapter_id, manga_id, manga_title, chapter_title, page_index, scanlator_name, created_at
      FROM bookmarks
      ${whereSql}
      ${orderSql}
-     LIMIT ${limitIdx} OFFSET ${offsetIdx}`,
-    queryParams,
+     LIMIT ? OFFSET ?`,
+    page,
+    limit,
+    q ? [`%${q}%`, `%${q}%`] : [],
+    query,
   );
-
-  return {
-    rows,
-    totalPages,
-    currentPage,
-    totalCount,
-  };
 }
 
 export async function getMdxBookmarkChapterIds(chapterIds: string[]): Promise<Set<string>> {
   if (chapterIds.length === 0) return new Set();
   await initMangaDexDb();
-  const placeholders = chapterIds.map((_, i) => `?${i + 1}`).join(", ");
   const rows = await query<{ chapter_id: string }>(
-    `SELECT chapter_id FROM bookmarks WHERE chapter_id IN (${placeholders})`,
+    `SELECT chapter_id FROM bookmarks WHERE chapter_id IN (${inClause(chapterIds.length)})`,
     chapterIds,
   );
   return new Set(rows.map((r) => r.chapter_id));

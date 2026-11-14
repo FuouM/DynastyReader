@@ -27,10 +27,10 @@ export function useCacheActions(refetch: () => unknown) {
     }
   };
 
-  const purgeAll = () => withRefresh(() => clearAllCacheStorage(), "cache.clearAllSuccess");
-  const purgePages = () => withRefresh(() => clearAllCachedPages(), "cache.clearPagesOnlySuccess");
-  const purgeCovers = () => withRefresh(() => clearAllCachedCovers(), "cache.clearCoversOnlySuccess");
-  const wipeDb = () => withRefresh(() => wipeDatabase(), "cache.dbWipeSuccess");
+  const purgeAll = () => withRefresh(clearAllCacheStorage, "cache.clearAllSuccess");
+  const purgePages = () => withRefresh(clearAllCachedPages, "cache.clearPagesOnlySuccess");
+  const purgeCovers = () => withRefresh(clearAllCachedCovers, "cache.clearCoversOnlySuccess");
+  const wipeDb = () => withRefresh(wipeDatabase, "cache.dbWipeSuccess");
 
   const backupDb = async (): Promise<void> => {
     if (isBusy) return;
@@ -69,7 +69,7 @@ export function useCacheActions(refetch: () => unknown) {
       } catch (e) {
         log.warn("cache-actions", "clearMemoryCache failed (non-fatal):", e);
       }
-      showBanner(t("cache.dbRestoreSuccess", { path: picked as string }));
+      showBanner(t("cache.dbRestoreSuccess", { path: picked }));
       void refetch();
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {

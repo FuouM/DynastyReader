@@ -70,67 +70,58 @@ export function useReaderGestures(s: ReaderSession) {
     if (!vpEl) return;
 
     setupViewportResize(s, vpEl, () => {
-      if (activeOverscroll) {
-        activeOverscroll = null;
-        dispatchOverscroll(null);
-        resetStripTransform(false);
-      }
-      if (activeMouseOverscroll) {
-        activeMouseOverscroll = null;
-        dispatchOverscroll(null);
-        resetStripTransform(false);
-      }
+      cancelTouchOverscroll(false);
+      cancelMouseOverscroll(false);
     });
 
     setupScrollTracker(s, vpEl);
     // ── Helper: Restore Canvas Strip Transform (Never Jump to Void) ──
     let resetTransformTimer: number | null = null;
     const resetStripTransform = (smooth = true) => {
-      if (!s.stripEl) return;
+      const strip = s.stripEl;
+      if (!strip) return;
       if (resetTransformTimer !== null) {
         clearTimeout(resetTransformTimer);
         resetTransformTimer = null;
       }
-      if (s.isHorizontal()) {
-        const slideIndex = s.isSpread() ? s.slideIndex() : s.currentIndex();
-        const dir = s.direction();
-        if (smooth) {
-          s.stripEl.style.willChange = "transform";
-          s.stripEl.style.transition = `transform ${TRANSITION_DURATION_MS}ms ease-out`;
-          s.stripEl.style.transform = stripTranslateX(slideIndex, dir);
-          resetTransformTimer = window.setTimeout(() => {
-            if (s.stripEl) {
-              s.stripEl.style.transition = "";
-              s.stripEl.style.willChange = "auto";
-            }
-            resetTransformTimer = null;
-          }, TRANSITION_DURATION_MS);
-        } else {
-          s.stripEl.style.transition = "none";
-          s.stripEl.style.transform = stripTranslateX(slideIndex, dir);
-          s.stripEl.style.willChange = "auto";
-          requestAnimationFrame(() => {
-            if (s.stripEl) s.stripEl.style.transition = "";
-          });
-        }
+      const horizontal = s.isHorizontal();
+      const slideIndex = s.isSpread() ? s.slideIndex() : s.currentIndex();
+      if (smooth) {
+        strip.style.willChange = "transform";
+        strip.style.transition = `transform ${TRANSITION_DURATION_MS}ms ease-out`;
+        strip.style.transform = horizontal ? stripTranslateX(slideIndex, s.direction()) : "translate3d(0, 0px, 0)";
+        resetTransformTimer = window.setTimeout(() => {
+          if (s.stripEl) {
+            s.stripEl.style.transition = "";
+            s.stripEl.style.willChange = "auto";
+          }
+          resetTransformTimer = null;
+        }, TRANSITION_DURATION_MS);
+      } else if (horizontal) {
+        strip.style.transition = "none";
+        strip.style.transform = stripTranslateX(slideIndex, s.direction());
+        strip.style.willChange = "auto";
+        requestAnimationFrame(() => {
+          if (s.stripEl) s.stripEl.style.transition = "";
+        });
       } else {
-        if (smooth) {
-          s.stripEl.style.willChange = "transform";
-          s.stripEl.style.transition = `transform ${TRANSITION_DURATION_MS}ms ease-out`;
-          s.stripEl.style.transform = "translate3d(0, 0px, 0)";
-          resetTransformTimer = window.setTimeout(() => {
-            if (s.stripEl) {
-              s.stripEl.style.transition = "";
-              s.stripEl.style.willChange = "auto";
-            }
-            resetTransformTimer = null;
-          }, TRANSITION_DURATION_MS);
-        } else {
-          s.stripEl.style.transform = "";
-          s.stripEl.style.willChange = "auto";
-        }
+        strip.style.transform = "";
+        strip.style.willChange = "auto";
       }
     };
+
+    /** The current horizontal slide when its content overflows (zoomed or wide pages). */
+    const pannableSlide = (): HTMLElement | null => {
+      const curSlide = s.isSpread() ? s.slideIndex() : s.currentIndex();
+      const target = s.isSpread() ? s.spreadSlotEls[curSlide] : s.slotEls[curSlide];
+      return target && (target.scrollWidth > target.clientWidth || target.scrollHeight > target.clientHeight)
+        ? target
+        : null;
+    };
+
+    /** A press during an animated/programmatic or very recent scroll only stops that scroll. */
+    const isScrollInMotion = (): boolean =>
+      s.scrollAnimRaf !== null || s.isProgrammaticScroll || Date.now() - lastScrollTime < 150;
 
     let lastScrollTime = 0;
     let isTouchDown = false;
@@ -163,6 +154,49 @@ export function useReaderGestures(s: ReaderSession) {
     let touchSlotScrollTop = 0;
     let isTouchOnEndCard = false;
 
+    const clearTouchLongPress = (): void => {
+      if (touchLongPressTimer !== null) {
+        clearTimeout(touchLongPressTimer);
+        touchLongPressTimer = null;
+      }
+    };
+
+    /** Drops an engaged touch overscroll and restores the strip. */
+    const cancelTouchOverscroll = (smooth: boolean): void => {
+      if (!activeOverscroll) return;
+      activeOverscroll = null;
+      dispatchOverscroll(null);
+      resetStripTransform(smooth);
+    };
+
+    /** Follows the pointer with an engaged overscroll; returns its updated state. */
+    const trackOverscroll = (
+      engaged: NonNullable<OverscrollActive>,
+      x: number,
+      y: number,
+    ): NonNullable<OverscrollActive> => {
+      const updated = updateActiveOverscroll(s, engaged, x, y, hasVibrated);
+      const next = updated.state;
+      if (updated.triggerHaptic) {
+        triggerHaptic("snap");
+        hasVibrated = true;
+      } else if (!next.ready) {
+        hasVibrated = false;
+      }
+      const overscrollState: OverscrollGestureState = {
+        fingerX: x,
+        fingerY: y,
+        targetX: next.targetX,
+        targetY: next.targetY,
+        direction: next.direction,
+        chapter: next.chapter,
+        ready: next.ready,
+      };
+      applyOverscrollTransform(s, { engaged: next, overscrollState, dampedPullPx: updated.dampedPullPx });
+      dispatchOverscroll(overscrollState);
+      return next;
+    };
+
     const onTouchStart = (ev: TouchEvent): void => {
       if (ev.touches.length !== 1) return;
       if ((ev.target as HTMLElement)?.closest("button, a, input, select, textarea, .ds-chapter-end-card")) {
@@ -172,9 +206,7 @@ export function useReaderGestures(s: ReaderSession) {
       isTouchOnEndCard = false;
       if (isBlockingOverlayOpen()) return;
       isTouchDown = true;
-      const wasAnimating = s.scrollAnimRaf !== null || s.isProgrammaticScroll;
-      const wasRecentScroll = Date.now() - lastScrollTime < 150;
-      wasTouchStoppingScroll = wasAnimating || wasRecentScroll;
+      wasTouchStoppingScroll = isScrollInMotion();
       s.cancelScrollAnimation();
       const t = ev.touches[0];
       if (!t) return;
@@ -184,21 +216,14 @@ export function useReaderGestures(s: ReaderSession) {
       touchMoved = false;
       didTouchLongPress = false;
       hasVibrated = false;
-      if (activeOverscroll) {
-        activeOverscroll = null;
-        dispatchOverscroll(null);
-        resetStripTransform(false);
-      } else {
-        activeOverscroll = null;
-        dispatchOverscroll(null);
-      }
+      if (activeOverscroll) cancelTouchOverscroll(false);
+      else dispatchOverscroll(null);
       activeTouchSlot = null;
 
-      if (touchLongPressTimer !== null) clearTimeout(touchLongPressTimer);
+      clearTouchLongPress();
       if (s.isHorizontal()) {
-        const curSlide = s.isSpread() ? s.slideIndex() : s.currentIndex();
-        const target = s.isSpread() ? s.spreadSlotEls[curSlide] : s.slotEls[curSlide];
-        if (target && (target.scrollWidth > target.clientWidth || target.scrollHeight > target.clientHeight)) {
+        const target = pannableSlide();
+        if (target) {
           activeTouchSlot = target;
           touchSlotScrollLeft = target.scrollLeft;
           touchSlotScrollTop = target.scrollTop;
@@ -217,11 +242,7 @@ export function useReaderGestures(s: ReaderSession) {
     const onTouchMove = (ev: TouchEvent): void => {
       if (isTouchOnEndCard || (ev.target as HTMLElement)?.closest(".ds-chapter-end-card")) return;
       if (ev.touches.length !== 1) {
-        if (activeOverscroll) {
-          activeOverscroll = null;
-          dispatchOverscroll(null);
-          resetStripTransform(true);
-        }
+        cancelTouchOverscroll(true);
         return;
       }
       const t = ev.touches[0];
@@ -233,10 +254,7 @@ export function useReaderGestures(s: ReaderSession) {
 
       if (Math.hypot(dx, dy) > MOVEMENT_THRESHOLD_PX) {
         touchMoved = true;
-        if (touchLongPressTimer !== null) {
-          clearTimeout(touchLongPressTimer);
-          touchLongPressTimer = null;
-        }
+        clearTouchLongPress();
       }
 
       // Prevent native horizontal overscroll rubberband flash at chapter boundaries (M-10)
@@ -256,36 +274,7 @@ export function useReaderGestures(s: ReaderSession) {
       }
       // If overscroll gesture is already engaged, update finger tracking and check center collision
       if (activeOverscroll) {
-        const updated = updateActiveOverscroll(s, activeOverscroll, t.clientX, t.clientY, hasVibrated);
-        activeOverscroll = updated.state;
-        if (updated.triggerHaptic) {
-          triggerHaptic("snap");
-          hasVibrated = true;
-        } else if (!activeOverscroll.ready) {
-          hasVibrated = false;
-        }
-        applyOverscrollTransform(s, {
-          engaged: activeOverscroll,
-          overscrollState: {
-            fingerX: t.clientX,
-            fingerY: t.clientY,
-            targetX: activeOverscroll.targetX,
-            targetY: activeOverscroll.targetY,
-            direction: activeOverscroll.direction,
-            chapter: activeOverscroll.chapter,
-            ready: activeOverscroll.ready,
-          },
-          dampedPullPx: updated.dampedPullPx,
-        });
-        dispatchOverscroll({
-          fingerX: t.clientX,
-          fingerY: t.clientY,
-          targetX: activeOverscroll.targetX,
-          targetY: activeOverscroll.targetY,
-          direction: activeOverscroll.direction,
-          chapter: activeOverscroll.chapter,
-          ready: activeOverscroll.ready,
-        });
+        activeOverscroll = trackOverscroll(activeOverscroll, t.clientX, t.clientY);
         return;
       }
       // Check for overscroll boundary engagement
@@ -312,10 +301,7 @@ export function useReaderGestures(s: ReaderSession) {
       isTouchDown = false;
       wasTouchStoppingScroll = false;
       lastTouchEndTime = Date.now();
-      if (touchLongPressTimer !== null) {
-        clearTimeout(touchLongPressTimer);
-        touchLongPressTimer = null;
-      }
+      clearTouchLongPress();
       if (tapZoneGuide()) {
         setTapZoneGuide(null);
       }
@@ -337,10 +323,7 @@ export function useReaderGestures(s: ReaderSession) {
         return;
       }
       lastTouchEndTime = Date.now();
-      if (touchLongPressTimer !== null) {
-        clearTimeout(touchLongPressTimer);
-        touchLongPressTimer = null;
-      }
+      clearTouchLongPress();
 
       if (tapZoneGuide()) {
         setTapZoneGuide(null);
@@ -353,11 +336,7 @@ export function useReaderGestures(s: ReaderSession) {
       const wasStoppingScroll = wasTouchStoppingScroll;
       wasTouchStoppingScroll = false;
       if (ev.changedTouches.length !== 1) {
-        if (activeOverscroll) {
-          activeOverscroll = null;
-          dispatchOverscroll(null);
-          resetStripTransform(true);
-        }
+        cancelTouchOverscroll(true);
         return;
       }
       const t = ev.changedTouches[0];
@@ -390,7 +369,7 @@ export function useReaderGestures(s: ReaderSession) {
 
       // 1. Horizontal Swipe gesture for in-chapter page flips (horizontal mode only)
       if (s.isHorizontal() && touchMoved && !wasTouchSlotPanned) {
-        const handled = resolveSwipe(s, totalDx, totalDy, absX, absY, dt, SWIPE_MIN_DIST_TOUCH_PX, 60, 350, triggerDirectionHint);
+        const handled = resolveSwipe(s, totalDx, absX, absY, dt, SWIPE_MIN_DIST_TOUCH_PX, 60, 350, triggerDirectionHint);
         if (handled) return;
       }
       // 2. Tap gesture (without move)
@@ -424,11 +403,7 @@ export function useReaderGestures(s: ReaderSession) {
       if (s.fitMode() !== "original") return;
       activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
       if (activePointers.size === 2) {
-        if (activeOverscroll) {
-          activeOverscroll = null;
-          dispatchOverscroll(null);
-          resetStripTransform(true);
-        }
+        cancelTouchOverscroll(true);
         pinchActive = true;
         pinchStartDist = pinchDistance();
         pinchStartScale = s.zoomScale();
@@ -460,17 +435,10 @@ export function useReaderGestures(s: ReaderSession) {
           touchStartY = remaining.y;
           touchStartTime = Date.now();
           touchMoved = true;
-          if (touchLongPressTimer !== null) {
-            clearTimeout(touchLongPressTimer);
-            touchLongPressTimer = null;
-          }
-        } else {
-          activePointers.clear();
+          clearTouchLongPress();
         }
       } else if (activePointers.size === 0) {
-        if (pinchActive) pinchActive = false;
         vpEl.style.touchAction = "";
-        activePointers.clear();
       }
     };
 
@@ -481,9 +449,7 @@ export function useReaderGestures(s: ReaderSession) {
         vpEl.style.touchAction = "";
         activePointers.clear();
       } else if (activePointers.size === 0) {
-        if (pinchActive) pinchActive = false;
         vpEl.style.touchAction = "";
-        activePointers.clear();
       }
     };
 
@@ -504,6 +470,21 @@ export function useReaderGestures(s: ReaderSession) {
 
     let isMouseOnEndCard = false;
 
+    const clearMouseLongPress = (): void => {
+      if (mouseLongPressTimer !== null) {
+        clearTimeout(mouseLongPressTimer);
+        mouseLongPressTimer = null;
+      }
+    };
+
+    /** Drops an engaged mouse overscroll and restores the strip. */
+    const cancelMouseOverscroll = (smooth: boolean): void => {
+      if (!activeMouseOverscroll) return;
+      activeMouseOverscroll = null;
+      dispatchOverscroll(null);
+      resetStripTransform(smooth);
+    };
+
     const onMouseDown = (ev: MouseEvent): void => {
       if (ev.button !== 0) return;
       if (
@@ -517,9 +498,7 @@ export function useReaderGestures(s: ReaderSession) {
         return;
       }
       isMouseOnEndCard = false;
-      const wasAnimating = s.scrollAnimRaf !== null || s.isProgrammaticScroll;
-      const wasRecentScroll = Date.now() - lastScrollTime < 150;
-      wasMouseStoppingScroll = wasAnimating || wasRecentScroll;
+      wasMouseStoppingScroll = isScrollInMotion();
       s.cancelScrollAnimation();
       isMouseDown = true;
       mouseStartX = ev.clientX;
@@ -527,16 +506,10 @@ export function useReaderGestures(s: ReaderSession) {
       mouseStartTime = Date.now();
       mouseMoved = false;
       didMouseLongPress = false;
-      if (activeMouseOverscroll) {
-        activeMouseOverscroll = null;
-        dispatchOverscroll(null);
-        resetStripTransform(false);
-      } else {
-        activeMouseOverscroll = null;
-        dispatchOverscroll(null);
-      }
+      if (activeMouseOverscroll) cancelMouseOverscroll(false);
+      else dispatchOverscroll(null);
 
-      if (mouseLongPressTimer !== null) clearTimeout(mouseLongPressTimer);
+      clearMouseLongPress();
       if (isMobileGesturesOnDesktopEnabled() && s.isHorizontal()) {
         mouseLongPressTimer = window.setTimeout(() => {
           if (!mouseMoved && isMobileGesturesOnDesktopEnabled() && s.isHorizontal()) {
@@ -547,9 +520,8 @@ export function useReaderGestures(s: ReaderSession) {
       }
 
       if (s.isHorizontal()) {
-        const curSlide = s.isSpread() ? s.slideIndex() : s.currentIndex();
-        const target = s.isSpread() ? s.spreadSlotEls[curSlide] : s.slotEls[curSlide];
-        if (target && (target.scrollWidth > target.clientWidth || target.scrollHeight > target.clientHeight)) {
+        const target = pannableSlide();
+        if (target) {
           activeSlot = target;
           slotScrollLeft = target.scrollLeft;
           slotScrollTop = target.scrollTop;
@@ -565,6 +537,22 @@ export function useReaderGestures(s: ReaderSession) {
       }
     };
 
+    /** Tries to engage a mouse overscroll at a chapter boundary; returns whether it engaged. */
+    const engageMouseOverscroll = (dx: number, dy: number, ev: MouseEvent): boolean => {
+      const { prevCh, nextCh } = s.adjacentChapters();
+      const result = tryEngageOverscroll({
+        s, dx, dy, absX: Math.abs(dx), absY: Math.abs(dy),
+        startX: mouseStartX, startY: mouseStartY,
+        fingerX: ev.clientX, fingerY: ev.clientY,
+        prevCh, nextCh,
+      });
+      if (!result) return false;
+      activeMouseOverscroll = result.engaged;
+      dispatchOverscroll(result.overscrollState);
+      applyOverscrollTransform(s, result);
+      return true;
+    };
+
     const onMouseMove = (ev: MouseEvent): void => {
       if (!isMouseDown) return;
       if (isMouseOnEndCard || (ev.target as HTMLElement)?.closest(".ds-chapter-end-card")) return;
@@ -573,10 +561,7 @@ export function useReaderGestures(s: ReaderSession) {
 
       if (Math.hypot(dx, dy) > MOVEMENT_THRESHOLD_PX) {
         mouseMoved = true;
-        if (mouseLongPressTimer !== null) {
-          clearTimeout(mouseLongPressTimer);
-          mouseLongPressTimer = null;
-        }
+        clearMouseLongPress();
       }
       if (tapZoneGuide()) {
         setTapZoneGuide({ activeZone: getTapZone(ev.clientX) });
@@ -590,77 +575,20 @@ export function useReaderGestures(s: ReaderSession) {
       }
       // If mouse overscroll gesture is already engaged, update finger tracking and check center collision
       if (activeMouseOverscroll) {
-        const updated = updateActiveOverscroll(s, activeMouseOverscroll, ev.clientX, ev.clientY, hasVibrated);
-        activeMouseOverscroll = updated.state;
-        if (updated.triggerHaptic) {
-          triggerHaptic("snap");
-          hasVibrated = true;
-        } else if (!activeMouseOverscroll.ready) {
-          hasVibrated = false;
-        }
-        applyOverscrollTransform(s, {
-          engaged: activeMouseOverscroll,
-          overscrollState: {
-            fingerX: ev.clientX,
-            fingerY: ev.clientY,
-            targetX: activeMouseOverscroll.targetX,
-            targetY: activeMouseOverscroll.targetY,
-            direction: activeMouseOverscroll.direction,
-            chapter: activeMouseOverscroll.chapter,
-            ready: activeMouseOverscroll.ready,
-          },
-          dampedPullPx: updated.dampedPullPx,
-        });
-        dispatchOverscroll({
-          fingerX: ev.clientX,
-          fingerY: ev.clientY,
-          targetX: activeMouseOverscroll.targetX,
-          targetY: activeMouseOverscroll.targetY,
-          direction: activeMouseOverscroll.direction,
-          chapter: activeMouseOverscroll.chapter,
-          ready: activeMouseOverscroll.ready,
-        });
+        activeMouseOverscroll = trackOverscroll(activeMouseOverscroll, ev.clientX, ev.clientY);
         return;
       }
-      const absX = Math.abs(dx);
-      const absY = Math.abs(dy);
-      const { prevCh, nextCh } = s.adjacentChapters();
-      if (s.isHorizontal() && isMobileGesturesOnDesktopEnabled()) {
-        const result = tryEngageOverscroll({
-          s, dx, dy, absX, absY,
-          startX: mouseStartX, startY: mouseStartY,
-          fingerX: ev.clientX, fingerY: ev.clientY,
-          prevCh, nextCh,
-        });
-        if (result) {
-          activeMouseOverscroll = result.engaged;
-          dispatchOverscroll(result.overscrollState);
-          applyOverscrollTransform(s, result);
-          return;
-        }
-      } else if (!s.isHorizontal()) {
-        // Vertical Continuous Scroll Mode
-        const vp = s.viewportEl;
-        if (vp) {
-          if (isMobileGesturesOnDesktopEnabled()) {
-            const result = tryEngageOverscroll({
-              s, dx, dy, absX, absY,
-              startX: mouseStartX, startY: mouseStartY,
-              fingerX: ev.clientX, fingerY: ev.clientY,
-              prevCh, nextCh,
-            });
-            if (result) {
-              activeMouseOverscroll = result.engaged;
-              dispatchOverscroll(result.overscrollState);
-              applyOverscrollTransform(s, result);
-              return;
-            }
-          }
-          if (isMobileGesturesOnDesktopEnabled() || s.fitMode() === "original") {
-            vp.scrollTop = vpScrollTop - dy;
-            vp.scrollLeft = vpScrollLeft - dx;
-          }
-        }
+      if (s.isHorizontal()) {
+        if (isMobileGesturesOnDesktopEnabled()) engageMouseOverscroll(dx, dy, ev);
+        return;
+      }
+      // Vertical Continuous Scroll Mode
+      const vp = s.viewportEl;
+      if (!vp) return;
+      if (isMobileGesturesOnDesktopEnabled() && engageMouseOverscroll(dx, dy, ev)) return;
+      if (isMobileGesturesOnDesktopEnabled() || s.fitMode() === "original") {
+        vp.scrollTop = vpScrollTop - dy;
+        vp.scrollLeft = vpScrollLeft - dx;
       }
     };
 
@@ -668,10 +596,7 @@ export function useReaderGestures(s: ReaderSession) {
       isMouseOnEndCard = false;
       if (!isMouseDown) return;
       isMouseDown = false;
-      if (mouseLongPressTimer !== null) {
-        clearTimeout(mouseLongPressTimer);
-        mouseLongPressTimer = null;
-      }
+      clearMouseLongPress();
 
       if (tapZoneGuide()) {
         setTapZoneGuide(null);
@@ -717,7 +642,7 @@ export function useReaderGestures(s: ReaderSession) {
         mouseMoved &&
         !wasSlotPanned
       ) {
-        const handled = resolveSwipe(s, totalDx, totalDy, absX, absY, dt, SWIPE_MIN_DIST_MOUSE_PX, 65, 300, triggerDirectionHint);
+        const handled = resolveSwipe(s, totalDx, absX, absY, dt, SWIPE_MIN_DIST_MOUSE_PX, 65, 300, triggerDirectionHint);
         if (handled) return;
       }
 
@@ -748,27 +673,13 @@ export function useReaderGestures(s: ReaderSession) {
       isTouchDown = false;
       wasTouchStoppingScroll = false;
       wasMouseStoppingScroll = false;
-      if (touchLongPressTimer !== null) {
-        clearTimeout(touchLongPressTimer);
-        touchLongPressTimer = null;
-      }
-      if (mouseLongPressTimer !== null) {
-        clearTimeout(mouseLongPressTimer);
-        mouseLongPressTimer = null;
-      }
+      clearTouchLongPress();
+      clearMouseLongPress();
       if (tapZoneGuide()) {
         setTapZoneGuide(null);
       }
-      if (activeOverscroll) {
-        activeOverscroll = null;
-        dispatchOverscroll(null);
-        resetStripTransform(true);
-      }
-      if (activeMouseOverscroll) {
-        activeMouseOverscroll = null;
-        dispatchOverscroll(null);
-        resetStripTransform(true);
-      }
+      cancelTouchOverscroll(true);
+      cancelMouseOverscroll(true);
       if (activeSlot) {
         activeSlot.classList.remove("ds-dragging");
         activeSlot = null;
@@ -788,14 +699,8 @@ export function useReaderGestures(s: ReaderSession) {
         resetTransformTimer = null;
       }
       // Pending long-press timers must not fire into the disposed session (RD-M8).
-      if (touchLongPressTimer !== null) {
-        clearTimeout(touchLongPressTimer);
-        touchLongPressTimer = null;
-      }
-      if (mouseLongPressTimer !== null) {
-        clearTimeout(mouseLongPressTimer);
-        mouseLongPressTimer = null;
-      }
+      clearTouchLongPress();
+      clearMouseLongPress();
       s.toolbarAnimEndHook = null;
       vpEl.removeEventListener("touchstart", onTouchStart);
       vpEl.removeEventListener("scroll", onScroll);

@@ -3,6 +3,10 @@ import type { DirectoryEntry, DirectoryGroup } from "../types/api";
 import { DB_NAME } from "../constants";
 import * as ipc from "../ipc";
 import { slugify } from "../utils/formatting";
+
+const UPSERT_DIRECTORY_ENTRY_SQL =
+  "INSERT INTO directory_entries (kind, letter, permalink, name, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(kind, permalink) DO UPDATE SET letter = excluded.letter, name = excluded.name, updated_at = excluded.updated_at";
+
 /**
  * Searches directory entries directly in SQLite with `LIKE %query%` or alphabetical sorting.
  */
@@ -53,13 +57,11 @@ export async function saveDirectoryEntries(
 ): Promise<void> {
   if (groups.length === 0) return;
   const now = Date.now();
-  const sql =
-    "INSERT INTO directory_entries (kind, letter, permalink, name, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(kind, permalink) DO UPDATE SET letter = excluded.letter, name = excluded.name, updated_at = excluded.updated_at";
   const statements: string[] = [];
   const params: unknown[][] = [];
   for (const group of groups) {
     for (const entry of group.entries) {
-      statements.push(sql);
+      statements.push(UPSERT_DIRECTORY_ENTRY_SQL);
       params.push([kind, group.letter, entry.permalink, entry.name, now]);
     }
   }
@@ -101,8 +103,6 @@ export async function saveSuggestEntries(
 ): Promise<void> {
   if (suggestions.length === 0) return;
   const now = Date.now();
-  const sql =
-    "INSERT INTO directory_entries (kind, letter, permalink, name, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(kind, permalink) DO UPDATE SET letter = excluded.letter, name = excluded.name, updated_at = excluded.updated_at";
   const statements: string[] = [];
   const params: unknown[][] = [];
   for (const s of suggestions) {
@@ -112,7 +112,7 @@ export async function saveSuggestEntries(
     if (!permalink) continue;
     const firstChar = s.name.trim().charAt(0).toUpperCase();
     const letter = /[A-Z]/.test(firstChar) ? firstChar : "#";
-    statements.push(sql);
+    statements.push(UPSERT_DIRECTORY_ENTRY_SQL);
     params.push([kind, letter, permalink, s.name.trim(), now]);
   }
   if (statements.length > 0) await ipc.dbExecuteBatch(DB_NAME, statements, params);

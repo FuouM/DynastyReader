@@ -85,12 +85,8 @@ export function AnchoredPopover(props: AnchoredPopoverProps) {
     let left = screenLeft;
     if (props.align === "right") {
       left = screenRight - width;
-    } else if (props.align === "left") {
-      left = screenLeft;
-    } else {
-      if (left + width > vpWidth - 8) {
-        left = Math.max(8, screenRight - width);
-      }
+    } else if (props.align !== "left" && left + width > vpWidth - 8) {
+      left = Math.max(8, screenRight - width);
     }
 
     if (left + width > vpWidth - 8) {

@@ -11,7 +11,7 @@ import { decodeEntities } from "../utils/formatting";
 import { t } from "../i18n";
 import { openExternal } from "../api/navigation";
 import { navigate } from "../stores/router";
-import { groupSeriesTags, type GroupedSeriesTags } from "../taxonomy";
+import { groupSeriesTags } from "../taxonomy";
 import type { Series } from "../types/api";
 import type { SeriesProgressRow } from "../types/db";
 import type { ChapterMeta } from "./SeriesChapterList";
@@ -114,10 +114,6 @@ export function SeriesActions(props: SeriesActionsProps) {
 
 // ── 2. Series Header ─────────────────────────────────────────────────────────
 
-function groupTags(series: Series): GroupedSeriesTags {
-  return groupSeriesTags(series.tags, series.taggings);
-}
-
 export interface SeriesHeaderProps {
   series: Series;
   coverPath: string | null;
@@ -140,7 +136,7 @@ export function SeriesHeader(props: SeriesHeaderProps) {
     }
   };
 
-  const tags = createMemo(() => groupTags(props.series));
+  const tags = createMemo(() => groupSeriesTags(props.series.tags, props.series.taggings));
   const hasMetaRows = createMemo(() => {
     const t = tags();
     return (
@@ -296,7 +292,7 @@ export function SeriesTaggables(props: SeriesTaggablesProps) {
   const taggables = () => props.series.taggables;
 
   return (
-    <Show when={taggables() && taggables()!.length > 0}>
+    <Show when={taggables()?.length}>
       <GroupBox class="ds-mt-10" title={<IconText icon={<StorageIcon />}>{t("series.relatedAnthologies", { count: taggables()!.length })}</IconText>}>
         <div class="ds-taggables-grid">
           <For each={taggables()}>
