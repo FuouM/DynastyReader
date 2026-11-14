@@ -560,13 +560,6 @@
   font-weight: 600;
   color: var(--sys-window-text, #333);
 }
-.ds-bl-mode-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--font-sm);
-  cursor: pointer;
-}
 .ds-bl-chips {
   display: flex;
   flex-wrap: wrap;

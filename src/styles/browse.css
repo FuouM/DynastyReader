@@ -287,8 +287,7 @@
 }
 
 /* Downloaded tab header & stats */
-#ds-downloaded-header,
-.ds-downloaded-header {
+#ds-downloaded-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -320,45 +319,6 @@
   align-items: center;
   gap: 6px;
 }
-.ds-downloaded-stats {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  color: var(--sys-text-muted);
-  font-size: var(--font-sm);
-}
-.ds-downloaded-stat-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--sys-window-text);
-}
-.ds-downloaded-stat-item b {
-  color: var(--sys-window-text);
-  font-weight: 700;
-}
-.ds-downloaded-stat-icon {
-  font-size: var(--font-md);
-  color: var(--sys-link);
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-.ds-downloaded-stat-size .ds-downloaded-stat-icon {
-  color: var(--sys-text-muted);
-}
-.ds-downloaded-divider {
-  color: var(--sys-border-dark);
-  opacity: 0.6;
-  user-select: none;
-}
-.ds-downloaded-count,
-.ds-downloaded-size {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
 #ds-browse-check-updates-btn,
 .ds-status-refresh-btn,
 .win-button.ds-status-refresh-btn {
@@ -373,14 +333,6 @@
   box-sizing: border-box;
   flex-shrink: 0;
   line-height: normal;
-}
-.ds-feed-status-right {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  margin-left: auto;
 }
 #ds-browse-top-pager,
 .ds-feed-status-pager-wrap {
@@ -400,10 +352,6 @@
   gap: 4px;
   flex-shrink: 0;
   line-height: normal;
-}
-.ds-etag-status-label {
-  font-weight: 600;
-  color: var(--sys-window-text);
 }
 
 /* Typeahead */
@@ -461,17 +409,6 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-}
-
-.ds-download-speed-badge {
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--sys-primary);
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 3px;
-  user-select: none;
 }
 
 .ds-download-series-list {
@@ -609,12 +546,6 @@
   align-items: center;
   gap: 4px;
   flex-wrap: nowrap;
-}
-.ds-downloaded-series-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
 }
 .ds-downloaded-summary-strip {
   display: flex;

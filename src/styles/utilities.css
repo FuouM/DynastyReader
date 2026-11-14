@@ -472,12 +472,10 @@
   gap: 4px;
   margin-top: 6px;
 }
-.ds-reader-mobile-row,
 .ds-reader-mobile-row--full {
   width: 100%;
   justify-content: space-between;
 }
-.ds-reader-mobile-title,
 .ds-reader-mobile-title--flex {
   display: flex;
   flex-direction: column;

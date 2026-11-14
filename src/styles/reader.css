@@ -160,29 +160,14 @@
   gap: 4px;
   flex-shrink: 0;
 }
-.ds-ctrl-zoom-group.ds-zoom-disabled {
-  display: none !important;
-}
 .ds-ctrl-fit-select {
   width: 90px;
   max-width: 90px;
   flex-shrink: 0;
 }
-.ds-ctrl-text {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .ds-ctrl-text {
-    display: inline;
-  }
-}
 
 @media (max-width: 680px) {
   /* Narrow phone: compress toolbar, drop non-essential labels and controls */
-  .ds-nav-btn-ch .ds-ch-btn-text {
-    display: none;
-  }
   .ds-reader-nav {
     padding: 2px 4px;
     gap: 4px;
@@ -204,9 +189,6 @@
     display: none !important;
   }
   .ds-nav-btn-jump {
-    display: none;
-  }
-  .ds-ctrl-zoom-group.ds-zoom-disabled {
     display: none;
   }
 }
@@ -637,16 +619,6 @@
   opacity: 1;
   transform: translate(-50%, 0);
 }
-.ds-slot-loading {
-  min-height: 200px;
-  background: linear-gradient(90deg, var(--sys-control-bg) 25%, var(--sys-hover-bg) 50%, var(--sys-control-bg) 75%);
-  background-size: 200% 100%;
-  animation: ds-shimmer 1.2s ease-in-out infinite;
-}
-@keyframes ds-shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 /* Fit modes */
 .fit-width #ds-reader-viewport {
@@ -755,7 +727,6 @@
   overflow: auto;
   user-select: none;
 }
-#ds-reader-viewport.horizontal #ds-reader-strip > .ds-slot.ds-draggable,
 .fit-original #ds-reader-viewport.horizontal #ds-reader-strip > .ds-slot {
   cursor: grab;
 }
@@ -1067,14 +1038,6 @@
 #ds-reader-viewport.horizontal .ds-spread-canvas .ds-slot:has(.ds-slot-state) {
   min-width: 280px !important;
   width: auto !important;
-}
-
-.ds-slot-placeholder {
-  width: 100%;
-  max-width: 800px;
-  min-height: 200px;
-  background: transparent;
-  display: block;
 }
 
 .ds-slot-state {

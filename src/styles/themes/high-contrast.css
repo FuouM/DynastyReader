@@ -29,7 +29,6 @@
     color: var(--sys-success-accent, #22dd88) !important;
   }
   :root[data-theme="high-contrast"] .win-button:disabled,
-  :root[data-theme="high-contrast"] .win-button[aria-disabled="true"],
   :root[data-theme="high-contrast"] button:disabled {
     color: #666666 !important;
     border-color: #444444 !important;
