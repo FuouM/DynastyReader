@@ -42,11 +42,7 @@ function TriggerWarningModal(props: TriggerWarningModalProps) {
             style="min-width:85px;"
             icon={<ExternalLinkIcon />}
             text={t("dialogs.triggerWarning.proceedButton")}
-            onClick={() => {
-              const proceed = props.onProceed;
-              props.onClose();
-              proceed();
-            }}
+            onClick={() => props.onProceed()}
           />
         </div>
       }
